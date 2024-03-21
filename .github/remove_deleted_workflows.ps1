@@ -1,5 +1,5 @@
 # Variables
-$user = "th3w1zard1"  # Replace with your GitHub username
+$user = "NickHugi"  # Replace with your GitHub username
 $repo = "PyKotor"  # Replace with your repository name
 $workflowsDir = "./workflows"  # Adjust the path to your local clone of the repository
 

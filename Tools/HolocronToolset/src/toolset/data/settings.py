@@ -58,11 +58,11 @@ class QtTypeWrapper:
 
 class Settings:
     def __init__(self, scope: str):
-        self.settings = QSettings("HolocronToolset", scope)
+        self.settings = QSettings("HolocronToolsetBeta", scope)
 
     @staticmethod
     def addSetting(name: str, default: Any) -> property:  # noqa: C901
-        def encode_value(value):
+        def convert_value(value):
             """Recursively converts values, including Qt.Key and nested structures, for serialization.
             Encapsulates special Qt types in QtTypeWrapper.
             """
@@ -71,60 +71,42 @@ class Settings:
             if isinstance(value, Qt.MouseButton):
                 return QtTypeWrapper(mouseButtonMap[value], "Qt.MouseButton")
             if isinstance(value, set):
-                return {encode_value(item) for item in value}  # type: ignore[reportUnhashable]
+                return {convert_value(item) for item in value}  # type: ignore[reportUnhashable]
             if isinstance(value, tuple):
-                return tuple(encode_value(item) for item in value)
+                return tuple(convert_value(item) for item in value)
             if isinstance(value, list):
-                return [encode_value(item) for item in value]
+                return [convert_value(item) for item in value]
             if isinstance(value, dict):
-                return {key: encode_value(val) for key, val in value.items()}
-            return jsonpickle.encode(value)
+                return {key: convert_value(val) for key, val in value.items()}
+            return value
 
-        def decode_value(value: Any):  # noqa: ANN202
+        def reconstruct_value(value: Any):  # noqa: ANN202
             """Reconstructs the value from the serialized form, handling QtTypeWrapper instances."""
             if isinstance(value, QtTypeWrapper):
                 return value.reconstruct()
             if isinstance(value, set):
-                return {decode_value(item) for item in value}  # type: ignore[reportUnhashable]
+                return {reconstruct_value(item) for item in value}  # type: ignore[reportUnhashable]
             if isinstance(value, tuple):
-                return tuple(decode_value(item) for item in value)
+                return tuple(reconstruct_value(item) for item in value)
             if isinstance(value, list):
-                return [decode_value(item) for item in value]
+                return [reconstruct_value(item) for item in value]
             if isinstance(value, dict):
-                return {key: decode_value(val) for key, val in value.items()}
-            return jsonpickle.decode(value)
+                return {key: reconstruct_value(val) for key, val in value.items()}
+            return value
 
         def getter(this: Settings) -> Any:
+            l_default = convert_value(default)
+            serialized_default = jsonpickle.encode(l_default)
             try:
-                serialized_default = encode_value(default)
-                try:
-                    raw_value = this.settings.value(name, serialized_default, str)
-                    if raw_value is None:
-                        return default
-                    return decode_value(raw_value)
-                except Exception as e:
-                    print(f"Exception in settings getter: {e}")
-                    return decode_value(this.settings.value(name, serialized_default, serialized_default.__class__))
-            except Exception as e:
-                print(format_exception_with_variables(e, e.__class__, e.__traceback__, message="Caught a major exception in Settings.addSetting's getter:"))
-                return decode_value(default)
+                raw_value = this.settings.value(name, serialized_default, str)
+                value = jsonpickle.decode(raw_value)
+                return reconstruct_value(value)
+            except JSONDecodeError as e:
+                print(f"Exception in settings getter: {e}")
+                return this.settings.value(name, l_default, l_default.__class__)
 
         def setter(this: Settings, value: Any):
-            try:
-                try:
-                    try:
-                        from PyQt5.QtCore import QVariant
-                    except Exception:
-                        from qtpy.QtCore import QVariant
-                    if isinstance(value, QVariant):
-                        value = value.value()
-                except Exception as e:
-                    print(f"Exception in settings getter: {e}")
-                    this.settings.setValue(name, encode_value(value))
-                else:
-                    this.settings.setValue(name, encode_value(value))
-            except Exception as e:
-                print(format_exception_with_variables(e, e.__class__, e.__traceback__, message="Caught a major exception in Settings.addSetting's setter:"))
-                return this.settings.setValue(name, encode_value(value))
+            #serialized_value = jsonpickle.encode(value, warn=True)
+            this.settings.setValue(name, jsonpickle.encode(convert_value(value)))
 
         return property(getter, setter)
