@@ -27,7 +27,7 @@ LOCAL_PROGRAM_INFO = \
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "<br>  - Tons of performance optimizations<br>  - Fix filtering by name in the Texture tab<br>  - Fix editors not starting on top<br>  - Use new strategy for IO<br>  - Use pillow to load large TGA images.<br>  - Fix reload/refresh buttons<br>  - Prompt before creating a .mod when using module designer.<br>  - Fix bug when compiling scripts inside RIMs, when rims saving setting is disabled.<br>  - Optimize installation loading and show progress bar for the entire process.<br>  - Fix issue with installations not being cached when swapping to a different installation in the combobox.<br>  - Fix issue with windows not having separate taskbar entries.<br>  - Add an option to disable/enable loading Override textures into the module designer (workaround for large textures taking ages to load).<br>  - Add additional resources into the Core tab.<br><br>Thank you to the users who've reported the bugs in the last few versions.",
+    "toolsetLatestBetaNotes": "Various bugfixes, update when you are able :)",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
@@ -57,13 +57,12 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         # Use regex to extract the JSON part between the markers
         json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
-        if json_data_match:
-            json_str = json_data_match.group(1)
-            remoteInfo = json.loads(json_str)
-            if not isinstance(remoteInfo, dict):
-                raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
-        else:
+        if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
+        json_str = json_data_match.group(1)
+        remoteInfo = json.loads(json_str)
+        if not isinstance(remoteInfo, dict):
+            raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001
         errMsg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(

@@ -106,7 +106,8 @@ class Settings:
                 return this.settings.value(name, l_default, l_default.__class__)
 
         def setter(this: Settings, value: Any):
-            #serialized_value = jsonpickle.encode(value, warn=True)
-            this.settings.setValue(name, jsonpickle.encode(convert_value(value)))
+            converted_value = convert_value(value)
+            serialized_value = jsonpickle.encode(converted_value, warn=True)
+            this.settings.setValue(name, serialized_value)
 
         return property(getter, setter)

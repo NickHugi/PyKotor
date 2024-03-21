@@ -941,13 +941,10 @@ class ToolWindow(QMainWindow):
 
         toolsetLatestReleaseVersion = remoteInfo["toolsetLatestVersion"]
         toolsetLatestBetaVersion = remoteInfo["toolsetLatestBetaVersion"]
-        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestReleaseVersion, toolsetLatestBetaVersion)
-        if (
-            self.settings.alsoCheckReleaseVersion
-            and (
-                not self.settings.useBetaChannel
-                or releaseNewerThanBeta is True
-            )
+        releaseNewerThanBeta = not remoteVersionNewer(toolsetLatestReleaseVersion, toolsetLatestBetaVersion)
+        if self.settings.alsoCheckReleaseVersion and (
+            not self.settings.useBetaChannel
+            or releaseNewerThanBeta
         ):
             releaseVersionChecked = True
             greatestAvailableVersion = remoteInfo["toolsetLatestVersion"]
