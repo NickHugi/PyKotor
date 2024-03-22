@@ -31,7 +31,7 @@ class Rtf15Writer(PythWriter):
     }
 
     @classmethod
-    def write(klass, document, target=None, fontFamily="roman"):
+    def write(cls, document, target=None, fontFamily="roman"):
         if target is None:
             target = StringIO()
 

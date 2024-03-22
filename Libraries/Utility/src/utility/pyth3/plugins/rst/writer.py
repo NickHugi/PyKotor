@@ -10,7 +10,7 @@ from utility.pyth3.format import PythWriter
 class RSTWriter(PythWriter):
 
     @classmethod
-    def write(klass, document, target=None):
+    def write(cls, document, target=None):
         if target is None:
             target = StringIO()
 

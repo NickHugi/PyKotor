@@ -14,7 +14,7 @@ def _convert(content):
 class PythonReader(PythReader):
 
     @classmethod
-    def read(self, source):
+    def read(cls, source):
         """source: A list of P objects."""
         return Document(content=[_convert(c) for c in source])
 
@@ -40,9 +40,9 @@ def _MetaPythonBase():
     """
 
     class MagicGetItem(type):
-        def __new__(mcs, name, bases, dict):
-            klass = type.__new__(mcs, name, bases, dict)
-            mcs.__getitem__ = lambda _, k: klass()[k]
+        def __new__(cls, name, bases, dict):
+            klass = type.__new__(cls, name, bases, dict)
+            cls.__getitem__ = lambda _, k: klass()[k]
             return klass
 
     return MagicGetItem

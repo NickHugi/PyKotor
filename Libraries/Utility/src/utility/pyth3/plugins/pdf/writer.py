@@ -28,7 +28,7 @@ BULLET_TEXT = "\xe2\x80\xa2"
 class PDFWriter(PythWriter):
 
     @classmethod
-    def write(klass, document, target=None, paragraphStyle=None):
+    def write(cls, document, target=None, paragraphStyle=None):
         writer = PDFWriter(document, paragraphStyle)
         story = writer.go()
 

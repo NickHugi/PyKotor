@@ -62,7 +62,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import LogType, PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
@@ -72,7 +72,6 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
-    from pykotor.tslpatcher.logger import PatchLog
 
 APP: KOTORPatchingToolUI
 OUTPUT_LOG: Path

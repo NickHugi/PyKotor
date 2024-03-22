@@ -11,7 +11,7 @@ from utility.pyth3.plugins.xhtml.css import CSS
 class XHTMLReader(PythReader):
 
     @classmethod
-    def read(self, source, css_source=None, encoding="utf-8", link_callback=None):
+    def read(cls, source, css_source=None, encoding="utf-8", link_callback=None):
         reader = XHTMLReader(source, css_source, encoding, link_callback)
         return reader.go()
 

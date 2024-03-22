@@ -16,7 +16,7 @@ from utility.pyth3.plugins.rst.writer import RSTWriter
 class LatexWriter(PythWriter):
 
     @classmethod
-    def write(klass, document, target=None, stylesheet=""):
+    def write(cls, document, target=None, stylesheet=""):
         """Convert a pyth document to a latex document.
 
         we can specify a stylesheet as a latex document fragment that

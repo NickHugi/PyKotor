@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import difflib
 import math
-import os
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
@@ -13,10 +12,12 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
-from utility.string import compare_and_format, format_text
+from utility.string import format_text
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from collections.abc import Callable, Generator, Iterator
 
 T = TypeVar("T")

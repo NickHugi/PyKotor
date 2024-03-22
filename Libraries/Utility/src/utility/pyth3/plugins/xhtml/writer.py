@@ -16,7 +16,7 @@ _tagNames = {
 class XHTMLWriter(PythWriter):
 
     @classmethod
-    def write(klass, document, target=None, cssClasses=True, pretty=False):
+    def write(cls, document, target=None, cssClasses=True, pretty=False):
         if target is None:
             target = StringIO()
 

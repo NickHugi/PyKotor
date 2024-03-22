@@ -86,9 +86,7 @@ def status_bar_decorator(func):
         editor = self if isinstance(self, PTHEditor) else self.editor
         try:
             editor.stdout.updateStatusBar(func_call_repr)
-            result = func(self, *args, **kwargs)
-            # Update the status bar to show the function call
-            return result
+            return func(self, *args, **kwargs)
         except Exception as e:
             traceback.print_exc()
             error_message = str(universal_simplify_exception(e))
