@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 LOCAL_PROGRAM_INFO = \
 {  #<---JSON_START--->#{
-    "currentVersion": "2.2.1b19",
+    "currentVersion": "2.2.1b20",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
@@ -27,7 +27,7 @@ LOCAL_PROGRAM_INFO = \
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Various bugfixes, update when you are able :)",
+    "toolsetLatestBetaNotes": "Fixed help booklet, and other various bugfixes. Update when you are able :)",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
