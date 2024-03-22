@@ -237,7 +237,7 @@ class Module:  # noqa: PLR0904
                     textures.add(texture)
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 print(
                     format_exception_with_variables(
                         e, message=f"Exception occurred when executing {self!r}.reload_resources() with model '{model.resname()}.{model.restype()}'"
@@ -333,7 +333,6 @@ class Module:  # noqa: PLR0904
         Args:
         ----
             self: The Module instance
-            _id: The ID of the layout resource
 
         Returns:
         -------
@@ -748,12 +747,12 @@ class Module:  # noqa: PLR0904
         """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTE]
 
-    def store(self, resname: str) -> ModuleResource[UTM] | None:
+    def store(self, resname: str | ResRef) -> ModuleResource[UTM] | None:
         """Looks up a material (UTM) resource by the specified resname from this module and returns the resource data.
 
         Args:
         ----
-            resname: Name of the resource to look up
+            resname(str | ResRef): Name of the resource to look up
 
         Returns:
         -------
@@ -766,7 +765,7 @@ class Module:  # noqa: PLR0904
             - Returns the first matching resource
             - Returns None if no match found.
         """
-        lower_resname: str = resname.lower()
+        lower_resname: str = str(resname).lower()
         return next(
             (
                 resource
