@@ -1155,19 +1155,7 @@ class ModuleResource(Generic[T]):
             return None
         if isinstance(res, UTC):
             return f"{self._installation.string(res.first_name)} {self._installation.string(res.last_name)}"
-        if isinstance(res, UTP):
-            return self._installation.string(res.name)
-        if isinstance(res, UTD):
-            return self._installation.string(res.name)
-        if isinstance(res, UTW):
-            return self._installation.string(res.name)
-        if isinstance(res, UTT):
-            return self._installation.string(res.name)
-        if isinstance(res, UTE):
-            return self._installation.string(res.name)
-        if isinstance(res, UTM):
-            return self._installation.string(res.name)
-        if isinstance(res, UTS):
+        if isinstance(res, (UTP, UTD, UTW, UTT, UTE, UTM, UTS)):
             return self._installation.string(res.name)
         print(f"Could not find res of type {res.__class__}")
         return None
