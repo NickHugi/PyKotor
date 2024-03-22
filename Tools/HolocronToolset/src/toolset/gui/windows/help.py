@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 # Try to import defusedxml, fallback to ElementTree if not available
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ElemTree
 
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
-    ElementTree.fromstring = _fromstring
+    ElemTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
     print("warning: diffusedxml is not available but recommended due to security concerns.")
 
