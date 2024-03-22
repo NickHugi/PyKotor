@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import math
 import os
 
@@ -153,6 +154,78 @@ class GFFFieldType(IntEnum):
         if self in {GFFFieldType.Double, GFFFieldType.Single}:
             return float
         raise ValueError(self)
+
+
+class Difference:
+    def __init__(self, path: os.PathLike | str, old_value: Any, new_value: Any):
+        """Initializes a Difference instance representing a specific difference between two GFFStructs.
+
+        Args:
+        ----
+            path (os.PathLike | str): The path to the value within the GFFStruct where the difference was found.
+            old_value (Any): The value from the original GFFStruct at the specified path.
+            new_value (Any): The value from the compared GFFStruct at the specified path.
+        """
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.old_value: Any = old_value
+        self.new_value: Any = new_value
+
+    def __repr__(self):
+        return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
+
+class GFFCompareResult:
+    """A comparison result from gff.compare/GFFStruct.compare.
+
+    Contains enough differential information between the two GFF structs that it can be used to take one gff and reconstruct the other.
+    Helper methods also exist for working with the data in other code.
+
+    Backwards-compatibility note: the original gff.compare used to return a simple boolean. True if the gffs were the same, False if not. This class
+    attempts to keep backwards compatibility while ensuring we can still return a type that's more detailed and informative.
+    """
+    def __init__(self):
+        self.differences: list[Difference] = []
+
+    def __bool__(self):
+        # Return False if the list has any contents (meaning the objects are different), True if it's empty.
+        return not bool(self.differences)
+
+    def add_difference(self, path, old_value, new_value):
+        """Adds a difference to the collection of tracked differences.
+
+        Args:
+        ----
+            path (str): The path to the value where the difference was found.
+            old_value (Any): The original value at the specified path.
+            new_value (Any): The new value at the specified path that differs from the original.
+        """
+        self.differences.append(Difference(path, old_value, new_value))
+
+    def get_changed_values(self) -> list[Difference]:
+        """Returns a list of differences where the value has changed from the original.
+
+        Returns:
+        -------
+            list[Difference]: The list of differences with changed values.
+        """
+        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value]
+
+    def get_new_values(self) -> list[Difference]:
+        """Returns a list of differences where a new value is present in the compared GFFStruct.
+
+        Returns:
+        -------
+            list[Difference]: The list of differences with new values.
+        """
+        return [diff for diff in self.differences if diff.old_value is None and diff.new_value is not None]
+
+    def get_removed_values(self) -> list[Difference]:
+        """Returns a list of differences where a value is present in the original GFFStruct but not in the compared.
+
+        Returns:
+        -------
+            list[Difference]: The list of differences with removed values.
+        """
+        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is None]
 
 
 class GFF:
@@ -461,19 +534,8 @@ class GFFStruct:
                     continue
 
                 formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                newlines_in_old: int = formatted_old_value.count("\n")
-                newlines_in_new: int = formatted_new_value.count("\n")
-
-                if newlines_in_old > 1 or newlines_in_new > 1:
-                    formatted_old_value, formatted_new_value = compare_and_format(formatted_old_value, formatted_new_value)
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
-                    continue
-
-                if newlines_in_old == 1 or newlines_in_new == 1:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{formatted_old_value}{os.linesep}<-vvv->{os.linesep}{formatted_new_value}")
-                    continue
-
-                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {formatted_old_value} --> {formatted_new_value}")
+                diff = difflib.ndiff(formatted_old_value.splitlines(keepends=True), formatted_new_value.splitlines(keepends=True))
+                log_func("\n".join(diff))
 
         return is_same
 
