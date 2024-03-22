@@ -15,6 +15,7 @@ class MiscWidget(QWidget):
         self.settings = GlobalSettings()
 
         from toolset.uic.widgets.settings import misc
+
         self.ui = misc.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()

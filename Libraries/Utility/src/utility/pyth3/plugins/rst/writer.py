@@ -1,4 +1,5 @@
 """Render documents as reStructuredText."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -8,7 +9,6 @@ from utility.pyth3.format import PythWriter
 
 
 class RSTWriter(PythWriter):
-
     @classmethod
     def write(cls, document, target=None):
         if target is None:
@@ -21,11 +21,10 @@ class RSTWriter(PythWriter):
         self.document = doc
         self.target = target
         self.indent = -1
-        self.paragraphDispatch = {document.List: self.list,
-                                  document.Paragraph: self.paragraph}
+        self.paragraphDispatch = {document.List: self.list, document.Paragraph: self.paragraph}
 
     def go(self):
-        for (_i, paragraph) in enumerate(self.document.content):
+        for _i, paragraph in enumerate(self.document.content):
             handler = self.paragraphDispatch[paragraph.__class__]
             handler(paragraph)
             self.target.write("\n")
@@ -78,8 +77,8 @@ class RSTWriter(PythWriter):
     def list(self, list, prefix=None):
         """Process a pyth list into the target."""
         self.indent += 1
-        for (_i, entry) in enumerate(list.content):
-            for (j, paragraph) in enumerate(entry.content):
+        for _i, entry in enumerate(list.content):
+            for j, paragraph in enumerate(entry.content):
                 prefix = "- " if j == 0 else "  "
                 handler = self.paragraphDispatch[paragraph.__class__]
                 handler(paragraph, prefix)

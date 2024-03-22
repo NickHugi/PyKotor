@@ -1,4 +1,5 @@
 """Render documents as Reportlab PDF stories."""
+
 from __future__ import annotations
 
 import cgi  # For escape()
@@ -12,11 +13,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate
 from utility.pyth3 import document
 from utility.pyth3.format import PythWriter
 
-_tagNames = {"bold": "b",
-             "italic": "i",
-             "underline": "u",
-             "sub": "sub",
-             "super": "super"}
+_tagNames = {"bold": "b", "italic": "i", "underline": "u", "sub": "sub", "super": "super"}
 
 LIST_INDENT = 0.3 * inch
 BULLET_INDENT = 0.2 * inch
@@ -26,7 +23,6 @@ BULLET_TEXT = "\xe2\x80\xa2"
 
 
 class PDFWriter(PythWriter):
-
     @classmethod
     def write(cls, document, target=None, paragraphStyle=None):
         writer = PDFWriter(document, paragraphStyle)
@@ -48,9 +44,7 @@ class PDFWriter(PythWriter):
         self.paragraphStyle = paragraphStyle
         self.paragraphStyle.spaceAfter = 0.2 * inch
 
-        self.paragraphDispatch = {
-            document.List: self._list,
-            document.Paragraph: self._paragraph}
+        self.paragraphDispatch = {document.List: self._list, document.Paragraph: self._paragraph}
 
     def go(self):
         self.paragraphs = []
@@ -92,7 +86,6 @@ class PDFWriter(PythWriter):
         self.paragraphStyle = ParagraphStyle("ListStyle", self.paragraphStyle)
 
         for para in entry.content:
-
             if first:
                 bullet = BULLET_TEXT
                 self.paragraphStyle.leftIndent = LIST_INDENT * level
@@ -106,6 +99,3 @@ class PDFWriter(PythWriter):
             first = False
 
         self.paragraphStyle = prevStyle
-
-
-

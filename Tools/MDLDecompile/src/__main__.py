@@ -6,6 +6,7 @@ import sys
 import traceback
 
 if getattr(sys, "frozen", False) is False:
+
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir in sys.path:
@@ -31,9 +32,7 @@ parser_args, unknown = parser.parse_known_args()
 parser.print_help()
 while True:
     parser_args.input = Path(
-        parser_args.input
-        or (unknown[0] if len(unknown) > 0 else None)
-        or input("Path to the MDL/MDX file/folder of MDL files: "),
+        parser_args.input or (unknown[0] if len(unknown) > 0 else None) or input("Path to the MDL/MDX file/folder of MDL files: "),
     ).resolve()
     if parser_args.input.safe_exists():
         break
@@ -52,9 +51,7 @@ while True:
     parser_args.output = None
 while True:
     parser_args.compile = str(
-        parser_args.compile
-        or (unknown[2] if len(unknown) > 2 else None)
-        or input("Would you like to compile or decompile? (enter 'c', 'compile' 'd', or 'decompile'): "),
+        parser_args.compile or (unknown[2] if len(unknown) > 2 else None) or input("Would you like to compile or decompile? (enter 'c', 'compile' 'd', or 'decompile'): "),
     )
     if parser_args.compile.lower().strip() in {"compile", "c"}:
         parser_args.compile = True

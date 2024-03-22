@@ -739,7 +739,6 @@ class Installation:  # noqa: PLR0904
         ]
 
         game1_xbox_checks: list[bool] = [  # TODO:
-
         ]
 
         game1_ios_checks: list[bool] = [
@@ -780,7 +779,6 @@ class Installation:  # noqa: PLR0904
         ]
 
         game1_android_checks: list[bool] = [  # TODO:
-
         ]
 
         game2_pc_checks: list[bool] = [
@@ -798,7 +796,6 @@ class Installation:  # noqa: PLR0904
         ]
 
         game2_xbox_checks: list[bool] = [  # TODO:
-
         ]
 
         game2_ios_checks: list[bool] = [
@@ -829,7 +826,6 @@ class Installation:  # noqa: PLR0904
         ]
 
         game2_android_checks: list[bool] = [  # TODO:
-
         ]
 
         # Determine the game with the most checks passed
@@ -1840,9 +1836,9 @@ class Installation:  # noqa: PLR0904
                     print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
 
             if is_our_search:  # Skip ARE validation (faster).
-                #if use_alternate:
+                # if use_alternate:
                 #    print(f"Alternate: Returning '{found_mod_id}' for '{module_filename}'")
-                #else:
+                # else:
                 #    print(f"Main: returning '{found_mod_id}' for '{module_filename}'")
                 if also_return_cached_capsules:
                     return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
@@ -1850,7 +1846,7 @@ class Installation:  # noqa: PLR0904
             # Validate the ARE exists.
             for mod_id in mod_ids_to_try:
                 for capsule in our_erf_rims_module:
-                    #print(f"Checking for '{mod_id}' in '{module_filename}'")
+                    # print(f"Checking for '{mod_id}' in '{module_filename}'")
                     if capsule.info(mod_id, ResourceType.ARE) is None:
                         continue
                     if also_return_cached_capsules:  # Found at this point.
@@ -1860,7 +1856,7 @@ class Installation:  # noqa: PLR0904
                     found_mod_id = mod_id
         except Exception as e:  # noqa: BLE001
             print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
-        #print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
+        # print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
         if also_return_cached_capsules:
             return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
         return found_mod_id
@@ -1873,7 +1869,7 @@ class Installation:  # noqa: PLR0904
         iterated_capsule: Capsule,
         mod_ids_to_try: set[str],
         attribute_name: str,
-        mode: Literal[0, 1]
+        mode: Literal[0, 1],
     ) -> tuple[str, bool]:
         """Processes a specified mod attribute (Mod_VO_ID or Mod_Entry_Area), extracting its value and handling exceptions."""
         found_mod_id: str = ""
@@ -1884,24 +1880,24 @@ class Installation:  # noqa: PLR0904
                     found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
                 else:
                     found_mod_id = ifo.root.get_string(attribute_name).strip()
-                if use_alternate: # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
+                if use_alternate:  # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
                     if found_mod_id and found_mod_id.lower() in lower_root:
-                        #print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
+                        # print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
                         return found_mod_id, True
-                    #print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
+                    # print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
         except Exception as e:  # noqa: BLE001
-            ...#print(iterated_capsule.filename(), attribute_name, str(e))
+            ...  # print(iterated_capsule.filename(), attribute_name, str(e))
         else:
             # if found_mod_id:
             #     print(f"Got ID '{found_mod_id}' in {attribute_name} for erf/rim '{iterated_capsule.filename()}'")
-            if not use_alternate: # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
+            if not use_alternate:  # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
                 if found_mod_id and found_mod_id.strip():
                     if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
                         return found_mod_id, True
                     mod_ids_to_try.add(found_mod_id)
-                    #print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                #else:
-                    #print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
+                    # print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
+                # else:
+                # print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
         return found_mod_id, False
 
     def _build_item(
@@ -1923,7 +1919,7 @@ class Installation:  # noqa: PLR0904
         modid_lookup: bool,  # noqa: FBT001
         mod_id: str,
         our_erf_rims_module: list[tuple[str, Capsule]] | list[Capsule],
-        cached_capsules: dict[Path, Capsule]
+        cached_capsules: dict[Path, Capsule],
     ) -> None:
         """Constructs the filepath from the given filename, checks if the file exists,
         and attempts to build a capsule from it, catching and handling any exceptions.

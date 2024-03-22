@@ -140,8 +140,7 @@ class ModUninstaller:
         if not valid_backups:
             messagebox.showerror(
                 "No backups found!",
-                f"No backups found at '{backup_folder_path}'!{os.linesep}"
-                "HoloPatcher cannot uninstall TSLPatcher.exe installations.",
+                f"No backups found at '{backup_folder_path}'!{os.linesep}" "HoloPatcher cannot uninstall TSLPatcher.exe installations.",
             )
             return None
         return max(valid_backups, key=lambda x: datetime.strptime(x.name, "%Y-%m-%d_%H.%M.%S").astimezone())
@@ -199,13 +198,13 @@ class ModUninstaller:
             files_to_delete = {line.strip() for line in lines if line.strip()}
             existing_files = {line.strip() for line in files_to_delete if line.strip() and Path(line.strip()).is_file()}
             if len(existing_files) < len(files_to_delete) and not messagebox.askyesno(
-                    "Backup out of date or mismatched",
-                    (
-                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
-                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
-                        f"Also ensure you selected the right mod, and the right KOTOR folder.{os.linesep}"
-                        "Continue anyway?"
-                    ),
+                "Backup out of date or mismatched",
+                (
+                    f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
+                    f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
+                    f"Also ensure you selected the right mod, and the right KOTOR folder.{os.linesep}"
+                    "Continue anyway?"
+                ),
             ):
                 return None, set(), [], 0
 

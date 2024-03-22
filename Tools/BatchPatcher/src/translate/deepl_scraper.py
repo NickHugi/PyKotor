@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 os.environ['PYTHONPATH'] = Path(r"../get-pwbrowser-sync")
 """  # noqa: D415, D400, D212
+
 from __future__ import annotations
 
 import re
@@ -159,4 +160,3 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
 
         # remove possible attached suffix
         return re.sub(r"[\d]+_$", "", content.strip()).strip()  # type: ignore[reportOptionalMemberAccess]
-

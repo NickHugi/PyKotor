@@ -18,10 +18,14 @@ from unittest import mock
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -51,8 +55,8 @@ def check_path_win_api(path) -> tuple[bool, bool, bool]:
     is_file: bool = not is_dir  # Simplistic check; may need refinement for special files
     return True, is_file, is_dir
 
-class TestPathlibMixedSlashes(unittest.TestCase):
 
+class TestPathlibMixedSlashes(unittest.TestCase):
     def create_and_run_batch_script(self, cmd: list[str], pause_after_command: bool = False):
         with TemporaryDirectory() as tempdir:
             # Ensure the script path is absolute
@@ -69,11 +73,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             cmd_switch = "/K" if pause_after_command else "/C"
 
             # Construct the command to run the batch script with elevated privileges
-            run_script_cmd: list[str] = [
-                "Powershell",
-                "-Command",
-                f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"
-            ]
+            run_script_cmd: list[str] = ["Powershell", "-Command", f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"]
 
             # Execute the batch script
             subprocess.run(run_script_cmd, check=False)
@@ -92,7 +92,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             f'icacls "{path_str}" /reset',
             f'attrib +S +R "{path_str}"',
             f'icacls "{path_str}" /inheritance:r',
-            f'icacls "{path_str}" /deny Everyone:(F)'
+            f'icacls "{path_str}" /deny Everyone:(F)',
         ]
 
         # Create and run the batch script
@@ -113,7 +113,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             # raise e
         self.remove_permissions(str(test_file))
         try:
-
             # Remove all permissions from the file
 
             test_filepath = CustomPath(test_file)
@@ -134,11 +133,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             ...
 
     def test_nt_case_hashing(self):
-        test_classes: tuple[type, ...] = (
-            (CustomPureWindowsPath,)
-            if os.name == "posix"
-            else (CustomWindowsPath, CustomPureWindowsPath, CustomPath)
-        )
+        test_classes: tuple[type, ...] = (CustomPureWindowsPath,) if os.name == "posix" else (CustomWindowsPath, CustomPureWindowsPath, CustomPath)
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 path1 = PathType("test\\path\\to\\nothing")
@@ -169,7 +164,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(False, Path(test_path).is_file())  # This is the bug
         self.assertEqual(False, Path(test_path).is_dir())  # This is the bug
         for PathType in test_classes:
-
             test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
             self.assertEqual(test_pathtype_exists, True, repr(PathType))
             self.assertEqual(True, PathType(test_path).exists(), repr(PathType))
@@ -199,7 +193,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(test_os_isfile, False)
 
         for PathType in test_classes:
-
             test_pathtype_exists: bool | None = PathType(test_path).safe_exists()
             self.assertEqual(test_pathtype_exists, True)
             test_pathtype_isfile: bool | None = PathType(test_path).safe_isfile()
@@ -266,11 +259,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         return True
 
     def test_posix_case_hashing(self):
-        test_classes: list[type] = (
-            [CustomPosixPath, CustomPurePosixPath, CustomPath]
-            if os.name == "posix"
-            else [CustomPurePosixPath]
-        )
+        test_classes: list[type] = [CustomPosixPath, CustomPurePosixPath, CustomPath] if os.name == "posix" else [CustomPurePosixPath]
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 path1 = PathType("test\\\\path\\to\\nothing\\")

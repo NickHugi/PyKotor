@@ -26,12 +26,14 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
         return True
     return False
 
+
 def onAppCrash(
     etype: type[BaseException],
     e: BaseException,
     tback: TracebackType | None,
 ):
     from utility.error_handling import format_exception_with_variables  # noqa: PLC0415  # pylint: disable=C0415
+
     with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
         try:
             file.writelines(format_exception_with_variables(e, etype, tback))
@@ -40,6 +42,7 @@ def onAppCrash(
         file.write("\n----------------------\n")
     # Mimic default behavior by printing the traceback to stderr
     traceback.print_exception(etype, e, tback)
+
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
@@ -57,6 +60,7 @@ def fix_sys_and_cwd_path():
         - Also checks for toolset package and changes cwd to that directory if exists.
         - This ensures packages and scripts can be located correctly on import.
     """
+
     def update_sys_path(path: pathlib.Path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -78,8 +82,8 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     if os.name == "nt":
         os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"

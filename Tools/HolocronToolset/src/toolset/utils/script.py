@@ -35,6 +35,7 @@ NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
     "Error details: {}"
 )
 
+
 def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool) -> str:
     """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
 
@@ -107,13 +108,7 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
                     set_registry_key_value(orig_regkey_path, "Path", installation_path_str)
                 except PermissionError as e:
                     print(f"Permission denied: {e}")
-                    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-                        extCompiler.get_info().name,
-                        orig_regkey_path,
-                        installation_path_str,
-                        orig_regkey_value,
-                        str(e)
-                    )
+                    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(extCompiler.get_info().name, orig_regkey_path, installation_path_str, orig_regkey_value, str(e))
                     QMessageBox(
                         QMessageBox.Warning,
                         "Permission denied when attempting to update nwnnsscomp in registry",
@@ -234,13 +229,7 @@ def _compile_windows(
                     set_registry_key_value(orig_regkey_path, "Path", installation_path_str)
                 except PermissionError as e:
                     print(f"Permission denied: {e}")
-                    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-                        extCompiler.get_info().name,
-                        orig_regkey_path,
-                        installation_path_str,
-                        orig_regkey_value,
-                        str(e)
-                    )
+                    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(extCompiler.get_info().name, orig_regkey_path, installation_path_str, orig_regkey_value, str(e))
                     QMessageBox(
                         QMessageBox.Warning,
                         "Permission denied when attempting to update nwnnsscomp in registry",

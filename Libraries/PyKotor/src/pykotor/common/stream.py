@@ -1,4 +1,5 @@
 """This module holds classes relating to read and write operations."""
+
 from __future__ import annotations
 
 import io
@@ -725,12 +726,10 @@ class BinaryReader:
 
 class BinaryWriter(ABC):
     @abstractmethod
-    def __enter__(self):
-        ...
+    def __enter__(self): ...
 
     @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        ...
+    def __exit__(self, exc_type, exc_val, exc_tb): ...
 
     @classmethod
     def to_file(
@@ -1580,8 +1579,7 @@ class BinaryWriterBytearray(BinaryWriter):
         exc_type,
         exc_val,
         exc_tb,
-    ):
-        ...
+    ): ...
 
     def close(
         self,

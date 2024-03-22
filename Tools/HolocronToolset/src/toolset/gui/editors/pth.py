@@ -98,6 +98,7 @@ def status_bar_decorator(func):
 
 def auto_decorate_methods(decorator: Callable[..., Any]) -> Callable[..., Any]:
     """Class decorator to automatically apply a decorator to all methods."""
+
     def class_decorator(cls):
         # Iterate over all attributes of cls
         for attr_name, attr_value in cls.__dict__.items():
@@ -106,6 +107,7 @@ def auto_decorate_methods(decorator: Callable[..., Any]) -> Callable[..., Any]:
                 # Wrap the method with the decorator
                 setattr(cls, attr_name, decorator(attr_value))
         return cls
+
     return class_decorator
 
 
@@ -117,6 +119,7 @@ class PTHEditor(Editor):
         self.stdout = CustomStdout(self)
 
         from toolset.uic.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -200,14 +203,10 @@ class PTHEditor(Editor):
     ):
         # Update the text of each label
         try:
-            self._core_update_status_bar(
-                left_status, center_status, right_status
-            )
+            self._core_update_status_bar(left_status, center_status, right_status)
         except RuntimeError:  # wrapped C/C++ object of type QLabel has been deleted
             self.setupStatusBar()
-            self._core_update_status_bar(
-                left_status, center_status, right_status
-            )
+            self._core_update_status_bar(left_status, center_status, right_status)
 
     # TODO Rename this here and in `updateStatusBar`
     def _core_update_status_bar(self, left_status, center_status, right_status):
@@ -379,6 +378,7 @@ class PTHEditor(Editor):
         if e is None:
             return
         self.ui.renderArea.keyReleaseEvent(e)
+
     # endregion
 
 
@@ -431,8 +431,7 @@ class PTHControlScheme:
             self.editor.selectNodeUnderMouse()
 
     @status_bar_decorator
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
@@ -448,8 +447,7 @@ class PTHControlScheme:
             self.editor.removeNode(node)
 
     @status_bar_decorator
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def onRenderContextMenu(self, world: Vector2, screen: QPoint):

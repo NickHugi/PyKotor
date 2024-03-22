@@ -20,12 +20,10 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
-class CriticalError(Exception):
-    ...
+class CriticalError(Exception): ...
 
 
-class WarningError(Exception):
-    ...
+class WarningError(Exception): ...
 
 
 class TargetType(IntEnum):
@@ -85,8 +83,7 @@ class Target:
 # region Value Returners
 class RowValue(ABC):
     @abstractmethod
-    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        ...
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str: ...
 
 
 class RowValueConstant(RowValue):
@@ -168,16 +165,14 @@ class RowValueHigh(RowValue):
 
 
 class RowValueRowIndex(RowValue):
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return str(twoda.row_index(row)) if row is not None else ""
 
 
 class RowValueRowLabel(RowValue):
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return row.label() if row is not None else ""
@@ -200,8 +195,7 @@ class RowValueRowCell(RowValue):
 # region Modify 2DA
 class Modify2DA(ABC):
     @abstractmethod
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def _unpack(
         self,
@@ -224,8 +218,7 @@ class Modify2DA(ABC):
         self,
         twoda: TwoDA,
         memory: PatcherMemory,
-    ):
-        ...
+    ): ...
 
 
 class ChangeRow2DA(Modify2DA):
@@ -539,6 +532,8 @@ class AddColumn2DA(Modify2DA):
             else:
                 msg = f"store_2da dict has an invalid value at {token_id}: '{value}'"
                 raise WarningError(msg)
+
+
 # endregion
 
 

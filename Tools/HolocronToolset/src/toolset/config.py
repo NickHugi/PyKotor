@@ -17,8 +17,7 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
-LOCAL_PROGRAM_INFO = \
-{  #<---JSON_START--->#{
+LOCAL_PROGRAM_INFO = {  # <---JSON_START--->#{
     "currentVersion": "2.2.1",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b18",
@@ -31,12 +30,13 @@ LOCAL_PROGRAM_INFO = \
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
-        "Hidden Bek Base": {"version": 1, "id": "hiddenbek"}
+        "Hidden Bek Base": {"version": 1, "id": "hiddenbek"},
     },
-    "help": {"version": 3}
-} #<---JSON_END--->#
+    "help": {"version": 3},
+}  # <---JSON_END--->#
 
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
+
 
 def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
     if useBetaChannel:
@@ -52,7 +52,7 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         decoded_content_str = decoded_content.decode(encoding="utf-8")
         # use for testing only:
-        #with open("config.py") as f:
+        # with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
         json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
@@ -70,10 +70,10 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
             None,
             "Error occurred fetching update information.",
             (
-                "An error occurred while fetching the latest toolset information.<br><br>" +
-                errMsg.replace("\n", "<br>") +
-                "<br><br>" +
-                "Would you like to check against the local database instead?"
+                "An error occurred while fetching the latest toolset information.<br><br>"
+                + errMsg.replace("\n", "<br>")
+                + "<br><br>"
+                + "Would you like to check against the local database instead?"
             ),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,

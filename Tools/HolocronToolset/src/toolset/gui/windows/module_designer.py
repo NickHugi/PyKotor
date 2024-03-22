@@ -241,6 +241,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
     #    @with_variable_trace(Exception)
     def openModule(self, mod_filepath: Path):
         """Opens a module."""
+
         def task() -> tuple[Module, GIT, list[BWM]]:
             if GlobalSettings().disableRIMSaving and not mod_filepath.is_file():
                 module.rim_to_mod(mod_filepath)
@@ -248,10 +249,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
 
             new_module = Module(mod_filepath.stem, self._installation)
             git: GIT | None = new_module.git().resource()
-            assert git is not None, assert_with_variable_trace(
-                git is not None,
-                f"GIT file cannot be found in {new_module.get_id()}"
-            )
+            assert git is not None, assert_with_variable_trace(git is not None, f"GIT file cannot be found in {new_module.get_id()}")
             walkmeshes: list[BWM] = []
             for bwm in new_module.resources.values():
                 if bwm.restype() != ResourceType.WOK:
@@ -290,14 +288,15 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
         window.show()
 
-#    @with_variable_trace((Exception, OSError))
+    #    @with_variable_trace((Exception, OSError))
     def git(self) -> GIT:
         return self._module.git().resource()
 
-#    @with_variable_trace(Exception)
+    #    @with_variable_trace(Exception)
     def are(self) -> ARE:
         return self._module.are().resource()
-#    @with_variable_trace(Exception)
+
+    #    @with_variable_trace(Exception)
     def ifo(self) -> IFO:
         return self._module.info().resource()
 
@@ -368,8 +367,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
-        editor: Editor | QMainWindow | None = openResourceEditor(resource.active(), resource.resname(), resource.restype(),
-                                                                 resource.data(), self._installation, self)[1]
+        editor: Editor | QMainWindow | None = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(), self._installation, self)[1]
 
         if editor is None:
             QMessageBox(
@@ -414,11 +412,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
-                if (
-                    instance.identifier() is not None
-                    and res.resname() == instance.identifier().resname
-                    and res.restype() == instance.identifier().restype
-                ):
+                if instance.identifier() is not None and res.resname() == instance.identifier().resname and res.restype() == instance.identifier().restype:
                     parent.setExpanded(True)
                     item.setSelected(True)
                     self.ui.resourceTree.scrollToItem(item)
@@ -558,7 +552,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
 
         self.rebuildInstanceList()
 
-#    @with_variable_trace(Exception)
+    #    @with_variable_trace(Exception)
     def addInstance(self, instance: GITInstance, *, walkmeshSnap: bool = True):
         """Adds a GIT instance to the editor.
 
@@ -606,7 +600,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
-#    @with_variable_trace()
+    #    @with_variable_trace()
     def addInstanceAtCursor(self, instance: GITInstance):
         """Adds instance at cursor position.
 
@@ -636,7 +630,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
-#    @with_variable_trace()
+    #    @with_variable_trace()
     def editInstance(self, instance: GITInstance):
         if openInstanceDialog(self, instance, self._installation):
             if not isinstance(instance, GITCamera):
@@ -1093,8 +1087,7 @@ class ModuleDesignerControls3d:
             world = Vector3(*self.renderer.scene.cursor.position())
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         """Handles keyboard input in the editor.
@@ -1162,8 +1155,7 @@ class ModuleDesignerControls3d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
 
 class ModuleDesignerControlsFreeCam:
@@ -1203,8 +1195,7 @@ class ModuleDesignerControlsFreeCam:
         mouseY = rendererPos.y() + self.renderer.height() // 2
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
         rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
@@ -1215,11 +1206,9 @@ class ModuleDesignerControlsFreeCam:
         self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=False)
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         if self.toggleFreeCam.satisfied(buttons, keys):
@@ -1239,8 +1228,7 @@ class ModuleDesignerControlsFreeCam:
         if self.moveCameraBackward.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(-strength, 0, 0)
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
 
 class ModuleDesignerControls2d:
@@ -1378,8 +1366,7 @@ class ModuleDesignerControls2d:
         self.editor.rebuildInstanceList()
         self.editor.setSelection([instance])
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         """Handle keyboard input in the editor.
@@ -1406,5 +1393,4 @@ class ModuleDesignerControls2d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...

@@ -1,4 +1,5 @@
 """Stuff for format implementations to subclass / use."""
+
 from __future__ import annotations
 
 

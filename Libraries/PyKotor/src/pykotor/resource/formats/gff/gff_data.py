@@ -174,6 +174,7 @@ class Difference:
     def __repr__(self):
         return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
 
+
 class GFFCompareResult:
     """A comparison result from gff.compare/GFFStruct.compare.
 
@@ -183,6 +184,7 @@ class GFFCompareResult:
     Backwards-compatibility note: the original gff.compare used to return a simple boolean. True if the gffs were the same, False if not. This class
     attempts to keep backwards compatibility while ensuring we can still return a type that's more detailed and informative.
     """
+
     def __init__(self):
         self.differences: list[Difference] = []
 
@@ -451,6 +453,7 @@ class GFFStruct:
             "KTInfoVersion",
             "EditorInfo",
         }
+
         def is_ignorable_value(v) -> bool:
             return not v or str(v) in {"0", "-1"}
 
@@ -471,8 +474,12 @@ class GFFStruct:
             is_same = False
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels
+        }
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels
+        }
 
         # Union of labels from both old and new structures
         all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
@@ -531,7 +538,9 @@ class GFFStruct:
 
                 is_same = False
                 if str(old_value) == str(new_value):
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
+                    log_func(
+                        f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
+                    )
                     continue
 
                 formatted_old_value, formatted_new_value = map(str, (old_value, new_value))

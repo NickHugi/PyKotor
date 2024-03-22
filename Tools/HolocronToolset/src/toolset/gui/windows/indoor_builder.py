@@ -46,7 +46,6 @@ from utility.misc import is_debug_mode
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-
     from PyQt5.QtCore import QPoint
     from PyQt5.QtGui import (
         QImage,
@@ -149,7 +148,9 @@ class IndoorMapBuilder(QMainWindow):
 
         if len(self._kits) == 0:
             noKitPrompt = QMessageBox(
-                QMessageBox.Warning, "No Kits Available", "No kits were detected, would you like to open the Kit downloader?",
+                QMessageBox.Warning,
+                "No Kits Available",
+                "No kits were detected, would you like to open the Kit downloader?",
             )
             noKitPrompt.addButton(QMessageBox.Yes)
             noKitPrompt.addButton(QMessageBox.No)
@@ -329,9 +330,7 @@ class IndoorMapBuilder(QMainWindow):
                 hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
                 if hook1 is not None:
                     assert hook2 is not None, assert_with_variable_trace(hook2 is not None)
-                    shift: Vector3 = (
-                        room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
-                    ) - active.position
+                    shift: Vector3 = (room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)) - active.position
                     for snapping in rooms:
                         snapping.position = shift + snapping.position
                         # snapping.position += shift
@@ -771,8 +770,7 @@ class IndoorMapRenderer(QWidget):
             path: QPainterPath = self._buildFace(face)
             painter.drawPath(path)
 
-    def _drawCircle(self, painter: QPainter, coords: Vector2):
-        ...
+    def _drawCircle(self, painter: QPainter, coords: Vector2): ...
 
     def _drawSpawnPoint(self, painter: QPainter, coords: Vector3):
         painter.setPen(QtCore.Qt.NoPen)
@@ -916,12 +914,16 @@ class IndoorMapRenderer(QWidget):
 
         if self._cursorComponent:
             fakeCursorRoom = IndoorMapRoom(
-                self._cursorComponent, self._cursorPoint, self._cursorRotation, self._cursorFlipX, self._cursorFlipY,
+                self._cursorComponent,
+                self._cursorPoint,
+                self._cursorRotation,
+                self._cursorFlipX,
+                self._cursorFlipY,
             )
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = (room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False))
+                    self._cursorPoint = room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
 
         self._underMouseRoom = None
         for room in self._map.rooms:
@@ -1009,9 +1011,7 @@ class KitDownloader(QDialog):
                 else:
                     button = QPushButton("Download")
                 button.clicked.connect(
-                    lambda _,
-                    kitDict=kitDict,
-                    button=button: self._downloadButtonPressed(button, kitDict),
+                    lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict),
                 )
 
                 layout: QFormLayout = self.ui.groupBox.layout()
@@ -1024,7 +1024,7 @@ class KitDownloader(QDialog):
                 error_msg,
                 QMessageBox.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()
@@ -1039,6 +1039,7 @@ class KitDownloader(QDialog):
             except Exception as e:
                 print(format_exception_with_variables(e))
                 raise
+
         if is_debug_mode() and not is_frozen():
             # Run synchronously for debugging
             try:

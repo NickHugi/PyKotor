@@ -37,6 +37,7 @@ def detect_ssf(
     -------
         The format of the SSF data.
     """
+
     def check(first4) -> ResourceType:
         if first4 == "SSF ":
             return ResourceType.SSF

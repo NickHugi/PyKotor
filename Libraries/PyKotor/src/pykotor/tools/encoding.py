@@ -77,11 +77,7 @@ def decode_bytes_with_fallbacks(
         # Filter the charset-normalizer results to encodings with a maximum of 256 characters
         if only_8bit_encodings:
             max_8bit_characters: int = 256
-            detected_8bit_encodings: list[CharsetMatch] = [
-                enc_match
-                for enc_match in detected_encodings
-                if len(enc_match.alphabets) <= max_8bit_characters
-            ]
+            detected_8bit_encodings: list[CharsetMatch] = [enc_match for enc_match in detected_encodings if len(enc_match.alphabets) <= max_8bit_characters]
             best_8bit_encoding = "windows-1252"
             if detected_8bit_encodings:
                 best_match: CharsetMatch = detected_8bit_encodings[0]
@@ -180,13 +176,13 @@ def get_cp950_charset() -> list[str]:
                     # Apply formula based on Big5 to Unicode PUA mapping
                     unicode_val: int = -1  # Placeholder for ranges not covered
                     if 0x81 <= i <= 0x8D:
-                        unicode_val = 0xeeb8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xEEB8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
                     elif 0x8E <= i <= 0xA0:
-                        unicode_val = 0xe311 + (157 * (i - 0x8E)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xE311 + (157 * (i - 0x8E)) + (j - 0x40 if j < 0x80 else j - 0x62)
                     elif 0xC6 <= i <= 0xC8:
-                        unicode_val = 0xf672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xF672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
                     elif 0xFA <= i <= 0xFE:
-                        unicode_val = 0xe000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xE000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
 
                     if unicode_val != -1:
                         try:

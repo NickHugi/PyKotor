@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 try:
     from PIL import Image
+
     pillow_available = True
 except ImportError:
     pillow_available = False
@@ -303,6 +304,7 @@ class TPCTGAReader(ResourceReader):
         print("tga datatype_code:", datacode_name, "y_flipped:", y_flipped, "bits_per_pixel:", bits_per_pixel)
         texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
         self._tpc.set_data(width, height, [bytes(data)], texture_format)
+
 
 class TPCTGAWriter(ResourceWriter):
     def __init__(

@@ -74,14 +74,14 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.splitter)
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(Dialog)
         self.settingsStack.setCurrentIndex(0)
-        self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
-        self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
+        self.buttonBox.accepted.connect(Dialog.accept)  # type: ignore
+        self.buttonBox.rejected.connect(Dialog.reject)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
@@ -95,6 +95,8 @@ class Ui_Dialog(object):
         self.settingsTree.topLevelItem(2).setText(0, _translate("Dialog", "Module Designer"))
         self.settingsTree.topLevelItem(3).setText(0, _translate("Dialog", "Misc"))
         self.settingsTree.setSortingEnabled(__sortingEnabled)
+
+
 from toolset.gui.widgets.settings.git import GITWidget
 from toolset.gui.widgets.settings.installations import InstallationsWidget
 from toolset.gui.widgets.settings.misc import MiscWidget

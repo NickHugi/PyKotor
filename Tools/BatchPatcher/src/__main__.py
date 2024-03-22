@@ -25,6 +25,7 @@ from pykotor.common.misc import ResRef
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(path: pathlib.Path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -67,7 +68,6 @@ from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-
     from collections.abc import Callable
 
     from pykotor.resource.formats.tlk import TLK
@@ -397,7 +397,7 @@ ALIEN_SOUNDS = {  # Same in k1 and tsl.
     "n_genbith_grt": {"_id": "295", "comment": "Bith_Greeting_Short"},
     "n_genbith_coms1": {"_id": "296", "comment": "Bith_Generic_Comment_-_Short_1"},
     "n_genbith_comm1": {"_id": "297", "comment": "Bith_Generic_Comment_-_Medium_1"},
-    "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"}
+    "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"},
 }
 
 
@@ -431,6 +431,7 @@ class Globals:
         # Equivalent to getting an attribute, returns None if not found
         return self.__dict__.get(key, None)
 
+
 SCRIPT_GLOBALS = Globals()
 
 
@@ -446,6 +447,7 @@ def get_font_paths_macos() -> list[Path]:
 
 def get_font_paths_windows() -> list[Path]:
     import winreg
+
     font_registry_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
     fonts_dir = Path("C:/Windows/Fonts")
     font_paths = set()
@@ -481,11 +483,7 @@ def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     dst_parts = list(dst.parts)
 
     common_length = next(
-        (
-            i
-            for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts))
-            if src_part != dst_part
-        ),
+        (i for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts)) if src_part != dst_part),
         len(src_parts),
     )
     rel_parts: list[str] = dst_parts[common_length:]
@@ -624,7 +622,9 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def process_translations(tlk: TLK, from_lang):
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
-            future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
+            future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {
+                executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk
+            }
 
             for future in concurrent.futures.as_completed(future_to_strref):
                 strref: int = future_to_strref[future]
@@ -656,10 +656,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
 
         from_lang: Language = tlk.language
         new_filename_stem = f"{resource.resname()}_" + (SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code() or "UNKNOWN")
-        new_file_path = (
-            resource.filepath().parent
-            / f"{new_filename_stem}.{resource.restype().extension}"
-        )
+        new_file_path = resource.filepath().parent / f"{new_filename_stem}.{resource.restype().extension}"
         tlk.language = SCRIPT_GLOBALS.pytranslator.to_lang
         process_translations(tlk, from_lang)
         write_tlk(tlk, new_file_path)
@@ -685,20 +682,22 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 gff.root,
                 gff.content,
                 gff,
-                resource._path_ident_obj  # noqa: SLF001
+                resource._path_ident_obj,  # noqa: SLF001
             )
-            if (
-                alien_vo_count < 3
-                and alien_owner in {0, "0", None}
-                and alien_vo_count != -1
-                and SCRIPT_GLOBALS.set_unskippable
-                and gff.content == GFFContent.DLG
-            ):
+            if alien_vo_count < 3 and alien_owner in {0, "0", None} and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
                     if conversationtype not in {"1", 1}:
-                        log_output("Skippable", skippable, "alien_vo_count", alien_vo_count, "ConversationType", conversationtype, f"Setting dialog as unskippable in {resource._path_ident_obj}")
+                        log_output(
+                            "Skippable",
+                            skippable,
+                            "alien_vo_count",
+                            alien_vo_count,
+                            "ConversationType",
+                            conversationtype,
+                            f"Setting dialog as unskippable in {resource._path_ident_obj}",
+                        )
                         made_change = True
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
@@ -772,7 +771,6 @@ def patch_capsule_file(c_file: Path):
     new_resources: list[tuple[str, ResourceType, bytes]] = []
     omitted_resources: list[ResourceIdentifier] = []
     for resource in file_capsule:
-
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
             new_data = bytes_gff(patched_data) if patched_data else resource.data()
@@ -822,12 +820,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
         elif isinstance(patched_data, TPC):
             log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
             txi_resource: FileResource | None = next(
-                (
-                    res
-                    for res in resources
-                    if res.resname() == resource.resname()
-                    and res.restype() == ResourceType.TXI
-                ),
+                (res for res in resources if res.resname() == resource.resname() and res.restype() == ResourceType.TXI),
                 None,
             )
             if txi_resource:
@@ -1158,6 +1151,7 @@ class KOTORPatchingToolUI:
         # Max threads
         def on_value_change():
             SCRIPT_GLOBALS.max_threads = int(spinbox_value.get())
+
         ttk.Label(self.root, text="Max Translation Threads:").grid(row=row, column=0)
         spinbox_value = tk.StringVar(value=str(SCRIPT_GLOBALS.max_threads))
         self.spinbox = tk.Spinbox(root, from_=1, to=2, increment=1, command=on_value_change, textvariable=spinbox_value)
@@ -1267,7 +1261,9 @@ class KOTORPatchingToolUI:
 
         if value is not None and varname is not None:
             self.translation_applied = False
-            ttk.Button(self.translation_options_frame, text="Apply Options", command=lambda: self.apply_translation_option(varname=varname, value=value)).grid(row=row, column=2)
+            ttk.Button(self.translation_options_frame, text="Apply Options", command=lambda: self.apply_translation_option(varname=varname, value=value)).grid(
+                row=row, column=2
+            )
         else:
             self.translation_applied = True
 
@@ -1282,7 +1278,6 @@ class KOTORPatchingToolUI:
         self.translation_applied = True
 
     def create_language_checkbuttons(self, row):
-
         # Show/Hide Languages
         self.show_hide_language = tk.BooleanVar(value=False)
         ttk.Checkbutton(self.root, text="Show/Hide Languages:", command=lambda: self.toggle_language_frame(self.show_hide_language)).grid(row=row, column=1)
@@ -1392,6 +1387,7 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
         return None
+
 
 if __name__ == "__main__":
     try:

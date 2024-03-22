@@ -131,6 +131,7 @@ class HTInstallation(Installation):
 
     def htClearCache2DA(self):
         self._cache2da = {}
+
     # endregion
 
     # region Cache TPC
@@ -184,6 +185,7 @@ class HTInstallation(Installation):
 
     def htClearCacheTPC(self):
         self._cacheTpc = {}
+
     # endregion
 
     def getItemIconFromUTI(self, uti: UTI) -> QPixmap:

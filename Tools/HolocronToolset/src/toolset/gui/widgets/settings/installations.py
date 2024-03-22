@@ -36,6 +36,7 @@ class InstallationsWidget(QWidget):
         self.settings = GlobalSettings()
 
         from toolset.uic.widgets.settings import installations
+
         self.ui = installations.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()
@@ -302,5 +303,4 @@ class GlobalSettings(Settings):
     # endregion
 
 
-class NoConfigurationSetError(Exception):
-    ...
+class NoConfigurationSetError(Exception): ...

@@ -222,7 +222,7 @@ class GFFEditor(Editor):
             gff_type = ResourceType.GFF_XML
             test_content = exts[-2].upper()
         if test_content in GFFContent.__members__:
-            #gff_content = GFFContent.__members__[test_content]
+            # gff_content = GFFContent.__members__[test_content]
             gff_content = GFFContent.GFF
         if not gff_content:
             gff_content = GFFContent.GFF
@@ -439,7 +439,7 @@ class GFFEditor(Editor):
             binaryDataLabel.setWordWrap(True)
             binaryDataLabel.setFont(QFont("Courier New", 7))
             binaryDataLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width()-20)  # -20 otherwise the pane grows for some reason.
+            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width() - 20)  # -20 otherwise the pane grows for some reason.
             self.ui.blankPage.layout().addWidget(binaryDataLabel)
             copyButton = QPushButton("Copy Binary Data")
             self.ui.blankPage.layout().addWidget(copyButton)
@@ -726,10 +726,12 @@ class GFFEditor(Editor):
         ----
             item: The item to add
         """
+
         def set_spinbox(minv: int, maxv: int, item: QListWidgetItem):
             self.ui.pages.setCurrentWidget(self.ui.intPage)
             self.ui.intSpin.setRange(minv, maxv)
             self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+
         parentType = item.data(_TYPE_NODE_ROLE)
         newValue = GFFStruct()
         newLabel = "[New Struct]"

@@ -65,6 +65,7 @@ class UTPEditor(Editor):
         self._utp = UTP()
 
         from toolset.uic.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -322,16 +323,13 @@ class UTPEditor(Editor):
         data, filepath = None, None
 
         if resname == "":
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor",
-                        "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox: int = QMessageBox(QMessageBox.Information, "DLG file not found",
-                                 "Do you wish to create a file in the override?",
-                                 QMessageBox.Yes | QMessageBox.No).exec_()
+            msgbox: int = QMessageBox(QMessageBox.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
             if QMessageBox.Yes == msgbox:
                 data = bytearray()
 
@@ -360,14 +358,8 @@ class UTPEditor(Editor):
 
         with suppress(Exception):
             root = Module.get_root(self._filepath)
-            moduleNames: list[str] = [
-                path for path in self._installation.module_names()
-                if root in path and path != self._filepath
-            ]
-            newCapsules: list[Capsule] = [
-                Capsule(self._installation.module_path() / mod_filename)
-                for mod_filename in moduleNames
-            ]
+            moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+            newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
             capsules.extend(newCapsules)
 
         inventoryEditor = InventoryEditor(

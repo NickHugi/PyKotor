@@ -21,6 +21,7 @@ def flatten_differences(compare_result):
             flat_changes[path_str] = None  # Represent removals as None or consider a special marker
     return flat_changes
 
+
 def build_hierarchy(flat_changes):
     """Builds a hierarchical structure suitable for INI serialization from flat changes.
 
@@ -43,6 +44,7 @@ def build_hierarchy(flat_changes):
         current_level[parts[-1]] = value  # Set the final part as the value
     return hierarchy
 
+
 def serialize_to_ini(hierarchy):
     """Serializes a hierarchical dictionary into an INI-formatted string.
 
@@ -53,6 +55,7 @@ def serialize_to_ini(hierarchy):
         str: A string formatted in INI structure.
     """
     ini_lines = []
+
     def serialize_section(name, content, indent_level=0):
         """Serializes a section of the hierarchy into INI format, recursively for nested sections.
 
@@ -87,8 +90,9 @@ def serialize_to_ini(hierarchy):
 
     return "\n".join(ini_lines)
 
+
 if __name__ == "__main__":
-    #gff_compare_result = something.compare(another)
+    # gff_compare_result = something.compare(another)
     hierarchy = build_hierarchy(flatten_differences(gff_compare_result))
     ini_content = serialize_to_ini(hierarchy)
     print(ini_content)

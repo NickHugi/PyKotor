@@ -495,6 +495,7 @@ def construct_dlg(
         - Populates DLG object with nodes, links, and metadata
         - Loops through GFF lists to populate all nodes and links.
     """
+
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
@@ -733,6 +734,7 @@ def dismantle_dlg(
         - dismantle_node handles populating node fields
         - dismantle_link handles populating link fields.
     """
+
     def dismantle_link(
         gff_struct: GFFStruct,
         link: DLGLink,
@@ -941,6 +943,7 @@ def dismantle_dlg(
         entry: DLGEntry = all_entries[struct.struct_id]
         struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index
         return struct.struct_id
+
     def sort_reply(struct: GFFStruct) -> int:
         reply: DLGReply = all_replies[struct.struct_id]
         struct.struct_id = struct.struct_id if reply.list_index == -1 else reply.list_index
