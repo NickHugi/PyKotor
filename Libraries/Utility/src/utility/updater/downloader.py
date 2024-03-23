@@ -9,7 +9,6 @@ import tempfile
 import time
 
 from typing import TYPE_CHECKING, Any, Callable
-from urllib.parse import quote as url_quote
 
 import certifi
 import requests
@@ -19,6 +18,7 @@ from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from typing_extensions import Literal
 
+from utility.error_handling import format_exception_with_variables
 from utility.logger import get_first_available_logger
 from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
@@ -48,7 +48,7 @@ class FileDownloader:
     Kwargs:
     ------
         progress_hooks ( list[Callable[dict[str, Any]]] ): A list of callable functions that can be used when we report the progress. Untested.
-        headers (dict | None): Unknown
+        headers: (dict[str, Any] | None): custom headers to pass
         max_download_retries (int): Maximum number of times to attempt to download the file. Defaults to zero.
         verify (bool):
             True: Verify https connection
@@ -63,7 +63,7 @@ class FileDownloader:
         hexdigest: str | None,
         *,
         progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
-        headers: dict | None = None,
+        headers: dict[str, Any] | None = None,
         max_download_retries: int | None = None,
         verify: bool = True,
         http_timeout=None,
@@ -93,12 +93,14 @@ class FileDownloader:
         self.file_binary_type: Literal["memory", "file"] = "memory"  # Storage type
 
         # Extra headers
-        self.headers: dict = headers or {}
+        self.headers: dict[str, Any] = headers or {"User-Agent": "MyAppName/1.0 (https://myappwebsite.com/)"}
         self.http_timeout = http_timeout
         self.download_max_size: int = (
             16 * 1024 * 1024
         )  # Max size of download to memory, larger file will be stored to file
         self.content_length: int | None = None  # Total length of data to download.
+        self.session = requests.Session()
+        self.session.headers.update(self.headers)
 
         self.http_pool = self._get_http_pool(secure=self.verify)
 
@@ -127,6 +129,27 @@ class FileDownloader:
             _http.headers = dict(_http.headers)
         _http.headers.update(_headers)
 
+    def _start_hooks(self, content_length):
+        for hook in self.progress_hooks:
+            hook(
+                {
+                    "action": "starting",
+                    "data": {"total": content_length}
+                }
+            )
+
+    def _progress_hooks(self, just_downloaded, total):
+        for hook in self.progress_hooks:
+            hook(
+                {
+                    "action": "update_progress",
+                    "data": {
+                        "downloaded": just_downloaded,
+                        "total": total
+                    }
+                }
+            )
+
     def download_verify_write(self) -> bool:
         """Downloads file then verifies against provided hash
         If hash verfies then writes data to disk.
@@ -136,29 +159,26 @@ class FileDownloader:
                  True - Hashes match or no hash was given during initialization.
                  False - Hashes don't match
         """
-        # Downloading data internally
-        check = self._download_to_storage(check_hash=True) is not False
-        if check:
-            self._write_to_file()  # If no hash is passed just write the file
-        else:
-            del self.file_binary_data
-        return check
-
-    def download_verify_return(self):
-        """Downloads file to memory, checks against provided hash
-        If matched returns binary data.
-
-        Returns:
-            (data):
-                Binary data - If hashes match or no hash was given during initialization.
-                None - If any verification didn't pass
-        """
-        if self._download_to_storage(check_hash=True) is not False:
-            return None
-        if self.file_binary_type == "memory":
-            return b"".join(self.file_binary_data) if self.file_binary_data else None
-        self.log.warning("Downloaded file is very large, reading it into memory may crash the app")
-        return self.file_binary_path.open("rb").read()
+        success: bool = False
+        for url in self.urls:
+            try:
+                with self.session.get(url, stream=True, timeout=self.http_timeout, verify=self.verify) as r:
+                    r.raise_for_status()
+                    content_length = int(r.headers.get("Content-Length", 0))
+                    self._start_hooks(content_length)
+                    with self.filepath.open("wb") as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            if not chunk:
+                                continue
+                            f.write(chunk)
+                            self._progress_hooks(len(chunk), content_length)
+                    success = self._check_hash()
+                    if success:
+                        break
+            except requests.exceptions.RequestException:
+                self.log.exception("Request failed")
+                continue
+        return success
 
     @staticmethod
     def _best_block_size(elapsed_time: float, _bytes: float) -> int:
@@ -173,157 +193,14 @@ class FileDownloader:
         new_min = max(_bytes / 2.0, 1.0)
         return int(new_min) if rate < new_min else int(rate)
 
-    def _download_to_storage(self, *, check_hash: bool = True) -> bool | None:
-        data = self._create_response()
-
-        if data is None:
-            return None
-        hash_ = hashlib.sha256()
-
-        # Getting length of file to show progress
-        self.content_length = FileDownloader._get_content_length(data)
-        if self.content_length is None:
-            self.log.debug("Content-Length not in headers")
-            self.log.debug("Callbacks will not show time left or percent downloaded.")
-        if self.content_length is None or self.content_length > self.download_max_size:
-            self.log.debug("Using file as storage since the file is too large")
-            self.file_binary_type = "file"
-        else:
-            self.file_binary_type = "memory"
-
-        start_download = time.time()
-        block = data.read(1)
-        received_data = 0 + len(block)
-        if self.file_binary_type == "memory":
-            self.file_binary_data = [block]
-        else:
-            binary_file = self.file_binary_path.open("wb")
-            binary_file.write(block)
-        hash_.update(block)
-        while True:
-            # Grabbing start time for use with best block size
-            start_block = time.time()
-
-            # Get data from connection
-            block = data.read(self.block_size)
-
-            # Grabbing end time for use with best block size
-            end_block = time.time()
-
-            if not block:
-                # No more data, get out of this never ending loop!
-                if self.file_binary_type == "file":
-                    binary_file.close()
-                break
-
-            # Calculating the best block size for the current connection speed
-            self.block_size = self._best_block_size(end_block - start_block, len(block))
-            self.log.debug("Block size: %s", self.block_size)
-            if self.file_binary_type == "memory":
-                self.file_binary_data.append(block)
-            else:
-                binary_file.write(block)
-            hash_.update(block)
-
-            # Total data we've received so far
-            received_data += len(block)
-
-            # If content length is None we will return a static percent
-            # -.-%
-            percent = FileDownloader._calc_progress_percent(received_data, self.content_length)
-
-            # If content length is None we will return a static time remaining
-            # --:--
-            time_left = FileDownloader._calc_eta(start_download, time.time(), self.content_length, received_data)
-
-            status = {
-                "total": self.content_length,
-                "downloaded": received_data,
-                "status": "downloading",
-                "percent_complete": percent,
-                "time": time_left,
-            }
-
-            # Call all progress hooks with status data
-            self._call_progress_hooks(status)
-
-        status = {
-            "total": self.content_length,
-            "downloaded": received_data,
-            "status": "finished",
-            "percent_complete": percent,
-            "time": "00:00",
-        }
-        self._call_progress_hooks(status)
-        self.log.debug("Download Complete")
-
-        return self._check_hash(hash_) if check_hash else None
-
-    # Calling all progress hooks
-    def _call_progress_hooks(self, data: dict[str, Any]):
-        self.log.debug(data)
-        for ph in self.progress_hooks:
-            try:
-                ph(data)
-            except Exception as err:  # noqa: PERF203
-                self.log.debug("Exception in callback: %s", ph.__name__)
-                self.log.debug(err, exc_info=True)
-
-    def _check_hash(self, hash_: hashlib._Hash) -> bool | None:
-        # Checks hash of downloaded file
-        if self.hexdigest is None:
-            self.log.debug("No hash to verify")
-            return None  # No hash provided to check. So just return any data received
-        if self.file_binary_data is None:
-            self.log.debug("Cannot verify file hash - No Data")
-            return False  # Exit quickly if we got nothing to compare.  Also I'm sure we'll get an exception trying to pass None to get hash :)
-        self.log.debug("Checking file hash")
-        self.log.debug("Update hash: %s", self.hexdigest)
-
-        file_hash = hash_.hexdigest()
-        if file_hash == self.hexdigest:
-            self.log.debug("File hash verified")
+    def _check_hash(self) -> bool:
+        if not self.hexdigest:
             return True
-        self.log.debug("Cannot verify file hash")
-        return False
-
-    # Creating response object to start download
-    # Attempting to do some error correction for aws s3 urls
-    def _create_response(self) -> urllib3.BaseHTTPResponse | None:
-        data = None
-        for url in self.urls:
-            # Create url for resource
-            file_url = url + url_quote(str(self.filepath))
-            self.log.debug("Url for request: %s", file_url)
-            try:
-                data = self.http_pool.urlopen(
-                    "GET",
-                    file_url,
-                    preload_content=False,
-                    retries=self.max_download_retries,
-                    decode_content=False,
-                )
-            except urllib3.exceptions.SSLError:
-                self.log.debug("SSL cert not verified")
-                continue
-            except urllib3.exceptions.MaxRetryError:
-                self.log.debug("MaxRetryError")
-                continue
-            except Exception as e:
-                # Catch whatever else comes up and log it
-                # to help fix other http related issues
-                self.log.debug(str(e), exc_info=True)
-            else:
-                if data.status == 200:
-                    break
-
-                self.log.debug("Received a non-200 response %d", data.status)
-                data = None
-        if data is not None:
-            self.log.debug("Resource URL: %s", file_url)
-        else:
-            self.log.debug("Could not create resource URL.")
-        return data
+        sha256 = hashlib.sha256()
+        with self.filepath.open("rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                sha256.update(chunk)
+        return sha256.hexdigest() == self.hexdigest
 
     def _write_to_file(self):
         # Writes download data to disk
@@ -495,11 +372,14 @@ def _download_file(
         time_left = FileDownloader._calc_eta(start_download, time.time(), file_size, chunk_start)
 
         status = {
-            "total": file_size,
-            "downloaded": chunk_start,
-            "status": "downloading",
-            "percent_complete": percent,
-            "time": time_left,
+            "action": "update_progress",
+            "data": {
+                "total": file_size,
+                "downloaded": chunk_start,
+                "status": "downloading",
+                "percent_complete": percent,
+                "time": time_left,
+            }
         }
 
         log = get_first_available_logger()
@@ -512,7 +392,8 @@ def _download_file(
                     ph(status)
                 except Exception as err:  # noqa: PERF203
                     log.debug("Exception in callback: %s", ph.__name__)
-                    log.debug(err, exc_info=True)
+                    log.error(format_exception_with_variables(err))  # noqa: TRY400
+                    log.exception()
         log.debug(f"Status - {file_info.st_size / file_size * 100:.2f} downloaded")  # noqa: G004
         log.debug(f"{file_info.st_size} of {file_size} downloaded")  # noqa: G004
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -15,6 +16,22 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from logging import Logger
 
+
+def kill_self_pid():
+    pid = os.getpid()
+    try:
+        if sys.platform == "win32":
+            from utility.updater.restarter import Restarter
+            sys32path = Restarter.win_get_system32_dir()
+            subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)
+        else:
+            subprocess.run(["/bin/kill", "-9", str(pid)], check=True)
+    except Exception:
+        from utility.logger import get_first_available_logger
+        log = get_first_available_logger()
+        log.exception("Failed to kill process", msgbox=False)
+    finally:
+        os._exit(0)
 
 def get_app_dir() -> Path:
     if is_frozen():

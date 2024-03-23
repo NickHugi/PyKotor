@@ -6,6 +6,7 @@ import sys
 
 from enum import Enum
 from tempfile import TemporaryDirectory
+import time
 from typing import TYPE_CHECKING, Callable
 
 from utility.logger import get_first_available_logger
@@ -88,18 +89,25 @@ class Restarter:
         self.log.debug("Starting updated app at '%s'...", self.current_app)
         cmd_exe_path = str(self.win_get_system32_dir() / "cmd.exe")
         run_script_cmd: list[str] = [cmd_exe_path, "/C", "start", "", f"{self.current_app}"]
-        result = subprocess.run(
+        flags = 0
+        flags |= 0x00000008  # DETACHED_PROCESS
+        flags |= 0x00000200  # CREATE_NEW_PROCESS_GROUP
+        flags |= 0x08000000  # CREATE_NO_WINDOW
+        subprocess.Popen(
             run_script_cmd,
             text=True,
-            capture_output=True,
-            check=True,
-            creationflags=subprocess.DETACHED_PROCESS,
+            #capture_output=True,
+            #check=True,
+            close_fds=True,
+            start_new_session=True,
+            creationflags=flags,
         )
-        self.log.debug(
-            "Result from simple restart 'start' subprocess.run call: Stdout: %s, Stderr: %s",
-            result.stdout,
-            result.stderr,
-        )
+        time.sleep(5)
+        #self.log.debug(
+        #    "Result from simple restart 'start' subprocess.run call: Stdout: %s, Stderr: %s",
+        #    result.stdout,
+        #    result.stderr,
+        #)
         self.log.info("Finally exiting app '%s'", sys.executable)
         if self.exithook is not None:
             self.exithook(True)

@@ -14,12 +14,13 @@ import zipfile
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Callable
 
+from utility.error_handling import format_exception_with_variables
 from utility.logger import get_first_available_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import ChDir, get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
 from utility.system.path import Path, PurePath
 from utility.updater.downloader import FileDownloader, download_mega_file_url
-from utility.updater.restarter import Restarter, UpdateStrategy
+from utility.updater.restarter import RestartStrategy, Restarter, UpdateStrategy
 
 if TYPE_CHECKING:
     from logging import Logger
@@ -42,14 +43,17 @@ class LibUpdate:
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
         http_timeout=None,
-        strategy: UpdateStrategy = UpdateStrategy.RENAME,
+        u_strategy: UpdateStrategy = UpdateStrategy.RENAME,
+        r_strategy: RestartStrategy = RestartStrategy.DEFAULT,
         logger: Logger | None = None,
+        version_to_tag_parser: Callable | None = None,
     ):
         # If user is using async download this will be True.
         # Future calls to an download methods will not run
         # until the current download is complete. Which will
         # set this back to False.
         self._is_downloading: bool = False
+        self.version_to_tag_parser: Callable | None = version_to_tag_parser
 
         self.update_folder = tempfile.mkdtemp("_update", "holotoolset_")
         self.update_temp_path = Path(self.update_folder)
@@ -79,7 +83,10 @@ class LibUpdate:
         self.downloader = downloader
 
         # The update strategy to use
-        self.strategy = strategy
+        self.u_strategy = u_strategy
+
+        # The restart strategy to use
+        self.r_strategy = r_strategy
 
         self.latest: str = latest
 
@@ -305,11 +312,14 @@ class LibUpdate:
                     if self.downloader:
                         return self.downloader(self.archive_name, parsed_url, self.progress_hooks)
 
-                    if "mega.nz" in url.lower():
-                        download_mega_file_url(url, archive_path, progress_hooks=self.progress_hooks)
+                    if "mega.nz" in parsed_url.lower():
+                        download_mega_file_url(parsed_url, archive_path, progress_hooks=self.progress_hooks)
                     else:
-                        if "https://github.com" in url.lower():
-                            parsed_url = url.format(self.latest)
+                        if "https://github.com" in parsed_url.lower():
+                            tag = self.latest
+                            if self.version_to_tag_parser is not None:
+                                tag = self.version_to_tag_parser(tag)
+                            parsed_url = parsed_url.replace("{tag}", tag)
                         fd = FileDownloader(
                             self.archive_name,
                             [parsed_url],
@@ -328,15 +338,16 @@ class LibUpdate:
                     if archive_path.safe_isfile():
                         break  # One of the mirrors worked successfully.
                 except Exception as e:  # noqa: PERF203
-                    print(e, "url:", url)
-        if not archive_path.safe_isfile():
-            exc = FileNotFoundError()
-            exc.filename = str(archive_path)
-            exc.strerror = "file downloader finished, but archive filepath doesn't exist."
-        return bool(result)
+                    self.log.exception()
+                    print(format_exception_with_variables(e))
+        #if not archive_path.safe_isfile():
+            #exc = FileNotFoundError()
+            #exc.filename = str(archive_path)
+            #exc.strerror = "file downloader finished, but archive filepath doesn't exist."
+        return bool(result and archive_path.safe_isfile())
 
     def cleanup(self):
-        self.update_folder.cleanup()
+        shutil.rmtree(self.update_temp_path, ignore_errors=True)
 
 
 class AppUpdate(LibUpdate):  # pragma: no cover
@@ -352,10 +363,12 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
         http_timeout=None,
-        strategy: UpdateStrategy = UpdateStrategy.RENAME,
+        u_strategy: UpdateStrategy = UpdateStrategy.RENAME,
+        r_strategy: RestartStrategy = RestartStrategy.DEFAULT,
         exithook: Callable | None = None,
+        version_to_tag_parser: Callable | None = None,
     ):
-        super().__init__(update_urls, filestem, current_version, latest, progress_hooks, max_download_retries, downloader, http_timeout, strategy)
+        super().__init__(update_urls, filestem, current_version, latest, progress_hooks, max_download_retries, downloader, http_timeout, u_strategy, r_strategy, None, version_to_tag_parser)
         self.exithook = exithook
 
     def extract_restart(self):
@@ -363,7 +376,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         try:
             self._extract_update()
             if os.name == "nt":
-                if self.strategy == UpdateStrategy.RENAME:
+                if self.u_strategy == UpdateStrategy.RENAME:
                     self._win_rename(restart=True)
                 else:
                     self._win_overwrite(restart=True)
@@ -378,7 +391,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         try:
             self._extract_update()
             if os.name == "nt":
-                if self.strategy == UpdateStrategy.RENAME:
+                if self.u_strategy == UpdateStrategy.RENAME:
                     self._win_rename()
                 else:
                     self._win_overwrite()
@@ -431,8 +444,9 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         r = Restarter(
             current_app_path,
             updated_app_path,
+            restart_strategy=self.r_strategy,
             filename=self.filestem,
-            update_strategy=self.strategy,
+            update_strategy=self.u_strategy,
             exithook=self.exithook
         )
         r.process()
@@ -518,7 +532,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             return old_app_path, cur_app_filepath
 
         try:
-            r = Restarter(cur_app_filepath, updated_app_filepath, filename=self.filename, update_strategy=self.strategy, exithook=self.exithook)
+            r = Restarter(cur_app_filepath, updated_app_filepath, restart_strategy=self.r_strategy, filename=self.filename, update_strategy=self.u_strategy, exithook=self.exithook)
             r.process()
         except OSError:
             if not is_frozen():
@@ -574,8 +588,9 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         r = Restarter(
             current_app_path,
             updated_app=updated_app_path,
+            restart_strategy=self.r_strategy,
             filename=self.filestem,
-            update_strategy=self.strategy,
+            update_strategy=self.u_strategy,
             exithook=self.exithook
         )
         r.process()

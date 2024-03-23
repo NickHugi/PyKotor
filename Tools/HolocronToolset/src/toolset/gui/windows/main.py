@@ -750,9 +750,7 @@ class ToolWindow(QMainWindow):
         progress_process.start()
         self.hide()
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
-            # Package the progress data with an action so the dialog knows how to handle it
-            packaged_data = {"action": "update_progress", "data": data}
-            progress_queue.put(packaged_data)
+            progress_queue.put(data)
 
         # Prepare the list of progress hooks with the method from ProgressDialog
         progress_hooks = [download_progress_hook]
