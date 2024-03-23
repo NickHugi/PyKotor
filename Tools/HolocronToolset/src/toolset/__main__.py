@@ -14,8 +14,6 @@ from typing import TYPE_CHECKING
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
-from utility.system.os_helper import kill_self_pid
-
 if TYPE_CHECKING:
     from types import TracebackType
 
@@ -118,6 +116,7 @@ if __name__ == "__main__":
     sys.excepthook = onAppCrash
 
     from toolset.gui.windows.main import ToolWindow
+    from utility.system.os_helper import kill_self_pid
 
     profiler = True  # Set to False or None to disable profiler
     if profiler:
