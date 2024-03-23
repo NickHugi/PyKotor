@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStyle
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -84,7 +84,8 @@ if TYPE_CHECKING:
 def run_progress_dialog(progress_queue: Queue) -> NoReturn:
     app = QApplication(sys.argv)
     dialog = ProgressDialog(progress_queue)
-    dialog.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
+    icon = app.style().standardIcon(QStyle.SP_MessageBoxInformation)
+    dialog.setWindowIcon(QIcon(icon))
     dialog.show()
     sys.exit(app.exec_())
 
@@ -738,6 +739,7 @@ class ToolWindow(QMainWindow):
         progress_queue = Queue()
         progress_process = Process(target=run_progress_dialog, args=(progress_queue,))
         progress_process.start()
+        self.hide()
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             # Package the progress data with an action so the dialog knows how to handle it
             packaged_data = {"action": "update_progress", "data": data}

@@ -26,7 +26,7 @@ import zipfile
 from contextlib import suppress
 from enum import Enum
 from tempfile import TemporaryDirectory
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import quote as url_quote
 
 import certifi
@@ -36,12 +36,14 @@ import urllib3
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from PyQt5.QtWidgets import QMessageBox
-from typing_extensions import Literal
 
 from toolset.__main__ import get_app_dir, is_frozen
 from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
+
+if TYPE_CHECKING:
+    from typing_extensions import Literal
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
@@ -610,7 +612,7 @@ class LibUpdate:
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
         http_timeout=None,
-        strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
+        strategy: UpdateStrategy = UpdateStrategy.RENAME,
     ):
         # If user is using async download this will be True.
         # Future calls to an download methods will not run
@@ -884,7 +886,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
         http_timeout=None,
-        strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
+        strategy: UpdateStrategy = UpdateStrategy.RENAME,
     ):
         super().__init__(
             update_urls,
@@ -974,7 +976,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
     def _win_rename(self, *, restart: bool = False) -> tuple[Path, Path]:
         """This function renames the current application with a temporary name and moves the updated application into its place.
 
-        It also handles rollback in case of failure. 
+        It also handles rollback in case of failure.
 
         Args:
         ----
@@ -1127,21 +1129,14 @@ class Restarter:
         self.data_dir.cleanup()
 
     def process(self, *, win_restart: bool = True):
-        try:
-            if os.name == "posix":
-                self._restart()
-                return
+        if os.name == "posix" or self.strategy == UpdateStrategy.RENAME:
+            self._restart()
+            return
 
-            if self.strategy == UpdateStrategy.OVERWRITE:
-                if win_restart:
-                    self._win_overwrite_restart()
-                else:
-                    self._win_overwrite()
-            else:
-                self._restart()
-        finally:
-            log.debug("Cleaning up temporary data dir...")
-            self.cleanup()
+        if win_restart:
+            self._win_overwrite_restart()
+        else:
+            self._win_overwrite()
 
     def _restart(self):
         #if not is_frozen():
@@ -1149,7 +1144,7 @@ class Restarter:
         #    return
         os.execl(self.current_app, self.filename, *sys.argv[1:])
 
-    def _win_overwrite(self):
+    def _win_overwrite(self):  # sourcery skip: class-extract-method
         is_folder = self.updated_app.safe_isdir()
         if is_folder:
             needs_admin = requires_admin(self.updated_app) or requires_admin(self.current_app)
@@ -1160,26 +1155,22 @@ class Restarter:
             if is_folder:
                 batchfile_writer.write(
                     f"""
-@echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
-robocopy "{self.updated_app}" "{self.current_app}" /e /move /V /PURGE > NUL
-DEL "%~f0"
+robocopy "{self.updated_app}" "{self.current_app}" /e /move /V /PURGE
 """
                 )
             else:
                 batchfile_writer.write(
                     f"""
-@echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
-move /Y "{self.updated_app}" "{self.current_app}" > NUL
-DEL "%~f0"
+move /Y "{self.updated_app}" "{self.current_app}"
 """
                 )
-        self._win_run_batch_restarter(needs_admin)
+        self._win_run_batch_restarter(admin=needs_admin)
 
     def _win_overwrite_restart(self):
         is_folder = self.updated_app.safe_isdir()
@@ -1192,43 +1183,87 @@ DEL "%~f0"
             if is_folder:
                 batchfile_writer.write(
                     f"""
-@echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
-robocopy "{self.updated_app}" "{self.current_app}" /e /move /V > NUL
-echo Restarting...
-start "" "{Path(self.current_app, self.filename)}"
-DEL "%~f0"
+robocopy "{self.updated_app}" "{self.current_app}" /e /move /V
 """
                 )
             else:
                 batchfile_writer.write(
                     f"""
-@echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
-move /Y "{self.updated_app}" "{self.current_app}" > NUL
-echo Restarting...
-start "" "{self.current_app}"
-DEL "%~f0"
+move /Y "{self.updated_app}" "{self.current_app}"
 """
                 )
-        self._win_run_batch_restarter(needs_admin)
+        self._win_run_batch_restarter(admin=needs_admin)
 
-    def _win_run_batch_restarter(self, needs_admin):
+    def _win_run_batch_restarter(self, *, admin: bool):
         log.info(f"Executing restart script @ {self.bat_file}")  # noqa: G004
-        if needs_admin:
-            Path.run_commands_as_admin([str(self.bat_file)], block_until_complete=False)
+        if admin:
+            run_script_cmd: list[str] = [
+                "Powershell",
+                "-Command",
+                f"Start-Process cmd.exe -ArgumentList '/C \"{self.bat_file}\"' -Verb RunAs -WindowStyle Hidden -Wait",
+            ]
+            try:
+                log.debug(subprocess.run(
+                    run_script_cmd,
+                #    executable=cmd_exe_path,
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
+                #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
+                #    start_new_session=True,
+                #     creationflags=subprocess.CREATE_NEW_CONSOLE,
+                #    close_fds=True
+                ))
+            except OSError:
+                log.exception("Error running batch script")
+                #log.debug(f"subprocess.call result: {result}")  # noqa: G004
         else:
-            subprocess.Popen(
-                [str(self.bat_file)],
-                timeout=60,
-                check=False,
-                capture_output=True,
-                text=True,
-            )
+            cmd_exe_path = str(self.win_get_system32_dir() / "cmd.exe")
+            log.debug(f"CMD.exe path: {cmd_exe_path}")  # noqa: G004
+            # Construct the command to run the batch script
+            run_script_cmd: list[str] = [
+                cmd_exe_path,
+                "/C",
+                str(self.bat_file)
+            ]
+            try:
+                log.debug(subprocess.run(
+                    run_script_cmd,
+                #    executable=cmd_exe_path,
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
+                #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
+                #    start_new_session=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                #    close_fds=True
+                ))
+            except OSError:
+                log.exception("Error running batch script")
+                #log.debug(f"subprocess.call result: {result}")  # noqa: G004
+        log.debug("Cleaning up temporary data dir...")
+        self.cleanup()
+        log.debug(f"Starting updated app at {self.current_app}...")
+        run_script_cmd: list[str] = [
+            "start",
+            "",
+            f"{self.current_app}"
+        ]
+        log.debug(subprocess.run(
+            run_script_cmd,
+            text=True,
+            capture_output=True,
+            check=True,
+            creationflags=subprocess.DETACHED_PROCESS,
+        ))
         log.info(f"Finally exiting app '{sys.executable}'")  # noqa: G004
         try:
             self._win_kill_self()
@@ -1237,7 +1272,7 @@ DEL "%~f0"
             os._exit(0)
 
     @staticmethod
-    def _win_kill_self():
+    def win_get_system32_dir() -> Path:
         import ctypes
 
         from ctypes import wintypes
@@ -1248,7 +1283,11 @@ DEL "%~f0"
         buffer = ctypes.create_unicode_buffer(260)
         # Call the function
         ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
-        taskkill_path = Path(buffer.value, "taskkill.exe")
+        return Path(buffer.value)
+
+    @classmethod
+    def _win_kill_self(cls):
+        taskkill_path = cls.win_get_system32_dir() / "taskkill.exe"
         if taskkill_path.safe_isfile():
             subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
         else:
