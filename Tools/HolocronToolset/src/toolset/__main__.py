@@ -11,7 +11,7 @@ import traceback
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QFile, QTextStream, QThread
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
 if TYPE_CHECKING:
@@ -101,7 +101,6 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
 
     from utility.system.path import Path
-    from utility.updater.restarter import Restarter
 
     app = QApplication(sys.argv)
 
@@ -147,4 +146,3 @@ if __name__ == "__main__":
     if profiler:
         profiler.disable()
         profiler.dump_stats(str(Path("profiler_output.pstat")))
-        
