@@ -644,6 +644,26 @@ class ToolWindow(QMainWindow):
                     self,
                 ).exec_()
 
+    def checkForUpdates(self, *, silent: bool = False):
+        """Scans for any updates and opens a dialog with a message based on the scan result.
+
+        Args:
+        ----
+            silent: If true, only shows popup if an update is available.
+        """
+        try:
+            self._check_toolset_update(silent=silent)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            if not silent:
+                etype, msg = universal_simplify_exception(e)
+                QMessageBox(
+                    QMessageBox.Information,
+                    f"Unable to fetch latest version ({etype})",
+                    f"Check if you are connected to the internet.\nError: {msg}",
+                    QMessageBox.Ok,
+                    self,
+                ).exec_()
+
     def _check_toolset_update(self, *, silent: bool):
         remoteInfo = getRemoteToolsetUpdateInfo(
             useBetaChannel=self.settings.useBetaChannel,
@@ -689,13 +709,42 @@ class ToolWindow(QMainWindow):
             QMessageBox.Information,
             f"New toolset {betaString}version available.",
             f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
-            QMessageBox.Ok,
+            QMessageBox.Ok | QMessageBox.Abort,
             parent=None,
             flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         )
+        newVersionMsgBox.button(QMessageBox.Ok).setText("Install Now")
         newVersionMsgBox.setWindowIcon(self.windowIcon())
-        newVersionMsgBox.exec_()
+        response = newVersionMsgBox.exec_()
+        if response == QMessageBox.Ok:
+            self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
 
+    def _run_autoupdate(
+        self,
+        latestVersion: str,
+        remoteInfo: dict[str, Any],
+        *,
+        isRelease: bool,
+    ):
+        proc_arch = ProcessorArchitecture.from_os()
+        assert proc_arch == ProcessorArchitecture.from_python()
+        os_name = platform.system()
+        links: list[str] = []
+
+        isRelease = False  # TODO(th3w1zard1): remove this line when the release version direct links are ready.
+        if isRelease:
+            links = remoteInfo["toolsetDirectLinks"][os_name][proc_arch.value]
+        else:
+            links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
+
+        updater = AppUpdate(
+            links,
+            PurePath(sys.executable).stem,
+            CURRENT_VERSION,
+            latestVersion,
+        )
+        updater.download(background=False)
+        updater.extract_restart()
     # endregion
 
     # region Other
