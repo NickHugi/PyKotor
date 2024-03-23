@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from toolset.__main__ import is_frozen
+from utility.system.os_helper import is_frozen
 from toolset.config import download_github_file, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom

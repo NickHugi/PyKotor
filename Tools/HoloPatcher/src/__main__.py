@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import base64
+import atexit
 import contextlib
 import ctypes
 import inspect
@@ -8,6 +8,7 @@ import io
 import json
 import os
 import pathlib
+import platform
 import subprocess
 import sys
 import tempfile
@@ -19,6 +20,7 @@ import webbrowser
 from argparse import ArgumentParser
 from datetime import datetime, timezone
 from enum import IntEnum
+from multiprocessing import Process, Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -26,7 +28,14 @@ from tkinter import (
     messagebox,
     ttk,
 )
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
+
+from config import getRemoteHolopatcherUpdateInfo, remoteVersionNewer
+from utility.misc import ProcessorArchitecture
+from utility.system.os_helper import kill_self_pid
+from utility.tkinter.updater import TkProgressDialog, UpdateDialog, dialog_process
+from utility.updater.restarter import RestartStrategy
+from utility.updater.update import AppUpdate
 
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
@@ -55,6 +64,7 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
+from config import CURRENT_VERSION
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -78,8 +88,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 3)
-VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
+VERSION_LABEL = f"v{CURRENT_VERSION}"
 
 
 class ExitCode(IntEnum):
@@ -93,6 +102,7 @@ class ExitCode(IntEnum):
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
     CRASH = 9
+    CLOSE_FOR_UPDATE_PROCESS = 10
 
 
 class HoloPatcherError(Exception): ...
@@ -342,29 +352,102 @@ class App:
 
     def check_for_updates(self):
         try:
-            import requests
+            updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
+            if isinstance(updateInfoData, Exception):
+                self._handle_general_exception(updateInfoData)
+                return
 
-            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
-            req.raise_for_status()
-            file_data: dict = req.json()
-            base64_content: bytes = file_data["content"]
-            decoded_content: bytes = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            updateInfoData: dict = json.loads(decoded_content.decode("utf-8"))
-
-            new_version = tuple(map(int, str(updateInfoData["holopatcherLatestVersion"]).split(".")))
-            if new_version > CURRENT_VERSION:
-                if messagebox.askyesno(
-                    "Update available",
+            latest_version = updateInfoData["holopatcherLatestVersion"]
+            if remoteVersionNewer(CURRENT_VERSION, latest_version):
+                dialog = UpdateDialog(
+                    self.root,
+                    "Update Available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
-                ):
+                    ["Update", "Manual"],
+                )
+                if dialog.result == "Update":
+                    self._run_autoupdate(latest_version, updateInfoData)
+                elif dialog.result == "Manual":
                     webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
             else:
-                messagebox.showinfo(
+                dialog = UpdateDialog(
+                    self.root,
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
+                    ["Reinstall", "Cancel"],
                 )
+                if dialog.result == "Reinstall":
+                    self._run_autoupdate(latest_version, updateInfoData)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, title="Unable to fetch latest version")
+
+    def _run_autoupdate(
+        self,
+        latest_version: str,
+        remote_info: dict[str, Any],
+        *,
+        is_release: bool = True,
+    ):
+        proc_arch = ProcessorArchitecture.from_os()
+        assert proc_arch == ProcessorArchitecture.from_python()
+        os_name = platform.system()
+        links: list[str] = []
+
+        is_release = True  # TODO(th3w1zard1): remove this line when the beta version direct links are ready.
+        if is_release:
+            links = remote_info["holopatcherDirectLinks"][os_name][proc_arch.value]
+        else:
+            links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
+        progress_queue: Queue = Queue()
+        progress_process = Process(target=dialog_process, args=(progress_queue, "Applying update..."))
+        progress_process.start()
+        # self.hide()  # TODO: figure out how to hide.
+        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+            progress_queue.put(data)
+
+        # Prepare the list of progress hooks with the method from ProgressDialog
+        progress_hooks = [download_progress_hook]
+        def exitapp(kill_self_here: bool):  # noqa: FBT001
+            packaged_data = {"action": "shutdown", "data": {}}
+            progress_queue.put(packaged_data)
+            TkProgressDialog.monitor_and_terminate(progress_process)
+            if kill_self_here:
+                time.sleep(3)
+                self.root.destroy()
+
+        def remove_second_dot(s: str) -> str:
+            if s.count(".") == 2:
+                # Find the index of the second dot
+                second_dot_index = s.find(".", s.find(".") + 1)
+                # Remove the second dot by slicing and concatenating
+                s = s[:second_dot_index] + s[second_dot_index + 1:]
+            return f"v{s}-patcher"
+
+        updater = AppUpdate(
+            links,
+            "HoloPatcher",
+            CURRENT_VERSION,
+            latest_version,
+            downloader=None,
+            progress_hooks=progress_hooks,
+            exithook=exitapp,
+            r_strategy=RestartStrategy.DEFAULT,
+            version_to_tag_parser=remove_second_dot
+        )
+        try:
+            progress_queue.put({"action": "update_status", "text": "Downloading update..."})
+            updater.download(background=False)
+            progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
+            updater.extract_restart()
+            progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
+            updater.cleanup()
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+        #finally:
+        #    exitapp(True)
 
     def execute_commandline(
         self,
@@ -1377,6 +1460,15 @@ sys.excepthook = onAppCrash
 def main():
     app = App()
     app.root.mainloop()
+    atexit.register(lambda: my_cleanup_function(app))
+
+
+def my_cleanup_function(app: App):
+    """Prevents the toolset from running in the background after sys.exit is called..."""
+    #print("Fully shutting down Holocron Patcher...")
+    #kill_self_pid()
+    #app.root.destroy()
+
 
 
 if __name__ == "__main__":

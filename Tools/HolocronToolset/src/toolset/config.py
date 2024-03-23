@@ -19,25 +19,25 @@ if TYPE_CHECKING:
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b19",
+    "currentVersion": "2.2.1b20",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
-    "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
+    "updateBetaInfoLink": "https://api.github.com/repos/th3w1zard1/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=auto-update-toolset-t2",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
     "toolsetBetaDirectLinks": {
         "Darwin": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4"]
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
         },
         "Linux": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E"]
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
         },
         "Windows": {
-            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0"],
-            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU"]
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
@@ -116,8 +116,10 @@ def download_github_file(
     url_or_repo: str,
     local_path: os.PathLike | str,
     repo_path: os.PathLike | str | None = None,
+    timeout: int | None = None,
 ):
-    local_path = Path(local_path)
+    timeout = 180 if timeout is None else timeout
+    local_path = Path(local_path).absolute()
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
     if repo_path is not None:
@@ -137,7 +139,7 @@ def download_github_file(
         download_url = url_or_repo
 
     # Download the file
-    with requests.get(download_url, stream=True, timeout=15) as r:
+    with requests.get(download_url, stream=True, timeout=timeout) as r:
         r.raise_for_status()
         with local_path.open("wb") as f:
             for chunk in r.iter_content(chunk_size=8192):

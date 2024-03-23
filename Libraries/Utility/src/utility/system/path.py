@@ -743,17 +743,19 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
             return is_read_only, is_hidden, is_system
 
+        @classmethod
         def run_commands_as_admin(
-            self,
+            cls,
             cmd: list[str],
             *,
             pause_after_command: bool = False,
             hide_window: bool = True,
+            block_until_complete: bool = True,
         ):
             # sourcery skip: extract-method
             with TemporaryDirectory() as tempdir:
                 # Ensure the script path is absolute
-                script_path: Path = self.__class__(tempdir, "temp_script.bat").absolute()  # type: ignore[reportGeneralTypeIssues]
+                script_path: Path = cls(tempdir, "temp_script.bat").absolute()  # type: ignore[reportGeneralTypeIssues]
                 script_path_str = str(script_path)
 
                 # Write the commands to a batch file
@@ -782,7 +784,10 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 ]
 
                 # Execute the batch script
-                subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)
+                if block_until_complete:
+                    subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)
+                else:
+                    subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)
 
             # Delete the batch script after execution
             with contextlib.suppress(Exception):
