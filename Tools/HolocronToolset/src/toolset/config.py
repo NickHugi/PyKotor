@@ -947,7 +947,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         # if update_app is a directory, then we are updating a directory
         if app_update_path.safe_isdir():
             if current_app_path.safe_isdir():
-                shutil.rmtree(current_app_path)
+                shutil.rmtree(str(current_app_path))
             else:
                 shutil.rmtree(str(current_app_path.parent))
 
@@ -1115,9 +1115,9 @@ class Restarter:
         self.filename: str = self.current_app.name if filename is None else filename
         self.strategy: UpdateStrategy = strategy
 
+        self.data_dir = TemporaryDirectory("_restarter", "holotoolset_")
+        data_dirpath = Path(self.data_dir.name)
         if os.name == "nt" and self.strategy == UpdateStrategy.OVERWRITE:
-            self.data_dir = TemporaryDirectory("_restarter", "holotoolset_")
-            data_dirpath = Path(self.data_dir.name)
             self.bat_file = data_dirpath / "update.bat"
             if not updated_app:
                 raise ValueError("updated_app must be provided on Windows.")
