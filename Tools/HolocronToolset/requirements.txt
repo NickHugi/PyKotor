@@ -1,4 +1,4 @@
-#tsidna~=3.3  # TODO: can't be found on pip/pypi?
+idna~=3.3
 PyQt5~=5.15
 PyQt5-Qt5~=5.15
 PyQt5-sip~=12.10
