@@ -27,6 +27,11 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     return False
 
 
+def get_app_dir() -> Path:
+    from utility.system.path import Path
+    return Path(sys.executable if is_frozen() else __file__).resolve().parent
+
+
 def onAppCrash(
     etype: type[BaseException],
     e: BaseException,
@@ -114,14 +119,16 @@ if __name__ == "__main__":
 
     from toolset.gui.windows.main import ToolWindow
 
-    window = ToolWindow()
-    window.show()
-
     profiler = True  # Set to False or None to disable profiler
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
 
+    window = ToolWindow()
+    window.show()
+    window.checkForUpdates(silent=True)
+
+    # Start main app loop.
     app.exec_()
 
     if profiler:

@@ -38,6 +38,7 @@ from Crypto.Util import Counter
 from PyQt5.QtWidgets import QMessageBox
 from typing_extensions import Literal
 
+from toolset.__main__ import get_app_dir, is_frozen
 from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
@@ -218,6 +219,11 @@ def _request_api_data(api_url: str) -> Any:
 
 
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+file_handler = logging.FileHandler("output.txt")
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+log.addHandler(file_handler)
 
 
 def _api_request(data, sequence_num: int | None = None, **kwargs):
@@ -315,6 +321,7 @@ def _download_file(
     dest_filename: str | None = None,
     is_public: bool = False,
     file=None,
+    progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
 ):
     dest_path = Path.pathify(dest or Path.cwd()).absolute()
     if file is None:
@@ -361,7 +368,9 @@ def _download_file(
     mac_encryptor = AES.new(k_str, AES.MODE_CBC, mac_str)
     iv_str = a32_to_str([iv[0], iv[1], iv[0], iv[1]])
 
-    for _chunk_start, chunk_size in get_chunks(file_size):
+    start_download = time.time()
+
+    for chunk_start, chunk_size in get_chunks(file_size):
         chunk = input_file.read(chunk_size)
         chunk = aes.decrypt(chunk)
         temp_output_file.write(chunk)
@@ -384,6 +393,32 @@ def _download_file(
 
         # Temp file size
         file_info = Path(temp_output_file.name).stat()
+
+        # If content length is None we will return a static percent
+        # -.-%
+        percent = FileDownloader._calc_progress_percent(chunk_start, file_size)
+
+        # If content length is None we will return a static time remaining
+        # --:--
+        time_left = FileDownloader._calc_eta(start_download, time.time(), file_size, chunk_start)
+
+        status = {
+            "total": file_size,
+            "downloaded": chunk_start,
+            "status": "downloading",
+            "percent_complete": percent,
+            "time": time_left,
+        }
+
+        # Call all progress hooks with status data
+        log.debug(status)
+        if progress_hooks is not None:
+            for ph in progress_hooks:
+                try:
+                    ph(status)
+                except Exception as err:  # noqa: PERF203
+                    log.debug("Exception in callback: %s", ph.__name__)
+                    log.debug(err, exc_info=True)
         log.debug(f"Status - {file_info.st_size / file_size * 100:.2f} downloaded")  # noqa: G004
         log.debug(f"{file_info.st_size} of {file_size} downloaded")  # noqa: G004
 
@@ -401,7 +436,7 @@ def _download_file(
         dest_path = dest_path.parent
     dest_filepath = dest_path / file_name
     if not dest_filepath.parent.safe_isdir():
-        dest_filepath.mkdir(parents=True, exist_ok=True)
+        dest_filepath.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(temp_output_file.name, dest_filepath)
 
 
@@ -409,6 +444,7 @@ def download_mega_file_url(
     url: str,
     dest_path: os.PathLike | str | None = None,
     dest_filename: str | None = None,
+    progress_hooks: list[Callable] | None = None,
 ):
     """Download a file by it's public mega url."""
     # Splitting the URL at the first occurrence of '/file/' and '#'
@@ -421,10 +457,10 @@ def download_mega_file_url(
     print("Base URL:", base_url)
     print("File ID:", file_id)
     print("Decryption Key:", decryption_key)
-    _download_file(file_id, decryption_key, dest_path, dest_filename, is_public=True)
+    _download_file(file_id, decryption_key, dest_path, dest_filename, is_public=True, progress_hooks=progress_hooks)
 
 
-def download_wrapper(filename: str, urls: list[str]):
+def download_wrapper(filename: str, urls: list[str], progress_hooks: list[Callable] | None = None):
     """Downloads a file from a list of URLs.
 
     Args:
@@ -441,7 +477,7 @@ def download_wrapper(filename: str, urls: list[str]):
     filepath = Path.pathify(filename).absolute()
     for url in urls:
         if "mega.nz" in url.lower():
-            download_mega_file_url(url, filename)
+            download_mega_file_url(url, filename, progress_hooks=progress_hooks)
         if filepath.safe_isfile():
             break
     if not filepath.safe_isfile():
@@ -458,7 +494,9 @@ def requires_admin(path: os.PathLike | str) -> bool:  # pragma: no cover
         return dir_requires_admin(path)
     if path_obj.safe_isfile():
         return file_requires_admin(path)
-    raise ValueError("requires_admin needs dir or file, or doesn't have permissions to determine properly...")
+    if is_frozen():
+        raise ValueError("requires_admin needs dir or file, or doesn't have permissions to determine properly...")
+    return False
 
 
 def file_requires_admin(file_path: os.PathLike | str) -> bool:  # pragma: no cover
@@ -548,8 +586,7 @@ class ChDir:
 class UpdateStrategy(Enum):  # pragma: no cover
     """Enum representing the update strategies available."""
 
-    DEFAULT = "overwrite"  # The default strategy to use.  Currently is the overwrite strategy
-    OVERWRITE = "overwrite"  # Overwrites the binary in place  # noqa: PIE796
+    OVERWRITE = "overwrite"  # Overwrites the binary in place
     RENAME = "rename"  # Renames the binary.  Only available for Windows single file bundled executables
 
 
@@ -566,14 +603,14 @@ class LibUpdate:
     def __init__(
         self,
         update_urls: list[str],
-        name: str,
+        filestem: str,
         current_version: str,
         latest: str,
         progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
         http_timeout=None,
-        strategy: UpdateStrategy = UpdateStrategy.DEFAULT,
+        strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
     ):
         # If user is using async download this will be True.
         # Future calls to an download methods will not run
@@ -581,7 +618,8 @@ class LibUpdate:
         # set this back to False.
         self._is_downloading: bool = False
 
-        self.update_folder = TemporaryDirectory("update", "ht")
+        self.update_folder = TemporaryDirectory("_update", "holotoolset_")
+        self.update_temp_path = Path(self.update_folder.name)
 
         # Used with the version property.
         # Returns a user friendly version string
@@ -591,7 +629,7 @@ class LibUpdate:
         self.update_urls: list[str] = update_urls
 
         # The name of the asset we are targeting.
-        self.name: str = name
+        self.filestem: str = filestem
 
         # The version of the current asset
         self.current_version = current_version
@@ -613,23 +651,21 @@ class LibUpdate:
         self.latest: str = latest
 
         self.archive_name = self.get_archive_name()
-        self._current_app_dir: Path = Path(sys.executable).absolute().parent
+        self._current_app_dir: Path = get_app_dir()
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
-
-        # TODO(th3w1zard1): Used to remove version earlier than the current.
-        self.cleanup()
 
     @property
     def filename(self) -> str:
         # sourcery skip: assign-if-exp, switch, use-fstring-for-concatenation
+        # TODO(th3w1zard1): allow customization of this in the constructor.
         os_lookup_str = platform.system()
         if os_lookup_str == "Windows":
-            return self.name + ".exe"
+            return f"{self.filestem}.exe"
         if os_lookup_str == "Linux":
-            return self.name
+            return self.filestem
         if os_lookup_str == "Darwin":
-            return self.name + ".app"
-        return self.name
+            return f"{self.filestem}.app"
+        raise ValueError(f"Unsupported return from platform.system() call: '{os_lookup_str}'")
 
     @property
     def version(self) -> str:
@@ -655,6 +691,7 @@ class LibUpdate:
         return self._version
 
     def get_archive_name(self) -> str:
+        # TODO(th3w1zard1): Allow customization of this in the constructor.
         proc_arch = ProcessorArchitecture.from_python()
         assert proc_arch == ProcessorArchitecture.from_os()
         os_short_name: str = ""
@@ -668,8 +705,10 @@ class LibUpdate:
         elif lookup_os_name == "Darwin":
             os_short_name = "Mac"
             ext = ".tar.gz"
+        else:
+            raise ValueError(f"Unsupported return from platform.system() call: '{lookup_os_name}'")
 
-        return f"{self.name}_{os_short_name}_{proc_arch.get_machine_repr()}{ext}"
+        return f"{self.filestem}_{os_short_name}-{proc_arch.get_machine_repr()}{ext}"
 
     def is_downloaded(self) -> bool | None:
         """Used to check if update has been downloaded.
@@ -684,7 +723,6 @@ class LibUpdate:
         """Downloads update.
 
         ######Args:
-
             background (bool): Perform download in background thread
         """
         if background:
@@ -696,29 +734,27 @@ class LibUpdate:
             return self._download()
         return None
 
-    def extract(self) -> bool:
-        """Will extract the update from its archive to the update folder.
-        If updating a lib you can take over from there. If updating
-        an app this call should be followed by method "restart" to
-        complete update.
+    if os.name == "posix":
+        def extract(self) -> bool:
+            """Will extract the update from its archive to the update folder.
+            If updating a lib you can take over from there. If updating
+            an app this call should be followed by method "restart" to
+            complete update.
 
-        ######Returns:
-            (bool)
-                True - Extract successful.
-                False - Extract failed.
-        """
-        if platform.system() == "Windows":
-            log.debug("Only supported on Unix like systems")
-            return False
-        try:
-            self._extract_update()
-        except OSError as err:
-            log.debug(err, exc_info=True)
-            return False
-        return True
+            ######Returns:
+                (bool)
+                    True - Extract successful.
+                    False - Extract failed.
+            """
+            try:
+                self._extract_update()
+            except OSError as err:
+                log.debug(err, exc_info=True)
+                return False
+            return True
 
     def _download(self):
-        if self.name is not None:
+        if self.filestem is not None:
             if self._is_downloaded():  # pragma: no cover
                 self._download_status = True
             else:
@@ -736,38 +772,74 @@ class LibUpdate:
     def _extract_update(self):
         with ChDir(self.update_folder.name):
             archive_path = Path(self.get_archive_name()).absolute()
-            if not archive_path.safe_exists():
-                log.debug("File does not exists")
-                raise FileNotFoundError(errno.ENOENT, "File does not exist", str(archive_path))
-            if not archive_path.gain_access():
-                raise PermissionError(errno.EACCES, "Permission denied", str(archive_path))
+            self._recursive_extract(archive_path)
 
-            log.debug("Extracting Update")
-            archive_ext = archive_path.suffix.lower()
+    def _recursive_extract(self, archive_path: Path):
+        if not archive_path.safe_isfile():
+            logging.debug("File does not exist")
+            raise FileNotFoundError(errno.ENOENT, "File does not exist", str(archive_path))
+        if not os.access(str(archive_path), os.R_OK):
+            raise PermissionError(errno.EACCES, "Permission denied", str(archive_path))
 
-            if archive_ext in [".gz", ".bz2"]:
-                try:
-                    mode = f"r:{archive_ext[1:]}"
-                    with tarfile.open(str(archive_path), mode) as tfile:
-                        # Extract file update to current directory.
-                        tfile.extractall()
-                except Exception as err:  # pragma: no cover
-                    log.debug(err, exc_info=True)
-                    raise ValueError("Error reading gzip file") from err
-            elif archive_ext == ".zip":
-                try:
-                    with zipfile.ZipFile(str(archive_path), "r") as zfile:
-                        # Extract update file to current directory.
-                        zfile.extractall()
-                except Exception as err:  # pragma: no cover
-                    log.debug(err, exc_info=True)
-                    raise ValueError("Error reading zip file") from err
-            else:
-                raise ValueError("Unknown file type")
+        logging.debug(f"Extracting '{archive_path}'...")  # noqa: G004
+        archive_ext = archive_path.suffix.lower()
+        if archive_ext in {".gz", ".bz2", ".tar"}:
+            self.extract_tar(archive_path, recursive_extract=True)
+        elif archive_ext == ".zip":
+            self.extract_zip(archive_path, recursive_extract=True)
 
-    # Checks if latest update is already downloaded
+    @classmethod
+    def extract_tar(
+        cls,
+        archive_path: os.PathLike | str,
+        *,
+        recursive_extract: bool = False,
+    ):
+        try:
+            with tarfile.open(archive_path, "r:*") as tfile:
+                for member in tfile.getmembers():
+                    if not member.isfile():
+                        continue  # Ignore directories and non-file members
+                    # Sanitize and extract each file
+                    member_path = PurePath(member.name).parts
+                    sanitized_path = Path.cwd() / PurePath(*[p for p in member_path if p not in ("/", "..", "")])
+                    sanitized_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+                    with sanitized_path.open("wb") as f:
+                        extracted_member = tfile.extractfile(member)
+                        if not extracted_member:
+                            raise ValueError(f"Issue extracting member '{member}' ({member!r}): extractfile(member) returned None")  # noqa: TRY301
+                        f.write(extracted_member.read())
+                    if not recursive_extract:
+                        continue
+                    if sanitized_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and sanitized_path.safe_isfile():
+                        cls._recursive_extract(sanitized_path)
+        except Exception as err:  # pragma: no cover
+            log.debug(err, exc_info=True)
+            raise ValueError(f"Error reading tar/gzip file: {archive_path}") from err
+
+    @classmethod
+    def extract_zip(
+        cls,
+        archive_path: os.PathLike | str,
+        *,
+        recursive_extract: bool = False,
+    ):
+        try:
+            with zipfile.ZipFile(archive_path, "r") as zfile:
+                zfile.extractall()  # noqa: S202
+                if not recursive_extract:
+                    return
+                for file_info in zfile.infolist():
+                    extracted_path = Path.cwd() / file_info.filename
+                    if extracted_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and extracted_path.safe_isfile():
+                        cls._recursive_extract(extracted_path)
+        except Exception as err:  # pragma: no cover
+            log.debug(err, exc_info=True)
+            raise ValueError("Error reading zip file") from err
+
     def _is_downloaded(self) -> bool | None:
-        # Comparing file hashes to ensure security
+        """Checks if latest update is already downloaded."""
+        # TODO(th3w1zard1): Compare file hashes to ensure security
         with ChDir(self.update_folder.name):
             return Path(self.get_archive_name()).safe_exists()
 
@@ -776,7 +848,7 @@ class LibUpdate:
         with ChDir(self.update_folder.name):
             log.debug("Downloading update...")
             if self.downloader:
-                return self.downloader(self.archive_name, self.update_urls)
+                return self.downloader(self.archive_name, self.update_urls, self.progress_hooks)
 
             fd = FileDownloader(
                 self.archive_name,
@@ -800,26 +872,23 @@ class LibUpdate:
 
 
 class AppUpdate(LibUpdate):  # pragma: no cover
-    """Used to update an application. This object is returned by
-    pyupdater.client.Client.update_check.
-    """
+    """Used to update an application. This object is returned by `update_check`."""
 
     def __init__(
         self,
         update_urls: list[str],
-        name: str,
+        filestem: str,
         current_version: str,
         latest: str,
         progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
         http_timeout=None,
-        strategy: UpdateStrategy = UpdateStrategy.DEFAULT,
+        strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
     ):
-        self._is_win = os.name == "nt"
         super().__init__(
             update_urls,
-            name,
+            filestem,
             current_version,
             latest,
             progress_hooks,
@@ -833,7 +902,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         """Will extract the update, overwrite the current binary, then restart the application using the updated binary."""
         try:
             self._extract_update()
-            if self._is_win:
+            if os.name == "nt":
                 if self.strategy == UpdateStrategy.RENAME:
                     self._win_rename(restart=True)
                 else:
@@ -848,7 +917,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         """Will extract the update then overwrite the current binary."""
         try:
             self._extract_update()
-            if self._is_win:
+            if os.name == "nt":
                 if self.strategy == UpdateStrategy.RENAME:
                     self._win_rename()
                 else:
@@ -861,7 +930,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
     def _overwrite(self):
         # Unix: Overwrites the running applications binary
         if platform.system() == "Darwin" and self._current_app_dir.endswith("MacOS"):
-            log.debug("Looks like we're dealing with a Mac Gui")
+            log.debug("Looks like we're dealing with a Mac GUI")
             temp_dir = get_mac_dot_app_dir(self._current_app_dir)
             self._current_app_dir = temp_dir
 
@@ -888,48 +957,74 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
     def _restart(self):
         log.debug("Restarting")
-        current_app_path = Path(self._current_app_dir, self.filename)
+        exe_name = self.filename
+        current_app_path = Path(self._current_app_dir, exe_name)
+        updated_app_path = Path(self.update_folder.name, exe_name)
         if platform.system() == "Darwin" and current_app_path.suffix.lower() == ".app":
             log.debug(f"Must be a .app bundle: '{current_app_path}'")  # noqa: G004
-            mac_app_binary_dir = current_app_path / "Contents" / "MacOS"
+            mac_app_binary_dir = current_app_path.joinpath("Contents", "MacOS")
 
             # We are making an assumption here that only 1
             # executable will be in the MacOS folder.
-            current_app_path = mac_app_binary_dir / sys.executable
+            current_app_path = mac_app_binary_dir / self.filestem
 
-        r = Restarter(current_app_path, name=self.filename)
+        r = Restarter(current_app_path, filename=self.filestem, updated_app=updated_app_path)
         r.process()
 
     def _win_rename(self, *, restart: bool = False) -> tuple[Path, Path]:
+        """This function renames the current application with a temporary name and moves the updated application into its place.
+
+        It also handles rollback in case of failure. 
+
+        Args:
+        ----
+            - restart (bool): If True, the updated application will be launched after the rename process is complete. Default is False.
+
+        Returns:
+        -------
+            - tuple[Path, Path]: A tuple containing the paths of the old application and the current application after the rename process is complete.
+
+        Processing Logic:
+        ----------------
+            - Checks if the current application path is a directory and raises an error if it is.
+            - Renames the current application with a temporary name.
+            - Checks if the updated application is a file and raises an error if it is not.
+            - Removes the old application from previous updates.
+            - Renames the updated application to the current application name.
+            - Hides the old application.
+            - Launches the updated application if restart is True.
+            - Handles rollback in case of failure.
+        """
         exe_name = self.filename
-        current_app_path = self._current_app_dir / exe_name
+        cur_app_filepath = self._current_app_dir / exe_name
+        if cur_app_filepath.safe_isdir():
+            raise ValueError(f"Current app path '{cur_app_filepath}' cannot be a directory!")
+
         old_exe_name = f"{exe_name}.old"
         old_app_path = self._current_app_dir / old_exe_name
-        updated_app_path = Path(self.update_folder.name, exe_name)
-        update_folder_path = Path(self.update_folder.name)
+        updated_app_filepath = self.update_temp_path.joinpath(exe_name)
 
-        # detect if is a folder
-        if update_folder_path.joinpath(exe_name).safe_exists():
+        # Ensure it's a file.
+        if not updated_app_filepath.safe_isfile():
             raise ValueError("The rename strategy is only supported for one file bundled executables")
 
         # Remove the old app from previous updates
-        if old_app_path.exists():
+        if old_app_path.safe_isfile():
             old_app_path.unlink(missing_ok=True)
+        elif old_app_path.safe_isdir():
+            shutil.rmtree(str(old_app_path), ignore_errors=True)
+        elif old_app_path.safe_exists():
+            raise ValueError(f"Old app path at '{old_app_path}' was neither a file or directory, perhaps we don't have permission to check? No changes have been made.")
 
         # On Windows, it's possible to rename a currently running exe file
-        current_app_path.rename(old_app_path)
+        cur_app_filepath.rename(old_app_path)
 
         # Any operation from here forward will require rollback on failure
         try:
-            updated_app_path.rename(current_app_path)
+            updated_app_filepath.rename(cur_app_filepath)
         except OSError:
             log.exception("Failed to move updated app into position, rolling back")
-            # Rollback strategy: move current app back into position
-            if current_app_path.safe_exists():
-                current_app_path.unlink(missing_ok=True)
-            old_app_path.rename(current_app_path)
-            raise
-
+            self._win_rollback_on_exception(cur_app_filepath, old_app_path)
         try:
             # Hide the old app
             import ctypes
@@ -943,10 +1038,10 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             log.exception("Failed to hide file")
 
         if not restart:
-            return old_app_path, current_app_path
+            return old_app_path, cur_app_filepath
 
         try:
-            r = Restarter(current_app_path, name=self.filename, strategy=UpdateStrategy.RENAME)
+            r = Restarter(cur_app_filepath, filename=self.filename, strategy=UpdateStrategy.RENAME, updated_app=updated_app_filepath)
             r.process()
         except OSError:
             # Raised by os.execl
@@ -963,30 +1058,41 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             except OSError:
                 # Better to stay hidden than to just fail at this point
                 log.exception("Could not unhide file in rollback process")
-            # Rename does not overwrite on Windows, so will need to unlink
-            current_app_path.unlink()
-            # Move old app back
-            old_app_path.rename(current_app_path)
+            self._win_rollback_on_exception(cur_app_filepath, old_app_path)
+        return old_app_path, cur_app_filepath
+
+    def _win_rollback_on_exception(
+        self,
+        cur_app_filepath: Path,
+        old_app_path: Path,
+        *,
+        no_raise: bool = False,
+    ):
+        """Rollback strategy: move current app back into position."""
+        cur_app_filepath.unlink(missing_ok=True)
+        old_app_path.rename(cur_app_filepath)
+        if no_raise:
+            return
+        # Check if there is an exception currently being handled
+        # If there is an exception, re-raise it
+        exc_type, _exc_value, _exc_traceback = sys.exc_info()
+        if exc_type is not None:
             raise
 
-        return old_app_path, current_app_path
-
     def _win_overwrite(self, *, restart: bool = False):
-        # Windows: Moves update to current directory of running
-        #                 application then restarts application using
-        #                 new update.
+        """Moves update to current directory of running application then restarts application using new update."""
         exe_name = self.filename
         update_folder_path = Path(self.update_folder.name)
 
-        # detect if is a folder
-        if update_folder_path.joinpath(self.name).safe_exists():
+        # Detect if folder
+        if update_folder_path.joinpath(self.filestem).safe_isdir():
             current_app_path = self._current_app_dir
-            updated_app_path = update_folder_path.joinpath(self.name)
+            updated_app_path = update_folder_path.joinpath(self.filestem)
         else:
             current_app_path = self._current_app_dir / exe_name
             updated_app_path = Path(self.update_folder.name, exe_name)
 
-        r = Restarter(current_app_path, updated_app=updated_app_path, name=exe_name)
+        r = Restarter(current_app_path, updated_app=updated_app_path, filename=self.filestem)
         r.process(win_restart=restart)
 
 
@@ -995,40 +1101,53 @@ class Restarter:
         self,
         current_app: os.PathLike | str,
         *,
-        name: str | None = None,
-        data_dir: os.PathLike | str | None = None,
+        filename: str | None = None,
         updated_app: os.PathLike | str | None = None,
-        strategy: UpdateStrategy = UpdateStrategy.DEFAULT,
+        strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
     ):
         self.current_app: Path = Path.pathify(current_app)
-        self.name: str = name or self.current_app.stem
+        log.debug("Current App: %s resolved to %s", current_app, self.current_app)
+        if is_frozen() and not self.current_app.safe_exists():
+            raise ValueError(f"Bad path to current_app provided to Restarter: '{self.current_app}'")
+
+        self.filename: str = self.current_app.name if filename is None else filename
         self.strategy: UpdateStrategy = strategy
 
-        log.debug("Current App: %s", self.current_app)
-        self.is_win = platform.system() == "Windows"
-        if self.is_win and self.strategy == UpdateStrategy.OVERWRITE:
-            if not data_dir:
-                raise ValueError("data_dir must be provided on Windows.")
-            self.data_dir = Path.pathify(data_dir)
-            self.bat_file = self.data_dir / "update.bat"
-            self.vbs_file = self.data_dir / "invis.vbs"
+        if os.name == "nt" and self.strategy == UpdateStrategy.OVERWRITE:
+            self.data_dir = TemporaryDirectory("_restarter", "holotoolset_")
+            data_dirpath = Path(self.data_dir.name)
+            self.bat_file = data_dirpath / "update.bat"
             if not updated_app:
                 raise ValueError("updated_app must be provided on Windows.")
             self.updated_app: Path = Path.pathify(updated_app)
             log.debug("Restart script dir: %s", self.data_dir)
             log.debug("Update path: %s", self.updated_app)
 
+    def cleanup(self):
+        self.data_dir.cleanup()
+
     def process(self, *, win_restart: bool = True):
-        if self.is_win and self.strategy == UpdateStrategy.OVERWRITE:
-            if win_restart:
-                self._win_overwrite_restart()
+        try:
+            if os.name == "posix":
+                self._restart()
+                return
+
+            if self.strategy == UpdateStrategy.OVERWRITE:
+                if win_restart:
+                    self._win_overwrite_restart()
+                else:
+                    self._win_overwrite()
             else:
-                self._win_overwrite()
-        else:
-            self._restart()
+                self._restart()
+        finally:
+            log.debug("Cleaning up temporary data dir...")
+            self.cleanup()
 
     def _restart(self):
-        os.execl(self.current_app, self.name, *sys.argv[1:])
+        #if not is_frozen():
+        #    log.warning("Cannot call os.exec1() from non-frozen executables.")
+        #    return
+        os.execl(self.current_app, self.filename, *sys.argv[1:])
 
     def _win_overwrite(self):
         is_folder = self.updated_app.safe_isdir()
@@ -1037,33 +1156,30 @@ class Restarter:
         else:
             needs_admin = requires_admin(self.current_app)
         log.debug(f"Admin required to update={needs_admin}")  # noqa: G004
-        with self.bat_file.open("w", encoding="utf-8") as bat:
+        with self.bat_file.open("w", encoding="utf-8") as batchfile_writer:
             if is_folder:
-                bat.write(
+                batchfile_writer.write(
                     f"""
 @echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
 robocopy "{self.updated_app}" "{self.current_app}" /e /move /V /PURGE > NUL
-DEL "{self.vbs_file}"
 DEL "%~f0"
 """
                 )
             else:
-                bat.write(
+                batchfile_writer.write(
                     f"""
 @echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
 move /Y "{self.updated_app}" "{self.current_app}" > NUL
-DEL "{self.vbs_file}"
 DEL "%~f0"
 """
                 )
-
-        self._extracted_from__win_overwrite_restart_34(needs_admin=needs_admin)
+        self._win_run_batch_restarter(needs_admin)
 
     def _win_overwrite_restart(self):
         is_folder = self.updated_app.safe_isdir()
@@ -1072,67 +1188,72 @@ DEL "%~f0"
         else:
             needs_admin = requires_admin(self.current_app)
         log.debug(f"Admin required to update={needs_admin}")  # noqa: G004
-        with self.bat_file.open("w", encoding="utf-8") as bat:
+        with self.bat_file.open("w", encoding="utf-8") as batchfile_writer:
             if is_folder:
-                bat.write(
+                batchfile_writer.write(
                     f"""
 @echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
 robocopy "{self.updated_app}" "{self.current_app}" /e /move /V > NUL
-echo restarting...
-start "" "{Path(self.current_app, f"{self.name}.exe")}"
-DEL "{self.vbs_file}"
+echo Restarting...
+start "" "{Path(self.current_app, self.filename)}"
 DEL "%~f0"
 """
                 )
             else:
-                bat.write(
+                batchfile_writer.write(
                     f"""
 @echo off
 chcp 65001
 echo Updating to latest version...
 ping 127.0.0.1 -n 5 -w 1000 > NUL
 move /Y "{self.updated_app}" "{self.current_app}" > NUL
-echo restarting...
+echo Restarting...
 start "" "{self.current_app}"
-DEL "{self.vbs_file}"
 DEL "%~f0"
 """
                 )
-        self._extracted_from__win_overwrite_restart_34(needs_admin=needs_admin)
+        self._win_run_batch_restarter(needs_admin)
 
-    # TODO Rename this here and in `_win_overwrite` and `_win_overwrite_restart`
-    def _extracted_from__win_overwrite_restart_34(self, *, needs_admin: bool):
-        with self.vbs_file.open("w", encoding="utf-8") as vbs:
-            vbs.write('CreateObject("Wscript.Shell").Run """" & WScript.Arguments(0) & """", 0, False')
-        log.debug("Starting update batch file")
-        win_run(
-            "wscript.exe",
-            [str(self.vbs_file), str(self.bat_file)],
-            admin=needs_admin,
-        )
+    def _win_run_batch_restarter(self, needs_admin):
+        log.info(f"Executing restart script @ {self.bat_file}")  # noqa: G004
+        if needs_admin:
+            Path.run_commands_as_admin([str(self.bat_file)], block_until_complete=False)
+        else:
+            subprocess.Popen(
+                [str(self.bat_file)],
+                timeout=60,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        log.info(f"Finally exiting app '{sys.executable}'")  # noqa: G004
+        try:
+            self._win_kill_self()
+        finally:
+            # This code might not be reached, but it's here for completeness
+            os._exit(0)
+
+    @staticmethod
+    def _win_kill_self():
+        import ctypes
+
+        from ctypes import wintypes
+
+        ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [wintypes.LPWSTR, wintypes.UINT]
+        ctypes.windll.kernel32.GetSystemDirectoryW.restype = wintypes.UINT
+        # Buffer size (MAX_PATH is generally 260 as defined by Windows)
+        buffer = ctypes.create_unicode_buffer(260)
+        # Call the function
+        ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
+        taskkill_path = Path(buffer.value, "taskkill.exe")
+        if taskkill_path.safe_isfile():
+            subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
+        else:
+            log.warning(f"taskkill.exe not found at '{taskkill_path}', could not guarantee our process is terminated.")  # noqa: G004
         os._exit(0)
-
-
-def win_run(command: str, args: list[str], *, admin: bool = False):  # pragma: no cover
-    """In windows run a command, optionally as admin."""
-    if admin:
-        import win32con  # type: ignore[reportMissingModuleSource, import-untyped]
-
-        from win32com.shell import shellcon  # type: ignore[reportMissingModuleSource, import-untyped]
-        from win32com.shell.shell import ShellExecuteEx  # type: ignore[reportMissingModuleSource, import-untyped]
-
-        ShellExecuteEx(
-            nShow=win32con.SW_SHOWNORMAL,
-            fMask=shellcon.SEE_MASK_NOCLOSEPROCESS,
-            lpVerb="runas",
-            lpFile=command,
-            lpParameters=" ".join(f'"{arg}"' for arg in args),
-        )
-    else:
-        subprocess.Popen([command, *args])  # noqa: S603
 
 
 class FileDownloaderError(ConnectionError):
@@ -1148,18 +1269,18 @@ class FileDownloader:
     Args:
     ----
         filename (os.PathLike | str): The name of file to download
-        urls (list): List of urls to use for file download
-        hexdigest (str): The hash of the file to download
+        urls (list[str]): List of urls to use for file download
+        hexdigest (str | None): The hash of the file to download
+
     Kwargs:
     ------
-        headers (str):
-        hexdigest (str): The hash of the file to download
+        progress_hooks ( list[Callable[dict[str, Any]]] ): A list of callable functions that can be used when we report the progress. Untested.
+        headers (dict | None): Unknown
         max_download_retries (int): Maximum number of times to attempt to download the file. Defaults to zero.
-        http_timeout: Unknown but defaults to None.
-        progress_hooks: Unknown but should be a list if provided.
         verify (bool):
             True: Verify https connection
             False: Do not verify https connection
+        http_timeout: Unknown but defaults to None.
     """
 
     def __init__(
@@ -1304,7 +1425,7 @@ class FileDownloader:
             binary_file = self.file_binary_path.open("wb")
             binary_file.write(block)
         hash_.update(block)
-        while 1:
+        while True:
             # Grabbing start time for use with best block size
             start_block = time.time()
 
@@ -1363,6 +1484,16 @@ class FileDownloader:
 
         return self._check_hash(hash_) if check_hash else None
 
+    # Calling all progress hooks
+    def _call_progress_hooks(self, data: dict[str, Any]):
+        log.debug(data)
+        for ph in self.progress_hooks:
+            try:
+                ph(data)
+            except Exception as err:  # noqa: PERF203
+                log.debug("Exception in callback: %s", ph.__name__)
+                log.debug(err, exc_info=True)
+
     def _check_hash(self, hash_: hashlib._Hash) -> bool | None:
         # Checks hash of downloaded file
         if self.hexdigest is None:
@@ -1380,16 +1511,6 @@ class FileDownloader:
             return True
         log.debug("Cannot verify file hash")
         return False
-
-    # Calling all progress hooks
-    def _call_progress_hooks(self, data: dict[str, Any]):
-        log.debug(data)
-        for ph in self.progress_hooks:
-            try:
-                ph(data)
-            except Exception as err:  # noqa: PERF203
-                log.debug("Exception in callback: %s", ph.__name__)
-                log.debug(err, exc_info=True)
 
     # Creating response object to start download
     # Attempting to do some error correction for aws s3 urls

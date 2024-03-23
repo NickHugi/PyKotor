@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from multiprocessing import Queue
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QTimer
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
@@ -16,11 +17,59 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
+class ProgressDialog(QDialog):
+    def __init__(self, progress_queue: Queue, title: str = "Operation Progress"):
+        super().__init__(None)
+        self.progress_queue: Queue = progress_queue
+        self.setWindowTitle(title)
+        self.setLayout(QVBoxLayout())
+
+        self.statusLabel = QLabel("Initializing...", self)
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setMaximum(100)
+
+        self.layout().addWidget(self.statusLabel)
+        self.layout().addWidget(self.progressBar)
+
+        # Timer to poll the queue for new progress updates
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.check_queue)
+        self.timer.start(100)  # Check every 100 ms
+        self.setFixedSize(420, 80)
+
+    def check_queue(self):
+        while not self.progress_queue.empty():
+            message = self.progress_queue.get()
+            if message["action"] == "update_progress":
+                # Handle progress updates
+                data = message["data"]
+                downloaded = data["downloaded"]
+                total = data["total"]
+                progress = int((downloaded / total) * 100) if total else 0
+                self.progressBar.setValue(progress)
+                self.statusLabel.setText(f"Downloading... {progress}%")
+            elif message["action"] == "update_status":
+                # Handle status text updates
+                text = message["text"]
+                self.statusLabel.setText(text)
+
+    def update_status(self, text: str):
+        self.statusLabel.setText(text)
+
+
 class AsyncLoader(QDialog, Generic[T]):
     optionalFinishHook = QtCore.pyqtSignal(object)
     optionalErrorHook = QtCore.pyqtSignal(object)
 
-    def __init__(self, parent: QWidget, title: str, task: Callable[..., T], errorTitle: str | None = None, *, startImmediately: bool = True):
+    def __init__(
+        self,
+        parent: QWidget,
+        title: str,
+        task: Callable[..., T],
+        errorTitle: str | None = None,
+        *,
+        startImmediately: bool = True,
+    ):
         """Initializes a progress dialog.
 
         Args:

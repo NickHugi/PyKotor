@@ -6,13 +6,14 @@ import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
+from multiprocessing import Process, Queue
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -29,10 +30,10 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from toolset.config import CURRENT_VERSION, AppUpdate, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import CURRENT_VERSION, AppUpdate, download_wrapper, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
-from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
+from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
 from toolset.gui.dialogs.search import FileResults, FileSearcher
 from toolset.gui.dialogs.settings import SettingsDialog
@@ -66,6 +67,8 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
+    from typing import NoReturn
+
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
     from watchdog.observers.api import BaseObserver
@@ -76,6 +79,14 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import TextureList
+
+
+def run_progress_dialog(progress_queue: Queue) -> NoReturn:
+    app = QApplication(sys.argv)
+    dialog = ProgressDialog(progress_queue)
+    dialog.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
+    dialog.show()
+    sys.exit(app.exec_())
 
 
 class ToolWindow(QMainWindow):
@@ -145,7 +156,6 @@ class ToolWindow(QMainWindow):
             with suppress(Exception):
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
 
-        self.checkForUpdates(silent=True)
 
     def _setupSignals(self):
         """Connects signals to slots for UI interactions.
@@ -637,26 +647,11 @@ class ToolWindow(QMainWindow):
         try:
             self._check_toolset_update(silent=silent)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            if not silent:
-                etype, msg = universal_simplify_exception(e)
-                QMessageBox(
-                    QMessageBox.Information,
-                    f"Unable to fetch latest version ({etype})",
-                    f"Check if you are connected to the internet.\nError: {msg}",
-                    QMessageBox.Ok,
-                    self,
-                ).exec_()
-
-    def checkForUpdates(self, *, silent: bool = False):
-        """Scans for any updates and opens a dialog with a message based on the scan result.
-
-        Args:
-        ----
-            silent: If true, only shows popup if an update is available.
-        """
-        try:
-            self._check_toolset_update(silent=silent)
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+            print(lines)
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -717,6 +712,7 @@ class ToolWindow(QMainWindow):
             flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         )
         newVersionMsgBox.button(QMessageBox.Ok).setText("Install Now")
+        newVersionMsgBox.button(QMessageBox.Abort).setText("Ignore")
         newVersionMsgBox.setWindowIcon(self.windowIcon())
         response = newVersionMsgBox.exec_()
         if response == QMessageBox.Ok:
@@ -739,15 +735,32 @@ class ToolWindow(QMainWindow):
             links = remoteInfo["toolsetDirectLinks"][os_name][proc_arch.value]
         else:
             links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
+        progress_queue = Queue()
+        progress_process = Process(target=run_progress_dialog, args=(progress_queue,))
+        progress_process.start()
+        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+            # Package the progress data with an action so the dialog knows how to handle it
+            packaged_data = {"action": "update_progress", "data": data}
+            progress_queue.put(packaged_data)
+
+        # Prepare the list of progress hooks with the method from ProgressDialog
+        progress_hooks = [download_progress_hook]
 
         updater = AppUpdate(
             links,
-            PurePath(sys.executable).stem,
+            "HolocronToolset",
             CURRENT_VERSION,
             latestVersion,
+            downloader=download_wrapper,
+            progress_hooks=progress_hooks
         )
+        progress_queue.put({"action": "update_status", "text": "Downloading update..."})
         updater.download(background=False)
+        progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
         updater.extract_restart()
+        progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
+        updater.cleanup()
+        sys.exit(0)
     # endregion
 
     # region Other
