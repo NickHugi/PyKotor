@@ -279,6 +279,7 @@ class LibUpdate:
 
     def _full_update(self) -> bool:
         self.log.debug("Starting full update")
+        result = True
         with ChDir(self.update_folder.name):
             self.log.debug("Downloading update...")
             archive_path = Path(self.get_archive_name()).absolute()
@@ -313,11 +314,11 @@ class LibUpdate:
                         break  # One of the mirrors worked successfully.
                 except Exception as e:  # noqa: PERF203
                     print(e, "url:", url)
-            if not archive_path.safe_isfile():
-                exc = FileNotFoundError()
-                exc.filename = str(archive_path)
-                exc.strerror = "file downloader finished, but archive filepath doesn't exist."
-            return bool(result)
+        if not archive_path.safe_isfile():
+            exc = FileNotFoundError()
+            exc.filename = str(archive_path)
+            exc.strerror = "file downloader finished, but archive filepath doesn't exist."
+        return bool(result)
 
     def cleanup(self):
         self.update_folder.cleanup()

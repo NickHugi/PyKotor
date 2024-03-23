@@ -58,7 +58,11 @@ class Restarter:
         self.data_dir.cleanup()
 
     def process(self, *, win_restart: bool = True):
-        if os.name == "posix" or self.strategy == UpdateStrategy.RENAME:
+        if (
+            os.name == "posix"
+            or self.strategy == UpdateStrategy.RENAME
+            or not is_frozen()
+        ):
             self._restart()
             return
 
@@ -73,9 +77,11 @@ class Restarter:
         #    return
         if self.exithook is not None:
             self.exithook(False)
+        self.log.info("Replacing current process with new app '%s' | %s", self.current_app, self.filename)
         os.execl(self.current_app, self.filename, *sys.argv[1:])
 
     def _win_overwrite(self):  # sourcery skip: class-extract-method
+        self.log.info("Calling _win_overwrite for updated app '%s'", self.updated_app)
         is_folder = self.updated_app.safe_isdir()
         if is_folder:
             needs_admin = requires_admin(self.updated_app) or requires_admin(self.current_app)
@@ -140,18 +146,20 @@ move /Y "{self.updated_app}" "{self.current_app}"
                 f"Start-Process cmd.exe -ArgumentList '/C \"{self.bat_file}\"' -Verb RunAs -WindowStyle Hidden -Wait",
             ]
             try:
-                self.log.debug(subprocess.run(
-                    run_script_cmd,
-                #    executable=cmd_exe_path,
-                    text=True,
-                    capture_output=True,
-                    check=False,
-                #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
-                #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
-                #    start_new_session=True,
-                #     creationflags=subprocess.CREATE_NEW_CONSOLE,
-                #    close_fds=True
-                ))
+                self.log.debug(
+                    subprocess.run(
+                        run_script_cmd,
+                    #    executable=cmd_exe_path,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
+                    #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
+                    #    start_new_session=True,
+                    #     creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    #    close_fds=True
+                    )
+                )
             except OSError:
                 self.log.exception("Error running batch script")
                 #self.log.debug(f"subprocess.call result: {result}")  # noqa: G004
@@ -165,18 +173,20 @@ move /Y "{self.updated_app}" "{self.current_app}"
                 str(self.bat_file)
             ]
             try:
-                self.log.debug(subprocess.run(
-                    run_script_cmd,
-                #    executable=cmd_exe_path,
-                    text=True,
-                    capture_output=True,
-                    check=False,
-                #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
-                #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
-                #    start_new_session=True,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                #    close_fds=True
-                ))
+                self.log.debug(
+                    subprocess.run(
+                        run_script_cmd,
+                    #    executable=cmd_exe_path,
+                        text=True,
+                        capture_output=True,
+                        check=False,
+                    #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
+                    #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
+                    #    start_new_session=True,
+                        creationflags=subprocess.CREATE_NEW_CONSOLE,
+                    #    close_fds=True
+                    )
+                )
             except OSError:
                 self.log.exception("Error running batch script")
                 #self.log.debug(f"subprocess.call result: {result}")  # noqa: G004
@@ -188,13 +198,15 @@ move /Y "{self.updated_app}" "{self.current_app}"
             "",
             f"{self.current_app}"
         ]
-        self.log.debug(subprocess.run(
-            run_script_cmd,
-            text=True,
-            capture_output=True,
-            check=True,
-            creationflags=subprocess.DETACHED_PROCESS,
-        ))
+        self.log.debug(
+            subprocess.run(
+                run_script_cmd,
+                text=True,
+                capture_output=True,
+                check=True,
+                creationflags=subprocess.DETACHED_PROCESS,
+            )
+        )
         self.log.info(f"Finally exiting app '{sys.executable}'")  # noqa: G004
         if self.exithook is not None:
             self.exithook(True)
