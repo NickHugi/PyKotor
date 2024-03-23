@@ -12,3 +12,4 @@ pyperclip~=1.8
 setuptools>=67.8.0
 Pillow>=9.5
 jsonpickle
+pycryptodome
