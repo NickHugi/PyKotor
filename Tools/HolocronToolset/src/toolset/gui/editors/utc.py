@@ -78,6 +78,7 @@ class UTCEditor(Editor):
         self._utc: UTC = UTC()
 
         from toolset.uic.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -138,10 +139,19 @@ class UTCEditor(Editor):
         self.ui.lastnameEdit.setInstallation(installation)
 
         # Load required 2da files if they have not been loaded already
-        required: list[str] = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
-                    HTInstallation.TwoDA_SUBRACES, HTInstallation.TwoDA_SPEEDS, HTInstallation.TwoDA_FACTIONS,
-                    HTInstallation.TwoDA_GENDERS, HTInstallation.TwoDA_PERCEPTIONS, HTInstallation.TwoDA_CLASSES,
-                    HTInstallation.TwoDA_FEATS, HTInstallation.TwoDA_POWERS]
+        required: list[str] = [
+            HTInstallation.TwoDA_APPEARANCES,
+            HTInstallation.TwoDA_SOUNDSETS,
+            HTInstallation.TwoDA_PORTRAITS,
+            HTInstallation.TwoDA_SUBRACES,
+            HTInstallation.TwoDA_SPEEDS,
+            HTInstallation.TwoDA_FACTIONS,
+            HTInstallation.TwoDA_GENDERS,
+            HTInstallation.TwoDA_PERCEPTIONS,
+            HTInstallation.TwoDA_CLASSES,
+            HTInstallation.TwoDA_FEATS,
+            HTInstallation.TwoDA_POWERS,
+        ]
         installation.htBatchCache2DA(required)
 
         appearances = installation.htGetCache2DA(HTInstallation.TwoDA_APPEARANCES)
@@ -184,8 +194,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        #self.ui.featList.setSortingEnabled(True)
-        #self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        # self.ui.featList.setSortingEnabled(True)
+        # self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -198,8 +208,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        #self.ui.powerList.setSortingEnabled(True)
-        #self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        # self.ui.powerList.setSortingEnabled(True)
+        # self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
@@ -572,12 +582,10 @@ class UTCEditor(Editor):
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            if QMessageBox(
-                QMessageBox.Information,
-                "DLG file not found",
-                "Do you wish to create a file in the override?",
-                QMessageBox.Yes | QMessageBox.No
-            ).exec_() == QMessageBox.Yes:
+            if (
+                QMessageBox(QMessageBox.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
+                == QMessageBox.Yes
+            ):
                 data = bytearray()
                 filepath = self._installation.override_path() / f"{resname}.dlg"
 

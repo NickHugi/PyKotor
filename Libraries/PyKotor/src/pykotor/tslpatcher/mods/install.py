@@ -57,7 +57,6 @@ def create_backup(
         backup_filepath = backup_folderpath / destination_filepath.name
 
     if destination_file_str_lower not in processed_files:
-
         # Write a list of files that should be removed in order to uninstall the mod
         uninstall_folder: CaseAwarePath = backup_folderpath.parent.parent.joinpath("uninstall")
         uninstall_str_lower: str = str(uninstall_folder).lower()
@@ -86,7 +85,6 @@ def create_backup(
             except (OSError, PermissionError) as e:
                 log.add_warning(f"Failed to create backup of '{destination_file_str}': {universal_simplify_exception(e)}")
         else:
-
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt: CaseAwarePath = backup_folderpath.joinpath("remove these files.txt")
             line: str = ("\n" if removal_files_txt.is_file() else "") + destination_file_str
@@ -328,5 +326,4 @@ class InstallFile(PatcherModifications):
         with BinaryReader.from_auto(source) as reader:
             return reader.read_all()
 
-    def apply(self, source, *args, **kwargs):
-        ...
+    def apply(self, source, *args, **kwargs): ...

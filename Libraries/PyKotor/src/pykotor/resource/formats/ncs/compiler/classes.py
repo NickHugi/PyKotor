@@ -31,8 +31,7 @@ class CompileError(Exception):
         super().__init__(message)
 
 
-class EntryPointError(CompileError):
-    ...
+class EntryPointError(CompileError): ...
 
 
 class TopLevelObject(ABC):
@@ -656,7 +655,6 @@ class IncludeScript(TopLevelObject):
         self.library: dict[str, bytes] = library if library is not None else {}
 
     def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
-
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
         nss_parser = NssParser(
@@ -710,8 +708,7 @@ class Expression(ABC):
         ncs: NCS,
         root: CodeRoot,
         block: CodeBlock,
-    ) -> DynamicDataType:
-        ...
+    ) -> DynamicDataType: ...
 
 
 class Statement(ABC):
@@ -727,8 +724,7 @@ class Statement(ABC):
         return_instruction: NCSInstruction,
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
-    ) -> object:
-        ...
+    ) -> object: ...
 
 
 class FieldAccess:
@@ -1937,8 +1933,7 @@ class SwitchLabel(ABC):
         block: CodeBlock,
         jump_to: NCSInstruction,
         expression_type: DynamicDataType,
-    ):
-        ...
+    ): ...
 
 
 class ExpressionSwitchLabel:
@@ -1967,8 +1962,7 @@ class ExpressionSwitchLabel:
 
 
 class DefaultSwitchLabel:
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def compile(
         self,

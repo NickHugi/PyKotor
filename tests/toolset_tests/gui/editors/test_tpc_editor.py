@@ -18,6 +18,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -52,8 +53,10 @@ class TPCEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.tpc import TPCEditor
+
         cls.TPCEditor = TPCEditor
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self):
@@ -63,8 +66,8 @@ class TPCEditorTest(TestCase):
     def tearDown(self):
         self.app.deleteLater()
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
+
 
 if __name__ == "__main__":
     unittest.main()

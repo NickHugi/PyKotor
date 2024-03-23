@@ -23,6 +23,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -63,7 +64,7 @@ class CustomTextTestRunner(unittest.TextTestRunner):
         failfast: bool = False,
         buffer: bool = False,
         resultclass: Type[unittest.TestResult] | None = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(stream, descriptions, verbosity, failfast, buffer, resultclass, **kwargs)
 
@@ -74,8 +75,8 @@ class CustomTextTestRunner(unittest.TextTestRunner):
         test(result)
         return result
 
-class CustomTestResult(unittest.TextTestResult):
 
+class CustomTestResult(unittest.TextTestResult):
     def addError(
         self,
         test: unittest.TestCase,
@@ -193,8 +194,7 @@ class GFFEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

@@ -228,10 +228,13 @@ def clone_module(
                     new_lightmap_name = f"{identifier}_lm_{len(new_lightmaps.keys())}"
                     new_lightmaps[lightmap] = new_lightmap_name
 
-                    tpc = installation.texture(
-                        lightmap,
-                        [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
-                    ) or TPC()
+                    tpc = (
+                        installation.texture(
+                            lightmap,
+                            [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
+                        )
+                        or TPC()
+                    )
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()

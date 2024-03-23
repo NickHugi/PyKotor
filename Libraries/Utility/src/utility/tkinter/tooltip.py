@@ -42,9 +42,7 @@ class ToolTip:
         self.tip_window = tk.Toplevel(self.widget)
         self.tip_window.wm_overrideredirect(boolean=True)
         self.tip_window.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT,
-                         background="#ffffff", relief=tk.SOLID, borderwidth=1,
-                         font=("tahoma", "8", "normal"))
+        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT, background="#ffffff", relief=tk.SOLID, borderwidth=1, font=("tahoma", "8", "normal"))
         label.pack(ipadx=1)
 
     def hide_tip(self, event: tk.Event | None = None):

@@ -230,13 +230,15 @@ class ModInstaller:
     def handle_modrim_shadow(self, patch: PatcherModifications):
         """Check if a patch is being installed into a rim and overshadowed by a .mod."""
         # uncomment and define the attrs if we decide this should be configurable.
-        #modrim_type: str = patch.modrim_type.lower().strip()
-        #if not modrim_type or modrim_type == ignore
+        # modrim_type: str = patch.modrim_type.lower().strip()
+        # if not modrim_type or modrim_type == ignore
         #    return
         modrim_path = self.game_path / patch.destination / patch.saveas
         mod_path = modrim_path.with_name(Installation.replace_module_extensions(modrim_path.name) + ".mod")
         if modrim_path != mod_path and mod_path.safe_isfile():
-            self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}'. Since {mod_path.name} exists, this instruction makes zero sense as this resource rim is overshadowed by the .mod anyway.")
+            self.log.add_warning(
+                f"This mod intends to install '{patch.saveas}' into '{patch.destination}'. Since {mod_path.name} exists, this instruction makes zero sense as this resource rim is overshadowed by the .mod anyway."
+            )
 
     def handle_override_type(self, patch: PatcherModifications):
         """Handles the desired behavior set by the !OverrideType tslpatcher var for the specified patch.
@@ -360,7 +362,7 @@ class ModInstaller:
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
-            *config.patches_ncs,   # Note: TSLPatcher executes [CompileList] after [HACKList]
+            *config.patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
             *config.patches_ssf,
         ]
 
@@ -456,14 +458,8 @@ class ModInstaller:
 
         if female_dialog_file.is_file():
             female_tlk_patches: ModificationsTLK = deepcopy(patches_tlk)
-            female_tlk_patches.sourcefile = (
-                female_tlk_patches.sourcefile_f
-                if (self.mod_path / female_tlk_patches.sourcefile_f).is_file()
-                else patches_tlk.sourcefile
-            )
+            female_tlk_patches.sourcefile = female_tlk_patches.sourcefile_f if (self.mod_path / female_tlk_patches.sourcefile_f).is_file() else patches_tlk.sourcefile
             female_tlk_patches.saveas = female_dialog_filename
             tlk_patches.append(female_tlk_patches)
 
         return tlk_patches
-
-

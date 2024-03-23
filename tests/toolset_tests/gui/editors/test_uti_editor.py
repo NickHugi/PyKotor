@@ -18,6 +18,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -59,8 +60,10 @@ class UTIEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.uti import UTIEditor
+
         cls.UTIEditor = UTIEditor
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):

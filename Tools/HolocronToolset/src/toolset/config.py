@@ -52,6 +52,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
 
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
+
 def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
     if useBetaChannel:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
@@ -66,10 +67,10 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         decoded_content_str = decoded_content.decode(encoding="utf-8")
         # use for testing only:
-        #with open("config.py") as f:
+        # with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
@@ -83,10 +84,10 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
             None,
             "Error occurred fetching update information.",
             (
-                "An error occurred while fetching the latest toolset information.<br><br>" +
-                errMsg.replace("\n", "<br>") +
-                "<br><br>" +
-                "Would you like to check against the local database instead?"
+                "An error occurred while fetching the latest toolset information.<br><br>"
+                + errMsg.replace("\n", "<br>")
+                + "<br><br>"
+                + "Would you like to check against the local database instead?"
             ),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,

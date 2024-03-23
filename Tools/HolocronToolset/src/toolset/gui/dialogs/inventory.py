@@ -55,9 +55,19 @@ class SlotMapping(NamedTuple):
 
 
 class InventoryEditor(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule], folders: list[str],
-                 inventory: list[InventoryItem], equipment: dict[EquipmentSlot, InventoryItem], *, droid: bool = False,
-                 hide_equipment: bool = False, is_store: bool = False):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        capsules: list[Capsule],
+        folders: list[str],
+        inventory: list[InventoryItem],
+        equipment: dict[EquipmentSlot, InventoryItem],
+        *,
+        droid: bool = False,
+        hide_equipment: bool = False,
+        is_store: bool = False,
+    ):
         """Initializes the inventory dialog.
 
         Args:
@@ -84,6 +94,7 @@ class InventoryEditor(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.inventory import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -794,27 +805,17 @@ class ItemBuilderWorker(QThread):
         """
         queries: list[ResourceIdentifier] = []
         if self._installation.cacheCoreItems is None:
-            queries.extend([ResourceIdentifier(resource.resname(), resource.restype())
-                            for resource in self._installation.chitin_resources()
-                            if resource.restype() == ResourceType.UTI])
+            queries.extend(
+                [ResourceIdentifier(resource.resname(), resource.restype()) for resource in self._installation.chitin_resources() if resource.restype() == ResourceType.UTI]
+            )
         queries.extend(
-            ResourceIdentifier(resource.resname(), resource.restype())
-            for resource in self._installation.override_resources()
-            if resource.restype() == ResourceType.UTI
+            ResourceIdentifier(resource.resname(), resource.restype()) for resource in self._installation.override_resources() if resource.restype() == ResourceType.UTI
         )
         for capsule in self._capsules:
-            queries.extend(
-                ResourceIdentifier(resource.resname(), resource.restype())
-                for resource in capsule
-                if resource.restype() == ResourceType.UTI
-            )
+            queries.extend(ResourceIdentifier(resource.resname(), resource.restype()) for resource in capsule if resource.restype() == ResourceType.UTI)
         results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(
             queries,
-            [
-                SearchLocation.OVERRIDE,
-                SearchLocation.CHITIN,
-                SearchLocation.CUSTOM_MODULES
-            ],
+            [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
             capsules=self._capsules,
         )
         for result in results.values():
@@ -885,6 +886,7 @@ class SetItemResRefDialog(QDialog):
         super().__init__(parent)
 
         from editors import ui_setitemresref  # TODO: ??
+
         self.ui = ui_setitemresref.Ui_Dialog()
         self.ui.setupUi(self)
 

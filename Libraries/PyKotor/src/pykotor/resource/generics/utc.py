@@ -332,10 +332,7 @@ def construct_utc(
 
     # Not sure why there's extras... some utc's in k1 have 20 structs in the SkillList.
     if len(skill_list._structs) > 8:
-        utc._extra_unimplemented_skills = [
-            skill_struct.acquire("Rank", 0)
-            for skill_struct in skill_list._structs[8:]
-        ]
+        utc._extra_unimplemented_skills = [skill_struct.acquire("Rank", 0) for skill_struct in skill_list._structs[8:]]
 
     class_list: GFFList = root.acquire("ClassList", GFFList())
     for class_struct in class_list:
@@ -479,7 +476,9 @@ def dismantle_utc(
             power_struct.set_uint16("Spell", power)
             power_struct.set_uint8("SpellFlags", 1)
             power_struct.set_uint8("SpellMetaMagic", 0)
-        power_list._structs = sorted(power_list._structs, key=lambda power_struct_local: utc_class._original_powers_mapping.get(power_struct_local.get_uint16("Spell"), float("inf")))
+        power_list._structs = sorted(
+            power_list._structs, key=lambda power_struct_local: utc_class._original_powers_mapping.get(power_struct_local.get_uint16("Spell"), float("inf"))
+        )
 
     feat_list: GFFList = root.set_list("FeatList", GFFList())
     for feat in utc.feats:

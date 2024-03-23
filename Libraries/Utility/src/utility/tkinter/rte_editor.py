@@ -54,18 +54,15 @@ tag_types: dict[str, dict[str, str]] = {
     "Bold": {"font": f"{font_name} 15 bold"},
     "Italic": {"font": f"{font_name} 15 italic"},
     "Code": {"font": "Consolas 15", "background": rgbToHex((200, 200, 200))},
-
     # Sizes
     "Normal Size": {"font": f"{font_name} 15"},
     "Larger Size": {"font": f"{font_name} 25"},
     "Largest Size": {"font": f"{font_name} 35"},
-
     # Background Colors
     "Highlight": {"background": rgbToHex((255, 255, 0))},
     "Highlight Red": {"background": rgbToHex((255, 0, 0))},
     "Highlight Green": {"background": rgbToHex((0, 255, 0))},
     "Highlight Black": {"background": rgbToHex((0, 0, 0))},
-
     # Foreground /  Text Colors
     "Text White": {"foreground": rgbToHex((255, 255, 255))},
     "Text Grey": {"foreground": rgbToHex((200, 200, 200))},
@@ -175,6 +172,7 @@ def main():
         except (ValueError, tk.TclError):
             # This block will execute if there is no selection, i.e., 'sel' tag doesn't exist
             ...
+
     # Setup
     root = tk.Tk()
     root.geometry("600x600")

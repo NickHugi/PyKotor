@@ -40,8 +40,7 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Cannot save to RIM"))
-        self.label.setText(_translate("Dialog", "Saving to RIM files is disabled. You can choose\n"
-"to save it to the Override or .MOD file instead."))
+        self.label.setText(_translate("Dialog", "Saving to RIM files is disabled. You can choose\n" "to save it to the Override or .MOD file instead."))
         self.cancelButton.setText(_translate("Dialog", "Cancel"))
         self.overrideSaveButton.setText(_translate("Dialog", "Save to Override"))
         self.modSaveButton.setText(_translate("Dialog", "Save to .MOD"))

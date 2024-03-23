@@ -52,6 +52,7 @@ class UTIEditor(Editor):
         self._uti = UTI()
 
         from toolset.uic.editors.uti import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -209,10 +210,7 @@ class UTIEditor(Editor):
         uti.body_variation = self.ui.bodyVarSpin.value()
         uti.texture_variation = self.ui.textureVarSpin.value()
 
-        uti.properties = [
-            self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.UserRole)
-            for i in range(self.ui.assignedPropertiesList.count())
-        ]
+        uti.properties = [self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.UserRole) for i in range(self.ui.assignedPropertiesList.count())]
         # Comments
         uti.comment = self.ui.commentsEdit.toPlainText()
 
@@ -375,11 +373,7 @@ class UTIEditor(Editor):
         subproperties: TwoDA = installation.htGetCache2DA(subtypeResname)
         headerStrref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
-        return (
-            installation.talktable().string(nameStrref)
-            if nameStrref is not None
-            else subproperties.get_cell(subprop, "label")
-        )
+        return installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
 
     @staticmethod
     def costName(installation: HTInstallation, cost: int, value: int):
@@ -423,6 +417,7 @@ class PropertyEditor(QDialog):
         super().__init__()
 
         from toolset.uic.dialogs.property import Ui_Dialog
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

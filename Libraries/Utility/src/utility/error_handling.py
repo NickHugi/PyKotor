@@ -83,6 +83,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
                 err_str += f"\n    {arg}"
     return error_name, err_str
 
+
 # Get default module attributes to filter out built-ins
 default_attrs: set[str] = set(dir(sys.modules["builtins"]))
 
@@ -169,6 +170,82 @@ def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
         current_stack.pop()
         _currently_processing.set(current_stack)
 
+def is_builtin_class_instance(obj: Any) -> bool:
+    """Check if the object is an instance of a built-in class."""
+    return obj.__class__.__module__ in ("builtins", "__builtin__")
+
+
+_currently_processing: ContextVar[list] = ContextVar("_currently_processing", default=[])
+
+
+def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
+    """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
+    if is_builtin_class_instance(obj):
+        try:
+            obj_repr = repr(obj)
+            # Truncate if necessary
+            if len(obj_repr) > max_length:
+                return f"{obj_repr[:max_length]}..."
+        except Exception:  # noqa: BLE001
+            return object.__repr__(obj)
+        else:
+            return obj_repr
+    indent: str = "    "  # Define the indentation unit (4 spaces).
+
+    # Retrieve the stack of objects currently being processed
+    current_stack = _currently_processing.get()
+    obj_id = id(obj)
+
+    # Check for recursion - if this object is already in the stack
+    for frame in current_stack:
+        if obj_id == frame["id"]:
+            # Finish the partial representation for this object and return
+            base_indent = indent * frame["indent_level"]
+            return f"{frame['representation']}...\n{base_indent})"
+
+    try:
+        # Initialize the representation for this object and add it to the stack
+        base_indent = indent * indent_level
+        next_indent = indent * (indent_level + 1)
+        representation: str = f"{obj.__class__.__name__}(\n{next_indent}"
+        current_stack.append({"id": obj_id, "indent_level": indent_level, "representation": representation})
+        _currently_processing.set(current_stack)
+
+        if hasattr(obj, "__class__") and obj.__class__.__repr__ is not object.__repr__:
+            # Call the object's __repr__ with _is_safe_repr_call set to True
+            try:
+                return repr(obj)
+            except Exception:  # noqa: BLE001
+                # Fallback to the base object __repr__ if an error occurs
+                representation += object.__repr__(obj)
+            return representation
+
+        attrs: list[str] = []
+        for attr_name in dir(obj):
+            attr_value = getattr(obj, attr_name)
+            if not attr_name.startswith("__") and not callable(attr_value):
+                try:
+                    this_repr = safe_repr(attr_value, max_length, indent_level + 1)
+                    # Concatenate attribute name and its representation with appropriate indentation
+                    attr_repr = f"{attr_name}={this_repr}"
+                    # Check if current attribute representation exceeds the max length
+                    if len(attr_repr) > max_length:
+                        attr_repr = f"{attr_repr[:max_length]}..."
+                    attrs.append(attr_repr)
+                except Exception:  # noqa: BLE001
+                    attrs.append(f"{attr_name}={object.__repr__(attr_value)}")
+        joined_attrs = (",\n" + next_indent).join(attrs)
+        final_repr = f"{representation}{joined_attrs}\n{base_indent})" if attrs else f"{representation}{base_indent})"
+    except Exception:  # noqa: BLE001
+        return object.__repr__(obj)
+    else:
+        return final_repr
+    finally:
+        # Always remove the object from the stack to avoid leaks
+        current_stack.pop()
+        _currently_processing.set(current_stack)
+
+
 def format_var_str(
     var: str,
     val: Any,
@@ -192,7 +269,7 @@ def format_var_str(
 
     try:
         val_repr = safe_repr(val)
-        if len(val_repr) > max_length*2:
+        if len(val_repr) > max_length * 2:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
         val_repr = unique_sentinel
@@ -275,6 +352,7 @@ def format_exception_with_variables(
 def is_assertion_removal_enabled() -> bool:
     return sys.flags.optimize >= 1
 
+
 IT = TypeVar("IT")
 
 
@@ -321,6 +399,7 @@ def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed
     # Raise an exception with the detailed message
     raise AssertionError(full_message)
 
+
 RT = TypeVar("RT")
 unique_sentinel = object()
 
@@ -348,7 +427,6 @@ def with_variable_trace(
                     msg = f"Return type of '{f.__name__}' must be {return_type.__name__}, got {result.__class__}: {result!r}: {result}"
                     raise CustomAssertionError(msg)
             except exception_types as e:
-
                 detailed_message: list[str] = [
                     f"Exception caught in function '{f.__name__}': {e}",
                     "Stack Trace Variables:",

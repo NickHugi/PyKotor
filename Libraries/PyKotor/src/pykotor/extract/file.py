@@ -72,11 +72,11 @@ class FileResource:
     def __repr__(self):
         return (
             f"{self.__class__.__name__}("
-                f"resname='{self._resname}', "
-                f"restype={self._restype!r}, "
-                f"size={self._size}, "
-                f"offset={self._offset}, "
-                f"filepath={self._filepath!r}"
+            f"resname='{self._resname}', "
+            f"restype={self._restype!r}, "
+            f"size={self._size}, "
+            f"offset={self._offset}, "
+            f"filepath={self._filepath!r}"
             ")"
         )
 
@@ -289,6 +289,7 @@ class LocationResult(NamedTuple):
     filepath: Path
     offset: int
     size: int
+
 
 @dataclass(frozen=True)
 class ResourceIdentifier:

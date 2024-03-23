@@ -17,6 +17,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -58,8 +59,10 @@ class BWMEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.bwm import BWMEditor
+
         cls.BWMEditor = BWMEditor
         from toolset.data.installation import HTInstallation
+
         # cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
@@ -136,8 +139,7 @@ class BWMEditorTest(TestCase):
         else:
             self.assertEqual(obj1, obj2, context)
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

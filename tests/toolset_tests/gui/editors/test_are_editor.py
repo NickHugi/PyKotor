@@ -17,6 +17,7 @@ except (ImportError, ModuleNotFoundError):
 TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).resolve().parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -60,8 +61,10 @@ class AREEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.are import AREEditor
+
         cls.AREEditor = AREEditor
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):
@@ -124,8 +127,7 @@ class AREEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

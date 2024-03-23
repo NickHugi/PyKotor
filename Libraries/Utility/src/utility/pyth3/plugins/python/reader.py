@@ -1,4 +1,5 @@
 """Write Pyth documents straight in Python, a la Nevow's Stan."""
+
 from __future__ import annotations
 
 from utility.pyth3.document import *
@@ -12,9 +13,8 @@ def _convert(content):
 
 
 class PythonReader(PythReader):
-
     @classmethod
-    def read(self, source):
+    def read(cls, source):
         """source: A list of P objects."""
         return Document(content=[_convert(c) for c in source])
 
@@ -40,9 +40,9 @@ def _MetaPythonBase():
     """
 
     class MagicGetItem(type):
-        def __new__(mcs, name, bases, dict):
-            klass = type.__new__(mcs, name, bases, dict)
-            mcs.__getitem__ = lambda _, k: klass()[k]
+        def __new__(cls, name, bases, dict):
+            klass = type.__new__(cls, name, bases, dict)
+            cls.__getitem__ = lambda _, k: klass()[k]
             return klass
 
     return MagicGetItem
@@ -62,13 +62,12 @@ class _PythonBase:
         self.content = []
 
     def toPyth(self):
-        return self.pythType(self.properties,
-                             [_convert(c) for c in self.content])
+        return self.pythType(self.properties, [_convert(c) for c in self.content])
 
     def __getitem__(self, item):
-
         if isinstance(item, (tuple, list)):
-            for i in item: self[i]
+            for i in item:
+                self[i]
         elif isinstance(item, int):
             return self.content[item]
         else:
@@ -77,10 +76,7 @@ class _PythonBase:
         return self
 
     def __str__(self):
-        return "{}({}) [ {} ]".format(
-            self.__class__.__name__,
-            ", ".join(f"{k}={v!r}" for (k, v) in self.properties.items()),
-            ", ".join(repr(x) for x in self.content))
+        return "{}({}) [ {} ]".format(self.__class__.__name__, ", ".join(f"{k}={v!r}" for (k, v) in self.properties.items()), ", ".join(repr(x) for x in self.content))
 
 
 class P(_PythonBase, metaclass=_MetaPythonBase()):

@@ -342,6 +342,7 @@ class ToolWindow(QMainWindow):
             designerUi = ModuleDesigner(self, self.active, self.active.module_path() / self.ui.modulesWidget.currentSection())
             addWindow(designerUi)
             return designerUi
+
         self.ui.specialActionButton.clicked.connect(openModuleDesigner)
 
         self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
@@ -353,9 +354,14 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(),
-                                                                              self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()))
+        self.ui.extractButton.clicked.connect(
+            lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget())
+        )
+        self.ui.openButton.clicked.connect(
+            lambda *args: self.onOpenResources(
+                self.getActiveResourceWidget().selectedResources(), self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()
+            )
+        )
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -717,13 +723,7 @@ class ToolWindow(QMainWindow):
         if not res_ident.restype:
             return
         _filepath, _editor = openResourceEditor(
-            erf_filepath,
-            res_ident.resname,
-            res_ident.restype,
-            BinaryReader.load_file(erf_filepath),
-            self.active,
-            self,
-            gff_specialized=useSpecializedEditor
+            erf_filepath, res_ident.resname, res_ident.restype, BinaryReader.load_file(erf_filepath), self.active, self, gff_specialized=useSpecializedEditor
         )
 
     # endregion
@@ -942,14 +942,9 @@ class ToolWindow(QMainWindow):
         toolsetLatestReleaseVersion = remoteInfo["toolsetLatestVersion"]
         toolsetLatestBetaVersion = remoteInfo["toolsetLatestBetaVersion"]
         releaseNewerThanBeta = remoteVersionNewer(toolsetLatestBetaVersion, toolsetLatestReleaseVersion)
-        if (
-            self.settings.useBetaChannel
-            and self.settings.alsoCheckReleaseVersion
-            and releaseNewerThanBeta
-            or not self.settings.useBetaChannel
-        ):
-            betaString = "release"
-            greatestAvailableVersion = toolsetLatestReleaseVersion
+        if self.settings.alsoCheckReleaseVersion and (not self.settings.useBetaChannel or releaseNewerThanBeta is True):
+            releaseVersionChecked = True
+            greatestAvailableVersion = remoteInfo["toolsetLatestVersion"]
             toolsetLatestNotes = remoteInfo.get("toolsetLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetDownloadLink"]
         else:
@@ -967,7 +962,7 @@ class ToolWindow(QMainWindow):
                 f"You are running the latest version ({CURRENT_VERSION}).",
                 QMessageBox.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             )
             upToDateMsgBox.setWindowIcon(self.windowIcon())
             upToDateMsgBox.exec_()
@@ -979,7 +974,7 @@ class ToolWindow(QMainWindow):
             f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString} version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
             QMessageBox.Ok,
             parent=None,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         )
         newVersionMsgBox.setWindowIcon(self.windowIcon())
         newVersionMsgBox.exec_()
@@ -1019,19 +1014,16 @@ class ToolWindow(QMainWindow):
             lowerModuleFileName = moduleFileName.lower()
             if "stunt" in lowerModuleFileName:  # keep the least used stunt modules at the bottom.
                 sortStr = "zzzzz"
-            elif self.settings.moduleSortOption == 0:  #"Sort by filename":
+            elif self.settings.moduleSortOption == 0:  # "Sort by filename":
                 sortStr = ""
-            elif self.settings.moduleSortOption == 1:  #"Sort by humanized area name":
+            elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
                 sortStr = areaNames.get(moduleFileName).lower()
             else:  # alternate mod id that attempts to match to filename.
                 sortStr = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
             sortStr += f"_{lowerModuleFileName}".lower()
             return sortStr
 
-        sortedKeys: list[str] = sorted(
-            areaNames,
-            key=sortAlgo
-        )
+        sortedKeys: list[str] = sorted(areaNames, key=sortAlgo)
 
         modules: list[QStandardItem] = []
         for moduleName in sortedKeys:
@@ -1063,8 +1055,10 @@ class ToolWindow(QMainWindow):
         """Refreshes the list of modules in the modulesCombo combobox."""
         if not moduleItems:
             action = "Reloading" if reload else "Refreshing"
+
             def task() -> list[QStandardItem]:
                 return self._getModulesList(reload=reload)
+
             loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
             loader.exec_()
             moduleItems = loader.value
@@ -1111,8 +1105,10 @@ class ToolWindow(QMainWindow):
             self.active.load_override()
         if not overrideItems:
             action = "Reloading" if reload else "Refreshing"
+
             def task() -> list[QStandardItem]:
                 return self._getOverrideList(reload=reload)
+
             loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
             loader.exec_()
             overrideItems = loader.value
@@ -1264,6 +1260,7 @@ class ToolWindow(QMainWindow):
                 self.dogObserver = None
             return
         self.active = loader.value
+
         # KEEP UI CODE IN MAIN THREAD!
         def prepare_task() -> tuple[list[QStandardItem] | None, ...]:
             return (
@@ -1271,6 +1268,7 @@ class ToolWindow(QMainWindow):
                 self._getOverrideList(reload=False),
                 self._getTexturePackList(reload=False),
             )
+
         prepare_loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
         if not prepare_loader.exec_():
             self.active = None

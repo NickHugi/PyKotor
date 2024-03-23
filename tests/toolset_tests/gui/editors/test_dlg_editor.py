@@ -18,6 +18,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -59,11 +60,13 @@ class DLGEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
+
         # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)  # type: ignore[reportGeneralTypeIssues]
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)  # type: ignore[reportGeneralTypeIssues]
 
     def setUp(self):
         from toolset.gui.editors.dlg import DLGEditor
+
         self.app = QApplication([])
         self.editor = DLGEditor(None, self.K2_INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
@@ -119,8 +122,7 @@ class DLGEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

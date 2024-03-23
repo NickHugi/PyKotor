@@ -158,12 +158,4 @@ class PatcherConfig:
         num_nss_patches: int = len(self.patches_nss)
         num_ncs_patches: int = len(self.patches_ncs)
 
-        return (
-            num_2da_patches
-            + num_gff_patches
-            + num_ssf_patches
-            + num_tlk_patches
-            + num_install_list_patches
-            + num_nss_patches
-            + num_ncs_patches
-        )
+        return num_2da_patches + num_gff_patches + num_ssf_patches + num_tlk_patches + num_install_list_patches + num_nss_patches + num_ncs_patches

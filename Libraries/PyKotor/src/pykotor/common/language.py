@@ -1,4 +1,5 @@
 """This module holds classes relating to string localization."""
+
 from __future__ import annotations
 
 from enum import IntEnum

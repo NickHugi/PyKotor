@@ -159,19 +159,21 @@ class NwnnsscompConfig:
         return self._format_args(self.chosen_compiler.value.commandline["decompile"], executable)
 
     def _format_args(self, args_list: list[str], executable: str) -> list[str]:
-        formatted_args: list[str] = [arg.format(
-            source=self.source_file,
-            output=self.output_file,
-            output_dir=self.output_dir,
-            output_name=self.output_name,
-            game_value="1" if self.game.is_k1() else "2",
-        ) for arg in args_list]
+        formatted_args: list[str] = [
+            arg.format(
+                source=self.source_file,
+                output=self.output_file,
+                output_dir=self.output_dir,
+                output_name=self.output_name,
+                game_value="1" if self.game.is_k1() else "2",
+            )
+            for arg in args_list
+        ]
         formatted_args.insert(0, executable)
         return formatted_args
 
 
 class ExternalNCSCompiler(NCSCompiler):
-
     def __init__(self, nwnnsscomp_path: os.PathLike | str):
         self.nwnnsscomp_path: Path
         self.filehash: str

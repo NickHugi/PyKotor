@@ -88,14 +88,10 @@ class Editor(QMainWindow):
         additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
         for add_format in additional_formats:
             readSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"]
-                for restype in readSupported
-                if f"{restype.name}_{add_format}" in ResourceType.__members__
+                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
             )
             writeSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"]
-                for restype in writeSupported
-                if f"{restype.name}_{add_format}" in ResourceType.__members__
+                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
             )
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
@@ -402,9 +398,7 @@ class Editor(QMainWindow):
             res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
 
         erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype == ResourceType.RIM else read_erf(c_filepath)
-        nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [
-            (ResourceIdentifier.from_path(c_filepath), erf_or_rim)
-        ]
+        nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [(ResourceIdentifier.from_path(c_filepath), erf_or_rim)]
         for res_ident in reversed(nested_capsule_idents[:-1]):
             nested_erf_or_rim_data = erf_or_rim.get(*res_ident.unpack())
             if nested_erf_or_rim_data is None:
@@ -531,8 +525,7 @@ class Editor(QMainWindow):
         self.load(c_filepath, resname, restype, data)
 
     @abstractmethod
-    def build(self) -> tuple[bytes, bytes]:
-        ...
+    def build(self) -> tuple[bytes, bytes]: ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource from a file.

@@ -237,11 +237,7 @@ class NCS:
 
     def links_to(self, target: NCSInstruction) -> list[NCSInstruction]:
         """Get a list of all instructions which may jump to the target instructions."""
-        return [
-            inst
-            for inst in self.instructions
-            if inst.jump is target
-        ]
+        return [inst for inst in self.instructions if inst.jump is target]
 
     def optimize(self, optimizers: list[NCSOptimizer]):
         """Optimize the model using the provided optimizers.
@@ -315,8 +311,7 @@ class NCSOptimizer(ABC):
         self.instructions_cleared: int = 0
 
     @abstractmethod
-    def optimize(self, ncs: NCS):
-        ...
+    def optimize(self, ncs: NCS): ...
 
     def reset(self):
         """Reset stats counter."""
@@ -325,5 +320,4 @@ class NCSOptimizer(ABC):
 
 class NCSCompiler(ABC):
     @abstractmethod
-    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool):
-        ...
+    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool): ...

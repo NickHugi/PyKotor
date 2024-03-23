@@ -1,4 +1,5 @@
 """Render documents as XHTML fragments."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -14,9 +15,8 @@ _tagNames = {
 
 
 class XHTMLWriter(PythWriter):
-
     @classmethod
-    def write(klass, document, target=None, cssClasses=True, pretty=False):
+    def write(cls, document, target=None, cssClasses=True, pretty=False):
         if target is None:
             target = StringIO()
 
@@ -41,13 +41,9 @@ class XHTMLWriter(PythWriter):
         self.target = target
         self.cssClasses = cssClasses
         self.pretty = pretty
-        self.paragraphDispatch = {
-            document.List: self._list,
-            document.Paragraph: self._paragraph
-        }
+        self.paragraphDispatch = {document.List: self._list, document.Paragraph: self._paragraph}
 
     def go(self):
-
         self.list_level = -1
 
         tag = Tag("div")
@@ -119,14 +115,12 @@ _prettyBreak = object()
 
 
 class Tag:
-
     def __init__(self, tag, attrs=None, content=None):
         self.tag = tag
         self.attrs = attrs or {}
         self.content = content or []
 
     def render(self, target):
-
         if self.tag is not None:
             attrString = self.attrString()
             if attrString:
@@ -145,22 +139,15 @@ class Tag:
             target.write("</%s>" % self.tag)
 
     def attrString(self):
-        return " ".join(
-            f'{k}="{quoteAttr(v)}"'
-            for (k, v) in self.attrs.items())
+        return " ".join(f'{k}="{quoteAttr(v)}"' for (k, v) in self.attrs.items())
 
     def __repr__(self):
         return f"T({self.tag})[{self.content!r}]"
 
 
 def quoteText(text):
-    return text.replace(
-        "&", "&amp;").replace(
-        "<", "&lt;").replace(
-        ">", "&gt;")
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def quoteAttr(text):
-    return quoteText(text).replace(
-        '"', "&quot;").replace(
-        "'", "&apos;")
+    return quoteText(text).replace('"', "&quot;").replace("'", "&apos;")

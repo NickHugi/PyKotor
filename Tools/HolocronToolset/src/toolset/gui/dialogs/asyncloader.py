@@ -15,19 +15,12 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+
 class AsyncLoader(QDialog, Generic[T]):
     optionalFinishHook = QtCore.pyqtSignal(object)
     optionalErrorHook = QtCore.pyqtSignal(object)
 
-    def __init__(
-        self,
-        parent: QWidget,
-        title: str,
-        task: Callable[..., T],
-        errorTitle: str | None = None,
-        *,
-        startImmediately: bool = True
-    ):
+    def __init__(self, parent: QWidget, title: str, task: Callable[..., T], errorTitle: str | None = None, *, startImmediately: bool = True):
         """Initializes a progress dialog.
 
         Args:

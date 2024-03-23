@@ -126,7 +126,7 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.saveRimCheck.setText(_translate("Form", "Allow saving resources to RIM files."))
-        self.useBetaChannel.setText(_translate("Form", "Check for beta updates and take me to their download link when they\'re available."))
+        self.useBetaChannel.setText(_translate("Form", "Check for beta updates and take me to their download link when they're available."))
         self.alsoCheckReleaseVersion.setText(_translate("Form", "Also check release version if it is newer than beta version."))
         self.mergeRimCheck.setText(_translate("Form", "Merge RIM files in the Modules tab of the Main Window."))
         self.moduleSortOptionComboBox.setItemText(0, _translate("Form", "Sort by filename"))

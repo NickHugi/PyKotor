@@ -18,6 +18,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -59,12 +60,14 @@ class UTTEditorTest(TestCase):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
         from toolset.gui.editors.utt import UTTEditor
+
         cls.UTTEditor = UTTEditor
         # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
 
     def setUp(self):
         from toolset.gui.editors.utt import UTTEditor
+
         self.app = QApplication([])
         self.editor = UTTEditor(None, self.K2_INSTALLATION)
         self.log_messages: list[str] = [os.linesep]

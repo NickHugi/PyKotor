@@ -18,6 +18,7 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -59,10 +60,12 @@ class TwoDAEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):
         from toolset.gui.editors.twoda import TwoDAEditor
+
         self.app = QApplication([])
         self.editor = TwoDAEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
@@ -138,8 +141,7 @@ class TwoDAEditorTest(TestCase):
         else:
             self.assertEqual(obj1, obj2, context)
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

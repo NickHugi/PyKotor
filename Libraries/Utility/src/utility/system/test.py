@@ -24,6 +24,7 @@ def get_win_attrs(file_path):
 
     return is_read_only, is_hidden, is_system
 
+
 file_path = r"C:\Users\boden\Documents\k1 mods\NPC_Alignment_Fix_v1_1\tslpatchdata\tk664.hid"
 read_only, hidden, system = get_win_attrs(file_path)
 print(f"Read-Only: {read_only}, Hidden: {hidden}, System: {system}")

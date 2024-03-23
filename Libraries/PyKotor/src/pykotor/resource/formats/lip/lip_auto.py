@@ -38,6 +38,7 @@ def detect_lip(
     -------
         The format of the LIP data.
     """
+
     def check(first4):
         if first4 == "LIP ":
             return ResourceType.LIP
@@ -48,6 +49,7 @@ def detect_lip(
         # if "," in first4:
         #    return ResourceType.LIP_CSV
         return ResourceType.INVALID
+
     file_format: ResourceType
     try:
         if isinstance(source, (os.PathLike, str)):

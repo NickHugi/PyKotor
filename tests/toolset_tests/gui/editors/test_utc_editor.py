@@ -16,6 +16,7 @@ except (ImportError, ModuleNotFoundError):
 TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir not in sys.path:
@@ -56,10 +57,12 @@ class UTCEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):
         from toolset.gui.editors.utc import UTCEditor
+
         self.app = QApplication([])
         self.editor = UTCEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]

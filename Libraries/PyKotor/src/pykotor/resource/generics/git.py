@@ -209,8 +209,7 @@ class GITInstance(ABC):
     @abstractmethod
     def blank(
         self,
-    ) -> bytes | None:
-        ...
+    ) -> bytes | None: ...
 
     @abstractmethod
     def move(
@@ -234,14 +233,12 @@ class GITInstance(ABC):
         yaw: float,
         pitch: float,
         roll: float,
-    ):
-        ...
+    ): ...
 
     @abstractmethod
     def classification(
         self,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     @abstractmethod
     def yaw(
@@ -882,10 +879,13 @@ def construct_git(
         creature.position.x = creature_struct.acquire("XPosition", 0.0)
         creature.position.y = creature_struct.acquire("YPosition", 0.0)
         creature.position.z = creature_struct.acquire("ZPosition", 0.0)
-        rot_x, rot_y = creature_struct.acquire(
-            "XOrientation",
-            0.0,
-        ), creature_struct.acquire("YOrientation", 0.0)
+        rot_x, rot_y = (
+            creature_struct.acquire(
+                "XOrientation",
+                0.0,
+            ),
+            creature_struct.acquire("YOrientation", 0.0),
+        )
         creature.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
     for door_struct in gff.root.get_list("Door List"):
@@ -972,9 +972,12 @@ def construct_git(
         store.position.y = store_struct.acquire("YPosition", 0.0)
         store.position.z = store_struct.acquire("ZPosition", 0.0)
 
-        rot_x, rot_y = store_struct.acquire("XOrientation", 0.0), store_struct.acquire(
-            "YOrientation",
-            0.0,
+        rot_x, rot_y = (
+            store_struct.acquire("XOrientation", 0.0),
+            store_struct.acquire(
+                "YOrientation",
+                0.0,
+            ),
         )
         store.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
@@ -1028,10 +1031,13 @@ def construct_git(
             )
             waypoint.map_note_enabled = bool(waypoint_struct.acquire("MapNoteEnabled", 0))
 
-        rot_x, rot_y = waypoint_struct.acquire(
-            "XOrientation",
-            0.0,
-        ), waypoint_struct.acquire("YOrientation", 0.0)
+        rot_x, rot_y = (
+            waypoint_struct.acquire(
+                "XOrientation",
+                0.0,
+            ),
+            waypoint_struct.acquire("YOrientation", 0.0),
+        )
         waypoint.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
     return git

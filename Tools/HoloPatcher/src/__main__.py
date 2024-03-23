@@ -40,6 +40,7 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
 
 
 if not is_frozen():
+
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -94,8 +95,7 @@ class ExitCode(IntEnum):
     CRASH = 9
 
 
-class HoloPatcherError(Exception):
-    ...
+class HoloPatcherError(Exception): ...
 
 
 # Please be careful modifying this functionality as 3rd parties depend on this syntax.
@@ -235,7 +235,9 @@ class App:
         # PCGamingWiki submenu
         pcgamingwiki_menu = tk.Menu(help_menu, tearoff=0)
         pcgamingwiki_menu.add_command(label="KOTOR 1", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"))
-        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"))
+        pcgamingwiki_menu.add_command(
+            label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
+        )
         help_menu.add_cascade(label="PCGamingWiki", menu=pcgamingwiki_menu)
 
         # About menu
@@ -272,7 +274,9 @@ class App:
         # Browse for a tslpatcher mod
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
-        self.expand_namespace_description_button: ttk.Button = ttk.Button(top_frame, width=1, text="?", command=lambda *args: messagebox.showinfo(self.namespaces_combobox.get(), self.get_namespace_description(*args)))
+        self.expand_namespace_description_button: ttk.Button = ttk.Button(
+            top_frame, width=1, text="?", command=lambda *args: messagebox.showinfo(self.namespaces_combobox.get(), self.get_namespace_description(*args))
+        )
         self.expand_namespace_description_button.grid(row=0, column=2, padx=2, pady=2, stick="e")
 
         # Store all discovered KOTOR install paths
@@ -339,6 +343,7 @@ class App:
     def check_for_updates(self):
         try:
             import requests
+
             req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
             req.raise_for_status()
             file_data: dict = req.json()
@@ -511,8 +516,7 @@ class App:
         if not inspect.isclass(exctype):
             msg = "Only types can be raised (not instances)"
             raise TypeError(msg)
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid),
-                                                        ctypes.py_object(exctype))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
         if res == 0:
             msg = "invalid thread id"
             raise ValueError(msg)
@@ -541,20 +545,14 @@ class App:
             return  # leave here for the static type checkers
 
         # Handle unsafe exit.
-        if (
-            self.install_running
-            and not messagebox.askyesno(
-                "Really cancel the current installation? ",
-                "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
-            )
+        if self.install_running and not messagebox.askyesno(
+            "Really cancel the current installation? ",
+            "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
-        if (
-            self.task_running
-            and not messagebox.askyesno(
-                "Really cancel the current task?",
-                "A task is currently running. Exiting now may not be safe. Really continue?",
-            )
+        if self.task_running and not messagebox.askyesno(
+            "Really cancel the current task?",
+            "A task is currently running. Exiting now may not be safe. Really continue?",
         ):
             return
         self.simple_thread_event.set()
@@ -635,6 +633,7 @@ class App:
             return
 
         try:
+
             def task():
                 self.set_state(state=True)
                 self.clear_main_text()
@@ -711,11 +710,7 @@ class App:
             game_number: int | None = reader.config.game_number
             if game_number:
                 game = Game(game_number)
-                self.gamepaths["values"] = [
-                    str(path)
-                    for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
-                    for path in find_kotor_paths_from_default()[game_key]
-                ]
+                self.gamepaths["values"] = [str(path) for game_key in ([game] + ([Game.K1] if game == Game.K2 else [])) for path in find_kotor_paths_from_default()[game_key]]
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
@@ -881,7 +876,8 @@ class App:
     def play_error_sound():
         if os.name == "nt":
             import winsound
-        # Play the system 'error' sound
+
+            # Play the system 'error' sound
             winsound.MessageBeep(winsound.MB_ICONHAND)
 
     def fix_permissions(
@@ -898,6 +894,7 @@ class App:
 
         try:
             path: Path = Path.pathify(path_arg)
+
             def task() -> bool:
                 extra_msg: str = ""
                 self.set_state(state=True)
@@ -938,6 +935,7 @@ class App:
                 finally:
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
+
             self.task_thread = Thread(target=task)
             self.task_thread.start()
         except Exception as e2:
@@ -974,8 +972,10 @@ class App:
         """
         filter_results: Callable[[Path], bool] | None = None  # type: ignore[reportGeneralTypeIssues]
         if should_filter:
+
             def filter_results(x: Path) -> bool:
                 return not ResourceIdentifier.from_path(x).restype.is_invalid
+
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
         if messagebox.askyesno(
@@ -1113,6 +1113,7 @@ class App:
 
         self.set_state(state=True)
         self.clear_main_text()
+
         def task():
             try:
                 reader = ConfigReader.from_filepath(ini_file_path, self.logger)
@@ -1122,6 +1123,7 @@ class App:
             finally:
                 self.set_state(state=False)
                 self.logger.add_note("Config reader test is complete.")
+
         Thread(target=task).start()
 
     def set_state(
@@ -1271,10 +1273,12 @@ class App:
 
     def create_rte_content(self, event: tk.Tk | None = None):
         from utility.tkinter.rte_editor import main as start_rte_editor
+
         start_rte_editor()
 
     def load_rte_content(self, rte_content: str | bytes | bytearray | None = None):
         from utility.tkinter.rte_editor import tag_types
+
         if rte_content is None:
             file_path_str = filedialog.askopenfilename()
             if not file_path_str:
@@ -1304,6 +1308,7 @@ class App:
     def load_rtf_file(self, file_path: os.PathLike | str):
         from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
         from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
+
         with open(file_path, "rb") as file:
             rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
             doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
@@ -1364,6 +1369,7 @@ def onAppCrash(
         messagebox.showerror(title, short_msg)
         root.destroy()
     sys.exit(ExitCode.CRASH)
+
 
 sys.excepthook = onAppCrash
 

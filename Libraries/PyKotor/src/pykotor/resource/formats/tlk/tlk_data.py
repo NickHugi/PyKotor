@@ -1,4 +1,5 @@
 """This module handles classes relating to working with TLK files."""
+
 from __future__ import annotations
 
 from itertools import zip_longest

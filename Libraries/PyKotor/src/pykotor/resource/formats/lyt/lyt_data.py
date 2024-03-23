@@ -1,4 +1,5 @@
 """This module handles classes relating to editing LYT files."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

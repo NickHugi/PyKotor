@@ -10,10 +10,14 @@ from unittest.mock import patch
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -95,6 +99,7 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="/"), "/path/to/dir")
 
+
 class TestSplitFilename(unittest.TestCase):
     def test_normal(self):
         path = CaseAwarePath("file.txt")
@@ -138,8 +143,8 @@ class TestSplitFilename(unittest.TestCase):
         with self.assertRaises(ValueError):
             path.split_filename(dots=0)
 
-class TestIsRelativeTo(unittest.TestCase):
 
+class TestIsRelativeTo(unittest.TestCase):
     def test_basic(self):  # sourcery skip: class-extract-method
         p1 = CaseAwarePath("/usr/local/bin")
         p2 = CaseAwarePath("/usr/local")
@@ -169,6 +174,7 @@ class TestIsRelativeTo(unittest.TestCase):
         p1 = CaseAwarePath("/home/user")
         p2 = CaseAwarePath("/home/user")
         self.assertTrue(p1.is_relative_to(p2))
+
 
 if __name__ == "__main__":
     unittest.main()

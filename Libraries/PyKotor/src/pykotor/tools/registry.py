@@ -14,7 +14,7 @@ KOTOR_REG_PATHS = {
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1207666283", "PATH"),
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR", "InternalPath"),
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR", "Path"),
-#            (r"HKEY_USERS\S-1-5-21-3288518552-3737095363-3281442775-1001\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Star Wars - Knights of the Old", "InstallLocation"),
+            #            (r"HKEY_USERS\S-1-5-21-3288518552-3737095363-3281442775-1001\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Star Wars - Knights of the Old", "InstallLocation"),
         ],
         ProcessorArchitecture.BIT_64: [
             (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370", "InstallLocation"),
@@ -43,6 +43,7 @@ KOTOR_REG_PATHS = {
 # amazon's k1 reg key can be found using the below code. Doesn't store it in HKLM for some reason.
 def find_software_key(software_name: str) -> str | None:
     import winreg
+
     with winreg.ConnectRegistry(None, winreg.HKEY_USERS) as hkey_users:
         i = 0
         while True:
@@ -114,10 +115,7 @@ def check_reg_keys_existence_and_validity() -> tuple[list[tuple[str, str]], list
             else:
                 # Convert registry path to a proper WindowsPath and check existence and if it's a default path
                 reg_path_obj = WindowsPath(reg_path)
-                if not reg_path_obj.exists() or all(
-                    reg_path_obj != WindowsPath(default_path)
-                    for default_path in game_defaults
-                ):
+                if not reg_path_obj.exists() or all(reg_path_obj != WindowsPath(default_path) for default_path in game_defaults):
                     invalid_path_keys.append((path, name))
 
     return non_existent_keys, invalid_path_keys
@@ -202,6 +200,7 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
     """Recursively creates the registry path if it doesn't exist."""
     try:
         import winreg
+
         current_path = ""
         for part in path.split("\\"):
             current_path = f"{current_path}\\{part}" if current_path else part
@@ -231,6 +230,7 @@ def set_registry_key_value(full_key_path, value_name, value_data):
     """
     try:
         import winreg
+
         # Parse the hive from the full key path
         hive_name, sub_key = full_key_path.split("\\", 1)
         hive = {
@@ -238,7 +238,7 @@ def set_registry_key_value(full_key_path, value_name, value_data):
             "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER,
             "HKEY_LOCAL_MACHINE": winreg.HKEY_LOCAL_MACHINE,
             "HKEY_USERS": winreg.HKEY_USERS,
-            "HKEY_CURRENT_CONFIG": winreg.HKEY_CURRENT_CONFIG
+            "HKEY_CURRENT_CONFIG": winreg.HKEY_CURRENT_CONFIG,
         }.get(hive_name)
         if hive is None:
             print(f"Error: Invalid registry hive '{hive_name}'.")
@@ -269,6 +269,7 @@ def remove_winreg_path(game: Game):
 
     try:
         import winreg
+
         for key_path, subkey in possible_kotor_reg_paths:
             key = winreg.OpenKeyEx(
                 winreg.HKEY_LOCAL_MACHINE,

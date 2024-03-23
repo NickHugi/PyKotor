@@ -1,4 +1,5 @@
 """Represents patches specific to [CompileList] logic."""
+
 from __future__ import annotations
 
 import os
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 class MutableString:
     def __init__(self, value: str):
         self.value: str = value
+
     def __str__(self):
         return self.value
 
