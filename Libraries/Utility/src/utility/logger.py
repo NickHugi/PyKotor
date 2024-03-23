@@ -23,22 +23,17 @@ def is_internal_logger(logger_name: str, project_root: str) -> bool:
             module_logger_name = module.__name__
             if logger_name.startswith(module_logger_name):
                 return True
+    print(f"Found our logger: {logger_name}")
     return False
 
 def get_first_available_logger() -> logging.Logger:
-    project_root = Path(__file__).parents[4]
-    logger_dict = logging.root.manager.loggerDict
-    for logger_name, logger_obj in logger_dict.items():
-        if logger_name in IGNORABLE_LOGGERS or not isinstance(logger_obj, logging.PlaceHolder):
-            continue
-        if is_internal_logger(logger_name, str(project_root)):
-            continue
-        print(f"Found logger: {logger_name}")
-        return logging.getLogger(logger_name)
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler("output.txt")
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(formatter)
-    log.addHandler(file_handler)
+    log = logging.getLogger()
+    # Check if the root logger already has handlers
+    if not log.hasHandlers():
+        log.setLevel(logging.DEBUG)
+        file_handler = logging.FileHandler("output.txt")
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        log.addHandler(file_handler)
+
     return log

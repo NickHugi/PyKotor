@@ -17,7 +17,15 @@ if TYPE_CHECKING:
 
 
 def get_app_dir() -> Path:
-    return Path(sys.executable if is_frozen() else __file__).resolve().parent
+    if is_frozen():
+        return Path(sys.executable).resolve().parent
+    main_module = sys.modules["__main__"]
+    # Try to get the __file__ attribute that contains the path of the entry-point script.
+    main_script_path = getattr(main_module, "__file__", None)
+    if main_script_path is not None:
+        return Path(main_script_path).resolve().parent
+    # Fall back to the current working directory if the __file__ attribute was not found.
+    return Path.cwd()
 
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast

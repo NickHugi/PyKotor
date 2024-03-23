@@ -99,8 +99,8 @@ if __name__ == "__main__":
     else:
         fix_sys_and_cwd_path()
 
-    from utility.system.path import Path
     from utility.updater.restarter import Restarter
+    from utility.system.path import Path
 
     app = QApplication(sys.argv)
 

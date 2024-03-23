@@ -17,6 +17,12 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+def human_readable_size(byte_size: float) -> str:
+    for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
+        if byte_size < 1024:  # noqa: PLR2004
+            return f"{round(byte_size, 2)} {unit}"
+        byte_size /= 1024
+    return str(byte_size)
 
 class ProgressDialog(QDialog):
     def __init__(self, progress_queue: Queue, title: str = "Operation Progress"):
@@ -26,10 +32,12 @@ class ProgressDialog(QDialog):
         self.setLayout(QVBoxLayout())
 
         self.statusLabel = QLabel("Initializing...", self)
+        self.bytesLabel = QLabel("")
         self.progressBar = QProgressBar(self)
         self.progressBar.setMaximum(100)
 
         self.layout().addWidget(self.statusLabel)
+        self.layout().addWidget(self.bytesLabel)
         self.layout().addWidget(self.progressBar)
 
         # Timer to poll the queue for new progress updates
@@ -49,6 +57,7 @@ class ProgressDialog(QDialog):
                 progress = int((downloaded / total) * 100) if total else 0
                 self.progressBar.setValue(progress)
                 self.statusLabel.setText(f"Downloading... {progress}%")
+                self.bytesLabel.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
                 # Handle status text updates
                 text = message["text"]

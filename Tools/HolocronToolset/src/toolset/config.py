@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import json
-import logging
 import re
 
 from contextlib import suppress
@@ -191,11 +190,3 @@ def _request_api_data(api_url: str) -> Any:
     response: requests.Response = requests.get(api_url, timeout=15)
     response.raise_for_status()
     return response.json()
-
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler("output.txt")
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
-log.addHandler(file_handler)
