@@ -1,0 +1,229 @@
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+
+from enum import Enum
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING, Callable
+
+from utility.logger import get_first_available_logger
+from utility.system.os_helper import is_frozen, requires_admin
+from utility.system.path import Path
+
+if TYPE_CHECKING:
+    from logging import Logger
+
+
+class UpdateStrategy(Enum):  # pragma: no cover
+    """Enum representing the update strategies available."""
+
+    OVERWRITE = "overwrite"  # Overwrites the binary in place
+    RENAME = "rename"  # Renames the binary.  Only available for Windows single file bundled executables
+
+
+class Restarter:
+    def __init__(
+        self,
+        current_app: os.PathLike | str,
+        *,
+        filename: str | None = None,
+        updated_app: os.PathLike | str | None = None,
+        strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
+        exithook: Callable | None = None,
+        logger: Logger | None = None,
+    ):
+        self.log = logger or get_first_available_logger()
+        self.current_app: Path = Path.pathify(current_app)
+        self.log.debug("Current App: %s resolved to %s", current_app, self.current_app)
+        if is_frozen() and not self.current_app.safe_exists():
+            raise ValueError(f"Bad path to current_app provided to Restarter: '{self.current_app}'")
+
+        self.filename: str = self.current_app.name if filename is None else filename
+        self.strategy: UpdateStrategy = strategy
+
+        self.data_dir = TemporaryDirectory("_restarter", "holotoolset_")
+        data_dirpath = Path(self.data_dir.name)
+        self.exithook = exithook
+        if os.name == "nt": # and self.strategy == UpdateStrategy.OVERWRITE:
+            self.bat_file = data_dirpath / "update.bat"
+            if not updated_app:
+                raise ValueError("updated_app must be provided on Windows.")
+            self.updated_app: Path = Path.pathify(updated_app)
+            self.log.debug("Restart script dir: %s", self.data_dir)
+            self.log.debug("Update path: %s", self.updated_app)
+
+    def cleanup(self):
+        self.data_dir.cleanup()
+
+    def process(self, *, win_restart: bool = True):
+        if os.name == "posix" or self.strategy == UpdateStrategy.RENAME:
+            self._restart()
+            return
+
+        if win_restart:
+            self._win_overwrite_restart()
+        else:
+            self._win_overwrite()
+
+    def _restart(self):
+        #if not is_frozen():
+        #    self.log.warning("Cannot call os.exec1() from non-frozen executables.")
+        #    return
+        if self.exithook is not None:
+            self.exithook(False)
+        os.execl(self.current_app, self.filename, *sys.argv[1:])
+
+    def _win_overwrite(self):  # sourcery skip: class-extract-method
+        is_folder = self.updated_app.safe_isdir()
+        if is_folder:
+            needs_admin = requires_admin(self.updated_app) or requires_admin(self.current_app)
+        else:
+            needs_admin = requires_admin(self.current_app)
+        self.log.debug(f"Admin required to update={needs_admin}")  # noqa: G004
+        with self.bat_file.open("w", encoding="utf-8") as batchfile_writer:
+            if is_folder:
+                batchfile_writer.write(
+                    f"""
+chcp 65001
+echo Updating to latest version...
+ping 127.0.0.1 -n 5 -w 1000 > NUL
+robocopy "{self.updated_app}" "{self.current_app}" /e /move /V /PURGE
+"""
+                )
+            else:
+                batchfile_writer.write(
+                    f"""
+chcp 65001
+echo Updating to latest version...
+ping 127.0.0.1 -n 5 -w 1000 > NUL
+move /Y "{self.updated_app}" "{self.current_app}"
+"""
+                )
+        self._win_run_batch_restarter(admin=needs_admin)
+
+    def _win_overwrite_restart(self):
+        is_folder = self.updated_app.safe_isdir()
+        if is_folder:
+            needs_admin = requires_admin(self.updated_app) or requires_admin(self.current_app)
+        else:
+            needs_admin = requires_admin(self.current_app)
+        self.log.debug(f"Admin required to update={needs_admin}")  # noqa: G004
+        with self.bat_file.open("w", encoding="utf-8") as batchfile_writer:
+            if is_folder:
+                batchfile_writer.write(
+                    f"""
+chcp 65001
+echo Updating to latest version...
+ping 127.0.0.1 -n 5 -w 1000 > NUL
+robocopy "{self.updated_app}" "{self.current_app}" /e /move /V
+"""
+                )
+            else:
+                batchfile_writer.write(
+                    f"""
+chcp 65001
+echo Updating to latest version...
+ping 127.0.0.1 -n 5 -w 1000 > NUL
+move /Y "{self.updated_app}" "{self.current_app}"
+"""
+                )
+        self._win_run_batch_restarter(admin=needs_admin)
+
+    def _win_run_batch_restarter(self, *, admin: bool):
+        self.log.info(f"Executing restart script @ {self.bat_file}")  # noqa: G004
+        if admin:
+            run_script_cmd: list[str] = [
+                "Powershell",
+                "-Command",
+                f"Start-Process cmd.exe -ArgumentList '/C \"{self.bat_file}\"' -Verb RunAs -WindowStyle Hidden -Wait",
+            ]
+            try:
+                self.log.debug(subprocess.run(
+                    run_script_cmd,
+                #    executable=cmd_exe_path,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
+                #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
+                #    start_new_session=True,
+                #     creationflags=subprocess.CREATE_NEW_CONSOLE,
+                #    close_fds=True
+                ))
+            except OSError:
+                self.log.exception("Error running batch script")
+                #self.log.debug(f"subprocess.call result: {result}")  # noqa: G004
+        else:
+            cmd_exe_path = str(self.win_get_system32_dir() / "cmd.exe")
+            self.log.debug(f"CMD.exe path: {cmd_exe_path}")  # noqa: G004
+            # Construct the command to run the batch script
+            run_script_cmd: list[str] = [
+                cmd_exe_path,
+                "/C",
+                str(self.bat_file)
+            ]
+            try:
+                self.log.debug(subprocess.run(
+                    run_script_cmd,
+                #    executable=cmd_exe_path,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
+                #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
+                #    start_new_session=True,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                #    close_fds=True
+                ))
+            except OSError:
+                self.log.exception("Error running batch script")
+                #self.log.debug(f"subprocess.call result: {result}")  # noqa: G004
+        self.log.debug("Cleaning up temporary data dir...")
+        self.cleanup()
+        self.log.debug("Starting updated app at '%s'...", self.current_app)
+        run_script_cmd: list[str] = [
+            "start",
+            "",
+            f"{self.current_app}"
+        ]
+        self.log.debug(subprocess.run(
+            run_script_cmd,
+            text=True,
+            capture_output=True,
+            check=True,
+            creationflags=subprocess.DETACHED_PROCESS,
+        ))
+        self.log.info(f"Finally exiting app '{sys.executable}'")  # noqa: G004
+        if self.exithook is not None:
+            self.exithook(True)
+        #try:
+        #    self._win_kill_self()
+        #finally:
+            # This code might not be reached, but it's here for completeness
+        #    os._exit(0)
+
+    @staticmethod
+    def win_get_system32_dir() -> Path:
+        import ctypes
+
+        from ctypes import wintypes
+
+        ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [wintypes.LPWSTR, wintypes.UINT]
+        ctypes.windll.kernel32.GetSystemDirectoryW.restype = wintypes.UINT
+        # Buffer size (MAX_PATH is generally 260 as defined by Windows)
+        buffer = ctypes.create_unicode_buffer(260)
+        # Call the function
+        ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
+        return Path(buffer.value)
+
+    @classmethod
+    def _win_kill_self(cls):
+        taskkill_path = cls.win_get_system32_dir() / "taskkill.exe"
+        if taskkill_path.safe_isfile():
+            subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
+        else:
+            log = get_first_available_logger()
+            log.warning(f"taskkill.exe not found at '{taskkill_path}', could not guarantee our process is terminated.")  # noqa: G004
+        os._exit(0)

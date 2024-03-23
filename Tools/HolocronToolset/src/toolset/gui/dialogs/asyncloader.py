@@ -54,8 +54,7 @@ class ProgressDialog(QDialog):
                 text = message["text"]
                 self.statusLabel.setText(text)
             elif message["action"] == "shutdown":
-                # TODO:
-                ...
+                self.close()
 
     def update_status(self, text: str):
         self.statusLabel.setText(text)

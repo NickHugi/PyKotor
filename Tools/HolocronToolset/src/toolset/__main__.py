@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import cProfile
 import multiprocessing
 import os
@@ -25,11 +26,6 @@ def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identit
     if tempfile.gettempdir() in sys.executable:
         return True
     return False
-
-
-def get_app_dir() -> Path:
-    from utility.system.path import Path
-    return Path(sys.executable if is_frozen() else __file__).resolve().parent
 
 
 def onAppCrash(
@@ -104,6 +100,7 @@ if __name__ == "__main__":
         fix_sys_and_cwd_path()
 
     from utility.system.path import Path
+    from utility.updater.restarter import Restarter
 
     app = QApplication(sys.argv)
 
@@ -127,6 +124,12 @@ if __name__ == "__main__":
     window = ToolWindow()
     window.show()
     window.checkForUpdates(silent=True)
+    def my_cleanup_function():
+        """Prevents the toolset from running in the background after sys.exit is called..."""
+        print("Fully shutting down Holocron Toolset...")
+        Restarter._win_kill_self()
+
+    atexit.register(my_cleanup_function)
 
     # Start main app loop.
     app.exec_()

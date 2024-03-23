@@ -30,7 +30,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from toolset.config import CURRENT_VERSION, AppUpdate, Restarter, download_wrapper, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
@@ -63,6 +63,7 @@ from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
+from utility.updater.update import AppUpdate
 
 if TYPE_CHECKING:
     import os
@@ -688,19 +689,27 @@ class ToolWindow(QMainWindow):
             toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
 
         version_check = remoteVersionNewer(CURRENT_VERSION, greatestAvailableVersion)
+        curVersionBetaReleaseStr = ""
+        if remoteInfo["toolsetLatestVersion"] == CURRENT_VERSION:
+            curVersionBetaReleaseStr = "release "
+        elif remoteInfo["toolsetLatestBetaVersion"] == CURRENT_VERSION:
+            curVersionBetaReleaseStr = "beta "
         if version_check is False:  # Only check False. if None then the version check failed
             if silent:
                 return
             upToDateMsgBox = QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
-                f"You are running the latest version ({CURRENT_VERSION}).",
-                QMessageBox.Ok,
+                f"You are running the latest {curVersionBetaReleaseStr}version ({CURRENT_VERSION}).",
+                QMessageBox.Ok | QMessageBox.Close,
                 parent=None,
                 flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             )
+            upToDateMsgBox.button(QMessageBox.Ok).setText("Reinstall?")
             upToDateMsgBox.setWindowIcon(self.windowIcon())
-            upToDateMsgBox.exec_()
+            result = upToDateMsgBox.exec_()
+            if result == QMessageBox.Ok:
+                self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
             return
 
         betaString = "release " if releaseVersionChecked else "beta "
@@ -747,8 +756,8 @@ class ToolWindow(QMainWindow):
 
         # Prepare the list of progress hooks with the method from ProgressDialog
         progress_hooks = [download_progress_hook]
-        def exitapp(kill_self_here: bool):
-            packaged_data = {"action": "close", "data": {}}
+        def exitapp(kill_self_here: bool):  # noqa: FBT001
+            packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
             ProgressDialog.monitor_and_terminate(progress_process)
             if kill_self_here:
@@ -760,7 +769,7 @@ class ToolWindow(QMainWindow):
             "HolocronToolset",
             CURRENT_VERSION,
             latestVersion,
-            downloader=download_wrapper,
+            downloader=None,
             progress_hooks=progress_hooks,
             exithook=exitapp
         )
@@ -777,7 +786,7 @@ class ToolWindow(QMainWindow):
                 file.writelines(lines)
                 file.write("\n----------------------\n")
         finally:
-            exitapp()
+            exitapp(True)
     # endregion
 
     # region Other
