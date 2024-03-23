@@ -17,15 +17,29 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
-LOCAL_PROGRAM_INFO = \
-{  #<---JSON_START--->#{
-    "currentVersion": "2.2.1b20",
+LOCAL_PROGRAM_INFO: dict[str, Any] = {
+    # <---JSON_START--->#{
+    "currentVersion": "2.2.1b19",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
+    "toolsetBetaDirectLinks": {
+        "Darwin": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4"]
+        },
+        "Linux": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E"]
+        },
+        "Windows": {
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU"]
+        }
+    },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
     "toolsetLatestBetaNotes": "Fixed help booklet, and other various bugfixes. Update when you are able :)",
     "kits": {
@@ -34,7 +48,7 @@ LOCAL_PROGRAM_INFO = \
         "Hidden Bek Base": {"version": 1, "id": "hiddenbek"}
     },
     "help": {"version": 3}
-} #<---JSON_END--->#
+}  #<---JSON_END--->#
 
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
@@ -55,7 +69,7 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         #with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
