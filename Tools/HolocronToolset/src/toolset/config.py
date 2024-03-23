@@ -17,22 +17,37 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
-LOCAL_PROGRAM_INFO = {  # <---JSON_START--->#{
-    "currentVersion": "2.2.1",
+LOCAL_PROGRAM_INFO: dict[str, Any] = {
+    # <---JSON_START--->#{
+    "currentVersion": "2.1.2",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b18",
+    "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
+    "toolsetBetaDirectLinks": {
+        "Darwin": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4"]
+        },
+        "Linux": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E"]
+        },
+        "Windows": {
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU"]
+        }
+    },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "<br>  - Tons of performance optimizations<br>  - Fix filtering by name in the Texture tab<br>  - Fix editors not starting on top<br>  - Use new strategy for IO<br>  - Use pillow to load large TGA images.<br>  - Fix reload/refresh buttons<br>  - Prompt before creating a .mod when using module designer.<br>  - Fix bug when compiling scripts inside RIMs, when rims saving setting is disabled.<br>  - Optimize installation loading and show progress bar for the entire process.<br>  - Fix issue with installations not being cached when swapping to a different installation in the combobox.<br>  - Fix issue with windows not having separate taskbar entries.<br>  - Add an option to disable/enable loading Override textures into the module designer (workaround for large textures taking ages to load).<br>  - Add additional resources into the Core tab.<br><br>Thank you to the users who've reported the bugs in the last few versions.",
+    "toolsetLatestBetaNotes": "Various bugfixes, update when you are able :)",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
-        "Hidden Bek Base": {"version": 1, "id": "hiddenbek"},
+        "Hidden Bek Base": {"version": 1, "id": "hiddenbek"}
     },
-    "help": {"version": 3},
+    "help": {"version": 3}
 }  # <---JSON_END--->#
 
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
