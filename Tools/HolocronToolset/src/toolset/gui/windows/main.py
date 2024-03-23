@@ -1040,7 +1040,7 @@ class ToolWindow(QMainWindow):
             item.setData(moduleName, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and lower_module_name.endswith(".rim"):
+            if self.settings.greyRIMText and lower_module_name.endswith((".rim", "_dlg.erf")):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
