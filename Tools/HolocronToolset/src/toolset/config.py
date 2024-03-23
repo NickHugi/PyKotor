@@ -778,12 +778,12 @@ class LibUpdate:
 
     def _recursive_extract(self, archive_path: Path):
         if not archive_path.safe_isfile():
-            logging.debug("File does not exist")
+            log.debug("File does not exist")
             raise FileNotFoundError(errno.ENOENT, "File does not exist", str(archive_path))
         if not os.access(str(archive_path), os.R_OK):
             raise PermissionError(errno.EACCES, "Permission denied", str(archive_path))
 
-        logging.debug(f"Extracting '{archive_path}'...")  # noqa: G004
+        log.debug(f"Extracting '{archive_path}'...")  # noqa: G004
         archive_ext = archive_path.suffix.lower()
         if archive_ext in {".gz", ".bz2", ".tar"}:
             self.extract_tar(archive_path, recursive_extract=True)
@@ -887,6 +887,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         downloader: Callable | None = None,
         http_timeout=None,
         strategy: UpdateStrategy = UpdateStrategy.RENAME,
+        exithook: Callable | None = None,
     ):
         super().__init__(
             update_urls,
@@ -899,6 +900,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             http_timeout,
             strategy,
         )
+        self.exithook = exithook
 
     def extract_restart(self):
         """Will extract the update, overwrite the current binary, then restart the application using the updated binary."""
@@ -941,7 +943,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         log.debug("Update Name: %s", app_update_path.parent.name)
 
         current_app_path = Path(self._current_app_dir, self.filename)
-        log.debug("Current App location:\n\n%s", current_app_path)
+        log.debug("Current App location: %s", current_app_path)
 
         # Remove current app to prevent errors when moving update to new location
         # if update_app is a directory, then we are updating a directory
@@ -954,8 +956,8 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         if current_app_path.safe_exists():
             remove_any(current_app_path)
 
-        log.debug("Moving app to new location:\n\n%s", self._current_app_dir)
-        shutil.move(str(current_app_path), self._current_app_dir)
+        log.debug("Moving update: %s --> %s", app_update_path, self._current_app_dir)
+        shutil.move(str(current_app_path), str(self._current_app_dir))
 
     def _restart(self):
         log.debug("Restarting")
@@ -970,7 +972,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             # executable will be in the MacOS folder.
             current_app_path = mac_app_binary_dir / self.filestem
 
-        r = Restarter(current_app_path, filename=self.filestem, updated_app=updated_app_path)
+        r = Restarter(current_app_path, filename=self.filestem, updated_app=updated_app_path, exithook=self.exithook)
         r.process()
 
     def _win_rename(self, *, restart: bool = False) -> tuple[Path, Path]:
@@ -1011,15 +1013,21 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             raise ValueError("The rename strategy is only supported for one file bundled executables")
 
         # Remove the old app from previous updates
-        if old_app_path.safe_isfile():
-            old_app_path.unlink(missing_ok=True)
-        elif old_app_path.safe_isdir():
-            shutil.rmtree(str(old_app_path), ignore_errors=True)
-        elif old_app_path.safe_exists():
-            raise ValueError(f"Old app path at '{old_app_path}' was neither a file or directory, perhaps we don't have permission to check? No changes have been made.")
+        try:
+            if old_app_path.safe_isfile():
+                    old_app_path.unlink(missing_ok=True)
+            elif old_app_path.safe_isdir():
+                shutil.rmtree(str(old_app_path), ignore_errors=True)
+            elif old_app_path.safe_exists():
+                raise ValueError(f"Old app path at '{old_app_path}' was neither a file or directory, perhaps we don't have permission to check? No changes have been made.")
+        except PermissionError:
+            # Fallback to the good ol' rename strategy.
+            randomized_old_app_path = old_app_path.add_suffix(str(uuid.uuid4()))
+            old_app_path.rename(randomized_old_app_path)
 
         # On Windows, it's possible to rename a currently running exe file
-        cur_app_filepath.rename(old_app_path)
+        if is_frozen() or cur_app_filepath.safe_exists():  # exe may not exist if running from .py source
+            cur_app_filepath.rename(old_app_path)
 
         # Any operation from here forward will require rollback on failure
         try:
@@ -1027,23 +1035,25 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         except OSError:
             log.exception("Failed to move updated app into position, rolling back")
             self._win_rollback_on_exception(cur_app_filepath, old_app_path)
-        try:
-            # Hide the old app
-            import ctypes
 
-            ret = ctypes.windll.kernel32.SetFileAttributesW(str(old_app_path), 0x02)
-            if not ret:
-                # WinError will automatically grab the relevant code and message
-                raise ctypes.WinError()
-        except OSError:
-            # Failed to hide file, which is fine - we can still continue
-            log.exception("Failed to hide file")
+        if is_frozen() or old_app_path.safe_isfile():  # exe may not exist if running from .py source
+            try:
+                # Hide the old app
+                import ctypes
+
+                ret = ctypes.windll.kernel32.SetFileAttributesW(str(old_app_path), 0x02)
+                if not ret:
+                    # WinError will automatically grab the relevant code and message
+                    raise ctypes.WinError()
+            except OSError:
+                # Failed to hide file, which is fine - we can still continue
+                log.exception("Failed to hide file")
 
         if not restart:
             return old_app_path, cur_app_filepath
 
         try:
-            r = Restarter(cur_app_filepath, filename=self.filename, strategy=UpdateStrategy.RENAME, updated_app=updated_app_filepath)
+            r = Restarter(cur_app_filepath, filename=self.filename, strategy=self.strategy, updated_app=updated_app_filepath, exithook=self.exithook)
             r.process()
         except OSError:
             # Raised by os.execl
@@ -1094,7 +1104,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             current_app_path = self._current_app_dir / exe_name
             updated_app_path = Path(self.update_folder.name, exe_name)
 
-        r = Restarter(current_app_path, updated_app=updated_app_path, filename=self.filestem)
+        r = Restarter(current_app_path, updated_app=updated_app_path, filename=self.filestem, exithook=self.exithook)
         r.process(win_restart=restart)
 
 
@@ -1106,6 +1116,7 @@ class Restarter:
         filename: str | None = None,
         updated_app: os.PathLike | str | None = None,
         strategy: UpdateStrategy = UpdateStrategy.OVERWRITE,
+        exithook: Callable | None = None,
     ):
         self.current_app: Path = Path.pathify(current_app)
         log.debug("Current App: %s resolved to %s", current_app, self.current_app)
@@ -1117,7 +1128,8 @@ class Restarter:
 
         self.data_dir = TemporaryDirectory("_restarter", "holotoolset_")
         data_dirpath = Path(self.data_dir.name)
-        if os.name == "nt" and self.strategy == UpdateStrategy.OVERWRITE:
+        self.exithook = exithook
+        if os.name == "nt": # and self.strategy == UpdateStrategy.OVERWRITE:
             self.bat_file = data_dirpath / "update.bat"
             if not updated_app:
                 raise ValueError("updated_app must be provided on Windows.")
@@ -1142,6 +1154,8 @@ class Restarter:
         #if not is_frozen():
         #    log.warning("Cannot call os.exec1() from non-frozen executables.")
         #    return
+        if self.exithook is not None:
+            self.exithook(False)
         os.execl(self.current_app, self.filename, *sys.argv[1:])
 
     def _win_overwrite(self):  # sourcery skip: class-extract-method
@@ -1214,7 +1228,7 @@ move /Y "{self.updated_app}" "{self.current_app}"
                 #    executable=cmd_exe_path,
                     text=True,
                     capture_output=True,
-                    check=True,
+                    check=False,
                 #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
                 #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
                 #    start_new_session=True,
@@ -1239,11 +1253,11 @@ move /Y "{self.updated_app}" "{self.current_app}"
                 #    executable=cmd_exe_path,
                     text=True,
                     capture_output=True,
-                    check=True,
+                    check=False,
                 #    stdout=Path.cwd().joinpath("suboutput.txt").open("a", encoding="utf-8"),
                 #    stderr=Path.cwd().joinpath("suberror.txt").open("a", encoding="utf-8"),
                 #    start_new_session=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
                 #    close_fds=True
                 ))
             except OSError:
@@ -1265,11 +1279,13 @@ move /Y "{self.updated_app}" "{self.current_app}"
             creationflags=subprocess.DETACHED_PROCESS,
         ))
         log.info(f"Finally exiting app '{sys.executable}'")  # noqa: G004
-        try:
-            self._win_kill_self()
-        finally:
+        if self.exithook is not None:
+            self.exithook(True)
+        #try:
+        #    self._win_kill_self()
+        #finally:
             # This code might not be reached, but it's here for completeness
-            os._exit(0)
+        #    os._exit(0)
 
     @staticmethod
     def win_get_system32_dir() -> Path:

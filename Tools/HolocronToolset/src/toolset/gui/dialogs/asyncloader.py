@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from multiprocessing import Queue
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
@@ -11,6 +10,8 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from multiprocessing import Process, Queue
+
     from PyQt5.QtGui import QCloseEvent
     from PyQt5.QtWidgets import QWidget
 
@@ -52,9 +53,20 @@ class ProgressDialog(QDialog):
                 # Handle status text updates
                 text = message["text"]
                 self.statusLabel.setText(text)
+            elif message["action"] == "shutdown":
+                # TODO:
+                ...
 
     def update_status(self, text: str):
         self.statusLabel.setText(text)
+
+    @staticmethod
+    def monitor_and_terminate(process: Process, timeout: int = 5):
+        """Monitor and forcefully terminate if this doesn't exit gracefully."""
+        process.join(timeout)  # Wait for the process to terminate for 'timeout' seconds
+        if process.is_alive():  # Check if the process is still alive
+            process.terminate()  # Forcefully terminate the process
+            process.join()  # Wait for the process to terminate
 
 
 class AsyncLoader(QDialog, Generic[T]):

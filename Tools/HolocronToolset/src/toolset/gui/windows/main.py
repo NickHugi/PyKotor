@@ -30,7 +30,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from toolset.config import CURRENT_VERSION, AppUpdate, download_wrapper, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import CURRENT_VERSION, AppUpdate, Restarter, download_wrapper, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
@@ -81,9 +81,9 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.main_widgets import TextureList
 
 
-def run_progress_dialog(progress_queue: Queue) -> NoReturn:
+def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
     app = QApplication(sys.argv)
-    dialog = ProgressDialog(progress_queue)
+    dialog = ProgressDialog(progress_queue, title)
     icon = app.style().standardIcon(QStyle.SP_MessageBoxInformation)
     dialog.setWindowIcon(QIcon(icon))
     dialog.show()
@@ -737,7 +737,7 @@ class ToolWindow(QMainWindow):
         else:
             links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
         progress_queue = Queue()
-        progress_process = Process(target=run_progress_dialog, args=(progress_queue,))
+        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Applying update..."))
         progress_process.start()
         self.hide()
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
@@ -747,6 +747,13 @@ class ToolWindow(QMainWindow):
 
         # Prepare the list of progress hooks with the method from ProgressDialog
         progress_hooks = [download_progress_hook]
+        def exitapp(kill_self_here: bool):
+            packaged_data = {"action": "close", "data": {}}
+            progress_queue.put(packaged_data)
+            ProgressDialog.monitor_and_terminate(progress_process)
+            if kill_self_here:
+                #Restarter._win_kill_self()  # noqa: SLF001
+                sys.exit(0)
 
         updater = AppUpdate(
             links,
@@ -754,15 +761,23 @@ class ToolWindow(QMainWindow):
             CURRENT_VERSION,
             latestVersion,
             downloader=download_wrapper,
-            progress_hooks=progress_hooks
+            progress_hooks=progress_hooks,
+            exithook=exitapp
         )
-        progress_queue.put({"action": "update_status", "text": "Downloading update..."})
-        updater.download(background=False)
-        progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
-        updater.extract_restart()
-        progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
-        updater.cleanup()
-        sys.exit(0)
+        try:
+            progress_queue.put({"action": "update_status", "text": "Downloading update..."})
+            updater.download(background=False)
+            progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
+            updater.extract_restart()
+            progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
+            updater.cleanup()
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+        finally:
+            exitapp()
     # endregion
 
     # region Other
