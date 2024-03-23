@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import platform
+import sys
 import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
@@ -27,7 +29,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
-from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import CURRENT_VERSION, AppUpdate, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
@@ -58,6 +60,7 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -676,7 +679,7 @@ class ToolWindow(QMainWindow):
 
         toolsetLatestReleaseVersion = remoteInfo["toolsetLatestVersion"]
         toolsetLatestBetaVersion = remoteInfo["toolsetLatestBetaVersion"]
-        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestReleaseVersion, toolsetLatestBetaVersion)
+        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestBetaVersion, toolsetLatestReleaseVersion)
         if self.settings.alsoCheckReleaseVersion and (not self.settings.useBetaChannel or releaseNewerThanBeta is True):
             releaseVersionChecked = True
             greatestAvailableVersion = remoteInfo["toolsetLatestVersion"]
