@@ -402,7 +402,9 @@ class ModInstaller:
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                self.log.add_error(str(e))
+                exc_type, exc_msg = universal_simplify_exception(e)
+                fmt_exc_str = f"{exc_type}: {exc_msg}"
+                self.log.add_error(f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n")
                 detailed_error = format_exception_with_variables(e)
                 with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
                     f.write(f"\n{detailed_error}")
