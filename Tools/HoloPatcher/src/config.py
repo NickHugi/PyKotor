@@ -33,6 +33,20 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
             "64bit": ["https://github.com/NickHugi/PyKotor/releases/download/{tag}/HoloPatcher_Windows.zip"]
         }
     },
+    "holopatcherBetaDirectLinks": {
+        "Darwin": {
+            "32bit": [],
+            "64bit": ["https://github.com/NickHugi/PyKotor/releases/download/{tag}/HoloPatcher_Mac.zip"]
+        },
+        "Linux": {
+            "32bit": [],
+            "64bit": ["https://github.com/NickHugi/PyKotor/releases/download/{tag}/HoloPatcher_Linux.zip"]
+        },
+        "Windows": {
+            "32bit": ["https://github.com/NickHugi/PyKotor/releases/download/{tag}/HoloPatcher_Windows.zip"],
+            "64bit": ["https://github.com/NickHugi/PyKotor/releases/download/{tag}/HoloPatcher_Windows.zip"]
+        }
+    },
     "holopatcherLatestNotes": "",
     "holopatcherLatestBetaNotes": ""
 }  # <---JSON_END--->#

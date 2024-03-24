@@ -579,6 +579,9 @@
         "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--exclude-module=dl_translate",
         "--exclude-module=torch",
+        "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
+        "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotorGL${pathSeparator}src",
         "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
         "toolset${pathSeparator}__main__.py"
       ],
@@ -593,9 +596,6 @@
       },
       "problemMatcher": [],
       "options": {
-        "env": {
-          "PYTHONPATH": "${env:PYTHONPATH};${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src;${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotorGL${pathSeparator}src;${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src"
-        },
         "cwd": "${workspaceFolder}${pathSeparator}Tools${pathSeparator}HolocronToolset${pathSeparator}src"
       },
       "group": {
