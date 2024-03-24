@@ -48,6 +48,7 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 
 [tool.black]
 line-length = 175
+skip-magic-trailing-comma = false
 target-version = ['py38']
 include = '\.pyi?$'
 exclude = '''
