@@ -123,6 +123,8 @@ class Restarter:
         #    return
         if self.exithook is not None:
             self.exithook(False)
+        self.log.debug("Setting executable permissions on %s | %s", self.current_app, self.filename)
+        self.current_app.gain_access(mode=7)
         self.log.info("Replacing current process with new app '%s' | %s", self.current_app, self.filename)
         os.execl(self.current_app, self.filename, *sys.argv[1:])
 
