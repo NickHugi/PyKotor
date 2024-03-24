@@ -7,7 +7,7 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
-from utility.string import CaseInsensitiveWrappedStr
+from utility.string_util import CaseInsensitiveWrappedStr
 
 if TYPE_CHECKING:
     import os
