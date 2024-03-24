@@ -34,7 +34,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "holopatcherLatestNotes": "",
-    "holopatcherLatestBetaNotes": "",
+    "holopatcherLatestBetaNotes": ""
 }  # <---JSON_END--->#
 
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
