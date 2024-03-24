@@ -275,7 +275,7 @@ class GlobalSettings(Settings):
     )
     useBetaChannel = Settings.addSetting(
         "useBetaChannel",
-        False,
+        True,
     )
     alsoCheckReleaseVersion = Settings.addSetting(
         "alsoCheckReleaseVersion",
