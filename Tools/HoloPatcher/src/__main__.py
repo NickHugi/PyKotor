@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import platform
+from queue import Queue
 import subprocess
 import sys
 import tempfile
@@ -20,7 +21,6 @@ import webbrowser
 from argparse import ArgumentParser
 from datetime import datetime, timezone
 from enum import IntEnum
-from multiprocessing import Process, Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -383,7 +383,7 @@ class App:
         *,
         is_release: bool = True,
     ):
-        from utility.tkinter.updater import TkProgressDialog, dialog_process
+        from utility.tkinter.updater import run_tk_progress_dialog
         from utility.updater.restarter import RestartStrategy
         from utility.updater.update import AppUpdate
         proc_arch = ProcessorArchitecture.from_os()
@@ -396,9 +396,9 @@ class App:
             links = remote_info["holopatcherDirectLinks"][os_name][proc_arch.value]
         else:
             links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
+
         progress_queue: Queue = Queue()
-        progress_process = Process(target=dialog_process, args=(progress_queue, "Applying update..."))
-        progress_process.start()
+        progress_dialog = run_tk_progress_dialog(progress_queue, "Applying update...")
         # self.hide()  # TODO: figure out how to hide.
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             progress_queue.put(data)
@@ -408,10 +408,11 @@ class App:
         def exitapp(kill_self_here: bool):  # noqa: FBT001
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
-            TkProgressDialog.monitor_and_terminate(progress_process)
+            progress_queue.put({"action": "shutdown"})
             if kill_self_here:
                 time.sleep(3)
                 self.root.destroy()
+                sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
 
         def remove_second_dot(s: str) -> str:
             if s.count(".") == 2:

@@ -213,6 +213,13 @@ class LibUpdate:
         self.log.info("Main extraction, starting in working dir '%s'", self.update_folder)
         with ChDir(self.update_folder):
             archive_path = Path(self.get_archive_name()).absolute()
+            if not archive_path.safe_isfile():
+                self.log.info("Archive not found, attempting to find it via similar extensions")
+                for ext in (".gz", ".tar", ".zip", ".bz2"):
+                    test_path = archive_path.with_suffix(ext)
+                    if test_path.safe_isfile():
+                        self.log.info("Found archive %s", test_path)
+                        archive_path = test_path
             self._recursive_extract(archive_path)
 
     def _recursive_extract(self, archive_path: Path):
@@ -333,6 +340,9 @@ class LibUpdate:
                         result = fd.download_verify_write()
                         if result:
                             self.log.debug("Download Complete")
+                            archive_path = fd.filepath.parent / fd.downloaded_filename
+                            if archive_path.safe_exists():
+                                self.get_archive_name = lambda a=archive_path: a.name
                         else:  # pragma: no cover
                             self.log.debug("Failed To Download Latest Version")
                     if archive_path.safe_isfile():
@@ -425,14 +435,13 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         if current_app_path.safe_exists():
             remove_any(current_app_path)
 
-        self.log.debug("Moving update: %s --> %s", app_update_path, self._current_app_dir)
-        shutil.move(str(current_app_path), str(self._current_app_dir))
+        self.log.info("Moving update: %s --> %s", app_update_path, self._current_app_dir)
+        shutil.move(str(app_update_path), str(current_app_path))
 
     def _unix_restart(self):
         self.log.debug("Restarting")
         exe_name = self.filename
         current_app_path = Path(self._current_app_dir, exe_name)
-        updated_app_path = Path(self.update_folder, exe_name)
         if platform.system() == "Darwin" and current_app_path.suffix.lower() == ".app":
             self.log.debug(f"Must be a .app bundle: '{current_app_path}'")  # noqa: G004
             mac_app_binary_dir = current_app_path.joinpath("Contents", "MacOS")
@@ -443,7 +452,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         r = Restarter(
             current_app_path,
-            updated_app_path,
+            current_app_path,
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,

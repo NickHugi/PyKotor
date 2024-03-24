@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import re
 import secrets
 import shutil
 import tempfile
@@ -92,6 +93,7 @@ class FileDownloader:
         self.progress_hooks: list[Callable[[dict[str, Any]], Any]] = progress_hooks or []  # Progress hooks to be called
         self.block_size: int = 4096 * 4  # Initial block size for each read
         self.file_binary_type: Literal["memory", "file"] = "memory"  # Storage type
+        self.downloaded_filename: str = self.filepath.name
 
         # Extra headers
         self.headers: dict[str, Any] = headers or {"User-Agent": "MyAppName/1.0 (https://myappwebsite.com/)"}
@@ -151,6 +153,14 @@ class FileDownloader:
                 }
             )
 
+    @staticmethod
+    def _get_filename_from_cd(cd):
+        """Get filename from content-disposition header."""
+        if not cd:
+            return None
+        fname = re.findall('filename="(.+)"', cd)
+        return fname[0] if fname else None
+
     def download_verify_write(self) -> bool:
         """Downloads file then verifies against provided hash
         If hash verfies then writes data to disk.
@@ -165,9 +175,16 @@ class FileDownloader:
             try:
                 with self.session.get(url, stream=True, timeout=self.http_timeout, verify=self.verify) as r:
                     r.raise_for_status()
+
+                    # Determine the filename from the Content-Disposition header or URL.
+                    filename = self._get_filename_from_cd(r.headers.get("Content-Disposition")) or Path(url).name
+                    self.downloaded_filename = filename
+                    file_path = self.filepath.parent / filename
+
+                    # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))
                     self._start_hooks(content_length)
-                    with self.filepath.open("wb") as f:
+                    with file_path.open("wb") as f:
                         for chunk in r.iter_content(chunk_size=8192):
                             if not chunk:
                                 continue
