@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import multiprocessing
 import os
 import shutil
 import subprocess
@@ -18,12 +19,26 @@ if TYPE_CHECKING:
 
 
 def kill_self_pid():
+    # Get the current process id
     pid = os.getpid()
+    # Try to kill all child multiprocessing processes
     try:
+        # Get all active child processes spawned by multiprocessing
+        active_children = multiprocessing.active_children()
+        for child in active_children:
+            # Send a SIGTERM signal to each child process
+            if sys.platform == "win32":
+                from utility.updater.restarter import Restarter
+                sys32path = Restarter.win_get_system32_dir()
+                subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], check=True)
+            else:
+                subprocess.run(["/bin/kill", "-TERM", str(child.pid)], check=True)
+
+        # Now kill the main process
         if sys.platform == "win32":
             from utility.updater.restarter import Restarter
             sys32path = Restarter.win_get_system32_dir()
-            subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)
+            subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(pid)], check=True)
         else:
             subprocess.run(["/bin/kill", "-9", str(pid)], check=True)
     except Exception:
@@ -31,6 +46,7 @@ def kill_self_pid():
         log = get_first_available_logger()
         log.exception("Failed to kill process", msgbox=False)
     finally:
+        # Forcefully exit the process
         os._exit(0)
 
 def get_app_dir() -> Path:
