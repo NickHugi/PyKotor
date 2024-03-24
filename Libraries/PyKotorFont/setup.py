@@ -46,7 +46,7 @@ def main():
     )
 
 
-import contextlib
+from contextlib import suppress
 import datetime
 import re
 
@@ -874,7 +874,7 @@ def loads(s, _dict=dict, decoder=None):
                         currentlevel[group] = [decoder.get_empty_table()]
                 currentlevel = currentlevel[group]
                 if arrayoftables:
-                    with contextlib.suppress(KeyError):
+                    with suppress(KeyError):
                         currentlevel = currentlevel[-1]
         elif line[0] == "{":
             if line[-1] != "}":

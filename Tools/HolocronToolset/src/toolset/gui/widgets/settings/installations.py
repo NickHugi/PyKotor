@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import QWidget
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
+from utility.logger_util import get_root_logger
 
 
 class InstallationsWidget(QWidget):
@@ -150,7 +152,7 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str):
-        installations = self._settings.value("installations", {}, dict)
+        installations: dict[str, dict[str, Any]] = self._settings.value("installations", {}, dict)
         installation = installations[self._name]
 
         del installations[self._name]
@@ -162,23 +164,34 @@ class InstallationConfig:
 
     @property
     def path(self) -> str:
-        installation = self._settings.value("installations", {})[self._name]
-        return installation["path"]
+        try:
+            installation = self._settings.value("installations", {})[self._name]
+        except Exception:
+            return ""
+        else:
+            return installation.get("path", "")
 
     @path.setter
     def path(self, value: str):
-        installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
-        installations[self._name]["path"] = value
-        self._settings.setValue("installations", installations)
+        try:
+            installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
+            installations[self._name] = installations.get(self._name, {})
+            installations[self._name]["path"] = value
+            self._settings.setValue("installations", installations)
+        except Exception:
+            log = get_root_logger()
+            log.exception()
 
     @property
     def tsl(self) -> bool:
-        installation = self._settings.value("installations", {})[self._name]
+        all_installs: dict[str, dict[str, Any]] = self._settings.value("installations", {})
+        installation = all_installs.get(self._name, {})
         return installation["tsl"]
 
     @tsl.setter
     def tsl(self, value: bool):
-        installations = self._settings.value("installations", {})
+        installations: dict[str, dict[str, Any]] = self._settings.value("installations", {})
+        installations[self._name] = installations.get(self._name, {})
         installations[self._name]["tsl"] = value
         self._settings.setValue("installations", installations)
 
@@ -203,7 +216,7 @@ class GlobalSettings(Settings):
         Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
         The installations dictionary is then saved back to the user settings.
         """
-        installations = self.settings.value("installations")
+        installations: dict[str, dict[str, Any]] = self.settings.value("installations")
         if installations is None:
             installations = {}
 

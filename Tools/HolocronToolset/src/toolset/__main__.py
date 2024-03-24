@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import cProfile
 import multiprocessing
 import os
@@ -100,6 +101,7 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("spawn")
 
     from utility.system.path import Path
+    from utility.updater.restarter import Restarter
 
     app = QApplication(sys.argv)
 
@@ -114,15 +116,24 @@ if __name__ == "__main__":
     sys.excepthook = onAppCrash
 
     from toolset.gui.windows.main import ToolWindow
-
-    window = ToolWindow()
-    window.show()
+    from utility.system.os_helper import kill_self_pid
 
     profiler = True  # Set to False or None to disable profiler
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
 
+    window = ToolWindow()
+    window.show()
+    window.checkForUpdates(silent=True)
+    def my_cleanup_function():
+        """Prevents the toolset from running in the background after sys.exit is called..."""
+        print("Fully shutting down Holocron Toolset...")
+        kill_self_pid()
+
+    atexit.register(my_cleanup_function)
+
+    # Start main app loop.
     app.exec_()
 
     if profiler:

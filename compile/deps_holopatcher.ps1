@@ -28,16 +28,16 @@ if ((Get-OS) -eq "Mac") {
         switch ((Get-Linux-Distro-Name)) {
             "debian" {
                 sudo apt-get update
-                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk python3-pip
                 break
             }
             "ubuntu" {
                 sudo apt-get update
-                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk python3-pip
                 break
             }
             "fedora" {
-                sudo dnf install -y tk-devel tcl-devel python3-tkinter
+                sudo dnf install -y tk-devel tcl-devel python3-tkinter python3-pip
                 break
             }
             "almalinux" {

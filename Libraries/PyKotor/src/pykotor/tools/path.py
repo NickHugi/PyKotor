@@ -8,7 +8,7 @@ import tempfile
 from typing import TYPE_CHECKING, Any
 
 from pykotor.tools.registry import find_software_key, winreg_key
-from utility.string import ireplace
+from utility.string_util import ireplace
 from utility.system.path import (
     Path as InternalPath,
     PosixPath as InternalPosixPath,

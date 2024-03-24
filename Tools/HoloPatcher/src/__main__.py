@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import base64
-import contextlib
+import atexit
+from contextlib import suppress
 import ctypes
 import inspect
 import io
 import json
 import os
 import pathlib
+import platform
 import subprocess
 import sys
 import tempfile
@@ -19,6 +20,7 @@ import webbrowser
 from argparse import ArgumentParser
 from datetime import datetime, timezone
 from enum import IntEnum
+from queue import Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -26,7 +28,7 @@ from tkinter import (
     messagebox,
     ttk,
 )
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
@@ -46,26 +48,30 @@ if not is_frozen():
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
         if pykotor_path.exists():
             update_sys_path(pykotor_path.parent)
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
+
+from config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.string import striprtf
+from utility.misc import ProcessorArchitecture
+from utility.string_util import striprtf
+from utility.system.os_helper import kill_self_pid
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
@@ -78,8 +84,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
 
-CURRENT_VERSION: tuple[int, ...] = (1, 5, 3)
-VERSION_LABEL = f"v{'.'.join(map(str, CURRENT_VERSION))}"
+VERSION_LABEL = f"v{CURRENT_VERSION}"
 
 
 class ExitCode(IntEnum):
@@ -93,6 +98,7 @@ class ExitCode(IntEnum):
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
     CRASH = 9
+    CLOSE_FOR_UPDATE_PROCESS = 10
 
 
 class HoloPatcherError(Exception): ...
@@ -318,9 +324,19 @@ class App:
         self,
         text_frame: tk.Text,
     ):
-        font_obj = tkfont.Font(font=self.main_text.cget("font"))
+        font_obj = tkfont.Font(font=text_frame.cget("font"))  # use the original font
         font_obj.configure(size=9)
         text_frame.configure(font=font_obj)
+
+        # Define a bold and slightly larger font
+        bold_font = tkfont.Font(font=text_frame.cget("font"))
+        bold_font.configure(size=10, weight="bold")
+
+        self.main_text.tag_configure("DEBUG", foreground="#6495ED")  # Cornflower Blue
+        self.main_text.tag_configure("INFO", foreground="#000000")   # Black
+        self.main_text.tag_configure("WARNING", foreground="#FFA500", font=bold_font)  # Orange with bold font
+        self.main_text.tag_configure("ERROR", foreground="#B22222", font=bold_font)  # Firebrick with bold font
+        self.main_text.tag_configure("CRITICAL", foreground="#FFFFFF", background="#8B0000", font=bold_font)  # White on Dark Red with bold font
 
     def on_combobox_focus_in(
         self,
@@ -341,29 +357,106 @@ class App:
 
     def check_for_updates(self):
         try:
-            import requests
-
-            req: requests.Response = requests.get("https://api.github.com/repos/NickHugi/PyKotor/contents/update_info.json", timeout=15)
-            req.raise_for_status()
-            file_data: dict = req.json()
-            base64_content: bytes = file_data["content"]
-            decoded_content: bytes = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            updateInfoData: dict = json.loads(decoded_content.decode("utf-8"))
-
-            new_version = tuple(map(int, str(updateInfoData["holopatcherLatestVersion"]).split(".")))
-            if new_version > CURRENT_VERSION:
-                if messagebox.askyesno(
-                    "Update available",
+            from utility.tkinter.updater import UpdateDialog
+            updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
+            if isinstance(updateInfoData, Exception):
+                self._handle_general_exception(updateInfoData)
+                return
+            latest_version = updateInfoData["holopatcherLatestVersion"]
+            if remoteVersionNewer(CURRENT_VERSION, latest_version):
+                dialog = UpdateDialog(
+                    self.root,
+                    "Update Available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
-                ):
+                    ["Update", "Manual"],
+                )
+                if dialog.result == "Update":
+                    self._run_autoupdate(latest_version, updateInfoData)
+                elif dialog.result == "Manual":
                     webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
             else:
-                messagebox.showinfo(
+                dialog = UpdateDialog(
+                    self.root,
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
+                    ["Reinstall", "Cancel"],
                 )
+                if dialog.result == "Reinstall":
+                    self._run_autoupdate(latest_version, updateInfoData)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, title="Unable to fetch latest version")
+
+    def _run_autoupdate(
+        self,
+        latest_version: str,
+        remote_info: dict[str, Any],
+        *,
+        is_release: bool = True,
+    ):
+        from utility.tkinter.updater import run_tk_progress_dialog
+        from utility.updater.restarter import RestartStrategy
+        from utility.updater.update import AppUpdate
+        proc_arch = ProcessorArchitecture.from_os()
+        assert proc_arch == ProcessorArchitecture.from_python()
+        os_name = platform.system()
+        links: list[str] = []
+
+        is_release = True  # TODO(th3w1zard1): remove this line when the beta version direct links are ready.
+        if is_release:
+            links = remote_info["holopatcherDirectLinks"][os_name][proc_arch.value]
+        else:
+            links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
+
+        progress_queue: Queue = Queue()
+        progress_dialog = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
+        # self.hide()  # TODO: figure out how to hide.
+        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+            progress_queue.put(data)
+
+        # Prepare the list of progress hooks with the method from ProgressDialog
+        progress_hooks = [download_progress_hook]
+        def exitapp(kill_self_here: bool):  # noqa: FBT001
+            packaged_data = {"action": "shutdown", "data": {}}
+            progress_queue.put(packaged_data)
+            progress_queue.put({"action": "shutdown"})
+            if kill_self_here:
+                time.sleep(3)
+                self.root.destroy()
+                sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
+
+        def remove_second_dot(s: str) -> str:
+            if s.count(".") == 2:
+                # Find the index of the second dot
+                second_dot_index = s.find(".", s.find(".") + 1)
+                # Remove the second dot by slicing and concatenating
+                s = s[:second_dot_index] + s[second_dot_index + 1:]
+            return f"v{s}-patcher"
+
+        updater = AppUpdate(
+            links,
+            "HoloPatcher",
+            CURRENT_VERSION,
+            latest_version,
+            downloader=None,
+            progress_hooks=progress_hooks,
+            exithook=exitapp,
+            r_strategy=RestartStrategy.DEFAULT,
+            version_to_tag_parser=remove_second_dot
+        )
+        try:
+            progress_queue.put({"action": "update_status", "text": "Downloading update..."})
+            updater.download(background=False)
+            progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
+            updater.extract_restart()
+            progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
+            updater.cleanup()
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+        #finally:
+        #    exitapp(True)
 
     def execute_commandline(
         self,
@@ -1332,8 +1425,15 @@ class App:
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
+        def log_to_tag(this_log: PatchLog) -> str:
+            if this_log.log_type == LogType.NOTE:
+                return "INFO"
+            if this_log.log_type == LogType.VERBOSE:
+                return "DEBUG"
+            return this_log.log_type.name
+
         self.main_text.config(state=tk.NORMAL)
-        self.main_text.insert(tk.END, log.formatted_message + os.linesep)
+        self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
         with self.log_file_path.open("a", encoding="utf-8") as log_file:
@@ -1351,7 +1451,7 @@ def onAppCrash(
     with Path.cwd().joinpath("errorlog.txt").open("a") as f:
         f.write(f"\n{detailed_msg}")
 
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         root = tk.Tk()
         root.withdraw()  # Hide
         messagebox.showerror(title, short_msg)
@@ -1365,6 +1465,15 @@ sys.excepthook = onAppCrash
 def main():
     app = App()
     app.root.mainloop()
+    atexit.register(lambda: my_cleanup_function(app))
+
+
+def my_cleanup_function(app: App):
+    """Prevents the toolset from running in the background after sys.exit is called..."""
+    #print("Fully shutting down Holocron Patcher...")
+    #kill_self_pid()
+    #app.root.destroy()
+
 
 
 if __name__ == "__main__":

@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import platform
+import sys
 import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
+from multiprocessing import Process, Queue
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStyle
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -30,7 +33,7 @@ from pykotor.tools.path import CaseAwarePath
 from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
-from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
+from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
 from toolset.gui.dialogs.search import FileResults, FileSearcher
 from toolset.gui.dialogs.settings import SettingsDialog
@@ -58,10 +61,14 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
+from utility.updater.update import AppUpdate
 
 if TYPE_CHECKING:
     import os
+
+    from typing import NoReturn
 
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
@@ -73,6 +80,15 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import TextureList
+
+
+def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
+    app = QApplication(sys.argv)
+    dialog = ProgressDialog(progress_queue, title)
+    icon = app.style().standardIcon(QStyle.SP_MessageBoxInformation)
+    dialog.setWindowIcon(QIcon(icon))
+    dialog.show()
+    sys.exit(app.exec_())
 
 
 class ToolWindow(QMainWindow):
@@ -142,7 +158,6 @@ class ToolWindow(QMainWindow):
             with suppress(Exception):
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
 
-        self.checkForUpdates(silent=True)
 
     def _setupSignals(self):
         """Connects signals to slots for UI interactions.
@@ -634,6 +649,11 @@ class ToolWindow(QMainWindow):
         try:
             self._check_toolset_update(silent=silent)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+            print(lines)
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -669,19 +689,27 @@ class ToolWindow(QMainWindow):
             toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
 
         version_check = remoteVersionNewer(CURRENT_VERSION, greatestAvailableVersion)
+        curVersionBetaReleaseStr = ""
+        if remoteInfo["toolsetLatestVersion"] == CURRENT_VERSION:
+            curVersionBetaReleaseStr = "release "
+        elif remoteInfo["toolsetLatestBetaVersion"] == CURRENT_VERSION:
+            curVersionBetaReleaseStr = "beta "
         if version_check is False:  # Only check False. if None then the version check failed
             if silent:
                 return
             upToDateMsgBox = QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
-                f"You are running the latest version ({CURRENT_VERSION}).",
-                QMessageBox.Ok,
+                f"You are running the latest {curVersionBetaReleaseStr}version ({CURRENT_VERSION}).",
+                QMessageBox.Ok | QMessageBox.Close,
                 parent=None,
                 flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             )
+            upToDateMsgBox.button(QMessageBox.Ok).setText("Reinstall?")
             upToDateMsgBox.setWindowIcon(self.windowIcon())
-            upToDateMsgBox.exec_()
+            result = upToDateMsgBox.exec_()
+            if result == QMessageBox.Ok:
+                self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
             return
 
         betaString = "release " if releaseVersionChecked else "beta "
@@ -689,13 +717,74 @@ class ToolWindow(QMainWindow):
             QMessageBox.Information,
             f"New toolset {betaString}version available.",
             f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
-            QMessageBox.Ok,
+            QMessageBox.Ok | QMessageBox.Abort,
             parent=None,
             flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         )
+        newVersionMsgBox.button(QMessageBox.Ok).setText("Install Now")
+        newVersionMsgBox.button(QMessageBox.Abort).setText("Ignore")
         newVersionMsgBox.setWindowIcon(self.windowIcon())
-        newVersionMsgBox.exec_()
+        response = newVersionMsgBox.exec_()
+        if response == QMessageBox.Ok:
+            self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
 
+    def _run_autoupdate(
+        self,
+        latestVersion: str,
+        remoteInfo: dict[str, Any],
+        *,
+        isRelease: bool,
+    ):
+        proc_arch = ProcessorArchitecture.from_os()
+        assert proc_arch == ProcessorArchitecture.from_python()
+        os_name = platform.system()
+        links: list[str] = []
+
+        isRelease = False  # TODO(th3w1zard1): remove this line when the release version direct links are ready.
+        if isRelease:
+            links = remoteInfo["toolsetDirectLinks"][os_name][proc_arch.value]
+        else:
+            links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
+        progress_queue = Queue()
+        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
+        progress_process.start()
+        self.hide()
+        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+            progress_queue.put(data)
+
+        # Prepare the list of progress hooks with the method from ProgressDialog
+        progress_hooks = [download_progress_hook]
+        def exitapp(kill_self_here: bool):  # noqa: FBT001
+            packaged_data = {"action": "shutdown", "data": {}}
+            progress_queue.put(packaged_data)
+            ProgressDialog.monitor_and_terminate(progress_process)
+            if kill_self_here:
+                #Restarter._win_kill_self()  # noqa: SLF001
+                sys.exit(0)
+
+        updater = AppUpdate(
+            links,
+            "HolocronToolset",
+            CURRENT_VERSION,
+            latestVersion,
+            downloader=None,
+            progress_hooks=progress_hooks,
+            exithook=exitapp
+        )
+        try:
+            progress_queue.put({"action": "update_status", "text": "Downloading update..."})
+            updater.download(background=False)
+            progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
+            updater.extract_restart()
+            progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
+            updater.cleanup()
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+        finally:
+            exitapp(True)
     # endregion
 
     # region Other

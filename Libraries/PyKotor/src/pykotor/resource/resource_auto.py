@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import contextlib
+from contextlib import suppress
 import os
 
 from typing import TYPE_CHECKING
@@ -44,7 +44,7 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
         bytes: The resource data as bytes
     """
     source_path: os.PathLike | str | None = None
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         if isinstance(source, (os.PathLike, str)):
             source_path = source
             if not resource_type:
@@ -94,33 +94,33 @@ def read_resource(source: SOURCE_TYPES, resource_type: ResourceType | None = Non
 
 
 def read_unknown_resource(source: SOURCE_TYPES) -> bytes:  # noqa: PLR0911
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_tlk(read_tlk(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_ssf(read_ssf(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_2da(read_2da(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_lip(read_lip(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_tpc(read_tpc(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_erf(read_erf(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_rim(read_rim(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_ncs(read_ncs(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_gff(read_gff(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_mdl(read_mdl(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_vis(read_vis(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_lyt(read_lyt(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_ltr(read_ltr(source))
-    with contextlib.suppress(OSError, ValueError):
+    with suppress(OSError, ValueError):
         return bytes_bwm(read_bwm(source))
     msg = "Source resource data not recognized as any kotor file formats."
     raise ValueError(msg)

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.1.2",
+    "currentVersion": "2.2.1b20",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
@@ -29,15 +29,15 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     "toolsetBetaDirectLinks": {
         "Darwin": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4"]
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
         },
         "Linux": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E"]
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
         },
         "Windows": {
-            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0"],
-            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU"]
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
@@ -70,15 +70,14 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         # with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
-        if json_data_match:
-            json_str = json_data_match.group(1)
-            remoteInfo = json.loads(json_str)
-            if not isinstance(remoteInfo, dict):
-                raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
-        else:
+        if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
+        json_str = json_data_match.group(1)
+        remoteInfo = json.loads(json_str)
+        if not isinstance(remoteInfo, dict):
+            raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001
         errMsg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(
@@ -117,8 +116,10 @@ def download_github_file(
     url_or_repo: str,
     local_path: os.PathLike | str,
     repo_path: os.PathLike | str | None = None,
+    timeout: int | None = None,
 ):
-    local_path = Path(local_path)
+    timeout = 180 if timeout is None else timeout
+    local_path = Path(local_path).absolute()
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
     if repo_path is not None:
@@ -138,7 +139,7 @@ def download_github_file(
         download_url = url_or_repo
 
     # Download the file
-    with requests.get(download_url, stream=True, timeout=15) as r:
+    with requests.get(download_url, stream=True, timeout=timeout) as r:
         r.raise_for_status()
         with local_path.open("wb") as f:
             for chunk in r.iter_content(chunk_size=8192):

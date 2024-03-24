@@ -12,7 +12,7 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
-from utility.string import format_text
+from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:

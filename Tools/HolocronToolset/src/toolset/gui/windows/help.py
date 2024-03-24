@@ -22,11 +22,11 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from toolset.__main__ import is_frozen
 from toolset.config import download_github_file, getRemoteToolsetUpdateInfo
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
+from utility.system.os_helper import is_frozen
 from utility.system.path import Path
 
 if TYPE_CHECKING:
