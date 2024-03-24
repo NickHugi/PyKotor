@@ -23,7 +23,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b19",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
-    "updateBetaInfoLink": "https://api.github.com/repos/th3w1zard1/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
+    "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
     "toolsetDirectLinks": {
