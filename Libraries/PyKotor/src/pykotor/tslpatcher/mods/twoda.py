@@ -320,7 +320,7 @@ class AddRow2DA(Modify2DA):
         """
         target_row: TwoDARow | None = None
 
-        if self.exclusive_column is not None:
+        if self.exclusive_column:
             if self.exclusive_column not in self.cells:
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
                 raise WarningError(msg)
@@ -405,7 +405,7 @@ class CopyRow2DA(Modify2DA):
             3. Unpacks the cell values and updates/adds the target row
             4. Stores any 2DA or TLK values in the memory context.
         """
-        source_row: TwoDARow | None = self.target.search(twoda)
+        source_row: TwoDARow | None = self.target.search(twoda, memory)
         target_row: TwoDARow | None = None
         row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
