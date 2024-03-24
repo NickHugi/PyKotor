@@ -980,7 +980,7 @@ class ToolWindow(QMainWindow):
             toolsetLatestNotes = remoteInfo.get("toolsetLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetDownloadLink"]
         else:
-            betaString = "beta"
+            betaString = "beta "
             greatestAvailableVersion = toolsetLatestBetaVersion
             toolsetLatestNotes = remoteInfo.get("toolsetBetaLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
