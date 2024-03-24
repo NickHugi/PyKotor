@@ -63,7 +63,6 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     },
     "help": {"version": 3}
 }  #<---JSON_END--->#
-
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
 
