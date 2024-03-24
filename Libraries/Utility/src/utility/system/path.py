@@ -228,6 +228,8 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         return f"{self.__class__.__name__}({self!s})"
 
     def __eq__(self, __value):
+        if __value is None:
+            return False
         if self is __value:
             return True
         if isinstance(__value, (bytes, bytearray, memoryview)):

@@ -18,6 +18,8 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
+    from subprocess import CompletedProcess
+
     from pykotor.resource.formats.ncs.ncs_data import NCS, NCSOptimizer
 
 
@@ -33,14 +35,9 @@ class InbuiltNCSCompiler(NCSCompiler):
     ):
         source_filepath: Path = Path.pathify(source_path)
         nss_data: bytes = BinaryReader.load_file(source_filepath)
-        nss_contents: str = decode_bytes_with_fallbacks(nss_data)  # .replace('#include "k_inc_debug"', "")
+        nss_contents: str = decode_bytes_with_fallbacks(nss_data)
         ncs: NCS = compile_nss(nss_contents, game, optimizers, library_lookup=[source_filepath.parent], debug=debug)
         write_ncs(ncs, output_path)
-
-
-class ExternalCompilerFeatures(NamedTuple):
-    can_compile: bool
-    can_decompile: bool
 
 
 class ExternalCompilerConfig(NamedTuple):
@@ -48,7 +45,6 @@ class ExternalCompilerConfig(NamedTuple):
     name: str
     release_date: date
     author: str
-    features: ExternalCompilerFeatures
     commandline: dict[str, list[str]]
 
 
@@ -58,7 +54,6 @@ class KnownExternalCompilers(Enum):
         name="TSLPatcher",
         release_date=date(2009, 1, 1),
         author="todo",
-        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
             "compile": ["-c", "{source}", "-o", "{output}"],
             "decompile": ["-d", "{source}", "-o", "{output}"],
@@ -69,7 +64,6 @@ class KnownExternalCompilers(Enum):
         name="KOTOR Tool",
         release_date=date(2005, 1, 1),
         author="Fred Tetra",
-        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
             "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
             "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
@@ -80,7 +74,6 @@ class KnownExternalCompilers(Enum):
         name="v1.3 first public release",
         release_date=date(2003, 12, 31),
         author="todo",
-        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
             "compile": ["-c", "{source}", "{output}"],
             "decompile": ["-d", "{source}", "{output}"],
@@ -91,7 +84,6 @@ class KnownExternalCompilers(Enum):
         name="KOTOR Scripting Tool",
         release_date=date(2016, 5, 18),
         author="James Goad",  # TODO: double check
-        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={
             "compile": ["-c", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
             "decompile": ["-d", "--outputdir", "{output_dir}", "-o", "{output_name}", "-g", "{game_value}", "{source}"],
@@ -102,7 +94,6 @@ class KnownExternalCompilers(Enum):
         name="DeNCS",
         release_date=date(2006, 5, 30),
         author="todo",
-        features=ExternalCompilerFeatures(can_compile=True, can_decompile=True),
         commandline={},
     )
     XOREOS = ExternalCompilerConfig(
@@ -110,7 +101,6 @@ class KnownExternalCompilers(Enum):
         name="Xoreos Tools",
         release_date=date(1, 1, 1),
         author="todo",
-        features=ExternalCompilerFeatures(can_compile=False, can_decompile=True),
         commandline={},
     )
     KNSSCOMP = ExternalCompilerConfig(  # TODO: add hash and look for this in tslpatcher.reader.ConfigReader.load_compile_list()
@@ -118,7 +108,6 @@ class KnownExternalCompilers(Enum):
         name="knsscomp",
         release_date=date(1, 1, 1),  # 2022?
         author="Nick Hugi",
-        features=ExternalCompilerFeatures(can_compile=True, can_decompile=False),
         commandline={},
     )
 
@@ -179,8 +168,8 @@ class ExternalNCSCompiler(NCSCompiler):
         self.filehash: str
         self.change_nwnnsscomp_path(nwnnsscomp_path)
 
-    def get_info(self) -> ExternalCompilerConfig:
-        return KnownExternalCompilers.from_sha256(self.filehash).value
+    def get_info(self) -> KnownExternalCompilers:
+        return KnownExternalCompilers.from_sha256(self.filehash)
 
     def change_nwnnsscomp_path(self, nwnnsscomp_path: os.PathLike | str):
         self.nwnnsscomp_path: Path = Path.pathify(nwnnsscomp_path)
@@ -255,7 +244,7 @@ class ExternalNCSCompiler(NCSCompiler):
         """
         config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
-        result: subprocess.CompletedProcess[str] = subprocess.run(
+        result: CompletedProcess[str] = subprocess.run(
             args=config.get_compile_args(str(self.nwnnsscomp_path)),
             capture_output=True,  # Capture stdout and stderr
             text=True,
@@ -294,7 +283,7 @@ class ExternalNCSCompiler(NCSCompiler):
         """
         config: NwnnsscompConfig = self.config(source_file, output_file, game)
 
-        result: subprocess.CompletedProcess[str] = subprocess.run(
+        result: CompletedProcess[str] = subprocess.run(
             args=config.get_decompile_args(str(self.nwnnsscomp_path)),
             capture_output=True,  # Capture stdout and stderr
             text=True,
@@ -304,10 +293,10 @@ class ExternalNCSCompiler(NCSCompiler):
 
         return self._get_output(result)
 
-    def _get_output(self, result: subprocess.CompletedProcess[str]) -> tuple[str, str]:
+    def _get_output(self, result: CompletedProcess[str]) -> tuple[str, str]:
         stdout: str = result.stdout
         stderr: str = (
-            f"no error provided but return code is nonzero: ({result.returncode})"
+            f"No error provided, but return code is nonzero: ({result.returncode})"
             if result.returncode != 0 and (not result.stderr or not result.stderr.strip())
             else result.stderr
         )
