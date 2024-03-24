@@ -201,6 +201,6 @@ class ModificationsNSS(PatcherModifications):
         if stderr.strip():
             for line in stderr.split("\n"):
                 if line.strip():
-                    logger.add_error(line)
+                    logger.add_error(f"nwnnsscomp error: {line}")
 
         return result

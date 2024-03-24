@@ -48,6 +48,7 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 
 [tool.black]
 line-length = 175
+skip-magic-trailing-comma = false
 target-version = ['py38']
 include = '\.pyi?$'
 exclude = '''
@@ -86,6 +87,21 @@ profile = "black"
 line_length = 175
 skip_gitignore = true
 multi_line_output = 3
+
+[tool.yapf]
+column_limit = 175
+ALLOW_SPLIT_BEFORE_DEFAULT_OR_NAMED_ASSIGNS = false
+ALLOW_SPLIT_BEFORE_DICT_VALUE = false
+DISABLE_SPLIT_LIST_WITH_COMMENT = true
+INDENT_DICTIONARY_VALUE = true
+join_multiple_lines = false
+no_spaces_around_selected_binary_operators = "*,/"
+split_before_dict_set_generator = true
+split_before_expression_after_opening_paren = false
+split_complex_comprehension = true
+split_penalty_after_opening_bracket = 50
+split_penalty_excess_character = 75  # Lower penalty for going over the column limit
+split_penalty_for_added_line_split = 100  # Discourage adding new line splits
 
 [tool.ruff]
 line-length = 175

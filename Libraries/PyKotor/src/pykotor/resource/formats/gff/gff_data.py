@@ -329,9 +329,6 @@ class _GFFField:
         self._field_type: GFFFieldType = field_type
         self._value: Any = value
 
-    def __repr__(self):
-        return safe_repr(self)
-
     def field_type(
         self,
     ) -> GFFFieldType:
