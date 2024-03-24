@@ -231,7 +231,7 @@ class TestConfigReader(unittest.TestCase):
     def test_tlk_strref_ignore_functionality(self):
         ini_text = """
             [TLKList]
-            StrRef0to4=2-6
+            StrRef0-4=2-6
             Ignore1:2=
         """
 

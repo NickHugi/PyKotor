@@ -304,7 +304,7 @@ class ConfigReader:
         self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination, default_sourcefolder)
 
         modifier_dict: dict[int, dict[str, str]] = {}
-        range_delims: list[str] = [":", "-", "to"]
+        range_delims: list[str] = [":", "-"]
         syntax_error_caught = False
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
