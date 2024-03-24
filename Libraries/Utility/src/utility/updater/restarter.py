@@ -3,10 +3,10 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import time
 
 from enum import Enum
 from tempfile import TemporaryDirectory
-import time
 from typing import TYPE_CHECKING, Callable
 
 from utility.logger import get_first_available_logger

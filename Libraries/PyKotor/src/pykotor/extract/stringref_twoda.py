@@ -3,7 +3,6 @@ from __future__ import annotations
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
-
 # This will eventually be an entire mapping of the 2DA in the game.
 # e.g. some 2da reference each other's rows/columns for information.
 # Currently due to the scale of the project this will only link the strrefs to the TLK.

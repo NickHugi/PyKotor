@@ -22,9 +22,9 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QStyle,
     QVBoxLayout,
     QWidget,
-    QStyle,
 )
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -79,7 +79,6 @@ from utility.error_handling import (
     format_exception_with_variables,
     universal_simplify_exception,
 )
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate

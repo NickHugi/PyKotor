@@ -15,7 +15,6 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtCore import QItemSelection, QPoint
     from PyQt5.QtWidgets import QWidget
 
