@@ -33,12 +33,14 @@ class ProgressDialog(QDialog):
 
         self.statusLabel = QLabel("Initializing...", self)
         self.bytesLabel = QLabel("")
+        self.timeLabel = QLabel("--/--")
         self.progressBar = QProgressBar(self)
         self.progressBar.setMaximum(100)
 
         self.layout().addWidget(self.statusLabel)
         self.layout().addWidget(self.bytesLabel)
         self.layout().addWidget(self.progressBar)
+        self.layout().addWidget(self.timeLabel)
 
         # Timer to poll the queue for new progress updates
         self.timer = QTimer()
@@ -51,12 +53,13 @@ class ProgressDialog(QDialog):
             message = self.progress_queue.get()
             if message["action"] == "update_progress":
                 # Handle progress updates
-                data = message["data"]
+                data: dict[str, Any] = message["data"]
                 downloaded = data["downloaded"]
                 total = data["total"]
                 progress = int((downloaded / total) * 100) if total else 0
                 self.progressBar.setValue(progress)
                 self.statusLabel.setText(f"Downloading... {progress}%")
+                self.timeLabel.setText(f"Time remaining: {data.get('time', self.timeLabel.text())}")
                 self.bytesLabel.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
                 # Handle status text updates

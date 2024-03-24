@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import tkinter as tk
 
+from contextlib import suppress
 from queue import Empty
 from threading import Event, Thread
 from tkinter import simpledialog, ttk
@@ -14,10 +14,11 @@ if TYPE_CHECKING:
 
 
 def human_readable_size(byte_size: float) -> str:
-    for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
-        if byte_size < 1024:
-            return f"{round(byte_size, 2)} {unit}"
-        byte_size /= 1024
+    with suppress(Exception):
+        for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
+            if byte_size < 1024:
+                return f"{round(byte_size, 2)} {unit}"
+            byte_size /= 1024
     return str(byte_size)
 
 def dialog_thread_func(progress_queue, title):
@@ -44,7 +45,7 @@ class TkProgressDialog(tk.Tk):
         self.bytes_label.pack()
 
         self.time_left = tk.Label(self, text="--:--")
-        self.bytes_label.pack()
+        self.time_left.pack()
 
         self.progress_bar = ttk.Progressbar(self, orient="horizontal", length=400, mode="determinate")
         self.progress_bar.pack(pady=(0,10))
@@ -71,7 +72,7 @@ class TkProgressDialog(tk.Tk):
                     self.progress_bar["value"] = progress
                     self.status_label["text"] = f"Downloading... {progress}%"
                     self.bytes_label["text"] = f"{human_readable_size(downloaded)} / {human_readable_size(total)}"
-                    time_left = data.get("time_left")
+                    time_left = data.get("time")
                     if time_left:
                         self.time_left["text"] = time_left
                 elif message["action"] == "update_status":
