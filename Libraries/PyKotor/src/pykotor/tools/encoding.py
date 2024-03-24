@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import codecs
-from contextlib import suppress
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

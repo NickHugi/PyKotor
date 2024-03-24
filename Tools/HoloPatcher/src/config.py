@@ -57,7 +57,7 @@ def getRemoteHolopatcherUpdateInfo(*, use_beta_channel: bool = False, silent: bo
         # with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\s\#\s(.*?)\s\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
