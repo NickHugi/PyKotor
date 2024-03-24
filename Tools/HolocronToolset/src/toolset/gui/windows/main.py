@@ -980,10 +980,11 @@ class ToolWindow(QMainWindow):
             toolsetLatestNotes = remoteInfo.get("toolsetLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetDownloadLink"]
         else:
-            betaString = "beta "
-            greatestAvailableVersion = toolsetLatestBetaVersion
+            releaseVersionChecked = False
+            greatestAvailableVersion = remoteInfo["toolsetLatestBetaVersion"]
             toolsetLatestNotes = remoteInfo.get("toolsetBetaLatestNotes", "")
             toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
+
         version_check = remoteVersionNewer(CURRENT_VERSION, greatestAvailableVersion)
         curVersionBetaReleaseStr = ""
         if remoteInfo["toolsetLatestVersion"] == CURRENT_VERSION:
@@ -1008,6 +1009,7 @@ class ToolWindow(QMainWindow):
                 self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
             return
 
+        betaString = "release " if releaseVersionChecked else "beta "
         newVersionMsgBox = QMessageBox(
             QMessageBox.Information,
             f"New toolset {betaString}version available.",
