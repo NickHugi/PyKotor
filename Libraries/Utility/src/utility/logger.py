@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 import sys
 
-from utility.system.path import Path
-
 IGNORABLE_LOGGERS: set[str] = {"charset_normalizer", "concurrent.futures", "concurrent", "PIL.Image", "PIL", "urllib3.util.retry"}
 
 def is_internal_logger(logger_name: str, project_root: str) -> bool:
@@ -32,8 +30,11 @@ def get_first_available_logger() -> logging.Logger:
     if not log.hasHandlers():
         log.setLevel(logging.DEBUG)
         file_handler = logging.FileHandler("output.txt")
+        # StreamHandler for printing to the console
+        stream_handler = logging.StreamHandler()
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         log.addHandler(file_handler)
+        log.addHandler(stream_handler)
 
     return log
