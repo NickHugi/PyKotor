@@ -16,7 +16,6 @@ import urllib3
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-from typing_extensions import Literal
 
 from utility.error_handling import format_exception_with_variables
 from utility.logger import get_first_available_logger
@@ -27,6 +26,8 @@ if TYPE_CHECKING:
     import os
 
     from logging import Logger
+
+    from typing_extensions import Literal
 
 
 class FileDownloaderError(ConnectionError):

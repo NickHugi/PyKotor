@@ -30,13 +30,6 @@ from tkinter import (
 )
 from typing import TYPE_CHECKING, Any, NoReturn
 
-from config import getRemoteHolopatcherUpdateInfo, remoteVersionNewer
-from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import kill_self_pid
-from utility.tkinter.updater import TkProgressDialog, UpdateDialog, dialog_process
-from utility.updater.restarter import RestartStrategy
-from utility.updater.update import AppUpdate
-
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
     # Check for sys.frozen attribute
@@ -64,7 +57,8 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
-from config import CURRENT_VERSION
+
+from config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -75,9 +69,14 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.misc import ProcessorArchitecture
 from utility.string import striprtf
+from utility.system.os_helper import kill_self_pid
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
+from utility.tkinter.updater import TkProgressDialog, UpdateDialog, dialog_process
+from utility.updater.restarter import RestartStrategy
+from utility.updater.update import AppUpdate
 
 if TYPE_CHECKING:
     from argparse import Namespace
