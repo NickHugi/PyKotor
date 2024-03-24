@@ -1251,7 +1251,13 @@ class ConfigReader:
             if raw_value is None:
                 msg = f"[2DAList] parse error: '{key}' missing from [{identifier}] in ini."
                 raise ValueError(msg)
-            value: str | int = int(raw_value) if is_int else raw_value
+            lower_raw_value = raw_value.lower()
+            if lower_raw_value.startswith("strref"):
+                value: str | int | RowValue2DAMemory | RowValueTLKMemory = RowValueTLKMemory(int(raw_value[6:]))
+            elif lower_raw_value.startswith("2damemory"):
+                value = RowValue2DAMemory(int(raw_value[9:]))
+            else:
+                value = int(raw_value) if is_int else raw_value
             return Target(target_type, value)
 
         if "RowIndex" in modifiers:
