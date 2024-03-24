@@ -367,20 +367,20 @@ class ResourceType(Enum):
             name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
         instance._value_ = ResourceTuple(
-            kwargs.get("type_id", cls.INVALID.type_id),
-            kwargs.get("extension", cls.INVALID.extension),
-            kwargs.get("category", cls.INVALID.category),
-            kwargs.get("contents", cls.INVALID.contents),
-            kwargs.get("is_invalid", cls.INVALID.is_invalid),
-            kwargs.get("target_member", cls.INVALID.target_member)
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member)
         )
         instance.__init__(
-            kwargs.get("type_id", cls.INVALID.type_id),
-            kwargs.get("extension", cls.INVALID.extension),
-            kwargs.get("category", cls.INVALID.category),
-            kwargs.get("contents", cls.INVALID.contents),
-            kwargs.get("is_invalid", cls.INVALID.is_invalid),
-            kwargs.get("target_member", cls.INVALID.target_member)
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member)
         )
         return super().__new__(cls, instance)
 
