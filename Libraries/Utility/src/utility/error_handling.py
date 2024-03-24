@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextvars import ContextVar
 import inspect
 import os
 import sys
