@@ -61,12 +61,6 @@ class ResourceTuple(NamedTuple):
     is_invalid: bool = False
     target_member: str | None = None
 
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def keys(self) -> Iterable[str]:
-        return self._fields  # pylint: disable=no-member
-
 
 class ResourceType(Enum):
     """Represents a resource type that is used within either games.
@@ -372,8 +366,22 @@ class ResourceType(Enum):
         while name in cls.__members__:
             name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
-        instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
-        instance.__init__(**instance.value)  # type: ignore[misc]
+        instance._value_ = ResourceTuple(
+            kwargs.get("type_id", cls.INVALID.type_id),
+            kwargs.get("extension", cls.INVALID.type_id),
+            kwargs.get("category", cls.INVALID.type_id),
+            kwargs.get("contents", cls.INVALID.type_id),
+            kwargs.get("is_invalid", cls.INVALID.type_id),
+            kwargs.get("target_member", cls.INVALID.type_id)
+        )
+        instance.__init__(
+            kwargs.get("type_id", cls.INVALID.type_id),
+            kwargs.get("extension", cls.INVALID.type_id),
+            kwargs.get("category", cls.INVALID.type_id),
+            kwargs.get("contents", cls.INVALID.type_id),
+            kwargs.get("is_invalid", cls.INVALID.type_id),
+            kwargs.get("target_member", cls.INVALID.type_id)
+        )
         return super().__new__(cls, instance)
 
     def validate(self):
