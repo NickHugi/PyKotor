@@ -9,7 +9,7 @@ from enum import Enum
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Callable
 
-from utility.logger import get_first_available_logger
+from utility.logger_util import get_root_logger
 from utility.system.os_helper import is_frozen, requires_admin
 from utility.system.path import Path
 
@@ -40,7 +40,7 @@ class Restarter:
         exithook: Callable | None = None,
         logger: Logger | None = None,
     ):
-        self.log = logger or get_first_available_logger()
+        self.log = logger or get_root_logger()
         self.current_app: Path = Path.pathify(current_app)
         self.log.debug("Current App: %s resolved to %s", current_app, self.current_app)
         if is_frozen() and not self.current_app.safe_exists():
@@ -123,6 +123,8 @@ class Restarter:
         #    return
         if self.exithook is not None:
             self.exithook(False)
+        self.log.debug("Setting executable permissions on %s | %s", self.current_app, self.filename)
+        self.current_app.gain_access(mode=7)
         self.log.info("Replacing current process with new app '%s' | %s", self.current_app, self.filename)
         os.execl(self.current_app, self.filename, *sys.argv[1:])
 
@@ -227,6 +229,6 @@ move /Y "{self.updated_app}" "{self.current_app}"
         if taskkill_path.safe_isfile():
             subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
         else:
-            log = get_first_available_logger()
+            log = get_root_logger()
             log.warning(f"taskkill.exe not found at '{taskkill_path}', could not guarantee our process is terminated.")  # noqa: G004
         os._exit(0)

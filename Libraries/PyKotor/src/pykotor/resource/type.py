@@ -14,7 +14,7 @@ from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from utility.error_handling import format_exception_with_variables
-from utility.string import CaseInsensitiveWrappedStr, WrappedStr
+from utility.string_util import CaseInsensitiveWrappedStr, WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable

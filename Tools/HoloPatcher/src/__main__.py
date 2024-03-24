@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import atexit
-import contextlib
+from contextlib import suppress
 import ctypes
 import inspect
 import io
@@ -20,7 +20,7 @@ import webbrowser
 from argparse import ArgumentParser
 from datetime import datetime, timezone
 from enum import IntEnum
-from multiprocessing import Process, Queue
+from queue import Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -29,13 +29,6 @@ from tkinter import (
     ttk,
 )
 from typing import TYPE_CHECKING, Any, NoReturn
-
-from config import getRemoteHolopatcherUpdateInfo, remoteVersionNewer
-from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import kill_self_pid
-from utility.tkinter.updater import TkProgressDialog, UpdateDialog, dialog_process
-from utility.updater.restarter import RestartStrategy
-from utility.updater.update import AppUpdate
 
 
 def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
@@ -55,27 +48,30 @@ if not is_frozen():
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
         if pykotor_path.exists():
             update_sys_path(pykotor_path.parent)
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
-from config import CURRENT_VERSION
+
+from config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.string import striprtf
+from utility.misc import ProcessorArchitecture
+from utility.string_util import striprtf
+from utility.system.os_helper import kill_self_pid
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
@@ -329,9 +325,19 @@ class App:
         self,
         text_frame: tk.Text,
     ):
-        font_obj = tkfont.Font(font=self.main_text.cget("font"))
+        font_obj = tkfont.Font(font=text_frame.cget("font"))  # use the original font
         font_obj.configure(size=9)
         text_frame.configure(font=font_obj)
+
+        # Define a bold and slightly larger font
+        bold_font = tkfont.Font(font=text_frame.cget("font"))
+        bold_font.configure(size=10, weight="bold")
+
+        self.main_text.tag_configure("DEBUG", foreground="#6495ED")  # Cornflower Blue
+        self.main_text.tag_configure("INFO", foreground="#000000")   # Black
+        self.main_text.tag_configure("WARNING", foreground="#FFA500", font=bold_font)  # Orange with bold font
+        self.main_text.tag_configure("ERROR", foreground="#B22222", font=bold_font)  # Firebrick with bold font
+        self.main_text.tag_configure("CRITICAL", foreground="#FFFFFF", background="#8B0000", font=bold_font)  # White on Dark Red with bold font
 
     def on_combobox_focus_in(
         self,
@@ -352,11 +358,11 @@ class App:
 
     def check_for_updates(self):
         try:
+            from utility.tkinter.updater import UpdateDialog
             updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
             if isinstance(updateInfoData, Exception):
                 self._handle_general_exception(updateInfoData)
                 return
-
             latest_version = updateInfoData["holopatcherLatestVersion"]
             if remoteVersionNewer(CURRENT_VERSION, latest_version):
                 dialog = UpdateDialog(
@@ -388,6 +394,9 @@ class App:
         *,
         is_release: bool = True,
     ):
+        from utility.tkinter.updater import run_tk_progress_dialog
+        from utility.updater.restarter import RestartStrategy
+        from utility.updater.update import AppUpdate
         proc_arch = ProcessorArchitecture.from_os()
         assert proc_arch == ProcessorArchitecture.from_python()
         os_name = platform.system()
@@ -398,9 +407,9 @@ class App:
             links = remote_info["holopatcherDirectLinks"][os_name][proc_arch.value]
         else:
             links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
+
         progress_queue: Queue = Queue()
-        progress_process = Process(target=dialog_process, args=(progress_queue, "Applying update..."))
-        progress_process.start()
+        progress_dialog = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
         # self.hide()  # TODO: figure out how to hide.
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             progress_queue.put(data)
@@ -410,10 +419,11 @@ class App:
         def exitapp(kill_self_here: bool):  # noqa: FBT001
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
-            TkProgressDialog.monitor_and_terminate(progress_process)
+            progress_queue.put({"action": "shutdown"})
             if kill_self_here:
                 time.sleep(3)
                 self.root.destroy()
+                sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
 
         def remove_second_dot(s: str) -> str:
             if s.count(".") == 2:
@@ -1427,8 +1437,15 @@ class App:
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
+        def log_to_tag(this_log: PatchLog) -> str:
+            if this_log.log_type == LogType.NOTE:
+                return "INFO"
+            if this_log.log_type == LogType.VERBOSE:
+                return "DEBUG"
+            return this_log.log_type.name
+
         self.main_text.config(state=tk.NORMAL)
-        self.main_text.insert(tk.END, log.formatted_message + os.linesep)
+        self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
         with self.log_file_path.open("a", encoding="utf-8") as log_file:
@@ -1446,7 +1463,7 @@ def onAppCrash(
     with Path.cwd().joinpath("errorlog.txt").open("a") as f:
         f.write(f"\n{detailed_msg}")
 
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         root = tk.Tk()
         root.withdraw()  # Hide
         messagebox.showerror(title, short_msg)

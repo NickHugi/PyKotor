@@ -23,7 +23,7 @@ from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import assert_with_variable_trace
-from utility.string import ireplace
+from utility.string_util import ireplace
 
 if TYPE_CHECKING:
     import os

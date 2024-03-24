@@ -11,11 +11,10 @@ import threading
 import uuid
 import zipfile
 
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Callable
 
 from utility.error_handling import format_exception_with_variables
-from utility.logger import get_first_available_logger
+from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import ChDir, get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
 from utility.system.path import Path, PurePath
@@ -93,7 +92,7 @@ class LibUpdate:
         self.archive_name = self.get_archive_name()
         self._current_app_dir: Path = get_app_dir()
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
-        self.log = logger or get_first_available_logger()
+        self.log = logger or get_root_logger()
 
     @property
     def filename(self) -> str:
@@ -213,6 +212,13 @@ class LibUpdate:
         self.log.info("Main extraction, starting in working dir '%s'", self.update_folder)
         with ChDir(self.update_folder):
             archive_path = Path(self.get_archive_name()).absolute()
+            if not archive_path.safe_isfile():
+                self.log.info("Archive not found, attempting to find it via similar extensions")
+                for ext in (".gz", ".tar", ".zip", ".bz2"):
+                    test_path = archive_path.with_suffix(ext)
+                    if test_path.safe_isfile():
+                        self.log.info("Found archive %s", test_path)
+                        archive_path = test_path
             self._recursive_extract(archive_path)
 
     def _recursive_extract(self, archive_path: Path):
@@ -238,7 +244,7 @@ class LibUpdate:
         *,
         recursive_extract: bool = False,
     ):
-        log = get_first_available_logger()
+        log = get_root_logger()
         log.info("Extracting TAR/GZ/BZIP archive at path '%s'", archive_path)
         try:
             with tarfile.open(archive_path, "r:*") as tfile:
@@ -263,7 +269,7 @@ class LibUpdate:
                     if sanitized_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and sanitized_path.safe_isfile():
                         cls._recursive_extract(sanitized_path)
         except Exception as err:  # pragma: no cover
-            log = get_first_available_logger()
+            log = get_root_logger()
             log.debug(err, exc_info=True)
             raise ValueError(f"Error reading tar/gzip file: {archive_path}") from err
 
@@ -274,7 +280,7 @@ class LibUpdate:
         *,
         recursive_extract: bool = False,
     ):
-        log = get_first_available_logger()
+        log = get_root_logger()
         log.info("Extracting ZIP '%s'", archive_path)
         try:
             with zipfile.ZipFile(archive_path, "r") as zfile:
@@ -333,6 +339,9 @@ class LibUpdate:
                         result = fd.download_verify_write()
                         if result:
                             self.log.debug("Download Complete")
+                            archive_path = fd.filepath.parent / fd.downloaded_filename
+                            if archive_path.safe_exists():
+                                self.get_archive_name = lambda a=archive_path: a.name
                         else:  # pragma: no cover
                             self.log.debug("Failed To Download Latest Version")
                     if archive_path.safe_isfile():
@@ -425,14 +434,13 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         if current_app_path.safe_exists():
             remove_any(current_app_path)
 
-        self.log.debug("Moving update: %s --> %s", app_update_path, self._current_app_dir)
-        shutil.move(str(current_app_path), str(self._current_app_dir))
+        self.log.info("Moving update: %s --> %s", app_update_path, self._current_app_dir)
+        shutil.move(str(app_update_path), str(current_app_path))
 
     def _unix_restart(self):
         self.log.debug("Restarting")
         exe_name = self.filename
         current_app_path = Path(self._current_app_dir, exe_name)
-        updated_app_path = Path(self.update_folder, exe_name)
         if platform.system() == "Darwin" and current_app_path.suffix.lower() == ".app":
             self.log.debug(f"Must be a .app bundle: '{current_app_path}'")  # noqa: G004
             mac_app_binary_dir = current_app_path.joinpath("Contents", "MacOS")
@@ -443,7 +451,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         r = Restarter(
             current_app_path,
-            updated_app_path,
+            current_app_path,
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,

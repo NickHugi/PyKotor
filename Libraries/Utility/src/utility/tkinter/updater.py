@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import contextlib
+from contextlib import suppress
 import tkinter as tk
 
-from multiprocessing import Process
 from queue import Empty
+from threading import Event, Thread
 from tkinter import simpledialog, ttk
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+
     from queue import Queue
 
 
@@ -19,21 +20,21 @@ def human_readable_size(byte_size: float) -> str:
         byte_size /= 1024
     return str(byte_size)
 
-def dialog_process(progress_queue, title):
-    # This function now only contains the logic for the progress dialog
+def dialog_thread_func(progress_queue, title):
     dialog = TkProgressDialog(progress_queue, title)
+    dialog.check_queue()  # Make sure to call this to start the queue checking loop
     dialog.mainloop()
 
-def run_tk_progress_dialog(progress_queue: Queue, title: str = "Operation Progress"):
-    # Create a multiprocessing.Process targeting the dialog_process function
-    p = Process(target=dialog_process, args=(progress_queue, title))
-    p.start()
-    return p  # Return the process if you need to interact with it later (e.g., join or terminate)
+def run_tk_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> Thread:
+    # Create and start the thread for the dialog
+    dialog_thread = Thread(target=dialog_thread_func, args=(progress_queue, title), daemon=True)
+    dialog_thread.start()
+    return dialog_thread
 
 class TkProgressDialog(tk.Tk):
     def __init__(self, progress_queue: Queue, title: str = "Operation Progress"):
         super().__init__()
-        self.progress_queue = progress_queue
+        self.progress_queue: Queue = progress_queue
         self.title(title)
 
         self.status_label = tk.Label(self, text="Initializing...")
@@ -42,26 +43,37 @@ class TkProgressDialog(tk.Tk):
         self.bytes_label = tk.Label(self, text="")
         self.bytes_label.pack()
 
+        self.time_left = tk.Label(self, text="--:--")
+        self.bytes_label.pack()
+
         self.progress_bar = ttk.Progressbar(self, orient="horizontal", length=400, mode="determinate")
         self.progress_bar.pack(pady=(0,10))
+        self.shutdown_event = Event()
 
-        self.check_queue()
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def on_close(self):
+        # Handle close event
+        self.destroy()
 
     def check_queue(self):
-        with contextlib.suppress(Empty):
+        with suppress(Empty):
             while True:
                 try:
                     message = self.progress_queue.get_nowait()
                 except Exception:  # noqa: S112
                     continue
                 if message["action"] == "update_progress":
-                    data = message["data"]
+                    data: dict[str, Any] = message["data"]
                     downloaded = data["downloaded"]
                     total = data["total"]
                     progress = int((downloaded / total) * 100) if total else 0
                     self.progress_bar["value"] = progress
                     self.status_label["text"] = f"Downloading... {progress}%"
                     self.bytes_label["text"] = f"{human_readable_size(downloaded)} / {human_readable_size(total)}"
+                    time_left = data.get("time_left")
+                    if time_left:
+                        self.time_left["text"] = time_left
                 elif message["action"] == "update_status":
                     text = message["text"]
                     self.status_label["text"] = text
@@ -76,14 +88,6 @@ class TkProgressDialog(tk.Tk):
 
     def update_status(self, text: str):
         self.status_label = tk.Label(self, text=text)
-
-    @staticmethod
-    def monitor_and_terminate(process: Process, timeout: int = 5):
-        """Monitor and forcefully terminate if this doesn't exit gracefully."""
-        process.join(timeout)    # Wait for the process to terminate for 'timeout' seconds
-        if process.is_alive():   # Check if the process is still alive
-            process.terminate()  # Forcefully terminate the process
-            process.join()       # Wait for the process to terminate
 
 
 class UpdateDialog(simpledialog.Dialog):
@@ -102,7 +106,7 @@ class UpdateDialog(simpledialog.Dialog):
             btn = tk.Button(box, text=option, width=10, command=lambda opt=option: self.ok(opt))
             btn.pack(side=tk.LEFT, padx=5, pady=5)
         tk.Button(box, text="Cancel", width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
-        self.bind("<Return>", lambda event, opt=self.options[0]: self.ok(opt))
+        self.bind("<Return>", lambda _event, opt=self.options[0]: self.ok(opt))
         self.bind("<Escape>", self.cancel)
         box.pack()
 

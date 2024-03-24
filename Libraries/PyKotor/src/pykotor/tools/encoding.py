@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import codecs
-import contextlib
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ def decode_bytes_with_fallbacks(
 
         # Attempt decoding with provided encoding
         if provided_encoding is not None:
-            with contextlib.suppress(UnicodeDecodeError):
+            with suppress(UnicodeDecodeError):
                 return byte_content.decode(provided_encoding, errors=attempt_errors)
 
         # Detect encoding using charset_normalizer
@@ -87,7 +87,7 @@ def decode_bytes_with_fallbacks(
         result_detect: CharsetMatch | None = detected_encodings.best()
         if result_detect is None:
             # Semi-Final fallback (utf-8) if no encoding is detected
-            with contextlib.suppress(UnicodeDecodeError):
+            with suppress(UnicodeDecodeError):
                 return byte_content.decode(encoding="utf-8", errors=attempt_errors)
             # Final fallback (latin1) if no encoding is detected
             return byte_content.decode(encoding="latin1", errors=attempt_errors)
@@ -110,7 +110,7 @@ def decode_bytes_with_fallbacks(
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
     # Attempt strict first for more accurate results.
-    with contextlib.suppress(UnicodeDecodeError):
+    with suppress(UnicodeDecodeError):
         return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
 

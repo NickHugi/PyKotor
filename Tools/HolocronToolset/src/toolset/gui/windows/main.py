@@ -210,6 +210,15 @@ def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress"
     sys.exit(app.exec_())
 
 
+def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
+    app = QApplication(sys.argv)
+    dialog = ProgressDialog(progress_queue, title)
+    icon = app.style().standardIcon(QStyle.SP_MessageBoxInformation)
+    dialog.setWindowIcon(QIcon(icon))
+    dialog.show()
+    sys.exit(app.exec_())
+
+
 class ToolWindow(QMainWindow):
     moduleFilesUpdated = QtCore.pyqtSignal(object, object)
     overrideFilesUpdate = QtCore.pyqtSignal(object, object)
@@ -1032,7 +1041,7 @@ class ToolWindow(QMainWindow):
         else:
             links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
         progress_queue = Queue()
-        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Applying update..."))
+        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
         progress_process.start()
         self.hide()
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import re
 import secrets
 import shutil
 import tempfile
@@ -16,10 +17,9 @@ import urllib3
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-from typing_extensions import Literal
 
 from utility.error_handling import format_exception_with_variables
-from utility.logger import get_first_available_logger
+from utility.logger_util import get_root_logger
 from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     import os
 
     from logging import Logger
+
+    from typing_extensions import Literal
 
 
 class FileDownloaderError(ConnectionError):
@@ -74,7 +76,7 @@ class FileDownloader:
         if not filename:
             raise FileDownloaderError("No filename provided", expected=True)
         self.filepath = Path.pathify(filename)
-        self.log = logger or get_first_available_logger()
+        self.log = logger or get_root_logger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
         self.file_binary_path: Path = self.filepath.add_suffix(".part")  # Temporary file to hold large download data
@@ -91,6 +93,7 @@ class FileDownloader:
         self.progress_hooks: list[Callable[[dict[str, Any]], Any]] = progress_hooks or []  # Progress hooks to be called
         self.block_size: int = 4096 * 4  # Initial block size for each read
         self.file_binary_type: Literal["memory", "file"] = "memory"  # Storage type
+        self.downloaded_filename: str = self.filepath.name
 
         # Extra headers
         self.headers: dict[str, Any] = headers or {"User-Agent": "MyAppName/1.0 (https://myappwebsite.com/)"}
@@ -150,6 +153,14 @@ class FileDownloader:
                 }
             )
 
+    @staticmethod
+    def _get_filename_from_cd(cd):
+        """Get filename from content-disposition header."""
+        if not cd:
+            return None
+        fname = re.findall('filename="(.+)"', cd)
+        return fname[0] if fname else None
+
     def download_verify_write(self) -> bool:
         """Downloads file then verifies against provided hash
         If hash verfies then writes data to disk.
@@ -164,9 +175,16 @@ class FileDownloader:
             try:
                 with self.session.get(url, stream=True, timeout=self.http_timeout, verify=self.verify) as r:
                     r.raise_for_status()
+
+                    # Determine the filename from the Content-Disposition header or URL.
+                    filename = self._get_filename_from_cd(r.headers.get("Content-Disposition")) or Path(url).name
+                    self.downloaded_filename = filename
+                    file_path = self.filepath.parent / filename
+
+                    # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))
                     self._start_hooks(content_length)
-                    with self.filepath.open("wb") as f:
+                    with file_path.open("wb") as f:
                         for chunk in r.iter_content(chunk_size=8192):
                             if not chunk:
                                 continue
@@ -219,7 +237,7 @@ class FileDownloader:
         data: urllib3.BaseHTTPResponse,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
-        log = get_first_available_logger()
+        log = get_root_logger()
         log.debug("Got content length of: %s", content_length_lookup)
         return int(content_length_lookup) if content_length_lookup else None
 
@@ -322,7 +340,7 @@ def _download_file(
         raise ValueError("Could not retrieve attribs?")
 
     file_name = decrypted_attribs["n"] if dest_filename is None else dest_filename
-    input_file = requests.get(file_url, stream=True).raw
+    input_file = requests.get(file_url, stream=True, timeout=30).raw
 
     temp_output_file = tempfile.NamedTemporaryFile(mode="w+b", prefix="megapy_", delete=False)
 
@@ -382,7 +400,7 @@ def _download_file(
             }
         }
 
-        log = get_first_available_logger()
+        log = get_root_logger()
 
         # Call all progress hooks with status data
         log.debug(status)
