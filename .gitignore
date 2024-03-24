@@ -8,7 +8,6 @@ build
 /__main__.dist/
 /__main__.build/
 /__main__.onefile-build/
-*.spec
 *.zip
 dist-mac
 dist-lin

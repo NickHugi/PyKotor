@@ -5,12 +5,14 @@ repos:
       - id: check-added-large-files
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: mixed-line-ending
-        args: ["--fix=crlf"]
+#      - id: mixed-line-ending
+#        args: ["--fix=crlf"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.2.1
     hooks:
       - id: ruff
         args: ["--fix", "--fix-only"]
-      - id: ruff-format
-        args: ["--respect-gitignore"]
+  - repo: https://github.com/google/yapf
+    rev: fcd79bcc07c435ad6b94f84c92766ff88ad3fab7
+    hooks:
+      - id: yapf
