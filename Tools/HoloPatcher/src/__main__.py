@@ -74,9 +74,6 @@ from utility.string import striprtf
 from utility.system.os_helper import kill_self_pid
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
-from utility.tkinter.updater import TkProgressDialog, UpdateDialog, dialog_process
-from utility.updater.restarter import RestartStrategy
-from utility.updater.update import AppUpdate
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -350,11 +347,11 @@ class App:
 
     def check_for_updates(self):
         try:
+            from utility.tkinter.updater import UpdateDialog
             updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
             if isinstance(updateInfoData, Exception):
                 self._handle_general_exception(updateInfoData)
                 return
-
             latest_version = updateInfoData["holopatcherLatestVersion"]
             if remoteVersionNewer(CURRENT_VERSION, latest_version):
                 dialog = UpdateDialog(
@@ -386,6 +383,9 @@ class App:
         *,
         is_release: bool = True,
     ):
+        from utility.tkinter.updater import TkProgressDialog, dialog_process
+        from utility.updater.restarter import RestartStrategy
+        from utility.updater.update import AppUpdate
         proc_arch = ProcessorArchitecture.from_os()
         assert proc_arch == ProcessorArchitecture.from_python()
         os_name = platform.system()

@@ -8,8 +8,6 @@ from contextlib import suppress
 from tkinter import messagebox
 from typing import Any
 
-import requests
-
 from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
@@ -42,6 +40,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
 def getRemoteHolopatcherUpdateInfo(*, use_beta_channel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
+    import requests
     if use_beta_channel:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
     else:
