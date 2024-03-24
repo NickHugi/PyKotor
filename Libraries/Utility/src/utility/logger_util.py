@@ -82,6 +82,11 @@ def get_root_logger() -> logging.Logger:
             logging.ERROR: "pykotor_error.log",
             logging.CRITICAL: "pykotor_critical.log",
         }
+        # Replacing StreamHandler with ColoredConsoleHandler
+        console_handler = ColoredConsoleHandler()
+        formatter = logging.Formatter("%(levelname)s(%(name)s): %(message)s")
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
         for level, filename in log_levels.items():
             handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=5)
@@ -92,12 +97,6 @@ def get_root_logger() -> logging.Logger:
                 handler.setFormatter(JSONFormatter())
             else:
                 handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-
-            # Replacing StreamHandler with ColoredConsoleHandler
-            console_handler = ColoredConsoleHandler()
-            formatter = logging.Formatter("%(levelname)s(%(name)s): %(message)s")
-            console_handler.setFormatter(formatter)
-            logger.addHandler(console_handler)
 
             # Exclude lower level logs for handlers above DEBUG
             if level > logging.DEBUG:
