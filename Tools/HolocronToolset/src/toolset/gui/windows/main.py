@@ -746,7 +746,7 @@ class ToolWindow(QMainWindow):
         else:
             links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
         progress_queue = Queue()
-        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Applying update..."))
+        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
         progress_process.start()
         self.hide()
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):

@@ -398,7 +398,7 @@ class App:
             links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
 
         progress_queue: Queue = Queue()
-        progress_dialog = run_tk_progress_dialog(progress_queue, "Applying update...")
+        progress_dialog = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
         # self.hide()  # TODO: figure out how to hide.
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             progress_queue.put(data)

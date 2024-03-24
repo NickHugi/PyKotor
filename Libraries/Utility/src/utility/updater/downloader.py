@@ -340,7 +340,7 @@ def _download_file(
         raise ValueError("Could not retrieve attribs?")
 
     file_name = decrypted_attribs["n"] if dest_filename is None else dest_filename
-    input_file = requests.get(file_url, stream=True).raw
+    input_file = requests.get(file_url, stream=True, timeout=30).raw
 
     temp_output_file = tempfile.NamedTemporaryFile(mode="w+b", prefix="megapy_", delete=False)
 

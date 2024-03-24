@@ -11,7 +11,6 @@ import threading
 import uuid
 import zipfile
 
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Callable
 
 from utility.error_handling import format_exception_with_variables

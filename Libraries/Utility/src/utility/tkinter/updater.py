@@ -6,7 +6,7 @@ import tkinter as tk
 from queue import Empty
 from threading import Event, Thread
 from tkinter import simpledialog, ttk
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
 
@@ -25,7 +25,7 @@ def dialog_thread_func(progress_queue, title):
     dialog.check_queue()  # Make sure to call this to start the queue checking loop
     dialog.mainloop()
 
-def run_tk_progress_dialog(progress_queue: Queue, title: str = "Operation Progress"):
+def run_tk_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> Thread:
     # Create and start the thread for the dialog
     dialog_thread = Thread(target=dialog_thread_func, args=(progress_queue, title), daemon=True)
     dialog_thread.start()
@@ -41,6 +41,9 @@ class TkProgressDialog(tk.Tk):
         self.status_label.pack(pady=(10,0))
 
         self.bytes_label = tk.Label(self, text="")
+        self.bytes_label.pack()
+
+        self.time_left = tk.Label(self, text="--:--")
         self.bytes_label.pack()
 
         self.progress_bar = ttk.Progressbar(self, orient="horizontal", length=400, mode="determinate")
@@ -61,13 +64,16 @@ class TkProgressDialog(tk.Tk):
                 except Exception:  # noqa: S112
                     continue
                 if message["action"] == "update_progress":
-                    data = message["data"]
+                    data: dict[str, Any] = message["data"]
                     downloaded = data["downloaded"]
                     total = data["total"]
                     progress = int((downloaded / total) * 100) if total else 0
                     self.progress_bar["value"] = progress
                     self.status_label["text"] = f"Downloading... {progress}%"
                     self.bytes_label["text"] = f"{human_readable_size(downloaded)} / {human_readable_size(total)}"
+                    time_left = data.get("time_left")
+                    if time_left:
+                        self.time_left["text"] = time_left
                 elif message["action"] == "update_status":
                     text = message["text"]
                     self.status_label["text"] = text
