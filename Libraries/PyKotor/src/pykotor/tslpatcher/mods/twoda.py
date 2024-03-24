@@ -139,7 +139,7 @@ class RowValueHigh(RowValue):
     Attributes:
     ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
-    """  # noqa: D212
+    """  # noqa: D212, D415
 
     def __init__(self, column: str | None):
         self.column: str | None = column
@@ -209,13 +209,6 @@ class Modify2DA(ABC):
         row: TwoDARow,
     ) -> dict[str, str]:
         return {column: value.value(memory, twoda, row) for column, value in cells.items()}
-
-    def _check_memory(
-        self,
-        value: str,
-        memory: PatcherMemory,
-    ) -> Any:
-        return int(value[9:]) if value.lower().startswith("2DAMEMORY") else value
 
     @abstractmethod
     def apply(
@@ -294,7 +287,7 @@ class AddRow2DA(Modify2DA):
         store_tlk: dict[int, RowValue] | None = None,
     ):
         self.identifier: str = identifier
-        self.exclusive_column: str | None = exclusive_column if exclusive_column else None
+        self.exclusive_column: str | None = exclusive_column
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
@@ -338,8 +331,9 @@ class AddRow2DA(Modify2DA):
                 None,
             )
             for row in twoda:
-                if row.get_string(self.exclusive_column) == exclusive_value:
-                    target_row = row
+                if row.get_string(self.exclusive_column) != exclusive_value:
+                    continue
+                target_row = row
 
         if target_row is None:
             row_label: str = str(twoda.get_height()) if self.row_label is None else self.row_label
@@ -430,8 +424,9 @@ class CopyRow2DA(Modify2DA):
                 None,
             )
             for row in twoda:
-                if row.get_string(self.exclusive_column) == exclusive_value:
-                    target_row = row
+                if row.get_string(self.exclusive_column) != exclusive_value:
+                    continue
+                target_row = row
 
         if target_row is not None:
             # If the row already exists (based on exclusive_column) then we update the cells

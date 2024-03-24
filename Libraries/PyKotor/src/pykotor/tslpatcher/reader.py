@@ -1055,6 +1055,7 @@ class ConfigReader:
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
+        # sourcery skip: assign-if-exp, reintroduce-else
         """Extracts field value from raw string based on field type.
 
         Args:
