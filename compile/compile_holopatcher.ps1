@@ -52,7 +52,7 @@ $whitelistedModules = @(
     "dis", "opcode", "enum", "importlib", "warnings", "linecache",
     "tokenize", "re", "sre_compile",
     "requests", "urllib3", "charset-normalizer", 'pykotor', 'ply',
-    "charset_normalizer", "idna", "certifi"
+    "charset_normalizer", "idna", "certifi", "Crypto"
 )
 
 # Exclude these large modules, don't fill excludes with an element if it's in the whitelist.
