@@ -3,8 +3,8 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
+#      - id: trailing-whitespace
+#      - id: end-of-file-fixer
 #      - id: mixed-line-ending
 #        args: ["--fix=crlf"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -16,3 +16,8 @@ repos:
     rev: fcd79bcc07c435ad6b94f84c92766ff88ad3fab7
     hooks:
       - id: yapf
+        name: yapf
+        language: python
+        entry: yapf
+        args: ["-i", "-p"]
+        types: [python]

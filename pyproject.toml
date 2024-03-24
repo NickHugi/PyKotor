@@ -88,6 +88,10 @@ line_length = 175
 skip_gitignore = true
 multi_line_output = 3
 
+[tool.yapf]
+column_limit = 175
+SPLIT_BEFORE_EXPRESSION_AFTER_OPENING_PAREN = false
+
 [tool.ruff]
 line-length = 175
 
