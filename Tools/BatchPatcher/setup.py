@@ -137,7 +137,7 @@ def main():
         )
 
 
-import contextlib
+from contextlib import suppress
 import datetime
 import re
 
@@ -356,7 +356,7 @@ class TomlDecoder:
             and pair[-1].strip() != "true"
             and pair[-1].strip() != "false"
         ):
-            with contextlib.suppress(ValueError):
+            with suppress(ValueError):
                 float(pair[-1])
                 break
             if _load_date(pair[-1]) is not None:
@@ -982,7 +982,7 @@ def loads(s, _dict=dict, decoder=None):
                         currentlevel[group] = [decoder.get_empty_table()]
                 currentlevel = currentlevel[group]
                 if arrayoftables:
-                    with contextlib.suppress(KeyError):
+                    with suppress(KeyError):
                         currentlevel = currentlevel[-1]
         elif line[0] == "{":
             if line[-1] != "}":

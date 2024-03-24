@@ -14,7 +14,7 @@ import zipfile
 from typing import TYPE_CHECKING, Any, Callable
 
 from utility.error_handling import format_exception_with_variables
-from utility.logger import get_first_available_logger
+from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import ChDir, get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
 from utility.system.path import Path, PurePath
@@ -92,7 +92,7 @@ class LibUpdate:
         self.archive_name = self.get_archive_name()
         self._current_app_dir: Path = get_app_dir()
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
-        self.log = logger or get_first_available_logger()
+        self.log = logger or get_root_logger()
 
     @property
     def filename(self) -> str:
@@ -244,7 +244,7 @@ class LibUpdate:
         *,
         recursive_extract: bool = False,
     ):
-        log = get_first_available_logger()
+        log = get_root_logger()
         log.info("Extracting TAR/GZ/BZIP archive at path '%s'", archive_path)
         try:
             with tarfile.open(archive_path, "r:*") as tfile:
@@ -269,7 +269,7 @@ class LibUpdate:
                     if sanitized_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and sanitized_path.safe_isfile():
                         cls._recursive_extract(sanitized_path)
         except Exception as err:  # pragma: no cover
-            log = get_first_available_logger()
+            log = get_root_logger()
             log.debug(err, exc_info=True)
             raise ValueError(f"Error reading tar/gzip file: {archive_path}") from err
 
@@ -280,7 +280,7 @@ class LibUpdate:
         *,
         recursive_extract: bool = False,
     ):
-        log = get_first_available_logger()
+        log = get_root_logger()
         log.info("Extracting ZIP '%s'", archive_path)
         try:
             with zipfile.ZipFile(archive_path, "r") as zfile:

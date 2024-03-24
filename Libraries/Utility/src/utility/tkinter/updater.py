@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import contextlib
+from contextlib import suppress
 import tkinter as tk
 
 from queue import Empty
@@ -57,7 +57,7 @@ class TkProgressDialog(tk.Tk):
         self.destroy()
 
     def check_queue(self):
-        with contextlib.suppress(Empty):
+        with suppress(Empty):
             while True:
                 try:
                     message = self.progress_queue.get_nowait()

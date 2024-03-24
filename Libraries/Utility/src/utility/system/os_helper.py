@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import multiprocessing
 import os
 import shutil
 import subprocess
@@ -11,7 +10,7 @@ import uuid
 
 from typing import TYPE_CHECKING
 
-from utility.logger import get_first_available_logger
+from utility.logger_util import get_root_logger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -24,6 +23,7 @@ def kill_self_pid():
     # Try to kill all child multiprocessing processes
     try:
         # Get all active child processes spawned by multiprocessing
+        import multiprocessing
         active_children = multiprocessing.active_children()
         for child in active_children:
             # Send a SIGTERM signal to each child process
@@ -42,8 +42,8 @@ def kill_self_pid():
         else:
             subprocess.run(["/bin/kill", "-9", str(pid)], check=True)
     except Exception:
-        from utility.logger import get_first_available_logger
-        log = get_first_available_logger()
+        from utility.logger_util import get_root_logger
+        log = get_root_logger()
         log.exception("Failed to kill process", msgbox=False)
     finally:
         # Forcefully exit the process
@@ -110,7 +110,7 @@ def dir_requires_admin(_dir: os.PathLike | str) -> bool:  # pragma: no cover
 
 
 def remove_any(path):
-    log = get_first_available_logger()
+    log = get_root_logger()
     path_obj = Path.pathify(path)
     if not path_obj.safe_exists():
         return
@@ -157,7 +157,7 @@ class ChDir:
     def __init__(self, path: os.PathLike | str, logger: Logger | None = None):
         self.old_dir: Path = Path.cwd()
         self.new_dir: Path = Path.pathify(path)
-        self.log = logger or get_first_available_logger()
+        self.log = logger or get_root_logger()
 
     def __enter__(self):
         self.log.debug(f"Changing to Directory --> '{self.new_dir}'")  # noqa: G004

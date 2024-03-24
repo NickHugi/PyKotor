@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import atexit
-import contextlib
+from contextlib import suppress
 import ctypes
 import inspect
 import io
@@ -9,7 +9,6 @@ import json
 import os
 import pathlib
 import platform
-from queue import Queue
 import subprocess
 import sys
 import tempfile
@@ -21,6 +20,7 @@ import webbrowser
 from argparse import ArgumentParser
 from datetime import datetime, timezone
 from enum import IntEnum
+from queue import Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -48,11 +48,11 @@ if not is_frozen():
         if working_dir not in sys.path:
             sys.path.append(working_dir)
 
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
         if pykotor_path.exists():
             update_sys_path(pykotor_path.parent)
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
@@ -64,13 +64,13 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
-from utility.string import striprtf
+from utility.string_util import striprtf
 from utility.system.os_helper import kill_self_pid
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
@@ -324,9 +324,19 @@ class App:
         self,
         text_frame: tk.Text,
     ):
-        font_obj = tkfont.Font(font=self.main_text.cget("font"))
+        font_obj = tkfont.Font(font=text_frame.cget("font"))  # use the original font
         font_obj.configure(size=9)
         text_frame.configure(font=font_obj)
+
+        # Define a bold and slightly larger font
+        bold_font = tkfont.Font(font=text_frame.cget("font"))
+        bold_font.configure(size=10, weight="bold")
+
+        self.main_text.tag_configure("DEBUG", foreground="#6495ED")  # Cornflower Blue
+        self.main_text.tag_configure("INFO", foreground="#000000")   # Black
+        self.main_text.tag_configure("WARNING", foreground="#FFA500", font=bold_font)  # Orange with bold font
+        self.main_text.tag_configure("ERROR", foreground="#B22222", font=bold_font)  # Firebrick with bold font
+        self.main_text.tag_configure("CRITICAL", foreground="#FFFFFF", background="#8B0000", font=bold_font)  # White on Dark Red with bold font
 
     def on_combobox_focus_in(
         self,
@@ -1415,8 +1425,15 @@ class App:
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
+        def log_to_tag(this_log: PatchLog) -> str:
+            if this_log.log_type == LogType.NOTE:
+                return "INFO"
+            if this_log.log_type == LogType.VERBOSE:
+                return "DEBUG"
+            return this_log.log_type.name
+
         self.main_text.config(state=tk.NORMAL)
-        self.main_text.insert(tk.END, log.formatted_message + os.linesep)
+        self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
         with self.log_file_path.open("a", encoding="utf-8") as log_file:
@@ -1434,7 +1451,7 @@ def onAppCrash(
     with Path.cwd().joinpath("errorlog.txt").open("a") as f:
         f.write(f"\n{detailed_msg}")
 
-    with contextlib.suppress(Exception):
+    with suppress(Exception):
         root = tk.Tk()
         root.withdraw()  # Hide
         messagebox.showerror(title, short_msg)

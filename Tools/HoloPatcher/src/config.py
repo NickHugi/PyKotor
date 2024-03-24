@@ -15,8 +15,8 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     "currentVersion": "1.5.2",
     "holopatcherLatestVersion": "1.5.2",
     "holopatcherLatestBetaVersion": "1.5.3a1",
-    "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py",
-    "updateBetaInfoLink": "https://api.github.com/repos/th3w1zard1/PyKotor/contents/Tools/HoloPatcher/src/config.py?ref=auto-update-holopatcher-t2",
+    "updateInfoLink": "https://api.github.com/repos/th3w1zard1/PyKotor/contents/Tools/HoloPatcher/src/config.py?ref=auto-update-toolset-t2",
+    "updateBetaInfoLink": "https://api.github.com/repos/th3w1zard1/PyKotor/contents/Tools/HoloPatcher/src/config.py?ref=auto-update-toolset-t2",
     "holopatcherDownloadLink": "https://deadlystream.com/files/file/1982-holocron-holopatcher",
     "holopatcherBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
     "holopatcherDirectLinks": {
@@ -57,7 +57,7 @@ def getRemoteHolopatcherUpdateInfo(*, use_beta_channel: bool = False, silent: bo
         # with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\s\#\s(.*?)\s\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301

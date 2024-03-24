@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import contextlib
+from contextlib import suppress
 import os
 
 from pykotor.common.misc import Game
@@ -51,7 +51,7 @@ def find_software_key(software_name: str) -> str | None:
                 # Enumerate through the SIDs
                 sid: str = winreg.EnumKey(hkey_users, i)
                 software_path = f"{sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{software_name}"
-                with contextlib.suppress(FileNotFoundError), winreg.OpenKey(hkey_users, software_path) as software_key:
+                with suppress(FileNotFoundError), winreg.OpenKey(hkey_users, software_path) as software_key:
                     # If this point is reached, the software is installed under this SID
                     return winreg.QueryValue(software_key, "InstallLocation")
                 i += 1

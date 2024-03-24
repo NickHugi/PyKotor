@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import contextlib
+from contextlib import suppress
 import os
 import pathlib
 import re
@@ -778,7 +778,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)
 
             # Delete the batch script after execution
-            with contextlib.suppress(Exception):
+            with suppress(Exception):
                 if script_path.safe_isfile():
                     script_path.unlink()
 
