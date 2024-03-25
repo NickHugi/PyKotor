@@ -32,6 +32,7 @@ class CompileError(Exception):
 
 
 class EntryPointError(CompileError): ...
+class MissingIncludeError(CompileError): ...
 
 
 class TopLevelObject(ABC):

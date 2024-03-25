@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import os
+
+from contextlib import suppress
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
 from utility.error_handling import format_exception_with_variables
 from utility.misc import ProcessorArchitecture
+from utility.system.path import Path
+
+if TYPE_CHECKING:
+    import types
+
+    from typing_extensions import Self
 
 KOTOR_REG_PATHS = {
     Game.K1: {
@@ -215,7 +223,62 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
         print(format_exception_with_variables(e))
 
 
-def set_registry_key_value(full_key_path, value_name, value_data):
+def get_retail_key(game: Game):
+    if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
+        return (
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2"
+            if game.is_k2()
+            else r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR"
+        )
+    return (
+        r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2"
+        if game.is_k2()
+        else r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR"
+    )
+
+class SpoofKotorRegistry:
+    """A context manager used to safely spoof a registry path temporarily."""
+    def __init__(
+        self,
+        installation_path: os.PathLike | str,
+        game: Game | None = None,
+    ):
+        from pykotor.extract.installation import Installation
+
+        # Key name at the path containing the value.
+        self.key: str = "Path"
+        self.spoofed_path: Path = Path.pathify(installation_path).resolve()
+
+        if game is not None:
+            determined_game = game
+        else:
+            determined_game = Installation.determine_game(installation_path)
+            if determined_game is None:
+                raise ValueError(f"Could not auto-determine the game k1 or k2 from '{installation_path}'. Try sending 'game' enum to prevent auto-detections like this.")
+
+        # Path to the key.
+        self.registry_path: str = get_retail_key(determined_game)
+
+        # The original contents of the key. None if not existing.
+        self.original_value: str | None = resolve_reg_key_to_path(self.registry_path, self.key)
+
+    def __enter__(self) -> Self:
+        if self.spoofed_path == self.original_value:
+            set_registry_key_value(self.registry_path, self.key, str(self.spoofed_path))
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ):
+        # Revert the registry key to its original value if it was altered
+        if self.original_value is not None:
+            set_registry_key_value(self.registry_path, self.key, self.original_value)
+        # TODO(th3w1zard1): Determine what to do if the regpath never existed, as deleting it isn't easy. Set it to ""?
+
+def set_registry_key_value(full_key_path: str, value_name: str, value_data: str):
     """Sets a registry key value, creating the key (and its parents, if necessary).
 
     Args:
