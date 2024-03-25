@@ -64,13 +64,7 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
         The string of the decompiled script.
     """
     global_settings = GlobalSettings()
-    extract_path = Path(global_settings.extractPath)
-
-    if not extract_path.safe_isdir():
-        extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
-        if not extract_path.safe_isdir():
-            msg = "Temp directory has not been set or is invalid."
-            raise NoConfigurationSetError(msg)
+    extract_path = setupExtractPath()
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
     if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_isfile():
@@ -125,6 +119,17 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
             raise ValueError(stderr)  # noqa: TRY301
         return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
 
+def setupExtractPath() -> Path:
+    global_settings = GlobalSettings()
+    extract_path = Path(global_settings.extractPath)
+
+    if not extract_path.safe_isdir():
+        extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+        extract_path = Path(extract_path_str) if extract_path_str else None
+        if not extract_path or not extract_path.safe_isdir():
+            msg = "Temp directory has not been set or is invalid."
+            raise NoConfigurationSetError(msg)
+    return extract_path
 
 def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes | None:
     # sourcery skip: assign-if-exp, introduce-default-else
@@ -150,14 +155,7 @@ def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes |
         Bytes object of the compiled script.
     """
     global_settings = GlobalSettings()
-    extract_path = Path(global_settings.extractPath)
-
-    if not extract_path.safe_isdir():
-        extract_path_str = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-        extract_path = Path(extract_path_str) if extract_path_str else None
-        if not extract_path or not extract_path.safe_isdir():
-            msg = "Temp directory has not been set or is invalid."
-            raise NoConfigurationSetError(msg)
+    extract_path = setupExtractPath()
 
     returnValue: int | None = None
     if os.name == "nt":
@@ -280,20 +278,7 @@ def _win_setup_nwnnsscomp_compiler(
                 if not next_result:
                     raise ValueError(f"{stdout}\n{stderr}")
     except PermissionError as e:
-        if isinstance(reg_spoofer, NoOpRegistrySpoofer):
-            raise
-
-        # Spoofing was required but failed. Show the relevant message.
-        msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-            extCompiler.get_info().value.name, reg_spoofer.registry_path,
-            installation_path, reg_spoofer.original_value, str(e)
-        )
-        log.warning(msg)
-        QMessageBox(
-            QMessageBox.Warning,
-            "Permission denied when attempting to update nwnnsscomp in registry",
-            msg,
-        ).exec_()
+        handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
 
     # TODO(NickHugi): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
     # I do not think this version matches the versions used by Mac/Linux.
@@ -304,6 +289,30 @@ def _win_setup_nwnnsscomp_compiler(
     if not tempCompiledPath.safe_isfile():
         raise FileNotFoundError(f"Could not find temp compiled script at '{tempCompiledPath}'")  # noqa: TRY003, EM102
     return BinaryReader.load_file(tempCompiledPath)
+
+
+def handle_permission_error(
+    reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer,
+    extCompiler: ExternalNCSCompiler,
+    installation_path: Path,
+    e: PermissionError,
+):
+    if isinstance(reg_spoofer, NoOpRegistrySpoofer):
+        raise
+
+    # Spoofing was required but failed. Show the relevant message.
+    msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
+        extCompiler.get_info().value.name, reg_spoofer.registry_path,
+        installation_path, reg_spoofer.original_value, str(e)
+    )
+    log.warning(msg)
+    longMsgBoxErr = QMessageBox(
+        QMessageBox.Warning,
+        "Permission denied when attempting to update nwnnsscomp in registry",
+        msg,
+    )
+    longMsgBoxErr.setIcon(QMessageBox.Warning)
+    longMsgBoxErr.exec_()
 
 
 def _prompt_user_for_compiler_option() -> int:
