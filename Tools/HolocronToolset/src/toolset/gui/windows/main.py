@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import platform
 import sys
-import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
@@ -61,6 +60,7 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate
@@ -134,6 +134,7 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
+        self.log = get_root_logger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
@@ -921,6 +922,9 @@ class ToolWindow(QMainWindow):
 
     def refreshTexturePackList(self, *, reload=True):
         sections = self._getTexturePackList(reload=reload)
+        if sections is None:
+            self.log.debug("sections was None in refreshTexturePackList(reload=%s)", reload)
+            return
         self.ui.texturesWidget.setSections(sections)
 
     def changeModule(self, moduleName: str):
@@ -950,7 +954,7 @@ class ToolWindow(QMainWindow):
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
-            subfolder = ""
+            subfolder: str = ""
             for folder_name in self.active.override_list():
                 folder_path: CaseAwarePath = self.active.override_path() / folder_name
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
@@ -1028,7 +1032,7 @@ class ToolWindow(QMainWindow):
             return active or HTInstallation(path, name, tsl, self)
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
+        loader = AsyncLoader(self, "Refreshing installation" if active else "Loading Installation", lambda: load_task(active), "Failed to load installation")
         if not loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)
@@ -1054,25 +1058,28 @@ class ToolWindow(QMainWindow):
                 self.dogObserver.stop()
                 self.dogObserver = None
             return
-        print("Loading core installation resources into UI...")
+        self.log.info("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
         moduleItems, overrideItems, textureItems = prepare_loader.value
+        assert moduleItems is not None
+        assert overrideItems is not None
+        assert textureItems is not None
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
         self.ui.texturesWidget.setSections(textureItems)
-        print("Remove unused categories...")
+        self.log.debug("Remove unused categories...")
         self.ui.coreWidget.modulesModel.removeUnusedCategories()
         self.ui.texturesWidget.setInstallation(self.active)
-        print("Updating menus...")
+        self.log.debug("Updating menus...")
         self.updateMenus()
-        print("Setting up watchdog observer...")
+        self.log.debug("Setting up watchdog observer...")
         if self.dogObserver is not None:
-            print("Stopping old watchdog service...")
+            self.log.debug("Stopping old watchdog service...")
             self.dogObserver.stop()
         self.dogObserver = Observer()
         self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
         self.dogObserver.start()
-        print("Loader task completed.")
+        self.log.info("Loader task completed.")
         self.settings.installations()[name].path = path
         self.installations[name] = self.active
 
@@ -1124,8 +1131,8 @@ class ToolWindow(QMainWindow):
                 file.write(data)
 
         except Exception as e:
-            traceback.print_exc()
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
+            self.log.exception(msg)
             raise RuntimeError(msg) from e
         QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 
