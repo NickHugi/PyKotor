@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import os
 import pathlib
 import re
@@ -8,6 +7,7 @@ import subprocess
 import sys
 import uuid
 
+from contextlib import suppress
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Union
 

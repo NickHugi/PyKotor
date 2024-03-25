@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-from contextlib import suppress
 import ctypes
 import inspect
 import io
@@ -18,6 +17,7 @@ import traceback
 import webbrowser
 
 from argparse import ArgumentParser
+from contextlib import suppress
 from datetime import datetime, timezone
 from enum import IntEnum
 from queue import Queue

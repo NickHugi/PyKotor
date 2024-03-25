@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import os
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from pykotor.extract.file import ResourceIdentifier
