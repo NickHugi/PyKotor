@@ -496,12 +496,23 @@ jobs:
         id: get_tag
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
         shell: bash
+      
+      - name: Compress into archives
+        run: |
+          $sourceFolder = Join-Path -Path (Get-Location) -ChildPath "published_workflow_builds"
+          Set-Location $sourceFolder
+          Get-ChildItem -Path "." -Directory | ForEach-Object {
+            $folderName = $_.Name
+            $archiveName = "$folderName.zip"
+            zip -r -9 $archiveName $folderName
+          }
+        shell: pwsh
 
       - uses: ncipollo/release-action@v1.10.0
         with:
             tag: ${{ steps.get_tag.outputs.tag }}
             prerelease: true
             draft: true
-            artifacts: "published_workflow_builds/*"
+            artifacts: "published_workflow_builds/*.zip"
             allowUpdates: true
             token: ${{ secrets.GITHUB_TOKEN }}

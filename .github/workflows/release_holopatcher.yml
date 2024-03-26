@@ -828,29 +828,38 @@ jobs:
         path: ./dist/**
         retention-days: 90
 
-  package:  # The goal of this job is to repackage by toolname, rather than all tools by os_pyversion_arch
+  package:
     needs: build  # do not start this job until all 'build' jobs complete
     if: ${{ success() || failure() }}
     runs-on: ubuntu-latest
-    outputs:
-      filesToArchive: ${{ steps.set-matrix.outputs.matrixJson }}
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: published_workflow_builds/
           pattern: publish_*
-    
+
       - name: Extract tag name
         id: get_tag
         run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
         shell: bash
-    
+      
+      - name: Compress into archives
+        run: |
+          $sourceFolder = Join-Path -Path (Get-Location) -ChildPath "published_workflow_builds"
+          Set-Location $sourceFolder
+          Get-ChildItem -Path "." -Directory | ForEach-Object {
+            $folderName = $_.Name
+            $archiveName = "$folderName.zip"
+            zip -r -9 $archiveName $folderName
+          }
+        shell: pwsh
+
       - uses: ncipollo/release-action@v1.10.0
         with:
-          tag: ${{ steps.get_tag.outputs.tag }}
-          prerelease: true
-          draft: true
-          artifacts: "published_workflow_builds/*"
-          allowUpdates: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+            tag: ${{ steps.get_tag.outputs.tag }}
+            prerelease: true
+            draft: true
+            artifacts: "published_workflow_builds/*.zip"
+            allowUpdates: true
+            token: ${{ secrets.GITHUB_TOKEN }}
