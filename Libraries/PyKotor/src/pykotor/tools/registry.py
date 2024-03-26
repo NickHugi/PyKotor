@@ -217,7 +217,7 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
             current_path = f"{current_path}\\{part}" if current_path else part
             try:
                 winreg.CreateKey(hive, current_path)
-            except PermissionError:
+            except PermissionError as e:
                 raise PermissionError("Permission denied. Administrator privileges required.") from e  # noqa: B904, TRY003, EM101
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 # sourcery skip: raise-specific-error
