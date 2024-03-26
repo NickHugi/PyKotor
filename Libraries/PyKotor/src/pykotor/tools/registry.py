@@ -65,8 +65,8 @@ def find_software_key(software_name: str) -> str | None:
                     # If this point is reached, the software is installed under this SID
                     return winreg.QueryValue(software_key, "InstallLocation")
                 i += 1
-            except OSError as e:  # noqa: PERF203
-                log.debug(format_exception_with_variables(e))
+            except OSError:  # noqa: PERF203
+                log.debug("Not found with unimportant error", exc_info=True)
 
     return None
 

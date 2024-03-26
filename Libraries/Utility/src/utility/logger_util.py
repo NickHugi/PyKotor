@@ -19,14 +19,14 @@ class ColoredConsoleHandler(logging.StreamHandler):
         USING_COLORAMA = False
 
     COLOR_CODES: ClassVar[dict[int, str]] = {
-        logging.DEBUG: "\033[0;36m" if not USING_COLORAMA else colorama.Fore.CYAN,  # Cyan
-        logging.INFO: "\033[0;37m" if not USING_COLORAMA else colorama.Fore.WHITE,  # White
-        logging.WARNING: "\033[0;33m" if not USING_COLORAMA else colorama.Fore.YELLOW,  # Yellow
-        logging.ERROR: "\033[0;31m" if not USING_COLORAMA else colorama.Fore.RED,  # Red
-        logging.CRITICAL: "\033[1;41m" if not USING_COLORAMA else colorama.Back.RED,  # Red background
+        logging.DEBUG: colorama.Fore.CYAN if USING_COLORAMA else "\033[0;36m",  # Cyan
+        logging.INFO: colorama.Fore.WHITE if USING_COLORAMA else "\033[0;37m",  # White
+        logging.WARNING: colorama.Fore.YELLOW if USING_COLORAMA else "\033[0;33m",  # Yellow
+        logging.ERROR: colorama.Fore.RED if USING_COLORAMA else "\033[0;31m",  # Red
+        logging.CRITICAL: colorama.Back.RED if USING_COLORAMA else "\033[1;41m",  # Red background
     }
 
-    RESET_CODE = "\033[0m" if not USING_COLORAMA else colorama.Style.RESET_ALL
+    RESET_CODE = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
 
     def format(self, record):
         msg = super().format(record)
