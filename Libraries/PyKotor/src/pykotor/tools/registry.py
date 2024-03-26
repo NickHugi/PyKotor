@@ -53,7 +53,6 @@ KOTOR_REG_PATHS = {
 def find_software_key(software_name: str) -> str | None:
     import winreg
 
-    log = get_root_logger()
     with winreg.ConnectRegistry(None, winreg.HKEY_USERS) as hkey_users:
         i = 0
         while True:
@@ -66,7 +65,7 @@ def find_software_key(software_name: str) -> str | None:
                     return winreg.QueryValue(software_key, "InstallLocation")
                 i += 1
             except OSError:  # noqa: PERF203
-                log.debug("Not found with unimportant error", exc_info=True)
+                break
 
     return None
 
