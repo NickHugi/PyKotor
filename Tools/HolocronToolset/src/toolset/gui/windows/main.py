@@ -792,16 +792,17 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self):
         self.reloadInstallations()
 
-    def getActiveResourceWidget(self) -> ResourceList | TextureList | None:
-        if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
+    def getActiveResourceWidget(self) -> ResourceList | TextureList:
+        currentWidget = self.ui.resourceTabs.currentWidget()
+        if currentWidget is self.ui.coreTab:
             return self.ui.coreWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
+        if currentWidget is self.ui.modulesTab:
             return self.ui.modulesWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.overrideTab:
+        if currentWidget is self.ui.overrideTab:
             return self.ui.overrideWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.texturesTab:
+        if currentWidget is self.ui.texturesTab:
             return self.ui.texturesWidget
-        return None
+        raise ValueError(f"Unknown current widget: {currentWidget}")
 
     def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:
         if self.active is None:

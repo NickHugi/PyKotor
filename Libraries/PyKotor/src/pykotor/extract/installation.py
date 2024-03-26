@@ -25,9 +25,12 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    from logging import Logger
+
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
 
@@ -136,6 +139,7 @@ class Installation:  # noqa: PLR0904
     ]
 
     def __init__(self, path: os.PathLike | str):
+        self._log: Logger = get_root_logger()
         self._path: CaseAwarePath = CaseAwarePath.pathify(path)
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
@@ -171,7 +175,7 @@ class Installation:  # noqa: PLR0904
         elif self.game().is_k2():
             self.load_streamvoice()
         self.load_textures()
-        print(f"Finished loading the installation from {self._path}")
+        self._log.info("Finished loading the installation from %s", self._path)
         self._initialized = True
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
@@ -362,9 +366,8 @@ class Installation:  # noqa: PLR0904
                 offset=0,
                 filepath=filepath,
             )
-        except Exception as e:  # noqa: BLE001
-            with Path("errorlog.txt").open("a", encoding="utf-8") as f:
-                f.write(format_exception_with_variables(e))
+        except Exception:  # noqa: BLE001
+            self._log.exception("Error while gathering resources in worker")
         return filepath, None
 
     def load_resources(
@@ -392,10 +395,10 @@ class Installation:  # noqa: PLR0904
 
         r_path = Path(path)
         if not r_path.safe_isdir():
-            print(f"The '{r_path.name}' folder did not exist when loading the installation at '{self._path}', skipping...")
+            self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return resources
 
-        print(f"Loading {r_path.relative_to(self._path)}...")
+        self._log.info("Loading %s...", r_path.relative_to(self._path))
         files_iter = (
             path.safe_rglob("*")
             if recurse
@@ -430,7 +433,7 @@ class Installation:  # noqa: PLR0904
                         resources.append(resource)
 
         if not resources:
-            print(f"No resources found at '{r_path}' when loading the installation, skipping...")
+            self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
         return resources
 
     def load_chitin(self):
@@ -438,13 +441,13 @@ class Installation:  # noqa: PLR0904
         chitin_path: CaseAwarePath = self._path / "chitin.key"
         chitin_exists: bool | None = chitin_path.safe_isfile()
         if chitin_exists:
-            print(f"Loading BIFs from chitin.key at '{self._path}'...")
+            self._log.info("Loading BIFs from chitin.key at '%s'...", self._path)
             self._chitin = list(Chitin(key_path=chitin_path))
-            print("Done loading chitin")
+            self._log.info("Done loading chitin")
         elif chitin_exists is False:
-            print(f"The chitin.key file did not exist at '{self._path}' when loading the installation, skipping...")
+            self._log.warning("The chitin.key file did not exist at '%s' when loading the installation, skipping...", self._path)
         elif chitin_exists is None:
-            print(f"No permissions to the chitin.key file at '{self._path}' when loading the installation, skipping...")
+            self._log.error("No permissions to the chitin.key file at '%s' when loading the installation, skipping...", self._path)
 
     def load_lips(
         self,
@@ -538,7 +541,7 @@ class Installation:  # noqa: PLR0904
 
         identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
         if identifier.restype == ResourceType.INVALID:
-            print("Cannot reload override file. Invalid KOTOR resource:", identifier)
+            self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
         resource = FileResource(
             *identifier,
@@ -604,7 +607,7 @@ class Installation:  # noqa: PLR0904
         self,
         filename: str,
     ) -> list[FileResource]:
-        """Returns a a shallow copy of the list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
+        """Returns a shallow copy of the list of FileResources stored in the specified module file located in the modules folder linked to the Installation.
 
         Module resources are cached and require a reload after the contents have been modified on disk.
 
@@ -939,7 +942,7 @@ class Installation:  # noqa: PLR0904
         )
         search: ResourceResult | None = batch[query]
         if not search or not search.data:
-            print(f"Could not find '{query}' during resource lookup.")
+            self._log.warning(f"Could not find '{query}' during resource lookup.")
             return None
         return search
 
@@ -981,7 +984,7 @@ class Installation:  # noqa: PLR0904
             location_list: list[LocationResult] = locations.get(query, [])
 
             if not location_list:
-                print(f"Resource not found: '{query}'")
+                self._log.warning(f"Resource not found: '{query}'")
                 results[query] = None
                 continue
 
@@ -1235,7 +1238,7 @@ class Installation:  # noqa: PLR0904
         for resname in resnames:
             textures[resname] = None
 
-        def decode_txi(txi_bytes: bytes):
+        def decode_txi(txi_bytes: bytes) -> str:
             return txi_bytes.decode("ascii", errors="ignore")
 
         def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
@@ -1734,7 +1737,7 @@ class Installation:  # noqa: PLR0904
                 if name and name.strip():
                     return name
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, PERF203
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+                self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
             mod_ids_to_try.add(mod_id)
 
         # Deeper check.
@@ -1832,8 +1835,8 @@ class Installation:  # noqa: PLR0904
                     if mod_id and mod_id.strip():
                         found_mod_id = mod_id
 
-                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+                except Exception:  # pylint: disable=W0718  # noqa: BLE001
+                    self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
 
             if is_our_search:  # Skip ARE validation (faster).
                 # if use_alternate:
@@ -1846,7 +1849,7 @@ class Installation:  # noqa: PLR0904
             # Validate the ARE exists.
             for mod_id in mod_ids_to_try:
                 for capsule in our_erf_rims_module:
-                    # print(f"Checking for '{mod_id}' in '{module_filename}'")
+                    self._log.debug("Checking for id '%s' in filename str '%s'", mod_id, module_filename)
                     if capsule.info(mod_id, ResourceType.ARE) is None:
                         continue
                     if also_return_cached_capsules:  # Found at this point.
@@ -1854,8 +1857,8 @@ class Installation:  # noqa: PLR0904
                     return found_mod_id
                 if mod_id and mod_id.startswith("m") or mod_id[1].isdigit():
                     found_mod_id = mod_id
-        except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+        except Exception:  # noqa: BLE001
+            self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
         # print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
         if also_return_cached_capsules:
             return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
@@ -1929,7 +1932,7 @@ class Installation:  # noqa: PLR0904
             try:
                 cached_capsules[filepath] = self._build_item(filepath, modid_lookup, mod_id, our_erf_rims_module, cached_capsules)
             except Exception as e:  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+                self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
 
     def _build_capsule_info(
         self,
@@ -1980,8 +1983,8 @@ class Installation:  # noqa: PLR0904
         for gff_struct in mod_area_list:
             try:
                 mod_id = str(gff_struct.get_resref("Area_Name"))
-            except Exception as e:  # noqa: PERF203, BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed in pykotor.extract.installation."))
+            except Exception:  # noqa: PERF203, BLE001
+                self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
             else:
                 if mod_id and mod_id.strip():
                     return mod_id
