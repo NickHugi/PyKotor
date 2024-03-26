@@ -5,6 +5,8 @@ import struct
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from utility.logger_util import get_root_logger
+
 try:
     from PIL import Image
     pillow_available = True
@@ -202,7 +204,7 @@ class TPCTGAReader(ResourceReader):
                 texture_format = TPCTextureFormat.RGBA
                 new_img = img.convert("RGBA")  # Ensure the image is in RGBA format
             else:  # TODO: ???
-                print(f"Unknown pillow TGA format '{img.mode}'")
+                get_root_logger().warning(f"Unknown pillow TGA format '{img.mode}'")
                 texture_format = TPCTextureFormat.RGBA
                 new_img = img.convert("RGBA")  # Ensure the image is in RGBA format
                 return
@@ -300,7 +302,7 @@ class TPCTGAReader(ResourceReader):
         # Set the texture format based on the bits per pixel
         datacode_name = next((c.name for c in _DataTypes if c.value == datatype_code), _DataTypes.NO_IMAGE_DATA.name)
         self._tpc.original_datatype_code = _DataTypes.__members__[datacode_name]
-        print("tga datatype_code:", datacode_name, "y_flipped:", y_flipped, "bits_per_pixel:", bits_per_pixel)
+        get_root_logger().debug("tga datatype_code:", datacode_name, "y_flipped:", y_flipped, "bits_per_pixel:", bits_per_pixel)
         texture_format = TPCTextureFormat.RGBA if bits_per_pixel == 32 else TPCTextureFormat.RGB
         self._tpc.set_data(width, height, [bytes(data)], texture_format)
 
