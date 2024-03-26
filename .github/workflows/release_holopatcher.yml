@@ -840,160 +840,17 @@ jobs:
         with:
           path: published_workflow_builds/
           pattern: publish_*
-
-      - name: Re-package artifacts by Python version and architecture
-        shell: pwsh
-        run: |
-          $here_dirpath = (Get-Location)
-          Write-Output "here: '$here_dirpath'"
-          $packagedArtifactsPath = Join-Path -Path $here_dirpath -ChildPath "packaged_artifacts"
-          New-Item -ItemType Directory -Force -Path $packagedArtifactsPath
-
-          # Navigate to the directory with downloaded artifacts
-          Set-Location -Path "published_workflow_builds"
-
-          $artifactNames = New-Object 'System.Collections.Generic.HashSet[string]'
-          # Iterate through each os_pythonversion_arch folder.
-          Get-ChildItem -Filter "publish_*" | ForEach-Object {
-            $matrixPackagePath = $_.FullName
-            Write-Output "Found matrix package '$matrixPackagePath'"
-            $os, $python_or_pypy, $pythonVersion, $architecture = $_.BaseName -replace '^publish_', '' -split '_'
-
-            $shortOsName = $os
-            if ($os -eq "ubuntu-20.04" -or $os -eq "ubuntu-22.04" -or $os -eq "ubuntu-latest") {
-              $shortOsName = "Linux"
-            } elseif ($os -eq "macos-11" -or $os -eq "macos-12" -or $os -eq "macos-latest") {
-              $shortOsName = "Mac"
-            } elseif ($os -eq "windows-2019" -or $os -eq "windows-2022" -or $os -eq "windows-latest") {
-              $shortOsName = "Win"
-            }
-
-            # Iterate through each tool in the folder
-            Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
-              $toolExePath = $_.FullName
-              $toolFileName = $_.Name
-              $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)
-              $fileExtension = $_.Extension
-
-              $outerArchiveName = "$fileBaseName`_$pythonVersion"
-              $outerZipPath = Join-Path -Path $packagedArtifactsPath -ChildPath $outerArchiveName
-              $osSpecificArchiveName = "$fileBaseName`_$shortOsName-$architecture"
-              $osSpecificArchivePath = Join-Path -Path $outerZipPath -ChildPath $osSpecificArchiveName
-
-              Write-Output "   ToolFileName: '$toolFileName'"
-              Write-Output "   Tool original filepath: '$toolExePath'"
-              Write-Output "outerArchiveName: '$outerArchiveName'"
-              Write-Output " - osSpecificArchiveName: '$osSpecificArchiveName'"
-              Write-Output "outerZipPath: '$outerZipPath'"
-              Write-Output " - osSpecificArchivePath: '$osSpecificArchivePath'"
-
-              New-Item -ItemType Directory -Force -Path $outerZipPath
-              chmod 777 -R $toolExePath
-              $toolExeParentDirPath = Split-Path -Parent $toolExePath
-              Write-Output "Creating archive for '$toolFileName' at '$toolExeParentDirPath'..."
-
-              Write-Output ("Push-Location to start in '$toolExeParentDirPath' (originally at '$(Get-Location)')")
-              Push-Location -Path $toolExeParentDirPath
-              # Archive the tool by os identifier.
-              if ((-not $fileExtension) -or (-not $fileExtension.Trim()) -or ($fileExtension.ToLower().Trim() -eq ".app")) {
-                $osSpecificArchivePath = "$osSpecificArchivePath.tar.gz"
-                if (Test-Path $toolExePath -PathType Container -ErrorAction SilentlyContinue) {  # It's a directory
-                  tar -czf "$osSpecificArchivePath" -C "$toolExePath" .
-                } else {  # It's a file
-                  tar -czf "$osSpecificArchivePath" -C "$toolExeParentDirPath" $toolFileName
-                }
-              } else {
-                $osSpecificArchivePath = "$osSpecificArchivePath.zip"
-                zip -r -9 "$osSpecificArchivePath" $toolFileName
-              }
-              Pop-Location
-              Write-Output ("Pop-Location to return to $(Get-Location) (was pushed to '$toolExeParentDirPath')")
-
-              Write-Output "Compressed archive saved to '$osSpecificArchivePath'"
-              chmod 777 -R "$osSpecificArchivePath"
-
-              $artifactNames.Add($outerArchiveName)
-            }
-          }
-
-          # Save artifact names to a file
-          $artifactNames | Out-File -FilePath "../artifact-names.txt" -Encoding UTF8
-
-          # use for debug
-          # Get-ChildItem -Force | ForEach-Object {
-          #   $size = if ($_.PSIsContainer) { "N/A" } else { $_.Length }
-          #   $attrs = $_.Attributes.ToString() -replace 'ReadOnly', 'RO' -replace 'Hidden', 'H' -replace 'System', 'S' -replace 'Archive', 'A' -replace 'Directory', 'D' -replace ', ', '|'
-          #   [PSCustomObject]@{
-          #       Name = $_.Name
-          #       Size = $size
-          #       Attributes = $attrs
-          #   }
-          # } | Format-Table -AutoSize
-
-          # Navigate back to the root of the workspace
-          Set-Location -Path "../"
-
-      - name: Generate matrix for uploading
-        if: ${{ success() || failure() }}
-        id: set-matrix
-        shell: pwsh
-        run: |
-          $artifactNames = Get-Content 'artifact-names.txt' -ReadCount 0
-      
-          # Initialize an array to hold the artifact names directly
-          $matrixArray = @()
-      
-          foreach ($name in $artifactNames) {
-            if (-not [string]::IsNullOrEmpty($name)) {
-              Write-Host "Processing artifact name: $name"
-              # Trim the name and add directly to the array
-              $matrixArray += $name.trim()
-            }
-          }
-      
-          # Convert the array directly to JSON
-          $jsonMatrix = $matrixArray | ConvertTo-Json -Depth 5 -Compress
-
-          # Use a single line of JSON for the matrix to avoid issues
-          $singleLineJsonMatrix = $jsonMatrix -replace "`r", ""
-          $singleLineJsonMatrix = $singleLineJsonMatrix -replace "`n", ""
-          Write-Host "Matrix JSON:"
-          Write-Host $singleLineJsonMatrix
-      
-          echo "matrixJson<<EOF" >> $env:GITHUB_OUTPUT
-          echo $singleLineJsonMatrix >> $env:GITHUB_OUTPUT
-          echo "EOF" >> $env:GITHUB_OUTPUT
-
-      - name: Upload all repackages for next job
-        if: ${{ success() || failure() }}
-        uses: actions/upload-artifact@v4
+    
+      - name: Extract tag name
+        id: get_tag
+        run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
+        shell: bash
+    
+      - uses: ncipollo/release-action@v1.10.0
         with:
-          name: all_tool_dists_onearchive
-          path: packaged_artifacts/**
-          retention-days: 1  # only used for the next job.
-          compression-level: 0
-
-  upload:
-    needs: package
-    if: ${{ success() || failure() }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        artifactb: ${{ fromJson(needs.package.outputs.filesToArchive) }}
-    steps:
-      - name: Download repackages from package job
-        if: ${{ success() || failure() }}
-        uses: actions/download-artifact@v4
-        with:
-          path: all_tool_dists_onearchive
-          pattern: all_tool_dists*
-
-      - name: Upload re-packaged artifact
-        if: ${{ success() || failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifactb }}
-          path: all_tool_dists_onearchive/all_tool_dists_onearchive/${{ matrix.artifactb }}
-          compression-level: 9
-          if-no-files-found: error
+          tag: ${{ steps.get_tag.outputs.tag }}
+          prerelease: true
+          draft: true
+          artifacts: "published_workflow_builds/*"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
