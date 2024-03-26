@@ -239,7 +239,7 @@ def get_retail_key(game: Game):
     )
 
 class SpoofKotorRegistry:
-    """A context manager used to safely spoof a registry path temporarily."""
+    """A context manager used to safely spoof the KOTOR 1/2 disk retail registry path temporarily."""
     def __init__(
         self,
         installation_path: os.PathLike | str,
