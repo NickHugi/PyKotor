@@ -6,7 +6,7 @@ concurrency:
 
 env:
   OS_RUNNERS_JSON: '["windows-2019", "ubuntu-20.04", "macos-12"]'
-  PYTHON_VERSIONS_JSON: '["3.8", "3.9", "3.10", "3.11", "3.12"]'
+  PYTHON_VERSIONS_JSON: '["3.8"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
   INTERPRETERS_JSON: '["python"]'
   UPX_VERSION: '4.2.2'
