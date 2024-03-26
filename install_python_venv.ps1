@@ -57,7 +57,7 @@ function Set-EnvironmentVariablesFromEnvFile {
     Param (
         [string]$envFilePath
     )
-    if (Test-Path $envFilePath) {
+    if (Test-Path -LiteralPath $envFilePath) {
         Get-Content $envFilePath | ForEach-Object {
             if ($_ -match '^\s*(\w+)\s*=\s*(?:"(.*?)"|''(.*?)''|(.*?))\s*$') {
                 $key, $value = $matches[1], $matches[2] + $matches[3] + $matches[4]
@@ -85,7 +85,7 @@ function Set-EnvironmentVariablesFromEnvFile {
                     if (-not [string]::IsNullOrWhiteSpace($trimmedPath)) {
                         Write-Debug "Trimmed Path: $trimmedPath"
                         $absolutePath = "$repoRootPath/$trimmedPath"
-                        if ( Test-Path $absolutePath -ErrorAction SilentlyContinue )
+                        if ( Test-Path -LiteralPath $absolutePath -ErrorAction SilentlyContinue )
                         {
                             $resolvedPath = (Resolve-Path -LiteralPath $absolutePath).Path
                             if ($null -ne $resolvedPath) {
@@ -419,12 +419,13 @@ function Test-PythonCommand {
         $testPath = Get-Path-From-Command $CommandName
         $global:pythonVersion = Get-Python-Version $testPath
         if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
-            Write-Host "Found python command with version $global:pythonVersion"
-            $global:pythonInstallPath = Get-Path-From-Command $testPath
+            Write-Host "Found python command with version $global:pythonVersion at path $testPath"
+            $global:pythonInstallPath = $testPath
             return $true
         } else {
             Write-Host "python '$testPath' version '$global:pythonVersion' not supported"
-            Clear-GlobalPythonVariablesIfNecessary
+            $global:pythonInstallPath = ""
+            $global:pythonVersion = ""
         }
     }
     return $false
@@ -492,7 +493,7 @@ function Find-Python {
             } elseif ( (Get-OS) -eq "Linux" ) {
                 Install-Linux-Deps
             } elseif ( (Get-OS) -eq "Mac" ) {
-                & bash -c "brew install python@3.12" 2>&1 | Write-Output
+                & bash -c "brew install python@3.11 python-tk@3.11" 2>&1 | Write-Output
             }
             Write-Host "Find python again now that it's been installed."
             Find-Python -intrnal
@@ -505,15 +506,17 @@ $findVenvExecutable = $true
 $installPipToVenvManually = $false
 if (Get-ChildItem Env:VIRTUAL_ENV -ErrorAction SilentlyContinue) {  # Check if a venv is already activated
     $venvPath = $env:VIRTUAL_ENV
-    Write-Host "A virtual environment is currently activated: $venvPath"
-    if ($null -ne $pythonExePath) { # check if this script itself was previously used to activate this venv.
-        Write-Host "install_python_venv.ps1 has already ran and activated this venv, retrying anyway."
-    }
-    deactivate
+    Write-Host "A currently activated virtual environment found: $venvPath"
+    try {
+        deactivate
+    } catch {}
 } elseif ($venvPath -ne ($repoRootPath + $pathSep) -and (Test-Path $venvPath -ErrorAction SilentlyContinue)) {
-    Write-Host "Found existing python virtual environment at '$venvPath'"
+    Write-Host "Found non-activated existing python virtual environment at '$venvPath'"
 } else {
-    if ((Get-Linux-Distro-Name) -eq "ubuntu" -or (Get-Linux-Distro-Name) -eq "debian") {
+    # Even if python is installed, sometimes these packages are needed.
+    # Example: ubuntu has a half-implemented venv module. While a venv can be created with the partial,
+    # the partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
+    if ((Get-OS) -eq "Linux") {
         Install-Linux-Deps
     }
     Find-Python
@@ -601,33 +604,35 @@ if ( $findVenvExecutable -eq $true) {
     }
 }
 
+function Python-Venv-Activate {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$venvPath
+    )
 
-Write-Host "Activating venv at '$venvPath'"
-if ((Get-OS) -eq "Windows") {
-    # For Windows, attempt to activate using Activate.ps1
-    $activateScriptPath = Join-Path -Path $venvPath -ChildPath "Scripts\Activate.ps1"
-    if (Test-Path $activateScriptPath) {
-        & $activateScriptPath
-    } else {
-        Write-Error "Activate.ps1 not found in $activateScriptPath"
-        Write-Host "Press any key to exit..."
-        if (-not $noprompt) {
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        }
-        exit
+    # Check if the venvPath exists
+    if (-not (Test-Path -LiteralPath $venvPath)) {
+        Write-Error "Virtual environment path '$venvPath' does not exist."
+        return
     }
-} else {
-    # For Linux and macOS, check for Activate.ps1 for consistency, though it's not usually present
-    $activateScriptPath = Join-Path -Path $venvPath -ChildPath "bin/Activate.ps1"
-    if (Test-Path $activateScriptPath -ErrorAction SilentlyContinue) {
-        & $activateScriptPath
+
+    Write-Host "Activating venv at '$venvPath'"
+    if ((Get-OS) -eq "Windows") {
+        $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "Scripts"
     } else {
-        Write-Warning "Activate.ps1 not found in $activateScriptPath, attempting to use fallback activation script..."
-        $bashCommand = "source " + (Join-Path -Path $venvPath -ChildPath "bin/activate")
-        bash -c "`"$bashCommand`""
-        Write-Host "Activated venv using bash source command."
+        $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "bin"
+    }
+    $activateScriptPath = Join-Path -Path $venvScriptBinPath -ChildPath "Activate.ps1"
+    if (Test-Path -LiteralPath $activateScriptPath) {
+        & $activateScriptPath
+    } else {  # Sometimes a system may be missing activation scripts... manually do it here.
+        Write-Warning "Activate.ps1 not found in $activateScriptPath. Attempting to set venv manually."
+        $env:PATH = $env:PATH + ";$venvScriptBinPath"
+        $env:VIRTUAL_ENV = $venvPath
     }
 }
+
+Python-Venv-Activate $venvPath
 
 if ($installPipToVenvManually) {
     $originalLocation = Get-Location
