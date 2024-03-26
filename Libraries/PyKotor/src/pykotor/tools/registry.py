@@ -156,7 +156,7 @@ def winreg_key(game: Game) -> list[tuple[str, str]]:
 
 
 def get_winreg_path(game: Game):
-    """Returns the specified path value in the windows registry for the given game.
+    """(untested) Returns the specified path value in the windows registry for the given game.
 
     Attributes:
     ----------
@@ -180,7 +180,7 @@ def get_winreg_path(game: Game):
 
 
 def set_winreg_path(game: Game, path: str):
-    """Sets the kotor install folder path value in the windows registry for the given game.
+    """(untested) Sets the kotor install folder path value in the windows registry for the given game.
 
     Attributes:
     ----------
@@ -330,6 +330,7 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
 
 
 def remove_winreg_path(game: Game):
+    """(untested)."""
     possible_kotor_reg_paths = winreg_key(game)
 
     try:
