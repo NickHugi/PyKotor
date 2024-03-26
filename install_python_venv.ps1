@@ -493,7 +493,7 @@ function Find-Python {
             } elseif ( (Get-OS) -eq "Linux" ) {
                 Install-Linux-Deps
             } elseif ( (Get-OS) -eq "Mac" ) {
-                & bash -c "brew install python@3.11 python-tk@3.11" 2>&1 | Write-Output
+                & bash -c "brew install python@3.11 python-tk@3.11 tcl-tk" 2>&1 | Write-Output
             }
             Write-Host "Find python again now that it's been installed."
             Find-Python -intrnal
