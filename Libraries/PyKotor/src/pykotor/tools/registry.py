@@ -65,7 +65,7 @@ def find_software_key(software_name: str) -> str | None:
                     return winreg.QueryValue(software_key, "InstallLocation")
                 i += 1
             except OSError:  # noqa: PERF203
-                break
+                break  # No more left to iterate through.
 
     return None
 
