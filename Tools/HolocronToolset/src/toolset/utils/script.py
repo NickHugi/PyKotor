@@ -104,7 +104,7 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
             extCompiler.get_info().value.name, reg_spoofer.registry_path,
             installation_path, reg_spoofer.original_value, str(e)
         )
-        log.warning(msg)
+        log.warning(msg.replace("<br>", "\n"))
         QMessageBox(
             QMessageBox.Warning,
             "Permission denied when attempting to update nwnnsscomp in registry",
@@ -203,10 +203,10 @@ def _prompt_additional_include_dirs(
                 continue  # Skip any files in the include_path that aren't referenced by the script (faster)
 
             if ResourceIdentifier.from_path(file).restype != ResourceType.NSS:
-                log.info("%s is not an NSS script, skipping...", file.name)
+                log.debug("%s is not an NSS script, skipping...", file.name)
                 continue
             if not file.safe_isfile():
-                log.info("%s is a directory, skipping...", file.name)
+                log.debug("%s is a directory, skipping...", file.name)
                 continue
             new_include_script_path = extract_path / file.name
 
@@ -305,7 +305,7 @@ def handle_permission_error(
         extCompiler.get_info().value.name, reg_spoofer.registry_path,
         installation_path, reg_spoofer.original_value, str(e)
     )
-    log.warning(msg)
+    log.warning(msg.replace("<br>", "\n"))
     longMsgBoxErr = QMessageBox(
         QMessageBox.Warning,
         "Permission denied when attempting to update nwnnsscomp in registry",

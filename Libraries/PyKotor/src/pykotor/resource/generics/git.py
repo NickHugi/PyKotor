@@ -203,7 +203,7 @@ class GITInstance(ABC):
         self.resref: ResRef = ResRef.from_blank()
 
     @abstractmethod
-    def identifier(self) -> ResourceIdentifier | None:
+    def identifier(self) -> ResourceIdentifier:
         """Returns the resource identifier of the instance, or None if it doesn't have one."""
 
     @abstractmethod

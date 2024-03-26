@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import os
 import pathlib
 import re
@@ -9,6 +8,7 @@ import sys
 import uuid
 
 from collections import OrderedDict
+from contextlib import suppress
 from tempfile import TemporaryDirectory
 from threading import Lock
 from typing import TYPE_CHECKING, Any, ClassVar, Union

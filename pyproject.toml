@@ -176,7 +176,6 @@ ignore = [
     "N815",     # Variable `var` in class scope should not be mixedCase
     "PLR0904",  # Too many public methods
     "RUF100",   # Unused `noqa` directive (non-enabled: `PLC0415`)
-    "T201",     # 'print' found
     "TD001",    # Invalid TODO tag: `FIXME`
     "TRY003",   # Avoid specifying long messages outside the exception class
     "EM101",    # Exception must not use a string literal, assign to variable first

@@ -101,6 +101,24 @@ if (Test-Path -Path $finalExecutablePath) {
     Remove-Item -Path $finalExecutablePath -Force
 }
 
+$current_working_dir = (Get-Location).Path
+Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src").Path
+
+# Determine the final executable path
+$finalExecutablePath = $null
+if ((Get-OS) -eq "Windows") {
+    $finalExecutablePath = "$rootPath\dist\HoloPatcher.exe"
+} elseif ((Get-OS) -eq "Linux") {
+    $finalExecutablePath = "$rootPath/dist/HoloPatcher"
+} elseif ((Get-OS) -eq "Mac") {
+    $finalExecutablePath = "$rootPath/dist/HoloPatcher.app"
+}
+
+# Delete the final executable if it exists
+if (Test-Path -Path $finalExecutablePath) {
+    Remove-Item -Path $finalExecutablePath -Force
+}
+
 Write-Host "Compiling HoloPatcher..."
 $iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{

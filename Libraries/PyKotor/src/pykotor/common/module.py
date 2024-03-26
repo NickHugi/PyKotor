@@ -32,7 +32,7 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from utility.error_handling import format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 from utility.string_util import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath
 
@@ -1195,12 +1195,15 @@ class ModuleResource(Generic[T]):
 
         return BinaryReader.load_file(self._active)
 
-    def resource(self) -> T | None:
+    def resource(self) -> T:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns:
         -------
             The resource object.
+
+        Raises:
+            ValueError - resource not found somewhere
         """
         if self._resource_obj is None:
             conversions: dict[ResourceType, Callable[[SOURCE_TYPES], Any]] = {
@@ -1228,8 +1231,7 @@ class ModuleResource(Generic[T]):
 
             file_name: str = f"{self._resname}.{self._restype.extension}"
             if self._active is None:
-                self._resource_obj = None
-
+                assert_with_variable_trace(self._resource_obj is not None)
             elif is_capsule_file(self._active.name):
                 data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
                 if data is None:

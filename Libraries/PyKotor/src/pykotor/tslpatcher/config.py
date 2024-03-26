@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
-class LogLevel(IntEnum):  # TODO: implement into HoloPatcher
+class LogLevel(IntEnum):  # TODO(th3w1zard1): implement into HoloPatcher
     # Docstrings taken from ChangeEdit docs
 
     NOTHING = 0
@@ -145,7 +145,9 @@ class PatcherConfig:
                     continue
 
                 nested_modifiers = self.get_nested_gff_patches(gff_modifier)
-                gff_modifier.modifiers = nested_modifiers  # type: ignore[reportAttributeAccessIssue]  nested modifiers will reference the item from the flattened list.
+
+                # nested modifiers will reference the item from the flattened list.
+                gff_modifier.modifiers = nested_modifiers  # type: ignore[reportAttributeAccessIssue]
                 flattened_gff_patches.extend(nested_modifiers)
         return flattened_gff_patches
 

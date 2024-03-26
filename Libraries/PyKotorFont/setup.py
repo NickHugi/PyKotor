@@ -46,9 +46,10 @@ def main():
     )
 
 
-from contextlib import suppress
 import datetime
 import re
+
+from contextlib import suppress
 
 TIME_RE = re.compile(r"([0-9]{2}):([0-9]{2}):([0-9]{2})(\.([0-9]{3,6}))?")
 _number_with_underscores = re.compile("([0-9])(_([0-9]))*")

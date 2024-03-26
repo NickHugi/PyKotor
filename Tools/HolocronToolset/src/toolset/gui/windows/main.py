@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import platform
 import sys
-import traceback
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
@@ -79,6 +78,7 @@ from utility.error_handling import (
     format_exception_with_variables,
     universal_simplify_exception,
 )
+from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate
@@ -243,6 +243,7 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
+        self.log = get_root_logger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
@@ -1088,19 +1089,19 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self):
         self.reloadInstallations()
 
-
-    def getActiveResourceWidget(self) -> ResourceList | TextureList | None:
-        if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
+    def getActiveResourceWidget(self) -> ResourceList | TextureList:
+        currentWidget = self.ui.resourceTabs.currentWidget()
+        if currentWidget is self.ui.coreTab:
             return self.ui.coreWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
+        if currentWidget is self.ui.modulesTab:
             return self.ui.modulesWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.overrideTab:
+        if currentWidget is self.ui.overrideTab:
             return self.ui.overrideWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.texturesTab:
+        if currentWidget is self.ui.texturesTab:
             return self.ui.texturesWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.savesTab:
+        if currentWidget is self.ui.savesTab:
             return self.ui.savesWidget
-        return None
+        raise ValueError(f"Unknown current widget: {currentWidget}")
 
     def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:
         if self.active is None:
@@ -1237,6 +1238,9 @@ class ToolWindow(QMainWindow):
 
     def refreshTexturePackList(self, *, reload=True):
         sections = self._getTexturePackList(reload=reload)
+        if sections is None:
+            self.log.debug("sections was None in refreshTexturePackList(reload=%s)", reload)
+            return
         self.ui.texturesWidget.setSections(sections)
 
     def changeModule(self, moduleName: str):
@@ -1380,7 +1384,7 @@ class ToolWindow(QMainWindow):
                 self.dogObserver.stop()
                 self.dogObserver = None
             return
-        print("Loading core installation resources into UI...")
+        self.log.info("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
         if self.active.game().is_k1():
             patch_erf_path = self.active.path() / "patch.erf"
@@ -1390,24 +1394,27 @@ class ToolWindow(QMainWindow):
         self.ui.coreWidget.setResources(self.active._streammusic, "Stream Music", clear_existing=False)
         self.ui.coreWidget.setResources(self.active._streamsounds, "Stream Sounds", clear_existing=False)
         moduleItems, overrideItems, textureItems = prepare_loader.value
-        print("Loading saves list into UI...")
+        self.log.info("Loading saves list into UI...")
         self.refreshSavesList(reload=False)
+        assert moduleItems is not None
+        assert overrideItems is not None
+        assert textureItems is not None
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
         self.ui.texturesWidget.setSections(textureItems)
-        print("Remove unused categories...")
+        self.log.debug("Remove unused categories...")
         self.ui.coreWidget.modulesModel.removeUnusedCategories()
         self.ui.texturesWidget.setInstallation(self.active)
-        print("Updating menus...")
+        self.log.debug("Updating menus...")
         self.updateMenus()
-        print("Setting up watchdog observer...")
+        self.log.debug("Setting up watchdog observer...")
         if self.dogObserver is not None:
-            print("Stopping old watchdog service...")
+            self.log.debug("Stopping old watchdog service...")
             self.dogObserver.stop()
         self.dogObserver = Observer()
         self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
         self.dogObserver.start()
-        print("Loader task completed.")
+        self.log.info("Loader task completed.")
         self.settings.installations()[name].path = path
         self.installations[name] = self.active
 
@@ -1459,8 +1466,8 @@ class ToolWindow(QMainWindow):
                 file.write(data)
 
         except Exception as e:
-            print(format_exception_with_variables(e))
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
+            self.log.exception(msg)
             raise RuntimeError(msg) from e
         QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 

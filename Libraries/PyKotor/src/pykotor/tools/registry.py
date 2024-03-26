@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path
 
@@ -64,7 +65,7 @@ def find_software_key(software_name: str) -> str | None:
                     return winreg.QueryValue(software_key, "InstallLocation")
                 i += 1
             except OSError:  # noqa: PERF203
-                break
+                break  # No more left to iterate through.
 
     return None
 
@@ -154,7 +155,7 @@ def winreg_key(game: Game) -> list[tuple[str, str]]:
 
 
 def get_winreg_path(game: Game):
-    """Returns the specified path value in the windows registry for the given game.
+    """(untested) Returns the specified path value in the windows registry for the given game.
 
     Attributes:
     ----------
@@ -178,7 +179,7 @@ def get_winreg_path(game: Game):
 
 
 def set_winreg_path(game: Game, path: str):
-    """Sets the kotor install folder path value in the windows registry for the given game.
+    """(untested) Sets the kotor install folder path value in the windows registry for the given game.
 
     Attributes:
     ----------
@@ -206,6 +207,7 @@ def set_winreg_path(game: Game, path: str):
 
 def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-error
     """Recursively creates the registry path if it doesn't exist."""
+    log = get_root_logger()
     try:
         import winreg
 
@@ -214,14 +216,13 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
             current_path = f"{current_path}\\{part}" if current_path else part
             try:
                 winreg.CreateKey(hive, current_path)
-            except PermissionError:
+            except PermissionError as e:
                 raise PermissionError("Permission denied. Administrator privileges required.") from e  # noqa: B904, TRY003, EM101
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 # sourcery skip: raise-specific-error
-                raise Exception(f"Failed to create registry key: {current_path}. Error: {e}")  # noqa: TRY002, TRY003, EM102, B904
-    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-        print(format_exception_with_variables(e))
-
+                raise Exception(f"Failed to create registry key: {current_path}") from e  # noqa: TRY002, TRY003, EM102, B904
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
+        log.exception("An unexpected error occurred while creating a registry path.")
 
 def get_retail_key(game: Game):
     if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
@@ -237,7 +238,7 @@ def get_retail_key(game: Game):
     )
 
 class SpoofKotorRegistry:
-    """A context manager used to safely spoof a registry path temporarily."""
+    """A context manager used to safely spoof the KOTOR 1/2 disk retail registry path temporarily."""
     def __init__(
         self,
         installation_path: os.PathLike | str,
@@ -291,6 +292,7 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
     ------
         - PermissionError: PyKotor doesn't have permission to change the registry (usually fixed by running as admin).
     """
+    log = get_root_logger()
     try:
         import winreg
 
@@ -304,7 +306,7 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
             "HKEY_CURRENT_CONFIG": winreg.HKEY_CURRENT_CONFIG,
         }.get(hive_name)
         if hive is None:
-            print(f"Error: Invalid registry hive '{hive_name}'.")
+            log.error("Invalid registry hive '%s'.", hive_name)
             return
 
         # Create the registry path
@@ -312,22 +314,22 @@ def set_registry_key_value(full_key_path: str, value_name: str, value_data: str)
             create_registry_path(hive, sub_key)
         except PermissionError:
             raise
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            print(format_exception_with_variables(e))
+        except Exception:  # pylint: disable=W0718  # noqa: BLE001
+            log.exception("set_registry_key_value raised an error other than the expected PermissionError")
             return
         # Open or create the key at the specified path
         with winreg.CreateKeyEx(hive, sub_key, 0, winreg.KEY_WRITE | winreg.KEY_WOW64_32KEY) as key:
             # Set the value
             winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, value_data)
-            print(f"Successfully set {value_name} to {value_data} at {hive}\\{sub_key}")
+            log.debug("Successfully set %s to %s at %s\\%s", value_name, value_data, hive, sub_key)
     except PermissionError:
         raise
-    except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-        print(f"An unexpected error occurred: {e}")
-        print(format_exception_with_variables(e))
+    except Exception:  # pylint: disable=W0718  # noqa: BLE001
+        log.exception("An unexpected error occured while setting the registry.")
 
 
 def remove_winreg_path(game: Game):
+    """(untested)."""
     possible_kotor_reg_paths = winreg_key(game)
 
     try:
