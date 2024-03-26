@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import difflib
 import math
-import os
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
@@ -12,10 +12,12 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
-from utility.string import compare_and_format, format_text
+from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from collections.abc import Callable, Generator, Iterator
 
 T = TypeVar("T")
@@ -155,6 +157,80 @@ class GFFFieldType(IntEnum):
         raise ValueError(self)
 
 
+class Difference:
+    def __init__(self, path: os.PathLike | str, old_value: Any, new_value: Any):
+        """Initializes a Difference instance representing a specific difference between two GFFStructs.
+
+        Args:
+        ----
+            path (os.PathLike | str): The path to the value within the GFFStruct where the difference was found.
+            old_value (Any): The value from the original GFFStruct at the specified path.
+            new_value (Any): The value from the compared GFFStruct at the specified path.
+        """
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.old_value: Any = old_value
+        self.new_value: Any = new_value
+
+    def __repr__(self):
+        return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
+
+
+class GFFCompareResult:
+    """A comparison result from gff.compare/GFFStruct.compare.
+
+    Contains enough differential information between the two GFF structs that it can be used to take one gff and reconstruct the other.
+    Helper methods also exist for working with the data in other code.
+
+    Backwards-compatibility note: the original gff.compare used to return a simple boolean. True if the gffs were the same, False if not. This class
+    attempts to keep backwards compatibility while ensuring we can still return a type that's more detailed and informative.
+    """
+
+    def __init__(self):
+        self.differences: list[Difference] = []
+
+    def __bool__(self):
+        # Return False if the list has any contents (meaning the objects are different), True if it's empty.
+        return not bool(self.differences)
+
+    def add_difference(self, path, old_value, new_value):
+        """Adds a difference to the collection of tracked differences.
+
+        Args:
+        ----
+            path (str): The path to the value where the difference was found.
+            old_value (Any): The original value at the specified path.
+            new_value (Any): The new value at the specified path that differs from the original.
+        """
+        self.differences.append(Difference(path, old_value, new_value))
+
+    def get_changed_values(self) -> list[Difference]:
+        """Returns a list of differences where the value has changed from the original.
+
+        Returns:
+        -------
+            list[Difference]: The list of differences with changed values.
+        """
+        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value]
+
+    def get_new_values(self) -> list[Difference]:
+        """Returns a list of differences where a new value is present in the compared GFFStruct.
+
+        Returns:
+        -------
+            list[Difference]: The list of differences with new values.
+        """
+        return [diff for diff in self.differences if diff.old_value is None and diff.new_value is not None]
+
+    def get_removed_values(self) -> list[Difference]:
+        """Returns a list of differences where a value is present in the original GFFStruct but not in the compared.
+
+        Returns:
+        -------
+            list[Difference]: The list of differences with removed values.
+        """
+        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is None]
+
+
 class GFF:
     """Represents the data of a GFF file."""
 
@@ -252,9 +328,6 @@ class _GFFField:
     ):
         self._field_type: GFFFieldType = field_type
         self._value: Any = value
-
-    def __repr__(self):
-        return safe_repr(self)
 
     def field_type(
         self,
@@ -377,6 +450,7 @@ class GFFStruct:
             "KTInfoVersion",
             "EditorInfo",
         }
+
         def is_ignorable_value(v) -> bool:
             return not v or str(v) in {"0", "-1"}
 
@@ -397,8 +471,12 @@ class GFFStruct:
             is_same = False
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels
+        }
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels
+        }
 
         # Union of labels from both old and new structures
         all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
@@ -457,23 +535,14 @@ class GFFStruct:
 
                 is_same = False
                 if str(old_value) == str(new_value):
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
+                    log_func(
+                        f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
+                    )
                     continue
 
                 formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                newlines_in_old: int = formatted_old_value.count("\n")
-                newlines_in_new: int = formatted_new_value.count("\n")
-
-                if newlines_in_old > 1 or newlines_in_new > 1:
-                    formatted_old_value, formatted_new_value = compare_and_format(formatted_old_value, formatted_new_value)
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
-                    continue
-
-                if newlines_in_old == 1 or newlines_in_new == 1:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{formatted_old_value}{os.linesep}<-vvv->{os.linesep}{formatted_new_value}")
-                    continue
-
-                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {formatted_old_value} --> {formatted_new_value}")
+                diff = difflib.ndiff(formatted_old_value.splitlines(keepends=True), formatted_new_value.splitlines(keepends=True))
+                log_func("\n".join(diff))
 
         return is_same
 

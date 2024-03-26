@@ -1,4 +1,5 @@
 """This module handles classes relating to editing VIS files."""
+
 from __future__ import annotations
 
 from copy import copy, deepcopy

@@ -74,6 +74,7 @@ class DLGEditor(Editor):
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
         from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -522,13 +523,7 @@ class DLGEditor(Editor):
     def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
         self._add_node_main(source, target.links, True, item)
 
-    def _add_node_main(
-        self,
-        source: DLGNode,
-        target_links: list[DLGLink],
-        _copy_role_data: bool,
-        item: QStandardItem | QStandardItemModel | None
-    ):
+    def _add_node_main(self, source: DLGNode, target_links: list[DLGLink], _copy_role_data: bool, item: QStandardItem | QStandardItemModel | None):
         newLink = DLGLink(source)
         target_links.append(newLink)
         newItem = QStandardItem()
@@ -726,12 +721,7 @@ class DLGEditor(Editor):
 
         data: bytes | None = self._installation.sound(
             resname,
-            [
-                SearchLocation.VOICE,
-                SearchLocation.SOUND,
-                SearchLocation.OVERRIDE,
-                SearchLocation.CHITIN
-            ],
+            [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
 
         if data:
@@ -798,11 +788,7 @@ class DLGEditor(Editor):
         self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
 
         # Sync DLG to tree changes
-        links: list[DLGLink] = (
-            self._dlg.starters
-            if item.parent() is None
-            else item.parent().data(_LINK_ROLE).node.links
-        )
+        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
         link: DLGLink = links.pop(oldRow)
         links.insert(newRow, link)
 
@@ -859,8 +845,8 @@ class DLGEditor(Editor):
         menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
         menu.addSeparator()
         # REMOVEME: moving nodes is a horrible idea. It's currently broken anyway.
-        #menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
-        #menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+        # menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+        # menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
         menu.addSeparator()
 
         if isCopy:
@@ -1200,5 +1186,3 @@ class DLGEditor(Editor):
                 item = QListWidgetItem(text)
                 item.setData(QtCore.Qt.UserRole, anim)
                 self.ui.animsList.addItem(item)
-
-

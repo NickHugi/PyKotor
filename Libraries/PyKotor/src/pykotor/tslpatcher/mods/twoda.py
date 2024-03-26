@@ -20,12 +20,10 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
-class CriticalError(Exception):
-    ...
+class CriticalError(Exception): ...
 
 
-class WarningError(Exception):
-    ...
+class WarningError(Exception): ...
 
 
 class TargetType(IntEnum):
@@ -46,7 +44,7 @@ class Target:
     def __repr__(self):
         return f"{self.__class__.__name__}(target_type={self.target_type.__class__.__name__}.{self.target_type.name}, value={self.value!r})"
 
-    def search(self, twoda: TwoDA) -> TwoDARow | None:
+    def search(self, twoda: TwoDA, memory: PatcherMemory) -> TwoDARow | None:
         """Searches a TwoDA for a row matching the target.
 
         Args:
@@ -63,20 +61,24 @@ class Target:
             - For label column, checks for label column, then iterates rows to find match
             - Returns matching row or None.
         """
+        if isinstance(self.value, (RowValueTLKMemory, RowValue2DAMemory)):
+            value = self.value.value(memory, twoda, None)
+        else:
+            value = self.value
         source_row: TwoDARow | None = None
         if self.target_type == TargetType.ROW_INDEX:
-            source_row = twoda.get_row(int(self.value))
+            source_row = twoda.get_row(int(value))
         elif self.target_type == TargetType.ROW_LABEL:
-            source_row = twoda.find_row(str(self.value))
+            source_row = twoda.find_row(str(value))
         elif self.target_type == TargetType.LABEL_COLUMN:
             if "label" not in twoda.get_headers():
-                msg = f"The label could not be found in the twoda's headers: ({self.target_type.name}, {self.value})"
+                msg = f"'label' could not be found in the twoda's headers: ({self.target_type.name}, {value})"
                 raise WarningError(msg)
-            if self.value not in twoda.get_column("label"):
-                msg = f"The value '{self.value}' could not be found in the twoda's columns"
+            if value not in twoda.get_column("label"):
+                msg = f"The value '{value}' could not be found in the twoda's columns"
                 raise WarningError(msg)
             for row in twoda:
-                if row.get_string("label") == self.value:
+                if row.get_string("label") == value:
                     source_row = row
 
         return source_row
@@ -85,8 +87,7 @@ class Target:
 # region Value Returners
 class RowValue(ABC):
     @abstractmethod
-    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        ...
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str: ...
 
 
 class RowValueConstant(RowValue):
@@ -168,16 +169,14 @@ class RowValueHigh(RowValue):
 
 
 class RowValueRowIndex(RowValue):
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return str(twoda.row_index(row)) if row is not None else ""
 
 
 class RowValueRowLabel(RowValue):
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
         return row.label() if row is not None else ""
@@ -200,8 +199,7 @@ class RowValueRowCell(RowValue):
 # region Modify 2DA
 class Modify2DA(ABC):
     @abstractmethod
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def _unpack(
         self,
@@ -212,20 +210,12 @@ class Modify2DA(ABC):
     ) -> dict[str, str]:
         return {column: value.value(memory, twoda, row) for column, value in cells.items()}
 
-    def _check_memory(
-        self,
-        value: str,
-        memory: PatcherMemory,
-    ) -> Any:
-        return int(value[9:]) if value.lower().startswith("2DAMEMORY") else value
-
     @abstractmethod
     def apply(
         self,
         twoda: TwoDA,
         memory: PatcherMemory,
-    ):
-        ...
+    ): ...
 
 
 class ChangeRow2DA(Modify2DA):
@@ -263,7 +253,7 @@ class ChangeRow2DA(Modify2DA):
         )
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory):
-        source_row: TwoDARow | None = self.target.search(twoda)
+        source_row: TwoDARow | None = self.target.search(twoda, memory)
 
         if source_row is None:
             msg = f"The source row was not found during the search: ({self.target.target_type.name}, {self.target.value})"
@@ -297,7 +287,7 @@ class AddRow2DA(Modify2DA):
         store_tlk: dict[int, RowValue] | None = None,
     ):
         self.identifier: str = identifier
-        self.exclusive_column: str | None = exclusive_column if exclusive_column else None
+        self.exclusive_column: str | None = exclusive_column
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
@@ -330,7 +320,7 @@ class AddRow2DA(Modify2DA):
         """
         target_row: TwoDARow | None = None
 
-        if self.exclusive_column is not None:
+        if self.exclusive_column:
             if self.exclusive_column not in self.cells:
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
                 raise WarningError(msg)
@@ -341,8 +331,9 @@ class AddRow2DA(Modify2DA):
                 None,
             )
             for row in twoda:
-                if row.get_string(self.exclusive_column) == exclusive_value:
-                    target_row = row
+                if row.get_string(self.exclusive_column) != exclusive_value:
+                    continue
+                target_row = row
 
         if target_row is None:
             row_label: str = str(twoda.get_height()) if self.row_label is None else self.row_label
@@ -414,7 +405,7 @@ class CopyRow2DA(Modify2DA):
             3. Unpacks the cell values and updates/adds the target row
             4. Stores any 2DA or TLK values in the memory context.
         """
-        source_row: TwoDARow | None = self.target.search(twoda)
+        source_row: TwoDARow | None = self.target.search(twoda, memory)
         target_row: TwoDARow | None = None
         row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
@@ -433,8 +424,9 @@ class CopyRow2DA(Modify2DA):
                 None,
             )
             for row in twoda:
-                if row.get_string(self.exclusive_column) == exclusive_value:
-                    target_row = row
+                if row.get_string(self.exclusive_column) != exclusive_value:
+                    continue
+                target_row = row
 
         if target_row is not None:
             # If the row already exists (based on exclusive_column) then we update the cells
@@ -539,6 +531,8 @@ class AddColumn2DA(Modify2DA):
             else:
                 msg = f"store_2da dict has an invalid value at {token_id}: '{value}'"
                 raise WarningError(msg)
+
+
 # endregion
 
 

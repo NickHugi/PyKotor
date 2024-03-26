@@ -17,26 +17,54 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
-LOCAL_PROGRAM_INFO = \
-{  #<---JSON_START--->#{
-    "currentVersion": "2.2.1",
+LOCAL_PROGRAM_INFO: dict[str, Any] = {
+    # <---JSON_START--->#{
+    "currentVersion": "2.2.1b20",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b18",
+    "toolsetLatestBetaVersion": "2.2.1b20",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
     "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
+    "toolsetDirectLinks": {
+        "Darwin": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
+        },
+        "Linux": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
+        },
+        "Windows": {
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
+        }
+    },
+    "toolsetBetaDirectLinks": {
+        "Darwin": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
+        },
+        "Linux": {
+            "32bit": [],
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
+        },
+        "Windows": {
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
+        }
+    },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "<br>  - Tons of performance optimizations<br>  - Fix filtering by name in the Texture tab<br>  - Fix editors not starting on top<br>  - Use new strategy for IO<br>  - Use pillow to load large TGA images.<br>  - Fix reload/refresh buttons<br>  - Prompt before creating a .mod when using module designer.<br>  - Fix bug when compiling scripts inside RIMs, when rims saving setting is disabled.<br>  - Optimize installation loading and show progress bar for the entire process.<br>  - Fix issue with installations not being cached when swapping to a different installation in the combobox.<br>  - Fix issue with windows not having separate taskbar entries.<br>  - Add an option to disable/enable loading Override textures into the module designer (workaround for large textures taking ages to load).<br>  - Add additional resources into the Core tab.<br><br>Thank you to the users who've reported the bugs in the last few versions.",
+    "toolsetLatestBetaNotes": "Fixed help booklet, and other various bugfixes. Update when you are able :)",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
         "Hidden Bek Base": {"version": 1, "id": "hiddenbek"}
     },
     "help": {"version": 3}
-} #<---JSON_END--->#
-
+}  #<---JSON_END--->#
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
+
 
 def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
     if useBetaChannel:
@@ -52,28 +80,27 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         decoded_content_str = decoded_content.decode(encoding="utf-8")
         # use for testing only:
-        #with open("config.py") as f:
+        # with open("config.py") as f:
         #    decoded_content_str = f.read()
         # Use regex to extract the JSON part between the markers
-        json_data_match = re.search(r"<---JSON_START--->\#(.*?)\#<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
+        json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
-        if json_data_match:
-            json_str = json_data_match.group(1)
-            remoteInfo = json.loads(json_str)
-            if not isinstance(remoteInfo, dict):
-                raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
-        else:
+        if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
+        json_str = json_data_match.group(1)
+        remoteInfo = json.loads(json_str)
+        if not isinstance(remoteInfo, dict):
+            raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001
         errMsg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(
             None,
             "Error occurred fetching update information.",
             (
-                "An error occurred while fetching the latest toolset information.<br><br>" +
-                errMsg.replace("\n", "<br>") +
-                "<br><br>" +
-                "Would you like to check against the local database instead?"
+                "An error occurred while fetching the latest toolset information.<br><br>"
+                + errMsg.replace("\n", "<br>")
+                + "<br><br>"
+                + "Would you like to check against the local database instead?"
             ),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.Yes,
@@ -102,8 +129,10 @@ def download_github_file(
     url_or_repo: str,
     local_path: os.PathLike | str,
     repo_path: os.PathLike | str | None = None,
+    timeout: int | None = None,
 ):
-    local_path = Path(local_path)
+    timeout = 180 if timeout is None else timeout
+    local_path = Path(local_path).absolute()
     local_path.parent.mkdir(parents=True, exist_ok=True)
 
     if repo_path is not None:
@@ -123,7 +152,7 @@ def download_github_file(
         download_url = url_or_repo
 
     # Download the file
-    with requests.get(download_url, stream=True, timeout=15) as r:
+    with requests.get(download_url, stream=True, timeout=timeout) as r:
         r.raise_for_status()
         with local_path.open("wb") as f:
             for chunk in r.iter_content(chunk_size=8192):

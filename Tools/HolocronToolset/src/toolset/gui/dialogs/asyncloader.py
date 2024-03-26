@@ -3,17 +3,82 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QTimer
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    from multiprocessing import Process, Queue
+
     from PyQt5.QtGui import QCloseEvent
     from PyQt5.QtWidgets import QWidget
 
 T = TypeVar("T")
+
+def human_readable_size(byte_size: float) -> str:
+    for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
+        if byte_size < 1024:  # noqa: PLR2004
+            return f"{round(byte_size, 2)} {unit}"
+        byte_size /= 1024
+    return str(byte_size)
+
+class ProgressDialog(QDialog):
+    def __init__(self, progress_queue: Queue, title: str = "Operation Progress"):
+        super().__init__(None)
+        self.progress_queue: Queue = progress_queue
+        self.setWindowTitle(title)
+        self.setLayout(QVBoxLayout())
+
+        self.statusLabel = QLabel("Initializing...", self)
+        self.bytesLabel = QLabel("")
+        self.timeLabel = QLabel("--/--")
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setMaximum(100)
+
+        self.layout().addWidget(self.statusLabel)
+        self.layout().addWidget(self.bytesLabel)
+        self.layout().addWidget(self.progressBar)
+        self.layout().addWidget(self.timeLabel)
+
+        # Timer to poll the queue for new progress updates
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.check_queue)
+        self.timer.start(100)  # Check every 100 ms
+        self.setFixedSize(420, 80)
+
+    def check_queue(self):
+        while not self.progress_queue.empty():
+            message = self.progress_queue.get()
+            if message["action"] == "update_progress":
+                # Handle progress updates
+                data: dict[str, Any] = message["data"]
+                downloaded = data["downloaded"]
+                total = data["total"]
+                progress = int((downloaded / total) * 100) if total else 0
+                self.progressBar.setValue(progress)
+                self.statusLabel.setText(f"Downloading... {progress}%")
+                self.timeLabel.setText(f"Time remaining: {data.get('time', self.timeLabel.text())}")
+                self.bytesLabel.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
+            elif message["action"] == "update_status":
+                # Handle status text updates
+                text = message["text"]
+                self.statusLabel.setText(text)
+            elif message["action"] == "shutdown":
+                self.close()
+
+    def update_status(self, text: str):
+        self.statusLabel.setText(text)
+
+    @staticmethod
+    def monitor_and_terminate(process: Process, timeout: int = 5):
+        """Monitor and forcefully terminate if this doesn't exit gracefully."""
+        process.join(timeout)  # Wait for the process to terminate for 'timeout' seconds
+        if process.is_alive():  # Check if the process is still alive
+            process.terminate()  # Forcefully terminate the process
+            process.join()  # Wait for the process to terminate
+
 
 class AsyncLoader(QDialog, Generic[T]):
     optionalFinishHook = QtCore.pyqtSignal(object)
@@ -26,7 +91,7 @@ class AsyncLoader(QDialog, Generic[T]):
         task: Callable[..., T],
         errorTitle: str | None = None,
         *,
-        startImmediately: bool = True
+        startImmediately: bool = True,
     ):
         """Initializes a progress dialog.
 
@@ -66,7 +131,7 @@ class AsyncLoader(QDialog, Generic[T]):
 
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self.value: T = None
+        self.value: T = None  # type: ignore[assignment]
         self.error: Exception | None = None
         self.errorTitle: str | None = errorTitle
 
@@ -181,7 +246,7 @@ class AsyncBatchLoader(QDialog):
         self.successCount = 0
         self.failCount = 0
 
-        self._worker = AsyncBatchWorker(self, tasks, cascade)
+        self._worker = AsyncBatchWorker(self, tasks, cascade=cascade)
         self._worker.successful.connect(self._onSuccessful)
         self._worker.failed.connect(self._onFailed)
         self._worker.completed.connect(self._onAllCompleted)
@@ -246,6 +311,7 @@ class AsyncBatchWorker(QThread):
         self,
         parent: QWidget,
         tasks: list[Callable],
+        *,
         cascade: bool,
     ):
         super().__init__(parent)

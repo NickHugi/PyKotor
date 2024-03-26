@@ -23,7 +23,7 @@ from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import assert_with_variable_trace
-from utility.string import ireplace
+from utility.string_util import ireplace
 
 if TYPE_CHECKING:
     import os
@@ -228,10 +228,13 @@ def clone_module(
                     new_lightmap_name = f"{identifier}_lm_{len(new_lightmaps.keys())}"
                     new_lightmaps[lightmap] = new_lightmap_name
 
-                    tpc = installation.texture(
-                        lightmap,
-                        [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
-                    ) or TPC()
+                    tpc = (
+                        installation.texture(
+                            lightmap,
+                            [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
+                        )
+                        or TPC()
+                    )
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()

@@ -76,15 +76,13 @@ if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     switch ($qtApi) {
-        "pyqt5"   { & bash -c "brew install qt5 -q" }
-        "pyqt6"   { & bash -c "brew install qt6 -q" }
-        "pyside2" { & bash -c "brew install qt5 -q" }  # PySide2 typically uses Qt5
-        "pyside6" { & bash -c "brew install qt6 -q" }
-        default   { & bash -c "brew install qt5 -q" }
+        "pyqt5"   { & bash -c "brew install qt@5 -q" }
+        "pyqt6"   { & bash -c "brew install qt@6 -q" }
+        "pyside2" { & bash -c "brew install qt@5 -q" }  # PySide2 typically uses Qt5
+        "pyside6" { & bash -c "brew install qt@6 -q" }
+        default   { & bash -c "brew install qt@5 -q" }
     }
     . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
-
-    brew install --quiet --force qt@5
 
 } elseif ((Get-OS) -eq "Windows") {
     # Determine system architecture
@@ -134,19 +132,21 @@ if ((Get-OS) -eq "Mac") {
     while ($attemptNum -le $maxAttempts) {
         # Attempt to update and install packages
         switch ($distro) {
+            # debian and ubuntu need libnsl in order to load DLGEditor, but the packages aren't found on some ubuntu systems?
             "debian" {  # untested
-                sudo apt-get update
+                sudo apt-get update -y
                 sudo apt-get install libicu-dev libunwind-dev libwebp-dev liblzma-dev libjpeg-dev libtiff-dev libquadmath0 libgfortran5 libopenblas-dev libxau-dev libxcb1-dev python3-opengl python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 -y
                 break
             }
             "ubuntu" {  # export LIBGL_ALWAYS_SOFTWARE=1
-                sudo apt-get update
+                sudo apt-get update -y
+                sudo apt-get upgrade -y
                 sudo apt-get install libicu-dev libunwind-dev libwebp-dev liblzma-dev libjpeg-dev libtiff-dev libquadmath0 libgfortran5 libopenblas-dev libxau-dev libxcb1-dev python3-opengl python3-pyqt5 libpulse-mainloop-glib0 libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly libgstreamer1.0-dev mesa-utils libgl1-mesa-glx libgl1-mesa-dri qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libgl1-mesa-glx libglu1-mesa libglu1-mesa-dev libqt5gui5 libqt5core5a libqt5dbus5 libqt5widgets5 --fix-missing -y
                 break
             }
             "fedora" {
                 sudo dnf groupinstall "Development Tools" -y
-                sudo dnf install binutils mesa-libGL-devel python3-pyopengl PyQt5 pulseaudio-libs-glib2 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free gstreamer1-devel -y
+                sudo dnf install binutils libnsl mesa-libGL-devel python3-pyopengl PyQt5 pulseaudio-libs-glib2 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free gstreamer1-devel -y
                 break
             }
             "oracle" {
@@ -155,7 +155,7 @@ if ((Get-OS) -eq "Mac") {
                 break
             }
             "almalinux" {
-                sudo dnf install binutils libglvnd-opengl python3-qt5 python3-pyqt5-sip pulseaudio-libs-glib2 pulseaudio-libs-devel gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free mesa-libGLw libX11 mesa-dri-drivers mesa-libGL mesa-libglapi -y
+                sudo dnf install binutils libnsl libglvnd-opengl python3-qt5 python3-pyqt5-sip pulseaudio-libs-glib2 pulseaudio-libs-devel gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free mesa-libGLw libX11 mesa-dri-drivers mesa-libGL mesa-libglapi -y
                 break
             }
             "alpine" {  # export LIBGL_ALWAYS_SOFTWARE=1

@@ -1,4 +1,4 @@
-#tsidna~=3.3  # TODO: can't be found on pip/pypi?
+idna~=3.3
 PyQt5~=5.15
 PyQt5-Qt5~=5.15
 PyQt5-sip~=12.10
@@ -11,3 +11,4 @@ certifi==2021.10.8
 pyperclip~=1.8
 setuptools>=67.8.0
 Pillow>=9.5
+pycryptodome

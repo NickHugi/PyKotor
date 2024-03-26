@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 # Try to import defusedxml, fallback to ElementTree if not available
-from xml.etree import ElementTree
+from xml.etree import ElementTree as ElemTree
 
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
-    ElementTree.fromstring = _fromstring
+
+    ElemTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
     print("warning: diffusedxml is not available but recommended due to security concerns.")
 
@@ -21,17 +22,18 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from toolset.__main__ import is_frozen
 from toolset.config import download_github_file, getRemoteToolsetUpdateInfo
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
+from utility.system.os_helper import is_frozen
 from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
 
     from PyQt5.QtWidgets import QWidget
+
 
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
@@ -42,6 +44,7 @@ class HelpWindow(QMainWindow):
         self.version: tuple[int, ...] | None = None
 
         from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -113,15 +116,17 @@ class HelpWindow(QMainWindow):
                     "Update available",
                     "A newer version of the help book is available for download, would you like to download it?",
                     parent=None,
-                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
                 )
                 newHelpMsgBox.setWindowIcon(self.windowIcon())
                 newHelpMsgBox.addButton(QMessageBox.Yes)
                 newHelpMsgBox.addButton(QMessageBox.No)
                 user_response = newHelpMsgBox.exec_()
                 if user_response == QMessageBox.Yes:
+
                     def task():
                         return self._downloadUpdate()
+
                     loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                     if loader.exec_():
                         self._setupContents()
@@ -133,7 +138,7 @@ class HelpWindow(QMainWindow):
                 error_msg,
                 QMessageBox.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()

@@ -34,6 +34,7 @@ def compile_cython_files(py_files):
         script_args=["build_ext", "--inplace"],
     )
 
+
 if __name__ == "__main__":
     workspace_folder = Path.cwd()  # Gets the current working directory
 

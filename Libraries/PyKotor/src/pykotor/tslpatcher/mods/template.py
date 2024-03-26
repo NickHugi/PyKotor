@@ -16,7 +16,7 @@ class OverrideType:
     """Possible actions for how the patcher should behave when patching a file to a ERF/MOD/RIM while that filename already exists in the Override folder."""
 
     IGNORE = "ignore"  # Do nothing: don't even check (TSLPatcher default)
-    WARN = "warn"    # Log a warning (HoloPatcher default)
+    WARN = "warn"  # Log a warning (HoloPatcher default)
     RENAME = "rename"  # Rename the file in the Override folder with the 'old_' prefix. Also logs a warning.
 
 
@@ -76,13 +76,13 @@ class PatcherModifications(ABC):
         replace: bool | None = None,
         modifiers: list | None = None,
     ):
-        self.sourcefile:    str = sourcefile
-        self.sourcefolder:  str = "."
-        self.saveas:        str = sourcefile
-        self.replace_file:  bool = bool(replace)
-        self.destination:   str = self.DEFAULT_DESTINATION
+        self.sourcefile: str = sourcefile
+        self.sourcefolder: str = "."
+        self.saveas: str = sourcefile
+        self.replace_file: bool = bool(replace)
+        self.destination: str = self.DEFAULT_DESTINATION
 
-        self.action:        str = "Patch" + " "
+        self.action: str = "Patch" + " "
         self.override_type: str = OverrideType.WARN
         self.skip_if_not_replace: bool = False  # [InstallList] and [CompileList] only
 
@@ -104,8 +104,7 @@ class PatcherModifications(ABC):
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game,
-    ):
-        ...
+    ): ...
 
     def pop_tslpatcher_vars(
         self,

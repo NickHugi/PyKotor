@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import traceback
+import platform
+import sys
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
+from multiprocessing import Process, Queue
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox, QStyle
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -30,7 +32,7 @@ from pykotor.tools.path import CaseAwarePath
 from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
-from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
+from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
 from toolset.gui.dialogs.search import FileResults, FileSearcher
 from toolset.gui.dialogs.settings import SettingsDialog
@@ -58,10 +60,15 @@ from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
+from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
+from utility.updater.update import AppUpdate
 
 if TYPE_CHECKING:
     import os
+
+    from typing import NoReturn
 
     from PyQt5 import QtGui
     from PyQt5.QtGui import QCloseEvent
@@ -73,6 +80,15 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import TextureList
+
+
+def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
+    app = QApplication(sys.argv)
+    dialog = ProgressDialog(progress_queue, title)
+    icon = app.style().standardIcon(QStyle.SP_MessageBoxInformation)
+    dialog.setWindowIcon(QIcon(icon))
+    dialog.show()
+    sys.exit(app.exec_())
 
 
 class ToolWindow(QMainWindow):
@@ -118,6 +134,7 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
+        self.log = get_root_logger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
@@ -142,7 +159,6 @@ class ToolWindow(QMainWindow):
             with suppress(Exception):
                 self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
 
-        self.checkForUpdates(silent=True)
 
     def _setupSignals(self):
         """Connects signals to slots for UI interactions.
@@ -177,6 +193,7 @@ class ToolWindow(QMainWindow):
             designerUi = ModuleDesigner(self, self.active, self.active.module_path() / self.ui.modulesWidget.currentSection())
             addWindow(designerUi)
             return designerUi
+
         self.ui.specialActionButton.clicked.connect(openModuleDesigner)
 
         self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
@@ -188,9 +205,14 @@ class ToolWindow(QMainWindow):
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
         self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget()))
-        self.ui.openButton.clicked.connect(lambda *args: self.onOpenResources(self.getActiveResourceWidget().selectedResources(),
-                                                                              self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()))
+        self.ui.extractButton.clicked.connect(
+            lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources(), resourceWidget=self.getActiveResourceWidget())
+        )
+        self.ui.openButton.clicked.connect(
+            lambda *args: self.onOpenResources(
+                self.getActiveResourceWidget().selectedResources(), self.settings.gff_specializedEditors, resourceWidget=self.getActiveResourceWidget()
+            )
+        )
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -433,13 +455,7 @@ class ToolWindow(QMainWindow):
         if not res_ident.restype:
             return
         _filepath, _editor = openResourceEditor(
-            erf_filepath,
-            res_ident.resname,
-            res_ident.restype,
-            BinaryReader.load_file(erf_filepath),
-            self.active,
-            self,
-            gff_specialized=useSpecializedEditor
+            erf_filepath, res_ident.resname, res_ident.restype, BinaryReader.load_file(erf_filepath), self.active, self, gff_specialized=useSpecializedEditor
         )
 
     # endregion
@@ -634,6 +650,11 @@ class ToolWindow(QMainWindow):
         try:
             self._check_toolset_update(silent=silent)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+            print(lines)
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -656,14 +677,8 @@ class ToolWindow(QMainWindow):
 
         toolsetLatestReleaseVersion = remoteInfo["toolsetLatestVersion"]
         toolsetLatestBetaVersion = remoteInfo["toolsetLatestBetaVersion"]
-        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestReleaseVersion, toolsetLatestBetaVersion)
-        if (
-            self.settings.alsoCheckReleaseVersion
-            and (
-                not self.settings.useBetaChannel
-                or releaseNewerThanBeta is True
-            )
-        ):
+        releaseNewerThanBeta = remoteVersionNewer(toolsetLatestBetaVersion, toolsetLatestReleaseVersion)
+        if self.settings.alsoCheckReleaseVersion and (not self.settings.useBetaChannel or releaseNewerThanBeta is True):
             releaseVersionChecked = True
             greatestAvailableVersion = remoteInfo["toolsetLatestVersion"]
             toolsetLatestNotes = remoteInfo.get("toolsetLatestNotes", "")
@@ -675,19 +690,27 @@ class ToolWindow(QMainWindow):
             toolsetDownloadLink = remoteInfo["toolsetBetaDownloadLink"]
 
         version_check = remoteVersionNewer(CURRENT_VERSION, greatestAvailableVersion)
+        curVersionBetaReleaseStr = ""
+        if remoteInfo["toolsetLatestVersion"] == CURRENT_VERSION:
+            curVersionBetaReleaseStr = "release "
+        elif remoteInfo["toolsetLatestBetaVersion"] == CURRENT_VERSION:
+            curVersionBetaReleaseStr = "beta "
         if version_check is False:  # Only check False. if None then the version check failed
             if silent:
                 return
             upToDateMsgBox = QMessageBox(
                 QMessageBox.Information,
                 "Version is up to date",
-                f"You are running the latest version ({CURRENT_VERSION}).",
-                QMessageBox.Ok,
+                f"You are running the latest {curVersionBetaReleaseStr}version ({CURRENT_VERSION}).",
+                QMessageBox.Ok | QMessageBox.Close,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             )
+            upToDateMsgBox.button(QMessageBox.Ok).setText("Reinstall?")
             upToDateMsgBox.setWindowIcon(self.windowIcon())
-            upToDateMsgBox.exec_()
+            result = upToDateMsgBox.exec_()
+            if result == QMessageBox.Ok:
+                self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
             return
 
         betaString = "release " if releaseVersionChecked else "beta "
@@ -695,29 +718,91 @@ class ToolWindow(QMainWindow):
             QMessageBox.Information,
             f"New toolset {betaString}version available.",
             f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
-            QMessageBox.Ok,
+            QMessageBox.Ok | QMessageBox.Abort,
             parent=None,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         )
+        newVersionMsgBox.button(QMessageBox.Ok).setText("Install Now")
+        newVersionMsgBox.button(QMessageBox.Abort).setText("Ignore")
         newVersionMsgBox.setWindowIcon(self.windowIcon())
-        newVersionMsgBox.exec_()
+        response = newVersionMsgBox.exec_()
+        if response == QMessageBox.Ok:
+            self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
 
+    def _run_autoupdate(
+        self,
+        latestVersion: str,
+        remoteInfo: dict[str, Any],
+        *,
+        isRelease: bool,
+    ):
+        proc_arch = ProcessorArchitecture.from_os()
+        assert proc_arch == ProcessorArchitecture.from_python()
+        os_name = platform.system()
+        links: list[str] = []
+
+        isRelease = False  # TODO(th3w1zard1): remove this line when the release version direct links are ready.
+        if isRelease:
+            links = remoteInfo["toolsetDirectLinks"][os_name][proc_arch.value]
+        else:
+            links = remoteInfo["toolsetBetaDirectLinks"][os_name][proc_arch.value]
+        progress_queue = Queue()
+        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
+        progress_process.start()
+        self.hide()
+        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+            progress_queue.put(data)
+
+        # Prepare the list of progress hooks with the method from ProgressDialog
+        progress_hooks = [download_progress_hook]
+        def exitapp(kill_self_here: bool):  # noqa: FBT001
+            packaged_data = {"action": "shutdown", "data": {}}
+            progress_queue.put(packaged_data)
+            ProgressDialog.monitor_and_terminate(progress_process)
+            if kill_self_here:
+                #Restarter._win_kill_self()  # noqa: SLF001
+                sys.exit(0)
+
+        updater = AppUpdate(
+            links,
+            "HolocronToolset",
+            CURRENT_VERSION,
+            latestVersion,
+            downloader=None,
+            progress_hooks=progress_hooks,
+            exithook=exitapp
+        )
+        try:
+            progress_queue.put({"action": "update_status", "text": "Downloading update..."})
+            updater.download(background=False)
+            progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
+            updater.extract_restart()
+            progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
+            updater.cleanup()
+        except Exception as e:
+            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
+                lines = format_exception_with_variables(e)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+        finally:
+            exitapp(True)
     # endregion
 
     # region Other
     def reloadSettings(self):
         self.reloadInstallations()
 
-    def getActiveResourceWidget(self) -> ResourceList | TextureList | None:
-        if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
+    def getActiveResourceWidget(self) -> ResourceList | TextureList:
+        currentWidget = self.ui.resourceTabs.currentWidget()
+        if currentWidget is self.ui.coreTab:
             return self.ui.coreWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
+        if currentWidget is self.ui.modulesTab:
             return self.ui.modulesWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.overrideTab:
+        if currentWidget is self.ui.overrideTab:
             return self.ui.overrideWidget
-        if self.ui.resourceTabs.currentWidget() is self.ui.texturesTab:
+        if currentWidget is self.ui.texturesTab:
             return self.ui.texturesWidget
-        return None
+        raise ValueError(f"Unknown current widget: {currentWidget}")
 
     def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:
         if self.active is None:
@@ -729,23 +814,21 @@ class ToolWindow(QMainWindow):
             self.active.load_modules()
 
         areaNames: dict[str, str] = self.active.module_names()
+
         def sortAlgo(moduleFileName: str) -> str:
             lowerModuleFileName = moduleFileName.lower()
             if "stunt" in lowerModuleFileName:  # keep the least used stunt modules at the bottom.
                 sortStr = "zzzzz"
-            elif self.settings.moduleSortOption == 0:  #"Sort by filename":
+            elif self.settings.moduleSortOption == 0:  # "Sort by filename":
                 sortStr = ""
-            elif self.settings.moduleSortOption == 1:  #"Sort by humanized area name":
+            elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
                 sortStr = areaNames.get(moduleFileName).lower()
             else:  # alternate mod id that attempts to match to filename.
                 sortStr = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
             sortStr += f"_{lowerModuleFileName}".lower()
             return sortStr
 
-        sortedKeys: list[str] = sorted(
-            areaNames,
-            key=sortAlgo
-        )
+        sortedKeys: list[str] = sorted(areaNames, key=sortAlgo)
 
         modules: list[QStandardItem] = []
         for moduleName in sortedKeys:
@@ -777,8 +860,10 @@ class ToolWindow(QMainWindow):
         """Refreshes the list of modules in the modulesCombo combobox."""
         if not moduleItems:
             action = "Reloading" if reload else "Refreshing"
+
             def task() -> list[QStandardItem]:
                 return self._getModulesList(reload=reload)
+
             loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
             loader.exec_()
             moduleItems = loader.value
@@ -809,8 +894,10 @@ class ToolWindow(QMainWindow):
             self.active.load_override()
         if not overrideItems:
             action = "Reloading" if reload else "Refreshing"
+
             def task() -> list[QStandardItem]:
                 return self._getOverrideList(reload=reload)
+
             loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
             loader.exec_()
             overrideItems = loader.value
@@ -836,6 +923,9 @@ class ToolWindow(QMainWindow):
 
     def refreshTexturePackList(self, *, reload=True):
         sections = self._getTexturePackList(reload=reload)
+        if sections is None:
+            self.log.debug("sections was None in refreshTexturePackList(reload=%s)", reload)
+            return
         self.ui.texturesWidget.setSections(sections)
 
     def changeModule(self, moduleName: str):
@@ -865,7 +955,7 @@ class ToolWindow(QMainWindow):
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
-            subfolder = ""
+            subfolder: str = ""
             for folder_name in self.active.override_list():
                 folder_path: CaseAwarePath = self.active.override_path() / folder_name
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
@@ -943,7 +1033,7 @@ class ToolWindow(QMainWindow):
             return active or HTInstallation(path, name, tsl, self)
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Loading Installation" if not active else "Refreshing installation", lambda: load_task(active), "Failed to load installation")
+        loader = AsyncLoader(self, "Refreshing installation" if active else "Loading Installation", lambda: load_task(active), "Failed to load installation")
         if not loader.exec_():
             self.active = None
             self.ui.gameCombo.setCurrentIndex(0)
@@ -952,6 +1042,7 @@ class ToolWindow(QMainWindow):
                 self.dogObserver = None
             return
         self.active = loader.value
+
         # KEEP UI CODE IN MAIN THREAD!
         def prepare_task() -> tuple[list[QStandardItem] | None, ...]:
             return (
@@ -959,6 +1050,7 @@ class ToolWindow(QMainWindow):
                 self._getOverrideList(reload=False),
                 self._getTexturePackList(reload=False),
             )
+
         prepare_loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
         if not prepare_loader.exec_():
             self.active = None
@@ -967,25 +1059,28 @@ class ToolWindow(QMainWindow):
                 self.dogObserver.stop()
                 self.dogObserver = None
             return
-        print("Loading core installation resources into UI...")
+        self.log.info("Loading core installation resources into UI...")
         self.ui.coreWidget.setResources(self.active.chitin_resources())
         moduleItems, overrideItems, textureItems = prepare_loader.value
+        assert moduleItems is not None
+        assert overrideItems is not None
+        assert textureItems is not None
         self.ui.modulesWidget.setSections(moduleItems)
         self.ui.overrideWidget.setSections(overrideItems)
         self.ui.texturesWidget.setSections(textureItems)
-        print("Remove unused categories...")
+        self.log.debug("Remove unused categories...")
         self.ui.coreWidget.modulesModel.removeUnusedCategories()
         self.ui.texturesWidget.setInstallation(self.active)
-        print("Updating menus...")
+        self.log.debug("Updating menus...")
         self.updateMenus()
-        print("Setting up watchdog observer...")
+        self.log.debug("Setting up watchdog observer...")
         if self.dogObserver is not None:
-            print("Stopping old watchdog service...")
+            self.log.debug("Stopping old watchdog service...")
             self.dogObserver.stop()
         self.dogObserver = Observer()
         self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
         self.dogObserver.start()
-        print("Loader task completed.")
+        self.log.info("Loader task completed.")
         self.settings.installations()[name].path = path
         self.installations[name] = self.active
 
@@ -1037,8 +1132,8 @@ class ToolWindow(QMainWindow):
                 file.write(data)
 
         except Exception as e:
-            traceback.print_exc()
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
+            self.log.exception(msg)
             raise RuntimeError(msg) from e
         QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 

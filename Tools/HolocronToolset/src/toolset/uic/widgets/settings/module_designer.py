@@ -93,9 +93,7 @@ class Ui_Form(object):
         self.formLayout.setObjectName("formLayout")
         self.label_2 = QtWidgets.QLabel(self.groupBox)
         self.label_2.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_2.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_2.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_2.setAlignment(QtCore.Qt.AlignCenter)
         self.label_2.setObjectName("label_2")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_2)
@@ -104,9 +102,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.moveCameraXY3dBindEdit)
         self.label_12 = QtWidgets.QLabel(self.groupBox)
         self.label_12.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_12.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_12.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_12.setAlignment(QtCore.Qt.AlignCenter)
         self.label_12.setObjectName("label_12")
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_12)
@@ -115,9 +111,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.moveCameraZ3dBindEdit)
         self.label_3 = QtWidgets.QLabel(self.groupBox)
         self.label_3.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_3.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_3.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
         self.label_3.setObjectName("label_3")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_3)
@@ -126,9 +120,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.rotateCamera3dBindEdit)
         self.label_4 = QtWidgets.QLabel(self.groupBox)
         self.label_4.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_4.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_4.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_4.setAlignment(QtCore.Qt.AlignCenter)
         self.label_4.setObjectName("label_4")
         self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_4)
@@ -137,9 +129,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.zoomCamera3dBindEdit)
         self.label_9 = QtWidgets.QLabel(self.groupBox)
         self.label_9.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_9.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_9.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_9.setAlignment(QtCore.Qt.AlignCenter)
         self.label_9.setObjectName("label_9")
         self.formLayout.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_9)
@@ -148,9 +138,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.zoomCameraMM3dBindEdit)
         self.label_10 = QtWidgets.QLabel(self.groupBox)
         self.label_10.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_10.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_10.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_10.setAlignment(QtCore.Qt.AlignCenter)
         self.label_10.setObjectName("label_10")
         self.formLayout.setWidget(6, QtWidgets.QFormLayout.LabelRole, self.label_10)
@@ -159,9 +147,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(6, QtWidgets.QFormLayout.FieldRole, self.moveSelectedXY3dBindEdit)
         self.label_11 = QtWidgets.QLabel(self.groupBox)
         self.label_11.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_11.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_11.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_11.setAlignment(QtCore.Qt.AlignCenter)
         self.label_11.setObjectName("label_11")
         self.formLayout.setWidget(7, QtWidgets.QFormLayout.LabelRole, self.label_11)
@@ -170,9 +156,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(7, QtWidgets.QFormLayout.FieldRole, self.moveSelectedZ3dBindEdit)
         self.label_5 = QtWidgets.QLabel(self.groupBox)
         self.label_5.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_5.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_5.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_5.setAlignment(QtCore.Qt.AlignCenter)
         self.label_5.setObjectName("label_5")
         self.formLayout.setWidget(8, QtWidgets.QFormLayout.LabelRole, self.label_5)
@@ -181,9 +165,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(8, QtWidgets.QFormLayout.FieldRole, self.selectObject3dBindEdit)
         self.label_6 = QtWidgets.QLabel(self.groupBox)
         self.label_6.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_6.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_6.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_6.setAlignment(QtCore.Qt.AlignCenter)
         self.label_6.setObjectName("label_6")
         self.formLayout.setWidget(9, QtWidgets.QFormLayout.LabelRole, self.label_6)
@@ -197,9 +179,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(11, QtWidgets.QFormLayout.FieldRole, self.line_3)
         self.label_7 = QtWidgets.QLabel(self.groupBox)
         self.label_7.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_7.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_7.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_7.setAlignment(QtCore.Qt.AlignCenter)
         self.label_7.setObjectName("label_7")
         self.formLayout.setWidget(15, QtWidgets.QFormLayout.LabelRole, self.label_7)
@@ -208,9 +188,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(15, QtWidgets.QFormLayout.FieldRole, self.deleteObject3dBindEdit)
         self.label_46 = QtWidgets.QLabel(self.groupBox)
         self.label_46.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_46.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_46.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_46.setAlignment(QtCore.Qt.AlignCenter)
         self.label_46.setObjectName("label_46")
         self.formLayout.setWidget(16, QtWidgets.QFormLayout.LabelRole, self.label_46)
@@ -219,9 +197,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(16, QtWidgets.QFormLayout.FieldRole, self.rotateCameraLeft3dBindEdit)
         self.label_47 = QtWidgets.QLabel(self.groupBox)
         self.label_47.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_47.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_47.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_47.setAlignment(QtCore.Qt.AlignCenter)
         self.label_47.setObjectName("label_47")
         self.formLayout.setWidget(17, QtWidgets.QFormLayout.LabelRole, self.label_47)
@@ -230,9 +206,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(17, QtWidgets.QFormLayout.FieldRole, self.rotateCameraRight3dBindEdit)
         self.label_48 = QtWidgets.QLabel(self.groupBox)
         self.label_48.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_48.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_48.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_48.setAlignment(QtCore.Qt.AlignCenter)
         self.label_48.setObjectName("label_48")
         self.formLayout.setWidget(18, QtWidgets.QFormLayout.LabelRole, self.label_48)
@@ -241,9 +215,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(18, QtWidgets.QFormLayout.FieldRole, self.rotateCameraUp3dBindEdit)
         self.label_49 = QtWidgets.QLabel(self.groupBox)
         self.label_49.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_49.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_49.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_49.setAlignment(QtCore.Qt.AlignCenter)
         self.label_49.setObjectName("label_49")
         self.formLayout.setWidget(19, QtWidgets.QFormLayout.LabelRole, self.label_49)
@@ -252,9 +224,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(19, QtWidgets.QFormLayout.FieldRole, self.rotateCameraDown3dBindEdit)
         self.label_50 = QtWidgets.QLabel(self.groupBox)
         self.label_50.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_50.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_50.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_50.setAlignment(QtCore.Qt.AlignCenter)
         self.label_50.setObjectName("label_50")
         self.formLayout.setWidget(20, QtWidgets.QFormLayout.LabelRole, self.label_50)
@@ -263,9 +233,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(20, QtWidgets.QFormLayout.FieldRole, self.moveCameraForward3dBindEdit)
         self.label_51 = QtWidgets.QLabel(self.groupBox)
         self.label_51.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_51.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_51.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_51.setAlignment(QtCore.Qt.AlignCenter)
         self.label_51.setObjectName("label_51")
         self.formLayout.setWidget(21, QtWidgets.QFormLayout.LabelRole, self.label_51)
@@ -274,9 +242,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(21, QtWidgets.QFormLayout.FieldRole, self.moveCameraBackward3dBindEdit)
         self.label_53 = QtWidgets.QLabel(self.groupBox)
         self.label_53.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_53.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_53.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_53.setAlignment(QtCore.Qt.AlignCenter)
         self.label_53.setObjectName("label_53")
         self.formLayout.setWidget(22, QtWidgets.QFormLayout.LabelRole, self.label_53)
@@ -285,9 +251,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(22, QtWidgets.QFormLayout.FieldRole, self.moveCameraLeft3dBindEdit)
         self.label_52 = QtWidgets.QLabel(self.groupBox)
         self.label_52.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_52.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_52.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_52.setAlignment(QtCore.Qt.AlignCenter)
         self.label_52.setObjectName("label_52")
         self.formLayout.setWidget(23, QtWidgets.QFormLayout.LabelRole, self.label_52)
@@ -296,9 +260,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(23, QtWidgets.QFormLayout.FieldRole, self.moveCameraRight3dBindEdit)
         self.label_54 = QtWidgets.QLabel(self.groupBox)
         self.label_54.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_54.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_54.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_54.setAlignment(QtCore.Qt.AlignCenter)
         self.label_54.setObjectName("label_54")
         self.formLayout.setWidget(24, QtWidgets.QFormLayout.LabelRole, self.label_54)
@@ -307,9 +269,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(24, QtWidgets.QFormLayout.FieldRole, self.moveCameraUp3dBindEdit)
         self.label_55 = QtWidgets.QLabel(self.groupBox)
         self.label_55.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_55.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_55.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_55.setAlignment(QtCore.Qt.AlignCenter)
         self.label_55.setObjectName("label_55")
         self.formLayout.setWidget(25, QtWidgets.QFormLayout.LabelRole, self.label_55)
@@ -318,9 +278,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(25, QtWidgets.QFormLayout.FieldRole, self.moveCameraDown3dBindEdit)
         self.label_56 = QtWidgets.QLabel(self.groupBox)
         self.label_56.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_56.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_56.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_56.setAlignment(QtCore.Qt.AlignCenter)
         self.label_56.setObjectName("label_56")
         self.formLayout.setWidget(26, QtWidgets.QFormLayout.LabelRole, self.label_56)
@@ -329,9 +287,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(26, QtWidgets.QFormLayout.FieldRole, self.zoomCameraIn3dBindEdit)
         self.label_57 = QtWidgets.QLabel(self.groupBox)
         self.label_57.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_57.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_57.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_57.setAlignment(QtCore.Qt.AlignCenter)
         self.label_57.setObjectName("label_57")
         self.formLayout.setWidget(27, QtWidgets.QFormLayout.LabelRole, self.label_57)
@@ -340,9 +296,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(27, QtWidgets.QFormLayout.FieldRole, self.zoomCameraOut3dBindEdit)
         self.label_8 = QtWidgets.QLabel(self.groupBox)
         self.label_8.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_8.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_8.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_8.setAlignment(QtCore.Qt.AlignCenter)
         self.label_8.setObjectName("label_8")
         self.formLayout.setWidget(12, QtWidgets.QFormLayout.LabelRole, self.label_8)
@@ -354,17 +308,13 @@ class Ui_Form(object):
         self.formLayout.setWidget(10, QtWidgets.QFormLayout.FieldRole, self.duplicateObject3dBindEdit)
         self.label_58 = QtWidgets.QLabel(self.groupBox)
         self.label_58.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_58.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_58.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_58.setAlignment(QtCore.Qt.AlignCenter)
         self.label_58.setObjectName("label_58")
         self.formLayout.setWidget(10, QtWidgets.QFormLayout.LabelRole, self.label_58)
         self.label_69 = QtWidgets.QLabel(self.groupBox)
         self.label_69.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_69.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_69.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_69.setAlignment(QtCore.Qt.AlignCenter)
         self.label_69.setObjectName("label_69")
         self.formLayout.setWidget(13, QtWidgets.QFormLayout.LabelRole, self.label_69)
@@ -373,9 +323,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(13, QtWidgets.QFormLayout.FieldRole, self.moveCameraToCursor3dBindEdit)
         self.label_70 = QtWidgets.QLabel(self.groupBox)
         self.label_70.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_70.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_70.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_70.setAlignment(QtCore.Qt.AlignCenter)
         self.label_70.setObjectName("label_70")
         self.formLayout.setWidget(14, QtWidgets.QFormLayout.LabelRole, self.label_70)
@@ -384,9 +332,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(14, QtWidgets.QFormLayout.FieldRole, self.moveCameraToEntryPoint3dBindEdit)
         self.label_71 = QtWidgets.QLabel(self.groupBox)
         self.label_71.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_71.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_71.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_71.setAlignment(QtCore.Qt.AlignCenter)
         self.label_71.setObjectName("label_71")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_71)
@@ -443,9 +389,7 @@ class Ui_Form(object):
         self.formLayout_8.setObjectName("formLayout_8")
         self.label_63 = QtWidgets.QLabel(self.groupBox_4)
         self.label_63.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_63.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_63.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_63.setAlignment(QtCore.Qt.AlignCenter)
         self.label_63.setObjectName("label_63")
         self.formLayout_8.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_63)
@@ -454,33 +398,25 @@ class Ui_Form(object):
         self.formLayout_8.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.moveCameraForwardFcBindEdit)
         self.label_65 = QtWidgets.QLabel(self.groupBox_4)
         self.label_65.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_65.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_65.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_65.setAlignment(QtCore.Qt.AlignCenter)
         self.label_65.setObjectName("label_65")
         self.formLayout_8.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_65)
         self.label_66 = QtWidgets.QLabel(self.groupBox_4)
         self.label_66.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_66.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_66.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_66.setAlignment(QtCore.Qt.AlignCenter)
         self.label_66.setObjectName("label_66")
         self.formLayout_8.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_66)
         self.label_67 = QtWidgets.QLabel(self.groupBox_4)
         self.label_67.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_67.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_67.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_67.setAlignment(QtCore.Qt.AlignCenter)
         self.label_67.setObjectName("label_67")
         self.formLayout_8.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_67)
         self.label_68 = QtWidgets.QLabel(self.groupBox_4)
         self.label_68.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_68.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_68.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_68.setAlignment(QtCore.Qt.AlignCenter)
         self.label_68.setObjectName("label_68")
         self.formLayout_8.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_68)
@@ -501,9 +437,7 @@ class Ui_Form(object):
         self.formLayout_8.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.moveCameraDownFcBindEdit)
         self.label_64 = QtWidgets.QLabel(self.groupBox_4)
         self.label_64.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_64.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_64.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_64.setAlignment(QtCore.Qt.AlignCenter)
         self.label_64.setObjectName("label_64")
         self.formLayout_8.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_64)
@@ -556,9 +490,7 @@ class Ui_Form(object):
         self.formLayout_2.setObjectName("formLayout_2")
         self.label_13 = QtWidgets.QLabel(self.groupBox_2)
         self.label_13.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_13.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_13.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_13.setAlignment(QtCore.Qt.AlignCenter)
         self.label_13.setObjectName("label_13")
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_13)
@@ -567,9 +499,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.moveCamera2dBindEdit)
         self.label_14 = QtWidgets.QLabel(self.groupBox_2)
         self.label_14.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_14.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_14.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_14.setAlignment(QtCore.Qt.AlignCenter)
         self.label_14.setObjectName("label_14")
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_14)
@@ -578,9 +508,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.zoomCamera2dBindEdit)
         self.label_15 = QtWidgets.QLabel(self.groupBox_2)
         self.label_15.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_15.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_15.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_15.setAlignment(QtCore.Qt.AlignCenter)
         self.label_15.setObjectName("label_15")
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_15)
@@ -589,9 +517,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.rotateCamera2dBindEdit)
         self.label_16 = QtWidgets.QLabel(self.groupBox_2)
         self.label_16.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_16.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_16.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_16.setAlignment(QtCore.Qt.AlignCenter)
         self.label_16.setObjectName("label_16")
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_16)
@@ -600,9 +526,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.selectObject2dBindEdit)
         self.label_17 = QtWidgets.QLabel(self.groupBox_2)
         self.label_17.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_17.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_17.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_17.setAlignment(QtCore.Qt.AlignCenter)
         self.label_17.setObjectName("label_17")
         self.formLayout_2.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_17)
@@ -611,9 +535,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.moveObject2dBindEdit)
         self.label_19 = QtWidgets.QLabel(self.groupBox_2)
         self.label_19.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_19.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_19.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_19.setAlignment(QtCore.Qt.AlignCenter)
         self.label_19.setObjectName("label_19")
         self.formLayout_2.setWidget(5, QtWidgets.QFormLayout.LabelRole, self.label_19)
@@ -622,9 +544,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.rotateObject2dBindEdit)
         self.label_59 = QtWidgets.QLabel(self.groupBox_2)
         self.label_59.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_59.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_59.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_59.setAlignment(QtCore.Qt.AlignCenter)
         self.label_59.setObjectName("label_59")
         self.formLayout_2.setWidget(6, QtWidgets.QFormLayout.LabelRole, self.label_59)
@@ -638,9 +558,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(7, QtWidgets.QFormLayout.FieldRole, self.line_4)
         self.label_61 = QtWidgets.QLabel(self.groupBox_2)
         self.label_61.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_61.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_61.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_61.setAlignment(QtCore.Qt.AlignCenter)
         self.label_61.setObjectName("label_61")
         self.formLayout_2.setWidget(9, QtWidgets.QFormLayout.LabelRole, self.label_61)
@@ -649,9 +567,7 @@ class Ui_Form(object):
         self.formLayout_2.setWidget(9, QtWidgets.QFormLayout.FieldRole, self.deleteObject2dBindEdit)
         self.label_62 = QtWidgets.QLabel(self.groupBox_2)
         self.label_62.setMinimumSize(QtCore.QSize(110, 0))
-        self.label_62.setStyleSheet("QLabel:hover {\n"
-"    color: #555;\n"
-"}")
+        self.label_62.setStyleSheet("QLabel:hover {\n" "    color: #555;\n" "}")
         self.label_62.setAlignment(QtCore.Qt.AlignCenter)
         self.label_62.setObjectName("label_62")
         self.formLayout_2.setWidget(8, QtWidgets.QFormLayout.LabelRole, self.label_62)
@@ -855,19 +771,15 @@ class Ui_Form(object):
         self.label_41.setText(_translate("Form", "Rotate Sensitivity"))
         self.label_42.setText(_translate("Form", "Zoom Sensitivity"))
         self.label_2.setToolTip(_translate("Form", "Reacts to mouse movement."))
-        self.label_2.setText(_translate("Form", "Move Camera\n"
-"(XY)"))
+        self.label_2.setText(_translate("Form", "Move Camera\n" "(XY)"))
         self.label_12.setToolTip(_translate("Form", "Reacts to mouse movement."))
-        self.label_12.setText(_translate("Form", "Move Camera\n"
-"(Z)"))
+        self.label_12.setText(_translate("Form", "Move Camera\n" "(Z)"))
         self.label_3.setToolTip(_translate("Form", "Reacts to mouse movement."))
         self.label_3.setText(_translate("Form", "Rotate Camera"))
         self.label_4.setToolTip(_translate("Form", "Reacts to mouse scrolling."))
-        self.label_4.setText(_translate("Form", "Zoom Camera\n"
-"(Mouse Scroll)"))
+        self.label_4.setText(_translate("Form", "Zoom Camera\n" "(Mouse Scroll)"))
         self.label_9.setToolTip(_translate("Form", "Reacts to mouse movement."))
-        self.label_9.setText(_translate("Form", "Zoom Camera\n"
-"(Mouse Movement)"))
+        self.label_9.setText(_translate("Form", "Zoom Camera\n" "(Mouse Movement)"))
         self.label_10.setToolTip(_translate("Form", "Reacts to mouse scrolling."))
         self.label_10.setText(_translate("Form", "Move Object XY"))
         self.label_11.setToolTip(_translate("Form", "Reacts to mouse scrolling."))
@@ -903,19 +815,15 @@ class Ui_Form(object):
         self.label_57.setToolTip(_translate("Form", "Reacts to keyboard input."))
         self.label_57.setText(_translate("Form", "Zoom Camera Out"))
         self.label_8.setToolTip(_translate("Form", "Reacts to keyboard input."))
-        self.label_8.setText(_translate("Form", "Move Camera\n"
-"to Selection"))
+        self.label_8.setText(_translate("Form", "Move Camera\n" "to Selection"))
         self.label_58.setToolTip(_translate("Form", "Reacts to mouse movement."))
         self.label_58.setText(_translate("Form", "Duplicate Object"))
         self.label_69.setToolTip(_translate("Form", "Reacts to keyboard input."))
-        self.label_69.setText(_translate("Form", "Move Camera\n"
-"to Cursor"))
+        self.label_69.setText(_translate("Form", "Move Camera\n" "to Cursor"))
         self.label_70.setToolTip(_translate("Form", "Reacts to keyboard input."))
-        self.label_70.setText(_translate("Form", "Move Camera\n"
-"to Entry Point"))
+        self.label_70.setText(_translate("Form", "Move Camera\n" "to Entry Point"))
         self.label_71.setToolTip(_translate("Form", "Reacts to mouse movement."))
-        self.label_71.setText(_translate("Form", "Move Camera\n"
-"(Camera Plane)"))
+        self.label_71.setText(_translate("Form", "Move Camera\n" "(Camera Plane)"))
         self.groupBox_4.setTitle(_translate("Form", "3D FreeCam Controls"))
         self.controlsFcResetButton.setText(_translate("Form", "Reset"))
         self.label_18.setText(_translate("Form", "Fly Speed"))
@@ -977,5 +885,7 @@ class Ui_Form(object):
         self.label_39.setText(_translate("Form", "Door:"))
         self.label_40.setText(_translate("Form", "Non-Walk Grass:"))
         self.coloursResetButton.setText(_translate("Form", "Reset"))
+
+
 from toolset.gui.widgets.edit.color import ColorEdit
 from toolset.gui.widgets.set_bind import SetBindWidget

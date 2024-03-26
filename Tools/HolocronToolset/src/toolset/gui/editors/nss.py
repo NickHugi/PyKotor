@@ -708,4 +708,3 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
         textFormat.setFontItalic(italic)
         return textFormat
-

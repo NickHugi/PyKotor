@@ -172,7 +172,6 @@ class ModelRenderer(QOpenGLWidget):
         self._mouseDown.discard(e.button())
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
-
         # FIXME: these values are wrong but there's an issue elsewhere i cbf fixing.
 
         self._keysDown.add(e.key())
@@ -206,4 +205,5 @@ class ModelRenderer(QOpenGLWidget):
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         self._keysDown.discard(e.key())
+
     # endregion

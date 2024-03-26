@@ -18,11 +18,13 @@ TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).parents if f.name == "
 
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
+
     pykotor_path = pathlib.Path(__file__).parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
@@ -59,10 +61,12 @@ class UTEEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):
         from toolset.gui.editors.ute import UTEEditor
+
         self.app = QApplication([])
         self.editor = UTEEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
@@ -118,8 +122,7 @@ class UTEEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

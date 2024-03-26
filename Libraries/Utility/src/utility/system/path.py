@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import os
 import pathlib
 import re
@@ -8,6 +7,7 @@ import subprocess
 import sys
 import uuid
 
+from contextlib import suppress
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Union
 
@@ -73,11 +73,7 @@ class PurePathType(type):
 
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     # pylint: disable-all
-    def __new__(
-        cls,
-        *args,
-        **kwargs
-    ) -> Self:
+    def __new__(cls, *args, **kwargs) -> Self:
         if cls is PurePath:
             cls = PureWindowsPath if os.name == "nt" else PurePosixPath
         return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
@@ -210,6 +206,8 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         return f"{self.__class__.__name__}({self!s})"
 
     def __eq__(self, __value):
+        if __value is None:
+            return False
         if self is __value:
             return True
         if isinstance(__value, (bytes, bytearray, memoryview)):
@@ -331,13 +329,9 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
         if len(parts) <= abs(dots):
             first_dot: int = self.name.find(".")
-            return (
-                (self.name[:first_dot], self.name[first_dot + 1:])
-                if first_dot != -1
-                else (self.name, "")
-            )
+            return (self.name[:first_dot], self.name[first_dot + 1 :]) if first_dot != -1 else (self.name, "")
 
-        return ".".join(parts[:-abs(dots)]), ".".join(parts[-abs(dots):])
+        return ".".join(parts[: -abs(dots)]), ".".join(parts[-abs(dots) :])
 
     def as_posix(self) -> str:
         """Convert path to a POSIX path.
@@ -442,14 +436,11 @@ class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
 
 
 class Path(PurePath, pathlib.Path):  # type: ignore[misc]
-    def __new__(
-        cls,
-        *args,
-        **kwargs
-    ) -> Self:
+    def __new__(cls, *args, **kwargs) -> Self:
         if cls is Path:
             cls = WindowsPath if os.name == "nt" else PosixPath
         return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+
     # Safe rglob operation
     def safe_rglob(
         self,
@@ -458,7 +449,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             iterator: Generator[Self, Any, None] = self.rglob(pattern)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return
         else:
             while True:
@@ -467,7 +458,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+                    # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
@@ -484,7 +475,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 except StopIteration:  # noqa: PERF203
                     break  # StopIteration means there are no more files to iterate over
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+                    # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
                     continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
@@ -493,7 +484,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_dir()
         except (OSError, ValueError) as e:
-            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -504,7 +495,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_file()
         except (OSError, ValueError) as e:
-            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -515,7 +506,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError) as e:
-            #print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
             return None
         else:
             return check
@@ -570,14 +561,14 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             >>> path.has_access(mode=0o6, recurse=False)
         """
         mode_to_str: dict[int, str | None] = {
-            0o0: None,   # No permissions
-            0o1: None,   # Execute only
-            0o2: "w",    # Write only
-            0o3: "w",    # Write and execute
-            0o4: "r",    # Read only
-            0o5: "r",    # Read and execute
-            0o6: "r+",   # Read and write
-            0o7: "r+",   # Read, write, and execute
+            0o0: None,  # No permissions
+            0o1: None,  # Execute only
+            0o2: "w",  # Write only
+            0o3: "w",  # Write and execute
+            0o4: "r",  # Read only
+            0o5: "r",  # Read and execute
+            0o6: "r+",  # Read and write
+            0o7: "r+",  # Read, write, and execute
         }
         try:
             if filter_results and not filter_results(self):
@@ -616,6 +607,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         return False
 
     unique_sentinel = object()
+
     def gain_access(
         self,
         mode: int = 0o7,
@@ -669,7 +661,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             current_permissions: int = self.stat().st_mode
             # Extract owner and group permissions
             owner_permissions: int = current_permissions & 0o700  # Extracts the first number of the octal (e.g. 0o7 in 0o750)
-            group_permissions: int = current_permissions & 0o70   # Extracts the second number of the octal (e.g. 0o5 in 0o750)
+            group_permissions: int = current_permissions & 0o70  # Extracts the second number of the octal (e.g. 0o5 in 0o750)
             # Combine them with the new 'other' permissions
             new_permissions: int = owner_permissions | group_permissions | mode
             # Apply the new permissions
@@ -717,6 +709,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         return success
 
     if os.name == "nt":
+
         @staticmethod
         def get_win_attrs(file_path):
             import ctypes
@@ -740,17 +733,19 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
             return is_read_only, is_hidden, is_system
 
+        @classmethod
         def run_commands_as_admin(
-            self,
+            cls,
             cmd: list[str],
             *,
             pause_after_command: bool = False,
             hide_window: bool = True,
+            block_until_complete: bool = True,
         ):
             # sourcery skip: extract-method
             with TemporaryDirectory() as tempdir:
                 # Ensure the script path is absolute
-                script_path: Path = self.__class__(tempdir, "temp_script.bat").absolute()  # type: ignore[reportGeneralTypeIssues]
+                script_path: Path = cls(tempdir, "temp_script.bat").absolute()  # type: ignore[reportGeneralTypeIssues]
                 script_path_str = str(script_path)
 
                 # Write the commands to a batch file
@@ -779,10 +774,13 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 ]
 
                 # Execute the batch script
-                subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)
+                if block_until_complete:
+                    subprocess.run(run_script_cmd, check=False, creationflags=creation_flags, timeout=5)
+                else:
+                    subprocess.Popen(run_script_cmd, creationflags=creation_flags, timeout=5)
 
             # Delete the batch script after execution
-            with contextlib.suppress(Exception):
+            with suppress(Exception):
                 if script_path.safe_isfile():
                     script_path.unlink()
 
@@ -809,8 +807,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(icacls_reset_args))
             else:
-                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False,
-                                                                                    capture_output=True, text=True)
+                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False, capture_output=True, text=True)
                 if icacls_reset_result.returncode != 0:
                     log_func(
                         f"Failed reset permissions of {self_path_str}:\n"
@@ -830,8 +827,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:  # sourcery skip: extract-duplicate-method
                 commands.append(" ".join(takeown_args))
             else:
-                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False,
-                                                                                    capture_output=True, text=True)
+                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)
                 if takeown_result.returncode != 0:
                     log_func(
                         f"Failed to take ownership of {self_path_str}:\n"
@@ -849,8 +845,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(icacls_args))
             else:
-                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False,
-                                                                                    capture_output=True, text=True)
+                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)
                 if icacls_result.returncode != 0:
                     log_func(
                         f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -875,8 +870,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(attrib_args))
             else:
-                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False,
-                                                                                    capture_output=True, text=True)
+                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False, capture_output=True, text=True)
                 if attrib_result.returncode != 0:
                     log_func(
                         f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -897,8 +891,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 if elevate:
                     commands.append(" ".join(rehide_args))
                 else:
-                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False,
-                                                                                        capture_output=True, text=True)
+                    rehide_result: subprocess.CompletedProcess[str] = subprocess.run(rehide_args, timeout=60, check=False, capture_output=True, text=True)
                     if rehide_result.returncode != 0:
                         log_func(
                             f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -912,6 +905,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 return
 
     if os.name == "posix":
+
         def get_highest_posix_permission(
             self: Path,  # type: ignore[reportGeneralTypeIssues]
             uid: int | None = None,

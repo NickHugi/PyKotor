@@ -1,4 +1,5 @@
 """Read documents from xhtml."""
+
 from __future__ import annotations
 
 import BeautifulSoup
@@ -9,9 +10,8 @@ from utility.pyth3.plugins.xhtml.css import CSS
 
 
 class XHTMLReader(PythReader):
-
     @classmethod
-    def read(self, source, css_source=None, encoding="utf-8", link_callback=None):
+    def read(cls, source, css_source=None, encoding="utf-8", link_callback=None):
         reader = XHTMLReader(source, css_source, encoding, link_callback)
         return reader.go()
 
@@ -22,17 +22,14 @@ class XHTMLReader(PythReader):
         self.link_callback = link_callback
 
     def go(self):
-        soup = BeautifulSoup.BeautifulSoup(self.source,
-                                           convertEntities=BeautifulSoup.BeautifulSoup.HTML_ENTITIES,
-                                           fromEncoding=self.encoding,
-                                           smartQuotesTo=None)
+        soup = BeautifulSoup.BeautifulSoup(self.source, convertEntities=BeautifulSoup.BeautifulSoup.HTML_ENTITIES, fromEncoding=self.encoding, smartQuotesTo=None)
         # Make sure the document content doesn't use multi-lines
         soup = self.format(soup)
         doc = document.Document()
         if self.css_source:
             self.css = CSS(self.css_source)
         else:
-            self.css = CSS()    # empty css
+            self.css = CSS()  # empty css
         self.process_into(soup, doc)
         return doc
 
@@ -66,29 +63,25 @@ class XHTMLReader(PythReader):
         """Return true if the BeautifulSoup node needs to be rendered as
         bold.
         """
-        return (node.findParent(["b", "strong"]) is not None or
-                self.css.is_bold(node))
+        return node.findParent(["b", "strong"]) is not None or self.css.is_bold(node)
 
     def is_italic(self, node):
         """Return true if the BeautifulSoup node needs to be rendered as
         italic.
         """
-        return (node.findParent(["em", "i"]) is not None
-                or self.css.is_italic(node))
+        return node.findParent(["em", "i"]) is not None or self.css.is_italic(node)
 
     def is_sub(self, node):
         """Return true if the BeautifulSoup node needs to be rendered as
         sub.
         """
-        return (node.findParent(["sub"]) is not None
-                or self.css.is_sub(node))
+        return node.findParent(["sub"]) is not None or self.css.is_sub(node)
 
     def is_super(self, node):
         """Return true if the BeautifulSoup node needs to be rendered as
         super.
         """
-        return (node.findParent(["sup"]) is not None
-                or self.css.is_super(node))
+        return node.findParent(["sup"]) is not None or self.css.is_super(node)
 
     def url(self, node):
         """Return the url of a BeautifulSoup node or None if there is no

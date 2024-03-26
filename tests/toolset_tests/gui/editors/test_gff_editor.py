@@ -23,11 +23,13 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
+
     pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
@@ -54,6 +56,7 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from PySide2.QtWidgets import QApplication
 
+
 class CustomTextTestRunner(unittest.TextTestRunner):
     def __init__(
         self,
@@ -63,7 +66,7 @@ class CustomTextTestRunner(unittest.TextTestRunner):
         failfast: bool = False,
         buffer: bool = False,
         resultclass: Type[unittest.TestResult] | None = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(stream, descriptions, verbosity, failfast, buffer, resultclass, **kwargs)
 
@@ -74,8 +77,8 @@ class CustomTextTestRunner(unittest.TextTestRunner):
         test(result)
         return result
 
-class CustomTestResult(unittest.TextTestResult):
 
+class CustomTestResult(unittest.TextTestResult):
     def addError(
         self,
         test: unittest.TestCase,
@@ -97,6 +100,7 @@ class CustomTestResult(unittest.TextTestResult):
             raise ValueError(f"exception object was unexpectedly None, got exc_tuple: {exc_tuple} and test: {test}")
         return format_exception_with_variables(value, exctype, tb)
 
+
 @unittest.skipIf(
     not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
     "K2_PATH environment variable is not set or not found on disk.",
@@ -113,6 +117,7 @@ class GFFEditorTest(TestCase):
     @classmethod
     def setUpClass(cls):
         from toolset.gui.editors.gff import GFFEditor
+
         cls.Editor = GFFEditor
         cls.K1_INSTALLATION = None
         cls.TSL_INSTALLATION = None
@@ -128,6 +133,7 @@ class GFFEditorTest(TestCase):
     def get_installation_k1(cls):
         if cls.K1_INSTALLATION is None:
             from toolset.data.installation import HTInstallation
+
             cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         return cls.K1_INSTALLATION
 
@@ -135,6 +141,7 @@ class GFFEditorTest(TestCase):
     def get_installation_tsl(cls):
         if cls.TSL_INSTALLATION is None:
             from toolset.data.installation import HTInstallation
+
             cls.TSL_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
         return cls.TSL_INSTALLATION
 
@@ -193,8 +200,7 @@ class GFFEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

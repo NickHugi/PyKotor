@@ -159,6 +159,7 @@ class ConfigReader:
             - Return the initialized instance
         """
         from pykotor.tslpatcher.config import PatcherConfig  # noqa: PLC0415 Prevent circular imports
+
         resolved_file_path: Path = Path.pathify(file_path).resolve()
 
         ini = ConfigParser(
@@ -333,7 +334,7 @@ class ConfigReader:
 
                 parts: list[str] = range_str.split(delim)
                 start: int = int(parts[0].strip()) if parts[0].strip() else 0
-                end:   int | None = int(parts[1].strip()) if parts[1].strip() else None
+                end: int | None = int(parts[1].strip()) if parts[1].strip() else None
                 return start, end
 
             return int(range_str), None
@@ -781,7 +782,7 @@ class ConfigReader:
         identifier: str,
         ini_data: CaseInsensitiveDict[str],
         current_path: PureWindowsPath | None = None,
-    ) -> ModifyGFF:    # sourcery skip: extract-method, remove-unreachable-code
+    ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
         """Parse GFFList's AddField syntax from the ini to determine what fields/structs/lists to add.
 
         Args:
@@ -821,10 +822,8 @@ class ConfigReader:
         index_in_list_token = None
 
         for key, iterated_value in ini_data.items():
-
             lower_key: str = key.lower()
             if lower_key.startswith("2damemory"):
-
                 lower_iterated_value: str = iterated_value.lower()
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
@@ -1056,6 +1055,7 @@ class ConfigReader:
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
+        # sourcery skip: assign-if-exp, reintroduce-else
         """Extracts field value from raw string based on field type.
 
         Args:
@@ -1168,7 +1168,7 @@ class ConfigReader:
             modification = self._read_add_column(modifiers, identifier)
 
         else:
-            msg = (f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']")
+            msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
             raise KeyError(msg)
 
         return modification
@@ -1241,6 +1241,7 @@ class ConfigReader:
             - Calls get_target() to create Target object
             - Returns None if no valid key found with warning
         """
+
         def get_target(
             target_type: TargetType,
             key: str,
@@ -1251,7 +1252,13 @@ class ConfigReader:
             if raw_value is None:
                 msg = f"[2DAList] parse error: '{key}' missing from [{identifier}] in ini."
                 raise ValueError(msg)
-            value: str | int = int(raw_value) if is_int else raw_value
+            lower_raw_value = raw_value.lower()
+            if lower_raw_value.startswith("strref"):
+                value: str | int | RowValue2DAMemory | RowValueTLKMemory = RowValueTLKMemory(int(raw_value[6:]))
+            elif lower_raw_value.startswith("2damemory"):
+                value = RowValue2DAMemory(int(raw_value[9:]))
+            else:
+                value = int(raw_value) if is_int else raw_value
             return Target(target_type, value)
 
         if "RowIndex" in modifiers:
@@ -1287,17 +1294,17 @@ class ConfigReader:
             3. Creates appropriate RowValue for cell/store value
             4. Adds cell/store value to return dictionaries
         """
-        cells:     dict[str, RowValue] = {}
+        cells: dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}
         store_tlk: dict[int, RowValue] = {}
 
         for modifier, value in modifiers.items():
             lower_modifier: str = modifier.lower().strip()
-            lower_value:    str = value.lower()
+            lower_value: str = value.lower()
 
-            is_store_2da:  bool = lower_modifier.startswith("2damemory")
-            is_store_tlk:  bool = lower_modifier.startswith("strref") and len(lower_modifier) > len("strref")
-            is_row_label:  bool = lower_modifier in {"rowlabel", "newrowlabel"}
+            is_store_2da: bool = lower_modifier.startswith("2damemory")
+            is_store_tlk: bool = lower_modifier.startswith("strref") and len(lower_modifier) > len("strref")
+            is_row_label: bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
             if lower_value.startswith("2damemory"):
@@ -1349,8 +1356,8 @@ class ConfigReader:
             - Return the value of the key if present, else return None.
         """
         return modifiers.pop(
-           "RowLabel",
-           modifiers.pop("NewRowLabel", None),
+            "RowLabel",
+            modifiers.pop("NewRowLabel", None),
         )
 
     def column_inserts_2da(

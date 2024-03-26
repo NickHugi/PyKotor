@@ -1,4 +1,5 @@
 """This module handles classes relating to editing LTR files."""
+
 from __future__ import annotations
 
 import random

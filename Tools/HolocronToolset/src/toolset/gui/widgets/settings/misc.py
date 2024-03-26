@@ -15,6 +15,7 @@ class MiscWidget(QWidget):
         self.settings = GlobalSettings()
 
         from toolset.uic.widgets.settings import misc
+
         self.ui = misc.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()
@@ -36,7 +37,7 @@ class MiscWidget(QWidget):
 
     def save(self):
         self.settings.alsoCheckReleaseVersion = self.ui.alsoCheckReleaseVersion.isChecked()
-        self.settings.useBetaChannel = not self.ui.useBetaChannel.isChecked()
+        self.settings.useBetaChannel = self.ui.useBetaChannel.isChecked()
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
         self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
         self.settings.moduleSortOption = self.ui.moduleSortOptionComboBox.currentIndex()

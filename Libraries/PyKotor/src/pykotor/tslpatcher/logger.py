@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import IntEnum
 
-from utility.event import Observable
+from utility.event_util import Observable
 
 
 class LogType(IntEnum):

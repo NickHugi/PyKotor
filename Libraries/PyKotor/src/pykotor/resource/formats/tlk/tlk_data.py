@@ -1,4 +1,5 @@
 """This module handles classes relating to working with TLK files."""
+
 from __future__ import annotations
 
 from itertools import zip_longest
@@ -7,7 +8,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from utility.string import compare_and_format, format_text
+from utility.string_util import compare_and_format, format_text
 
 if TYPE_CHECKING:
     from collections.abc import Callable

@@ -53,8 +53,7 @@ class LocalizedStringDelta(LocalizedString):
 # region Value Returners
 class FieldValue(ABC):
     @abstractmethod
-    def value(self, memory: PatcherMemory, field_type: GFFFieldType) -> Any:
-        ...
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType) -> Any: ...
 
     def validate(self, value: Any, field_type: GFFFieldType) -> ResRef | str | PureWindowsPath | int | float | object:
         """Validate a value based on its field type.
@@ -78,9 +77,7 @@ class FieldValue(ABC):
             return value
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
             value = (  # This is here to support literal statements like 'resref=' in ini (allow_no_entries=True in configparser)
-                ResRef(str(value))
-                if not isinstance(value, str) or value.strip()
-                else ResRef.from_blank()
+                ResRef(str(value)) if not isinstance(value, str) or value.strip() else ResRef.from_blank()
             )
         elif field_type == GFFFieldType.String and not isinstance(value, str):
             value = str(value)
@@ -134,8 +131,7 @@ class ModifyGFF(ABC):
         root_container: GFFStruct | GFFList,
         memory: PatcherMemory,
         logger: PatchLogger,
-    ):
-        ...
+    ): ...
 
     def _navigate_containers(
         self,
@@ -236,11 +232,7 @@ class AddStructToListGFF(ModifyGFF):
         list_container: GFFList | None = None
         if self.path.name == ">>##INDEXINLIST##<<":
             self.path = self.path.parent  # HACK: idk why conditional parenting is necessary but it works
-        navigated_container: GFFList | GFFStruct | None = (
-            self._navigate_containers(root_struct, self.path)
-            if self.path.name
-            else root_struct
-        )
+        navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path) if self.path.name else root_struct
         if isinstance(navigated_container, GFFList):
             list_container = navigated_container
         else:
@@ -273,7 +265,6 @@ class AddFieldGFF(ModifyGFF):
         path: PureWindowsPath | os.PathLike | str,
         modifiers: list[ModifyGFF] | None = None,
     ):
-
         self.identifier: str = identifier
         self.label: str = label
         self.field_type: GFFFieldType = field_type
@@ -498,4 +489,3 @@ class ModificationsGFF(PatcherModifications):
     ):
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
-

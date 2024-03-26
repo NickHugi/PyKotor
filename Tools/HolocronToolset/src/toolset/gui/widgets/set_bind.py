@@ -34,6 +34,7 @@ class SetBindWidget(QWidget):
         self.recordBind: bool = False
 
         from toolset.uic.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -93,4 +94,3 @@ class SetBindWidget(QWidget):
                 text += "+"
 
         self.ui.setKeysEdit.setText(text.upper())
-

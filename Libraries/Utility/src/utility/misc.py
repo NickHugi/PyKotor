@@ -130,16 +130,13 @@ def get_system_info():
 
     return info
 
+
 T = TypeVar("T")
 
 
 def remove_duplicates(my_list: list[T], *, case_insensitive: bool = False) -> list[T]:
     seen = set()
-    return [
-        x.lower() if case_insensitive and isinstance(x, str) else x
-        for x in my_list
-        if not (x in seen or seen.add(x))
-    ]
+    return [x.lower() if case_insensitive and isinstance(x, str) else x for x in my_list if not (x in seen or seen.add(x))]
 
 
 def is_debug_mode() -> bool:

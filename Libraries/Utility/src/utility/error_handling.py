@@ -82,6 +82,7 @@ def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
                 err_str += f"\n    {arg}"
     return error_name, err_str
 
+
 # Get default module attributes to filter out built-ins
 default_attrs: set[str] = set(dir(sys.modules["builtins"]))
 
@@ -91,17 +92,22 @@ ignore_attrs: set[str] = {
     "__builtins__",
 }
 
+
 class CustomAssertionError(AssertionError):
     def __init__(self, *args, **kwargs):
         self.message: str = kwargs.get("message", args[0])
         super().__init__(*args, **kwargs)
 
+
 def is_builtin_class_instance(obj: Any) -> bool:
     """Check if the object is an instance of a built-in class."""
     return obj.__class__.__module__ in ("builtins", "__builtin__")
 
+
 _currently_processing: ContextVar[list] = ContextVar("_currently_processing", default=[])
-def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
+
+
+def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0, max_depth: int = 3, _depth: int = 0) -> str:
     """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
     if is_builtin_class_instance(obj):
         try:
@@ -126,6 +132,17 @@ def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
             base_indent = indent * frame["indent_level"]
             return f"{frame['representation']}...\n{base_indent})"
 
+    if _depth > max_depth:
+        try:
+            obj_repr = repr(obj)
+            # Truncate if necessary
+            if len(obj_repr) > max_length:
+                return f"{obj_repr[:max_length]}..."
+        except Exception:  # noqa: BLE001
+            return object.__repr__(obj)
+        else:
+            return obj_repr
+
     try:
         # Initialize the representation for this object and add it to the stack
         base_indent = indent * indent_level
@@ -148,10 +165,10 @@ def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
             attr_value = getattr(obj, attr_name)
             if not attr_name.startswith("__") and not callable(attr_value):
                 try:
-                    this_repr = safe_repr(attr_value, max_length, indent_level + 1)
+                    this_repr = safe_repr(attr_value, max_length, indent_level + 1, _depth=_depth+1)
                     # Concatenate attribute name and its representation with appropriate indentation
                     attr_repr = f"{attr_name}={this_repr}"
-                        # Check if current attribute representation exceeds the max length
+                    # Check if current attribute representation exceeds the max length
                     if len(attr_repr) > max_length:
                         attr_repr = f"{attr_repr[:max_length]}..."
                     attrs.append(attr_repr)
@@ -167,6 +184,7 @@ def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0) -> str:
         # Always remove the object from the stack to avoid leaks
         current_stack.pop()
         _currently_processing.set(current_stack)
+
 
 def format_var_str(
     var: str,
@@ -191,7 +209,7 @@ def format_var_str(
 
     try:
         val_repr = safe_repr(val)
-        if len(val_repr) > max_length*2:
+        if len(val_repr) > max_length * 2:
             val_repr = f"{val_repr[:max_length]}...<truncated>"
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
         val_repr = unique_sentinel
@@ -274,6 +292,7 @@ def format_exception_with_variables(
 def is_assertion_removal_enabled() -> bool:
     return sys.flags.optimize >= 1
 
+
 IT = TypeVar("IT")
 
 
@@ -320,6 +339,7 @@ def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed
     # Raise an exception with the detailed message
     raise AssertionError(full_message)
 
+
 RT = TypeVar("RT")
 unique_sentinel = object()
 
@@ -347,7 +367,6 @@ def with_variable_trace(
                     msg = f"Return type of '{f.__name__}' must be {return_type.__name__}, got {result.__class__}: {result!r}: {result}"
                     raise CustomAssertionError(msg)
             except exception_types as e:
-
                 detailed_message: list[str] = [
                     f"Exception caught in function '{f.__name__}': {e}",
                     "Stack Trace Variables:",
