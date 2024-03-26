@@ -436,6 +436,7 @@ class ModuleDesigner(QMainWindow):  # noqa: PLR0904
             self: The class instance
 
         Rebuilding Logic:
+        ----------------
             - Clear existing instance list
             - Only rebuild if module is loaded
             - Filter instances based on visible type mappings

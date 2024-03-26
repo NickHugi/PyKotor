@@ -131,7 +131,7 @@ class AsyncLoader(QDialog, Generic[T]):
 
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self.value: T = None
+        self.value: T = None  # type: ignore[assignment]
         self.error: Exception | None = None
         self.errorTitle: str | None = errorTitle
 
@@ -246,7 +246,7 @@ class AsyncBatchLoader(QDialog):
         self.successCount = 0
         self.failCount = 0
 
-        self._worker = AsyncBatchWorker(self, tasks, cascade)
+        self._worker = AsyncBatchWorker(self, tasks, cascade=cascade)
         self._worker.successful.connect(self._onSuccessful)
         self._worker.failed.connect(self._onFailed)
         self._worker.completed.connect(self._onAllCompleted)
@@ -311,6 +311,7 @@ class AsyncBatchWorker(QThread):
         self,
         parent: QWidget,
         tasks: list[Callable],
+        *,
         cascade: bool,
     ):
         super().__init__(parent)

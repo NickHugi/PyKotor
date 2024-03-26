@@ -1195,12 +1195,15 @@ class ModuleResource(Generic[T]):
 
         return BinaryReader.load_file(self._active)
 
-    def resource(self) -> T | None:
+    def resource(self) -> T:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns:
         -------
             The resource object.
+
+        Raises:
+            ValueError - resource not found somewhere
         """
         if self._resource_obj is None:
             conversions: dict[ResourceType, Callable[[SOURCE_TYPES], Any]] = {
@@ -1228,15 +1231,7 @@ class ModuleResource(Generic[T]):
 
             file_name: str = f"{self._resname}.{self._restype.extension}"
             if self._active is None:
-                try:
-                    assert_with_variable_trace(self._resource_obj is not None)
-                except Exception as e:
-                    with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                        lines = format_exception_with_variables(e)
-                        file.writelines(lines)
-                        file.write("\n----------------------\n")
-                self._resource_obj = None
-
+                assert_with_variable_trace(self._resource_obj is not None)
             elif is_capsule_file(self._active.name):
                 data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
                 if data is None:
