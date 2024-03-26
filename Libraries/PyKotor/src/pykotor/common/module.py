@@ -33,6 +33,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
+from utility.logger_util import get_root_logger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -231,18 +232,17 @@ class Module:  # noqa: PLR0904
         look_for = []
         textures: set[str] = set()
         for model in self.models():
+            get_root_logger().info("Finding textures/lightmaps for model %s...", model)
             try:
                 data: bytes = model.data()
                 for texture in list_textures(data):
                     textures.add(texture)
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
-            except Exception as e:  # noqa: PERF203
-                print(
-                    format_exception_with_variables(
-                        e, message=f"Exception occurred when executing {self!r}.reload_resources() with model '{model.resname()}.{model.restype()}'"
-                    )
-                )
+            except OSError:  # noqa: PERF203
+                get_root_logger().debug("Suppressed exception when executing %s.reload_resources() with model '{model.resname()}.{model.restype()}'", repr(self), exc_info=True)
+            except Exception:  # noqa: BLE001
+                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '{model.resname()}.{model.restype()}'", repr(self), exc_info=True)
 
         for texture in textures:
             look_for.extend(
@@ -263,6 +263,7 @@ class Module:  # noqa: PLR0904
             ],
         )
         for identifier, locations in search2.items():
+            get_root_logger().info("Adding %s locations for resource '%s'...", identifier, len(locations))
             if not locations:
                 continue
             self.add_locations(
@@ -272,6 +273,7 @@ class Module:  # noqa: PLR0904
             )
 
         for module_resource in self.resources.values():
+            get_root_logger().info("Activating module resource '%s'...", module_resource.identifier())
             module_resource.activate()
 
     def add_locations(
