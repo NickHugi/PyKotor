@@ -621,12 +621,6 @@ function Initialize-Python {
     }
 }
 
-if ($global:force_python_version) {
-    $validPythonVersions = @($global:force_python_versions)
-} else {
-    $validPythonVersions = @("3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
-}
-
 function Get-PythonPaths {
     Param (
         [string]$version
@@ -731,6 +725,7 @@ function Find-Python {
     if ( -not $global:pythonInstallPath -or ($global:pythonVersion -and $global:pythonVersion -ge $recommendedVersion) ) {
         Write-Host "Check 1 pass"
         foreach ($version in $pythonVersions) {
+            $version = $version -replace "python", ""
             $paths = (Get-PythonPaths $version)[(Get-OS)]
             foreach ($path in $paths) {
                 try {

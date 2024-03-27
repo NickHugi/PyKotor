@@ -18,15 +18,61 @@ permissions:
   contents: write
 
 jobs:
-  runtests:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set_env.outputs.os }}
+      python-version: ${{ steps.set_env.outputs.python-version }}
+      architecture: ${{ steps.set_env.outputs.architecture }}
+      python-pypy: ${{ steps.set_env.outputs.python-pypy }}
+      #qt_version: ${#{ steps.set_env.outputs.qt_version }}
+
+    steps:
+      - name: Set environment variables
+        id: set_env
+        run: |
+          # Use a single line of JSON to avoid issues
+
+          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", ""
+          $singleLineJson = $singleLineJson -replace "`n", ""
+          Write-Host $singleLineJson
+          echo "os<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", ""
+          $singleLineJson = $singleLineJson -replace "`n", ""
+          Write-Host $singleLineJson
+          echo "python-version<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", ""
+          $singleLineJson = $singleLineJson -replace "`n", ""
+          Write-Host $singleLineJson
+          echo "architecture<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+
+          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", ""
+          $singleLineJson = $singleLineJson -replace "`n", ""
+          Write-Host $singleLineJson
+          echo "python-pypy<<EOF" >> $env:GITHUB_OUTPUT
+          echo $singleLineJson >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+  build:
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # Disable automatic cancellation of other jobs
       matrix:
-        os: [windows-2019, ubuntu-20.04, macos-12]  # make sure you update the above one too.
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
-        architecture: ['x86', 'x64']
-        python_pypy: ['python']
+        os: ${{ fromJson(needs.setup.outputs.os) }}
+        python-version: ${{ fromJson(needs.setup.outputs.python-version) }}
+        architecture: ${{ fromJson(needs.setup.outputs.architecture) }}
+        python_pypy: ${{ fromJson(needs.setup.outputs.python-pypy) }}
+        #qt_version: ['pyqt5', 'pyqt6', 'pyside2', 'pyside6']
         exclude:
           # unix x86 is definitely not supported.
           - os: ubuntu-20.04
