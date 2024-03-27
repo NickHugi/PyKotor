@@ -43,7 +43,7 @@ foreach ($moduleName in $modulesArray) {
     }
 }
 
-# Whitelisted modules to keep.
+# Whitelisted modules to keep (the base packages listed here are incomplete, but the site-packages should be complete in this definition)
 $whitelistedModules = @(
     'sys', 'os', "collections", "encodings", "codecs", "io",
     "abc", "stat", "_collections_abc", "ntpath", "genericpath",
