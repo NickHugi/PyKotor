@@ -186,15 +186,31 @@ function Install-TclTk {
     }
 
     # Check Tcl version
-    $tclCheck = GetAndCompareVersion "tclsh <<< 'puts $tcl_version'" $requiredVersion
+    $tclCurVersion = "tclsh <<< 'puts $tcl_version'"
+    $tclCheck = GetAndCompareVersion $tclCurVersion $requiredVersion
 
     # Check Tk version
-    $tkCheck = GetAndCompareVersion "wish <<< 'puts $tk_version'" $requiredVersion
+    $tkCurVersion = "wish <<< 'puts $tk_version'"
+    $tkCheck = GetAndCompareVersion $tkCurVersion $requiredVersion
 
     if ($tclCheck -and $tkCheck -and ($tk_version -eq $tcl_version)) {
         Write-Host "Tcl and Tk version 8.6.10 or higher are already installed (tcl: $tcl_version tk: $tk_version)"
         return
+    } else {
+        Write-Host "Tcl version '$tclCurVersion' and Tk version '$tkCurVersion' must be updated now."
     }
+
+    if ((Get-OS) -eq "Mac") {  #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
+        # Retrieve current macOS version
+        $macOSVersion = bash -c "sw_vers -productVersion"
+        $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
+        $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
+        if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
+            Invoke-BashCommand -Command "brew update && brew install tcl-tk"
+            return
+        }
+    }
+
     Write-Host "Installing Tcl from source..."
     $originalDir = Get-Location
     Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz"
@@ -530,8 +546,9 @@ function Install-PythonWindows {
         Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0' -Wait -NoNewWindow
         Write-Host "Python install process has finished."
     
-        Write-Debug "Refresh environment variables to detect new Python installation"
+        Write-Host "Refresh environment variables to detect new Python installation"
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+        Write-Host "New PATH env: $env:PATH"
         return $true
     } catch {
         Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
@@ -678,6 +695,15 @@ function Find-Python {
     }
     foreach ($pyCommandPathCheck in $pythonVersions) {
         if (Test-PythonCommand -CommandName $pyCommandPathCheck) {
+            # Even if python is installed, debian-based distros need python3-venv packages and a few others.
+            # Example: while a venv can be partially created, the 
+            # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
+            # they'll also be missing things like pip. This step fixes that.
+            if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
+                $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+                $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
+                Install-Python-Linux -pythonVersion $shortVersion
+            }
             return
         }
     }
