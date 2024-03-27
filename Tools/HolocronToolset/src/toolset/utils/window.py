@@ -117,7 +117,7 @@ def openResourceEditor(
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
 
-    if restype.category in {"Images", "Textures"}:
+    if restype.category in {"Images", "Textures"} and restype != ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:
