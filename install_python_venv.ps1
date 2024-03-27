@@ -197,7 +197,7 @@ function Install-TclTk {
     }
     Write-Host "Installing Tcl from source..."
     $originalDir = Get-Location
-    Invoke-BashCommand "curl -O https://prdownloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz"
+    Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz"
     Invoke-BashCommand "tar -xzvf tcl8.6.10-src.tar.gz"
     Set-Location "tcl8.6.10/unix"
     Invoke-BashCommand "./configure --prefix=/usr/local"
@@ -206,7 +206,7 @@ function Install-TclTk {
 
     Set-Location $originalDir  # Return to the original directory to start Tk installation
     Write-Host "Installing Tk from source..."
-    Invoke-BashCommand "curl -O https://prdownloads.sourceforge.net/tcl/tk8.6.10-src.tar.gz"
+    Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tk8.6.10-src.tar.gz"
     Invoke-BashCommand "tar -xzvf tk8.6.10-src.tar.gz"
     Set-Location "tk8.6.10/unix"
     Invoke-BashCommand "./configure --prefix=/usr/local --with-tcl=/usr/local/lib"
