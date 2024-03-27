@@ -11,9 +11,10 @@ env:
   INTERPRETERS_JSON: '["python"]'
   UPX_VERSION: '4.2.2'
   USE_UPX: true
-  BUILD_BOOTLOADERS: true  # TODO(th3w1zard1):
+  BUILD_BOOTLOADERS: false  # TODO(th3w1zard1):
   
 on:
+  - push
   - workflow_dispatch
 
 permissions:
