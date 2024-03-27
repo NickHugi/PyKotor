@@ -707,7 +707,8 @@ function Find-Python {
     # Check for Python 3 command and version
     if ($global:force_python_version) {
         $fallbackVersion = $global:force_python_version
-        $pythonVersions = @("python$global:force_python_version")
+        Write-Host "Fallback version: $fallbackVersion"
+        $pythonVersions = @("python$fallbackVersion")
     } else {
         $fallbackVersion = "{0}.{1}" -f $recommendedVersion.Major, $recommendedVersion.Minor
         $pythonVersions = @('python3.8', 'python3', 'python3.9', 'python3.10', 'python3.11', 'python3.12', 'python3.13', 'python3.14', 'python')
@@ -729,7 +730,7 @@ function Find-Python {
 
     if ( -not $global:pythonInstallPath -or ($global:pythonVersion -and $global:pythonVersion -ge $recommendedVersion) ) {
         Write-Host "Check 1 pass"
-        foreach ($version in $validPythonVersions) {
+        foreach ($version in $pythonVersions) {
             $paths = (Get-PythonPaths $version)[(Get-OS)]
             foreach ($path in $paths) {
                 try {
