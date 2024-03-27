@@ -210,6 +210,7 @@ class UpdateDialog(QDialog):
             raise result
         self.remoteInfo: dict[str, Any] = result
         self.releases: list = fetch_github_releases()
+        self.on_release_changed(self.releaseComboBox.currentIndex())
 
     def on_release_changed(self, index: int):
         release: GithubRelease = self.releaseComboBox.itemData(index)
