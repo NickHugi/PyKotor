@@ -7,7 +7,6 @@ import os
 import pathlib
 import sys
 import tempfile
-import traceback
 
 from typing import TYPE_CHECKING
 
@@ -95,7 +94,7 @@ if __name__ == "__main__":
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
-    multiprocessing.set_start_method("spawn")
+    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
 
     from utility.system.path import Path
 

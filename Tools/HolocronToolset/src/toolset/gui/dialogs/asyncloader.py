@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import cProfile
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 import uuid
+
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread, QTimer

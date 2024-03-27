@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import lru_cache
 import os
 import pathlib
 import re
@@ -9,6 +8,7 @@ import sys
 import uuid
 
 from contextlib import suppress
+from functools import lru_cache
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Union
 

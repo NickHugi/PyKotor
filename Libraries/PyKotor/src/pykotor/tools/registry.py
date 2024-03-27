@@ -6,7 +6,6 @@ from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
-from utility.error_handling import format_exception_with_variables
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path
