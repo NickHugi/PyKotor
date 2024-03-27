@@ -505,7 +505,7 @@ function Install-PythonUnixSource {
     # Conditionally apply --disable-new-dtags based on platform
     $configureOptions = "--enable-optimizations --with-ensurepip=install --enable-shared"
     if ((Get-OS) -eq "Linux") {
-        $configureOptions += " --disable-new-dtags"
+        $env:LDFLAGS="-Wl,--disable-new-dtags"
     }
 
     Invoke-BashCommand -Command "sudo ./configure $configureOptions"
@@ -547,7 +547,7 @@ function Install-PythonWindows {
         Write-Host "Python install process has finished."
     
         Write-Host "Refresh environment variables to detect new Python installation"
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+        $env:Path = Get-ItemProperty -Path 'Registry::HKEY_CURRENT_USER\Environment' -Name PATH | Select-Object -ExpandProperty PATH
         Write-Host "New PATH env: $env:PATH"
         return $true
     } catch {
