@@ -722,16 +722,19 @@ function Find-Python {
     }
 
     if ( -not $global:pythonInstallPath -or ($global:pythonVersion -and $global:pythonVersion -ge $recommendedVersion )) {
-
+        Write-Host "Check 1 pass"
         foreach ($version in $validPythonVersions) {
             $paths = (Get-PythonPaths $version)[(Get-OS)]
             foreach ($path in $paths) {
                 try {
                     # Resolve potential environment variables in the path
                     $resolvedPath = [Environment]::ExpandEnvironmentVariables($path)
+                    Write-Host "Check 2: $resolvedPath"
                     if (Test-Path $resolvedPath -ErrorAction SilentlyContinue) {
+                        Write-Host "Check 3: $resolvedPath exists!"
                         $thisVersion = Get-Python-Version $resolvedPath
                         if ($thisVersion -ge $minVersion -and $thisVersion -le $maxVersion) {
+                            Write-Host "Check 4: $resolvedPath has $thisVersion which matches our version range."
                             # Valid path or better recommended path found.
                             if (-not $global:pythonInstallPath -or $thisVersion -le $recommendedVersion) {
                                 Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
