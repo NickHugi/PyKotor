@@ -186,11 +186,11 @@ function Install-TclTk {
     }
 
     # Check Tcl version
-    $tclCurVersion = "tclsh <<< 'puts $tcl_version'"
+    $tclCurVersion = Invoke-BashCommand -Command "tclsh <<< 'puts $tcl_version'"
     $tclCheck = GetAndCompareVersion $tclCurVersion $requiredVersion
 
     # Check Tk version
-    $tkCurVersion = "wish <<< 'puts $tk_version'"
+    $tkCurVersion = Invoke-BashCommand -Command "wish <<< 'puts $tk_version'"
     $tkCheck = GetAndCompareVersion $tkCurVersion $requiredVersion
 
     if ($tclCheck -and $tkCheck -and ($tk_version -eq $tcl_version)) {
