@@ -173,12 +173,12 @@ function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
     # Function to get version and compare
-    function GetAndCompareVersion($command, $requiredVersion) {
+    function GetAndCompareVersion($versionString, $requiredVersion) {
         try {
-            $versionString = Invoke-Expression "$command" | Out-String
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
+            Write-Host "Error comparing '$versionString' and '$requiredVersion': $_"
             # If there's an error (e.g., command not found), assume installation is needed
             return $false
         }
