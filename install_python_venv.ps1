@@ -149,7 +149,6 @@ function Get-Linux-Distro-Name {
         if ($osInfo -match '\nID="?([^"\n]*)"?') {
             $distroName = $Matches[1].Trim('"')
             if ($distroName -eq "ol") {
-                sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
                 return "oracle"
             }
             return $distroName
