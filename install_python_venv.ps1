@@ -397,7 +397,7 @@ function Install-Python-Mac {
         "3.11" { "3.11.8" }
         "3.12" { "3.12.2" }
         "3.13" { "3.13.0a5" }
-        default { throw "Unsupported Python version." }
+        default { throw "Unsupported Python version: $pythonVersion" }
     }
     
     # Map of Python versions to their detailed installer information
@@ -475,6 +475,7 @@ function Install-PythonUnixSource {
         "3.10" { "3.10.13" }
         "3.11" { "3.11.8" }
         "3.12" { "3.12.2" }
+        default { throw "Unsupported Python version: $pythonVersion" }
     }
 
     $pythonSrcUrl = "https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz"
@@ -516,6 +517,7 @@ function Install-PythonWindows {
         "3.10" { "3.10.11" }
         "3.11" { "3.11.8" }
         "3.12" { "3.12.2" }
+        default { throw "Unsupported Python version: $pythonVersion" }
     }
     try {
         # Download and install Python
