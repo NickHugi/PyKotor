@@ -187,7 +187,7 @@ class InstallationConfig:
     def tsl(self) -> bool:
         all_installs: dict[str, dict[str, Any]] = self._settings.value("installations", {})
         installation = all_installs.get(self._name, {})
-        return installation.get("tsl", 0)
+        return installation.get("tsl", False)
 
     @tsl.setter
     def tsl(self, value: bool):
