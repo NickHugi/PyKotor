@@ -477,8 +477,9 @@ function Install-PythonUnixSource {
         "3.12" { "3.12.2" }
     }
 
-    Write-Output "Downloading python $pyVersion..."
-    Invoke-WebRequest -Uri https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz -OutFile Python-$pyVersion.tgz
+    $pythonSrcUrl = "https://www.python.org/ftp/python/$pyVersion/Python-$pyVersion.tgz"
+    Write-Output "Downloading python $pyVersion from $pythonSrcUrl..."
+    Invoke-WebRequest -Uri $pythonSrcUrl -OutFile Python-$pyVersion.tgz
     Invoke-BashCommand -Command "tar -xvf Python-$pyVersion.tgz"
     $current_working_dir = (Get-Location).Path
     Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
@@ -747,7 +748,9 @@ function Find-Python {
     # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
     # they'll also be missing things like pip. This step fixes that.
     if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
-        Install-Python-Linux -pythonVersion $pythonVersion
+        $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
+        Install-Python-Linux -pythonVersion $shortVersion
     }
 }
 
