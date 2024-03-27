@@ -172,10 +172,10 @@ function Get-Linux-Distro-Version {
 function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
-    # Function to get version and compare
-    function GetAndCompareVersion($command, $requiredVersion) {
+    function GetAndCompareVersion($command, $argument, $requiredVersion) {
         try {
-            $versionString = Invoke-Expression "$command" | Out-String
+            # Using call operator (&) to invoke the command with the argument
+            $versionString = & $command $argument
             Write-Host "$command output: $versionString"
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
@@ -185,14 +185,14 @@ function Install-TclTk {
             return $false
         }
     }
-
+    
     # Check Tcl version
-    $tclCurVersion = "tclsh <<< 'puts $tcl_version'"
-    $tclCheck = GetAndCompareVersion $tclCurVersion $requiredVersion
-
+    $tclCurVersion = "tclsh"
+    $tclCheck = GetAndCompareVersion $tclCurVersion 'puts $tcl_version' $requiredVersion
+    
     # Check Tk version
-    $tkCurVersion = "wish <<< 'puts $tk_version'"
-    $tkCheck = GetAndCompareVersion $tkCurVersion $requiredVersion
+    $tkCurVersion = "wish"
+    $tkCheck = GetAndCompareVersion $tkCurVersion 'puts $tk_version' $requiredVersion
 
     if ($tclCheck -and $tkCheck -and ($tk_version -eq $tcl_version)) {
         Write-Host "Tcl and Tk version 8.6.10 or higher are already installed (tcl: $tcl_version tk: $tk_version)"
