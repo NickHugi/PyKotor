@@ -62,7 +62,7 @@ jobs:
           echo "EOF" >> $env:GITHUB_OUTPUT
         shell: pwsh
 
-  build:
+  runtests:
     needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
