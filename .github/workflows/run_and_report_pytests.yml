@@ -61,7 +61,7 @@ jobs:
     - name: Install development packages
       if: ${{ success() || failure() }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python_pypy }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python_version }}
         & $pythonExePath -m pip install --upgrade pip
         if ("${{ matrix.python-version }}" -eq "3.7") {
           pip install -r requirements-dev-py37.txt --prefer-binary
