@@ -536,24 +536,32 @@ function Install-PythonWindows {
         "3.12" { "3.12.2" }
         default { throw "Unsupported Python version: $pythonVersion" }
     }
+    # Check if running on GitHub Actions
+    if ($env:GITHUB_ACTIONS -eq "true") {
+        Write-Host "Running on GitHub Actions."
 
-    # Determine the architecture using environment variables
-    $arch = $env:PROCESSOR_ARCHITECTURE
-    if ($env:PROCESSOR_ARCHITEW6432) {
-        $arch = $env:PROCESSOR_ARCHITEW6432
+        # Retrieve the architecture from matrix
+        $runnerArch = $env:MATRIX_ARCH
+        Write-Host "Runner architecture is $runnerArch."
+        
+        # Determine the installer name based on architecture from matrix
+        $installerName = switch ($runnerArch) {
+            "x86" { "python-$pyVersion.exe" }  # Assume this is the pattern for 32-bit
+            "x64" { "python-$pyVersion-amd64.exe" }  # Assume this is the pattern for 64-bit
+            default { throw "Unknown runner architecture: $runnerArch" }
+        }
+        
+        # The rest of your installation script using $installerName...
     }
-
-    # Select the installer based on the detected architecture
-    $installerSuffix = if ($arch -eq "AMD64" -or $arch -eq "IA64") { "amd64" } else { "win32" }
-    $installerName = "python-$pyVersion-$installerSuffix.exe"
-
-    # Determine the architecture and set the appropriate installer name
-    # This doesn't seem to work? Always detects x64...
-    #$installerName = if ([System.Environment]::Is64BitOperatingSystem) {
-    #    "python-$pyVersion-amd64.exe"
-    #} else {
-    #    "python-$pyVersion.exe"
-    #}
+    else {
+        Write-Host "Not running on GitHub Actions."
+        # Determine the architecture and set the appropriate installer name
+        $installerName = if ([System.Environment]::Is64BitOperatingSystem) {
+            "python-$pyVersion-amd64.exe"
+        } else {
+            "python-$pyVersion.exe"
+        }
+    }
 
     try {
         # Download and install Python

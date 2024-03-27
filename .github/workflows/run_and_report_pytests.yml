@@ -95,6 +95,8 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=${{ matrix.python-version }}"
         }
       shell: pwsh
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
 
     - uses: actions/checkout@v4
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }}
