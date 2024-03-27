@@ -116,6 +116,8 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "PYTHON_VERSION=${{ matrix.python-version }}"
         }
       shell: pwsh
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
 
     - uses: actions/checkout@v4
     - name: Test Powershell installer
@@ -250,6 +252,8 @@ jobs:
 
     - name: Install Holocron Toolset dependencies
       if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
       id: toolset_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
@@ -365,6 +369,8 @@ jobs:
 
     - name: Install HoloPatcher dependencies
       if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
       id: holopatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
@@ -478,6 +484,8 @@ jobs:
 
     - name: Install BatchPatcher dependencies
       if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
       id: batchpatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
@@ -591,6 +599,8 @@ jobs:
 
     - name: Compile KotorDiff
       if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
@@ -652,6 +662,8 @@ jobs:
 
     - name: Compile GUIDuplicator
       if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"

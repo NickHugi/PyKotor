@@ -256,6 +256,8 @@ jobs:
 
     - name: Install Holocron Toolset dependencies
       if: ${{ success() || failure() }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
       id: toolset_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
