@@ -172,7 +172,7 @@ class InstallationConfig:
     @property
     def path(self) -> str:
         try:
-            installation = self._settings.value("installations", {})[self._name]
+            installation = self._settings.value("installations", {}).get(self._name, {})
         except Exception:
             log = get_root_logger()
             log.debug("exception in path getter:", exc_info=True)
