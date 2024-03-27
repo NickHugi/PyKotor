@@ -102,6 +102,8 @@ class InstallationsWidget(QWidget):
         self.settings.settings.setValue("installations", installations)
 
     def addNewInstallation(self):
+        log = get_root_logger()
+        log.debug("addNewInstallation called")
         item = QStandardItem("New")
         item.setData({"path": "", "tsl": False})
         self.installationsModel.appendRow(item)
@@ -118,7 +120,9 @@ class InstallationsWidget(QWidget):
             self.ui.pathFrame.setEnabled(False)
 
     def updateInstallation(self):
+        log = get_root_logger()
         index = self.ui.pathList.selectedIndexes()[0]
+        log.debug("updateInstallation called, index %s", index)
         item = self.installationsModel.itemFromIndex(index)
 
         data = item.data()
@@ -153,6 +157,8 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str):
+        log = get_root_logger()
+        log.debug("Set name for %s to '%s'", self._name, value)
         installations: dict[str, dict[str, Any]] = self._settings.value("installations", {}, dict)
         installation = installations[self._name]
 
@@ -168,19 +174,22 @@ class InstallationConfig:
         try:
             installation = self._settings.value("installations", {})[self._name]
         except Exception:
+            log = get_root_logger()
+            log.debug("exception in path getter:", exc_info=True)
             return ""
         else:
             return installation.get("path", "")
 
     @path.setter
     def path(self, value: str):
+        log = get_root_logger()
+        log.debug("Set path for %s to '%s'", self._name, value)
         try:
             installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
             installations[self._name] = installations.get(self._name, {})
             installations[self._name]["path"] = value
             self._settings.setValue("installations", installations)
         except Exception:
-            log = get_root_logger()
             log.exception()
 
     @property
@@ -227,6 +236,8 @@ class GlobalSettings(Settings):
 
         for game, paths in find_kotor_paths_from_default().items():
             for path in filter(CaseAwarePath.safe_isdir, paths):
+                log = get_root_logger()
+                log.debug("Found existing installation path '%s' game '%s'", path, game)
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 
