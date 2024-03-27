@@ -548,12 +548,15 @@ function Install-PythonWindows {
         # Download and install Python
         $pythonInstallerUrl = "https://www.python.org/ftp/python/$pyVersion/$installerName"
         $installerPath = "$env:TEMP/$installerName"
+        $curPath = Get-Location
+        $logPath = "$curPath/PythonInstall.log"
         Write-Host "Downloading '$installerName' to '$env:TEMP', please wait..."
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Write-Host "Download completed."
         Write-Host "Installing '$installerName', please wait..."
-        Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0' -Wait -NoNewWindow
+        Start-Process -FilePath $installerPath -Args "/quiet /passive InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0 /log=$logPath" -Wait -NoNewWindow
         Write-Host "Python install process has finished."
+        Get-Content -Path $logPath | ForEach-Object { Write-Host $_ }
     
         Write-Host "Refresh environment variables to detect new Python installation"
         $systemPath = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH | Select-Object -ExpandProperty PATH
@@ -633,11 +636,14 @@ function Get-PythonPaths {
 
     $windowsPaths = @(
         "C:\Program Files\Python$windowsVersion\python.exe",
+        "$env:ProgramFiles\Python$windowsVersion\python.exe",
         "C:\Program Files (x86)\Python$windowsVersion\python.exe",
+        "$env:ProgramFiles(x86)\Python$windowsVersion\python.exe"
         "C:\Program Files\Python$windowsVersion-32\python.exe",
         "C:\Program Files (x86)\Python$windowsVersion-32\python.exe",
         "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion\python.exe",
         "$env:USERPROFILE\AppData\Local\Programs\Python\Python$windowsVersion-32\python.exe",
+        "$env:LOCALAPPDATA\Programs\Python\Python$windowsVersion-64\python.exe",
         "$env:LOCALAPPDATA\Programs\Python\Python$windowsVersion\python.exe",
         "$env:LOCALAPPDATA\Programs\Python\Python$windowsVersion-32\python.exe"
     )
@@ -721,7 +727,7 @@ function Find-Python {
         }
     }
 
-    if ( -not $global:pythonInstallPath -or ($global:pythonVersion -and $global:pythonVersion -ge $recommendedVersion )) {
+    if ( -not $global:pythonInstallPath -or ($global:pythonVersion -and $global:pythonVersion -ge $recommendedVersion) ) {
         Write-Host "Check 1 pass"
         foreach ($version in $validPythonVersions) {
             $paths = (Get-PythonPaths $version)[(Get-OS)]
