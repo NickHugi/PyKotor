@@ -40,7 +40,6 @@ jobs:
             python-version: '3.12'
 
     steps:
-  
     - name: Determine Python version string
       id: set-python-version
       run: |
@@ -53,37 +52,16 @@ jobs:
 
     - uses: actions/checkout@v4
     - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }}
+      if: ${{ matrix.python_pypy == 'pypy' }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ matrix.architecture }}
 
-    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }} macOS
-      if: ${{ runner.os == 'macOS' }}
-      run: |  # warning: `brew link --overwrite python@ver` is unsafe on any non-virtualized macos.
-        echo "NONINTERACTIVE DEFAULT: $NONINTERACTIVE"
-        export NONINTERACTIVE=1
-        echo "NONINTERACTIVE NEW: $NONINTERACTIVE"
-        brew analytics on
-        brew update
-        brew install ${{ matrix.python_pypy }}@${{ matrix.python-version }} || brew link --overwrite ${{ matrix.python_pypy }}@${{ matrix.python-version }}
-
-    - name: Setup python venvs
-      run: |  # create the venv early to work around an issue with the matrix runners' concurrency
-        $pythonExeName = "${{ matrix.python_pypy }}"
-        if ("${{ runner.os }}" -ne "Windows")
-        {
-          $pythonExeName = "${{ matrix.python_pypy }}${{ matrix.python-version }}"
-          # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
-          $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
-        }
-        & $pythonExeName -m venv .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
-      shell: pwsh
-
     - name: Install development packages
       if: ${{ success() || failure() }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python_pypy }}
         & $pythonExePath -m pip install --upgrade pip
         if ("${{ matrix.python-version }}" -eq "3.7") {
           pip install -r requirements-dev-py37.txt --prefer-binary
