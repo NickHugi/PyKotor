@@ -173,30 +173,32 @@ function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
     # Function to get version and compare
-    function GetAndCompareVersion($versionString, $requiredVersion) {
+    function GetAndCompareVersion($command, $requiredVersion) {
         try {
+            $versionString = Invoke-Expression "$command" | Out-String
+            Write-Host "$command output: $versionString"
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
-            Write-Host "Error comparing '$versionString' and '$requiredVersion': $_"
+            Write-Host "Error comparing '$command' and '$requiredVersion': $_"
             # If there's an error (e.g., command not found), assume installation is needed
             return $false
         }
     }
 
     # Check Tcl version
-    $tclCurVersion = Invoke-BashCommand -Command "tclsh <<< 'puts $tcl_version'"
+    $tclCurVersion = "tclsh <<< 'puts $tcl_version'"
     $tclCheck = GetAndCompareVersion $tclCurVersion $requiredVersion
 
     # Check Tk version
-    $tkCurVersion = Invoke-BashCommand -Command "wish <<< 'puts $tk_version'"
+    $tkCurVersion = "wish <<< 'puts $tk_version'"
     $tkCheck = GetAndCompareVersion $tkCurVersion $requiredVersion
 
     if ($tclCheck -and $tkCheck -and ($tk_version -eq $tcl_version)) {
         Write-Host "Tcl and Tk version 8.6.10 or higher are already installed (tcl: $tcl_version tk: $tk_version)"
         return
     } else {
-        Write-Host "Tcl version '$tclCurVersion' and Tk version '$tkCurVersion' must be updated now."
+        Write-Host "Tcl/Tk version must be updated now."
     }
 
     if ((Get-OS) -eq "Mac") {  #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
