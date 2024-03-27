@@ -554,7 +554,7 @@ function Install-PythonWindows {
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Write-Host "Download completed."
         Write-Host "Installing '$installerName', please wait..."
-        Start-Process -FilePath $installerPath -Args "/quiet InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0 /log $logPath" -Wait -NoNewWindow
+        Start-Process -FilePath $installerPath -Args "/quiet /log $logPath InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0" -Wait -NoNewWindow
         Write-Host "Python install process has finished."
         Get-Content -Path $logPath | ForEach-Object { Write-Host $_ }
     
