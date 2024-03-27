@@ -73,11 +73,11 @@ fallback_install_pwsh() {
             install_powershell_brew
         fi
     fi
-    #if ! command -v pwsh > /dev/null; then
-        #if command -v pacman > /dev/null; then
-            #...
-        #fi
-    #fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v pacman > /dev/null; then
+            install_powershell_archlinux
+        fi
+    fi
     if ! command -v pwsh > /dev/null; then
         if command -v flatpak > /dev/null; then
             echo "Installing PowerShell via Flatpak..."
@@ -94,6 +94,9 @@ fallback_install_pwsh() {
 }
 
 install_powershell_archlinux() {
+    sudo pacman-key --init
+    sudo pacman-key --populate archlinux
+    sudo pacman -Syu archlinux-keyring --noconfirm
     sudo pacman -Syy --noconfirm
     # Find the exact name of the package (if available in official repos)
     # It's more efficient to install from official repos if available
@@ -135,7 +138,7 @@ install_powershell_archlinux() {
             # Change ownership to tempuser for the build directory
             sudo chown -R "$TEMP_USER:$TEMP_USER" "../powershell-bin"
             
-            echo If you are prompted to enter a password at this point, enter 'temppassword' without the ''
+            echo If you are prompted to enter a password at this point, enter temppassword
             # Attempt to build the package as tempuser
             if ! echo "$TEMP_PASSWORD" | sudo -S -u "$TEMP_USER" makepkg -si --noconfirm; then
                 # If makepkg fails, reset the ownership to root before exiting
