@@ -537,12 +537,23 @@ function Install-PythonWindows {
         default { throw "Unsupported Python version: $pythonVersion" }
     }
 
-    # Determine the architecture and set the appropriate installer name
-    $installerName = if ([System.Environment]::Is64BitOperatingSystem) {
-        "python-$pyVersion-amd64.exe"
-    } else {
-        "python-$pyVersion.exe"
+    # Determine the architecture using environment variables
+    $arch = $env:PROCESSOR_ARCHITECTURE
+    if ($env:PROCESSOR_ARCHITEW6432) {
+        $arch = $env:PROCESSOR_ARCHITEW6432
     }
+
+    # Select the installer based on the detected architecture
+    $installerSuffix = if ($arch -eq "AMD64" -or $arch -eq "IA64") { "amd64" } else { "win32" }
+    $installerName = "python-$pyVersion-$installerSuffix.exe"
+
+    # Determine the architecture and set the appropriate installer name
+    # This doesn't seem to work? Always detects x64...
+    #$installerName = if ([System.Environment]::Is64BitOperatingSystem) {
+    #    "python-$pyVersion-amd64.exe"
+    #} else {
+    #    "python-$pyVersion.exe"
+    #}
 
     try {
         # Download and install Python
