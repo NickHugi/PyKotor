@@ -664,7 +664,7 @@ function Test-PythonCommand {
 
 function Find-Python {
     Param (
-        [switch]$installIfNotFound
+        [bool]$installIfNotFound
     )
     # Check for Python 3 command and version
     if ($global:force_python_version) {
@@ -721,22 +721,22 @@ function Find-Python {
                     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                     exit
                 }
-                try {
-                    if ( (Get-OS) -eq "Windows" ) {
-                        Install-PythonWindows -pythonVersion $fallbackVersion
-                    } elseif ( (Get-OS) -eq "Linux" ) {  # use $global:force_python_version, don't use $fallbackVersion for linux.
-                        Install-Python-Linux -pythonVersion $global:force_python_version
-                    } elseif ( (Get-OS) -eq "Mac" ) {
-                        Install-Python-Mac -pythonVersion $fallbackVersion
-                    }
-                } catch {
-                    Write-Error $_
-                    Write-Host "The Python install either failed or has been cancelled."
-                    Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
-                    Write-Host "Press any key to exit..."
-                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                    exit
+            }
+            try {
+                if ( (Get-OS) -eq "Windows" ) {
+                    Install-PythonWindows -pythonVersion $fallbackVersion
+                } elseif ( (Get-OS) -eq "Linux" ) {  # use $global:force_python_version, don't use $fallbackVersion for linux.
+                    Install-Python-Linux -pythonVersion $global:force_python_version
+                } elseif ( (Get-OS) -eq "Mac" ) {
+                    Install-Python-Mac -pythonVersion $fallbackVersion
                 }
+            } catch {
+                Write-Error $_
+                Write-Host "The Python install either failed or has been cancelled."
+                Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
+                Write-Host "Press any key to exit..."
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+                exit
             }
             Write-Host "Find python again now that it's been installed."
             Find-Python -installIfNotFound $false
