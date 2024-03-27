@@ -206,7 +206,7 @@ function Install-TclTk {
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
-            Invoke-BashCommand -Command "brew update && brew install tcl-tk"
+            Invoke-BashCommand -Command "brew update && brew install -q tcl-tk || true"  # send || true to ignore linking errors.
             return
         }
     }
@@ -535,20 +535,32 @@ function Install-PythonWindows {
         "3.12" { "3.12.2" }
         default { throw "Unsupported Python version: $pythonVersion" }
     }
+
+    # Determine the architecture and set the appropriate installer name
+    $installerName = if ([System.Environment]::Is64BitOperatingSystem) {
+        "python-$pyVersion-amd64.exe"
+    } else {
+        "python-$pyVersion.exe"
+    }
+
     try {
         # Download and install Python
-        $pythonInstallerUrl = "https://www.python.org/ftp/python/$pyVersion/python-$pyVersion.exe"
-        $installerPath = "$env:TEMP/python-$pyVersion.exe"
-        Write-Host "Downloading 'python-$pyVersion.exe' to '$env:TEMP', please wait..."
+        $pythonInstallerUrl = "https://www.python.org/ftp/python/$pyVersion/$installerName"
+        $installerPath = "$env:TEMP/$installerName"
+        Write-Host "Downloading '$installerName' to '$env:TEMP', please wait..."
         Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath
         Write-Host "Download completed."
-        Write-Host "Installing 'python-$pyVersion.exe', please wait..."
+        Write-Host "Installing '$installerName', please wait..."
         Start-Process -FilePath $installerPath -Args '/quiet InstallAllUsers=0 PrependPath=1 InstallLauncherAllUsers=0' -Wait -NoNewWindow
         Write-Host "Python install process has finished."
     
         Write-Host "Refresh environment variables to detect new Python installation"
-        $env:Path = Get-ItemProperty -Path 'Registry::HKEY_CURRENT_USER\Environment' -Name PATH | Select-Object -ExpandProperty PATH
-        Write-Host "New PATH env: $env:PATH"
+        $systemPath = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH | Select-Object -ExpandProperty PATH
+        $userPath = Get-ItemProperty -Path 'Registry::HKEY_CURRENT_USER\Environment' -Name PATH | Select-Object -ExpandProperty PATH
+
+        # Concatenate the user PATH and system PATH, with user PATH taking precedence
+        $env:Path = $userPath + ";" + $systemPath
+        Write-Debug "New PATH env: $env:PATH"
         return $true
     } catch {
         Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
