@@ -16,37 +16,72 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from logging import Logger
 
+def kill_child_processes(
+    timeout: int = 3,
+):
+    """Attempt to gracefully terminate and join all child processes of the given PID with a timeout.
+    Forcefully terminate any child processes that do not terminate within the timeout period.
+    """
+    import multiprocessing
+    active_children = multiprocessing.active_children()
+    for child in active_children:
+        # Politely ask child processes to terminate
+        child.terminate()
 
-def kill_self_pid():
-    # Get the current process id
-    pid = os.getpid()
-    # Try to kill all child multiprocessing processes
+        # Wait for the process to terminate, with a timeout
+        try:
+            child.join(timeout)
+        except multiprocessing.TimeoutError:
+            from utility.logger_util import get_root_logger
+            log = get_root_logger()
+            try:
+                log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
+                # Forcefully terminate the child process if it didn't terminate in time
+                if sys.platform == "win32":
+                    from utility.updater.restarter import Restarter
+                    sys32path = Restarter.win_get_system32_dir()
+                    subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], check=True)  # noqa: S603
+                else:
+                    import signal
+                    os.kill(child.pid, signal.SIGKILL)  # Use SIGKILL as a last resort
+            except Exception:
+                log.critical("Failed to kill process", msgbox=False)
+
+def kill_self_pid(timeout=3):
+    """Waits for a specified timeout for threads to complete.
+    If threads other than the main thread are still running after the timeout,
+    it forcefully terminates the process. Otherwise, exits normally.
+    """
+    # Wait for the timeout period to give threads a chance to finish
+    time.sleep(timeout)
+    from utility.logger_util import get_root_logger
     try:
-        # Get all active child processes spawned by multiprocessing
-        import multiprocessing
-        active_children = multiprocessing.active_children()
-        for child in active_children:
-            # Send a SIGTERM signal to each child process
+        import threading
+        # First, try to clean up child processes gracefully
+        kill_child_processes(timeout=timeout)
+
+        # Check for any active threads
+        number_threads_remaining = len(threading.enumerate())
+        if number_threads_remaining > 1:
+            self_pid = os.getpid()
+            # More than one thread means threads other than the main thread are still running
+            get_root_logger().warning("%s threads still running. Forcefully terminating the main process pid %s.", number_threads_remaining, self_pid)
             if sys.platform == "win32":
+                # Forcefully terminate the process on Windows
                 from utility.updater.restarter import Restarter
                 sys32path = Restarter.win_get_system32_dir()
-                subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], check=True)
+                subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/PID", str(self_pid)], check=True)  # noqa: S603
             else:
-                subprocess.run(["/bin/kill", "-TERM", str(child.pid)], check=True)
-
-        # Now kill the main process
-        if sys.platform == "win32":
-            from utility.updater.restarter import Restarter
-            sys32path = Restarter.win_get_system32_dir()
-            subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(pid)], check=True)
+                # Send SIGKILL to the current process on Unix-like systems
+                import signal
+                os.kill(self_pid, signal.SIGKILL)
         else:
-            subprocess.run(["/bin/kill", "-9", str(pid)], check=True)
+            # Only the main thread is running, can exit normally
+            get_root_logger().debug("No additional threads running. Exiting normally.")
+            sys.exit(0)
     except Exception:
-        from utility.logger_util import get_root_logger
-        log = get_root_logger()
-        log.exception("Failed to kill process", msgbox=False)
+        get_root_logger().exception("Exception occurred while stopping main process")
     finally:
-        # Forcefully exit the process
         os._exit(0)
 
 def get_app_dir() -> Path:
