@@ -12,6 +12,8 @@ env:
   
 on:
 #  push:
+  pull_request:
+    types: [opened, reopened]
   workflow_dispatch:
   schedule:
     - cron: '0 5 * * *'
