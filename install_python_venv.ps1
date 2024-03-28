@@ -222,7 +222,7 @@ function Install-TclTk {
 
     if ((Get-OS) -eq "Mac") {  #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
         # Retrieve current macOS version
-        $macOSVersion = bash -c "sw_vers -productVersion"
+        $macOSVersion = Invoke-BashCommand -Command "sw_vers -productVersion"
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
