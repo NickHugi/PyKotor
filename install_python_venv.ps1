@@ -177,6 +177,9 @@ function Install-TclTk {
             # Use a script block to run the command and capture the output
             $versionString = Invoke-Command -ScriptBlock $scriptBlock
             Write-Host "$command output: $versionString"
+            if ([string]::IsNullOrWhiteSpace($versionString)) {
+                throw "No version output detected."
+            }
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
