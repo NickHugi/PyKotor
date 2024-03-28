@@ -14,7 +14,7 @@ env:
   BUILD_BOOTLOADERS: false  # TODO(th3w1zard1):
   
 on:
-  - push
+#  - push
   - workflow_dispatch
 
 permissions:
