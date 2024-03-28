@@ -298,7 +298,6 @@ jobs:
           exit 1
         }
       shell: pwsh
-      continue-on-error: ${{ runner.os == 'macOS' }}  # FIXME(th3w1zard1): brew constantly tries to install the wrong python and then complains it can't link...
 
     - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}

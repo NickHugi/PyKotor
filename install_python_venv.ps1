@@ -226,10 +226,8 @@ function Install-TclTk {
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
-            Write-Host "Run brew update & install tcl-tk through it."
-            bash -c "brew update || true"  # send || true to ignore linking errors.
-            bash -c "brew install tcl-tk --no-binaries || true"  # send || true to ignore linking errors.
-            Write-Host "brew update && brew install tcl-tk completed."
+            & bash -c "brew install tcl-tk --overwrite --force || true"  # send || true to ignore linking errors.
+            Write-Host 'brew install tcl-tk --overwrite --force completed.'
             return
         }
     }

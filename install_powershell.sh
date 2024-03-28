@@ -1,4 +1,12 @@
 #!/bin/bash
+if command -v pwsh > /dev/null 2>&1; then
+    echo "PowerShell already installed, nothing to do."
+    pwsh --version
+    exit 0
+else
+    echo "PowerShell is not installed."
+    # Proceed with installation steps...
+fi
 
 # Default values
 noprompt=false
