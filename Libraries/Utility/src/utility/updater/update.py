@@ -491,11 +491,23 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         old_exe_name = f"{exe_name}.old"
         old_app_path = self._current_app_dir / old_exe_name
         updated_app_filepath = self.update_temp_path.joinpath(exe_name)
+        archive_stem = self.archive_name[:self.archive_name.find(".")]
 
         # Ensure it's a file.
         if not updated_app_filepath.safe_isfile():
-            self.log.warning("The rename strategy is only supported for one file bundled executables. Falling back to overwrite strategy.")
-            self._win_overwrite(restart=True)
+            # TODO(th3w1zard1): clean this up... i'm ashamed.
+            updated_app_filepath = updated_app_filepath.parent
+            check_path1 = updated_app_filepath.joinpath(archive_stem, exe_name)
+            check_path2 = updated_app_filepath.joinpath(archive_stem.replace("_Win-", "_Windows_"), exe_name)
+            # Detect if archive expanded some folder with the same name as the archive.
+            # This assumes all dots in the archive filename are extensions of the file archive.
+            if check_path1.safe_isfile():
+                updated_app_filepath = check_path1
+            elif check_path2.safe_isfile():
+                updated_app_filepath = check_path2
+            else:
+                self.log.warning("The rename strategy is only supported for one file bundled executables. Falling back to overwrite strategy.")
+                self._win_overwrite(restart=True)
 
         # Remove the old app from previous updates
         try:
@@ -584,13 +596,20 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         """Moves update to current directory of running application then restarts application using new update."""
         exe_name = self.filename
         update_folder_path = Path(self.update_folder)
+        current_app_path = self._current_app_dir / exe_name
+        archive_stem = self.archive_name[:self.archive_name.find(".")]
 
-        # Detect if folder
-        if update_folder_path.joinpath(self.filestem).safe_isdir():
-            current_app_path = self._current_app_dir
-            updated_app_path = update_folder_path.joinpath(self.filestem)
+        # TODO(th3w1zard1): clean this up... i'm ashamed.
+        check_path1 = update_folder_path.joinpath(archive_stem)
+        check_path2 = update_folder_path.joinpath(archive_stem.replace("_Win-", "_Windows_"))
+
+        # Detect if archive expanded some folder with the same name as the archive.
+        # This assumes all dots in the archive filename are extensions of the file archive.
+        if check_path1.safe_isdir():
+            updated_app_path = check_path1
+        elif check_path2.safe_isdir():
+            updated_app_path = check_path2
         else:
-            current_app_path = self._current_app_dir / exe_name
             updated_app_path = Path(self.update_folder, exe_name)
 
         r = Restarter(

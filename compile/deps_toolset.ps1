@@ -76,11 +76,11 @@ if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     switch ($qtApi) {
-        "pyqt5"   { & bash -c "brew install qt@5 -q" }
-        "pyqt6"   { & bash -c "brew install qt@6 -q" }
-        "pyside2" { & bash -c "brew install qt@5 -q" }  # PySide2 typically uses Qt5
-        "pyside6" { & bash -c "brew install qt@6 -q" }
-        default   { & bash -c "brew install qt@5 -q" }
+        "pyqt5"   { & bash -c "brew install qt@5 -q || true" }
+        "pyqt6"   { & bash -c "brew install qt@6 -q || true" }
+        "pyside2" { & bash -c "brew install qt@5 -q || true" }  # PySide2 typically uses Qt5
+        "pyside6" { & bash -c "brew install qt@6 -q || true" }
+        default   { & bash -c "brew install qt@5 -q || true" }
     }
     . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
 

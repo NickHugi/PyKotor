@@ -55,6 +55,8 @@ class Restarter:
         self.exithook = exithook
         self.updated_app: Path = Path.pathify(updated_app)
         self.log.debug("Update path: %s", self.updated_app)
+        if not self.updated_app.exists():
+            self.updated_app = self.updated_app.joinpath(self.updated_app.name)
         assert self.updated_app.exists()
         if os.name == "nt": # and self.strategy == UpdateStrategy.OVERWRITE:
             self.bat_file = data_dirpath / "update.bat"

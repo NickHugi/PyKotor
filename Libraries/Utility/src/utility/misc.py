@@ -7,7 +7,7 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
+from typing import TYPE_CHECKING, Any, SupportsFloat, SupportsInt, TypeVar
 
 from utility.system.path import Path
 
@@ -44,8 +44,7 @@ class ProcessorArchitecture(Enum):
     def get_dashed_bitness(self):
         return self._get("32-bit", "64-bit")
 
-    # TODO Rename this here and in `get_machine_repr`, `get_int` and `get_dashed_bitness`
-    def _get(self, arg0, arg1):  # sourcery skip: assign-if-exp, reintroduce-else
+    def _get(self, arg0, arg1) -> Any:  # sourcery skip: assign-if-exp, reintroduce-else  # noqa: ANN001
         if self == self.BIT_32:
             return arg0
         if self == self.BIT_64:

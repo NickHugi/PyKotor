@@ -156,6 +156,7 @@ class UpdateDialog(QDialog):
 
     def init_config(self):
         self.include_prerelease = self.preReleaseCheckBox.isChecked()
+        self.forksCache["NickHugi/PyKotor"] = self.fetch_fork_releases("NickHugi/PyKotor", include_all=True)
         self.fetch_and_cache_forks_with_releases()
         self.populate_fork_combo_box()
         self.on_fork_changed(self.forkComboBox.currentIndex())
@@ -204,7 +205,7 @@ class UpdateDialog(QDialog):
 
     def populate_fork_combo_box(self):
         self.forkComboBox.clear()
-        self.forkComboBox.addItem("NickHugi/PyKotor")  # Optionally add the main repo.
+        self.forkComboBox.addItem("NickHugi/PyKotor")
         for fork in self.forksCache:
             self.forkComboBox.addItem(fork)
 
@@ -246,15 +247,20 @@ class UpdateDialog(QDialog):
 
     def on_update_latest_clicked(self):
         latest_release = self.releases[0]
+        if not latest_release:
+            return
         self.start_update(latest_release)
 
     def on_install_selected(self):
         release = self.releaseComboBox.currentData()
+        if not release:
+            QMessageBox(QMessageBox.Information, "Select a release", "No release selected, select one first.").exec_()
+            return
         self.start_update(release)
 
     def start_update(self, release: GithubRelease):
         os_name = platform.system().lower()
-        proc_arch = ProcessorArchitecture.from_os().value.lower()
+        proc_arch = ProcessorArchitecture.from_os().get_machine_repr()
         asset = next((a for a in release.assets if proc_arch in a.name.lower() and os_name in a.name.lower()), None)
 
         if asset:
