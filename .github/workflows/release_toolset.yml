@@ -298,9 +298,10 @@ jobs:
           exit 1
         }
       shell: pwsh
+      continue-on-error: ${{ runner.os == 'macOS' }}  # FIXME(th3w1zard1): brew constantly tries to install the wrong python and then complains it can't link...
 
     - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && (steps.toolset_deps.outputs.success == 'true' || runner.os == 'macOS') }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
@@ -431,10 +432,16 @@ jobs:
           path: published_workflow_builds/
           pattern: HolocronToolset_*
 
-      - name: Extract tag name
+      - name: Determine Release Tag
         id: get_tag
-        run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
-        shell: bash
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            $tag = gh release list --repo $env:GITHUB_REPOSITORY | Select-String -Pattern 'v[0-9]+\.[0-9]+-toolset' | Select-Object -First 1 -ExpandProperty Line | Out-String -Stream | Select-String -o 'v[0-9]+\.[0-9]+-toolset' | Select-Object -First 1 -ExpandProperty Matches | ForEach-Object { $_.Value }
+          } else {
+            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          }
+          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: pwsh
       
       - name: Compress into archives
         run: |
@@ -447,11 +454,26 @@ jobs:
           }
         shell: pwsh
 
-      - uses: ncipollo/release-action@v1.10.0
-        with:
-            tag: ${{ steps.get_tag.outputs.tag }}
-            prerelease: true
-            draft: false
-            artifacts: "published_workflow_builds/*.zip"
-            allowUpdates: true
-            token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Release ID by Tag
+        id: get_release_id
+        run: |
+          $tag = "${{ steps.get_tag.outputs.tag }}"
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tag"
+          $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
+          $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+          $releaseId = $response.id
+          echo "RELEASE_ID=$releaseId" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Upload Archive to Release
+        run: |
+          $archivePath = "published_workflow_builds/*.zip"
+          $releaseId = $env:RELEASE_ID
+          $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
+          Get-ChildItem -Path $archivePath | ForEach-Object {
+            $filePath = $_.FullName
+            $fileName = $_.Name
+            $uploadUrl = "https://uploads.github.com/repos/${{ github.repository }}/releases/$releaseId/assets?name=$fileName"
+            Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -ContentType "application/zip" -InFile $filePath
+          }
+        shell: pwsh
