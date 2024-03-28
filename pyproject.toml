@@ -134,7 +134,7 @@ ignore-init-module-imports = true
 external = ["V"]
 task-tags = ["TODO", "FIXME", "HACK"]
 select = ["ALL"]
-exclude = [".venv"]
+exclude = [".venv", ".venv*"]
 unfixable = [
     "F841",
     "ERA001",

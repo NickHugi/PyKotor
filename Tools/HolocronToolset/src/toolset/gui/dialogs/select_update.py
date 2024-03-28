@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import os
 import pathlib
 import platform
@@ -14,7 +13,7 @@ import requests
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QComboBox, QDialog, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
 
 
 def fix_sys_and_cwd_path():
@@ -57,83 +56,23 @@ def fix_sys_and_cwd_path():
 
 fix_sys_and_cwd_path()
 
-from toolset.config import LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo
+from toolset.config import LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from toolset.gui.windows.main import run_progress_dialog
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
+from utility.updater.github import GithubRelease
 from utility.updater.update import AppUpdate
 
 
-@dataclasses.dataclass
-class Asset:
-    url: str
-    id: int
-    name: str
-    label: str | None
-    state: str
-    content_type: str
-    size: int
-    download_count: int
-    created_at: str
-    updated_at: str
-    browser_download_url: str
-    node_id: Any
-    uploader: Any
-
-@dataclasses.dataclass
-class GithubRelease:
-    url: str
-    assets_url: str
-    upload_url: str
-    html_url: str
-    id: int
-    author: dict
-    node_id: str
-    tag_name: str
-    target_commitish: str
-    name: str
-    draft: bool
-    prerelease: bool
-    created_at: str
-    published_at: str
-    assets: list[Asset]
-    tarball_url: str
-    zipball_url: str
-    body: str
-
-    @staticmethod
-    def from_json(json_dict: dict) -> GithubRelease:
-        assets = [Asset(**asset) for asset in json_dict.get("assets", [])]
-        return GithubRelease(
-            url=json_dict["url"],
-            assets_url=json_dict["assets_url"],
-            upload_url=json_dict["upload_url"],
-            html_url=json_dict["html_url"],
-            id=json_dict["id"],
-            author=json_dict["author"],
-            node_id=json_dict["node_id"],
-            tag_name=json_dict["tag_name"],
-            target_commitish=json_dict["target_commitish"],
-            name=json_dict["name"],
-            draft=json_dict["draft"],
-            prerelease=json_dict["prerelease"],
-            created_at=json_dict["created_at"],
-            published_at=json_dict["published_at"],
-            assets=assets,
-            tarball_url=json_dict["tarball_url"],
-            zipball_url=json_dict["zipball_url"],
-            body=json_dict["body"]
-        )
-
-def fetch_github_releases():
+def fetch_github_releases(include_draft: bool = True, include_prerelease: bool = False) -> list[GithubRelease]:
     url = "https://api.github.com/repos/NickHugi/PyKotor/releases"
     try:
         response = requests.get(url, timeout=15)
         response.raise_for_status()
         releases_json = response.json()
         # Convert json objects to GithubRelease objects
-        return [GithubRelease.from_json(r) for r in releases_json if not r["draft"] and not r["prerelease"]]
+        return [GithubRelease.from_json(r) for r in releases_json if (include_draft or not r["draft"]) and (include_prerelease or not r["prerelease"])]
     except requests.HTTPError as e:
         get_root_logger().exception(f"Failed to fetch releases: {e}")
         return []
@@ -145,6 +84,7 @@ def convert_markdown_to_html(md_text: str) -> str:
 class UpdateDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.include_prerelease: bool = False
         self.remoteInfo: dict[str, Any] = {}
         self.releases: list = fetch_github_releases()
         self.setWindowTitle("Update Application")
@@ -156,10 +96,24 @@ class UpdateDialog(QDialog):
     def init_ui(self):
         mainLayout = QVBoxLayout(self)
 
+        # Option to fetch releases
+        fetchReleasesButton = QPushButton("Fetch Releases")
+        fetchReleasesButton.clicked.connect(self.on_fetch_releases_clicked)
+        mainLayout.addWidget(fetchReleasesButton)
+
         # Current version display
         currentVersionLabel = QLabel(f"Your current version: {LOCAL_PROGRAM_INFO['currentVersion']}")
         currentVersionLabel.setFont(QFont("Arial", 10, QFont.Bold))
         mainLayout.addWidget(currentVersionLabel)
+
+        optionsLayout = QHBoxLayout()
+
+        # Include pre-release checkbox
+        self.preReleaseCheckBox = QCheckBox("Include Pre-releases")
+        self.preReleaseCheckBox.stateChanged.connect(self.on_pre_release_changed)
+        optionsLayout.addWidget(self.preReleaseCheckBox)
+
+        mainLayout.addLayout(optionsLayout)
 
         selectionLayout = QHBoxLayout()
 
@@ -204,6 +158,12 @@ class UpdateDialog(QDialog):
 
         mainLayout.addLayout(buttonLayout)
 
+    def on_fetch_releases_clicked(self):
+        # Update include_prerelease based on checkbox state
+        self.include_prerelease = self.preReleaseCheckBox.isChecked()
+        fetch_github_releases(self.include_prerelease)
+        self.update_release_combo_box()
+
     def get_config(self):
         result = getRemoteToolsetUpdateInfo()
         if isinstance(result, BaseException):
@@ -212,11 +172,25 @@ class UpdateDialog(QDialog):
         self.releases: list = fetch_github_releases()
         self.on_release_changed(self.releaseComboBox.currentIndex())
 
+    def on_pre_release_changed(self, state: bool):  # noqa: FBT001
+        self.include_prerelease = state == Qt.Checked
+        self.get_config()
+
+    def update_release_combo_box(self):
+        self.releaseComboBox.clear()
+        release: GithubRelease
+        for release in self.releases:
+            self.releaseComboBox.addItem(release.tag_name, release)
+        self.on_release_changed(self.releaseComboBox.currentIndex())
+
     def on_release_changed(self, index: int):
+        if index < 0 or index >= len(self.releases):
+            return
         release: GithubRelease = self.releaseComboBox.itemData(index)
-        if release:
-            changelog_html: str = convert_markdown_to_html(release.body)
-            self.changelogEdit.setHtml(changelog_html)
+        if not release:
+            return
+        changelog_html: str = convert_markdown_to_html(release.body)
+        self.changelogEdit.setHtml(changelog_html)
 
     def on_update_latest_clicked(self):
         latest_release = self.releases[0]  # Assuming the first release is the latest
@@ -253,7 +227,6 @@ class UpdateDialog(QDialog):
             progress_queue.put(data)
 
         # Prepare the list of progress hooks with the method from ProgressDialog
-        progress_hooks = [download_progress_hook]
         def exitapp(kill_self_here: bool):  # noqa: FBT001
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
@@ -267,8 +240,9 @@ class UpdateDialog(QDialog):
             LOCAL_PROGRAM_INFO["currentVersion"],
             release.tag_name,
             downloader=None,
-            progress_hooks=progress_hooks,
-            exithook=exitapp
+            progress_hooks=[download_progress_hook],
+            exithook=exitapp,
+            version_to_tag_parser=version_to_toolset_tag
         )
         try:
             progress_queue.put({"action": "update_status", "text": "Downloading update..."})

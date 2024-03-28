@@ -125,14 +125,14 @@ def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
     return version_check
 
 
-def version_to_tag(version: str) -> str:
+def version_to_toolset_tag(version: str) -> str:
     major_minor_patch_count = 2
     if version.count(".") == major_minor_patch_count:
         second_dot_index = version.find(".", version.find(".") + 1)  # Find the index of the second dot
         version = version[:second_dot_index] + version[second_dot_index + 1:]  # Remove the second dot by slicing and concatenating
     return f"v{version}-toolset"
 
-def tag_to_version(tag: str) -> str:
+def toolset_tag_to_version(tag: str) -> str:
     numeric_part: str = "".join([c for c in tag if c.isdigit() or c == "."])
     parts = numeric_part.split(".")
 
