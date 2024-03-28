@@ -281,6 +281,7 @@ class UpdateDialog(QDialog):
         progress_process.start()
         self.hide()
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+            #get_root_logger().debug("progress data: %s", data)
             progress_queue.put(data)
 
         def exitapp(kill_self_here: bool):  # noqa: FBT001

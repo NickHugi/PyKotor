@@ -89,10 +89,6 @@ class Restarter:
         self.log.debug("Starting updated app at '%s'...", self.current_app)
         cmd_exe_path = str(self.win_get_system32_dir() / "cmd.exe")
         run_script_cmd: list[str] = [cmd_exe_path, "/C", "start", "", f"{self.current_app}"]
-        flags = 0
-        flags |= 0x00000008  # DETACHED_PROCESS
-        flags |= 0x00000200  # CREATE_NEW_PROCESS_GROUP
-        flags |= 0x08000000  # CREATE_NO_WINDOW
         subprocess.Popen(
             run_script_cmd,
             text=True,
@@ -100,7 +96,7 @@ class Restarter:
             #check=True,
             close_fds=True,
             start_new_session=True,
-            creationflags=flags,
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW,
         )
         time.sleep(5)
         #self.log.debug(
