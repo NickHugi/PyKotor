@@ -14,8 +14,10 @@ env:
   BUILD_BOOTLOADERS: false  # TODO(th3w1zard1):
   
 on:
-#  - push
-  - workflow_dispatch
+#  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
 
 permissions:
   contents: write
@@ -321,6 +323,18 @@ jobs:
         }
       shell: pwsh
 
+    - name: Search for DLL files
+      if: ${{ matrix.python-version == '3.12' && runner.os == 'Windows' }}
+      run: |
+        Get-PSDrive -PSProvider FileSystem | ForEach-Object {
+          $drive = $_.Root
+          Write-Host "Searching in $drive"
+          Get-ChildItem -Path $drive -Filter 'api-ms-win-crt-*.dll' -Recurse -ErrorAction SilentlyContinue -Force | ForEach-Object {
+            Write-Host $_.FullName
+          }
+        }
+      shell: pwsh
+
     - name: Compile Holocron Toolset
       if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
       run: |
@@ -349,7 +363,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -358,7 +372,7 @@ jobs:
       shell: pwsh
 
     - name: HolocronToolset - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install staticx
@@ -464,7 +478,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -579,7 +593,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -642,7 +656,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -704,7 +718,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {

@@ -353,7 +353,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {

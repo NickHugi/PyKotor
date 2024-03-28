@@ -11,8 +11,10 @@ env:
   INTERPRETERS_JSON: '["python"]'
   
 on:
-  - push
-  - workflow_dispatch
+#  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * *'
 
 permissions:
   contents: write
