@@ -168,14 +168,29 @@ function Get-Linux-Distro-Version {
     return $null
 }
 
+# Helper function to run a command and capture output with a timeout
+function Invoke-WithTimeout {
+    param(
+        [ScriptBlock]$ScriptBlock,
+        [TimeSpan]$Timeout
+    )
+    $task = [System.Threading.Tasks.Task]::Run($ScriptBlock)
+    if ($task.Wait($Timeout)) {
+        return $task.Result
+    } else {
+        throw "Command timed out."
+    }
+}
+
 # Needed for tkinter-based apps, common in Python and subsequently most of PyKotor's tools.
 function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
     function GetAndCompareVersion($command, $scriptBlock, $requiredVersion) {
         try {
-            # Use a script block to run the command and capture the output
-            $versionString = Invoke-Command -ScriptBlock $scriptBlock
+            $timeout = New-TimeSpan -Seconds 5
+            # Run the command with a timeout to prevent freezes
+            $versionString = Invoke-WithTimeout -ScriptBlock $scriptBlock -Timeout $timeout
             Write-Host "$command output: $versionString"
             if ([string]::IsNullOrWhiteSpace($versionString)) {
                 throw "No version output detected."
@@ -187,20 +202,22 @@ function Install-TclTk {
             return $false
         }
     }
-    
-    # Check Tcl version
-    $tclVersionScript = { tclsh -command "puts $tcl_version" }
+
+    # Define script blocks for Tcl and Tk version checks
+    $tclVersionScript = { & tclsh --version 2>&1 }
+    $tkVersionScript = { & wish --version 2>&1 }
+
+    # Perform the checks
     $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
-    
-    # Check Tk version
-    $tkVersionScript = { wish -command "puts $tk_version" }
     $tkCheck = GetAndCompareVersion "wish" $tkVersionScript $requiredVersion
 
-    if ($tclCheck -and $tkCheck -and ($tk_version -eq $tcl_version)) {
-        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed (tcl: $tcl_version tk: $tk_version)"
+    # Handle the result of the version checks
+    if ($tclCheck -and $tkCheck) {
+        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
         return
     } else {
         Write-Host "Tcl/Tk version must be updated now."
+        # Continue with the installation...
     }
 
     if ((Get-OS) -eq "Mac") {  #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
@@ -209,7 +226,7 @@ function Install-TclTk {
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
-            Invoke-BashCommand -Command "brew update && brew install -q tcl-tk || true"  # send || true to ignore linking errors.
+            Invoke-BashCommand -Command "brew update && brew install tcl-tk || true"  # send || true to ignore linking errors.
             return
         }
     }
