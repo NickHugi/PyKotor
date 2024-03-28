@@ -6,7 +6,7 @@ import uuid
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread, QTimer
+from PyQt5.QtCore import QThread, QTimer, Qt
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
@@ -309,6 +309,7 @@ class AsyncBatchLoader(QDialog):
             QMessageBox.Critical,
             errorTitle,
             "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         ).exec_()
 
 

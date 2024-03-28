@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from toolset.config import download_github_file, getRemoteToolsetUpdateInfo, remoteVersionNewer
+from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.indoorkit import load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -44,6 +44,7 @@ from utility.error_handling import assert_with_variable_trace, format_exception_
 from utility.misc import is_debug_mode
 from utility.system.os_helper import is_frozen
 from utility.system.path import Path
+from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
     from PyQt5.QtCore import QPoint
