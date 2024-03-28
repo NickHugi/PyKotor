@@ -56,7 +56,7 @@ def fix_sys_and_cwd_path():
 
 fix_sys_and_cwd_path()
 
-from toolset.config import LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, toolset_tag_to_version, version_to_toolset_tag
+from toolset.config import LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from toolset.gui.windows.main import run_progress_dialog
 from utility.logger_util import get_root_logger
@@ -72,7 +72,15 @@ def fetch_github_releases(include_draft: bool = True, include_prerelease: bool =
         response.raise_for_status()
         releases_json = response.json()
         # Convert json objects to GithubRelease objects
-        return [GithubRelease.from_json(r) for r in releases_json if (include_draft or not r["draft"]) and (include_prerelease or not r["prerelease"])]
+        return [
+            GithubRelease.from_json(r)
+            for r in releases_json
+            if (
+                (include_draft or not r["draft"])
+                and (include_prerelease or not r["prerelease"])
+                and "toolset" in r["tag_name"].lower()
+            )
+        ]
     except requests.HTTPError as e:
         get_root_logger().exception(f"Failed to fetch releases: {e}")
         return []
@@ -101,10 +109,33 @@ class UpdateDialog(QDialog):
         fetchReleasesButton.clicked.connect(self.on_fetch_releases_clicked)
         mainLayout.addWidget(fetchReleasesButton)
 
+        # Release selection combo box
+        self.releaseComboBox = QComboBox()
+        self.releaseComboBox.setFixedSize(400, 30)  # Increase combo box size
+        release: GithubRelease
+        for release in self.releases:
+            self.releaseComboBox.addItem(release.tag_name, release)
+            if release.tag_name == version_to_toolset_tag(LOCAL_PROGRAM_INFO["currentVersion"]):
+                # Set current version font to bold in the combo box
+                index = self.releaseComboBox.count() - 1
+                self.releaseComboBox.setItemData(index, QFont("Arial", 10, QFont.Bold), Qt.FontRole)
+
         # Current version display
-        currentVersionLabel = QLabel(f"Your current version: {LOCAL_PROGRAM_INFO['currentVersion']}")
-        currentVersionLabel.setFont(QFont("Arial", 10, QFont.Bold))
-        mainLayout.addWidget(currentVersionLabel)
+        currentVersionLayout = QHBoxLayout()
+        currentVersionLayout.addStretch(1)
+        currentVersion = LOCAL_PROGRAM_INFO["currentVersion"]
+        versionColor = self.determine_version_color(currentVersion, toolset_tag_to_version(self.get_selected_tag()))
+
+        # Splitting the label text to apply different styles
+        labelText = "Holocron Toolset Current Version: "
+        # Applying HTML styling for different font sizes and weights
+        versionText = f"<span style='font-size:20px; font-weight:bold; color:{versionColor};'>{currentVersion}</span>"
+        currentVersionLabel = QLabel(f"{labelText}{versionText}")
+        currentVersionLabel.setFont(QFont("Arial", 16))  # Set the base font size and style
+
+        currentVersionLayout.addWidget(currentVersionLabel)
+        currentVersionLayout.addStretch(1)
+        mainLayout.addLayout(currentVersionLayout)
 
         optionsLayout = QHBoxLayout()
 
@@ -116,17 +147,6 @@ class UpdateDialog(QDialog):
         mainLayout.addLayout(optionsLayout)
 
         selectionLayout = QHBoxLayout()
-
-        # Release selection combo box
-        self.releaseComboBox = QComboBox()
-        self.releaseComboBox.setFixedSize(400, 30)  # Increase combo box size
-        release: GithubRelease
-        for release in self.releases:
-            self.releaseComboBox.addItem(release.tag_name, release)
-            if release.tag_name == LOCAL_PROGRAM_INFO["currentVersion"]:
-                # Set current version font to bold in the combo box
-                index = self.releaseComboBox.count() - 1
-                self.releaseComboBox.setItemData(index, QFont("Arial", 10, QFont.Bold), Qt.FontRole)
 
         self.releaseComboBox.currentIndexChanged.connect(self.on_release_changed)
         selectionLayout.addWidget(self.releaseComboBox)
@@ -158,11 +178,10 @@ class UpdateDialog(QDialog):
 
         mainLayout.addLayout(buttonLayout)
 
-    def on_fetch_releases_clicked(self):
-        # Update include_prerelease based on checkbox state
-        self.include_prerelease = self.preReleaseCheckBox.isChecked()
-        fetch_github_releases(self.include_prerelease)
-        self.update_release_combo_box()
+    def determine_version_color(self, currentVersion, latestVersion):
+        if remoteVersionNewer(currentVersion, latestVersion):
+            return "#FFA500"  # Orange
+        return "#00FF00"  # Green for up to date
 
     def get_config(self):
         result = getRemoteToolsetUpdateInfo()
@@ -172,16 +191,29 @@ class UpdateDialog(QDialog):
         self.releases: list = fetch_github_releases()
         self.on_release_changed(self.releaseComboBox.currentIndex())
 
-    def on_pre_release_changed(self, state: bool):  # noqa: FBT001
-        self.include_prerelease = state == Qt.Checked
-        self.get_config()
-
     def update_release_combo_box(self):
         self.releaseComboBox.clear()
         release: GithubRelease
         for release in self.releases:
+            if "toolset" not in release.tag_name.lower():
+                continue
             self.releaseComboBox.addItem(release.tag_name, release)
         self.on_release_changed(self.releaseComboBox.currentIndex())
+
+    def on_fetch_releases_clicked(self):
+        # Update include_prerelease based on checkbox state
+        self.include_prerelease = self.preReleaseCheckBox.isChecked()
+        self.releases = fetch_github_releases(self.include_prerelease)
+        self.update_release_combo_box()
+
+    def on_pre_release_changed(self, state: bool):  # noqa: FBT001
+        self.include_prerelease = state == Qt.Checked
+        self.get_config()
+
+    def get_selected_tag(self) -> str:
+        curIndex: int = self.releaseComboBox.currentIndex()
+        release: GithubRelease = self.releaseComboBox.itemData(curIndex)
+        return release.tag_name if release else ""
 
     def on_release_changed(self, index: int):
         if index < 0 or index >= len(self.releases):
@@ -238,7 +270,7 @@ class UpdateDialog(QDialog):
             links,
             "HolocronToolset",
             LOCAL_PROGRAM_INFO["currentVersion"],
-            release.tag_name,
+            toolset_tag_to_version(release.tag_name),
             downloader=None,
             progress_hooks=[download_progress_hook],
             exithook=exitapp,

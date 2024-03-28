@@ -5,21 +5,17 @@ import json
 import re
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import requests
 
 from PyQt5.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
-
-if TYPE_CHECKING:
-    import os
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b20",
+    "currentVersion": "2.2.1b18",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b20",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
