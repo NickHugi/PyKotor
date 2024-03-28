@@ -1,14 +1,13 @@
-idna~=3.3
+idna  # Tested with 3.3
 PyQt5~=5.15
 PyQt5-Qt5~=5.15
 PyQt5-sip~=12.10
-urllib3~=1.26
-watchdog>=2.1,<3.1
-Markdown>=3.3,<3.6
-jsmin~=3.0
-requests>=2.27,<2.32
+urllib3<=2  # Tested with 1.26.18
+watchdog>=2.1#,<3.1
+Markdown>=3.3#,<3.6
+jsmin>=3
+requests>=2.27#,<2.32
 certifi==2021.10.8
 pyperclip~=1.8
 setuptools>=67.8.0
 Pillow>=9.5
-pycryptodome
