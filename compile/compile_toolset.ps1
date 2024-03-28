@@ -47,6 +47,7 @@ $pyInstallerArgs = @{
     'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
+    'debug' = 'all'
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
     'upx-dir' = $upx_dir
