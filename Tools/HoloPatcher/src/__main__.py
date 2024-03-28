@@ -71,7 +71,6 @@ from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
-from utility.system.os_helper import kill_self_pid
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 

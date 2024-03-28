@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     )
 
 
-def is_filesystem_case_sensitive(path) -> bool | None:
+def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
     """Check if the filesystem at the given path is case-sensitive.
     This function creates a temporary file to test the filesystem behavior.
     """
@@ -119,7 +119,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls: type):  # TODO: move into CaseAwarePath.__getattr__
+def create_case_insensitive_pathlib_class(cls: type):  # TODO(th3w1zard1): move into CaseAwarePath.__getattr__
     # Create a dictionary that'll hold the original methods for this class
     """Wraps methods of a pathlib class to be case insensitive.
 
@@ -248,6 +248,9 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
             - If not, find the closest matching file/folder name in the existing path
             - Return a CaseAwarePath instance with case sensitivity resolved.
         """
+        if os.name == "nt":
+            return cls.pathify(path)
+
         prefixes = prefixes or []
         pathlib_path = pathlib.Path(path)
         pathlib_abspath = pathlib.Path(*prefixes, path).absolute() if prefixes else pathlib_path.absolute()
@@ -341,7 +344,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
     def __str__(self):
         path_obj = pathlib.Path(self)
-        if path_obj.exists():
+        if os.name == "nt" or path_obj.exists():
             return super().__str__()
 
         case_resolved_path = self.get_case_sensitive_path(path_obj)

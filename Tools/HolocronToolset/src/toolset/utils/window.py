@@ -24,11 +24,16 @@ WINDOWS: list[QWidget] = []
 
 
 def addWindow(window: QWidget):
+    """Prevents Qt's garbage collection by keeping a reference to the window."""
     # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
     # Define a new closeEvent method that also calls the original
-    def newCloseEvent(event: QCloseEvent | None = None, *args, **kwargs):  # Make arg optional just in case the class has the wrong definition.
+    def newCloseEvent(
+        event: QCloseEvent | None = None,  # Make event arg optional just in case the class has the wrong definition.
+        *args,
+        **kwargs,
+    ):
         if window in WINDOWS:
             WINDOWS.remove(window)
         # Call the original closeEvent
@@ -117,7 +122,7 @@ def openResourceEditor(
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
 
-    if restype.category in {"Images", "Textures"}:
+    if restype.category in {"Images", "Textures"} and restype != ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:

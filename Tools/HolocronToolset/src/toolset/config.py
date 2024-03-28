@@ -125,81 +125,31 @@ def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
     return version_check
 
 
-def download_github_file(
-    url_or_repo: str,
-    local_path: os.PathLike | str,
-    repo_path: os.PathLike | str | None = None,
-    timeout: int | None = None,
-):
-    timeout = 180 if timeout is None else timeout
-    local_path = Path(local_path).absolute()
-    local_path.parent.mkdir(parents=True, exist_ok=True)
+def version_to_tag(version: str) -> str:
+    major_minor_patch_count = 2
+    if version.count(".") == major_minor_patch_count:
+        second_dot_index = version.find(".", version.find(".") + 1)  # Find the index of the second dot
+        version = version[:second_dot_index] + version[second_dot_index + 1:]  # Remove the second dot by slicing and concatenating
+    return f"v{version}-toolset"
 
-    if repo_path is not None:
-        # Construct the API URL for the file in the repository
-        owner, repo = PurePath(url_or_repo).parts[-2:]
-        api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
+def tag_to_version(tag: str) -> str:
+    numeric_part: str = "".join([c for c in tag if c.isdigit() or c == "."])
+    parts = numeric_part.split(".")
 
-        file_info: dict[str, str] = _request_api_data(api_url)
-        # Check if it's a file and get the download URL
-        if file_info["type"] == "file":
-            download_url = file_info["download_url"]
-        else:
-            msg = "The provided repo_path does not point to a file."
-            raise ValueError(msg)
-    else:
-        # Direct URL
-        download_url = url_or_repo
+    major_minor_patch_len = 3
+    if len(parts) == major_minor_patch_len:
+        return ".".join(parts)
+    major_minor_len = 2
+    if len(parts) == major_minor_len:
+        return ".".join(parts)
 
-    # Download the file
-    with requests.get(download_url, stream=True, timeout=timeout) as r:
-        r.raise_for_status()
-        with local_path.open("wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+    # Handle the legacy typo format (missing second dot)
+    major_len = 1
+    major: str = parts[0]
+    if len(parts) > major_len:
+        # Assume the minor version always precedes the concatenated patch version
+        minor = parts[1][0]  # Take the first digit as the minor version
+        patch = parts[1][1:]  # The rest is considered the patch
+        return f"{major}.{minor}.{patch}"
 
-
-def download_github_directory(
-    repo: os.PathLike | str,
-    local_dir: os.PathLike | str,
-    repo_path: os.PathLike | str,
-):
-    """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
-    repo = PurePath(repo)
-    repo_path = PurePath(repo_path)
-    api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-    data = _request_api_data(api_url)
-    for item in data:
-        item_path = Path(item["path"])
-        local_path = item_path.relative_to("toolset")
-
-        if item["type"] == "file":
-            download_github_file(item["download_url"], Path(local_dir, local_path))
-        elif item["type"] == "dir":
-            download_github_directory(repo, item_path, local_path)
-
-
-def download_github_directory_fallback(
-    repo: os.PathLike | str,
-    local_dir: os.PathLike | str,
-    repo_path: os.PathLike | str,
-):
-    """There were two versions of this function and I can't remember which one worked."""
-    repo = PurePath.pathify(repo)
-    repo_path = PurePath.pathify(repo_path)
-    api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-    data = _request_api_data(api_url)
-    for item in data:
-        item_path = Path(item["path"])
-        local_path = item_path.relative_to("toolset")
-
-        if item["type"] == "file":
-            download_github_file(item["download_url"], local_path)
-        elif item["type"] == "dir":
-            download_github_directory(repo, item_path, local_path)
-
-
-def _request_api_data(api_url: str) -> Any:
-    response: requests.Response = requests.get(api_url, timeout=15)
-    response.raise_for_status()
-    return response.json()
+    return f"{major}.0.0"  # In case there's only a major version

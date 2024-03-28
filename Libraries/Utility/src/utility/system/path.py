@@ -8,10 +8,12 @@ import sys
 import uuid
 
 from contextlib import suppress
+from functools import lru_cache
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Union
 
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -117,12 +119,14 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
         return args_list
 
-    @staticmethod
+    @classmethod
+    @lru_cache(maxsize=20000)
     def _fix_path_formatting(
+        cls,
         str_path: str,
         *,
         slash: str = os.sep,
-    ) -> str:
+    ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
         """Formats a path string.
 
         Args:
@@ -142,28 +146,19 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             4. Format Unix paths by replacing mixed slashes and normalizing slashes
             5. Strip trailing slashes from the formatted path.
         """
-        if slash not in {"\\", "/"}:
+        if slash not in ("\\", "/"):
             msg = f"Invalid slash str: '{slash}'"
             raise ValueError(msg)
 
-        formatted_path: str = str_path.strip('"')
-        if not formatted_path.strip():
-            return formatted_path
-
-        # For Windows paths
-        if slash == "\\":
-            formatted_path = formatted_path.replace("/", "\\")
-            formatted_path = _WINDOWS_PATH_NORMALIZE_RE.sub(r"\\\\", formatted_path)
-            formatted_path = _WINDOWS_EXTRA_SLASHES_RE.sub(r"\\", formatted_path)
-        # For Unix-like paths
-        elif slash == "/":
-            formatted_path = formatted_path.replace("\\", "/")
-            formatted_path = _UNIX_EXTRA_SLASHES_RE.sub("/", formatted_path)
+        other_slash = "\\" if slash == "/" else "/"
+        formatted_path: str = os.path.normpath(str_path.strip('"')).replace(other_slash, slash)
 
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         if len(formatted_path) != 1:
-            formatted_path = formatted_path.rstrip(slash)
-        return formatted_path or "."
+            return formatted_path.rstrip(slash)
+        if formatted_path == "\\":
+            return "."
+        return formatted_path
 
     @staticmethod
     def _fspath_str(arg: object) -> str:
@@ -446,45 +441,35 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         self,
         pattern: str,
     ) -> Generator[Self, Any, None]:
-        try:
-            iterator: Generator[Self, Any, None] = self.rglob(pattern)
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-            return
-        else:
-            while True:
-                try:
-                    yield next(iterator)
-                except StopIteration:  # noqa: PERF203
-                    break  # StopIteration means there are no more files to iterate over
-                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-                    continue  # Ignore the file that caused an exception and move to the next
+        iterator: Generator[Self, Any, None] = self.rglob(pattern)
+        while True:
+            try:
+                yield next(iterator)
+            except StopIteration:  # noqa: PERF203
+                break  # StopIteration means there are no more files to iterate over
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
+                get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+                continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
     def safe_iterdir(self) -> Generator[Self, Any, None]:
-        try:
-            iterator: Generator[Self, Any, None] = self.iterdir()
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-            return
-        else:
-            while True:
-                try:
-                    yield next(iterator)
-                except StopIteration:  # noqa: PERF203
-                    break  # StopIteration means there are no more files to iterate over
-                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
-                    continue  # Ignore the file that caused an exception and move to the next
+        iterator: Generator[Self, Any, None] = self.iterdir()
+        while True:
+            try:
+                yield next(iterator)
+            except StopIteration:  # noqa: PERF203
+                break  # StopIteration means there are no more files to iterate over
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
+                get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+                continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool | None:
         check: bool | None = None
         try:
             check = self.is_dir()
-        except (OSError, ValueError) as e:
-            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+        except (OSError, ValueError):
+            get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -494,8 +479,8 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         check: bool | None = None
         try:
             check = self.is_file()
-        except (OSError, ValueError) as e:
-            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+        except (OSError, ValueError):
+            get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -505,8 +490,8 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         check: bool | None = None
         try:
             check = self.exists()
-        except (OSError, ValueError) as e:
-            # print(format_exception_with_variables(e, message="This exception has been suppressed and is only relevant for debug purposes."))
+        except (OSError, ValueError):
+            get_root_logger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check

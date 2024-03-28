@@ -10,7 +10,7 @@ try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tup
 
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: diffusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended due to security concerns.")
 
 from typing import TYPE_CHECKING
 
