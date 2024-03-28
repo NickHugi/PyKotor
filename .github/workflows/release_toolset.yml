@@ -371,52 +371,52 @@ jobs:
         Move-Item -LiteralPath ./dist/HolocronToolset-static -Destination ./dist/HolocronToolset -Force
       shell: pwsh
 
-    - name: Upload compiled binaries attempt 1
+    - name: Upload HolocronToolset binaries attempt 1
       if: ${{ success() || failure() }}
       id: upload_attempt_1
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 2
+    - name: Upload HolocronToolset binaries attempt 2
       id: upload_attempt_2
       if: ${{ (success() || failure()) && steps.upload_attempt_1.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 3
+    - name: Upload HolocronToolset binaries attempt 3
       id: upload_attempt_3
       if: ${{ (success() || failure()) && steps.upload_attempt_2.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 4
+    - name: Upload HolocronToolset binaries attempt 4
       id: upload_attempt_4
       if: ${{ (success() || failure()) && steps.upload_attempt_3.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 5
+    - name: Upload HolocronToolset binaries attempt 5
       id: upload_attempt_5
       if: ${{ (success() || failure()) && steps.upload_attempt_4.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
 
@@ -429,7 +429,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: published_workflow_builds/
-          pattern: publish_*
+          pattern: HolocronToolset_*
 
       - name: Extract tag name
         id: get_tag
