@@ -174,13 +174,18 @@ function Invoke-WithTimeout {
         [ScriptBlock]$ScriptBlock,
         [TimeSpan]$Timeout
     )
-    $task = [System.Threading.Tasks.Task]::Run($ScriptBlock)
-    if ($task.Wait($Timeout)) {
-        return $task.Result
+    $ps = [powershell]::Create().AddScript($ScriptBlock)
+    $task = $ps.BeginInvoke()
+    if ($task.AsyncWaitHandle.WaitOne($Timeout)) {
+        $output = $ps.EndInvoke($task)
+        $ps.Dispose()
+        return $output
     } else {
+        $ps.Dispose()
         throw "Command timed out."
     }
 }
+
 
 # Needed for tkinter-based apps, common in Python and subsequently most of PyKotor's tools.
 function Install-TclTk {
