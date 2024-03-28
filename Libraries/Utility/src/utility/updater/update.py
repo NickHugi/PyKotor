@@ -89,7 +89,7 @@ class LibUpdate:
 
         self.latest: str = latest
 
-        self.archive_name = self.get_archive_name()
+        self.archive_name = self.get_archive_names()[0]
         self._current_app_dir: Path = get_app_dir()
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
         self.log = logger or get_root_logger()
@@ -130,25 +130,37 @@ class LibUpdate:
                 version += f" {v[4]}"
         return self._version
 
-    def get_archive_name(self) -> str:
-        # TODO(th3w1zard1): Allow customization of this in the constructor.
+    def get_archive_names(self) -> list[str]:
         proc_arch = ProcessorArchitecture.from_python()
         assert proc_arch == ProcessorArchitecture.from_os()
-        os_short_name: str = ""
-        lookup_os_name = platform.system()
-        if lookup_os_name == "Windows":
-            os_short_name = "Win"
-            ext = ".zip"
-        elif lookup_os_name == "Linux":
-            os_short_name = "Linux"
-            ext = ".tar.gz"
-        elif lookup_os_name == "Darwin":
-            os_short_name = "Mac"
-            ext = ".tar.gz"
-        else:
-            raise ValueError(f"Unsupported return from platform.system() call: '{lookup_os_name}'")
 
-        return f"{self.filestem}_{os_short_name}-{proc_arch.get_machine_repr()}{ext}"
+        lookup_os_name = platform.system()
+        str_arch = proc_arch.get_machine_repr()
+        if lookup_os_name == "Windows":
+            return [
+                f"{self.filestem}_Win_{str_arch}.zip",
+                f"{self.filestem}_Windows_{str_arch}.zip"
+            ]
+        if lookup_os_name == "Linux":
+            return [
+                f"{self.filestem}_Linux_{str_arch}.zip",
+                f"{self.filestem}_Linux_{str_arch}.tar.gz",
+                f"{self.filestem}_Linux_{str_arch}.tar.bz2",
+                f"{self.filestem}_Linux_{str_arch}.tar.xz",
+            ]
+        if lookup_os_name == "Darwin":
+            return [
+                f"{self.filestem}_Mac_{str_arch}.tar.gz",
+                f"{self.filestem}_macOS_{str_arch}.tar.gz",
+                f"{self.filestem}_Mac_{str_arch}.tar.bz2",
+                f"{self.filestem}_macOS_{str_arch}.tar.bz2",
+                f"{self.filestem}_Mac_{str_arch}.tar.xz",
+                f"{self.filestem}_macOS_{str_arch}.tar.xz",
+                f"{self.filestem}_Mac_{str_arch}.zip",
+                f"{self.filestem}_macOS_{str_arch}.zip"
+            ]
+
+        raise ValueError(f"Unexpected and unsupported OS: {lookup_os_name}")
 
     def is_downloaded(self) -> bool | None:
         """Used to check if update has been downloaded.
@@ -211,14 +223,18 @@ class LibUpdate:
     def _extract_update(self):
         self.log.info("Main extraction, starting in working dir '%s'", self.update_folder)
         with ChDir(self.update_folder):
-            archive_path = Path(self.get_archive_name()).absolute()
-            if not archive_path.safe_isfile():
-                self.log.info("Archive not found, attempting to find it via similar extensions")
+            for archive_name in self.get_archive_names():
+                archive_path = Path.cwd().joinpath(archive_name).absolute()
+                if archive_path.safe_isfile():
+                    self.log.info("Found archive %s", archive_name)
+                    break
+                self.log.warning("Archive not found, attempting to find it via similar extensions")
                 for ext in (".gz", ".tar", ".zip", ".bz2"):
                     test_path = archive_path.with_suffix(ext)
                     if test_path.safe_isfile():
-                        self.log.info("Found archive %s", test_path)
-                        archive_path = test_path
+                        self.log.info("Found archive %s", test_path.name)
+                        self._recursive_extract(test_path)
+                        return
             self._recursive_extract(archive_path)
 
     def _recursive_extract(self, archive_path: Path):
@@ -303,14 +319,17 @@ class LibUpdate:
         """Checks if latest update is already downloaded."""
         # TODO(th3w1zard1): Compare file hashes to ensure security
         with ChDir(self.update_folder):
-            return Path(self.get_archive_name()).safe_exists()
+            for archive_name in self.get_archive_names():
+                if Path(archive_name).safe_isfile():
+                    return True
+        return False
 
     def _full_update(self) -> bool:
         self.log.debug("Starting full update")
         result = True
         with ChDir(self.update_folder):
             self.log.debug("Downloading update...")
-            archive_path = Path(self.get_archive_name()).absolute()
+            archive_path = Path(self.get_archive_names()[0]).absolute()
             parsed_url = ""
             for url in self.update_urls:
                 parsed_url = url
@@ -339,16 +358,21 @@ class LibUpdate:
                         result = fd.download_verify_write()
                         if result:
                             self.log.debug("Download Complete")
-                            archive_path = fd.filepath.parent / fd.downloaded_filename
-                            if archive_path.safe_exists():
-                                self.get_archive_name = lambda a=archive_path: a.name
+                            archive_path = fd.filepath.parent / fd.downloaded_filename  # TODO(th3w1zard1): loop through archive names...
+                            if not archive_path.safe_isfile():
+                                self.log.error("Download complete but %s not found on disk at expected %s filepath?", fd.downloaded_filename, archive_path)
+                                continue
+                            if fd.downloaded_filename not in self.get_archive_names():
+                                self.log.warning("Archive name %s does not exist in the archive name getter function, will override with downloaded name.", archive_path.name)
+                                def getarchivename(a: Path = archive_path) -> list[str]:
+                                    return [a.name]
+                                self.get_archive_names = getarchivename
                         else:  # pragma: no cover
                             self.log.debug("Failed To Download Latest Version")
                     if archive_path.safe_isfile():
                         break  # One of the mirrors worked successfully.
-                except Exception as e:  # noqa: PERF203
-                    self.log.exception()
-                    print(format_exception_with_variables(e))
+                except Exception:  # noqa: PERF203
+                    self.log.exception("Exception while downloading %s", url)
         #if not archive_path.safe_isfile():
             #exc = FileNotFoundError()
             #exc.filename = str(archive_path)
@@ -429,7 +453,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             if current_app_path.safe_isdir():
                 shutil.rmtree(str(current_app_path))
             else:
-                shutil.rmtree(str(current_app_path.parent))
+                current_app_path.unlink()
 
         if current_app_path.safe_exists():
             remove_any(current_app_path)
@@ -438,9 +462,8 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         shutil.move(str(app_update_path), str(current_app_path))
 
     def _unix_restart(self):
-        self.log.debug("Restarting")
-        exe_name = self.filename
-        current_app_path = Path(self._current_app_dir, exe_name)
+        self.log.debug("Restarting %s", self.filename)
+        current_app_path = Path(self._current_app_dir, self.filename)
         if platform.system() == "Darwin" and current_app_path.suffix.lower() == ".app":
             self.log.debug(f"Must be a .app bundle: '{current_app_path}'")  # noqa: G004
             mac_app_binary_dir = current_app_path.joinpath("Contents", "MacOS")
@@ -491,23 +514,24 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         old_exe_name = f"{exe_name}.old"
         old_app_path = self._current_app_dir / old_exe_name
         updated_app_filepath = self.update_temp_path.joinpath(exe_name)
-        archive_stem = self.archive_name[:self.archive_name.find(".")]
 
         # Ensure it's a file.
         if not updated_app_filepath.safe_isfile():
-            # TODO(th3w1zard1): clean this up... i'm ashamed.
-            updated_app_filepath = updated_app_filepath.parent
-            check_path1 = updated_app_filepath.joinpath(archive_stem, exe_name)
-            check_path2 = updated_app_filepath.joinpath(archive_stem.replace("_Win-", "_Windows_"), exe_name)
             # Detect if archive expanded some folder with the same name as the archive.
             # This assumes all dots in the archive filename are extensions of the file archive.
-            if check_path1.safe_isfile():
-                updated_app_filepath = check_path1
-            elif check_path2.safe_isfile():
-                updated_app_filepath = check_path2
-            else:
+            updated_app_filepath = updated_app_filepath.parent
+            for archive_name in self.get_archive_names():
+                archive_stem = archive_name[:archive_name.find(".")]
+                check_path = updated_app_filepath.joinpath(archive_stem, exe_name)
+                if check_path.safe_isfile():
+                    updated_app_filepath = check_path
+                    break
+            if updated_app_filepath.safe_isdir():
                 self.log.warning("The rename strategy is only supported for one file bundled executables. Falling back to overwrite strategy.")
                 self._win_overwrite(restart=True)
+            elif not updated_app_filepath.safe_exists():
+                self.log.error("Updated app filepath: %s not found", updated_app_filepath)
+
 
         # Remove the old app from previous updates
         try:

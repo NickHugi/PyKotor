@@ -270,7 +270,7 @@ jobs:
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
-              pip install "pyinstaller==5.4" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             }
           } else {
             pip install pyinstaller -U --prefer-binary
@@ -300,7 +300,7 @@ jobs:
       shell: pwsh
 
     - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && (steps.toolset_deps.outputs.success == 'true' || runner.os == 'macOS') }}
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed

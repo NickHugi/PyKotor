@@ -323,7 +323,7 @@ jobs:
       shell: pwsh
     
     - name: Compile HoloPatcher
-      if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && (steps.holopatcher_deps.outputs.success == 'true' || runner.os == 'macOS') }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"

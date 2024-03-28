@@ -61,7 +61,7 @@ from toolset.gui.dialogs.asyncloader import ProgressDialog
 from toolset.gui.windows.main import run_progress_dialog
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.updater.github import GithubRelease
+from utility.updater.github import Asset, GithubRelease
 from utility.updater.update import AppUpdate
 
 
@@ -261,7 +261,7 @@ class UpdateDialog(QDialog):
     def start_update(self, release: GithubRelease):
         os_name = platform.system().lower()
         proc_arch = ProcessorArchitecture.from_os().get_machine_repr()
-        asset = next((a for a in release.assets if proc_arch in a.name.lower() and os_name in a.name.lower()), None)
+        asset: Asset | None = next((a for a in release.assets if proc_arch in a.name.lower() and os_name in a.name.lower()), None)
 
         if asset:
             download_url = asset.browser_download_url
@@ -290,6 +290,9 @@ class UpdateDialog(QDialog):
             if kill_self_here:
                 sys.exit(0)
 
+        def expected_archive_filenames() -> list[str]:
+            return [asset.name]
+
         updater = AppUpdate(
             links,
             "HolocronToolset",
@@ -298,8 +301,10 @@ class UpdateDialog(QDialog):
             downloader=None,
             progress_hooks=[download_progress_hook],
             exithook=exitapp,
-            version_to_tag_parser=version_to_toolset_tag
+            version_to_tag_parser=version_to_toolset_tag,
         )
+        updater.get_archive_names = expected_archive_filenames
+
         try:
             progress_queue.put({"action": "update_status", "text": "Downloading update..."})
             updater.download(background=False)
