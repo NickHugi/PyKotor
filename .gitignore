@@ -65,3 +65,4 @@ tests/results/
 *.pstat
 installlog.txt
 ./vendor
+powershell-bin/

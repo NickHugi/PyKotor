@@ -87,7 +87,7 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
-        json_str = json_data_match.group(1)
+        json_str = json_data_match[1]
         remoteInfo = json.loads(json_str)
         if not isinstance(remoteInfo, dict):
             raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
