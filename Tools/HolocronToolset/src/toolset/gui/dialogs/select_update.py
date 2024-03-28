@@ -13,7 +13,7 @@ import requests
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
 
 
 def fix_sys_and_cwd_path():
@@ -56,7 +56,7 @@ def fix_sys_and_cwd_path():
 
 fix_sys_and_cwd_path()
 
-from toolset.config import LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
+from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from toolset.gui.windows.main import run_progress_dialog
 from utility.logger_util import get_root_logger
@@ -75,7 +75,7 @@ class UpdateDialog(QDialog):
         self.include_prerelease: bool = False
         self.remoteInfo: dict[str, Any] = {}
         self.releases: list[GithubRelease] = []
-        self.forksCache: list[str] = []
+        self.forksCache: dict[str, list[GithubRelease]] = {}
         self.setWindowTitle("Update Application")
         self.setGeometry(100, 100, 800, 600)
         self.setFixedSize(800, 600)
@@ -84,125 +84,152 @@ class UpdateDialog(QDialog):
 
     def init_ui(self):
         mainLayout = QVBoxLayout(self)
+        mainLayout.setSpacing(10)
+        mainLayout.setContentsMargins(10, 10, 10, 10)
+
+        # Fetch Releases Button
         fetchReleasesButton = QPushButton("Fetch Releases")
-        fetchReleasesButton.clicked.connect(self.on_fetch_releases_clicked)
-        fetchReleasesButton.setFixedHeight(40)
+        fetchReleasesButton.clicked.connect(self.init_config)
+        fetchReleasesButton.setFixedSize(780, 50)
         mainLayout.addWidget(fetchReleasesButton)
-        forksLayout = QHBoxLayout()
+
+        formLayout = QFormLayout()
+
+        # Fork Selection Layout
         self.forkComboBox = QComboBox()
-        self.forkComboBox.addItem("NickHugi/PyKotor")
-        forks = self.fetch_repository_forks()
-        for fork in forks:
-            self.forkComboBox.addItem(fork)
+        self.forkComboBox.setFixedWidth(300)
+        self.forkComboBox.addItem("NickHugi/PyKotor")  # Default repository
         self.forkComboBox.currentIndexChanged.connect(self.on_fork_changed)
-        forksLayout.addWidget(QLabel("Select Fork:"))
-        forksLayout.addWidget(self.forkComboBox)
-        mainLayout.addLayout(forksLayout)
+        formLayout.addRow("Select Fork:", self.forkComboBox)
+
+        # Release Selection ComboBox
         self.releaseComboBox = QComboBox()
-        self.releaseComboBox.setFixedSize(400, 30)
+        self.releaseComboBox.setFixedWidth(300)
+        self.releaseComboBox.currentIndexChanged.connect(self.on_release_changed)
+        # Populate the releaseComboBox with releases
         for release in self.releases:
             self.releaseComboBox.addItem(release.tag_name, release)
             if release.tag_name == version_to_toolset_tag(LOCAL_PROGRAM_INFO["currentVersion"]):
                 index = self.releaseComboBox.count() - 1
                 self.releaseComboBox.setItemData(index, QFont("Arial", 10, QFont.Bold), Qt.FontRole)
-        currentVersionLayout = QHBoxLayout()
-        currentVersionLayout.addStretch(1)
-        currentVersion = LOCAL_PROGRAM_INFO["currentVersion"]
-        versionColor = "#FFA500" if remoteVersionNewer(currentVersion, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
-        labelText = "Holocron Toolset Current Version: "
-        versionText = f"<span style='font-size:20px; font-weight:bold; color:{versionColor};'>{currentVersion}</span>"
-        currentVersionLabel = QLabel(f"{labelText}{versionText}")
-        currentVersionLabel.setFont(QFont("Arial", 16))
-        currentVersionLayout.addWidget(currentVersionLabel)
-        currentVersionLayout.addStretch(1)
-        mainLayout.addLayout(currentVersionLayout)
-        optionsLayout = QHBoxLayout()
+        formLayout.addRow("Select Release:", self.releaseComboBox)
+
+        mainLayout.addLayout(formLayout)
+
+        # Include Pre-releases Checkbox
         self.preReleaseCheckBox = QCheckBox("Include Pre-releases")
         self.preReleaseCheckBox.stateChanged.connect(self.on_pre_release_changed)
-        optionsLayout.addWidget(self.preReleaseCheckBox)
-        mainLayout.addLayout(optionsLayout)
-        selectionLayout = QHBoxLayout()
-        self.releaseComboBox.currentIndexChanged.connect(self.on_release_changed)
-        selectionLayout.addWidget(self.releaseComboBox)
-        updateButton = QPushButton("Install Selected")
-        updateButton.clicked.connect(self.on_download_clicked)
-        updateButton.setFixedSize(120, 30)  # Ensure consistent button size
-        selectionLayout.addWidget(updateButton)
-        selectionLayout.setAlignment(Qt.AlignLeft)
-        mainLayout.addLayout(selectionLayout)
+        mainLayout.addWidget(self.preReleaseCheckBox)
 
+        # Install Selected Button
+        updateButton = QPushButton("Install Selected")
+        updateButton.clicked.connect(self.on_install_selected)
+        updateButton.setFixedSize(150, 30)
+        mainLayout.addWidget(updateButton)
+
+        # Changelog Display
         self.changelogEdit = QTextEdit()
         self.changelogEdit.setReadOnly(True)
         self.changelogEdit.setFont(QFont("Arial", 10))
         mainLayout.addWidget(self.changelogEdit)
 
-        buttonLayout = QHBoxLayout()
+        # Update to Latest Button
         updateLatestButton = QPushButton("Update to Latest")
         updateLatestButton.clicked.connect(self.on_update_latest_clicked)
-        updateLatestButton.setFixedSize(800, 50)  # Ensure consistent button size
-        buttonLayout.addWidget(updateLatestButton)
+        updateLatestButton.setFixedSize(780, 50)  # Ensure consistent button size
+        mainLayout.addWidget(updateLatestButton)
 
-        mainLayout.addLayout(buttonLayout)
+        # Current Version Display
+        currentVersionLayout = QHBoxLayout()
+        currentVersionLayout.addStretch(1)
+        currentVersion = LOCAL_PROGRAM_INFO["currentVersion"]
+        versionColor = "#FFA500" if remoteVersionNewer(currentVersion, toolset_tag_to_version(self.get_selected_tag())) else "#00FF00"
+        versionText = f"<span style='font-size:16px; font-weight:bold; color:{versionColor};'>{currentVersion}</span>"
+        currentVersionLabel = QLabel(f"Holocron Toolset Current Version: {versionText}")
+        currentVersionLabel.setFont(QFont("Arial", 12))
+        currentVersionLayout.addWidget(currentVersionLabel)
+        currentVersionLayout.addStretch(1)
+        mainLayout.addLayout(currentVersionLayout)
+
+        self.setLayout(mainLayout)
+
 
     def init_config(self):
-        result = getRemoteToolsetUpdateInfo()
-        if isinstance(result, BaseException):
-            raise result
-        self.remoteInfo: dict[str, Any] = result
-        self.releases = self.fetch_github_releases(include_prerelease=self.include_prerelease)
-        self.on_release_changed(self.releaseComboBox.currentIndex())
+        self.include_prerelease = self.preReleaseCheckBox.isChecked()
+        self.fetch_and_cache_forks_with_releases()
+        self.populate_fork_combo_box()
+        self.on_fork_changed(self.forkComboBox.currentIndex())
 
-    def fetch_github_releases(self, include_draft: bool = True, include_prerelease: bool = False) -> list[GithubRelease]:
-        selected_fork = self.forkComboBox.currentText()
-        url = f"https://api.github.com/repos/{selected_fork}/releases"
+    def fetch_and_cache_forks_with_releases(self):
+        self.forksCache.clear()
+        forks_url = "https://api.github.com/repos/NickHugi/PyKotor/forks"
+        try:
+            forks_response = requests.get(forks_url, timeout=15)
+            forks_response.raise_for_status()
+            forks_json = forks_response.json()
+            for fork in forks_json:
+                fork_owner_login = fork["owner"]["login"]
+                if fork_owner_login not in ("NickHugi", "th3w1zard1"):
+                    continue
+                fork_full_name = f"{fork_owner_login}/{fork['name']}"
+                self.forksCache[fork_full_name] = self.fetch_fork_releases(fork_full_name, include_all=True)
+        except requests.HTTPError as e:
+            get_root_logger().exception(f"Failed to fetch forks: {e}")
+
+
+    def fetch_fork_releases(self, fork_full_name: str, *, include_all: bool = False) -> list[GithubRelease]:
+        url = f"https://api.github.com/repos/{fork_full_name}/releases"
         try:
             response = requests.get(url, timeout=15)
             response.raise_for_status()
             releases_json = response.json()
+            if include_all:
+                return [GithubRelease.from_json(r) for r in releases_json]
             return [
-                GithubRelease.from_json(r)
-                for r in releases_json
-                if (
-                    (include_draft or not r["draft"])
-                    and (include_prerelease or not r["prerelease"])
-                    and "toolset" in r["tag_name"].lower()
-                )
+                GithubRelease.from_json(r) for r in releases_json
+                if not r["draft"] and (self.include_prerelease or not r["prerelease"])
             ]
         except requests.HTTPError as e:
-            get_root_logger().exception(f"Failed to fetch releases: {e}")
+            get_root_logger().exception(f"Failed to fetch releases for {fork_full_name}: {e}")
             return []
 
     def update_release_combo_box(self):
         self.releaseComboBox.clear()
-        release: GithubRelease
+        self.changelogEdit.clear()
         for release in self.releases:
             if "toolset" not in release.tag_name.lower():
                 continue
             self.releaseComboBox.addItem(release.tag_name, release)
         self.on_release_changed(self.releaseComboBox.currentIndex())
 
-    def on_fetch_releases_clicked(self):
-        self.forksCache = []
-        self.include_prerelease = self.preReleaseCheckBox.isChecked()
-        forks = self.fetch_repository_forks()
-        self.populate_fork_combo_box(forks)
-        self.releases = self.fetch_github_releases(include_prerelease=self.include_prerelease)
-        self.update_release_combo_box()
-
-    def populate_fork_combo_box(self, forks: list[str]):
+    def populate_fork_combo_box(self):
         self.forkComboBox.clear()
-        self.forkComboBox.addItem("NickHugi/PyKotor")  # Main repository
-        for fork in forks:
+        self.forkComboBox.addItem("NickHugi/PyKotor")  # Optionally add the main repo.
+        for fork in self.forksCache:
             self.forkComboBox.addItem(fork)
 
-    def on_pre_release_changed(self, state: bool):  # noqa: FBT001
+    def on_pre_release_changed(self, state: bool):
         self.include_prerelease = state == Qt.Checked
+        self.filter_releases_based_on_prerelease()
+
+    def filter_releases_based_on_prerelease(self):
+        selected_fork = self.forkComboBox.currentText()
+        if selected_fork in self.forksCache:
+            filtered_releases = [
+                release for release in self.forksCache[selected_fork]
+                if not release.draft
+                and (self.include_prerelease or not release.prerelease)
+            ]
+            self.releases = filtered_releases
+        else:
+            self.releases = []
+
         self.update_release_combo_box()
 
     def on_fork_changed(self, index: int):
-        self.include_prerelease = self.preReleaseCheckBox.isChecked()
-        self.releases = self.fetch_github_releases(include_prerelease=self.include_prerelease)
-        self.update_release_combo_box()
+        if index < 0:
+            return
+        self.filter_releases_based_on_prerelease()
 
     def get_selected_tag(self) -> str:
         release: GithubRelease = self.releaseComboBox.itemData(self.releaseComboBox.currentIndex())
@@ -217,46 +244,11 @@ class UpdateDialog(QDialog):
         changelog_html: str = convert_markdown_to_html(release.body)
         self.changelogEdit.setHtml(changelog_html)
 
-    def fetch_repository_forks(self) -> list[str]:
-        if self.forksCache:
-            return self.forksCache
-        url = "https://api.github.com/repos/NickHugi/PyKotor/forks"
-        try:
-            return self._process_fork_urls(url)
-        except requests.HTTPError as e:
-            get_root_logger().exception(f"Failed to fetch forks: {e}")
-            return []
-
-    def _process_fork_urls(self, url: str):
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        forks_json = response.json()
-        forks_with_releases = []
-        for fork in forks_json:
-            if fork["owner"] not in ("th3w1zard1", "NickHugi"):
-                continue
-            fork_full_name = f"{fork['owner']['login']}/{fork['name']}"
-            if self.check_fork_has_releases(fork_full_name):
-                forks_with_releases.append(fork_full_name)
-        self.forksCache = forks_with_releases
-        return forks_with_releases
-
-    def check_fork_has_releases(self, fork_full_name: str) -> bool:
-        releases_url = f"https://api.github.com/repos/{fork_full_name}/releases"
-        try:
-            response = requests.get(releases_url, timeout=10)
-            response.raise_for_status()
-            releases_json = response.json()
-            return bool(releases_json)  # True if there's at least one release
-        except Exception as e:
-            get_root_logger().exception(f"Failed to check releases for {fork_full_name}: {e}")
-            return False
-
     def on_update_latest_clicked(self):
         latest_release = self.releases[0]
         self.start_update(latest_release)
 
-    def on_download_clicked(self):
+    def on_install_selected(self):
         release = self.releaseComboBox.currentData()
         self.start_update(release)
 
