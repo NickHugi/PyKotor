@@ -228,6 +228,17 @@ function Install-TclTk {
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
             & bash -c "brew install tcl-tk --overwrite --force || true"  # send || true to ignore linking errors.
             Write-Host 'brew install tcl-tk --overwrite --force completed.'
+            $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
+            $tkCheck = GetAndCompareVersion "wish" $tkVersionScript $requiredVersion
+        
+            # Handle the result of the version checks
+            if ($tclCheck -and $tkCheck) {
+                Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+                return
+            } else {
+                Write-Error "Could not get tcl/tk versions after brew install!"
+                # Continue with the installation...
+            }
             return
         }
     }
