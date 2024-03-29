@@ -519,7 +519,7 @@ jobs:
             Get-ChildItem -Path $archivePath | ForEach-Object {
               $filePath = $_.FullName
               $fileName = $_.Name
-              $uploadUrl = "https://uploads.github.com/repos/${{ github.repository }}/releases/$releaseId/assets?name=$fileName&label=$fileName"
+              $uploadUrl = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$releaseId/assets?name=$fileName&label=$fileName"
               try {
                 Write-Host "Attempting to upload $fileName"
                 [GitHubUploader]::UploadFileAsync($filePath, $uploadUrl, $token).GetAwaiter().GetResult()
