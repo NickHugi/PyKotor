@@ -526,7 +526,27 @@ jobs:
                 [GitHubUploader]::UploadFileAsync($filePath, $uploadUrl, $token).GetAwaiter().GetResult()
                 Write-Host "Upload successful: $fileName"
               } catch {
-                Write-Host "Failed to upload $fileName: $($_.Exception.Message)"
+                Write-Host "Failed to upload $fileName : $($_.Exception.Message)"
+                Write-Host -ForegroundColor Red "Detailed Error Report:"
+                Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+                
+                # Attempt to provide a more detailed location of the error
+                if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+                    Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+                    Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+                    Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+                    Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+                } else {
+                    Write-Host -ForegroundColor Red "No invocation information available."
+                }
+            
+                # Extract and display the script stack trace if available
+                if ($_.ScriptStackTrace) {
+                    Write-Host -ForegroundColor Red "Script Stack Trace:"
+                    Write-Host -ForegroundColor Red $_.ScriptStackTrace
+                } else {
+                    Write-Host -ForegroundColor Red "No script stack trace available."
+                }
               }
             }
           } catch {
