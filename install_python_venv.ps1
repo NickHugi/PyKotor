@@ -258,7 +258,9 @@ function Install-TclTk {
         Write-Host "Tcl/Tk version must be updated now."
     }
 
-    if ((Get-OS) -eq "Mac") {  #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
+    if ((Get-OS) -eq "Mac") {
+        #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
+        # More info: https://www.python.org/download/mac/tcltk/
         # Retrieve current macOS version
         $macOSVersion = Invoke-BashCommand -Command "sw_vers -productVersion"
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
