@@ -168,46 +168,115 @@ function Get-Linux-Distro-Version {
     return $null
 }
 
+# Helper function to run a command and capture output with a timeout
+function Invoke-WithTimeout {
+    param(
+        [ScriptBlock]$ScriptBlock,
+        [TimeSpan]$Timeout
+    )
+    $ps = [powershell]::Create().AddScript($ScriptBlock)
+    $task = $ps.BeginInvoke()
+    if ($task.AsyncWaitHandle.WaitOne($Timeout)) {
+        $output = $ps.EndInvoke($task)
+        $ps.Dispose()
+        return $output
+    } else {
+        $ps.Dispose()
+        throw "Command timed out."
+    }
+}
+
+
 # Needed for tkinter-based apps, common in Python and subsequently most of PyKotor's tools.
 function Install-TclTk {
-    $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
-
-    function GetAndCompareVersion($command, $argument, $requiredVersion) {
+    function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
+        if (-not (CommandExists $command)) {
+            # Attempt to find version-specific command if 'wish' is not found
+            if ($command -eq 'wish') {
+                $versionSpecificCommand = Get-Command 'wish*' -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -ne $versionSpecificCommand) {
+                    $command = $versionSpecificCommand.Name
+                    Write-Host "wish not found but $command was found. Symlinking $($versionSpecificCommand.Source) >> /usr/bin/wish"
+                    Invoke-BashCommand "sudo ln -sv $($versionSpecificCommand.Source) /usr/bin/wish"
+                } else {
+                    Write-Host "Command 'wish' not found."
+                    return $false
+                }
+            } else {
+                Write-Host "Command '$command' not found."
+                return $false
+            }
+        }
+    
         try {
-            # Using call operator (&) to invoke the command with the argument
-            $versionString = & $command $argument
-            Write-Host "$command output: $versionString"
+            $versionScript = "echo `$scriptCommand` | $command"
+            $versionString = Invoke-Expression $versionScript 2>&1
+            if ([string]::IsNullOrWhiteSpace($versionString)) {
+                Write-Host "No version output detected for '$command'."
+                return $false
+            }
+            $versionString = $versionString -replace '[^\d.]+', ''  # Clean the version string of non-numeric characters
+            Write-Host "Output of $command : '$versionString'"
+    
+            if ($versionString -eq '') {
+                Write-Host "Version string for '$command' is empty."
+                return $false
+            }
+    
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
-            Write-Host "Error comparing '$command' and '$requiredVersion': $_"
-            # If there's an error (e.g., command not found), assume installation is needed
+            Write-Host "Error comparing with version '$requiredVersion' for $command : $_"
             return $false
         }
     }
     
-    # Check Tcl version
-    $tclCurVersion = "tclsh"
-    $tclCheck = GetAndCompareVersion $tclCurVersion 'puts $tcl_version' $requiredVersion
+    function CommandExists($command) {
+        return $null -ne (Get-Command -Name $command -ErrorAction SilentlyContinue)
+    }
     
-    # Check Tk version
-    $tkCurVersion = "wish"
-    $tkCheck = GetAndCompareVersion $tkCurVersion 'puts $tk_version' $requiredVersion
+    # Correctly invoke tclsh and wish with the version check script
+    $tclVersionScript = "puts [info patchlevel];exit"
+    $tkVersionScript = "puts [info patchlevel];exit"
+    
+    # Initialize required version
+    if ((Get-OS) -eq "macOS") {
+        $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
+    } else {
+        $requiredVersion = New-Object -TypeName "System.Version" "8.6.0"
+    }
+    
+    # Perform version checks
+    $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
+    $tkCheck = GetAndCompareVersion "wish" $tkVersionScript $requiredVersion
 
-    if ($tclCheck -and $tkCheck -and ($tk_version -eq $tcl_version)) {
-        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed (tcl: $tcl_version tk: $tk_version)"
+    # Handle the result of the version checks
+    if ($tclCheck -and $tkCheck) {
+        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
         return
     } else {
         Write-Host "Tcl/Tk version must be updated now."
     }
 
-    if ((Get-OS) -eq "Mac") {  #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
+    if ((Get-OS) -eq "Mac") {
+        #  OSSpinLock is deprecated in favor of os_unfair_lock starting with 10.12. I can't modify the src of tcl here so this'll just need to brew it.
+        # More info: https://www.python.org/download/mac/tcltk/
         # Retrieve current macOS version
-        $macOSVersion = bash -c "sw_vers -productVersion"
+        $macOSVersion = Invoke-BashCommand -Command "sw_vers -productVersion"
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
-            Invoke-BashCommand -Command "brew update && brew install -q tcl-tk || true"  # send || true to ignore linking errors.
+            bash -c "brew install tcl-tk --overwrite --force || true"
+            Write-Host 'brew install tcl-tk --overwrite --force completed.'
+            $tclCheck = GetAndCompareVersion "tclsh", $tclVersionScript, $requiredVersion
+            $tkCheck = GetAndCompareVersion "wish", $tkVersionScript, $requiredVersion
+    
+            if ($tclCheck -and $tkCheck) {
+                Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+                return
+            } else {
+                Write-Error "Could not get tcl/tk versions after brew install!"
+            }
             return
         }
     }
@@ -229,6 +298,24 @@ function Install-TclTk {
     Invoke-BashCommand "./configure --prefix=/usr/local --with-tcl=/usr/local/lib"
     Invoke-BashCommand "make"
     Invoke-BashCommand "sudo make install"
+    Set-Location $originalDir
+
+    # Refresh the env after installing tcl/tk
+    #$userPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
+    #$systemPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+    #$env:PATH = $userPath + ";" + $systemPath
+    
+    # Perform version checks
+    $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
+    $tkCheck = GetAndCompareVersion "wish" $tkVersionScript $requiredVersion
+
+    # Handle the result of the version checks
+    if ($tclCheck -and $tkCheck) {
+        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+        return
+    } else {
+        Write-Host "Tcl/Tk version must be updated now."
+    }
 }
 
 function Install-Python-Linux {
@@ -250,12 +337,12 @@ function Install-Python-Linux {
             switch ($distro) {
                 "debian" {
                     Invoke-BashCommand -Command "sudo apt-get update -y"
-                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python$pythonVersion-pip -y"
+                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python3-dev python$pythonVersion-venv python3-pip -y"
                     break
                 }
                 "ubuntu" {
                     Invoke-BashCommand -Command "sudo apt-get update -y"
-                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python$pythonVersion-pip -y"
+                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python3-dev python$pythonVersion-venv python3-pip -y"
                     break
                 }
                 "alpine" {
@@ -336,7 +423,9 @@ function Install-Python-Linux {
                 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                 exit 1
             }
+
             # Fallback mechanism for each distribution
+            Install-TclTk  # TODO(th3w1zard1): move this up and separate tk/tcl package manager installs from python. Tk/tcl needs to be installed first.
             switch ($distro) {
                 "debian" {
                     Invoke-BashCommand -Command 'sudo apt-get update -y'
@@ -428,14 +517,7 @@ function Install-Python-Mac {
         "3.13" = @("python-$pyVersion-macos11.pkg")
     }
 
-    $originalDir = Get-Location
-    try {
-        Install-TclTk
-    } catch {
-        Write-Error $_
-        Set-Location $originalDir
-        Invoke-BashCommand "brew install tcl-tk"
-    }
+    Install-TclTk
 
     try {
         # Retrieve current macOS version
@@ -728,14 +810,16 @@ function Find-Python {
     }
     foreach ($pyCommandPathCheck in $pythonVersions) {
         if (Test-PythonCommand -CommandName $pyCommandPathCheck) {
-            # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-            # Example: while a venv can be partially created, the 
-            # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-            # they'll also be missing things like pip. This step fixes that.
-            if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
-                $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-                $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-                Install-Python-Linux -pythonVersion $shortVersion
+            if ($installIfNotFound) {
+                # Even if python is installed, debian-based distros need python3-venv packages and a few others.
+                # Example: while a venv can be partially created, the 
+                # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
+                # they'll also be missing things like pip. This step fixes that.
+                if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
+                    $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+                    $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
+                    Install-Python-Linux -pythonVersion $shortVersion
+                }
             }
             return
         }
@@ -812,7 +896,7 @@ function Find-Python {
     # Example: while a venv can be partially created, the 
     # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
     # they'll also be missing things like pip. This step fixes that.
-    if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
+    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
         $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
         $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
         Install-Python-Linux -pythonVersion $shortVersion

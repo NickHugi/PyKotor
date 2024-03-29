@@ -323,7 +323,7 @@ jobs:
       shell: pwsh
     
     - name: Compile HoloPatcher
-      if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && (steps.holopatcher_deps.outputs.success == 'true' || runner.os == 'macOS') }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
@@ -350,7 +350,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {

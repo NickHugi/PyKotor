@@ -36,7 +36,7 @@ class ProgressDialog(QDialog):
 
         self.statusLabel = QLabel("Initializing...", self)
         self.bytesLabel = QLabel("")
-        self.timeLabel = QLabel("--/--")
+        self.timeLabel = QLabel("Time remaining: --/--")
         self.progressBar = QProgressBar(self)
         self.progressBar.setMaximum(100)
 
@@ -62,7 +62,8 @@ class ProgressDialog(QDialog):
                 progress = int((downloaded / total) * 100) if total else 0
                 self.progressBar.setValue(progress)
                 self.statusLabel.setText(f"Downloading... {progress}%")
-                self.timeLabel.setText(f"Time remaining: {data.get('time', self.timeLabel.text())}")
+                time_remaining = data.get("time", self.timeLabel.text().replace("Time remaining: ", ""))
+                self.timeLabel.setText(f"Time remaining: {time_remaining}")
                 self.bytesLabel.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
                 # Handle status text updates

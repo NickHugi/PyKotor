@@ -14,8 +14,10 @@ env:
   BUILD_BOOTLOADERS: false  # TODO(th3w1zard1):
   
 on:
-  - push
-  - workflow_dispatch
+#  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
 
 permissions:
   contents: write
@@ -290,7 +292,28 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          
+          # Attempt to provide a more detailed location of the error
+          if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+              Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+              Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+              Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+              Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+          } else {
+              Write-Host -ForegroundColor Red "No invocation information available."
+          }
+      
+          # Extract and display the script stack trace if available
+          if ($_.ScriptStackTrace) {
+              Write-Host -ForegroundColor Red "Script Stack Trace:"
+              Write-Host -ForegroundColor Red $_.ScriptStackTrace
+          } else {
+              Write-Host -ForegroundColor Red "No script stack trace available."
+          }
+      
+          # Log the error to GitHub Actions output or another logging mechanism
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -318,6 +341,18 @@ jobs:
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
+        }
+      shell: pwsh
+
+    - name: Search for DLL files
+      if: ${{ matrix.python-version == '3.12_Disabled' && runner.os == 'Windows' }}
+      run: |
+        Get-PSDrive -PSProvider FileSystem | ForEach-Object {
+          $drive = $_.Root
+          Write-Host "Searching in $drive"
+          Get-ChildItem -Path $drive -Filter 'api-ms-win-crt-*.dll' -Recurse -ErrorAction SilentlyContinue -Force | ForEach-Object {
+            Write-Host $_.FullName
+          }
         }
       shell: pwsh
 
@@ -349,7 +384,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -405,7 +440,28 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          
+          # Attempt to provide a more detailed location of the error
+          if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+              Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+              Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+              Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+              Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+          } else {
+              Write-Host -ForegroundColor Red "No invocation information available."
+          }
+      
+          # Extract and display the script stack trace if available
+          if ($_.ScriptStackTrace) {
+              Write-Host -ForegroundColor Red "Script Stack Trace:"
+              Write-Host -ForegroundColor Red $_.ScriptStackTrace
+          } else {
+              Write-Host -ForegroundColor Red "No script stack trace available."
+          }
+      
+          # Log the error to GitHub Actions output or another logging mechanism
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -464,7 +520,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -520,7 +576,28 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          
+          # Attempt to provide a more detailed location of the error
+          if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+              Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+              Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+              Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+              Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+          } else {
+              Write-Host -ForegroundColor Red "No invocation information available."
+          }
+      
+          # Extract and display the script stack trace if available
+          if ($_.ScriptStackTrace) {
+              Write-Host -ForegroundColor Red "Script Stack Trace:"
+              Write-Host -ForegroundColor Red $_.ScriptStackTrace
+          } else {
+              Write-Host -ForegroundColor Red "No script stack trace available."
+          }
+      
+          # Log the error to GitHub Actions output or another logging mechanism
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -579,7 +656,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -642,7 +719,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -704,7 +781,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {

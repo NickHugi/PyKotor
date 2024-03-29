@@ -17,14 +17,12 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
+def is_frozen() -> bool:
+    return (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+        or tempfile.gettempdir() in sys.executable
+    )
 
 
 def onAppCrash(

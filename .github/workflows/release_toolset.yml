@@ -270,7 +270,7 @@ jobs:
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
-              pip install "pyinstaller==5.4" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             }
           } else {
             pip install pyinstaller -U --prefer-binary
@@ -293,7 +293,28 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          
+          # Attempt to provide a more detailed location of the error
+          if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+              Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+              Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+              Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+              Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+          } else {
+              Write-Host -ForegroundColor Red "No invocation information available."
+          }
+      
+          # Extract and display the script stack trace if available
+          if ($_.ScriptStackTrace) {
+              Write-Host -ForegroundColor Red "Script Stack Trace:"
+              Write-Host -ForegroundColor Red $_.ScriptStackTrace
+          } else {
+              Write-Host -ForegroundColor Red "No script stack trace available."
+          }
+      
+          # Log the error to GitHub Actions output or another logging mechanism
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
@@ -352,7 +373,7 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } elseif ($warningCount -ge 3) {
-          Write-Output "Many 'library not found' warnings raised, pyinstaller was probably unsuccessful."
+          Write-Output "Many warnings raised, pyinstaller was probably unsuccessful."
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         } else {
@@ -371,52 +392,52 @@ jobs:
         Move-Item -LiteralPath ./dist/HolocronToolset-static -Destination ./dist/HolocronToolset -Force
       shell: pwsh
 
-    - name: Upload compiled binaries attempt 1
+    - name: Upload HolocronToolset binaries attempt 1
       if: ${{ success() || failure() }}
       id: upload_attempt_1
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 2
+    - name: Upload HolocronToolset binaries attempt 2
       id: upload_attempt_2
       if: ${{ (success() || failure()) && steps.upload_attempt_1.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 3
+    - name: Upload HolocronToolset binaries attempt 3
       id: upload_attempt_3
       if: ${{ (success() || failure()) && steps.upload_attempt_2.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 4
+    - name: Upload HolocronToolset binaries attempt 4
       id: upload_attempt_4
       if: ${{ (success() || failure()) && steps.upload_attempt_3.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 5
+    - name: Upload HolocronToolset binaries attempt 5
       id: upload_attempt_5
       if: ${{ (success() || failure()) && steps.upload_attempt_4.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HolocronToolset_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
 
@@ -429,12 +450,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: published_workflow_builds/
-          pattern: publish_*
+          pattern: HolocronToolset_*
 
-      - name: Extract tag name
+      - name: Determine Release Tag
         id: get_tag
-        run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
-        shell: bash
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            $tag = gh release list --repo $env:GITHUB_REPOSITORY | Select-String -Pattern 'v\d+(\.\d+){1,2}-toolset' | Select-Object -First 1 -ExpandProperty Line | Out-String -Stream | Select-String -Pattern 'v\d+(\.\d+){1,2}-toolset' | Select-Object -First 1 -ExpandProperty Matches | ForEach-Object { $_.Value }
+          } else {
+            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          }
+          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Compress into archives
         run: |
@@ -447,11 +476,111 @@ jobs:
           }
         shell: pwsh
 
+      - name: Get Release ID by Tag
+        id: get_release_id
+        run: |
+          $tag = "${{ steps.get_tag.outputs.tag }}"
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tag"
+          $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
+          $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+          $releaseId = $response.id
+          echo "RELEASE_ID=$releaseId" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
       - uses: ncipollo/release-action@v1.10.0
         with:
             tag: ${{ steps.get_tag.outputs.tag }}
-            prerelease: true
-            draft: true
+            prerelease: false
+            draft: false
             artifacts: "published_workflow_builds/*.zip"
             allowUpdates: true
             token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Archive to Release
+        if: ${{ failure() }}
+        run: |
+          try {
+            Add-Type -TypeDefinition @"
+          using System;
+          using System.Net.Http;
+          using System.Net.Http.Headers;
+          using System.Threading.Tasks;
+    
+          public class GitHubUploader {
+              public static async Task UploadFileAsync(string filePath, string uploadUrl, string token) {
+                  using (var client = new HttpClient()) {
+                      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                      using (var content = new MultipartFormDataContent()) {
+                          var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                          fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                          content.Add(fileContent, "file", System.IO.Path.GetFileName(filePath));
+                          var response = await client.PostAsync(uploadUrl, content);
+                          if (!response.IsSuccessStatusCode) {
+                              throw new ApplicationException(await response.Content.ReadAsStringAsync());
+                          }
+                      }
+                  }
+              }
+            }
+          "@
+            $archivePath = "published_workflow_builds/*.zip"
+            $releaseId = $env:RELEASE_ID
+            $token = "${{ secrets.GITHUB_TOKEN }}""
+            Get-ChildItem -Path $archivePath | ForEach-Object {
+              $filePath = $_.FullName
+              $fileName = $_.Name
+              $uploadUrl = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$releaseId/assets?name=$fileName&label=$fileName"
+              try {
+                Write-Host "Attempting to upload $fileName"
+                [GitHubUploader]::UploadFileAsync($filePath, $uploadUrl, $token).GetAwaiter().GetResult()
+                Write-Host "Upload successful: $fileName"
+              } catch {
+                Write-Host "Failed to upload $fileName : $($_.Exception.Message)"
+                Write-Host -ForegroundColor Red "Detailed Error Report:"
+                Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+                
+                # Attempt to provide a more detailed location of the error
+                if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+                    Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+                    Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+                    Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+                    Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+                } else {
+                    Write-Host -ForegroundColor Red "No invocation information available."
+                }
+            
+                # Extract and display the script stack trace if available
+                if ($_.ScriptStackTrace) {
+                    Write-Host -ForegroundColor Red "Script Stack Trace:"
+                    Write-Host -ForegroundColor Red $_.ScriptStackTrace
+                } else {
+                    Write-Host -ForegroundColor Red "No script stack trace available."
+                }
+              }
+            }
+          } catch {
+            Write-Host -ForegroundColor Red "Detailed Error Report:"
+            Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+            
+            # Attempt to provide a more detailed location of the error
+            if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+                Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+                Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+                Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+                Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+            } else {
+                Write-Host -ForegroundColor Red "No invocation information available."
+            }
+        
+            # Extract and display the script stack trace if available
+            if ($_.ScriptStackTrace) {
+                Write-Host -ForegroundColor Red "Script Stack Trace:"
+                Write-Host -ForegroundColor Red $_.ScriptStackTrace
+            } else {
+                Write-Host -ForegroundColor Red "No script stack trace available."
+            }
+
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
+          }
+        shell: pwsh

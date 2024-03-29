@@ -5,21 +5,17 @@ import json
 import re
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import requests
 
 from PyQt5.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
-
-if TYPE_CHECKING:
-    import os
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b20",
+    "currentVersion": "2.2.1b18",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b20",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
@@ -125,14 +121,14 @@ def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
     return version_check
 
 
-def version_to_tag(version: str) -> str:
+def version_to_toolset_tag(version: str) -> str:
     major_minor_patch_count = 2
     if version.count(".") == major_minor_patch_count:
         second_dot_index = version.find(".", version.find(".") + 1)  # Find the index of the second dot
         version = version[:second_dot_index] + version[second_dot_index + 1:]  # Remove the second dot by slicing and concatenating
     return f"v{version}-toolset"
 
-def tag_to_version(tag: str) -> str:
+def toolset_tag_to_version(tag: str) -> str:
     numeric_part: str = "".join([c for c in tag if c.isdigit() or c == "."])
     parts = numeric_part.split(".")
 
