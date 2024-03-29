@@ -263,7 +263,7 @@ class SpoofKotorRegistry:
         self.original_value: str | None = resolve_reg_key_to_path(self.registry_path, self.key)
 
     def __enter__(self) -> Self:
-        if self.spoofed_path == self.original_value:
+        if self.spoofed_path != self.original_value:
             set_registry_key_value(self.registry_path, self.key, str(self.spoofed_path))
         return self
 
