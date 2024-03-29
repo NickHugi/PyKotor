@@ -300,12 +300,12 @@ function Install-Python-Linux {
             switch ($distro) {
                 "debian" {
                     Invoke-BashCommand -Command "sudo apt-get update -y"
-                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python$pythonVersion-pip -y"
+                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python3-pip -y"
                     break
                 }
                 "ubuntu" {
                     Invoke-BashCommand -Command "sudo apt-get update -y"
-                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python$pythonVersion-pip -y"
+                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python3-pip -y"
                     break
                 }
                 "alpine" {
