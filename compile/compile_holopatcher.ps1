@@ -186,7 +186,8 @@ $pyInstallerArgs = @{
         'api-ms-win-core-synch-l1-1-0.dll',
         'api-ms-win-core-interlocked-l1-1-0.dll',
         'api-ms-win-core-datetime-l1-1-0.dll',
-        'api-ms-win-core-file-l2-1-0.dll'
+        'api-ms-win-core-file-l2-1-0.dll',
+        'api-ms-win-core-heap-l1-1-0.dll'
     )
     #'debug' = 'imports'
     'log-level' = 'INFO'
