@@ -293,19 +293,29 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
-          Write-Host -ForegroundColor Red "Error encountered!"
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
           Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
-          Write-Host -ForegroundColor Red "StackTrace: $($_.Exception.StackTrace)"
-          # Log the entire error record for complete details
-          Write-Host -ForegroundColor Red "Error Record: $_"
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
-          exit 1
-          # Optionally, inspect $Error for non-terminating errors (if relevant to your debugging needs)
-          if ($Error.Count -gt 0) {
-              Write-Host -ForegroundColor Red "Non-terminating errors encountered:"
-              $Error | ForEach-Object { Write-Host $_.ToString() }
+          
+          # Attempt to provide a more detailed location of the error
+          if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+              Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+              Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+              Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+              Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+          } else {
+              Write-Host -ForegroundColor Red "No invocation information available."
           }
+      
+          # Extract and display the script stack trace if available
+          if ($_.ScriptStackTrace) {
+              Write-Host -ForegroundColor Red "Script Stack Trace:"
+              Write-Host -ForegroundColor Red $_.ScriptStackTrace
+          } else {
+              Write-Host -ForegroundColor Red "No script stack trace available."
+          }
+      
+          # Log the error to GitHub Actions output or another logging mechanism
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
       shell: pwsh
