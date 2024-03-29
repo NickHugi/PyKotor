@@ -489,13 +489,53 @@ jobs:
 
       - name: Upload Archive to Release
         run: |
-          $archivePath = "published_workflow_builds/*.zip"
-          $releaseId = $env:RELEASE_ID
-          $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
-          Get-ChildItem -Path $archivePath | ForEach-Object {
-            $filePath = $_.FullName
-            $fileName = $_.Name
-            $uploadUrl = "https://uploads.github.com/repos/${{ github.repository }}/releases/$releaseId/assets?name=$fileName"
-            Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -ContentType "application/zip" -InFile $filePath
+          try {
+            $archivePath = "published_workflow_builds/*.zip"
+            $releaseId = $env:RELEASE_ID
+            $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
+            Get-ChildItem -Path $archivePath | ForEach-Object {
+              $filePath = $_.FullName
+              $fileName = $_.Name
+              $uploadUrl = "https://uploads.github.com/repos/${{ github.repository }}/releases/$releaseId/assets?name=$fileName"
+              $attempts = 0
+              $maxAttempts = 5
+              $uploaded = $false
+              while (-not $uploaded -and $attempts -lt $maxAttempts) {
+                try {
+                  Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -ContentType "application/zip" -InFile $filePath
+                  $uploaded = $true
+                } catch {
+                  Start-Sleep -Seconds 15
+                  $attempts++
+                }
+              }
+              if (-not $uploaded) {
+                throw "Failed to upload $fileName after $maxAttempts attempts."
+              }
+            }
+          } catch {
+            Write-Host -ForegroundColor Red "Detailed Error Report:"
+            Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+            
+            # Attempt to provide a more detailed location of the error
+            if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+                Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+                Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+                Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+                Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+            } else {
+                Write-Host -ForegroundColor Red "No invocation information available."
+            }
+        
+            # Extract and display the script stack trace if available
+            if ($_.ScriptStackTrace) {
+                Write-Host -ForegroundColor Red "Script Stack Trace:"
+                Write-Host -ForegroundColor Red $_.ScriptStackTrace
+            } else {
+                Write-Host -ForegroundColor Red "No script stack trace available."
+            }
+
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
           }
         shell: pwsh
