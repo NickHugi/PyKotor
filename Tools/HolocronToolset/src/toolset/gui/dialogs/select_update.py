@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import os
 import pathlib
 import platform
@@ -11,7 +12,7 @@ from typing import Any
 import markdown
 import requests
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
 
@@ -56,11 +57,11 @@ def fix_sys_and_cwd_path():
 
 fix_sys_and_cwd_path()
 
-from utility.system.os_helper import kill_child_processes
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
+from utility.system.os_helper import kill_child_processes
 from utility.updater.github import Asset, GithubRelease
 from utility.updater.update import AppUpdate
 
@@ -290,6 +291,12 @@ class UpdateDialog(QDialog):
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
             ProgressDialog.monitor_and_terminate(progress_process)
+            gc.collect()
+            for obj in gc.get_objects():
+                if isinstance(obj, QThread) and obj.isRunning():
+                    get_root_logger().debug(f"Terminating QThread: {obj}")
+                    obj.terminate()
+                    obj.wait()
             kill_child_processes()
             if kill_self_here:
                 sys.exit(0)
