@@ -56,9 +56,9 @@ def fix_sys_and_cwd_path():
 
 fix_sys_and_cwd_path()
 
+from utility.system.os_helper import kill_child_processes
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
-from toolset.gui.windows.main import run_progress_dialog
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.updater.github import Asset, GithubRelease
@@ -276,6 +276,8 @@ class UpdateDialog(QDialog):
                 flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             ).exec_()
             return
+
+        from toolset.gui.windows.main import run_progress_dialog
         progress_queue = Queue()
         progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
         progress_process.start()
@@ -288,6 +290,7 @@ class UpdateDialog(QDialog):
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
             ProgressDialog.monitor_and_terminate(progress_process)
+            kill_child_processes()
             if kill_self_here:
                 sys.exit(0)
 
