@@ -293,8 +293,19 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          Write-Host -ForegroundColor Red "Error encountered!"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          Write-Host -ForegroundColor Red "StackTrace: $($_.Exception.StackTrace)"
+          # Log the entire error record for complete details
+          Write-Host -ForegroundColor Red "Error Record: $_"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+          exit 1
+          # Optionally, inspect $Error for non-terminating errors (if relevant to your debugging needs)
+          if ($Error.Count -gt 0) {
+              Write-Host -ForegroundColor Red "Non-terminating errors encountered:"
+              $Error | ForEach-Object { Write-Host $_.ToString() }
+          }
           exit 1
         }
       shell: pwsh
