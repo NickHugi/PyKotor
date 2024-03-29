@@ -7,7 +7,6 @@ import os
 import pathlib
 import sys
 import tempfile
-import traceback
 
 from typing import TYPE_CHECKING
 
@@ -18,14 +17,12 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
+def is_frozen() -> bool:
+    return (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+        or tempfile.gettempdir() in sys.executable
+    )
 
 
 def onAppCrash(
@@ -33,16 +30,12 @@ def onAppCrash(
     e: BaseException,
     tback: TracebackType | None,
 ):
-    from utility.error_handling import format_exception_with_variables  # noqa: PLC0415  # pylint: disable=C0415
-
-    with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
-        try:
-            file.writelines(format_exception_with_variables(e, etype, tback))
-        except Exception:  # pylint: disable=W0702,W0718  # pylint: disable=W0718  # noqa: BLE001
-            file.writelines(str(e))
-        file.write("\n----------------------\n")
-    # Mimic default behavior by printing the traceback to stderr
-    traceback.print_exception(etype, e, tback)
+    from utility.logger_util import get_root_logger
+    if issubclass(etype, KeyboardInterrupt):
+        sys.__excepthook__(etype, e, tback)
+        return
+    logger = get_root_logger()
+    logger.critical("Uncaught exception", exc_info=(etype, e, tback))
 
 
 def fix_sys_and_cwd_path():
@@ -94,14 +87,14 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
     if is_frozen():
-        print("App is frozen - doing multiprocessing.freeze_support()")
+        from utility.logger_util import get_root_logger
+        get_root_logger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
-    multiprocessing.set_start_method("spawn")
+    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
 
     from utility.system.path import Path
-    from utility.updater.restarter import Restarter
 
     app = QApplication(sys.argv)
 
@@ -124,9 +117,8 @@ if __name__ == "__main__":
     sys.excepthook = onAppCrash
 
     from toolset.gui.windows.main import ToolWindow
-    from utility.system.os_helper import kill_self_pid
 
-    profiler = True  # Set to False or None to disable profiler
+    profiler = False  # Set to False or None to disable profiler
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
@@ -134,12 +126,25 @@ if __name__ == "__main__":
     window = ToolWindow()
     window.show()
     window.checkForUpdates(silent=True)
-    def my_cleanup_function():
+    def qt_cleanup():
+        """Cleanup so we can exit."""
+        from toolset.utils.window import WINDOWS
+        from utility.logger_util import get_root_logger
+        get_root_logger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
+        for window in WINDOWS:
+            window.close()
+            window.destroy()
+        WINDOWS.clear()
+
+    def last_resort_cleanup():
         """Prevents the toolset from running in the background after sys.exit is called..."""
-        print("Fully shutting down Holocron Toolset...")
+        from utility.logger_util import get_root_logger
+        from utility.system.os_helper import kill_self_pid
+        get_root_logger().info("Fully shutting down Holocron Toolset...")
         kill_self_pid()
 
-    atexit.register(my_cleanup_function)
+    app.aboutToQuit.connect(qt_cleanup)
+    atexit.register(last_resort_cleanup)
 
     # Start main app loop.
     app.exec_()

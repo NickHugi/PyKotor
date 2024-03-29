@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import cProfile
+import uuid
+
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread, QTimer
+from PyQt5.QtCore import QThread, QTimer, Qt
 from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
@@ -33,7 +36,7 @@ class ProgressDialog(QDialog):
 
         self.statusLabel = QLabel("Initializing...", self)
         self.bytesLabel = QLabel("")
-        self.timeLabel = QLabel("--/--")
+        self.timeLabel = QLabel("Time remaining: --/--")
         self.progressBar = QProgressBar(self)
         self.progressBar.setMaximum(100)
 
@@ -59,7 +62,8 @@ class ProgressDialog(QDialog):
                 progress = int((downloaded / total) * 100) if total else 0
                 self.progressBar.setValue(progress)
                 self.statusLabel.setText(f"Downloading... {progress}%")
-                self.timeLabel.setText(f"Time remaining: {data.get('time', self.timeLabel.text())}")
+                time_remaining = data.get("time", self.timeLabel.text().replace("Time remaining: ", ""))
+                self.timeLabel.setText(f"Time remaining: {time_remaining}")
                 self.bytesLabel.setText(f"{human_readable_size(downloaded)} / {human_readable_size(total)}")
             elif message["action"] == "update_status":
                 # Handle status text updates
@@ -183,16 +187,23 @@ class AsyncWorker(QThread):
     def __init__(
         self,
         parent: QWidget,
-        task: Callable,
+        task: Callable[..., T],
     ):
         super().__init__(parent)
-        self._task = task
+        self._task: Callable[..., T] = task
 
     def run(self):
+        use_profiler: bool = False # set to False to disable the profiler.
+        if use_profiler:
+            profiler = cProfile.Profile()
+            profiler.enable()
         try:
             self.successful.emit(self._task())
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self.failed.emit(e)
+        if use_profiler:
+            profiler.disable()
+            profiler.dump_stats(f"{uuid.uuid1().hex[:7]}_async_worker.pstat")
 
 
 class AsyncBatchLoader(QDialog):
@@ -222,7 +233,7 @@ class AsyncBatchLoader(QDialog):
         """
         super().__init__(parent)
 
-        self._progressBar = QProgressBar(self)
+        self._progressBar: QProgressBar = QProgressBar(self)
         self._progressBar.setMinimum(0)
         self._progressBar.setMaximum(len(tasks))
         self._progressBar.setTextVisible(False)
@@ -243,10 +254,10 @@ class AsyncBatchLoader(QDialog):
         self.value: list[Any] = []
         self.errors: list[Exception] = []
         self.errorTitle: str | None = errorTitle
-        self.successCount = 0
-        self.failCount = 0
+        self.successCount: int = 0
+        self.failCount: int = 0
 
-        self._worker = AsyncBatchWorker(self, tasks, cascade=cascade)
+        self._worker: AsyncBatchWorker = AsyncBatchWorker(self, tasks, cascade=cascade)
         self._worker.successful.connect(self._onSuccessful)
         self._worker.failed.connect(self._onFailed)
         self._worker.completed.connect(self._onAllCompleted)
@@ -299,6 +310,7 @@ class AsyncBatchLoader(QDialog):
             QMessageBox.Critical,
             errorTitle,
             "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         ).exec_()
 
 

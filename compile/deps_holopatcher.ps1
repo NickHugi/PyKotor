@@ -21,8 +21,8 @@ if ((Get-OS) -eq "Mac") {
     $versionObject = Get-Python-Version $pythonExePath
     $pyVersion = "{0}.{1}" -f $versionObject.Major, $versionObject.Minor
     Write-Host "pyversion: $versionObject major/minor $pyVersion"
-    brew update
-    brew install python-tk@$pyVersion tcl-tk
+    #brew update
+    #brew install python-tk@$pyVersion tcl-tk --force --overwrite  # don't use, instead install from the main install_python_venv. brew will constantly try to install other python versions.
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
         switch ((Get-Linux-Distro-Name)) {

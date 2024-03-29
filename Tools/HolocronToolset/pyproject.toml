@@ -11,7 +11,7 @@ description="A PyQt5-backed program with a collection of tools and editors that 
 version="2.2.0"
 requires-python = ">= 3.7"
 dependencies = [
-    #tsidna~=3.3  # TODO: can't be found on pip/pypi?
+    "idna",  # Tested with 3.3
     "PyQt5~=5.15",
     "PyQt5-Qt5~=5.15",
     "PyQt5-sip~=12.10",

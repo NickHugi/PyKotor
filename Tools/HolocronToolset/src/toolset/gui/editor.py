@@ -4,6 +4,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
 
@@ -24,6 +25,7 @@ from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -201,12 +203,14 @@ class Editor(QMainWindow):
         try:
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
-            print(format_exception_with_variables(e))
+            get_root_logger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(
                 QMessageBox.Critical,
                 "Invalid filename/extension",
                 f"Check the filename and try again. Could not save!<br><br>{error_msg}",
+                parent=None,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             ).exec_()
             return
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
@@ -119,12 +120,18 @@ class CloneModuleDialog(QDialog):
                 QMessageBox.Information,
                 "This may take a while",
                 "You have selected to create copies of the " "texture. This process may add a few extra minutes to the waiting time.",
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             ).exec_()
 
         if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
             return
 
-        QMessageBox(QMessageBox.Information, "Clone Successful", f"You can now warp to the cloned module '{identifier}'.").exec_()
+        QMessageBox(
+            QMessageBox.Information,
+            "Clone Successful",
+            f"You can now warp to the cloned module '{identifier}'.",
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+        ).exec_()
 
     def loadModules(self):
         """Loads module options from installed modules.

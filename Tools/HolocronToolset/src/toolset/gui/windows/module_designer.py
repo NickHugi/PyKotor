@@ -1372,14 +1372,7 @@ class ModuleDesignerControls3d:
         scene = self.renderer.scene
         assert scene is not None
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
-
-            vect3 = scene.cursor.position()
-            instance.position = Vector3(vect3.x, vect3.y, vect3.z)
-            self.editor.git().add(instance)
-            self.editor.rebuildInstanceList()
-            self.editor.setSelection([instance])
-
+            self._duplicateSelectedInstance()
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*scene.cursor.position())
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))

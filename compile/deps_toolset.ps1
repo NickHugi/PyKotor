@@ -76,11 +76,11 @@ if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     switch ($qtApi) {
-        "pyqt5"   { & bash -c "brew install qt@5 -q" }
-        "pyqt6"   { & bash -c "brew install qt@6 -q" }
-        "pyside2" { & bash -c "brew install qt@5 -q" }  # PySide2 typically uses Qt5
-        "pyside6" { & bash -c "brew install qt@6 -q" }
-        default   { & bash -c "brew install qt@5 -q" }
+        "pyqt5"   { & bash -c "brew install qt@5 --overwrite --force" }
+        "pyqt6"   { & bash -c "brew install qt@6 --overwrite --force" }
+        "pyside2" { & bash -c "brew install qt@5 --overwrite --force" }  # PySide2 typically uses Qt5
+        "pyside6" { & bash -c "brew install qt@6 --overwrite --force" }
+        default   { & bash -c "brew install qt@5 --overwrite --force" }
     }
     . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
 
@@ -163,10 +163,6 @@ if ((Get-OS) -eq "Mac") {
                 break
             }
             "arch" {
-                Write-Host "Initializing pacman keyring..."
-                sudo pacman-key --init
-                sudo pacman-key --populate archlinux
-                sudo pacman -Sy archlinux-keyring --noconfirm
                 sudo pacman -Sy --needed mesa libxcb qt5-base qt5-wayland xcb-util-wm xcb-util-keysyms xcb-util-image xcb-util-renderutil python-opengl libxcomposite gtk3 atk mpdecimal python-pyqt5 qt5-base qt5-multimedia qt5-svg pulseaudio pulseaudio-alsa gstreamer mesa libglvnd ttf-dejavu fontconfig gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly --noconfirm
                 break
             }

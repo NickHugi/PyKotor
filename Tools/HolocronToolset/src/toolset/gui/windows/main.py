@@ -48,6 +48,7 @@ from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
 from toolset.gui.dialogs.search import FileResults, FileSearcher
+from toolset.gui.dialogs.select_update import UpdateDialog
 from toolset.gui.dialogs.settings import SettingsDialog
 from toolset.gui.editors.dlg import DLGEditor
 from toolset.gui.editors.erf import ERFEditor
@@ -1007,7 +1008,8 @@ class ToolWindow(QMainWindow):
             upToDateMsgBox.setWindowIcon(self.windowIcon())
             result = upToDateMsgBox.exec_()
             if result == QMessageBox.Ok:
-                self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+                toolset_updater = UpdateDialog(self)
+                toolset_updater.exec_()
             return
 
         betaString = "release " if releaseVersionChecked else "beta "
@@ -1024,15 +1026,21 @@ class ToolWindow(QMainWindow):
         newVersionMsgBox.setWindowIcon(self.windowIcon())
         response = newVersionMsgBox.exec_()
         if response == QMessageBox.Ok:
-            self._run_autoupdate(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+            #self.autoupdate_toolset(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+            toolset_updater = UpdateDialog(self)
+            toolset_updater.exec_()
 
-    def _run_autoupdate(
+    def autoupdate_toolset(
         self,
         latestVersion: str,
         remoteInfo: dict[str, Any],
         *,
         isRelease: bool,
     ):
+        """A fast and quick way to auto-install a specific toolset version.
+
+        Deprecated in favor of the UpdateDialog.
+        """
         proc_arch = ProcessorArchitecture.from_os()
         assert proc_arch == ProcessorArchitecture.from_python()
         os_name = platform.system()

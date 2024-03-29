@@ -7,11 +7,11 @@ try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tup
     from defusedxml.ElementTree import fromstring as _fromstring
     ElemTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: diffusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended due to security concerns.")
 
 import zipfile
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import markdown
 
@@ -21,16 +21,19 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from toolset.config import download_github_file, getRemoteToolsetUpdateInfo
+from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.system.os_helper import is_frozen
 from utility.system.path import Path
+from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
     import os
 
+    from PyQt5.QtGui import QShowEvent
     from PyQt5.QtWidgets import QWidget
 
 
@@ -40,7 +43,7 @@ class HelpWindow(QMainWindow):
     def __init__(self, parent: QWidget | None, startingPage: str | None = None):
         super().__init__(parent)
 
-        self.version: tuple[int, ...] | None = None
+        self.version: str | None = None
 
         from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
 
@@ -50,15 +53,16 @@ class HelpWindow(QMainWindow):
         self._setupContents()
         self.startingPage: str | None = startingPage
 
-    def showEvent(self, a0):
+    def showEvent(self, a0: QShowEvent):
         super().showEvent(a0)
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:
             self.checkForUpdates()
 
-        if self.startingPage is not None:
-            self.displayFile(self.startingPage)
+        if self.startingPage is None:
+            return
+        self.displayFile(self.startingPage)
 
     def _setupSignals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
@@ -67,10 +71,10 @@ class HelpWindow(QMainWindow):
         self.ui.contentsTree.clear()
 
         try:
-            tree = ElemTree.parse("./help/contents.xml")
+            tree = ElemTree.parse("./help/contents.xml")  # noqa: S314 incorrect warning.
             root = tree.getroot()
 
-            self.version = tuple(map(int, str(root.get("version", "0.0")).split(".")))
+            self.version = str(root.get("version", "0.0"))
             self._setupContentsRecXML(None, root)
 
             # Old JSON code:
@@ -78,57 +82,52 @@ class HelpWindow(QMainWindow):
             # data = json.loads(text)
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
-        except Exception as e:
-            print(f"Suppressed error: {universal_simplify_exception(e)}")
+        except Exception:
+            get_root_logger().debug("Suppressed error in HelpWindow._setupContents", exc_info=True)
 
-    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict):
-        add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
+    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict[str, Any]):
+        addItem: Callable[[QTreeWidgetItem], None] = (
+            self.ui.contentsTree.addTopLevelItem
+            if parent is None
+            else parent.addChild
+        )
 
-        if "structure" in data:
-            for title in data["structure"]:
-                item = QTreeWidgetItem([title])
-                item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])
-                add(item)
-                self._setupContentsRecJSON(item, data["structure"][title])
+        structure = data.get("structure", {})
+        for title in structure:
+            item = QTreeWidgetItem([title])
+            item.setData(0, QtCore.Qt.UserRole, structure[title]["filename"])
+            addItem(item)
+            self._setupContentsRecJSON(item, structure[title])
 
     def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
-        add: Callable[..., None] = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
+        addItem: Callable[[QTreeWidgetItem], None] = (
+            self.ui.contentsTree.addTopLevelItem
+            if parent is None
+            else parent.addChild
+        )
 
         for child in element:
             item = QTreeWidgetItem([child.get("name", "")])
             item.setData(0, QtCore.Qt.UserRole, child.get("file"))
-            add(item)
+            addItem(item)
             self._setupContentsRecXML(item, child)
 
     def checkForUpdates(self):
-        remoteInfo = getRemoteToolsetUpdateInfo(
-            useBetaChannel=GlobalSettings().useBetaChannel,
-        )
+        remoteInfo = getRemoteToolsetUpdateInfo(useBetaChannel=GlobalSettings().useBetaChannel)
         try:
             if not isinstance(remoteInfo, dict):
                 raise remoteInfo  # noqa: TRY301
 
-            new_version = tuple(map(int, str(remoteInfo["help"]["version"]).split(".")))
-            if self.version is None or new_version > self.version:
-                newHelpMsgBox = QMessageBox(
-                    QMessageBox.Information,
-                    "Update available",
-                    "A newer version of the help book is available for download, would you like to download it?",
-                    parent=None,
-                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
-                )
-                newHelpMsgBox.setWindowIcon(self.windowIcon())
-                newHelpMsgBox.addButton(QMessageBox.Yes)
-                newHelpMsgBox.addButton(QMessageBox.No)
-                user_response = newHelpMsgBox.exec_()
-                if user_response == QMessageBox.Yes:
-
-                    def task():
-                        return self._downloadUpdate()
-
-                    loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
-                    if loader.exec_():
-                        self._setupContents()
+            new_version = str(remoteInfo["help"]["version"])
+            if self.version is None:
+                title = "Help book missing"
+                text = "You do not seem to have a valid help booklet downloaded, would you like to download it?"
+            elif remoteVersionNewer(self.version, new_version):
+                title = "Update available"
+                text = "A newer version of the help book is available for download, would you like to download it?"
+            else:
+                get_root_logger().debug("No help booklet updates available, using version %s (latest version: %s)", self.version, new_version)
+                return
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             errMsgBox = QMessageBox(
@@ -141,16 +140,36 @@ class HelpWindow(QMainWindow):
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()
+        else:
+            newHelpMsgBox = QMessageBox(
+                QMessageBox.Information,
+                title,
+                text,
+                parent=None,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            )
+            newHelpMsgBox.setWindowIcon(self.windowIcon())
+            newHelpMsgBox.addButton(QMessageBox.Yes)
+            newHelpMsgBox.addButton(QMessageBox.No)
+            user_response = newHelpMsgBox.exec_()
+            if user_response == QMessageBox.Yes:
+
+                def task():
+                    return self._downloadUpdate()
+
+                loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
+                if loader.exec_():
+                    self._setupContents()
 
     def _downloadUpdate(self):
-        help_path = Path("help").resolve()
+        help_path = Path("./help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
         help_zip_path = Path("./help.zip").resolve()
         download_github_file("NickHugi/PyKotor", help_zip_path, "/Tools/HolocronToolset/downloads/help.zip")
 
         # Extract the ZIP file
         with zipfile.ZipFile(help_zip_path) as zip_file:
-            print(f"Extracting downloaded content to {help_path}")
+            get_root_logger().info("Extracting downloaded content to %s", help_path)
             zip_file.extractall(help_path)
 
         if is_frozen():
@@ -170,11 +189,12 @@ class HelpWindow(QMainWindow):
             ).exec_()
 
     def onContentsClicked(self):
-        if self.ui.contentsTree.selectedItems():
-            item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
-            filename = item.data(0, QtCore.Qt.UserRole)
-            if filename:
-                help_path = Path("./help").resolve()
-                file_path = Path(help_path, filename)
-                self.ui.textDisplay.setSearchPaths([str(help_path), str(file_path.parent)])
-                self.displayFile(file_path)
+        if not self.ui.contentsTree.selectedItems():
+            return
+        item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
+        filename = item.data(0, QtCore.Qt.UserRole)
+        if filename:
+            help_path = Path("./help").resolve()
+            file_path = Path(help_path, filename)
+            self.ui.textDisplay.setSearchPaths([str(help_path), str(file_path.parent)])
+            self.displayFile(file_path)

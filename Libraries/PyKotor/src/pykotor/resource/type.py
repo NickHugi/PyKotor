@@ -17,7 +17,7 @@ from utility.error_handling import format_exception_with_variables
 from utility.string_util import CaseInsensitiveWrappedStr, WrappedStr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
