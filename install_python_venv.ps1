@@ -191,8 +191,21 @@ function Invoke-WithTimeout {
 function Install-TclTk {
     function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
         if (-not (CommandExists $command)) {
-            Write-Host "Command '$command' not found."
-            return $false
+            # Attempt to find version-specific command if 'wish' is not found
+            if ($command -eq 'wish') {
+                $versionSpecificCommand = Get-Command 'wish*' -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($null -ne $versionSpecificCommand) {
+                    $command = $versionSpecificCommand.Name
+                    Write-Host "wish not found but $command was found. Symlinking $($versionSpecificCommand.Source) >> /usr/bin/wish"
+                    Invoke-BashCommand "sudo ln -sv $($versionSpecificCommand.Source) /usr/bin/wish"
+                } else {
+                    Write-Host "Command 'wish' not found."
+                    return $false
+                }
+            } else {
+                Write-Host "Command '$command' not found."
+                return $false
+            }
         }
     
         try {
@@ -285,9 +298,9 @@ function Install-TclTk {
     Invoke-BashCommand "sudo make install"
 
     # Refresh the env after installing tcl/tk
-    $userPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
-    $systemPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
-    $env:PATH = $userPath + ";" + $systemPath
+    #$userPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
+    #$systemPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+    #$env:PATH = $userPath + ";" + $systemPath
     
     # Perform version checks
     $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
@@ -407,6 +420,7 @@ function Install-Python-Linux {
                 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                 exit 1
             }
+
             # Fallback mechanism for each distribution
             Install-TclTk
             switch ($distro) {
