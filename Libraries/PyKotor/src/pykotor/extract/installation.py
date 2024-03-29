@@ -545,7 +545,7 @@ class Installation:  # noqa: PLR0904
 
         for folder in target_dirs:
             relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
-            self._override[relative_folder] = self.load_resources_list(folder)
+            self._override[relative_folder] = self.load_resources_list(folder, recurse=True)
 
     def reload_override(
         self,
