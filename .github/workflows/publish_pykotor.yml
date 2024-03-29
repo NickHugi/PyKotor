@@ -393,7 +393,7 @@ jobs:
       shell: pwsh
 
     - name: HolocronToolset - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install staticx
