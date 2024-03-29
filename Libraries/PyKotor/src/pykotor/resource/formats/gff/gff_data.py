@@ -24,6 +24,17 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 
+def format_diff(old_value: object, new_value: object, name: str) -> str:
+    # Convert values to strings if they aren't already
+    str_old_value = str(old_value).splitlines(keepends=True)
+    str_new_value = str(new_value).splitlines(keepends=True)
+
+    # Generate unified diff
+    diff = difflib.unified_diff(str_old_value, str_new_value, fromfile=f"(old){name}", tofile=f"(new){name}", lineterm="")
+
+    # Return formatted diff
+    return "\n".join(diff)
+
 class GFFContent(Enum):
     """The different resources that the GFF can represent."""
 
@@ -539,10 +550,8 @@ class GFFStruct:
                         f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
                     )
                     continue
-
-                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                diff = difflib.ndiff(formatted_old_value.splitlines(keepends=True), formatted_new_value.splitlines(keepends=True))
-                log_func("\n".join(diff))
+                log_func(f"Field '{old_ftype.name}' is different at '{child_path}':")
+                log_func(format_diff(old_value, new_value, label))
 
         return is_same
 
