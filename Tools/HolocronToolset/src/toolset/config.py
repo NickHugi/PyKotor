@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Fixed help booklet, and other various bugfixes. Update when you are able :)",
+    "toolsetLatestBetaNotes": "Performance improvements, bugfixes, and a dialog to upgrade/downgrade your toolset installation straight from github.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
