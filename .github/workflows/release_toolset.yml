@@ -502,9 +502,12 @@ jobs:
               $uploaded = $false
               while (-not $uploaded -and $attempts -lt $maxAttempts) {
                 try {
-                  Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -ContentType "application/zip" -InFile $filePath
+                  Write-Host "Attempting to upload $fileName (Attempt: $($attempts+1))"
+                  $result = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -ContentType "application/zip" -InFile $filePath
+                  Write-Host "Upload successful: $($result.browser_download_url)"
                   $uploaded = $true
                 } catch {
+                  Write-Host "Attempt $($attempts+1) failed: $($_.Exception.Message)"
                   Start-Sleep -Seconds 15
                   $attempts++
                 }
