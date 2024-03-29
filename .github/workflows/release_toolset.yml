@@ -487,7 +487,17 @@ jobs:
           echo "RELEASE_ID=$releaseId" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
 
+      - uses: ncipollo/release-action@v1.10.0
+        with:
+            tag: ${{ steps.get_tag.outputs.tag }}
+            prerelease: false
+            draft: false
+            artifacts: "published_workflow_builds/*.zip"
+            allowUpdates: true
+            token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Archive to Release
+        if: ${{ failure() }}
         run: |
           try {
             Add-Type -TypeDefinition @"
