@@ -191,13 +191,12 @@ function Invoke-WithTimeout {
 function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
-    function GetAndCompareVersion($command, $argument, $requiredVersion) {
+    function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
         try {
-            # Construct the command to echo the version check script and pipe it into tclsh or wish
-            $scriptCommand = "echo `"$argument`" | $command"
-            
-            # Execute the constructed command and capture the output
-            $versionString = Invoke-Expression $scriptCommand
+            # Prepare the script to be executed by tclsh or wish
+            $script = $scriptCommand.Trim('{}')
+            # Execute the command directly with the script
+            $versionString = & $command $script
             Write-Host "$command output: $versionString"
             
             if ([string]::IsNullOrWhiteSpace($versionString)) {
@@ -211,14 +210,14 @@ function Install-TclTk {
             return $false
         }
     }
-
+    
     # Check Tcl version
-    $tclVersionCommand = 'puts $tcl_version;exit 0'
-    $tclCheck = GetAndCompareVersion "tclsh", $tclVersionCommand, $requiredVersion
-
+    $tclVersionScript = "puts [info patchlevel];exit"
+    $tclCheck = GetAndCompareVersion "tclsh", $tclVersionScript, $requiredVersion
+    
     # Check Tk version
-    $tkVersionCommand = 'puts $tk_version;exit 0'
-    $tkCheck = GetAndCompareVersion "wish", $tkVersionCommand, $requiredVersion
+    $tkVersionScript = "puts [info patchlevel];exit"
+    $tkCheck = GetAndCompareVersion "wish", $tkVersionScript, $requiredVersion
 
     # Handle the result of the version checks
     if ($tclCheck -and $tkCheck) {
