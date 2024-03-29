@@ -490,27 +490,29 @@ jobs:
       - name: Upload Archive to Release
         run: |
           try {
-            Add-Type -TypeDefinition @"using System;
-            using System.Net.Http;
-            using System.Net.Http.Headers;
-            using System.Threading.Tasks;
-      
-            public class GitHubUploader {
-                public static async Task UploadFileAsync(string filePath, string uploadUrl, string token) {
-                    using (var client = new HttpClient()) {
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                        using (var content = new MultipartFormDataContent()) {
-                            var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
-                            fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-                            content.Add(fileContent, "file", System.IO.Path.GetFileName(filePath));
-                            var response = await client.PostAsync(uploadUrl, content);
-                            if (!response.IsSuccessStatusCode) {
-                                throw new ApplicationException(await response.Content.ReadAsStringAsync());
-                            }
-                        }
-                    }
-                }
-            }"@
+            Add-Type -TypeDefinition @"
+          using System;
+          using System.Net.Http;
+          using System.Net.Http.Headers;
+          using System.Threading.Tasks;
+    
+          public class GitHubUploader {
+              public static async Task UploadFileAsync(string filePath, string uploadUrl, string token) {
+                  using (var client = new HttpClient()) {
+                      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                      using (var content = new MultipartFormDataContent()) {
+                          var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                          fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                          content.Add(fileContent, "file", System.IO.Path.GetFileName(filePath));
+                          var response = await client.PostAsync(uploadUrl, content);
+                          if (!response.IsSuccessStatusCode) {
+                              throw new ApplicationException(await response.Content.ReadAsStringAsync());
+                          }
+                      }
+                  }
+              }
+            }
+          "@
             $archivePath = "published_workflow_builds/*.zip"
             $releaseId = $env:RELEASE_ID
             $token = ${{ secrets.GITHUB_TOKEN }}
