@@ -21,18 +21,18 @@ if ((Get-OS) -eq "Mac") {
     $versionObject = Get-Python-Version $pythonExePath
     $pyVersion = "{0}.{1}" -f $versionObject.Major, $versionObject.Minor
     brew update
-    brew install python-tk@$pyVersion tcl-tk
+    brew install python-tk@$pyVersion tcl-tk --force --overwrite
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
         switch ((Get-Linux-Distro-Name)) {
             "debian" {
                 sudo apt-get update
-                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk python3-pip
                 break
             }
             "ubuntu" {
                 sudo apt-get update
-                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk python3-pip
                 break
             }
             "fedora" {
