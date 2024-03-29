@@ -292,6 +292,8 @@ function Install-Python-Linux {
         $pythonVersion = "3"
     }
 
+    Install-TclTk
+
     if (Test-Path "/etc/os-release") {
         $distro = (Get-Linux-Distro-Name)
         $versionId = (Get-Linux-Distro-Version)
@@ -478,14 +480,7 @@ function Install-Python-Mac {
         "3.13" = @("python-$pyVersion-macos11.pkg")
     }
 
-    $originalDir = Get-Location
-    try {
-        Install-TclTk
-    } catch {
-        Write-Error $_
-        Set-Location $originalDir
-        Invoke-BashCommand "brew install tcl-tk"
-    }
+    Install-TclTk
 
     try {
         # Retrieve current macOS version
