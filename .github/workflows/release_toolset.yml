@@ -490,8 +490,7 @@ jobs:
       - name: Upload Archive to Release
         run: |
           try {
-            Add-Type -TypeDefinition @"
-            using System;
+            Add-Type -TypeDefinition @"using System;
             using System.Net.Http;
             using System.Net.Http.Headers;
             using System.Threading.Tasks;
@@ -511,9 +510,7 @@ jobs:
                         }
                     }
                 }
-            }
-            "@
-      
+            }"@
             $archivePath = "published_workflow_builds/*.zip"
             $releaseId = $env:RELEASE_ID
             $token = ${{ secrets.GITHUB_TOKEN }}
