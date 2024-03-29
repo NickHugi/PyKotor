@@ -15,9 +15,9 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b18",
+    "currentVersion": "2.2.1b21",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b20",
+    "toolsetLatestBetaVersion": "2.2.1b21",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
