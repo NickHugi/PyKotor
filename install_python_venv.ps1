@@ -196,13 +196,19 @@ function Install-TclTk {
         }
     
         try {
-            $versionString = & $command $scriptCommand 2>&1
+            $versionScript = "echo `$scriptCommand` | $command"
+            $versionString = Invoke-Expression $versionScript 2>&1
             if ([string]::IsNullOrWhiteSpace($versionString)) {
                 Write-Host "No version output detected for '$command'."
                 return $false
             }
             $versionString = $versionString -replace '[^\d.]+', ''  # Clean the version string of non-numeric characters
             Write-Host "Output of $command : '$versionString'"
+    
+            if ($versionString -eq '') {
+                Write-Host "Version string for '$command' is empty."
+                return $false
+            }
     
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
