@@ -192,7 +192,7 @@ function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
     function CommandExists($command) {
-        return $null -ne (Get-Command $command -ErrorAction SilentlyContinue)
+        return $null -ne (Get-Command -Name $command -ErrorAction SilentlyContinue)
     }
 
     function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
