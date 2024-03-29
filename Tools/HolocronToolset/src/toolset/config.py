@@ -25,29 +25,29 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac_x64.zip"]
         },
         "Linux": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux_x64.zip"]
         },
         "Windows": {
-            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
-            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x86.zip"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x64.zip"]
         }
     },
     "toolsetBetaDirectLinks": {
         "Darwin": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac_x64.zip"]
         },
         "Linux": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux_x64.zip"]
         },
         "Windows": {
-            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
-            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
+            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x86.zip"],
+            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x64.zip"]
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
