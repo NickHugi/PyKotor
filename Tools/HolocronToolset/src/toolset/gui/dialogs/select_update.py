@@ -157,8 +157,8 @@ class UpdateDialog(QDialog):
 
     def init_config(self):
         self.include_prerelease = self.preReleaseCheckBox.isChecked()
-        self.forksCache["NickHugi/PyKotor"] = self.fetch_fork_releases("NickHugi/PyKotor", include_all=True)
         self.fetch_and_cache_forks_with_releases()
+        self.forksCache["NickHugi/PyKotor"] = self.fetch_fork_releases("NickHugi/PyKotor", include_all=True)
         self.populate_fork_combo_box()
         self.on_fork_changed(self.forkComboBox.currentIndex())
 
