@@ -515,7 +515,7 @@ jobs:
           "@
             $archivePath = "published_workflow_builds/*.zip"
             $releaseId = $env:RELEASE_ID
-            $token = ${{ secrets.GITHUB_TOKEN }}
+            $token = "${{ secrets.GITHUB_TOKEN }}""
             Get-ChildItem -Path $archivePath | ForEach-Object {
               $filePath = $_.FullName
               $fileName = $_.Name
