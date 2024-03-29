@@ -345,7 +345,7 @@ jobs:
       shell: pwsh
 
     - name: Search for DLL files
-      if: ${{ matrix.python-version == '3.12' && runner.os == 'Windows' }}
+      if: ${{ matrix.python-version == '3.12_Disabled' && runner.os == 'Windows' }}
       run: |
         Get-PSDrive -PSProvider FileSystem | ForEach-Object {
           $drive = $_.Root

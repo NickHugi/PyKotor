@@ -91,6 +91,9 @@ $argumentsArray = @(
 foreach ($arg in $pyInstallerArgs) {
     $argumentsArray += $arg
 }
+if ($env:GITHUB_ACTIONS -eq "true") {  # HACK for github runners using python 3.12
+    $pyInstallerArgs += '--paths C:\Miniconda\'
+}
 
 # Append the final script path
 $argumentsArray += "toolset/__main__.py"
