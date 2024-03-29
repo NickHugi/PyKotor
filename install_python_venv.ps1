@@ -227,7 +227,11 @@ function Install-TclTk {
     $tkVersionScript = "puts [info patchlevel];exit"
     
     # Initialize required version
-    $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
+    if ((Get-OS) -eq "macOS") {
+        $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
+    } else {
+        $requiredVersion = New-Object -TypeName "System.Version" "8.6.0"
+    }
     
     # Perform version checks
     $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
@@ -279,6 +283,23 @@ function Install-TclTk {
     Invoke-BashCommand "./configure --prefix=/usr/local --with-tcl=/usr/local/lib"
     Invoke-BashCommand "make"
     Invoke-BashCommand "sudo make install"
+
+    # Refresh the env after installing tcl/tk
+    $userPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
+    $systemPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+    $env:PATH = $userPath + ";" + $systemPath
+    
+    # Perform version checks
+    $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
+    $tkCheck = GetAndCompareVersion "wish" $tkVersionScript $requiredVersion
+
+    # Handle the result of the version checks
+    if ($tclCheck -and $tkCheck) {
+        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+        return
+    } else {
+        Write-Host "Tcl/Tk version must be updated now."
+    }
 }
 
 function Install-Python-Linux {
@@ -291,8 +312,6 @@ function Install-Python-Linux {
     if (-not $pythonVersion) {
         $pythonVersion = "3"
     }
-
-    Install-TclTk
 
     if (Test-Path "/etc/os-release") {
         $distro = (Get-Linux-Distro-Name)
@@ -389,6 +408,7 @@ function Install-Python-Linux {
                 exit 1
             }
             # Fallback mechanism for each distribution
+            Install-TclTk
             switch ($distro) {
                 "debian" {
                     Invoke-BashCommand -Command 'sudo apt-get update -y'
