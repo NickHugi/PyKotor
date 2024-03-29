@@ -189,27 +189,21 @@ function Invoke-WithTimeout {
 
 # Needed for tkinter-based apps, common in Python and subsequently most of PyKotor's tools.
 function Install-TclTk {
-    $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
-
-    function CommandExists($command) {
-        return $null -ne (Get-Command -Name $command -ErrorAction SilentlyContinue)
-    }
-
     function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
         if (-not (CommandExists $command)) {
             Write-Host "Command '$command' not found."
             return $false
         }
-
+    
         try {
-            # Execute the command directly with the script
             $versionString = & $command $scriptCommand 2>&1
             if ([string]::IsNullOrWhiteSpace($versionString)) {
                 Write-Host "No version output detected for '$command'."
                 return $false
             }
-            Write-Host "output of $command : '$versionString'"
-
+            $versionString = $versionString -replace '[^\d.]+', ''  # Clean the version string of non-numeric characters
+            Write-Host "Output of $command : '$versionString'"
+    
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
@@ -218,13 +212,20 @@ function Install-TclTk {
         }
     }
     
-    # Check Tcl version
-    $tclVersionScript = "puts [info patchlevel];exit"
-    $tclCheck = GetAndCompareVersion "tclsh", $tclVersionScript, $requiredVersion
+    function CommandExists($command) {
+        return $null -ne (Get-Command -Name $command -ErrorAction SilentlyContinue)
+    }
     
-    # Check Tk version
+    # Correctly invoke tclsh and wish with the version check script
+    $tclVersionScript = "puts [info patchlevel];exit"
     $tkVersionScript = "puts [info patchlevel];exit"
-    $tkCheck = GetAndCompareVersion "wish", $tkVersionScript, $requiredVersion
+    
+    # Initialize required version
+    $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
+    
+    # Perform version checks
+    $tclCheck = GetAndCompareVersion "tclsh" $tclVersionScript $requiredVersion
+    $tkCheck = GetAndCompareVersion "wish" $tkVersionScript $requiredVersion
 
     # Handle the result of the version checks
     if ($tclCheck -and $tkCheck) {
@@ -240,18 +241,16 @@ function Install-TclTk {
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
-            bash -c "brew install tcl-tk --overwrite --force || true"  # send || true to ignore linking errors.
+            bash -c "brew install tcl-tk --overwrite --force || true"
             Write-Host 'brew install tcl-tk --overwrite --force completed.'
-            $tclCheck = GetAndCompareVersion "tclsh", $tclVersionCommand, $requiredVersion
-            $tkCheck = GetAndCompareVersion "wish", $tkVersionCommand, $requiredVersion
-        
-            # Handle the result of the version checks
+            $tclCheck = GetAndCompareVersion "tclsh", $tclVersionScript, $requiredVersion
+            $tkCheck = GetAndCompareVersion "wish", $tkVersionScript, $requiredVersion
+    
             if ($tclCheck -and $tkCheck) {
                 Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
                 return
             } else {
                 Write-Error "Could not get tcl/tk versions after brew install!"
-                # Continue with the installation...
             }
             return
         }
