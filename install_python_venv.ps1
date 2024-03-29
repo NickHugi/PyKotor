@@ -298,6 +298,7 @@ function Install-TclTk {
     Invoke-BashCommand "./configure --prefix=/usr/local --with-tcl=/usr/local/lib"
     Invoke-BashCommand "make"
     Invoke-BashCommand "sudo make install"
+    Set-Location $originalDir
 
     # Refresh the env after installing tcl/tk
     #$userPath = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
