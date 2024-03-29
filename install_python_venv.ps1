@@ -191,22 +191,29 @@ function Invoke-WithTimeout {
 function Install-TclTk {
     $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
 
+    function CommandExists($command) {
+        return $null -ne (Get-Command $command -ErrorAction SilentlyContinue)
+    }
+
     function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
+        if (-not (CommandExists $command)) {
+            Write-Host "Command '$command' not found."
+            return $false
+        }
+
         try {
-            # Prepare the script to be executed by tclsh or wish
-            $script = $scriptCommand.Trim('{}')
             # Execute the command directly with the script
-            $versionString = & $command $script
-            Write-Host "$command output: $versionString"
-            
+            $versionString = & $command $scriptCommand 2>&1
             if ([string]::IsNullOrWhiteSpace($versionString)) {
-                throw "No version output detected."
+                Write-Host "No version output detected for '$command'."
+                return $false
             }
-            
+            Write-Host "output of $command : '$versionString'"
+
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
-            Write-Host "Error comparing with version '$requiredVersion': $_"
+            Write-Host "Error comparing with version '$requiredVersion' for $command : $_"
             return $false
         }
     }
