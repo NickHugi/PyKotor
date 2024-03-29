@@ -490,30 +490,43 @@ jobs:
       - name: Upload Archive to Release
         run: |
           try {
+            Add-Type -TypeDefinition @"
+            using System;
+            using System.Net.Http;
+            using System.Net.Http.Headers;
+            using System.Threading.Tasks;
+      
+            public class GitHubUploader {
+                public static async Task UploadFileAsync(string filePath, string uploadUrl, string token) {
+                    using (var client = new HttpClient()) {
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                        using (var content = new MultipartFormDataContent()) {
+                            var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                            fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                            content.Add(fileContent, "file", System.IO.Path.GetFileName(filePath));
+                            var response = await client.PostAsync(uploadUrl, content);
+                            if (!response.IsSuccessStatusCode) {
+                                throw new ApplicationException(await response.Content.ReadAsStringAsync());
+                            }
+                        }
+                    }
+                }
+            }
+            "@
+      
             $archivePath = "published_workflow_builds/*.zip"
             $releaseId = $env:RELEASE_ID
-            $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
+            $token = ${{ secrets.GITHUB_TOKEN }}
             Get-ChildItem -Path $archivePath | ForEach-Object {
               $filePath = $_.FullName
               $fileName = $_.Name
-              $uploadUrl = "https://uploads.github.com/repos/${{ github.repository }}/releases/$releaseId/assets?name=$fileName"
-              $attempts = 0
-              $maxAttempts = 5
-              $uploaded = $false
-              while (-not $uploaded -and $attempts -lt $maxAttempts) {
-                try {
-                  Write-Host "Attempting to upload $fileName (Attempt: $($attempts+1))"
-                  $result = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -ContentType "application/zip" -InFile $filePath
-                  Write-Host "Upload successful: $($result.browser_download_url)"
-                  $uploaded = $true
-                } catch {
-                  Write-Host "Attempt $($attempts+1) failed: $($_.Exception.Message)"
-                  Start-Sleep -Seconds 15
-                  $attempts++
-                }
-              }
-              if (-not $uploaded) {
-                throw "Failed to upload $fileName after $maxAttempts attempts."
+              $uploadUrl = "https://uploads.github.com/repos/${{ github.repository }}/releases/$releaseId/assets?name=$fileName&label=$fileName"
+              try {
+                Write-Host "Attempting to upload $fileName"
+                [GitHubUploader]::UploadFileAsync($filePath, $uploadUrl, $token).GetAwaiter().GetResult()
+                Write-Host "Upload successful: $fileName"
+              } catch {
+                Write-Host "Failed to upload $fileName: $($_.Exception.Message)"
               }
             }
           } catch {
