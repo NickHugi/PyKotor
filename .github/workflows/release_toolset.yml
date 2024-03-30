@@ -470,8 +470,15 @@ jobs:
       - name: Determine Release Tag Ending with 'toolset'
         id: get_tag
         run: |
+          # Ensure all tags are fetched
+          git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
           # Filter tags ending with 'toolset', sort them by date, and pick the most recent one
-          $tag = git tag --list '*toolset' --sort=-v:refname | Select-Object -First 1
+          $tag = git tag --list '*toolset*' --sort=-v:refname | Select-Object -First 1
+          if (-not $tag) {
+            echo "No matching tag found ending with 'toolset'."
+            & git tag --list
+            exit 1
+          }
           echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         shell: pwsh
 
