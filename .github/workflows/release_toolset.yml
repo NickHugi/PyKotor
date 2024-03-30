@@ -455,11 +455,7 @@ jobs:
       - name: Determine Release Tag
         id: get_tag
         run: |
-          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-            $tag = gh release list --repo $env:GITHUB_REPOSITORY | Select-String -Pattern 'v\d+(\.\d+){1,2}.*?-toolset' | Select-Object -First 1 -ExpandProperty Line | Out-String -Stream | Select-String -Pattern 'v\d+(\.\d+){1,2}.*?-toolset' | Select-Object -First 1 -ExpandProperty Matches | ForEach-Object { $_.Value }
-          } else {
-            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
-          }
+          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
           echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         shell: pwsh
         env:
