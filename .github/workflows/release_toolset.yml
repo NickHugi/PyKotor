@@ -452,6 +452,7 @@ jobs:
           path: published_workflow_builds/
           pattern: HolocronToolset_*
 
+      - uses: actions/checkout@v4
       - name: Determine Release Tag Ending with 'toolset'
         id: get_tag
         run: |
