@@ -35,32 +35,22 @@ jobs:
       - name: Set environment variables
         id: set_env
         run: |
-          # Use a single line of JSON to avoid issues
-
-          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "os<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "python-version<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "architecture<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "python-pypy<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
@@ -472,10 +462,12 @@ jobs:
         run: |
           if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
             git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-            # Filter tags ending with 'toolset', sort them by commit date, and pick the most recent one
-            $tag = git for-each-ref --sort=-taggerdate --format '%(refname:short)' refs/tags/*toolset* | Select-Object -First 1
+            # Get all tags ending with 'toolset', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*toolset*' | Select-Object -Last 1
           } else {
-            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            # Get all tags ending with 'toolset', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*toolset*' | Select-Object -Last 1
           }
           if (-not $tag) {
             echo "No matching tag found ending with 'toolset'."
@@ -492,7 +484,7 @@ jobs:
           tag_name: ${{ steps.get_tag.outputs.tag }}
           files: "published_workflow_builds/*.zip"
           fail_on_unmatched_files: true
-          target_commitish: ${{ github.ref_name }}
+          target_commitish: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.head_ref }}
 
       - name: Determine Release ID for fallback upload.
         if: ${{ failure() }}
