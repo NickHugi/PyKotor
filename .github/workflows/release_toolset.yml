@@ -462,8 +462,8 @@ jobs:
         run: |
           if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
             git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-            # Filter tags ending with 'toolset', sort them by commit date, and pick the most recent one
-            $tag = git for-each-ref --sort=-taggerdate --format '%(refname:short)' refs/tags/*toolset* | Select-Object -First 1
+            # Get all tags ending with 'toolset', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*toolset*' | Select-Object -Last 1
           } else {
             $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
           }
