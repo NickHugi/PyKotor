@@ -68,7 +68,7 @@ tex = inst.texture("C_Gammorean01")
 write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
 As shown, this will save `C_Gammorean01.tga` to the current directory.
-[More examples](https://github.com/NickHugi/PyKotor/blob/v1.52-patcher/Libraries/PyKotor/docs/installation.md)
+[More examples](https://github.com/NickHugi/PyKotor/blob/master/Libraries/PyKotor/docs/installation.md)
 
 ## Tests
 
