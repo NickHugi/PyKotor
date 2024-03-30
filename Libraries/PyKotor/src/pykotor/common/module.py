@@ -32,7 +32,7 @@ from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import get_root_logger
 from utility.string_util import CaseInsensitiveWrappedStr
 from utility.system.path import Path, PurePath

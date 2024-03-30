@@ -33,6 +33,7 @@ from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+
     from logging import Logger
 
     from pykotor.extract.talktable import StringResult
@@ -437,7 +438,7 @@ class Installation:
         capsule_check: Callable,
         *,
         recurse: bool = False,
-    ) -> dict[str, list[FileResource]]:
+    ) -> CaseInsensitiveDict[list[FileResource]]:
         """Load resources for a given path and store them in a new dict.
 
         Args:
@@ -462,7 +463,7 @@ class Installation:
             else path.safe_iterdir()
         )
 
-        resources_dict: dict[str, list[FileResource]] = {}
+        resources_dict: CaseInsensitiveDict[list[FileResource]] = CaseInsensitiveDict()
 
         if self.use_multithreading:
             num_cores = os.cpu_count() or 1
