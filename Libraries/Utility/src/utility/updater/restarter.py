@@ -70,15 +70,8 @@ class Restarter:
                 self.log.info("Current app and updated app path are exactly the same, I guess they only wanted us to restart? path: %s", self.current_app)
             if self.u_strategy == UpdateStrategy.OVERWRITE:
                 self._win_overwrite()
-            if self.r_strategy == RestartStrategy.DEFAULT:
-                if is_frozen():
-                    self._join()
-                else:
-                    self._win_restart()
-            elif self.r_strategy == RestartStrategy.BATCH:
+            else:
                 self._win_restart()
-            elif self.r_strategy == RestartStrategy.JOIN:
-                self._join()
             return
 
         self._join()
