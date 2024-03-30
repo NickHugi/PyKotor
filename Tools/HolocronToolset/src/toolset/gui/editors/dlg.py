@@ -1057,7 +1057,10 @@ class DLGEditor(Editor):
             self.ui.questEntrySpin.setValue(node.quest_entry or 0)
 
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
-            self.ui.cameraAnimSpin = GFFFieldSpinBox.from_spinbox(self.ui.cameraAnimSpin, min_value=1200, max_value=65534)
+            self.ui.cameraAnimSpin.__class__ = GFFFieldSpinBox
+            self.ui.cameraAnimSpin.min_value=1200
+            self.ui.cameraAnimSpin.max_value=65534
+            self.ui.cameraAnimSpin.specialValueTextMapping: dict[int, str] = {0: "0", -1: "-1"}
             self.ui.cameraAnimSpin.setMinimum(-1)
             self.ui.cameraAnimSpin.setMaximum(65534)
 
