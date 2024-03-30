@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING
 
@@ -8,7 +7,7 @@ import pyperclip
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel, QValidator
+from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
