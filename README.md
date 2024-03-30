@@ -56,7 +56,7 @@ After cloning the repo, open any of the powershell scripts in the `compile` fold
 - Compile to executable binary, as one file, to the dist folder in the root level of this repository.
 
 
-## Development Example Usage:
+## Working with Installation class in src:
 Simple example of loading data from a game directory, searching for a specific texture, and exporting it to the TGA format.
 ```python
 from pykotor.resource.type import ResourceType
@@ -68,6 +68,7 @@ tex = inst.texture("C_Gammorean01")
 write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
 As shown, this will save `C_Gammorean01.tga` to the current directory.
+[More examples](https://github.com/NickHugi/PyKotor/blob/v1.52-patcher/Libraries/PyKotor/docs/installation.md)
 
 ## Tests
 
