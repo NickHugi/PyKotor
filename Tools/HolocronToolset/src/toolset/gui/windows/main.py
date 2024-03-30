@@ -1143,7 +1143,8 @@ class ToolWindow(QMainWindow):
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             self.log.exception(msg)
             raise RuntimeError(msg) from e
-        QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
+        # FIXME: DO NOT USE THIS MESSAGEBOX. Causes instant crash due to QThread!
+        #QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
         with filepath.with_suffix(".txi").open("wb") as file:
