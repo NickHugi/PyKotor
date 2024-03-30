@@ -452,14 +452,13 @@ jobs:
           path: published_workflow_builds/
           pattern: HolocronToolset_*
 
-      - name: Determine Release Tag
+      - name: Determine Release Tag Ending with 'toolset'
         id: get_tag
         run: |
-          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          # Filter tags ending with 'toolset', sort them by date, and pick the most recent one
+          $tag = git tag --list '*toolset' --sort=-v:refname | Select-Object -First 1
           echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Compress into archives
         run: |
