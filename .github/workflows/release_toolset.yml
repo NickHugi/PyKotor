@@ -446,55 +446,65 @@ jobs:
     if: ${{ success() || failure() }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: published_workflow_builds/
           pattern: HolocronToolset_*
-
-      - name: Determine Release Tag
-        id: get_tag
-        run: |
-          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-            $tag = gh release list --repo $env:GITHUB_REPOSITORY | Select-String -Pattern 'v\d+(\.\d+){1,2}-toolset' | Select-Object -First 1 -ExpandProperty Line | Out-String -Stream | Select-String -Pattern 'v\d+(\.\d+){1,2}-toolset' | Select-Object -First 1 -ExpandProperty Matches | ForEach-Object { $_.Value }
-          } else {
-            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
-          }
-          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Compress into archives
         run: |
-          $sourceFolder = Join-Path -Path (Get-Location) -ChildPath "published_workflow_builds"
+          $originalDir = Get-Location
+          $sourceFolder = Join-Path -Path $originalDir -ChildPath "published_workflow_builds"
           Set-Location $sourceFolder
           Get-ChildItem -Path "." -Directory | ForEach-Object {
             $folderName = $_.Name
             $archiveName = "$folderName.zip"
             zip -r -9 $archiveName $folderName
           }
+          Set-Location $originalDir
         shell: pwsh
 
-      - name: Get Release ID by Tag
+      - name: Determine Release Tag Ending with 'toolset'
+        id: get_tag
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            # Filter tags ending with 'toolset', sort them by commit date, and pick the most recent one
+            $tag = git for-each-ref --sort=-taggerdate --format '%(refname:short)' refs/tags/*toolset* | Select-Object -First 1
+          } else {
+            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          }
+          if (-not $tag) {
+            echo "No matching tag found ending with 'toolset'."
+            git tag --list
+            exit 1
+          }
+          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: pwsh
+      
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          files: "published_workflow_builds/*.zip"
+          fail_on_unmatched_files: true
+          target_commitish: ${{ github.ref_name }}
+
+      - name: Determine Release ID for fallback upload.
+        if: ${{ failure() }}
         id: get_release_id
         run: |
-          $tag = "${{ steps.get_tag.outputs.tag }}"
-          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tag"
+          # Filter tags ending with 'toolset', sort them by date, and pick the most recent one
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_tag.outputs.tag }}"
           $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
           $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
           $releaseId = $response.id
           echo "RELEASE_ID=$releaseId" | Out-File -FilePath $env:GITHUB_ENV -Append
         shell: pwsh
-
-      - uses: ncipollo/release-action@v1.10.0
-        with:
-            tag: ${{ steps.get_tag.outputs.tag }}
-            prerelease: false
-            draft: false
-            artifacts: "published_workflow_builds/*.zip"
-            allowUpdates: true
-            token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Archive to Release
         if: ${{ failure() }}
