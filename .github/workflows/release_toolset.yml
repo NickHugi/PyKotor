@@ -487,7 +487,7 @@ jobs:
         with:
             tag: ${{ steps.get_tag.outputs.tag }}
             prerelease: false
-            draft: false
+            draft: true
             artifacts: "published_workflow_builds/*.zip"
             allowUpdates: true
             token: ${{ secrets.GITHUB_TOKEN }}
