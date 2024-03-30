@@ -486,8 +486,8 @@ jobs:
       - uses: ncipollo/release-action@v1.10.0
         with:
             tag: ${{ steps.get_tag.outputs.tag }}
-            prerelease: false
-            draft: true
+            prerelease: true
+            draft: false
             artifacts: "published_workflow_builds/*.zip"
             allowUpdates: true
             token: ${{ secrets.GITHUB_TOKEN }}
