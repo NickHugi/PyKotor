@@ -470,26 +470,29 @@ jobs:
       - name: Determine Release Tag Ending with 'toolset'
         id: get_tag
         run: |
-          # Ensure all tags are fetched
-          git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-          # Filter tags ending with 'toolset', sort them by date, and pick the most recent one
-          $tag = git tag --list '*toolset*' --sort=-v:refname | Select-Object -First 1
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            # Filter tags ending with 'toolset', sort them by commit date, and pick the most recent one
+            $tag = git for-each-ref --sort=-taggerdate --format '%(refname:short)' refs/tags/*toolset* | Select-Object -First 1
+          } else {
+            $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          }
           if (-not $tag) {
             echo "No matching tag found ending with 'toolset'."
-            & git tag --list
+            git tag --list
             exit 1
           }
           echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         shell: pwsh
-
-      - uses: ncipollo/release-action@v1.10.0
+      
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ steps.get_tag.outputs.tag }}
-          prerelease: true
-          draft: false
-          artifacts: "published_workflow_builds/*.zip"
-          allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          files: "published_workflow_builds/*.zip"
+          fail_on_unmatched_files: true
+          target_commitish: ${{ github.ref_name }}
 
       - name: Determine Release ID for fallback upload.
         if: ${{ failure() }}
