@@ -18,10 +18,10 @@ def insert_newlines(text: str, length: int = 100) -> str:
 
     for word in words:
         if len(current_line) + len(word) + 1 <= length:
-            current_line += word + " "
+            current_line += f"{word} "
         else:
             new_string += current_line.rstrip() + "\n"
-            current_line = word + " "
+            current_line = f"{word} "
 
     # Add the last line if there's any content left.
     if current_line:
@@ -68,19 +68,15 @@ def format_text(text, max_chars_before_newline: int = 20) -> str:
 def first_char_diff_index(str1: str, str2: str) -> int:
     """Find the index of the first differing character in two strings."""
     min_length = min(len(str1), len(str2))
-    for i in range(min_length):
-        if str1[i] != str2[i]:
-            return i
-    if len(str1) != len(str2):
-        return min_length  # Difference due to length
-    return -1  # No difference
+    return next(
+        (i for i in range(min_length) if str1[i] != str2[i]),
+        min_length if len(str1) != len(str2) else -1,
+    )
 
 
 def generate_diff_marker_line(index: int, length: int) -> str:
     """Generate a line of spaces with a '^' at the specified index."""
-    if index == -1:
-        return ""
-    return " " * index + "^" + " " * (length - index - 1)
+    return "" if index == -1 else " " * index + "^" + " " * (length - index - 1)
 
 
 def compare_and_format(old_value, new_value) -> tuple[str, str]:
@@ -124,7 +120,7 @@ def compare_and_format(old_value, new_value) -> tuple[str, str]:
     return os.linesep.join(formatted_old), os.linesep.join(formatted_new)
 
 
-def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
+def striprtf(text: str) -> str:  # noqa: C901, PLR0915, PLR0912
     """Removes RTF tags from a string.
 
     Strips RTF encoding utterly and completely

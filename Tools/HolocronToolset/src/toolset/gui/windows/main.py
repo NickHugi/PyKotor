@@ -1398,9 +1398,6 @@ class ToolWindow(QMainWindow):
             patch_erf_path = self.active.path() / "patch.erf"
             if patch_erf_path.safe_isfile():
                 self.ui.coreWidget.setResources(Capsule(patch_erf_path).resources(), clear_existing=False)
-        self.ui.coreWidget.setResources(self.active._streamwaves, "Stream Waves", clear_existing=False)
-        self.ui.coreWidget.setResources(self.active._streammusic, "Stream Music", clear_existing=False)
-        self.ui.coreWidget.setResources(self.active._streamsounds, "Stream Sounds", clear_existing=False)
         moduleItems, overrideItems, textureItems = prepare_loader.value
         self.log.info("Loading saves list into UI...")
         self.refreshSavesList(reload=False)

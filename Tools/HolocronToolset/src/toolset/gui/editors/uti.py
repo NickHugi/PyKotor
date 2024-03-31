@@ -115,7 +115,7 @@ class UTIEditor(Editor):
             self.ui.availablePropertyList.addTopLevelItem(item)
 
             subtypeResname = itemProperties.get_cell(i, "subtyperesref")
-            if subtypeResname == "":
+            if not subtypeResname:
                 item.setData(0, QtCore.Qt.UserRole, i)
                 item.setData(0, QtCore.Qt.UserRole + 1, i)
                 continue
@@ -125,6 +125,7 @@ class UTIEditor(Editor):
                 if subtypeResname == "spells":
                     print("   ", j)
                 name = UTIEditor.subpropertyName(installation, i, j)
+                #assert name is not None
                 child = QTreeWidgetItem([name])
                 child.setData(0, QtCore.Qt.UserRole, i)
                 child.setData(0, QtCore.Qt.UserRole + 1, j)
@@ -182,7 +183,9 @@ class UTIEditor(Editor):
         Args:
         ----
             self: The object instance
+
         Returns:
+        -------
             tuple[bytes, bytes]: Byte data and empty string
 
         Processing Logic:
@@ -210,7 +213,10 @@ class UTIEditor(Editor):
         uti.body_variation = self.ui.bodyVarSpin.value()
         uti.texture_variation = self.ui.textureVarSpin.value()
 
-        uti.properties = [self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.UserRole) for i in range(self.ui.assignedPropertiesList.count())]
+        uti.properties = [
+            self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.UserRole)
+            for i in range(self.ui.assignedPropertiesList.count())
+        ]
         # Comments
         uti.comment = self.ui.commentsEdit.toPlainText()
 
@@ -226,42 +232,47 @@ class UTIEditor(Editor):
 
     def changeName(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        if not dialog.exec_():
+            return
+        self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def changeDesc(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
-        if dialog.exec_():
-            self._loadLocstring(self.ui.descEdit.ui.locstringText, dialog.locstring)
+        if not dialog.exec_():
+            return
+        self._loadLocstring(self.ui.descEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
-        if self.ui.resrefEdit.text() == "":
+        resrefText = self.ui.resrefEdit.text()
+        if not resrefText or not resrefText.strip():
             self.generateResref()
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def generateResref(self):
-        if self._resname is not None and self._resname != "":
+        if self._resname and self._resname.strip():
             self.ui.resrefEdit.setText(self._resname)
         else:
             self.ui.resrefEdit.setText("m00xx_itm_000")
 
     def editSelectedProperty(self):
-        if self.ui.assignedPropertiesList.selectedItems():
-            utiProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(QtCore.Qt.UserRole)
-            dialog = PropertyEditor(self._installation, utiProperty)
-            if dialog.exec_():
-                self.ui.assignedPropertiesList.selectedItems()[0].setData(QtCore.Qt.UserRole, dialog.utiProperty())
-                self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
+        if not self.ui.assignedPropertiesList.selectedItems():
+            return
+        utiProperty: UTIProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(QtCore.Qt.UserRole)
+        dialog = PropertyEditor(self._installation, utiProperty)
+        if not dialog.exec_():
+            return
+        self.ui.assignedPropertiesList.selectedItems()[0].setData(QtCore.Qt.UserRole, dialog.utiProperty())
+        self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
 
     def addSelectedProperty(self):
         if not self.ui.availablePropertyList.selectedItems():
             return
         item = self.ui.availablePropertyList.selectedItems()[0]
         propertyId = item.data(0, QtCore.Qt.UserRole)
+        if propertyId is None:
+            return
         subtypeId = item.data(0, QtCore.Qt.UserRole + 1)
-
-        if propertyId is not None:
-            self._add_property_main(propertyId, subtypeId)
+        self._add_property_main(propertyId, subtypeId)
 
     def _add_property_main(self, propertyId, subtypeId):
         """Adds a property to an item.
@@ -295,9 +306,10 @@ class UTIEditor(Editor):
         self.ui.assignedPropertiesList.addItem(item)
 
     def removeSelectedProperty(self):
-        if self.ui.assignedPropertiesList.selectedItems():
-            index = self.ui.assignedPropertiesList.selectedIndexes()[0]
-            self.ui.assignedPropertiesList.takeItem(index.row())
+        if not self.ui.assignedPropertiesList.selectedItems():
+            return
+        index = self.ui.assignedPropertiesList.selectedIndexes()[0]
+        self.ui.assignedPropertiesList.takeItem(index.row())
 
     def propertySummary(self, utiProperty: UTIProperty) -> str:
         """Retrieve the property, subproperty and cost names from the UTIEditor.
@@ -327,15 +339,17 @@ class UTIEditor(Editor):
 
     def onAvaialblePropertyListDoubleClicked(self):
         for item in self.ui.availablePropertyList.selectedItems():
-            if item.childCount() == 0:
-                self.addSelectedProperty()
+            if item.childCount() != 0:
+                continue
+            self.addSelectedProperty()
 
     def onAssignedPropertyListDoubleClicked(self):
         self.editSelectedProperty()
 
     def onDelShortcut(self):
-        if self.ui.assignedPropertiesList.hasFocus():
-            self.removeSelectedProperty()
+        if not self.ui.assignedPropertiesList.hasFocus():
+            return
+        self.removeSelectedProperty()
 
     @staticmethod
     def propertyName(installation: HTInstallation, prop: int) -> str:
@@ -381,7 +395,7 @@ class UTIEditor(Editor):
             costtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
             costtable: TwoDA = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
             stringref: int | None = costtable.get_row(value).get_integer("name")
-            return installation.talktable().string(stringref)  # FIXME: stringref is None in many occasions
+            return installation.talktable().string(stringref)  # FIXME(th3w1zard1): stringref is None in many occasions
         except Exception as e:
             print(format_exception_with_variables(e, message="This exception has been suppressed"))
         return None
@@ -430,18 +444,24 @@ class PropertyEditor(QDialog):
         self._utiProperty: UTIProperty = utiProperty
 
         costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        if utiProperty.cost_table != 0xFF:  # noqa: PLR2004
+        if utiProperty.cost_table != 0xFF:
             costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
             for i in range(costtable.get_height()):
-                item = QListWidgetItem(UTIEditor.costName(installation, utiProperty.cost_table, i))
+                costName = UTIEditor.costName(installation, utiProperty.cost_table, i)
+                if not costName:
+                    print(f"No cost at index {i}")
+                item = QListWidgetItem(costName)
                 item.setData(QtCore.Qt.UserRole, i)
                 self.ui.costList.addItem(item)
 
-        if utiProperty.param1 != 0xFF:  # noqa: PLR2004
+        if utiProperty.param1 != 0xFF:
             paramList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
             paramtable = installation.htGetCache2DA(paramList.get_cell(utiProperty.param1, "tableresref"))
             for i in range(paramtable.get_height()):
-                item = QListWidgetItem(UTIEditor.paramName(installation, utiProperty.param1, i))
+                paramName = UTIEditor.paramName(installation, utiProperty.param1, i)
+                if not paramName:
+                    print(f"No param at index {i}")
+                item = QListWidgetItem(paramName)
                 item.setData(QtCore.Qt.UserRole, i)
                 self.ui.parameterList.addItem(item)
 

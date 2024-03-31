@@ -33,7 +33,6 @@ from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
-
     from logging import Logger
 
     from pykotor.extract.talktable import StringResult

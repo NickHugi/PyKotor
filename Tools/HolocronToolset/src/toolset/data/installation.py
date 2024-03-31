@@ -189,7 +189,7 @@ class HTInstallation(Installation):
             - Filter names not already in cache
             - Loop through remaining names and cache textures from sources.
         """
-        queries: list[str] = list(names) if reload else [name for name in names if name not in self._cache2da]
+        queries = list(names) if reload else [name for name in names if name not in self._cacheTpc]
 
         if not queries:
             return
@@ -271,7 +271,7 @@ class HTInstallation(Installation):
                 return self._get_icon(texture)
         return pixmap
 
-    def _get_icon(self, texture):
+    def _get_icon(self, texture: TPC) -> QPixmap:
         width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))

@@ -78,12 +78,8 @@ class Module:  # noqa: PLR0904
         self._installation: Installation = installation
         self._root: CaseInsensitiveWrappedStr = CaseInsensitiveWrappedStr.cast(root)
 
-        # Build list of capsules from all .mods' in the provided installation
-        self._capsules: list[Capsule] = [
-            Capsule(installation.module_path() / module)
-            for module in installation.module_names()
-            if root in module
-        ]
+        # Build all capsules relevant to this root in the provided installation
+        self._capsules: list[Capsule] = self.get_capsules(installation, self._root)
         # Append the custom capsule if provided
         if custom_capsule is not None:
             self._capsules.append(custom_capsule)
@@ -106,6 +102,15 @@ class Module:  # noqa: PLR0904
         self._id: ResRef = ifo.root.get_resref("Mod_Entry_Area")
 
         self.reload_resources()
+
+    @classmethod
+    def get_capsules(cls, installation: Installation, root: str) -> list[Capsule]:
+        """Takes the root of the module filename and returns all relevant capsules."""
+        return [
+            Capsule(installation.module_path() / module)
+            for module in installation.module_names()
+            if cls.get_root(module).lower() == root
+        ]
 
     def get_id(self) -> str:
         return self._root
