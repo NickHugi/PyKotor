@@ -104,8 +104,6 @@ def test_gff_conversions(
         write_gff(unknown_generic, converted_filepath)
 
 
-
-
 def save_profiler_output(
     profiler: cProfile.Profile,
     filepath: os.PathLike | str,
@@ -115,12 +113,12 @@ def save_profiler_output(
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
 
+
 if __name__ == "__main__":
     profiler: cProfile.Profile = True  # type: ignore[reportAssignmentType, assignment]
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
-
 
     result: int | pytest.ExitCode = pytest.main(
         [

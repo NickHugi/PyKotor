@@ -24,11 +24,16 @@ WINDOWS: list[QWidget] = []
 
 
 def addWindow(window: QWidget):
+    """Prevents Qt's garbage collection by keeping a reference to the window."""
     # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
     # Define a new closeEvent method that also calls the original
-    def newCloseEvent(event: QCloseEvent | None = None, *args, **kwargs):  # Make arg optional just in case the class has the wrong definition.
+    def newCloseEvent(
+        event: QCloseEvent | None = None,  # Make event arg optional just in case the class has the wrong definition.
+        *args,
+        **kwargs,
+    ):
         if window in WINDOWS:
             WINDOWS.remove(window)
         # Call the original closeEvent
@@ -117,7 +122,7 @@ def openResourceEditor(
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
 
-    if restype.category in {"Images", "Textures"}:
+    if restype.category in {"Images", "Textures"} and restype != ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:
@@ -127,8 +132,9 @@ def openResourceEditor(
             QMessageBox.warning(parentWindowWidget, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
             editor = TXTEditor(None, installation)
         else:
-            QMessageBox.warning(parentWindowWidget,
-                                "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS.")
+            QMessageBox.warning(
+                parentWindowWidget, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS."
+            )
             return None, None
 
     if restype.target_type() is ResourceType.DLG:
@@ -247,7 +253,7 @@ def openResourceEditor(
                 str(universal_simplify_exception(e)),
                 QMessageBox.Ok,
                 parentWindowWidget,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             ).show()
             raise
         else:
@@ -259,7 +265,7 @@ def openResourceEditor(
             f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.Ok,
             parentWindowWidget,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         ).show()
 
     return None, None

@@ -446,6 +446,8 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionShowPreview.setText(_translate("MainWindow", "Show Preview"))
+
+
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.renderer.model import ModelRenderer

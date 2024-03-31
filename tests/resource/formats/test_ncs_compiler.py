@@ -8,10 +8,14 @@ import unittest
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -31,6 +35,7 @@ from utility.system.path import Path
 K1_PATH: str | None = os.environ.get("K1_PATH")
 K2_PATH: str | None = os.environ.get("K2_PATH")
 
+
 class TestNSSCompiler(unittest.TestCase):
     def compile(
         self,
@@ -41,12 +46,7 @@ class TestNSSCompiler(unittest.TestCase):
         if library is None:
             library = {}
         nssLexer = NssLexer()
-        nssParser = NssParser(
-            library=library,
-            constants=KOTOR_CONSTANTS,
-            functions=KOTOR_FUNCTIONS,
-            library_lookup=library_lookup
-        )
+        nssParser = NssParser(library=library, constants=KOTOR_CONSTANTS, functions=KOTOR_FUNCTIONS, library_lookup=library_lookup)
 
         parser = nssParser.parser
         t = parser.parse(script, tracking=True)
@@ -54,7 +54,6 @@ class TestNSSCompiler(unittest.TestCase):
         ncs = NCS()
         t.compile(ncs)
         return ncs
-
 
     # region Engine Call
     def test_enginecall(self):
@@ -1873,9 +1872,7 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(123);
             }
-        """.encode(
-            encoding="windows-1252"
-        )
+        """.encode(encoding="windows-1252")
 
         ncs = self.compile(
             """
@@ -1920,15 +1917,11 @@ class TestNSSCompiler(unittest.TestCase):
             {
                 PrintInteger(value);
             }
-        """.encode(
-            encoding="windows-1252"
-        )
+        """.encode(encoding="windows-1252")
 
         second_script = """
             #include "first_script"
-        """.encode(
-            encoding="windows-1252"
-        )
+        """.encode(encoding="windows-1252")
 
         ncs = self.compile(
             """
@@ -2071,9 +2064,7 @@ class TestNSSCompiler(unittest.TestCase):
     def test_imported_global_variable(self):
         otherscript = """
             int iExperience = 55;
-        """.encode(
-            encoding="windows-1252"
-        )
+        """.encode(encoding="windows-1252")
 
         ncs = self.compile(
             """

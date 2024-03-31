@@ -15,10 +15,14 @@ from pykotor.tools.path import CaseAwarePath
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -67,6 +71,7 @@ if TYPE_CHECKING:
     )
 
 K1_PATH: str = os.environ.get("K1_PATH", r"C:\Program Files (x86)\Steam\steamapps\common\swkotor")
+
 
 class TestConfigReader(unittest.TestCase):
     def setUp(self):
@@ -131,17 +136,14 @@ class TestConfigReader(unittest.TestCase):
         # Load the INI file and the TLK file
         self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
 
-
     def cleanUp(self):
         self.mod_path.unlink()
-
 
     def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
         for v in data.values():
             tlk.add(text=v["text"], sound_resref=v["voiceover"])
         return tlk
-
 
     def test_tlk_range_functionality(self):
         ini_text = """
@@ -167,7 +169,6 @@ class TestConfigReader(unittest.TestCase):
                 2: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6"), "replace": False},
             },
         )
-
 
     def test_tlk_strref_range_functionality(self):
         ini_text = """
@@ -196,7 +197,6 @@ class TestConfigReader(unittest.TestCase):
                 6: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
             },
         )
-
 
     def test_tlk_strref_default_functionality(self):
         ini_text = """
@@ -349,10 +349,7 @@ class TestConfigReader(unittest.TestCase):
             {
                 0: {"text": "Yavin", "voiceover": ResRef.from_blank()},
                 1: {
-                    "text": "Climate: Artificially Controled\n"
-                    "Terrain: Space Station\n"
-                    "Docking: Orbital Docking\n"
-                    "Native Species: Unknown",
+                    "text": "Climate: Artificially Controled\n" "Terrain: Space Station\n" "Docking: Orbital Docking\n" "Native Species: Unknown",
                     "voiceover": ResRef.from_blank(),
                 },
                 2: {"text": "Tatooine", "voiceover": ResRef.from_blank()},
@@ -362,10 +359,7 @@ class TestConfigReader(unittest.TestCase):
                 },
                 4: {"text": "Manaan", "voiceover": ResRef.from_blank()},
                 5: {
-                    "text": "Climate: Temperate\n"
-                    "Terrain: Ocean\n"
-                    "Docking: Ahto City Docking Bay\n"
-                    "Native Species: Selkath",
+                    "text": "Climate: Temperate\n" "Terrain: Ocean\n" "Docking: Ahto City Docking Bay\n" "Native Species: Selkath",
                     "voiceover": ResRef.from_blank(),
                 },
                 6: {"text": "Kashyyyk", "voiceover": ResRef.from_blank()},
@@ -402,10 +396,7 @@ class TestConfigReader(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123720: {
-                    "text": "Climate: Temperate\n"
-                    "Terrain: Decaying urban zones\n"
-                    "Docking: Refugee Landing Pad\n"
-                    "Native Species: None",
+                    "text": "Climate: Temperate\n" "Terrain: Decaying urban zones\n" "Docking: Refugee Landing Pad\n" "Native Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123722: {
@@ -417,17 +408,11 @@ class TestConfigReader(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 123726: {
-                    "text": "Climate: Temperate\n"
-                    "Terrain: Grasslands\n"
-                    "Docking: Khoonda Plains Settlement\n"
-                    "Native Species: None",
+                    "text": "Climate: Temperate\n" "Terrain: Grasslands\n" "Docking: Khoonda Plains Settlement\n" "Native Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123728: {
-                    "text": "Climate: Tectonic-Generated Storms\n"
-                    "Terrain: Shattered Planetoid\n"
-                    "Docking: No Docking Facilities Present\n"
-                    "Native Species: None",
+                    "text": "Climate: Tectonic-Generated Storms\n" "Terrain: Shattered Planetoid\n" "Docking: No Docking Facilities Present\n" "Native Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
                 123730: {
@@ -435,22 +420,15 @@ class TestConfigReader(unittest.TestCase):
                     "voiceover": ResRef.from_blank(),
                 },
                 124112: {
-                    "text": "Climate: Artificially Maintained \n"
-                    "Terrain: Droid Cityscape\n"
-                    "Docking: Landing Arm\n"
-                    "Native Species: Unknown",
+                    "text": "Climate: Artificially Maintained \n" "Terrain: Droid Cityscape\n" "Docking: Landing Arm\n" "Native Species: Unknown",
                     "voiceover": ResRef.from_blank(),
                 },
                 125863: {
-                    "text": "Climate: Artificially Maintained\n"
-                    "Terrain: Space Station\n"
-                    "Docking: Landing Zone\n"
-                    "Native Species: None",
+                    "text": "Climate: Artificially Maintained\n" "Terrain: Space Station\n" "Docking: Landing Zone\n" "Native Species: None",
                     "voiceover": ResRef.from_blank(),
                 },
             },
         )
-
 
     def test_tlk_file_range_functionality(self):
         ini_text = """
@@ -477,7 +455,6 @@ class TestConfigReader(unittest.TestCase):
                 4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
             },
         )
-
 
     def test_tlk_file_ignore_functionality(self):
         ini_text = """
@@ -550,7 +527,6 @@ class TestConfigReader(unittest.TestCase):
         mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("change_row_1", mod_0.identifier)
 
-
     def test_2da_changerow_targets(self):
         """Test that target values (line to modify) are loading correctly."""
         ini_text = """
@@ -599,7 +575,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual(TargetType.LABEL_COLUMN, mod_2da_2.target.target_type)
         self.assertEqual("3", mod_2da_2.target.value)
 
-
     def test_2da_changerow_store2da(self):
         """Test that 2DAMEMORY values are set to be stored correctly."""
         ini_text = """
@@ -645,7 +620,6 @@ class TestConfigReader(unittest.TestCase):
         store_2da_0c: RowValueRowCell = mod_2da_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_2da_0c, RowValueRowCell)
         self.assertEqual("label", store_2da_0c.column)
-
 
     def test_2da_changerow_cells(self):
         """Test that cells are set to be modified correctly."""
@@ -734,7 +708,6 @@ class TestConfigReader(unittest.TestCase):
         mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("add_row_1", mod_1.identifier)
 
-
     def test_2da_addrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
         ini_text = """
@@ -776,7 +749,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
 
-
     def test_2da_addrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
         ini_text = """
@@ -817,7 +789,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_1, AddRow2DA)
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.row_label)
-
 
     def test_2da_addrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
@@ -863,7 +834,6 @@ class TestConfigReader(unittest.TestCase):
         store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_0c, RowValueRowCell)
         self.assertEqual("label", store_0c.column)
-
 
     def test_2da_addrow_cells(self):
         """Test that cells will be assigned properly correctly."""
@@ -953,7 +923,6 @@ class TestConfigReader(unittest.TestCase):
         mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_1", mod_1.identifier)
 
-
     def test_2da_copyrow_high(self):
         """Test that high() is working correctly in copyrow's."""
         ini_text = """
@@ -1040,7 +1009,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("0", mod_0.cells["forcepriority"].string)
         self.assertEqual("3", mod_0.cells["pips"].string)
 
-
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""
         ini_text = """
@@ -1089,7 +1057,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual(TargetType.LABEL_COLUMN, mod_2.target.target_type)
         self.assertEqual("3", mod_2.target.value)
 
-
     def test_2da_copyrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
         ini_text = """
@@ -1133,7 +1100,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("copy_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
 
-
     def test_2da_copyrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
         ini_text = """
@@ -1176,7 +1142,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_1, CopyRow2DA)
         self.assertEqual("copy_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.row_label)
-
 
     def test_2da_copyrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
@@ -1223,7 +1188,6 @@ class TestConfigReader(unittest.TestCase):
         store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_0c, RowValueRowCell)
         self.assertEqual("label", store_0c.column)
-
 
     def test_2da_copyrow_cells(self):
         """Test that cells will be assigned properly."""
@@ -1321,7 +1285,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("someint", mod_1.header)
         self.assertEqual("0", mod_1.default)
 
-
     def test_2da_addcolumn_indexinsert(self):
         """Test that cells will be inserted to the new column at the given index correctly."""
         ini_text = """
@@ -1368,7 +1331,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(value, RowValueTLKMemory)
         self.assertEqual(5, value.token_id)  # type: ignore
 
-
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
         ini_text = """
@@ -1414,7 +1376,6 @@ class TestConfigReader(unittest.TestCase):
         value = mod_0.label_insert["2"]
         self.assertIsInstance(value, RowValueTLKMemory)
         self.assertEqual(5, value.token_id)  # type: ignore
-
 
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
@@ -1482,7 +1443,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertFalse(config.patches_ssf[0].replace_file)
         self.assertTrue(config.patches_ssf[1].replace_file)
 
-
     def test_ssf_stored_constant(self):
         """Test that the set sound as constant stringref is registered correctly."""
         ini_text = """
@@ -1515,7 +1475,6 @@ class TestConfigReader(unittest.TestCase):
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, NoTokenUsage)
         self.assertEqual("456", mod_1.stringref.stored)  # type: ignore
-
 
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
@@ -1550,7 +1509,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_1.stringref, TokenUsage2DA)
         self.assertEqual(6, mod_1.stringref.token_id)  # type: ignore
 
-
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""
         ini_text = """
@@ -1583,7 +1541,6 @@ class TestConfigReader(unittest.TestCase):
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, TokenUsageTLK)
         self.assertEqual(6, mod_1.stringref.token_id)
-
 
     def test_ssf_set(self):
         """Test that each sound is mapped and will register correctly."""
@@ -1725,7 +1682,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertEqual("ClassList\\0\\Class", str(mod_0.path))
 
-
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
         ini_text = """
@@ -1755,7 +1711,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeInt", str(mod_0.path))
         self.assertEqual(123, mod_0.value.stored)
-
 
     def test_gff_modify_type_string(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1787,7 +1742,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("SomeString", str(mod_0.path))
         self.assertEqual("abc", mod_0.value.stored)
 
-
     def test_gff_modify_type_vector3(self):
         """Test that the modify field modifiers are registered correctly."""
         ini_text = """
@@ -1818,7 +1772,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual("SomeVector", str(mod_0.path))
         self.assertEqual(Vector3(1, 2, 3), mod_0.value.stored)
 
-
     def test_gff_modify_type_vector4(self):
         """Test that the modify field modifiers are registered correctly."""
         ini_text = """
@@ -1848,7 +1801,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeVector", str(mod_0.path))
         self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value.stored)
-
 
     def test_gff_modify_type_locstring(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1891,7 +1843,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsNone(mod_2.value.stored.stringref)
         self.assertEqual(1, len(mod_2.value.stored))
 
-
     def _assert_types_and_path(self, config):
         result = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(result, ModifyFieldGFF)
@@ -1899,7 +1850,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(result.value.stored, LocalizedStringDelta)
         self.assertEqual("LocString", str(result.path))
         return result
-
 
     def test_gff_modify_2damemory(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1938,7 +1888,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertIsInstance(mod_1, ModifyFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueTLKMemory)
         self.assertEqual(2, mod_1.value.token_id)
-
 
     def test_gff_modify_tlkmemory(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -2065,14 +2014,12 @@ class TestConfigReader(unittest.TestCase):
         mod_6 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_6, 123)
 
-
     def _assert_batch(self, this_mod, stored):
         self.assertIsInstance(this_mod, AddFieldGFF)
         self.assertIsInstance(this_mod.value, FieldValueConstant)
         self.assertEqual("SomeList", str(this_mod.path))
         self.assertEqual("SomeField", this_mod.label)
         self.assertEqual(stored, this_mod.value.stored)
-
 
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2117,7 +2064,6 @@ class TestConfigReader(unittest.TestCase):
         mod_1 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_1, 1.23)
 
-
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
         ini_text = """
@@ -2150,7 +2096,6 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, "abc")
-
 
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2185,7 +2130,6 @@ class TestConfigReader(unittest.TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, Vector3(1, 2, 3))
 
-
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
         ini_text = """
@@ -2219,7 +2163,6 @@ class TestConfigReader(unittest.TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, Vector4(1, 2, 3, 4))
 
-
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
         ini_text = """
@@ -2252,7 +2195,6 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, ResRef("abc"))
-
 
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2295,30 +2237,29 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
-        assert (isinstance(mod_0, AddFieldGFF))
+        assert isinstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        assert (isinstance(mod_0.value, FieldValueConstant))
+        assert isinstance(mod_0.value, FieldValueConstant)
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        assert (isinstance(mod_0.value.stored, LocalizedStringDelta))
+        assert isinstance(mod_0.value.stored, LocalizedStringDelta)
         self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
-        assert (isinstance(mod_0.value.stored.stringref, FieldValueConstant))
+        assert isinstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(123, mod_0.value.stored.stringref.stored)
         self.assertEqual("abc", mod_0.value.stored.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual("lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE))
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
-        assert (isinstance(mod_1, AddFieldGFF))
+        assert isinstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        assert (isinstance(mod_1.value, FieldValueConstant))
+        assert isinstance(mod_1.value, FieldValueConstant)
         self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
-        assert (isinstance(mod_1.value.stored, LocalizedStringDelta))
+        assert isinstance(mod_1.value.stored, LocalizedStringDelta)
         self.assertIsInstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
-        assert (isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory))
+        assert isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
         self.assertEqual(8, mod_1.value.stored.stringref.token_id)
-
 
     def test_gff_add_inside_struct(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2359,9 +2300,9 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
-        assert (isinstance(mod_0, AddFieldGFF))
+        assert isinstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        assert (isinstance(mod_0.value, FieldValueConstant))
+        assert isinstance(mod_0.value, FieldValueConstant)
         self.assertEqual(mod_0.path.name, ">>##INDEXINLIST##<<")
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
@@ -2374,7 +2315,6 @@ class TestConfigReader(unittest.TestCase):
         self.assertEqual(mod_1.path.name, "SomeStruct")
         self.assertEqual("InsideStruct", mod_1.label)
         self.assertEqual(123, mod_1.value.stored)
-
 
     def test_gff_add_inside_list(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2414,19 +2354,19 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
-        assert (isinstance(mod_0, AddFieldGFF))
+        assert isinstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        assert (isinstance(mod_0.value, FieldValueConstant))
+        assert isinstance(mod_0.value, FieldValueConstant)
         self.assertFalse(mod_0.path.name)
         self.assertEqual("SomeList", mod_0.label)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddStructToListGFF)
-        assert (isinstance(mod_1, AddStructToListGFF))
+        assert isinstance(mod_1, AddStructToListGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        assert (isinstance(mod_1.value, FieldValueConstant))
+        assert isinstance(mod_1.value, FieldValueConstant)
         self.assertIsInstance(mod_1.value.value(None, GFFFieldType.Struct), GFFStruct)  # type: ignore[arg-type, reportGeneralTypeIssues]
-        assert (isinstance(mod_1.value.stored, GFFStruct))
+        assert isinstance(mod_1.value.stored, GFFStruct)
         self.assertEqual(111, mod_1.value.stored.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
 

@@ -10,10 +10,14 @@ from unittest import TestCase
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -70,6 +74,7 @@ if TYPE_CHECKING:
 
 # TODO Error, Warning tracking
 
+
 class TestManipulateTLK(TestCase):
     def test_apply_append(self):
         memory = PatcherMemory()
@@ -104,6 +109,7 @@ class TestManipulateTLK(TestCase):
         # 1        -        -       Old2
         # 2        1        0       Append2
         # 3        0        1       Append1
+
     def test_apply_replace(self):
         memory = PatcherMemory()
 
@@ -1167,9 +1173,7 @@ class TestManipulateGFF(TestCase):
         add_field2 = AddStructToListGFF("", FieldValueConstant(GFFStruct()), PureWindowsPath("List"))
         add_field1.modifiers.append(add_field2)
 
-        add_field3 = AddFieldGFF(
-            "", "SomeInteger", GFFFieldType.UInt8, FieldValueConstant(123), PureWindowsPath("List\\>>##INDEXINLIST##<<")
-        )
+        add_field3 = AddFieldGFF("", "SomeInteger", GFFFieldType.UInt8, FieldValueConstant(123), PureWindowsPath("List\\>>##INDEXINLIST##<<"))
         add_field2.modifiers.append(add_field3)
 
         config = ModificationsGFF("", False, [add_field1])

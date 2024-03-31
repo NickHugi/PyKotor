@@ -7,9 +7,10 @@ from xml.etree import ElementTree
 
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
+
     ElementTree.fromstring = _fromstring
 except (ImportError, ModuleNotFoundError):
-    print("warning: diffusedxml is not available but recommended due to security concerns.")
+    print("warning: defusedxml is not available but recommended due to security concerns.")
 
 from typing import TYPE_CHECKING
 

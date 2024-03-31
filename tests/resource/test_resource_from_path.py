@@ -8,10 +8,14 @@ import unittest
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -98,8 +102,10 @@ class TestResourceType(unittest.TestCase):
         self.assertEqual(ResourceIdentifier.from_path("C:/path/to/l.o.n.g._ex.te.nsio.n.xyz").restype.extension, "xyz")
         self.assertEqual(ResourceType.from_extension(".l.o.n.g._ex.te.nsio.n.xyz").extension, "l.o.n.g._ex.te.nsio.n.xyz")
 
+
 class TestResourceIdentifier(unittest.TestCase):
     """These tests were created because of the many soft, hard-to-find errors that occur all over when this function ever fails."""
+
     def assert_hashing(self, res_ident: ResourceIdentifier):
         lower_ident = ResourceIdentifier(res_ident.resname.swapcase(), res_ident.restype)
         self.assertEqual(res_ident, lower_ident, f"{res_ident!r} != {lower_ident!r}")

@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QShortcut
+from PyQt5.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
@@ -49,6 +49,82 @@ _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
 
 
+class GFFFieldSpinBox(QSpinBox):
+
+    def __init__(self, *args, min_value: int = 1200, max_value: int = 65534, **kwargs):
+        self._no_validate: bool = False
+        super().__init__(*args, **kwargs)
+        self.specialValueTextMapping: dict[int, str] = {0: "0", -1: "-1"}
+        self.min_value: int = min_value
+        self.max_value: int = max_value
+        self.setSpecialValueText(self.specialValueTextMapping[-1])
+
+    def fixup(self, text: str):
+        # Override fixup to correct any intermediate text
+        if text.isdigit() or (text and text[0] == "-" and text[1:].isdigit()):
+            value = int(text)
+            if value < self.min_value:
+                self.setValue(self.min_value)
+            elif value > self.max_value:
+                self.setValue(self.max_value)
+        else:
+            # In case it's not a digit, revert to the last valid value
+            self.setValue(self.value())
+
+    def stepBy(self, steps: int):
+        current_value = self.value()
+        if current_value in self.specialValueTextMapping and steps > 0:
+            self.setValue(self.min_value)
+        elif current_value == self.min_value and steps < 0:
+            self.setValue(max(self.specialValueTextMapping.keys()))
+        else:
+            next_value = current_value + steps
+            if self.min_value <= next_value <= self.max_value:
+                super().stepBy(steps)
+            elif next_value < self.min_value:
+                self.setValue(-1)
+            else:
+                self.setValue(self.max_value)
+
+    @classmethod
+    def from_spinbox(cls, originalSpin: QSpinBox, min_value: int = 0, max_value: int = 100) -> GFFFieldSpinBox:
+        if not isinstance(originalSpin, QSpinBox):
+            raise TypeError("The provided widget is not a QSpinBox.")
+
+        # Store the layout position details
+        layout = originalSpin.parentWidget().layout()
+        row, role = None, None
+
+        # Locate the position of the original spin box in the QFormLayout
+        if isinstance(layout, QFormLayout):
+            for r in range(layout.rowCount()):
+                if layout.itemAt(r, QFormLayout.FieldRole) and layout.itemAt(r, QFormLayout.FieldRole).widget() == originalSpin:
+                    row, role = r, QFormLayout.FieldRole
+                    break
+                if layout.itemAt(r, QFormLayout.LabelRole) and layout.itemAt(r, QFormLayout.LabelRole).widget() == originalSpin:
+                    row, role = r, QFormLayout.LabelRole
+                    break
+
+        # Create a new instance of CustomSpinBox
+        parent = originalSpin.parent()
+        customSpin = cls(parent, min_value=min_value, max_value=max_value)
+
+        # Dynamically transfer properties
+        for i in range(originalSpin.metaObject().propertyCount()):
+            prop = originalSpin.metaObject().property(i)
+            if prop.isReadable() and prop.isWritable():
+                value = originalSpin.property(prop.name())
+                customSpin.setProperty(prop.name(), value)
+
+        # Replace the original spin box with the custom spin box
+        if row is not None and role is not None:
+            layout.setWidget(row, role, customSpin)
+
+        # Remove the original spinbox from its parent widget
+        originalSpin.deleteLater()
+
+        return customSpin
+
 class DLGEditor(Editor):
     def __init__(self, parent: QWidget | None = None, installation: HTInstallation | None = None):
         """Initializes the Dialog Editor window.
@@ -72,6 +148,7 @@ class DLGEditor(Editor):
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
         from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -727,12 +804,7 @@ class DLGEditor(Editor):
 
         data: bytes | None = self._installation.sound(
             resname,
-            [
-                SearchLocation.VOICE,
-                SearchLocation.SOUND,
-                SearchLocation.OVERRIDE,
-                SearchLocation.CHITIN
-            ],
+            [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
 
         if data:
@@ -860,8 +932,8 @@ class DLGEditor(Editor):
         menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
         menu.addSeparator()
         # REMOVEME: moving nodes is a horrible idea. It's currently broken anyway.
-        #menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
-        #menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+        # menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+        # menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
         menu.addSeparator()
 
         if isCopy:
@@ -996,6 +1068,13 @@ class DLGEditor(Editor):
             self.ui.questEntrySpin.setValue(node.QuestEntry)
 
             self.ui.cameraIdSpin.setValue(node.CameraID if node.CameraID is not None else -1)
+            self.ui.cameraAnimSpin.__class__ = GFFFieldSpinBox
+            cameraAnimSpin: GFFFieldSpinBox = self.ui.cameraAnimSpin  # type: ignore[reportAssignmentType]
+            cameraAnimSpin.min_value=1200
+            cameraAnimSpin.max_value=65534
+            cameraAnimSpin.specialValueTextMapping = {0: "0", -1: "-1"}
+            self.ui.cameraAnimSpin.setMinimum(-1)
+            self.ui.cameraAnimSpin.setMaximum(65534)
             self.ui.cameraAnimSpin.setValue(node.CameraAnimation if node.CameraAnimation is not None else -1)
             self.ui.cameraAngleSelect.setCurrentIndex(node.CameraAnimation if node.CameraAnimation is not None else 0)
             self.ui.cameraEffectSelect.setCurrentIndex(node.CamVidEffect + 1 if node.CamVidEffect is not None else 0)
@@ -1094,7 +1173,7 @@ class DLGEditor(Editor):
         node.CamVidEffect = self.ui.cameraEffectSelect.currentData()
         if node.CameraID >= 0 and self.ui.cameraAngleSelect.currentIndex() == 0:
             self.ui.cameraAngleSelect.setCurrentIndex(6)
-        elif node.CameraID == -1 and self.ui.cameraAngleSelect.currentIndex() == 6:
+        elif node.CameraID == -1 and self.ui.cameraAngleSelect.currentIndex() == 7:
             self.ui.cameraAngleSelect.setCurrentIndex(0)
 
         # Other
@@ -1207,5 +1286,3 @@ class DLGEditor(Editor):
                 item = QListWidgetItem(text)
                 item.setData(QtCore.Qt.UserRole, anim)
                 self.ui.animsList.addItem(item)
-
-

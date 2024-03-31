@@ -66,46 +66,32 @@ class ModuleEditorControls(ABC):
         self.variables: list[DCVariable] = []
 
     @abstractmethod
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
-    def onKeyPressed(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyPressed(self, buttons: set[int], keys: set[int]): ...
 
     @abstractmethod
-    def onKeyReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyReleased(self, buttons: set[int], keys: set[int]): ...
 
     def getValue(self, name: str) -> Any:
         return next(
-            (
-                variable.get()
-                for variable in self.variables
-                if variable.name() == name
-            ),
+            (variable.get() for variable in self.variables if variable.name() == name),
             None,
         )
 
     def setValue(self, name: str, value: Any) -> Any:
         return next(
-            (
-                variable.set(value)
-                for variable in self.variables
-                if variable.name() == name
-            ),
+            (variable.set(value) for variable in self.variables if variable.name() == name),
             None,
         )
 
@@ -197,7 +183,6 @@ class ModuleEditorControls(ABC):
 
 
 class DynamicModuleEditorControls(ModuleEditorControls):
-
     def __init__(self, renderer: ModuleRenderer, filepath: str | None = None):
         super().__init__(renderer)
 
@@ -352,7 +337,6 @@ class DynamicModuleEditorControls(ModuleEditorControls):
 
 
 class HolocronModuleEditorControls(DynamicModuleEditorControls):
-
     def __init__(self, renderer: ModuleRenderer):
         """Initializes a camera controller.
 
@@ -492,8 +476,7 @@ class DCVariableString(DCVariable):
 
 class DCEffect(ABC):
     @abstractmethod
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
-        ...
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float): ...
 
     @staticmethod
     def determineFloat(value: float | str, controls: ModuleEditorControls, dx: float, dy: float) -> float:
@@ -574,6 +557,8 @@ class DCEffect(ABC):
             output = controls.renderer.scene.camera.pitch
 
         return output * modifier
+
+
 # endregion
 
 
@@ -677,8 +662,7 @@ class DCEffectAlterObjectRotation(DCEffect):
 
 # selectObjectAtMouse
 class DCEffectSelectObjectAtMouse(DCEffect):
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         controls.selectObjectAtMouse()
@@ -686,8 +670,7 @@ class DCEffectSelectObjectAtMouse(DCEffect):
 
 # openContextMenu
 class DCEffectOpenContextMenu(DCEffect):
-    def __init__(self):
-        ...
+    def __init__(self): ...
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         controls.openContextMenu()
@@ -708,8 +691,7 @@ class DCEffectChangeCameraFocus(DCEffect):
     def __init__(self, focus: bool | None):
         self.focus: bool | None = focus
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
-        ...
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float): ...
 
 
 # snapCameraToObject
@@ -720,6 +702,7 @@ class DCEffectSnapCameraToObject(DCEffect):
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         if controls.renderer.scene.selection:
             controls.renderer.snapCameraToPoint(controls.renderer.scene.selection[0].position(), self.distance)
+
 
 # endregion
 

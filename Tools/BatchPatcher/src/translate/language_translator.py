@@ -342,11 +342,7 @@ class TranslationOption(Enum):
 
     @staticmethod
     def get_available_translators() -> set[TranslationOption]:
-        return {
-            translator
-            for translator in TranslationOption
-            if translator.value is not None
-        }
+        return {translator for translator in TranslationOption if translator.value is not None}
 
 
 def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
@@ -563,12 +559,7 @@ class Translator:
             if (
                 not translated_chunk
                 or not translated_chunk
-                or (
-                    "Czech" in translated_chunk
-                    and "Danish" in translated_chunk
-                    and "French" in translated_chunk
-                    and "Indonesian" in translated_chunk
-                )
+                or ("Czech" in translated_chunk and "Danish" in translated_chunk and "French" in translated_chunk and "Indonesian" in translated_chunk)
             ):
                 msg = "No text returned."
                 raise ValueError(msg)
@@ -684,8 +675,7 @@ class Translator:
                 break
             except MinimumLengthError:
                 print(
-                    f"Using a fallback translator because {option.name} requires a minimum"
-                    f" of {option.min_chunk_length()} characters to translate.",
+                    f"Using a fallback translator because {option.name} requires a minimum" f" of {option.min_chunk_length()} characters to translate.",
                 )
                 if minimum_length_failed_translate_option is None:
                     minimum_length_failed_translate_option = option

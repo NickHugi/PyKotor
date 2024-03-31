@@ -33,8 +33,7 @@ class MainWindowList(QWidget):
     sectionChanged = QtCore.pyqtSignal(object)
 
     @abstractmethod
-    def selectedResources(self) -> list[FileResource]:
-        ...
+    def selectedResources(self) -> list[FileResource]: ...
 
 
 class ResourceList(MainWindowList):
@@ -204,11 +203,13 @@ class ResourceList(MainWindowList):
             resource: FileResource = resources[0]
             if resource.restype().contents == "gff":
                 menu = QMenu(self)
+
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
 
                 def open2():
                     return self.requestOpenResource.emit(resources, True)
+
                 menu.addAction("Open").triggered.connect(open2)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
@@ -281,11 +282,7 @@ class ResourceModel(QStandardItemModel):
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
-        resources = (
-            category.child(i, 0)
-            for category in self._categoryItems.values()
-            for i in range(category.rowCount())
-        )
+        resources = (category.child(i, 0) for category in self._categoryItems.values() for i in range(category.rowCount()))
         return [item for item in resources if item is not None]
 
     def removeUnusedCategories(self):
@@ -329,10 +326,7 @@ class TextureList(MainWindowList):
 
         self._taskQueue = multiprocessing.JoinableQueue()
         self._resultQueue = multiprocessing.Queue()
-        self._consumers: list[TextureListConsumer] = [
-            TextureListConsumer(self._taskQueue, self._resultQueue)
-            for _ in range(multiprocessing.cpu_count())
-        ]
+        self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for _ in range(multiprocessing.cpu_count())]
         for consumer in self._consumers:
             consumer.start()
 

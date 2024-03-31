@@ -775,7 +775,9 @@ class RenderObject:
     def set_transform(self, transform: mat4):
         self._transform = transform
         rotation = quat()
-        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())  # FIXME: Type "mat4" cannot be assigned to type "F32Matrix3x3 | mat3x3 | Tuple[Tuple[Number, Number, Number]]"
+        glm.decompose(
+            transform, vec3(), rotation, self._position, vec3(), vec4()
+        )  # FIXME: Type "mat4" cannot be assigned to type "F32Matrix3x3 | mat3x3 | Tuple[Tuple[Number, Number, Number]]"
         self._rotation = glm.eulerAngles(rotation)
 
     def _recalc_transform(self):

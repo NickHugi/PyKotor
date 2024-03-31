@@ -203,7 +203,7 @@ class TLKEditor(Editor):
             f"Looking for stringref '{stringref}' in {self._installation.path()}...",
             lambda: self._installation.find_tlk_entry_references(stringref),
             errorTitle="An unexpected error occurred searching the installation.",
-            startImmediately=False
+            startImmediately=False,
         )
         loader.setModal(False)
         loader.show()
@@ -238,13 +238,7 @@ class TLKEditor(Editor):
     ):
         # Open relevant tab then select resource in the tree
         filepath, editor = openResourceEditor(
-            selection.filepath(),
-            selection.resname(),
-            selection.restype(),
-            selection.data(),
-            self._installation,
-            self,
-            gff_specialized=GlobalSettings().gff_specializedEditors
+            selection.filepath(), selection.resname(), selection.restype(), selection.data(), self._installation, self, gff_specialized=GlobalSettings().gff_specializedEditors
         )
 
     def new(self):

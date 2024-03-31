@@ -23,6 +23,7 @@ class Chitin:
     """
 
     KEY_ELEMENT_SIZE = 8
+
     def __init__(
         self,
         key_path: os.PathLike | str,

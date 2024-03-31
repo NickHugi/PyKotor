@@ -18,10 +18,14 @@ from utility.error_handling import format_exception_with_variables
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[3].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -44,14 +48,8 @@ LOG_FILENAME = "test_ncs_compilers_install"
 ALL_INSTALLATIONS: dict[Game, Installation] | None = None
 ALL_SCRIPTS: dict[Game, list[tuple[FileResource, Path, Path]]] = {Game.K1: [], Game.K2: []}
 ALL_GFFS: dict[Game, list[tuple[FileResource, Path]]] = {Game.K1: [], Game.K2: []}
-TEMP_NSS_DIRS: dict[Game, TemporaryDirectory[str]] = {
-    Game.K1: TemporaryDirectory(),
-    Game.K2: TemporaryDirectory()
-}
-TEMP_NCS_DIRS: dict[Game, TemporaryDirectory[str]] = {
-    Game.K1: TemporaryDirectory(),
-    Game.K2: TemporaryDirectory()
-}
+TEMP_NSS_DIRS: dict[Game, TemporaryDirectory[str]] = {Game.K1: TemporaryDirectory(), Game.K2: TemporaryDirectory()}
+TEMP_NCS_DIRS: dict[Game, TemporaryDirectory[str]] = {Game.K1: TemporaryDirectory(), Game.K2: TemporaryDirectory()}
 
 TEMP_GFF_DIRS: dict[Game, TemporaryDirectory[str]] = {
     Game.K1: TemporaryDirectory(),
@@ -62,6 +60,7 @@ CANNOT_COMPILE_EXT: dict[Game, set[str]] = {
     Game.K1: set(),  # {"nwscript.nss"},
     Game.K2: set(),  # {"nwscript.nss"},
 }
+
 
 def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -> tuple[Literal["failed"], Literal["F"], str] | None:
     if report.failed:
@@ -76,6 +75,7 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -
         return "failed", "F", f"FAILED: {msg}"
     return None
 
+
 def save_profiler_output(profiler: cProfile.Profile, filepath: os.PathLike | str):
     profiler.disable()
     profiler_output_file = Path.pathify(filepath)
@@ -84,6 +84,7 @@ def save_profiler_output(profiler: cProfile.Profile, filepath: os.PathLike | str
     # Generate reports from the profile stats
     # stats = pstats.Stats(profiler_output_file_str).sort_stats('cumulative')
     # stats.print_stats()
+
 
 def log_file(
     *args,
@@ -96,13 +97,10 @@ def log_file(
     msg: str = buffer.getvalue()
     print(*args, **kwargs)  # noqa: T201
 
-    filepath = (
-        Path.cwd().joinpath(f"{LOG_FILENAME}.txt")
-        if filepath is None
-        else Path.pathify(filepath)
-    )
+    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
+
 
 def _setup_and_profile_installation() -> dict[Game, Installation]:
     global ALL_INSTALLATIONS  # noqa: PLW0603
@@ -122,6 +120,7 @@ def _setup_and_profile_installation() -> dict[Game, Installation]:
     if profiler:
         save_profiler_output(profiler, "installation_class_profile.pstat")
     return ALL_INSTALLATIONS
+
 
 def populate_all_gffs(
     restype: ResourceType = ResourceType.NSS,
@@ -155,12 +154,9 @@ def populate_all_gffs(
     return all_gffs
 
 
-
-
 def populate_all_scripts(
     restype: ResourceType = ResourceType.NSS,
 ) -> dict[Game, list[tuple[FileResource, Path, Path]]]:
-
     global ALL_INSTALLATIONS
     if ALL_INSTALLATIONS is None:
         ALL_INSTALLATIONS = _setup_and_profile_installation()
@@ -242,18 +238,21 @@ def populate_all_scripts(
     return all_scripts
 
 
-
 @pytest.fixture(params=[Game.K1, Game.K2])
 def game(request: pytest.FixtureRequest) -> Game:
     return request.param
+
 
 # when using `indirect=True`, we must have a fixture to accept these parameters.
 @pytest.fixture
 def script_data(request: pytest.FixtureRequest):
     return request.param
+
+
 @pytest.fixture
 def gff_data(request: pytest.FixtureRequest):
     return request.param
+
 
 # TODO: function isn't called early enough.
 def cleanup_before_tests():
@@ -283,6 +282,7 @@ def cleanup_before_tests():
                 else:
                     print(f"Could not cleanup '{file}': {e}")
 
+
 def cleanup_temp_dirs():
     temp_dirs = [
         TEMP_NSS_DIRS[Game.K1].name,
@@ -301,6 +301,7 @@ def cleanup_temp_dirs():
         with suppress(Exception):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
+
 def pytest_configure():
     cleanup_before_tests()
     print("Prepare all scripts...")
@@ -310,11 +311,13 @@ def pytest_configure():
     global ALL_GFFS
     ALL_GFFS = populate_all_gffs()
 
+
 def pytest_sessionfinish(
     session: pytest.Session,
     exitstatus: int,
 ):
     cleanup_temp_dirs()
+
 
 # pytest hook to check test outcomes
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> pytest.TestReport | None:
@@ -341,6 +344,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> pytes
         return report
     return None
 
+
 def pytest_generate_tests(metafunc: pytest.Metafunc):
     if "script_data" in metafunc.fixturenames:
         print("Generating NSS compile tests...")
@@ -352,12 +356,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
             if not script[1].is_symlink()  # and not print(f"Skipping test collection for '{script[1]}', already symlinked to '{script[1].resolve()}'")
         ]
         print(f"Test data collected. Total tests: {len(test_script_data)}")
-        ids = sorted(
-            [
-                f"{game}_{script[0].identifier()}"
-                for game, script in test_script_data
-            ]
-        )
+        ids = sorted([f"{game}_{script[0].identifier()}" for game, script in test_script_data])
         print(f"Test IDs collected. Total IDs: {len(ids)}")
         metafunc.parametrize("script_data", test_script_data, ids=ids, indirect=True)
         print("Tests have finished parametrizing!")
@@ -366,9 +365,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
         print("Generating GFF conversion tests...")
         # Step 1: Generate IDs along with their corresponding data
         combined_data = [
-            (f"{game}_{resource._path_ident_obj}", (game, resource, conversion_path))
-            for game, gff_info in ALL_GFFS.items()
-            for resource, conversion_path in gff_info
+            (f"{game}_{resource._path_ident_obj}", (game, resource, conversion_path)) for game, gff_info in ALL_GFFS.items() for resource, conversion_path in gff_info
         ]
 
         # Step 2 and 3: Sort combined data alphabetically by the ID

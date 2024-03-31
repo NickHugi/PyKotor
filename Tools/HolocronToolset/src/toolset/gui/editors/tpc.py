@@ -51,17 +51,11 @@ class TPCEditor(Editor):
         self._setupSignals()
 
         self._tpc: TPC = TPC()
-        self._tpc.set_single(
-            256,
-            256,
-            bytes(0 for _ in range(256 * 256 * 4)),
-            TPCTextureFormat.RGBA
-        )
+        self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
 
         self.new()
 
-    def _setupSignals(self):
-        ...
+    def _setupSignals(self): ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource into the editor.

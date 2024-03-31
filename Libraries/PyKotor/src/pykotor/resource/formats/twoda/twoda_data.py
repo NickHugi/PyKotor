@@ -1,4 +1,5 @@
 """This module handles classes related to reading, modifying and writing 2DA files."""
+
 from __future__ import annotations
 
 from contextlib import suppress

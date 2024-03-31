@@ -43,6 +43,7 @@ class TwoDAEditor(Editor):
         self.resize(400, 250)
 
         from toolset.uic.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -420,8 +421,7 @@ class TwoDAEditor(Editor):
                     columnIndex = i
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
-            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
-                                                              "QHeaderView::section:checked { color: #000000; }")
+            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
             headers = ["⯈" for _ in range(self.model.rowCount())]
 
         for i in range(self.model.rowCount()):

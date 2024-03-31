@@ -155,23 +155,13 @@ class AREEditor(Editor):
             res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)
             if res_result_lyt:
                 lyt: LYT = read_lyt(res_result_lyt.data)
-                queries: list[ResourceIdentifier] = [
-                    ResourceIdentifier(room.model, ResourceType.WOK)
-                    for room in lyt.rooms
-                ]
+                queries: list[ResourceIdentifier] = [ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms]
 
                 wok_results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(queries)
-                walkmeshes: list[BWM] = [
-                    read_bwm(result.data)
-                    for result in wok_results.values() if result
-                ]
+                walkmeshes: list[BWM] = [read_bwm(result.data) for result in wok_results.values() if result]
                 self.ui.minimapRenderer.setWalkmeshes(walkmeshes)
 
-            order: list[SearchLocation] = [
-                SearchLocation.OVERRIDE,
-                SearchLocation.TEXTURES_GUI,
-                SearchLocation.MODULES
-            ]
+            order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_GUI, SearchLocation.MODULES]
             self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resname}", order)
             if self._minimap is None:
                 print(f"Could not find texture 'lbl_map{self._resname}' required for minimap")

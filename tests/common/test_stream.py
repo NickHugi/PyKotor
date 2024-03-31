@@ -10,10 +10,14 @@ from unittest import TestCase
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -26,8 +30,8 @@ class TestBinaryReader(TestCase):
     def setUp(self):
         self.data1 = b"\x01" + b"\x02\x00" + b"\x03\x00\x00\x00" + b"\x04\x00\x00\x00\x00\x00\x00\x00"
         self.data2 = b"helloworld\x00"
-        self.data3 = b"\xFF" + b"\xFE\xFF" + b"\xFD\xFF\xFF\xFF" + b"\xFC\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
-        self.data4 = b"\x79\xE9\xF6\xC2" + b"\x68\x91\xED\x7C\x3F\xDD\x5E\x40"
+        self.data3 = b"\xff" + b"\xfe\xff" + b"\xfd\xff\xff\xff" + b"\xfc\xff\xff\xff\xff\xff\xff\xff"
+        self.data4 = b"\x79\xe9\xf6\xc2" + b"\x68\x91\xed\x7c\x3f\xdd\x5e\x40"
 
         self.reader1 = BinaryReader.from_bytes(self.data1)
         self.reader1b = BinaryReader.from_bytes(self.data1, 3)

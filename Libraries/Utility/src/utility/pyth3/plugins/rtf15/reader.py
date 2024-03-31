@@ -57,9 +57,44 @@ _CODEPAGES = {
 # All the ones named by number in my 2.6 encodings dir
 _CODEPAGES_BY_NUMBER = {
     x: f"cp{x}"
-    for x in (37, 1006, 1026, 1140, 1250, 1251, 1252, 1253, 1254, 1255, 1256, 1257, 1258,
-              424, 437, 500, 737, 775, 850, 852, 855, 856, 857, 860, 861, 862, 863, 864, 865,
-              866, 869, 874, 875, 932, 949, 950)
+    for x in (
+        37,
+        1006,
+        1026,
+        1140,
+        1250,
+        1251,
+        1252,
+        1253,
+        1254,
+        1255,
+        1256,
+        1257,
+        1258,
+        424,
+        437,
+        500,
+        737,
+        775,
+        850,
+        852,
+        855,
+        856,
+        857,
+        860,
+        861,
+        862,
+        863,
+        864,
+        865,
+        866,
+        869,
+        874,
+        875,
+        932,
+        949,
+        950,
+    )
 }
 
 # Miscellaneous, incomplete
@@ -375,10 +410,36 @@ class Group:
             self.destination = True
             return
 
-        if self.image and control in {"emfblip", "pngblip", "jpegblip", "macpict", "pmmetafile", "wmetafile", "dibitmap", "wbitmap",
-                                      "wbmbitspixel", "wbmplanes", "wbmwidthbytes", "picw", "pich", "picwgoal", "pichgoal", "picscalex",
-                                      "picscaley", "picscaled", "piccropt", "piccropb", "piccropr", "piccropl", "picbmp", "picbpp", "bin",
-                                      "blipupi", "blipuid", "bliptag"}:
+        if self.image and control in {
+            "emfblip",
+            "pngblip",
+            "jpegblip",
+            "macpict",
+            "pmmetafile",
+            "wmetafile",
+            "dibitmap",
+            "wbitmap",
+            "wbmbitspixel",
+            "wbmplanes",
+            "wbmwidthbytes",
+            "picw",
+            "pich",
+            "picwgoal",
+            "pichgoal",
+            "picscalex",
+            "picscaley",
+            "picscaled",
+            "piccropt",
+            "piccropb",
+            "piccropr",
+            "piccropl",
+            "picbmp",
+            "picbpp",
+            "bin",
+            "blipupi",
+            "blipuid",
+            "bliptag",
+        }:
             self.content.append(ImageMarker(control, digits))
             return
 
@@ -587,10 +648,10 @@ class Group:
         self.content.append("\u2019")
 
     def handle_ldblquote(self):
-        self.content.append("\u201C")
+        self.content.append("\u201c")
 
     def handle_rdblquote(self):
-        self.content.append("\u201D")
+        self.content.append("\u201d")
 
     def handle_tab(self):
         self.content.append("\t")

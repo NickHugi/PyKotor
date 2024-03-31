@@ -75,4 +75,3 @@ class LIPJSONWriter(ResourceWriter):
 
         json_string: str = json.dumps(self._json, indent=4)
         self._writer.write_bytes(json_string.encode())
-
