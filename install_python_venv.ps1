@@ -66,14 +66,18 @@ $pathSep = "/"
 if ((Get-OS) -eq "Windows") {
     $pathSep = "\"
 } else {
-    # LD_LIBRARY_PATH must be set on unix systems in order to build python.
+    # LD_LIBRARY_PATH must be set on unix systems.
     $ldLibraryPath = [System.Environment]::GetEnvironmentVariable('LD_LIBRARY_PATH', 'Process')
     if ([string]::IsNullOrEmpty($ldLibraryPath)) {
-        Write-Warning "LD_LIBRARY_PATH not defined, creating it with /usr/local/lib ..."
-        [System.Environment]::SetEnvironmentVariable('LD_LIBRARY_PATH', '/usr/local/lib', 'Process')
+        Write-Warning "LD_LIBRARY_PATH not defined, creating it with /usr/lib:/usr/local/lib ..."
+        [System.Environment]::SetEnvironmentVariable('LD_LIBRARY_PATH', '/usr/lib:/usr/local/lib', 'Process')
     } elseif (-not $ldLibraryPath.Contains('/usr/local/lib')) {
         Write-Warning "LD_LIBRARY_PATH defined but no definition for /usr/local/lib, adding it now..."
         $newLdLibraryPath = $ldLibraryPath + ':/usr/local/lib'
+        if (-not $newLdLibraryPath.Contains('/usr/lib')) {
+            Write-Host "Also adding /usr/lib"
+            $newLdLibraryPath = $ldLibraryPath + ':/usr/lib'
+        }
         [System.Environment]::SetEnvironmentVariable('LD_LIBRARY_PATH', $newLdLibraryPath, 'Process')
     }
 }
@@ -190,14 +194,16 @@ function Invoke-WithTimeout {
 # Needed for tkinter-based apps, common in Python and subsequently most of PyKotor's tools.
 function Install-TclTk {
     function GetAndCompareVersion($command, $scriptCommand, $requiredVersion) {
-        if (-not (CommandExists $command)) {
+        $commandInfo = Get-Command -Name $command -ErrorAction SilentlyContinue
+        if (-not ($commandInfo)) {
+            Write-Host "'$command' not found during CommandExists check."
             # Attempt to find version-specific command if 'wish' is not found
             if ($command -eq 'wish') {
                 $versionSpecificCommand = Get-Command 'wish*' -ErrorAction SilentlyContinue | Select-Object -First 1
                 if ($null -ne $versionSpecificCommand) {
                     $command = $versionSpecificCommand.Name
-                    Write-Host "wish not found but $command was found. Symlinking $($versionSpecificCommand.Source) >> /usr/bin/wish"
-                    Invoke-BashCommand "sudo ln -sv $($versionSpecificCommand.Source) /usr/bin/wish"
+                    Write-Host "'wish' command not found but versioned '$command' was found. Symlinking $($versionSpecificCommand.Source) >> /usr/local/bin/wish"
+                    Invoke-BashCommand "sudo ln -sv $($versionSpecificCommand.Source) /usr/local/bin/wish"
                 } else {
                     Write-Host "Command 'wish' not found."
                     return $false
@@ -206,6 +212,11 @@ function Install-TclTk {
                 Write-Host "Command '$command' not found."
                 return $false
             }
+        } else {
+            Write-Host "Command info for $command"
+            Write-Host $commandInfo
+            Write-Host $commandInfo.Path
+            Write-Host $commandInfo.Name
         }
     
         try {
@@ -231,17 +242,14 @@ function Install-TclTk {
         }
     }
     
-    function CommandExists($command) {
-        return $null -ne (Get-Command -Name $command -ErrorAction SilentlyContinue)
-    }
-    
     # Correctly invoke tclsh and wish with the version check script
     $tclVersionScript = "puts [info patchlevel];exit"
     $tkVersionScript = "puts [info patchlevel];exit"
     
     # Initialize required version
+    $recommendedVersion = "8.6.10"
     if ((Get-OS) -eq "macOS") {
-        $requiredVersion = New-Object -TypeName "System.Version" "8.6.10"
+        $requiredVersion = New-Object -TypeName "System.Version" $recommendedVersion
     } else {
         $requiredVersion = New-Object -TypeName "System.Version" "8.6.0"
     }
@@ -252,7 +260,7 @@ function Install-TclTk {
 
     # Handle the result of the version checks
     if ($tclCheck -and $tkCheck) {
-        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+        Write-Host "Tcl and Tk version $requiredVersion or higher are already installed."
         return
     } else {
         Write-Host "Tcl/Tk version must be updated now."
@@ -266,13 +274,13 @@ function Install-TclTk {
         $majorMacOSVersion = [int]$macOSVersion.Split('.')[0]
         $minorMacOSVersion = [int]$macOSVersion.Split('.')[1]
         if (($majorMacOSVersion -eq 10 -and $minorMacOSVersion -ge 12) -or $majorMacOSVersion -gt 10) {
-            bash -c "brew install tcl-tk --overwrite --force || true"
-            Write-Host 'brew install tcl-tk --overwrite --force completed.'
+            bash -c 'brew install tcl-tk --overwrite --force || true'
+            Write-Host '"brew install tcl-tk --overwrite --force || true" completed.'
             $tclCheck = GetAndCompareVersion "tclsh", $tclVersionScript, $requiredVersion
             $tkCheck = GetAndCompareVersion "wish", $tkVersionScript, $requiredVersion
     
             if ($tclCheck -and $tkCheck) {
-                Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+                Write-Host "Tcl and Tk version $requiredVersion or higher are already installed."
                 return
             } else {
                 Write-Error "Could not get tcl/tk versions after brew install!"
@@ -283,18 +291,18 @@ function Install-TclTk {
 
     Write-Host "Installing Tcl from source..."
     $originalDir = Get-Location
-    Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tcl8.6.10-src.tar.gz"
-    Invoke-BashCommand "tar -xzvf tcl8.6.10-src.tar.gz"
-    Set-Location "tcl8.6.10/unix"
+    Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tcl$recommendedVersion-src.tar.gz"
+    Invoke-BashCommand "tar -xzvf tcl$recommendedVersion-src.tar.gz"
+    Set-Location "tcl$recommendedVersion/unix"
     Invoke-BashCommand "./configure --prefix=/usr/local"
     Invoke-BashCommand "make"
     Invoke-BashCommand "sudo make install"
 
-    Set-Location $originalDir  # Return to the original directory to start Tk installation
+    Set-Location $originalDir
     Write-Host "Installing Tk from source..."
-    Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tk8.6.10-src.tar.gz"
-    Invoke-BashCommand "tar -xzvf tk8.6.10-src.tar.gz"
-    Set-Location "tk8.6.10/unix"
+    Invoke-BashCommand "curl -O -L https://prdownloads.sourceforge.net/tcl/tk$recommendedVersion-src.tar.gz"
+    Invoke-BashCommand "tar -xzvf tk$recommendedVersion-src.tar.gz"
+    Set-Location "tk$recommendedVersion/unix"
     Invoke-BashCommand "./configure --prefix=/usr/local --with-tcl=/usr/local/lib"
     Invoke-BashCommand "make"
     Invoke-BashCommand "sudo make install"
@@ -311,10 +319,14 @@ function Install-TclTk {
 
     # Handle the result of the version checks
     if ($tclCheck -and $tkCheck) {
-        Write-Host "Tcl and Tk version 8.6.10 or higher are already installed."
+        Write-Host "Tcl and Tk version $requiredVersion or higher have been installed."
         return
     } else {
-        Write-Host "Tcl/Tk version must be updated now."
+        if ((Get-OS) -ne "Linux") {
+            Write-Error "Tcl/Tk could not be installed! See above logs for the issue"
+        } else {
+            Write-Warning "Known problem with wish on linux, assuming it's installed and continuing..."
+        }
     }
 }
 
@@ -329,6 +341,8 @@ function Install-Python-Linux {
         $pythonVersion = "3"
     }
 
+    #Install-Deps-Linux
+
     if (Test-Path "/etc/os-release") {
         $distro = (Get-Linux-Distro-Name)
         $versionId = (Get-Linux-Distro-Version)
@@ -337,12 +351,12 @@ function Install-Python-Linux {
             switch ($distro) {
                 "debian" {
                     Invoke-BashCommand -Command "sudo apt-get update -y"
-                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python3-dev python$pythonVersion-venv python3-pip -y"
+                    Invoke-BashCommand -Command "sudo apt-get install -y tk tcl libpython$pythonVersion-dev python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python$pythonVersion-pip"
                     break
                 }
                 "ubuntu" {
                     Invoke-BashCommand -Command "sudo apt-get update -y"
-                    Invoke-BashCommand -Command "sudo apt-get install tk tcl python$pythonVersion python3-dev python$pythonVersion-venv python3-pip -y"
+                    Invoke-BashCommand -Command "sudo apt-get install -y tk tcl libpython$pythonVersion-dev python$pythonVersion python$pythonVersion-dev python$pythonVersion-venv python$pythonVersion-pip"
                     break
                 }
                 "alpine" {
@@ -368,7 +382,7 @@ function Install-Python-Linux {
                     $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo dnf update -y"
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo dnf install python$wildcardVersion python$wildcardVersion-tkinter python$wildcardVersion-pip python$wildcardVersion-wheel python$wildcardVersion-setuptools tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo dnf install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "fedora" {
@@ -385,7 +399,7 @@ function Install-Python-Linux {
                         Invoke-BashCommand -Command "sudo yum install epel-release -y"
                     }
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo yum install python$wildcardVersion python$wildcardVersion-tkinter python$wildcardVersion-pip python$wildcardVersion-wheel python$wildcardVersion-setuptools tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo yum install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "arch" {
@@ -429,11 +443,11 @@ function Install-Python-Linux {
             switch ($distro) {
                 "debian" {
                     Invoke-BashCommand -Command 'sudo apt-get update -y'
-                    Invoke-BashCommand -Command 'sudo apt-get install tk tcl build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y'
+                    Invoke-BashCommand -Command 'sudo apt-get install -y tk tcl build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev'
                 }
                 "ubuntu" {
                     Invoke-BashCommand -Command 'sudo apt-get update -y'
-                    Invoke-BashCommand -Command 'sudo apt-get install tk tcl build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev -y'
+                    Invoke-BashCommand -Command 'sudo apt-get install -y tk tcl build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev'
                 }
                 "alpine" {
                     Invoke-BashCommand -Command 'sudo apk add --update --no-cache tk tcl tk-dev tcl-dev alpine-sdk linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev libffi-dev'
@@ -455,7 +469,7 @@ function Install-Python-Linux {
                     # Check for the presence of package managers and execute corresponding commands
                     if (Get-Command apt-get -ErrorAction SilentlyContinue) {
                         Invoke-BashCommand -Command 'sudo apt-get update -y'
-                        Invoke-BashCommand -Command 'sudo apt-get install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev tcl-dev tk tcl -y'
+                        Invoke-BashCommand -Command 'sudo apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev libbz2-dev tk-dev tcl-dev tk tcl'
                     } elseif (Get-Command apk -ErrorAction SilentlyContinue) {
                         Invoke-BashCommand -Command 'sudo apk add --update --no-cache tcl tk tk-dev linux-headers zlib-dev bzip2-dev readline-dev sqlite-dev openssl-dev libffi-dev'
                     } elseif (Get-Command yum -ErrorAction SilentlyContinue) {
@@ -466,12 +480,12 @@ function Install-Python-Linux {
                         Invoke-BashCommand -Command 'sudo dnf install -y tk tcl tk-devel tcl-devel zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel libffi-devel'
                     } elseif (Get-Command zypper -ErrorAction SilentlyContinue) {
                         Invoke-BashCommand -Command 'sudo zypper install -t pattern devel_basis'
-                        Invoke-BashCommand -Command 'sudo zypper install zlib-devel bzip2-devel readline-devel sqlite3-devel openssl-devel tk-devel tcl-devel libffi-devel -y'
+                        Invoke-BashCommand -Command 'sudo zypper install -y zlib-devel bzip2-devel readline-devel sqlite3-devel openssl-devel tk-devel tcl-devel libffi-devel'
                     } elseif (Get-Command pacman -ErrorAction SilentlyContinue) {
                         Invoke-BashCommand -Command 'sudo pacman -Sy base-devel zlib bzip2 readline sqlite openssl tk tcl libffi --noconfirm'
                     } elseif (Get-Command brew -ErrorAction SilentlyContinue) {
-                        Invoke-BashCommand -Command 'brew update'
-                        Invoke-BashCommand -Command 'brew install zlib bzip2 readline sqlite openssl libffi tcl-tk'
+                        brew update
+                        brew install zlib bzip2 readline sqlite openssl libffi tcl-tk
                     } elseif (Get-Command snap -ErrorAction SilentlyContinue) {
                         Write-Warning "Snap packages are not directly applicable for building Python. Please ensure build dependencies are installed using another package manager."
                     } elseif (Get-Command flatpak -ErrorAction SilentlyContinue) {
@@ -556,7 +570,7 @@ function Install-Python-Mac {
         } catch {
             Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
             Write-Host "Attempting to install via brew."
-            Invoke-BashCommand "brew install python@$pyVersion python-tk@$pyVersion"
+            brew install python@$pyVersion python-tk@$pyVersion
             return $true
         }
         return $false
@@ -601,8 +615,20 @@ function Install-PythonUnixSource {
     # Using `make install` may break system packages, so we use `make altinstall` here.
     Invoke-BashCommand -Command "sudo make altinstall"
     Set-Location -LiteralPath $current_working_dir
-    # LD_LIBRARY_PATH must be updated. However this won't be permanent, just long enough to create the venv.
-    $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
+}
+
+function RefreshEnvVar {
+    Param (
+        [string]$varName
+    )
+    if ((Get-OS) -eq "Windows") {
+        $userPath = Get-ItemProperty -Path 'Registry::HKEY_CURRENT_USER\Environment' -Name $varName | Select-Object -ExpandProperty $varName
+        $systemPath = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name $varName | Select-Object -ExpandProperty $varName
+    } else {  # FIXME(th3w1zard1): [System.Environment]::GetEnvironmentVariable only takes the session's env variable, we need to source .bashrc or whatever for linux/mac to truly update.
+        $userPath = [System.Environment]::GetEnvironmentVariable($varName, [System.EnvironmentVariableTarget]::User)
+        $systemPath = [System.Environment]::GetEnvironmentVariable($varName, [System.EnvironmentVariableTarget]::Machine)
+    }
+    Set-Item -Path $envVarName -Value ($userPath + ";" + $systemPath)
 }
 
 function Install-PythonWindows {
@@ -621,23 +647,16 @@ function Install-PythonWindows {
     # Check if running on GitHub Actions
     if ($env:GITHUB_ACTIONS -eq "true") {
         Write-Host "Running on GitHub Actions."
-
-        # Retrieve the architecture from matrix
         $runnerArch = $env:MATRIX_ARCH
         Write-Host "Runner architecture is $runnerArch."
-        
-        # Determine the installer name based on architecture from matrix
         $installerName = switch ($runnerArch) {
-            "x86" { "python-$pyVersion.exe" }  # Assume this is the pattern for 32-bit
-            "x64" { "python-$pyVersion-amd64.exe" }  # Assume this is the pattern for 64-bit
+            "x86" { "python-$pyVersion.exe" }
+            "x64" { "python-$pyVersion-amd64.exe" }
             default { throw "Unknown runner architecture: $runnerArch" }
         }
-        
-        # The rest of your installation script using $installerName...
     }
     else {
         Write-Host "Not running on GitHub Actions."
-        # Determine the architecture and set the appropriate installer name
         $installerName = if ([System.Environment]::Is64BitOperatingSystem) {
             "python-$pyVersion-amd64.exe"
         } else {
@@ -662,8 +681,6 @@ function Install-PythonWindows {
         Write-Host "Refresh environment variables to detect new Python installation"
         $systemPath = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH | Select-Object -ExpandProperty PATH
         $userPath = Get-ItemProperty -Path 'Registry::HKEY_CURRENT_USER\Environment' -Name PATH | Select-Object -ExpandProperty PATH
-
-        # Concatenate the user PATH and system PATH, with user PATH taking precedence
         $env:Path = $userPath + ";" + $systemPath
         Write-Debug "New PATH env: $env:PATH"
         return $true
@@ -1410,9 +1427,10 @@ Activate-PythonVenv $venvPath
 if ($installPipToVenvManually) {
     Write-Host "Installing pip to venv manually..."
     $originalLocation = Get-Location
+    $tempPath = [System.IO.Path]::GetTempPath()
     try {
         # Download get-pip.py
-        $getPipScriptPath = Join-Path -Path $env:TEMP -ChildPath "get-pip.py"
+        $getPipScriptPath = Join-Path -Path $tempPath -ChildPath "get-pip.py"
         Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile $getPipScriptPath
 
         # Attempt to install pip
@@ -1424,14 +1442,14 @@ if ($installPipToVenvManually) {
 
             Write-Host "Downloading/Installing setuptools-$latestSetuptoolsVersion"
             Invoke-WebRequest -Uri $latestSetuptoolsUrl -OutFile "setuptools-$latestSetuptoolsVersion.tar.gz"
-            Invoke-BashCommand 'tar -xzf "setuptools-$latestSetuptoolsVersion.tar.gz"'
+            Invoke-BashCommand "tar -xzf `"setuptools-$latestSetuptoolsVersion.tar.gz`""
             Set-Location -LiteralPath "setuptools-$latestSetuptoolsVersion"
             & $pythonExePath setup.py install
             Set-Location -LiteralPath $originalLocation
 
             Write-Host "Downloading/Installing pip-$latestPipVersion"
             Invoke-WebRequest -Uri $latestPipPackageUrl -OutFile "pip-$latestPipVersion.tar.gz"
-            Invoke-BashCommand -Command 'tar -xzf "pip-$latestPipVersion.tar.gz"'
+            Invoke-BashCommand -Command "tar -xzf `"pip-$latestPipVersion.tar.gz`""
             Set-Location -LiteralPath "pip-$latestPipVersion"
             & $pythonExePath setup.py install
             Set-Location -LiteralPath $originalLocation
@@ -1440,8 +1458,6 @@ if ($installPipToVenvManually) {
         } else {
             Write-Host "pip installed successfully."
         }
-    } catch {
-        Write-Error "An error occurred during pip installation: $_"
     } finally {
         Set-Location -LiteralPath $originalLocation
     }

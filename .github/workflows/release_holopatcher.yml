@@ -14,7 +14,7 @@ env:
 on:
   push:
     tags:
-      - 'v*.**-patcher'
+      - '*-patcher*'
   workflow_dispatch:
 
 permissions:
@@ -35,32 +35,22 @@ jobs:
       - name: Set environment variables
         id: set_env
         run: |
-          # Use a single line of JSON to avoid issues
-
-          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "os<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "python-version<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "architecture<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "python-pypy<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
@@ -131,7 +121,7 @@ jobs:
         bash ./install_powershell.sh
       shell: bash
 
-    - name: Set up ${{ matrix.python_pypy }} ${{ matrix.python-version }}
+    - name: Set up pypy ${{ matrix.python-version }}
       if: ${{ matrix.python_pypy == 'pypy' }}
       uses: actions/setup-python@v5
       with:
@@ -258,25 +248,27 @@ jobs:
       if: ${{ success() || failure() }}
       env:
         MATRIX_ARCH: ${{ matrix.architecture }}
-      id: holopatcher_deps
+      id: patcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
-          . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
+          . ./install_python_venv.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
+          Write-Host "Python executable path: $pythonExePath"
           & $pythonExePath -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
             if ("${{ matrix.python-version }}" -eq "3.12") {
-              pip install "pyinstaller==5.13.2" --prefer-binary
+              pip install pyinstaller --prefer-binary -U
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
-              pip install "pyinstaller==5.4" --prefer-binary
+              pip install "pyinstaller==5.13.2" --prefer-binary
             }
           } else {
             pip install pyinstaller -U --prefer-binary
           }
+          #$env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "{{ matrix.qt_version }}" }
           $output = ""
           $errorLines = @()
-          . ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+          . ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
             Write-Output $_.ToString()
             $output += $_.ToString() + "`n"
             if($_ -match 'ERROR:') {
@@ -291,16 +283,37 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
         } catch {
-          Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+          Write-Host -ForegroundColor Red "Detailed Error Report:"
+          Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+          
+          # Attempt to provide a more detailed location of the error
+          if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+              Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+              Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+              Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+              Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+          } else {
+              Write-Host -ForegroundColor Red "No invocation information available."
+          }
+      
+          # Extract and display the script stack trace if available
+          if ($_.ScriptStackTrace) {
+              Write-Host -ForegroundColor Red "Script Stack Trace:"
+              Write-Host -ForegroundColor Red $_.ScriptStackTrace
+          } else {
+              Write-Host -ForegroundColor Red "No script stack trace available."
+          }
+      
+          # Log the error to GitHub Actions output or another logging mechanism
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }
       shell: pwsh
 
     - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.patcher_deps.outputs.success == 'true' }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
 
@@ -321,14 +334,14 @@ jobs:
           sudo patchelf --set-rpath '$ORIGIN' $libPath
         }
       shell: pwsh
-    
+
     - name: Compile HoloPatcher
-      if: ${{ (success() || failure()) && (steps.holopatcher_deps.outputs.success == 'true' || runner.os == 'macOS') }}
+      if: ${{ (success() || failure()) && steps.patcher_deps.outputs.success == 'true' }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        . ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
           if($_ -match 'ERROR:') {
@@ -359,9 +372,9 @@ jobs:
       shell: pwsh
 
     - name: HoloPatcher - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.patcher_deps.outputs.success == 'true' }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install staticx
         staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
         # Rename the static binary for clarity and consistency
@@ -369,52 +382,52 @@ jobs:
         Move-Item -LiteralPath ./dist/HoloPatcher-static -Destination ./dist/HoloPatcher -Force
       shell: pwsh
 
-    - name: Upload compiled binaries attempt 1
+    - name: Upload HoloPatcher binaries attempt 1
       if: ${{ success() || failure() }}
       id: upload_attempt_1
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HoloPatcher_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 2
+    - name: Upload HoloPatcher binaries attempt 2
       id: upload_attempt_2
       if: ${{ (success() || failure()) && steps.upload_attempt_1.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HoloPatcher_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 3
+    - name: Upload HoloPatcher binaries attempt 3
       id: upload_attempt_3
       if: ${{ (success() || failure()) && steps.upload_attempt_2.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HoloPatcher_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 4
+    - name: Upload HoloPatcher binaries attempt 4
       id: upload_attempt_4
       if: ${{ (success() || failure()) && steps.upload_attempt_3.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HoloPatcher_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
       continue-on-error: true
 
-    - name: Upload compiled binaries attempt 5
+    - name: Upload HoloPatcher binaries attempt 5
       id: upload_attempt_5
       if: ${{ (success() || failure()) && steps.upload_attempt_4.outcome == 'failure' }}
       uses: actions/upload-artifact@v4
       with:
-        name: publish_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        name: HoloPatcher_${{ runner.os }}_${{ matrix.architecture }}
         path: ./dist/**
         retention-days: 90
 
@@ -423,33 +436,153 @@ jobs:
     if: ${{ success() || failure() }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: published_workflow_builds/
-          pattern: publish_*
-
-      - name: Extract tag name
-        id: get_tag
-        run: echo "::set-output name=tag::${GITHUB_REF#refs/tags/}"
-        shell: bash
+          pattern: HoloPatcher_*
       
       - name: Compress into archives
         run: |
-          $sourceFolder = Join-Path -Path (Get-Location) -ChildPath "published_workflow_builds"
+          $originalDir = Get-Location
+          $sourceFolder = Join-Path -Path $originalDir -ChildPath "published_workflow_builds"
           Set-Location $sourceFolder
           Get-ChildItem -Path "." -Directory | ForEach-Object {
             $folderName = $_.Name
             $archiveName = "$folderName.zip"
             zip -r -9 $archiveName $folderName
           }
+          Set-Location $originalDir
         shell: pwsh
 
-      - uses: ncipollo/release-action@v1.10.0
+      - name: Determine Release Tag Ending with 'patcher'
+        id: get_tag
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            # Get all tags ending with '-patcher', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*-patcher*' | Select-Object -Last 1
+          } else {
+            git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
+            # Get all tags ending with '-patcher', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*-patcher*' | Select-Object -Last 1
+          }
+          if (-not $tag) {
+            echo "No matching tag found ending with 'patcher'."
+            git tag --list
+            exit 1
+          }
+          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: pwsh
+      
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-            tag: ${{ steps.get_tag.outputs.tag }}
-            prerelease: true
-            draft: true
-            artifacts: "published_workflow_builds/*.zip"
-            allowUpdates: true
-            token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          files: "published_workflow_builds/*.zip"
+          fail_on_unmatched_files: true
+          target_commitish: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.head_ref }}
+
+      - name: Determine Release ID for fallback upload.
+        if: ${{ failure() }}
+        id: get_release_id
+        run: |
+          # Filter tags ending with '-patcher', sort them by date, and pick the most recent one
+          $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_tag.outputs.tag }}"
+          $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
+          $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+          $releaseId = $response.id
+          echo "RELEASE_ID=$releaseId" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
+      - name: Upload Archive to Release
+        if: ${{ failure() }}
+        run: |
+          try {
+            Add-Type -TypeDefinition @"
+          using System;
+          using System.Net.Http;
+          using System.Net.Http.Headers;
+          using System.Threading.Tasks;
+    
+          public class GitHubUploader {
+              public static async Task UploadFileAsync(string filePath, string uploadUrl, string token) {
+                  using (var client = new HttpClient()) {
+                      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                      using (var content = new MultipartFormDataContent()) {
+                          var fileContent = new ByteArrayContent(System.IO.File.ReadAllBytes(filePath));
+                          fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+                          content.Add(fileContent, "file", System.IO.Path.GetFileName(filePath));
+                          var response = await client.PostAsync(uploadUrl, content);
+                          if (!response.IsSuccessStatusCode) {
+                              throw new ApplicationException(await response.Content.ReadAsStringAsync());
+                          }
+                      }
+                  }
+              }
+            }
+          "@
+            $archivePath = "published_workflow_builds/*.zip"
+            $releaseId = $env:RELEASE_ID
+            $token = "${{ secrets.GITHUB_TOKEN }}""
+            Get-ChildItem -Path $archivePath | ForEach-Object {
+              $filePath = $_.FullName
+              $fileName = $_.Name
+              $uploadUrl = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$releaseId/assets?name=$fileName&label=$fileName"
+              try {
+                Write-Host "Attempting to upload $fileName"
+                [GitHubUploader]::UploadFileAsync($filePath, $uploadUrl, $token).GetAwaiter().GetResult()
+                Write-Host "Upload successful: $fileName"
+              } catch {
+                Write-Host "Failed to upload $fileName : $($_.Exception.Message)"
+                Write-Host -ForegroundColor Red "Detailed Error Report:"
+                Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+                
+                # Attempt to provide a more detailed location of the error
+                if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+                    Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+                    Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+                    Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+                    Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+                } else {
+                    Write-Host -ForegroundColor Red "No invocation information available."
+                }
+            
+                # Extract and display the script stack trace if available
+                if ($_.ScriptStackTrace) {
+                    Write-Host -ForegroundColor Red "Script Stack Trace:"
+                    Write-Host -ForegroundColor Red $_.ScriptStackTrace
+                } else {
+                    Write-Host -ForegroundColor Red "No script stack trace available."
+                }
+              }
+            }
+          } catch {
+            Write-Host -ForegroundColor Red "Detailed Error Report:"
+            Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
+            
+            # Attempt to provide a more detailed location of the error
+            if ($_.InvocationInfo -and $_.InvocationInfo.MyCommand) {
+                Write-Host -ForegroundColor Red "Command Name: $($_.InvocationInfo.MyCommand.Name)"
+                Write-Host -ForegroundColor Red "Script Name: $($_.InvocationInfo.ScriptName)"
+                Write-Host -ForegroundColor Red "Line Number: $($_.InvocationInfo.ScriptLineNumber)"
+                Write-Host -ForegroundColor Red "Line: $($_.InvocationInfo.Line)"
+            } else {
+                Write-Host -ForegroundColor Red "No invocation information available."
+            }
+        
+            # Extract and display the script stack trace if available
+            if ($_.ScriptStackTrace) {
+                Write-Host -ForegroundColor Red "Script Stack Trace:"
+                Write-Host -ForegroundColor Red $_.ScriptStackTrace
+            } else {
+                Write-Host -ForegroundColor Red "No script stack trace available."
+            }
+
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
+            exit 1
+          }
+        shell: pwsh

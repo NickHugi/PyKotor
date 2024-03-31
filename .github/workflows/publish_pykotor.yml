@@ -36,32 +36,22 @@ jobs:
       - name: Set environment variables
         id: set_env
         run: |
-          # Use a single line of JSON to avoid issues
-
-          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.OS_RUNNERS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "os<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.PYTHON_VERSIONS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "python-version<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.ARCHITECTURES_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "architecture<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
 
-          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", ""
-          $singleLineJson = $singleLineJson -replace "`n", ""
-          Write-Host $singleLineJson
+          $singleLineJson = '${{ env.INTERPRETERS_JSON }}' -replace "`r", "" -replace "`n", ""
           echo "python-pypy<<EOF" >> $env:GITHUB_OUTPUT
           echo $singleLineJson >> $env:GITHUB_OUTPUT
           echo "EOF" >> $env:GITHUB_OUTPUT
