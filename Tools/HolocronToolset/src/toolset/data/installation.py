@@ -68,8 +68,8 @@ class HTInstallation(Installation):
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path)
 
-        self.name = name
-        self.tsl = tsl
+        self.name: str = name
+        self.tsl: bool = tsl
 
         self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: QStandardItemModel | None = None
@@ -78,7 +78,7 @@ class HTInstallation(Installation):
         self._cacheTpc: dict[str, TPC] = {}
 
     # region Cache 2DA
-    def htGetCache2DA(self, resname: str):
+    def htGetCache2DA(self, resname: str) -> TwoDA:
         """Gets a 2DA resource from the cache or loads it if not present.
 
         Args:
@@ -102,7 +102,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def htBatchCache2DA(self, resnames: list[str], reload: bool = False):
+    def htBatchCache2DA(self, resnames: list[str], *, reload: bool = False):
         """Cache 2D array resources in batch.
 
         Args:
@@ -126,8 +126,9 @@ class HTInstallation(Installation):
 
         resources = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         for iden, resource in resources.items():
-            if resource:
-                self._cache2da[iden.resname] = read_2da(resource.data)
+            if not resource:
+                continue
+            self._cache2da[iden.resname] = read_2da(resource.data)
 
     def htClearCache2DA(self):
         self._cache2da = {}
@@ -159,7 +160,7 @@ class HTInstallation(Installation):
                 self._cacheTpc[resname] = tex
         return self._cacheTpc.get(resname, None)
 
-    def htBatchCacheTPC(self, names: list[str], reload: bool = False):
+    def htBatchCacheTPC(self, names: list[str], *, reload: bool = False):
         """Cache textures for batch queries.
 
         Args:
@@ -173,7 +174,7 @@ class HTInstallation(Installation):
             - Filter names not already in cache
             - Loop through remaining names and cache textures from sources.
         """
-        queries = list(names) if reload else [name for name in names if name not in self._cache2da]
+        queries = list(names) if reload else [name for name in names if name not in self._cacheTpc]
 
         if not queries:
             return
@@ -252,7 +253,7 @@ class HTInstallation(Installation):
                 return self._get_icon(texture)
         return pixmap
 
-    def _get_icon(self, texture):
+    def _get_icon(self, texture: TPC) -> QPixmap:
         width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))

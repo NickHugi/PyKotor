@@ -298,7 +298,7 @@ class UTCEditor(Editor):
         self.ui.wisdomSpin.setValue(utc.wisdom)
         self.ui.charismaSpin.setValue(utc.charisma)
 
-        # TODO(th3w1zard1): Fix the maximum. Use max due to uncertainty, but it's probably always 150.
+        # TODO(th3w1zard1): Fix the maximum. Use max() due to uncertainty, but it's probably always 150.
         self.ui.baseHpSpin.setMaximum(max(self.ui.baseHpSpin.maximum(), utc.hp))
         self.ui.currentHpSpin.setMaximum(max(self.ui.currentHpSpin.maximum(), utc.current_hp))
         self.ui.maxHpSpin.setMaximum(max(self.ui.maxHpSpin.maximum(), utc.max_hp))
@@ -637,7 +637,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
                 print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
-                return None
+                continue
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
         return None
@@ -647,7 +647,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
                 print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
-                return None
+                continue
             if item.data(QtCore.Qt.UserRole) == powerId:
                 return item
         return None
@@ -671,7 +671,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
                 print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
-                return
+                continue
 
             if item.checkState() == QtCore.Qt.Checked:
                 summary += f"{item.text()}\n"
@@ -692,7 +692,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
                 print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
-                return
+                continue
 
             if item.checkState() == QtCore.Qt.Checked:
                 summary += f"{item.text()}\n"
