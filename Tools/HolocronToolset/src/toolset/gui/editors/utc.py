@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Generator
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
@@ -23,13 +24,11 @@ from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtWidgets import QMainWindow, QWidget
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
@@ -47,7 +46,7 @@ class UTCEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QWidget | QObject | None = None,
+        mainwindow: QMainWindow | None = None,
     ):
         """Initializes the Creature Editor window.
 
@@ -540,7 +539,7 @@ class UTCEditor(Editor):
         portraits: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
         portrait: str = portraits.get_cell(index, "baseresref")
 
-        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO: document these magic numbers
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO(th3w1zard1): document these magic numbers
             portrait = portraits.get_cell(index, "baseresrefe")
         elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):
             portrait = portraits.get_cell(index, "baseresrefve")
@@ -612,17 +611,15 @@ class UTCEditor(Editor):
             - Refreshes item count and 3D preview.
         """
         droid: bool = self.ui.raceSelect.currentIndex() == 0
-        capsules: list[Capsule] = []
-
-        try:
-            assert self._filepath is not None, f"self._filepath cannot be None in {self!r}.openInventory(). Relevance: (droid={droid!r})"
-            root: str = Module.get_root(self._filepath)
-            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
-            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            print(format_exception_with_variables(e, message="This exception has been suppressed by default."))
-
-        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
+        inventoryEditor = InventoryEditor(
+            self,
+            self._installation,
+            Module.get_capsules(self._installation, Module.get_root(self._filepath.name)),
+            [],
+            self._utc.inventory,
+            self._utc.equipment,
+            droid=droid,
+        )
         if inventoryEditor.exec_():
             self._utc.inventory = inventoryEditor.inventory
             self._utc.equipment = inventoryEditor.equipment
