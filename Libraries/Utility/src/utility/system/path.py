@@ -27,31 +27,6 @@ _WINDOWS_EXTRA_SLASHES_RE = re.compile(r"(?<!^)\\+")
 _UNIX_EXTRA_SLASHES_RE = re.compile(r"/{2,}")
 
 
-def get_direct_parent(cls: type):
-    parent_map: dict[type, type] = {
-        PurePath: object,
-        PureWindowsPath: pathlib.PurePath,
-        PurePosixPath: pathlib.PurePath,
-        Path: pathlib.PurePath,
-        WindowsPath: pathlib.Path,
-        PosixPath: pathlib.Path,
-    }
-    return parent_map.get(pathlib_to_override(cls), cls.__base__)
-
-
-def override_to_pathlib(cls: type) -> type:
-    class_map: dict[type, type] = {
-        PurePath: pathlib.PurePath,
-        PureWindowsPath: pathlib.PureWindowsPath,
-        PurePosixPath: pathlib.PurePosixPath,
-        Path: pathlib.Path,
-        WindowsPath: pathlib.WindowsPath,
-        PosixPath: pathlib.PosixPath,
-    }
-
-    return class_map.get(cls, cls)
-
-
 def pathlib_to_override(cls: type) -> type:
     class_map: dict[type, type] = {
         pathlib.PurePath: PurePath,
@@ -535,6 +510,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         ----
             mode (int): The permissions to check for. Defaults to 0o6.
             recurse (bool): Whether to recursively check permissions for all child paths. Defaults to False.
+            filter_results (Callable[[Path], bool] | None): An optional function that's called to determine if a file/folder should be ignored when recursing.
 
         Returns:
         -------
@@ -590,8 +566,6 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             print(format_exception_with_variables(exc))
             # raise
         return False
-
-    unique_sentinel = object()
 
     def gain_access(
         self,
@@ -737,7 +711,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 with script_path.open("w") as file:
                     for command in cmd:
                         file.write(command + "\n")
-                    if pause_after_command:
+                    if pause_after_command and not hide_window:
                         file.write("pause\nexit\n")
 
                 # Determine the CMD switch to use
