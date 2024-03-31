@@ -193,8 +193,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        # self.ui.featList.setSortingEnabled(True)
-        # self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.featList.setSortingEnabled(True)
+        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -207,8 +207,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        # self.ui.powerList.setSortingEnabled(True)
-        # self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.powerList.setSortingEnabled(True)
+        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
