@@ -1,96 +1,196 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from functools import wraps
+from typing import TYPE_CHECKING, Any, ClassVar, Type, TypeVar
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import GFFFieldType, FieldGFF, GFFStructInterface
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
-ARMOR_BASE_ITEMS = {
-    35,
-    36,
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    53,
-    58,
-    63,
-    64,
-    65,
-    69,
-    71,
-    85,
-    89,
-    98,
-    100,
-    102,
-    103,
-}
+ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """
 
+T = TypeVar("T")
 
+def typed_property(name: str, type_: T) -> Any:
+    """Creates a typed property that allows static type checkers to correctly infer the type."""
+
+    @property
+    @wraps(typed_property, assigned=("__annotations__",))
+    def prop(self: GFFStruct) -> T:
+        return self.acquire(name, self.FIELDS[name]._value())
+
+    @prop.setter
+    def prop(self: GFFStruct, value: T) -> None:
+        self.set(name, value)
+
+    prop.__annotations__ = {"return": type_}
+    return prop
+
+def add_typed_properties(cls):
+    """Class decorator that dynamically adds typed properties based on FIELDS and K2_FIELDS definitions."""
+    for name, field in cls.FIELDS.items():
+        setattr(cls, name, typed_property(name, field.field_type().return_type()))
+
+    if hasattr(cls, "K2_FIELDS"):
+        for name, field in cls.K2_FIELDS.items():
+            setattr(cls, name, typed_property(name, field.field_type().return_type()))
+
+    return cls
+
+#@add_typed_properties
 class UTI:
     """Stores item data."""
 
     BINARY_TYPE = ResourceType.UTI
 
+    FIELDS: ClassVar[dict[str, FieldGFF]] = {
+        "TemplateResRef": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
+        "BaseItem": FieldGFF(GFFFieldType.UInt32, 0),
+        "LocalizedName": FieldGFF(GFFFieldType.LocalizedString, LocalizedString.from_invalid()),
+        "DescIdentified": FieldGFF(GFFFieldType.LocalizedString, LocalizedString.from_invalid()),
+        "Tag": FieldGFF(GFFFieldType.String, ""),
+        "Charges": FieldGFF(GFFFieldType.UInt32, 0),
+        "Cost": FieldGFF(GFFFieldType.UInt32, 0),
+        "StackSize": FieldGFF(GFFFieldType.UInt32, 0),
+        "Plot": FieldGFF(GFFFieldType.UInt8, 0),
+        "AddCost": FieldGFF(GFFFieldType.UInt32, 0),
+        "PaletteID": FieldGFF(GFFFieldType.UInt8, 0),
+        "Comment": FieldGFF(GFFFieldType.String, ""),
+        "ModelVariation": FieldGFF(GFFFieldType.UInt8, 0),
+        "BodyVariation": FieldGFF(GFFFieldType.UInt8, 0),
+        "TextureVar": FieldGFF(GFFFieldType.UInt8, 0),
+    }
+
+    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {
+        # Add K2-specific fields here, following the DLGLink example
+        "UpgradeLevel": FieldGFF(GFFFieldType.UInt8, 0),
+        "Stolen": FieldGFF(GFFFieldType.UInt8, 0),
+        "Identified": FieldGFF(GFFFieldType.UInt8, 0),
+    }
+
     def __init__(
         self,
     ):
-        self.resref: ResRef = ResRef.from_blank()
-        self.base_item: int = 0
-        self.name: LocalizedString = LocalizedString.from_invalid()
-        self.description: LocalizedString = LocalizedString.from_invalid()
-        self.tag: str = ""
-        self.charges: int = 0
-        self.cost: int = 0
-        self.stack_size: int = 0
-        self.plot: int = 0
-        self.add_cost: int = 0
-        self.palette_id: int = 0
-        self.comment: str = ""
+        super().__init__()
+        self.TemplateResRef: ResRef
+        self.BaseItem: int
+        self.LocalizedName: LocalizedString
+        self.DescIdentified: LocalizedString
+        self.Tag: str
+        self.Charges: int
+        self.Cost: int
+        self.StackSize: int
+        self.Plot: int
+        self.AddCost: int
+        self.PaletteID: int
+        self.Comment: str
 
-        self.upgrade_level: int = 0
+        self.UpgradeLevel: int
 
-        self.properties: list[UTIProperty] = []
+        self.PropertiesList: GFFList[UTIProperty]
 
         # Armor Items Only:
-        self.body_variation: int = 0
-        self.model_variation: int = 0
-        self.texture_variation: int = 0
+        self.BodyVariation: int
+        self.ModelVariation: int
+        self.TextureVar: int
 
         # Deprecated:
-        self.stolen: int = 0
-        self.identified: int = 0
+        self.Stolen: int
+        self.Identified: int
 
     def is_armor(
         self,
     ) -> bool:
-        return self.base_item in ARMOR_BASE_ITEMS
+        return self.BaseItem in ARMOR_BASE_ITEMS
 
 
-class UTIProperty:
+class UTIProperty(GFFStructInterface):
+
+    FIELDS: ClassVar[dict[str, FieldGFF]] = {
+        "CostTable": FieldGFF(GFFFieldType.UInt8, 0),
+        "CostValue": FieldGFF(GFFFieldType.UInt16, 0),
+        "Param1": FieldGFF(GFFFieldType.UInt8, 0),
+        "Param1Value": FieldGFF(GFFFieldType.UInt8, 0),
+        "PropertyName": FieldGFF(GFFFieldType.UInt16, 0),
+        "Subtype": FieldGFF(GFFFieldType.UInt16, 0),
+        "ChanceAppear": FieldGFF(GFFFieldType.UInt8, 100),
+        "UpgradeType": FieldGFF(GFFFieldType.UInt8, 0),
+    }
     def __init__(
         self,
     ):
-        self.cost_table: int = 0
-        self.cost_value: int = 0
-        self.param1: int = 0
-        self.param1_value: int = 0
-        self.property_name: int = 0
-        self.subtype: int = 0
-        self.chance_appear: int = 100
-        self.upgrade_type: int | None = None
+        super().__init__()
+    @property
+    def cost_table(self) -> int:
+        return self.acquire("CostTable", self.CostTable)
 
+    @cost_table.setter
+    def cost_table(self, value: int):
+        self.CostTable = value
+
+    @property
+    def cost_value(self) -> int:
+        return self.acquire("CostValue", self.CostValue)
+
+    @cost_value.setter
+    def cost_value(self, value: int):
+        self.CostValue = value
+
+    @property
+    def param1(self) -> int:
+        return self.acquire("Param1", self.Param1)
+
+    @param1.setter
+    def param1(self, value: int):
+        self.Param1 = value
+
+    @property
+    def param1_value(self) -> int:
+        return self.acquire("Param1Value", self.Param1Value)
+
+    @param1_value.setter
+    def param1_value(self, value: int):
+        self.Param1Value = value
+
+    @property
+    def property_name(self) -> int:
+        return self.acquire("PropertyName", self.PropertyName)
+
+    @property_name.setter
+    def property_name(self, value: int):
+        self.PropertyName = value
+
+    @property
+    def subtype(self) -> int:
+        return self.acquire("Subtype", self.Subtype)
+
+    @subtype.setter
+    def subtype(self, value: int):
+        self.Subtype = value
+
+    @property
+    def chance_appear(self) -> int:
+        return self.acquire("ChanceAppear", self.ChanceAppear)
+
+    @chance_appear.setter
+    def chance_appear(self, value: int):
+        self.ChanceAppear = value
+
+    @property
+    def upgrade_type(self) -> int:
+        return self.acquire("UpgradeType", self.UpgradeType)
+
+    @upgrade_type.setter
+    def upgrade_type(self, value: int):
+        self.UpgradeType = value
 
 def construct_uti(
     gff: GFF,

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.gff import GFF
-    from pykotor.resource.formats.gff.gff_data import _GFFField
+    from pykotor.resource.formats.gff.gff_data import FieldGFF
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
@@ -171,7 +171,7 @@ class ModifyGFF(ABC):
         self,
         root_container: GFFStruct,
         path: PureWindowsPath | os.PathLike | str,
-    ) -> _GFFField | None:
+    ) -> FieldGFF | None:
         path = PureWindowsPath.pathify(path)
         # Use _navigate_containers to navigate to the container
         container: GFFList | GFFStruct | None = self._navigate_containers(root_container, path.parent)

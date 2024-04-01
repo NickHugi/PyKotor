@@ -287,8 +287,8 @@ class DLGEditor(Editor):
         self.ui.voIdEdit.setText(dlg.VO_ID)
         self.ui.ambientTrackEdit.setText(str(dlg.AmbientTrack))
         self.ui.cameraModelEdit.setText(str(dlg.CameraModel))
-        self.ui.conversationSelect.setCurrentIndex(dlg.ConversationType.value)
-        self.ui.computerSelect.setCurrentIndex(dlg.ComputerType.value)
+        self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
+        self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.Skippable)
         self.ui.animatedCutCheckbox.setChecked(bool(dlg.AnimatedCut))
         self.ui.oldHitCheckbox.setChecked(dlg.OldHitCheck)
@@ -366,7 +366,7 @@ class DLGEditor(Editor):
 
         if alreadyListed:
             return
-        for child_link in node._links:
+        for child_link in node.links:
             child_item = QStandardItem()
             self._loadDLGRec(child_item, child_link, seenLinks, seenNodes)
             item.appendRow(child_item)
@@ -575,7 +575,7 @@ class DLGEditor(Editor):
         """
         # Update DLG
         newNode: DLGNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
-        self._add_node_main(newNode, node._links, False, item)
+        self._add_node_main(newNode, node.links, False, item)
 
     def addRootNode(self):
         """Adds a root node to the dialog graph.
@@ -596,7 +596,7 @@ class DLGEditor(Editor):
         self._add_node_main(DLGEntry(), self._dlg.StartingList, False, self.model)
 
     def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
-        self._add_node_main(source, target._links, True, item)
+        self._add_node_main(source, target.links, True, item)
 
     def _add_node_main(
         self,
@@ -632,7 +632,7 @@ class DLGEditor(Editor):
         """
         sourceCopy: DLGNode = deepcopy(source)
         newLink = DLGLink(sourceCopy)
-        target._links.append(newLink)
+        target.links.append(newLink)
 
         newItem = QStandardItem()
         self._loadDLGRec(newItem, newLink, [], [])
@@ -645,9 +645,9 @@ class DLGEditor(Editor):
     def copyPath(self, node: DLGNode):
         path: str = ""
         if isinstance(node, DLGEntry):
-            path = f"EntryList\\{node._list_index}"
+            path = f"EntryList\\{node.Index}"
         elif isinstance(node, DLGReply):
-            path = f"ReplyList\\{node._list_index}"
+            path = f"ReplyList\\{node.Index}"
         if path:
             pyperclip.copy(path)
 
@@ -680,9 +680,9 @@ class DLGEditor(Editor):
             parentLink: DLGLink = parent.data(_LINK_ROLE)
             parentNode: DLGNode = parentLink._node
 
-            for link in copy(parentNode._links):
+            for link in copy(parentNode.links):
                 if link._node is node:
-                    parentNode._links.remove(link)
+                    parentNode.links.remove(link)
             parent.removeRow(item.row())
 
     def deleteSelectedNode(self):
@@ -769,12 +769,12 @@ class DLGEditor(Editor):
         else:
             prefix = "N"
 
-        list_prefix: str = f"{prefix}{node._list_index}: "
-        if not node._links:
+        list_prefix: str = f"{prefix}{node.Index}: "
+        if not node.links:
             item.setText(f"{list_prefix}[End Dialog]")
         else:
             text: str = self._installation.string(node.Text, "(continue)")
-            if node._list_index != -1:
+            if node.Index != -1:
                 text = f"{list_prefix}{text}"
             item.setText(text)
 
