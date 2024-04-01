@@ -111,21 +111,6 @@ class GFFContent(Enum):
             gff_content = GFFContent.INV
         return gff_content
 
-class GFFFieldTypeMeta(EnumMeta):
-    def __new__(metacls, cls, bases, classdict):
-        enum_class = super().__new__(metacls, cls, bases, classdict)
-        enum_class._member_classes = {}
-        for name, member in enum_class.__members__.items():
-            # Dynamically create a class for each member
-            member_class = type(name, (object,), {"_member": member})
-            enum_class._member_classes[member] = member_class
-            # Allow direct access to the class via the member
-            setattr(enum_class, name, member_class)
-        return enum_class
-
-    def __instancecheck__(self, instance: Any) -> bool:
-        # Override to allow isinstance checks
-        return instance.__class__ in self._member_classes.values()
 
 class GFFFieldType(IntEnum):
     """The different types of fields based off what kind of data it stores."""
