@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from copy import deepcopy
 from enum import IntEnum
-from typing import TYPE_CHECKING, ClassVar, TypedDict, Union
+from typing import TYPE_CHECKING, ClassVar, TypedDict
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
-from pykotor.common.misc import Game, ResRef
+from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.formats.gff.gff_data import FieldGFF, GFFFieldType, GFFStruct, GFFStructInterface  # noqa: PLC2701
+from pykotor.resource.formats.gff.gff_data import FieldGFF, FieldProperty, GFFFieldType, GFFStruct, GFFStructInterface  # noqa: PLC2701
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -25,6 +25,7 @@ class DLGConversationType(IntEnum):
     Human = 0
     Computer = 1
     Other = 2
+
 
 class DLGFields(TypedDict):
     EntryList: FieldGFF[GFFList[DLGEntry]]
@@ -55,42 +56,40 @@ class DLGFields(TypedDict):
     # Deprecated:
     DelayEntry: FieldGFF[int]
     DelayReply: FieldGFF[int]
-
 class DLG(GFFStructInterface):
     """Stores dialog data."""
 
     BINARY_TYPE = ResourceType.DLG
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "AmbientTrack": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "AnimatedCut": FieldGFF(GFFFieldType.UInt8, 0),
-        "CameraModel": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "ComputerType": FieldGFF(GFFFieldType.UInt8, DLGComputerType.Modern.value),
-        "ConversationType": FieldGFF(GFFFieldType.Int32, DLGConversationType.Human.value),
-        "EndConverAbort": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "EndConversation": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "Skippable": FieldGFF(GFFFieldType.UInt8, 0),
 
-        "EntryList": FieldGFF(GFFFieldType.List, GFFList()),
-        "ReplyList": FieldGFF(GFFFieldType.List, GFFList()),
-        "StuntList": FieldGFF(GFFFieldType.List, GFFList()),
-        "StartingList": FieldGFF(GFFFieldType.List, GFFList()),
+    ambient_track: FieldProperty[ResRef, ResRef] = FieldProperty("AmbientTrack", GFFFieldType.ResRef)
+    animated_cut = FieldProperty("AnimatedCut", GFFFieldType.UInt8)
+    camera_model: FieldProperty[ResRef, ResRef] = FieldProperty("CameraModel", GFFFieldType.ResRef)
+    computer_type = FieldProperty("ComputerType", GFFFieldType.UInt8, return_type=DLGComputerType)
+    conversation_type = FieldProperty("ConversationType", GFFFieldType.Int32, return_type=DLGConversationType)
+    on_abort: FieldProperty[ResRef, ResRef] = FieldProperty("EndConverAbort", GFFFieldType.ResRef)
+    on_end: FieldProperty[ResRef, ResRef] = FieldProperty("EndConversation", GFFFieldType.ResRef)
+    skippable: FieldProperty[int, bool] = FieldProperty("Skippable", GFFFieldType.UInt8, return_type=bool)
 
-        "NumWords": FieldGFF(GFFFieldType.UInt32, 0),
-        "OldHitCheck": FieldGFF(GFFFieldType.UInt8, 0),
-        "UnequipHItem": FieldGFF(GFFFieldType.UInt8, 0),
-        "UnequipItems": FieldGFF(GFFFieldType.UInt8, 0),
-        "VO_ID": FieldGFF(GFFFieldType.String, ""),
+    entries: FieldProperty[GFFList[GFFStruct], GFFList[DLGEntry]] = FieldProperty("EntryList", GFFFieldType.List, GFFList())
+    replies: FieldProperty[GFFList[GFFStruct], GFFList[DLGReply]] = FieldProperty("ReplyList", GFFFieldType.List, GFFList())
+    stunts: FieldProperty[GFFList[DLGStunt], GFFList[GFFStruct]] = FieldProperty("StuntList", GFFFieldType.List, GFFList())
+    starters: FieldProperty[GFFList[DLGLink], GFFList[GFFStruct]] = FieldProperty("StartingList", GFFFieldType.List, GFFList())
 
-        "DelayEntry": FieldGFF(GFFFieldType.UInt32, 0),  # Not used by game engine
-        "DelayReply": FieldGFF(GFFFieldType.UInt32, 0),  # Not used by game engine
-    }
+    word_count: FieldProperty[int, int] = FieldProperty("NumWords", GFFFieldType.UInt32)
+    old_hit_check: FieldProperty[int, bool] = FieldProperty("OldHitCheck", GFFFieldType.UInt8, return_type=bool)
+    unequip_hands: FieldProperty[int, bool] = FieldProperty("UnequipHItem", GFFFieldType.UInt8, return_type=bool)
+    unequip_items: FieldProperty[int, bool] = FieldProperty("UnequipItems", GFFFieldType.UInt8, return_type=bool)
+    vo_id: FieldProperty[str, str] = FieldProperty("VO_ID", GFFFieldType.String, "")
 
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "AlienRaceOwner": FieldGFF(GFFFieldType.Int32, 0),
-        "NextNodeID": FieldGFF(GFFFieldType.Int32, 0),
-        "PostProcOwner": FieldGFF(GFFFieldType.Int32, 0),
-        "RecordNoVO": FieldGFF(GFFFieldType.Int32, 0),
-    }
+    # KotOR 2 TSL Only.
+    alien_race_owner: FieldProperty[int, int] = FieldProperty("AlienRaceOwner", GFFFieldType.Int32, game=Game.K2)
+    next_node_id: FieldProperty[int, int] = FieldProperty("NextNodeID", GFFFieldType.Int32, game=Game.K2)
+    post_proc_owner: FieldProperty[int, int] = FieldProperty("PostProcOwner", GFFFieldType.Int32, game=Game.K2)
+    record_no_vo: FieldProperty[int, int] = FieldProperty("RecordNoVO", GFFFieldType.Int32, game=Game.K2)
+
+    # Deprecated. Not used by either game engine
+    delay_entry: FieldProperty[int, int] = FieldProperty("DelayEntry", GFFFieldType.UInt32)
+    delay_reply: FieldProperty[int, int] = FieldProperty("DelayReply", GFFFieldType.UInt32)  # Not used by game engine
 
     def __init__(
         self,
@@ -115,206 +114,6 @@ class DLG(GFFStructInterface):
             starter._node.text.set_data(Language.ENGLISH, Gender.MALE, "")
             self.starters.append(starter)
             return
-
-    def __deepcopy__(self, memo):
-        ...
-
-    @property
-    def stunts(self) -> GFFList[DLGStunt]: return self._fields.get("StuntList", self.FIELDS["StuntList"]).value()
-    @stunts.setter
-    def stunts(self, value: FieldGFF[GFFList[DLGStunt]] | GFFList[DLGStunt]):
-        if isinstance(value, GFFList):
-            value = FieldGFF(GFFFieldType.List, value)
-        self._fields["StuntList"] = value
-
-    @property
-    def text(self) -> LocalizedString: return self["Text"].value()
-    @text.setter
-    def text(self, value: FieldGFF[LocalizedString] | LocalizedString):
-        if isinstance(value, LocalizedString):
-            value = FieldGFF(GFFFieldType.LocalizedString, value)
-        self["Text"] = value
-
-    @property
-    def starters(self) -> GFFList[DLGLink]: return self._fields.get("StartingList", self.FIELDS["StartingList"]).value()
-    @starters.setter
-    def starters(self, value: FieldGFF[GFFList[DLGLink]] | GFFList[DLGLink]):
-        if isinstance(value, GFFList):
-            value = FieldGFF(GFFFieldType.List, value)
-        self._fields["StartingList"] = value
-
-    @property
-    def animated_cut(self) -> int: return self._fields["AnimatedCut"].value()
-    @animated_cut.setter
-    def animated_cut(self, value: FieldGFF[int] | int):
-        if isinstance(value, int):
-            value = FieldGFF(GFFFieldType.UInt8, value)
-        self._fields["AnimatedCut"] = value
-
-    @property
-    def vo_id(self) -> str: return self._fields["VO_ID"].value()
-    @vo_id.setter
-    def vo_id(self, value: FieldGFF[str] | str):
-        if isinstance(value, str):
-            value = FieldGFF(GFFFieldType.String, value)
-        self._fields["VO_ID"] = value
-
-    @property
-    def camera_model(self) -> ResRef:
-        return self._fields["CameraModel"].value()
-    @camera_model.setter
-    def camera_model(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["CameraModel"] = value
-
-    @property
-    def on_abort(self) -> ResRef:
-        return self._fields["EndConverAbort"].value()
-    @on_abort.setter
-    def on_abort(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["EndConverAbort"] = value
-
-    @property
-    def on_end(self) -> ResRef:
-        return self._fields["EndConversation"].value()
-    @on_end.setter
-    def on_end(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["EndConversation"] = value
-
-    @property
-    def ambient_track(self) -> ResRef:
-        return self._fields["AmbientTrack"].value()
-    @ambient_track.setter
-    def ambient_track(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["AmbientTrack"] = value
-
-    @property
-    def alien_race_owner(self) -> int:
-        return self._fields["AlienRaceOwner"].value()
-    @alien_race_owner.setter
-    def alien_race_owner(self, value: FieldGFF[int]):
-        self._fields["AlienRaceOwner"] = value
-
-    @property
-    def post_proc_owner(self) -> int:
-        return self._fields["PostProcOwner"].value()
-    @post_proc_owner.setter
-    def post_proc_owner(self, value: FieldGFF[int]):
-        self._fields["PostProcOwner"] = value
-
-    @property
-    def next_node_id(self) -> int:
-        return self._fields["NextNodeID"].value()
-    @next_node_id.setter
-    def next_node_id(self, value: FieldGFF[int]):
-        self._fields["NextNodeID"] = value
-
-    @property
-    def record_no_vo(self) -> int:
-        return self._fields["RecordNoVO"].value()
-    @record_no_vo.setter
-    def record_no_vo(self, value: FieldGFF[int]):
-        self._fields["RecordNoVO"] = value
-
-    @property
-    def word_count(self) -> int:
-        return self._fields["NumWords"].value()
-    @word_count.setter
-    def word_count(self, value: FieldGFF[int]):
-        self._fields["NumWords"] = value
-
-    @property
-    def skippable(self) -> bool:
-        return bool(self._fields["Skippable"].value())
-    @skippable.setter
-    def skippable(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            self._fields["Skippable"] = value
-        else:
-            self._fields["Skippable"] = FieldGFF(GFFFieldType.UInt8, int(value))
-
-    @property
-    def old_hit_check(self) -> bool:
-        return bool(self._fields["OldHitCheck"].value())
-    @old_hit_check.setter
-    def old_hit_check(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            self._fields["OldHitCheck"] = value
-        else:
-            self._fields["OldHitCheck"] = FieldGFF(GFFFieldType.UInt8, int(value))
-
-    @property
-    def unequip_hands(self) -> bool:
-        return bool(self._fields["UnequipHItem"].value())
-    @unequip_hands.setter
-    def unequip_hands(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            self._fields["UnequipHItem"] = value
-        else:
-            self._fields["UnequipHItem"] = FieldGFF(GFFFieldType.UInt8, int(value))
-
-    @property
-    def unequip_items(self) -> bool:
-        return bool(self._fields["UnequipItems"].value())
-    @unequip_items.setter
-    def unequip_items(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            self._fields["UnequipItems"] = value
-        else:
-            self._fields["UnequipItems"] = FieldGFF(GFFFieldType.UInt8, int(value))
-
-    @property
-    def computer_type(self) -> DLGComputerType:
-        return DLGComputerType(self._fields["ComputerType"].value())
-    @computer_type.setter
-    def computer_type(self, value: FieldGFF[int] | DLGComputerType | int):
-        if isinstance(value, DLGComputerType):
-            value = FieldGFF(GFFFieldType.UInt8, value.value)
-        elif isinstance(value, int):
-            value = FieldGFF(GFFFieldType.UInt8, value)
-        self._fields["ComputerType"] = value
-
-    @property
-    def conversation_type(self) -> DLGConversationType:
-        return DLGConversationType(self._fields["ConversationType"].value())
-    @conversation_type.setter
-    def conversation_type(self, value: FieldGFF[int] | DLGConversationType | int):
-        if isinstance(value, DLGConversationType):
-            value = FieldGFF(GFFFieldType.Int32, value.value)
-        elif isinstance(value, int):
-            value = FieldGFF(GFFFieldType.Int32, value)
-        self._fields["ConversationType"] = value
-
-    # Deprecated
-    @property
-    def delay_entry(self) -> int: return self._fields["DelayEntry"].value()
-    @delay_entry.setter
-    def delay_entry(self, value: FieldGFF[int] | int):
-        if isinstance(value, int):
-            value = FieldGFF(GFFFieldType.UInt32, value)
-        self._fields["DelayEntry"] = value
-    @property
-    def delay_reply(self) -> int: return self._fields["DelayReply"].value()
-    @delay_reply.setter
-    def delay_reply(self, value: FieldGFF[int] | int):
-        if isinstance(value, int):
-            value = FieldGFF(GFFFieldType.UInt32, value)
-        self._fields["DelayReply"] = value
 
     def print_tree(
         self,
@@ -459,6 +258,7 @@ class DLG(GFFStructInterface):
 
         return replies
 
+
 class DLGNodeFields(TypedDict):
     Comment: FieldGFF[str]
     AnimList: FieldGFF[GFFList[DLGAnimation]]
@@ -517,63 +317,58 @@ class DLGNodeFields(TypedDict):
     RecordNoOverri: FieldGFF[int]
     RecordVO: FieldGFF[int]
     VOTextChanged: FieldGFF[int]
-
 class DLGNode(GFFStructInterface):
     """Represents a node in the dialog tree."""
 
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "Text": FieldGFF(GFFFieldType.LocalizedString, LocalizedString.from_invalid()),
-        "Listener": FieldGFF(GFFFieldType.String, ""),
-        "VO_ResRef": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "Script": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "Delay": FieldGFF(GFFFieldType.UInt32, 0xFFFFFFFF),
-        "Comment": FieldGFF(GFFFieldType.String, ""),
-        "AnimList": FieldGFF(GFFFieldType.List, GFFList()),
-        "Sound": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "Quest": FieldGFF(GFFFieldType.String, ""),
-        "PlotIndex": FieldGFF(GFFFieldType.Int32, 0),
-        "PlotXPPercentage": FieldGFF(GFFFieldType.Single, 0.0),
-        "WaitFlags": FieldGFF(GFFFieldType.UInt32, 0),
-        "CameraAngle": FieldGFF(GFFFieldType.UInt32, 0),
-        "FadeType": FieldGFF(GFFFieldType.UInt8, 0),
-        "SoundExists": FieldGFF(GFFFieldType.UInt8, 0),
-        "Changed": FieldGFF(GFFFieldType.UInt8, 0),
-        "QuestEntry": FieldGFF(GFFFieldType.UInt32, 0),
-        "FadeDelay": FieldGFF(GFFFieldType.Single, 0.0),
-        "FadeLength": FieldGFF(GFFFieldType.Single, 0.0),
-        "CameraAnimation": FieldGFF(GFFFieldType.UInt16, -1),
-        "CameraID": FieldGFF(GFFFieldType.Int32, 0),
-        "CamFieldOfView": FieldGFF(GFFFieldType.Single, 0.0),
-        "CamHeightOffset": FieldGFF(GFFFieldType.Single, 0.0),
-        "CamVidEffect": FieldGFF(GFFFieldType.Int32, 0),
-        "TarHeightOffset": FieldGFF(GFFFieldType.Single, 0.0),
-        "FadeColor": FieldGFF(GFFFieldType.Vector3, Vector3.from_null()),
-    }
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "NodeID": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam1": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam2": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam3": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam4": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam5": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParamStrA": FieldGFF(GFFFieldType.String, ""),
-        "Script2": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "ActionParam1b": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam2b": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam3b": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam4b": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParam5b": FieldGFF(GFFFieldType.Int32, 0),
-        "ActionParamStrB": FieldGFF(GFFFieldType.String, ""),
-        "AlienRaceNode": FieldGFF(GFFFieldType.Int32, 0),
-        "FacialAnim": FieldGFF(GFFFieldType.Int32, 0),
-        "Emotion": FieldGFF(GFFFieldType.Int32, 0),
-        "NodeUnskippable": FieldGFF(GFFFieldType.Int32, 0),
-        "PostProcNode": FieldGFF(GFFFieldType.Int32, 0),
-        "RecordNoVOOverri": FieldGFF(GFFFieldType.Int32, 0),
-        "RecordNoOverri": FieldGFF(GFFFieldType.Int32, 0),
-        "RecordVO": FieldGFF(GFFFieldType.Int32, 0),
-        "VOTextChanged": FieldGFF(GFFFieldType.Int32, 0),
-    }
+    text: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("Text", GFFFieldType.LocalizedString, LocalizedString.from_invalid())
+    listener = FieldProperty("Listener", GFFFieldType.String, "")
+    vo_resref = FieldProperty("VO_ResRef", GFFFieldType.ResRef)
+    script1 = FieldProperty("Script", GFFFieldType.ResRef)
+    delay = FieldProperty("Delay", GFFFieldType.UInt32, 0xFFFFFFFF)
+    comment = FieldProperty("Comment", GFFFieldType.String, "")
+    animations = FieldProperty("AnimList", GFFFieldType.List, GFFList())
+    sound = FieldProperty("Sound", GFFFieldType.ResRef)
+    quest = FieldProperty("Quest", GFFFieldType.String, "")
+    plot_index = FieldProperty("PlotIndex", GFFFieldType.Int32)
+    plot_xp_percentage = FieldProperty("PlotXPPercentage", GFFFieldType.Single, 0.0)
+    wait_flags = FieldProperty("WaitFlags", GFFFieldType.UInt32)
+    camera_angle = FieldProperty("CameraAngle", GFFFieldType.UInt32)
+    fade_type = FieldProperty("FadeType", GFFFieldType.UInt8)
+    sound_exists = FieldProperty("SoundExists", GFFFieldType.UInt8)
+    placeholder = FieldProperty("Changed", GFFFieldType.UInt8)  # ???
+    quest_entry = FieldProperty("QuestEntry", GFFFieldType.UInt32)
+    fade_delay = FieldProperty("FadeDelay", GFFFieldType.Single, 0.0)
+    fade_length = FieldProperty("FadeLength", GFFFieldType.Single, 0.0)
+    camera_anim = FieldProperty("CameraAnimation", GFFFieldType.UInt16, -1)
+    camera_id = FieldProperty("CameraID", GFFFieldType.Int32)
+    camera_fov = FieldProperty("CamFieldOfView", GFFFieldType.Single, 0.0)
+    camera_height = FieldProperty("CamHeightOffset", GFFFieldType.Single, 0.0)
+    camera_effect = FieldProperty("CamVidEffect", GFFFieldType.Int32)
+    tar_offset = FieldProperty("TarHeightOffset", GFFFieldType.Single, 0.0)
+    fade_color = FieldProperty("FadeColor", GFFFieldType.Vector3, Vector3.from_null(), return_type=Color)
+    node_id = FieldProperty("NodeID", GFFFieldType.Int32)
+    script1_param1 = FieldProperty("ActionParam1", GFFFieldType.Int32)
+    script1_param2 = FieldProperty("ActionParam2", GFFFieldType.Int32)
+    script1_param3 = FieldProperty("ActionParam3", GFFFieldType.Int32)
+    script1_param4 = FieldProperty("ActionParam4", GFFFieldType.Int32)
+    script1_param5 = FieldProperty("ActionParam5", GFFFieldType.Int32)
+    script1_param6 = FieldProperty("ActionParamStrA", GFFFieldType.String, "")
+    script2 = FieldProperty("Script2", GFFFieldType.ResRef)
+    script2_param1 = FieldProperty("ActionParam1b", GFFFieldType.Int32)
+    script2_param2 = FieldProperty("ActionParam2b", GFFFieldType.Int32)
+    script2_param3 = FieldProperty("ActionParam3b", GFFFieldType.Int32)
+    script2_param4 = FieldProperty("ActionParam4b", GFFFieldType.Int32)
+    script2_param5 = FieldProperty("ActionParam5b", GFFFieldType.Int32)
+    script2_param6 = FieldProperty("ActionParamStrB", GFFFieldType.String, "")
+    alien_race_node = FieldProperty("AlienRaceNode", GFFFieldType.Int32)
+    facial_id = FieldProperty("FacialAnim", GFFFieldType.Int32)
+    emotion_id = FieldProperty("Emotion", GFFFieldType.Int32)
+    unskippable = FieldProperty("NodeUnskippable", GFFFieldType.Int32)
+    post_proc_node = FieldProperty("PostProcNode", GFFFieldType.Int32)
+    record_no_vo_override = FieldProperty("RecordNoVOOverri", GFFFieldType.Int32)
+    record_no_vo_override2 = FieldProperty("RecordNoOverri", GFFFieldType.Int32)  # ??? is this or the above the correct one?
+    record_vo = FieldProperty("RecordVO", GFFFieldType.Int32)
+    vo_text_changed = FieldProperty("VOTextChanged", GFFFieldType.Int32)
 
     def __init__(
         self,
@@ -593,366 +388,12 @@ class DLGNode(GFFStructInterface):
         for animation in self.animations:
             animation.__class__ = DLGAnimation
 
-    @property
-    def animations(self) -> GFFList[DLGAnimation]: return self._fields.get("AnimList", self.FIELDS["AnimList"]).value()
-    @animations.setter
-    def animations(self, value: FieldGFF[GFFList[DLGAnimation]] | GFFList[DLGAnimation]):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_list("AnimList", value)
-
-    @property
-    def text(self) -> LocalizedString: return self._fields["Text"].value()
-    @text.setter
-    def text(self, value: FieldGFF[LocalizedString] | LocalizedString):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_locstring("Text", value)
-
-    @property
-    def emotion_id(self) -> int: return self._fields["Emotion"].value()
-    @emotion_id.setter
-    def emotion_id(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("Emotion", value)
-
-    @property
-    def facial_id(self) -> int: return self._fields["FacialAnim"].value()
-    @facial_id.setter
-    def facial_id(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("FacialAnim", value)
-
-    @property
-    def quest_entry(self) -> int: return self._fields["QuestEntry"].value()
-    @quest_entry.setter
-    def quest_entry(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("QuestEntry", value)
-
-    @property
-    def camera_anim(self) -> int: return self._fields["CameraAnimation"].value()
-    @camera_anim.setter
-    def camera_anim(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint16("CameraAnimation", value)
-
-    @property
-    def node_id(self) -> int: return self._fields["NodeID"].value()
-    @node_id.setter
-    def node_id(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("NodeID", value)
-
-    @property
-    def unskippable(self) -> bool: return bool(self._fields["NodeUnskippable"].value())
-    @unskippable.setter
-    def unskippable(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("NodeUnskippable", int(value))
-
-    @property
-    def post_proc_node(self) -> int: return self._fields["PostProcNode"].value()
-    @post_proc_node.setter
-    def post_proc_node(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("PostProcNode", value)
-
-    @property
-    def record_no_vo_override(self) -> int: return self._fields["RecordNoVOOverri"].value()
-    @record_no_vo_override.setter
-    def record_no_vo_override(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("RecordNoVOOverri", value)
-
-    @property
-    def record_vo(self) -> int: return self._fields["RecordVO"].value()
-    @record_vo.setter
-    def record_vo(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("RecordVO", value)
-
-    @property
-    def camera_id(self) -> int: return self._fields["CameraID"].value()
-    @camera_id.setter
-    def camera_id(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("CameraID", value)
-
-    @property
-    def camera_effect(self) -> int: return self._fields["CamVidEffect"].value()
-    @camera_effect.setter
-    def camera_effect(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("CamVidEffect", value)
-
-    @property
-    def listener(self) -> str: return self._fields["Listener"].value()
-    @listener.setter
-    def listener(self, value: FieldGFF[str] | str):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_string(value)
-
-    @property
-    def alien_race_node(self) -> int: return self._fields["AlienRaceNode"].value()
-    @alien_race_node.setter
-    def alien_race_node(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("AlienRaceNode", value)
-
-    @property
-    def vo_resref(self) -> ResRef: return self._fields["VO_ResRef"].value()
-    @vo_resref.setter
-    def vo_resref(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["VO_ResRef"] = value
-
-    @property
-    def script1(self) -> ResRef: return self._fields["Script"].value()
-    @script1.setter
-    def script1(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["Script"] = value
-
-    @property
-    def delay(self) -> int:
-        overflow = -1
-        value = self._fields["Delay"].value()
-        return overflow if value == 4294967295 else value
-    @delay.setter
-    def delay(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint32("Delay", value)
-
-    @property
-    def comment(self) -> str: return self._fields["Comment"].value()
-    @comment.setter
-    def comment(self, value: FieldGFF[str] | str):
-        if isinstance(value, str):
-            value = FieldGFF(GFFFieldType.String, value)
-        self._fields["Comment"] = value
-
-    @property
-    def sound(self) -> ResRef: return self._fields["Sound"].value()
-    @sound.setter
-    def sound(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["Sound"] = value
-
-    @property
-    def quest(self) -> str: return self._fields["Quest"].value()
-    @quest.setter
-    def quest(self, value: FieldGFF[str] | str):
-        if isinstance(value, str):
-            value = FieldGFF(GFFFieldType.String, value)
-        self._fields["Quest"] = value
-
-    @property
-    def plot_index(self) -> int: return self._fields["PlotIndex"].value()
-    @plot_index.setter
-    def plot_index(self, value: FieldGFF[int] | int):
-        if isinstance(value, int):
-            value = FieldGFF(GFFFieldType.Int32, value)
-        self._fields["PlotIndex"] = value
-
-    @property
-    def plot_xp_percentage(self) -> float: return self._fields["PlotXPPercentage"].value()
-    @plot_xp_percentage.setter
-    def plot_xp_percentage(self, value: FieldGFF[float] | float):
-        if isinstance(value, float):
-            value = FieldGFF(GFFFieldType.Single, value)
-        assert not isinstance(value, int)
-        self._fields["PlotXPPercentage"] = value
-
-    @property
-    def wait_flags(self) -> int: return self._fields["WaitFlags"].value()
-    @wait_flags.setter
-    def wait_flags(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint32("WaitFlags", value)
-
-    @property
-    def camera_angle(self) -> int: return self._fields["CameraAngle"].value()
-    @camera_angle.setter
-    def camera_angle(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint32("CameraAngle", value)
-
-    @property
-    def fade_type(self) -> int: return self._fields["FadeType"].value()
-    @fade_type.setter
-    def fade_type(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint8("FadeType", value)
-
-    @property
-    def sound_exists(self) -> bool: return bool(self._fields.get("SoundExists", self.FIELDS["SoundExists"]).value())
-    @sound_exists.setter
-    def sound_exists(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint8("SoundExists", int(value))
-
-    @property
-    def vo_text_changed(self) -> bool: return bool(self._fields["VOTextChanged"].value())
-    @vo_text_changed.setter
-    def vo_text_changed(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint8("VOTextChanged", int(value))
-
-    # KotOR 2 specific fields
-    @property
-    def script1_param1(self) -> int: return self._fields["ActionParam1"].value()
-    @script1_param1.setter
-    def script1_param1(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam1", value)
-
-    @property
-    def script1_param2(self) -> int: return self._fields["ActionParam2"].value()
-    @script1_param2.setter
-    def script1_param2(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam2", value)
-
-    @property
-    def script1_param3(self) -> int: return self._fields["ActionParam3"].value()
-    @script1_param3.setter
-    def script1_param3(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam3", value)
-
-    @property
-    def script1_param4(self) -> int: return self._fields["ActionParam4"].value()
-    @script1_param4.setter
-    def script1_param4(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam4", value)
-
-    @property
-    def script1_param5(self) -> int: return self._fields["ActionParam5"].value()
-    @script1_param5.setter
-    def script1_param5(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam5", value)
-
-    @property
-    def script1_param6(self) -> str: return self._fields["ActionParamStrA"].value()
-    @script1_param6.setter
-    def script1_param6(self, value: FieldGFF[str] | str):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_string("ActionParamStrA", value)
-
-    @property
-    def script2(self) -> ResRef: return self._fields["Script2"].value()
-    @script2.setter
-    def script2(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["Script2"] = value
-
-    @property
-    def script2_param1(self) -> int: return self._fields["ActionParam1b"].value()
-    @script2_param1.setter
-    def script2_param1(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam1b", value)
-
-    @property
-    def script2_param2(self) -> int: return self._fields["ActionParam2b"].value()
-    @script2_param2.setter
-    def script2_param2(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam2b", value)
-
-    @property
-    def script2_param3(self) -> int: return self._fields["ActionParam3b"].value()
-    @script2_param3.setter
-    def script2_param3(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam3b", value)
-
-
-    @property
-    def script2_param4(self) -> int: return self._fields["ActionParam4b"].value()
-    @script2_param4.setter
-    def script2_param4(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam4b", value)
-
-    @property
-    def script2_param5(self) -> int: return self._fields["ActionParam5b"].value()
-    @script2_param5.setter
-    def script2_param5(self, value: FieldGFF[int] | int):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_int32("ActionParam5b", value)
-
-    @property
-    def script2_param6(self) -> str: return self._fields["ActionParamStrB"].value()
-    @script2_param6.setter
-    def script2_param6(self, value: FieldGFF[str] | str):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_string("ActionParamStrB", value)
-
-    def __repr__(
-        self,
-    ):
-        return str(self.text.get(Language.ENGLISH, Gender.MALE))
 
 class DLGReplyFields(TypedDict):
     EntriesList: FieldGFF[GFFList[DLGLink]]
-
 class DLGReply(DLGNode):
     """Replies are nodes that are responses by the player."""
-
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        **DLGNode.FIELDS,
-        "EntriesList": FieldGFF(GFFFieldType.List, GFFList()),
-    }
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        **DLGNode.K2_FIELDS
-    }
+    links = FieldProperty("EntriesList", GFFFieldType.List, GFFList())
 
     def __init__(
         self,
@@ -960,30 +401,14 @@ class DLGReply(DLGNode):
         super().__init__()
         self._fields: DLGReplyFields
 
-    @property
-    def links(self) -> GFFList[DLGLink]: return self._fields["EntriesList"].value()
-    @links.setter
-    def links(self, value: FieldGFF[GFFList[DLGLink]] | GFFList[DLGLink]):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_list("EntriesList", value)
-
 
 class DLGEntryFields(TypedDict):
     Speaker: FieldGFF[str]
     RepliesList: FieldGFF[GFFList[DLGLink]]
-
 class DLGEntry(DLGNode):
     """Entries are nodes that are responses by NPCs."""
-
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        **DLGNode.FIELDS,
-        "Speaker": FieldGFF(GFFFieldType.String, ""),
-        "RepliesList": FieldGFF(GFFFieldType.List, GFFList()),
-    }
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        **DLGNode.K2_FIELDS
-    }
+    speaker = FieldProperty("Speaker", GFFFieldType.String, "")
+    links = FieldProperty("RepliesList", GFFFieldType.List, GFFList())
 
     def __init__(
         self,
@@ -991,35 +416,15 @@ class DLGEntry(DLGNode):
         super().__init__()
         self._fields: DLGEntryFields
 
-    @property
-    def speaker(self) -> str: return self._fields.get("Speaker", self.FIELDS["Speaker"]).value()
-    @speaker.setter
-    def speaker(self, value: FieldGFF[str] | str):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_string("Speaker", value)
-
-    @property
-    def links(self) -> GFFList[DLGLink]: return self._fields["RepliesList"].value()
-    @links.setter
-    def links(self, value: FieldGFF[GFFList[DLGLink]] | GFFList[DLGLink]):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_list("RepliesList", value)
-
 
 class DLGAnimationFields(TypedDict):
     Animation: FieldGFF[int]
     Participant: FieldGFF[str]
-
-
 class DLGAnimation(GFFStructInterface):
     """Represents a unit of animation executed during a node."""
 
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "Animation": FieldGFF(GFFFieldType.UInt32, 6),
-        "Participant": FieldGFF(GFFFieldType.String, ""),
-    }
+    animation_id = FieldProperty("Animation", GFFFieldType.UInt32, 6)
+    participant = FieldProperty("Participant", GFFFieldType.String, "")
     K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {}
 
     def __init__(
@@ -1027,22 +432,6 @@ class DLGAnimation(GFFStructInterface):
     ) -> None:
         super().__init__()
         self._fields: DLGAnimationFields
-
-    @property
-    def animation_id(self) -> int: return self._fields.get("Animation", self.FIELDS["Animation"]).value()
-    @animation_id.setter
-    def animation_id(self, value: FieldGFF[int] | int) -> None:
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint32("Animation", value)
-
-    @property
-    def participant(self) -> str: return self._fields.get("Participant", self.FIELDS["Participant"]).value()
-    @participant.setter
-    def participant(self, value: FieldGFF[str] | str):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_string("Participant", value)
 
 
 class DLGLinkFields(TypedDict):
@@ -1072,38 +461,32 @@ class DLGLinkFields(TypedDict):
     Param4b: FieldGFF[int]
     Param5b: FieldGFF[int]
     ParamStrB: FieldGFF[str]
-
-
 class DLGLink(GFFStructInterface):
     """Points to a node. Links are stored either in other nodes or in the starting list of the DLG."""
 
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "Active": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
+    active1 = FieldProperty("Active", GFFFieldType.ResRef)
 
-        # not in StartingList
-        "LinkComment": FieldGFF(GFFFieldType.String, ""),
-        "IsChild": FieldGFF(GFFFieldType.UInt8, 0),
-        "Index": FieldGFF(GFFFieldType.UInt32, 0),
-    }
+    # not in StartingList
+    comment = FieldProperty("LinkComment", GFFFieldType.String, "")
+    is_child = FieldProperty("IsChild", GFFFieldType.UInt8)
+    link_index = FieldProperty("Index", GFFFieldType.UInt32)
 
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "Active2": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-        "Logic": FieldGFF(GFFFieldType.Int32, 0),
-        "Not": FieldGFF(GFFFieldType.UInt8, 0),
-        "Not2": FieldGFF(GFFFieldType.UInt8, 0),
-        "Param1": FieldGFF(GFFFieldType.Int32, 0),
-        "Param2": FieldGFF(GFFFieldType.Int32, 0),
-        "Param3": FieldGFF(GFFFieldType.Int32, 0),
-        "Param4": FieldGFF(GFFFieldType.Int32, 0),
-        "Param5": FieldGFF(GFFFieldType.Int32, 0),
-        "ParamStrA": FieldGFF(GFFFieldType.String, ""),
-        "Param1b": FieldGFF(GFFFieldType.Int32, 0),
-        "Param2b": FieldGFF(GFFFieldType.Int32, 0),
-        "Param3b": FieldGFF(GFFFieldType.Int32, 0),
-        "Param4b": FieldGFF(GFFFieldType.Int32, 0),
-        "Param5b": FieldGFF(GFFFieldType.Int32, 0),
-        "ParamStrB": FieldGFF(GFFFieldType.String, ""),
-    }
+    active2 = FieldProperty("Active2", GFFFieldType.ResRef, game=Game.K2)
+    logic = FieldProperty("Logic", GFFFieldType.Int32, game=Game.K2)
+    active1_not = FieldProperty("Not", GFFFieldType.UInt8, game=Game.K2)
+    active2_not = FieldProperty("Not2", GFFFieldType.UInt8, game=Game.K2)
+    active1_param1 = FieldProperty("Param1", GFFFieldType.Int32, game=Game.K2)
+    active1_param2 = FieldProperty("Param2", GFFFieldType.Int32, game=Game.K2)
+    active1_param3 = FieldProperty("Param3", GFFFieldType.Int32, game=Game.K2)
+    active1_param4 = FieldProperty("Param4", GFFFieldType.Int32, game=Game.K2)
+    active1_param5 = FieldProperty("Param5", GFFFieldType.Int32, game=Game.K2)
+    active1_param6 = FieldProperty("ParamStrA", GFFFieldType.String, "", game=Game.K2)
+    active2_param1 = FieldProperty("Param1b", GFFFieldType.Int32, game=Game.K2)
+    active2_param2 = FieldProperty("Param2b", GFFFieldType.Int32, game=Game.K2)
+    active2_param3 = FieldProperty("Param3b", GFFFieldType.Int32, game=Game.K2)
+    active2_param4 = FieldProperty("Param4b", GFFFieldType.Int32, game=Game.K2)
+    active2_param5 = FieldProperty("Param5b", GFFFieldType.Int32, game=Game.K2)
+    active2_param6 = FieldProperty("ParamStrB", GFFFieldType.String, "", game=Game.K2)
 
     def __init__(
         self,
@@ -1113,179 +496,19 @@ class DLGLink(GFFStructInterface):
         self._fields: DLGLinkFields
         self._node: DLGNode = node
 
-    @property
-    def link_index(self) -> int: return self._fields["Index"].value()
-    @link_index.setter
-    def link_index(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint8("Index", int(value))
-
-    @property
-    def active1(self) -> ResRef: return self._fields.get("Active", self.FIELDS["Active"]).value()
-    @active1.setter
-    def active1(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_resref("Active", value if isinstance(value, ResRef) else ResRef(value))
-
-    @property
-    def is_child(self) -> bool: return bool(self._fields.get("IsChild", self.FIELDS["IsChild"]).value())
-    @is_child.setter
-    def is_child(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, FieldGFF):
-            value = value.value()
-        self.set_uint8("IsChild", int(value))
-
-    @property
-    def comment(self) -> str: return self._fields.get("LinkComment", self.FIELDS["LinkComment"]).value()
-    @comment.setter
-    def comment(self, value: FieldGFF[str] | str):
-        if isinstance(value, str):
-            value = FieldGFF(GFFFieldType.String, value)
-        self._fields["LinkComment"] = value
-
-    @property
-    def active2(self) -> ResRef: return self._fields.get("Active2", self.K2_FIELDS["Active2"]).value()
-    @active2.setter
-    def active2(self, value: FieldGFF[ResRef] | str | ResRef):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["Active2"] = value
-
-    @property
-    def active1_not(self) -> bool: return bool(self._fields.get("Not", self.K2_FIELDS["Not"]).value())
-    @active1_not.setter
-    def active1_not(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, (int, bool)):
-            value = FieldGFF(GFFFieldType.UInt8, int(value))
-        self._fields["Not"] = value
-
-    @property
-    def active2_not(self) -> bool: return bool(self._fields.get("Not2", self.K2_FIELDS["Not2"]).value())
-    @active2_not.setter
-    def active2_not(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, (int, bool)):
-            value = FieldGFF(GFFFieldType.UInt8, int(value))
-        self._fields["Not2"] = value
-
-    @property
-    def logic(self) -> bool: return bool(self._fields.get("Param1", self.K2_FIELDS["Logic"]).value())
-    @logic.setter
-    def logic(self, value: FieldGFF[int] | int | bool):
-        if isinstance(value, (int, bool)):
-            value = FieldGFF(GFFFieldType.UInt8, int(value))
-        self._fields["Logic"] = value
-
-    @property
-    def active1_param1(self) -> int: return self._fields.get("Param1", self.K2_FIELDS["Param1"]).value()
-    @active1_param1.setter
-    def active1_param1(self, value):
-        self._fields["Param1"] = value
-
-    @property
-    def active1_param2(self) -> int: return self._fields.get("Param2", self.K2_FIELDS["Param2"]).value()
-    @active1_param2.setter
-    def active1_param2(self, value):
-        self._fields["Param2"] = value
-
-    @property
-    def active1_param3(self) -> int: return self._fields.get("Param3", self.K2_FIELDS["Param3"]).value()
-    @active1_param3.setter
-    def active1_param3(self, value):
-        self._fields["Param3"] = value
-
-    @property
-    def active1_param4(self) -> int: return self._fields.get("Param4", self.K2_FIELDS["Param4"]).value()
-    @active1_param4.setter
-    def active1_param4(self, value):
-        self._fields["Param4"] = value
-
-    @property
-    def active1_param5(self) -> int: return self._fields.get("Param5", self.K2_FIELDS["Param5"]).value()
-    @active1_param5.setter
-    def active1_param5(self, value):
-        self._fields["Param5"] = value
-
-    @property
-    def active1_param6(self) -> str: return self._fields.get("ParamStrA", self.K2_FIELDS["ParamStrA"]).value()
-    @active1_param6.setter
-    def active1_param6(self, value):
-        self._fields["ParamStrA"] = value
-
-    @property
-    def active2_param1(self) -> int: return self._fields.get("Param1b", self.K2_FIELDS["Param1b"]).value()
-    @active2_param1.setter
-    def active2_param1(self, value):
-        self._fields["Param1b"] = value
-
-    @property
-    def active2_param2(self) -> int: return self._fields.get("Param2b", self.K2_FIELDS["Param2b"]).value()
-    @active2_param2.setter
-    def active2_param2(self, value):
-        self._fields["Param2b"] = value
-
-    @property
-    def active2_param3(self) -> int: return self._fields.get("Param3b", self.K2_FIELDS["Param3b"]).value()
-    @active2_param3.setter
-    def active2_param3(self, value):
-        self._fields["Param3b"] = value
-
-    @property
-    def active2_param4(self) -> int: return self._fields.get("Param4b", self.K2_FIELDS["Param4b"]).value()
-    @active2_param4.setter
-    def active2_param4(self, value):
-        self._fields["Param4b"] = value
-
-    @property
-    def active2_param5(self) -> int: return self._fields.get("Param5b", self.K2_FIELDS["Param5b"]).value()
-    @active2_param5.setter
-    def active2_param5(self, value):
-        self._fields["Param5b"] = value
-
-    @property
-    def active2_param6(self) -> str: return self._fields.get("ParamStrB", self.K2_FIELDS["ParamStrB"]).value()
-    @active2_param6.setter
-    def active2_param6(self, value):
-        self._fields["ParamStrB"] = value
-
 
 class DLGStuntFields(TypedDict):
     Participant: FieldGFF[str]
     StuntModel: FieldGFF[ResRef]
-
 class DLGStunt(GFFStructInterface):
-    FIELDS: ClassVar[dict[str, FieldGFF]] = {
-        "Participant": FieldGFF(GFFFieldType.String, ""),
-        "StuntModel": FieldGFF(GFFFieldType.ResRef, ResRef.from_blank()),
-    }
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]] = {}
+    participant = FieldProperty("Participant", GFFFieldType.String, "")
+    stunt_model = FieldProperty("StuntModel", GFFFieldType.ResRef)
 
     def __init__(
         self,
     ) -> None:
         super().__init__()
         self._fields: DLGStuntFields
-
-    @property
-    def participant(self) -> str: return self._fields["Participant"].value()
-    @participant.setter
-    def participant(self, value: FieldGFF[str] | str):
-        if isinstance(value, str):
-            value = FieldGFF(GFFFieldType.String, value)
-        self._fields["Participant"] = value
-
-    @property
-    def stunt_model(self) -> ResRef: return self._fields.get("StuntModel", self.FIELDS["StuntModel"]).value()
-    @stunt_model.setter
-    def stunt_model(self, value: FieldGFF[ResRef] | ResRef | str):
-        if isinstance(value, ResRef):
-            value = FieldGFF(GFFFieldType.ResRef, value)
-        elif isinstance(value, str):
-            value = FieldGFF(GFFFieldType.ResRef, ResRef(value))
-        self._fields["StuntModel"] = value
 
 
 def construct_dlg(
@@ -1325,7 +548,6 @@ def construct_dlg(
         entry.list_index = i
         for reply_link in entry["RepliesList"].value():
             construct_link(reply_link, all_replies)  # type: ignore
-            entry.links.append(reply_link)
 
     entry_link: DLGLink
     reply: DLGReply
@@ -1334,11 +556,9 @@ def construct_dlg(
         reply.list_index = i
         for entry_link in reply["EntriesList"].value():
             construct_link(entry_link, all_entries)  # type: ignore
-            reply.links.append(entry_link)
+
     assert isinstance(dlg, DLG)
     return dlg
-
-
 
 
 def dismantle_dlg(
@@ -1371,17 +591,14 @@ def dismantle_dlg(
         link.__class__ = GFFStruct
 
     gff: GFF = GFF(GFFContent.DLG)
-    gff.root = deepcopy(dlg)
-    gff.root.__class__ = GFFStruct  # type: ignore[assignment]
-    if hasattr(gff.root, "_all_fields"):
-        del gff.root.__dict__["_all_fields"]
+    gff.root._fields = deepcopy(dlg._fields)
 
     stunt: DLGStunt
-    for stunt in gff.root["StuntList"].value():
+    for stunt in gff.root.get_list("StuntList"):
         stunt.__class__ = GFFStruct
 
     starter: DLGLink
-    for starter in gff.root["StartingList"].value():
+    for starter in gff.root.get_list("StartingList"):
         dismantle_link(starter)
 
     reply_link: DLGLink

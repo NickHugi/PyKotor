@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from enum import IntEnum
+from typing import TYPE_CHECKING, Any, Generator
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 # BCP 47 language code
@@ -412,26 +417,27 @@ class Gender(IntEnum):
     MALE = 0  # or neutral
     FEMALE = 1
 
-
 class LocalizedString:
     """Localized strings are a way of the game handling strings that need to be catered to a specific language or gender.
 
-    This is achieved through either referencing a entry in the 'dialog.tlk' or by directly providing strings for each
+    This is achieved through either referencing an entry in the 'dialog.tlk' or by directly providing strings for each
     language.
+    
+    LocalizedString instances are mutable by design.
 
     Attributes:
     ----------
-        stringref: An index into the 'dialog.tlk' file. If this value is -1 the game will use the stored substrings.
+        stringref: An index into the 'dialog.tlk' file. If this value is -1 the game will use the instance's stored substrings.
     """
 
     def __init__(self, stringref: int):
         self.stringref: int = stringref
         self._substrings: dict[int, str] = {}
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[tuple[Language, Gender, str], Any, None]:
         """Iterates through the list of substrings. Yields a tuple containing (language, gender, text)."""
         for substring_id, text in self._substrings.items():
-            language, gender = LocalizedString.substring_pair(substring_id)
+            language, gender = self.substring_pair(substring_id)
             yield language, gender, text
 
     def __len__(self):
@@ -439,22 +445,37 @@ class LocalizedString:
         return len(self._substrings)
 
     def __hash__(self):
-        return hash(self.stringref)
+        return hash(
+            (self.__class__, id(self._substrings))
+            if self.stringref == -1
+            else (self.__class__, self.stringref)
+        )
 
-    def __str__(self):
-        """If the stringref is valid, it will return it as a string. Otherwise it will return one of the substrings,
-        prioritizing the english substring if it exists. If no substring exists and the stringref is invalid, "-1" is
-        returned.
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        # Check if object is already copied to avoid infinite recursion
+        self_hash = hash(self)
+        if self_hash in memo:
+            return memo[self_hash]
+
+        # Create a new instance.
+        deep_copied_locstring = self.__class__(self.stringref)
+        memo[self_hash] = deep_copied_locstring  # Add to memo dictionary
+        deep_copied_locstring._substrings = deepcopy(self._substrings, memo)
+        return deep_copied_locstring
+
+    def __str__(self) -> str:
+        """If the stringref is valid, it will return it as a string.
+        Otherwise it will return one of the substrings, prioritizing the english substring if it exists.
+        If no substring exists, return the stringref int as a str (which should be -1 at that point).
         """
-        if self.stringref >= 0:
+        if self.stringref >= 0:  # Stringref points to an entry in TLK.
             return str(self.stringref)
-        # TODO: There's no reason we should default to english here, perhaps remove the __str__ overload and ensure relevant references call .get() with language information.
-        if self.exists(Language.ENGLISH, Gender.MALE):
+        if self.exists(Language.ENGLISH, Gender.MALE):  # Default to english I guess.
             return str(self.get(Language.ENGLISH, Gender.MALE))
-        # language either unset or not english.
-        for _language, _gender, text in self:
-            return text
-        return "-1"
+        return next(  # Get the first text found in substrings, else return the substring (which at this point should always be -1)
+            (text for _language, _gender, text in self),
+            str(self.stringref),
+        )
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, LocalizedString):
@@ -464,22 +485,22 @@ class LocalizedString:
         return other._substrings == self._substrings
 
     @classmethod
-    def from_invalid(cls):
+    def from_invalid(cls) -> Self:
         return cls(-1)
 
     @classmethod
-    def from_english(cls, text: str):
-        """Returns a new localizedstring object with a english substring.
+    def from_english(cls, text: str) -> Self:
+        """Returns a new LocalizedString object for the specified text, with english/male substring information.
 
         Args:
         ----
-            text: the text for the english substring.
+            text (str): The text for the english/male substring.
 
         Returns:
         -------
-            a new localizedstring object.
+            A new LocalizedString object.
         """
-        locstring = cls(-1)
+        locstring = cls.from_invalid()
         locstring.set_data(Language.ENGLISH, Gender.MALE, text)
         return locstring
 

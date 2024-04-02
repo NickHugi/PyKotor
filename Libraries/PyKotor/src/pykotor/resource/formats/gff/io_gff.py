@@ -142,6 +142,7 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Struct:
             struct_index = self._reader.read_uint32()
             new_struct = GFFStruct()
+            new_struct.parent = gff_struct
             self._load_struct(new_struct, struct_index)
             gff_struct.set_struct(label, new_struct)
         elif field_type is GFFFieldType.List:
@@ -164,14 +165,14 @@ class GFFBinaryReader(ResourceReader):
     def _load_list(self, gff_struct: GFFStruct, label: str):
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
-        value = GFFList()
+        new_list = GFFList()
         count = self._reader.read_uint32()
         list_indices: list[int] = [self._reader.read_uint32() for _ in range(count)]
         for struct_index in list_indices:
-            value.add(0)
-            child: GFFStruct | None = value.at(len(value) - 1)
+            new_list.add(0)
+            child: GFFStruct | None = new_list.at(len(new_list) - 1)
             self._load_struct(child, struct_index)
-        gff_struct.set_list(label, value)
+        gff_struct.set_list(label, new_list)
 
 
 class GFFBinaryWriter(ResourceWriter):

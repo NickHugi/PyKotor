@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import difflib
 import math
 
 from enum import Enum, EnumMeta, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generic, List, Type, TypeVar, cast
+from types import FunctionType
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generic, List, Protocol, Type, TypeVar, Union, cast, runtime_checkable
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef
+from pykotor.common.misc import Game, ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
 from utility.string_util import format_text
@@ -111,7 +113,6 @@ class GFFContent(Enum):
             gff_content = GFFContent.INV
         return gff_content
 
-
 class GFFFieldType(IntEnum):
     """The different types of fields based off what kind of data it stores."""
 
@@ -136,7 +137,7 @@ class GFFFieldType(IntEnum):
 
     def return_type(  # noqa: C901
         self,
-    ) -> Any:
+    ) -> type:
         if self in FieldGFF.INTEGER_TYPES:
             ftype = int
         elif self == GFFFieldType.String:
@@ -311,7 +312,7 @@ class GFF:
 
 
 class FieldGFF(Generic[T]):
-    """Read-only data structure for items stored in GFFStruct."""
+    """Read-only immutable object representing a field stored in a GFF struct."""
 
     INTEGER_TYPES: ClassVar[set[GFFFieldType]] = {
         GFFFieldType.Int8,
@@ -338,16 +339,17 @@ class FieldGFF(Generic[T]):
         value: T | None = None,
     ):
         self._field_type: GFFFieldType = field_type
-        self._python_type: type[T] = cast(Type[T], field_type.return_type())
         self._value: T = self.default(field_type) if value is None else value
 
-        assert isinstance(self._value, self._python_type), f"Expected {self._value!r} to be {self._python_type}, was instead {self._value.__class__.__name__}"
+        expected_type: type[T] = cast(Type[T], field_type.return_type())
+        assert isinstance(self._value, expected_type), f"Expected value '{self._value!r}' to be {field_type.return_type().__name__}, was instead {self._value.__class__.__name__}"
 
-    def default(self, field_type: GFFFieldType) -> T:
+    @classmethod
+    def default(cls, field_type: GFFFieldType) -> T:
         default = unique_sentinel
-        if field_type in self.INTEGER_TYPES:
+        if field_type in cls.INTEGER_TYPES:
             default = 0
-        elif field_type in self.FLOAT_TYPES:
+        elif field_type in cls.FLOAT_TYPES:
             default = 0.0
         elif field_type == GFFFieldType.LocalizedString:
             default = LocalizedString.from_invalid()
@@ -359,8 +361,11 @@ class FieldGFF(Generic[T]):
             default = Vector4.from_null()
         elif field_type == GFFFieldType.String:
             default = ""
-        if default is unique_sentinel or not isinstance(default, self._python_type):
-            raise ValueError(f"Invalid gff field type in default lookup: {field_type}")
+        if default is unique_sentinel:
+            raise ValueError(f"Invalid gff field type in default lookup: {field_type!r}")
+        expected_type = cast(Type[T], field_type.return_type())
+        if not isinstance(default, expected_type):
+            raise TypeError(f"Default '{default!r}' had unexpected type '{default.__class__.__name__}', expected '{expected_type.__name__}' which matches {field_type!r}")
         return default
 
     def field_type(
@@ -383,8 +388,95 @@ class FieldGFF(Generic[T]):
         -------
             The field's value.
         """
-        assert isinstance(self._value, self._python_type), f"Expected {self._value!r} to be {self._python_type}, was instead {self._value.__class__.__name__}"
+        assert isinstance(self._value, self._field_type.return_type()), f"Expected {self._value!r} to be {self._field_type.return_type().__name__}, was instead {type(self._value).__name__}"
         return self._value
+
+
+class FieldProperty(FieldGFF[T], Generic[T, U]):
+    """A property class representing a GFF field, useful for abstracting arbitrary GFF structs into specific generic classes."""
+
+    def __init__(
+        self,
+        label: str,
+        field_type: GFFFieldType,
+        default: T | None = None,
+        *,
+        game: Game = Game.K1,
+        return_type: Type[U] | Callable[[T], U] | None = None,
+        store_type: Type[T] | Callable[[U], T] | None = None
+    ):
+        assert isinstance(label, str), f"Expected label to be str, instead was {type(label).__name__}"
+        self._default: T = self.default(field_type) if default is None else default
+        super().__init__(field_type, default)
+        self._label: str = label
+        self._game: Game | None = game
+        self._return_type: Type[U] | Callable[[T], U] | None = return_type
+
+    def __get__(self, instance: GFFStruct | None, owner: Type[GFFStruct]) -> T | U:
+        if instance is None:
+            value = self._default
+        else:
+            lookup: FieldGFF[T] | None = instance.get(self._label)
+            value: T | None = lookup.value() if lookup is not None else self._default
+            if value is None:
+                raise ValueError(f"'{self._label}' {self._field_type!r} field somehow was None ({owner.__name__}).")
+        if self._return_type is None:
+            return value
+        if isinstance(self._return_type, Callable):
+            if not isinstance(value, self._default.__class__):  # Check if value is T
+                return self._return_type(value)
+            return value
+        if not isinstance(value, self._return_type):  # Check if value is U
+            return self._return_type(value)
+        return value
+    
+    def __set__(self, instance: GFFStruct | None, value: T) -> None:
+        assert instance is not None, "Improper access to FieldProperty.__set__ without an instance."
+        assert isinstance(value, self._default.__class__), f"Incorrect type: {type(value).__name__} sent, expected {self._default.__class__.__name__}"
+        self._set_value(instance, value)
+
+    def _set_value(self, struct: GFFStruct, value: T):
+        assert isinstance(value, self._field_type.return_type()), f"Cannot set {self._field_type!r} to a value of type {type(value).__name__}. Expected type {self._field_type.return_type().__name__}"
+        if self._field_type == GFFFieldType.UInt8:
+            struct.set_uint8(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Int8:
+            struct.set_int8(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.UInt16:
+            struct.set_uint16(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Int16:
+            struct.set_int16(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.UInt32:
+            struct.set_uint32(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Int32:
+            struct.set_int32(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.UInt64:
+            struct.set_uint64(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Int64:
+            struct.set_int64(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Single:
+            struct.set_single(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Double:
+            struct.set_double(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.String:
+            struct.set_string(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.ResRef:
+            struct.set_resref(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.LocalizedString:
+            struct.set_locstring(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Binary:
+            struct.set_binary(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Struct:
+            struct.set_struct(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.List:
+            struct.set_list(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Vector4:
+            struct.set_vector4(self._label, value)  # type: ignore[reportArgumentType]
+        elif self._field_type == GFFFieldType.Vector3:
+            struct.set_vector3(self._label, value)  # type: ignore[reportArgumentType]
+        else:
+            msg = f"Unsupported field type for label {self._label}: {self._field_type!r}"
+            raise TypeError(msg)
+
 
 class GFFStruct(Dict[str, FieldGFF]):
     """Stores a collection of GFFFields.
@@ -396,11 +488,6 @@ class GFFStruct(Dict[str, FieldGFF]):
     MAX_LENGTH: ClassVar[int] = 16
 
 
-    @property
-    def _fields(self) -> Self:
-        """Provided for backwards compatibility, deprecated."""
-        return self
-
     def _validate_label(self, label: str):
         if not isinstance(label, str):
             raise TypeError(f"Invalid field Label: '{label}'")
@@ -409,12 +496,14 @@ class GFFStruct(Dict[str, FieldGFF]):
 
     def __init__(self, struct_id: int = 0):
         self.struct_id: int = struct_id
+        self.parent: GFFStruct | GFFList | None = None
+        self._fields: dict[str, FieldGFF] = {}
 
     def __len__(
         self,
     ) -> int:
         """Returns the number of fields."""
-        return len(self._fields.values())
+        return len(self._fields)
 
     def __iter__(
         self,
@@ -425,7 +514,14 @@ class GFFStruct(Dict[str, FieldGFF]):
 
     def __setitem__(self, key: str, value: FieldGFF):
         self._validate_label(key)
-        super().__setitem__(key, value)
+        self._fields[key] = value
+
+    def __getitem__(self, key: str) -> FieldGFF[Any]:
+        self._validate_label(key)
+        return self._fields[key]
+
+    def get(self, *args, **kwargs):
+        return self._fields.get(*args, **kwargs)
 
     def exists(
         self,
@@ -562,9 +658,7 @@ class GFFStruct(Dict[str, FieldGFF]):
 
                 is_same = False
                 if str(old_value) == str(new_value):
-                    log_func(
-                        f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
-                    )
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
                     continue
                 log_func(f"Field '{old_ftype.name}' is different at '{child_path}':")
                 log_func(format_diff(old_value, new_value, label))
@@ -602,9 +696,12 @@ class GFFStruct(Dict[str, FieldGFF]):
     def value(
         self,
         label: str,
+        *,
+        return_type: type[T] | None = None
     ) -> T:
         field: FieldGFF[T] = self._fields[label]
-        return field.value()
+        value: T = field.value()
+        return value
 
     def set_uint8(
         self,
@@ -806,7 +903,7 @@ class GFFStruct(Dict[str, FieldGFF]):
     def set_binary(
         self,
         label: str,
-        value: bytes,
+        value: bytes | bytearray | memoryview,
     ):
         """Sets the value and field type of the field with the specified label.
 
@@ -886,6 +983,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         self._validate_label(label)
         self._fields[label] = FieldGFF(GFFFieldType.List, value)
+        value.parent = self
         return value
 
     def get_uint8(
@@ -909,7 +1007,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.UInt8:
-            raise TypeError(f"The specified field exists but does not store a UInt8 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a UInt8 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_uint16(
@@ -933,7 +1031,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.UInt16:
-            raise TypeError(f"The specified field exists but does not store a UInt16 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a UInt16 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_uint32(
@@ -957,7 +1055,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.UInt32:
-            raise TypeError(f"The specified field exists but does not store a UInt32 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a UInt32 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_uint64(
@@ -981,7 +1079,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.UInt64:
-            raise TypeError(f"The specified field exists but does not store a UInt64 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a UInt64 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_int8(
@@ -1005,7 +1103,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Int8:
-            raise TypeError(f"The specified field exists but does not store a Int8 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Int8 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_int16(
@@ -1029,7 +1127,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Int16:
-            raise TypeError(f"The specified field exists but does not store a Int16 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Int16 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_int32(
@@ -1053,7 +1151,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Int32:
-            raise TypeError(f"The specified field exists but does not store a Int32 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Int32 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_int64(
@@ -1077,7 +1175,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Int64:
-            raise TypeError(f"The specified field exists but does not store a Int64 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Int64 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_single(
@@ -1101,7 +1199,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Single:
-            raise TypeError(f"The specified field exists but does not store a Single field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Single field ({ftype.name})")
         return self._fields[label].value()
 
     def get_double(
@@ -1125,7 +1223,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Double:
-            raise TypeError(f"The specified field exists but does not store a Double field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Double field ({ftype.name})")
         return self._fields[label].value()
 
     def get_resref(
@@ -1149,7 +1247,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.ResRef:
-            raise TypeError(f"The specified field exists but does not store a ResRef field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a ResRef field ({ftype.name})")
         return self._fields[label].value()
 
     def get_string(
@@ -1173,7 +1271,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.String:
-            raise TypeError(f"The specified field exists but does not store a String field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a String field ({ftype.name})")
         return self._fields[label].value()
 
     def get_locstring(
@@ -1197,7 +1295,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.LocalizedString:
-            raise TypeError(f"The specified field exists but does not store a LocalizedString field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a LocalizedString field ({ftype.name})")
         return self._fields[label].value()
 
     def get_vector3(
@@ -1221,7 +1319,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Vector3:
-            raise TypeError(f"The specified field exists but does not store a Vector3 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Vector3 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_vector4(
@@ -1245,7 +1343,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Vector4:
-            raise TypeError(f"The specified field exists but does not store a Vector4 field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Vector4 field ({ftype.name})")
         return self._fields[label].value()
 
     def get_binary(
@@ -1269,7 +1367,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Binary:
-            raise TypeError(f"The specified field exists but does not store a Binary field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Binary field ({ftype.name})")
         return self._fields[label].value()
 
     def get_struct(
@@ -1293,7 +1391,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.Struct:
-            raise TypeError(f"The specified field exists but does not store a Struct field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a Struct field ({ftype.name})")
         return self._fields[label].value()
 
     def get_list(
@@ -1317,29 +1415,109 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         ftype: GFFFieldType = self._fields[label].field_type()
         if ftype is not GFFFieldType.List:
-            raise TypeError(f"The specified field exists but does not store a List field ({ftype!r})")
+            raise TypeError(f"The specified field exists but does not store a List field ({ftype.name})")
         return self._fields[label].value()
+
+class TypedProperty(Generic[T]):
+    def __init__(self, name: str, field: FieldGFF[T], default: T):
+        self.name: str = f"_{name}"
+        self.field: FieldGFF[T] = field
+        self.default: T = default
+    
+    def __get__(self, instance, owner) -> T:
+        return getattr(instance, self.name, self.default)
+    
+    def __set__(self, instance, value):
+        if not isinstance(value, self.field.field_type().return_type()):
+            raise TypeError(f"Expected value of type {self.field.field_type().return_type().__name__}, got {type(value).__name__}")
+        setattr(instance, self.name, value)
 
 unique_sentinel = object()
 class GFFStructInterface(GFFStruct):
 
-    FIELDS: ClassVar[dict[str, FieldGFF]]
-    K2_FIELDS: ClassVar[dict[str, FieldGFF]]
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._all_fields: dict[str, FieldGFF[Any]] = {}
+        self._all_fields: dict[str, FieldProperty[Any, Any]] = {}
 
-    def all_fields(self) -> dict[str, FieldGFF[Any]]:
+    def all_fields(self) -> dict[str, FieldProperty[Any, Any]]:
         if not hasattr(self, "_all_fields"):
-            mro = self.__class__.mro()
+            mro: list[Type] = self.__class__.mro()
             self._all_fields = {
                 key: value
                 for cls in mro
-                for fields_dict_name in ("FIELDS", "K2_FIELDS")
-                for key, value in vars(cls).get(fields_dict_name, {}).items()
+                for key, value in cls.__dict__.items()
+                if isinstance(value, FieldProperty)
             }
         return self._all_fields
+
+    def as_struct(self) -> GFFStruct:
+        new_struct = GFFStruct()
+        new_struct.struct_id = self.struct_id
+        for label, ftype, value in self:
+            if ftype == GFFFieldType.Struct:
+                assert isinstance(value, GFFStruct)
+                new_child = GFFStruct()
+                if isinstance(value, GFFStructInterface):
+                    new_child: GFFStruct = value.as_struct()
+                else:
+                    new_child = GFFStruct(value.struct_id)
+                    new_child._fields = deepcopy(value._fields)
+                    new_struct.set_struct(label, new_child)
+            elif ftype == GFFFieldType.List:
+                assert isinstance(value, GFFList)
+                deconstructed_list = GFFList()
+                for i, child_struct in enumerate(value):
+                    assert isinstance(child_struct, GFFStruct)
+                    new_child = GFFStruct(child_struct.struct_id)
+                    if isinstance(child_struct, GFFStructInterface):
+                        deconstructed_list[i] = child_struct.as_struct()
+                    elif isinstance(child_struct, GFFStruct):
+                        new_child._fields = deepcopy(child_struct._fields)
+                        deconstructed_list._structs[i] = new_child
+                    else:
+                        raise ValueError(f"Expected this GFFList to have a child GFFStruct at index {i}, instead was ({child_struct.__class__.__name__}) {child_struct}")
+                new_struct.set_list(label, deconstructed_list)
+            elif ftype == GFFFieldType.UInt8:
+                new_struct.set_uint8(label, value)
+            elif ftype == GFFFieldType.Int8:
+                new_struct.set_int8(label, value)
+            elif ftype == GFFFieldType.UInt16:
+                new_struct.set_uint16(label, value)
+            elif ftype == GFFFieldType.Int16:
+                new_struct.set_int16(label, value)
+            elif ftype == GFFFieldType.UInt32:
+                new_struct.set_uint32(label, value)
+            elif ftype == GFFFieldType.Int32:
+                new_struct.set_int32(label, value)
+            elif ftype == GFFFieldType.UInt64:
+                new_struct.set_uint64(label, value)
+            elif ftype == GFFFieldType.Int64:
+                new_struct.set_int64(label, value)
+            elif ftype == GFFFieldType.Single:
+                new_struct.set_single(label, value)
+            elif ftype == GFFFieldType.Double:
+                new_struct.set_double(label, value)
+            elif ftype == GFFFieldType.String:
+                new_struct.set_string(label, value)
+            elif ftype == GFFFieldType.ResRef:
+                new_struct.set_resref(label, ResRef(str(value)))
+            elif ftype == GFFFieldType.LocalizedString:
+                assert isinstance(value, LocalizedString)
+                new_struct.set_locstring(label, deepcopy(value))
+            elif ftype == GFFFieldType.Binary:
+                new_struct.set_binary(label, value)
+            elif ftype == GFFFieldType.Vector4:
+                assert isinstance(value, Vector4)
+                copied_value = Vector4(value.x, value.y, value.z, value.w)
+                new_struct.set_vector4(label, copied_value)
+            elif ftype == GFFFieldType.Vector3:
+                assert isinstance(value, Vector3)
+                copied_value = Vector4(value.x, value.y, value.z)
+                new_struct.set_vector3(label, value)
+            else:
+                msg = f"Unsupported field type for label '{label}': {ftype!r}"
+                raise TypeError(msg)
+        return new_struct
 
     def __getitem__(self, key: str) -> FieldGFF[Any]:
         """Fallback to default values if the field doesn't exist.
@@ -1348,54 +1526,9 @@ class GFFStructInterface(GFFStruct):
         """
         return super().__getitem__(key) if self.exists(key) else self.all_fields()[key]
 
-    def _set_field_value(
-        self,
-        field_type: GFFFieldType,
-        attr_name: str,
-        value: Any,
-    ):
-        if field_type == GFFFieldType.UInt8:
-            super().set_uint8(attr_name, value)
-        elif field_type == GFFFieldType.Int8:
-            super().set_int8(attr_name, value)
-        elif field_type == GFFFieldType.UInt16:
-            super().set_uint16(attr_name, value)
-        elif field_type == GFFFieldType.Int16:
-            super().set_int16(attr_name, value)
-        elif field_type == GFFFieldType.UInt32:
-            super().set_uint32(attr_name, value)
-        elif field_type == GFFFieldType.Int32:
-            super().set_int32(attr_name, value)
-        elif field_type == GFFFieldType.UInt64:
-            super().set_uint64(attr_name, value)
-        elif field_type == GFFFieldType.Int64:
-            super().set_int64(attr_name, value)
-        elif field_type == GFFFieldType.Single:
-            super().set_single(attr_name, value)
-        elif field_type == GFFFieldType.Double:
-            super().set_double(attr_name, value)
-        elif field_type == GFFFieldType.String:
-            super().set_string(attr_name, value)
-        elif field_type == GFFFieldType.ResRef:
-            super().set_resref(attr_name, value)
-        elif field_type == GFFFieldType.LocalizedString:
-            super().set_locstring(attr_name, value)
-        elif field_type == GFFFieldType.Binary:
-            super().set_binary(attr_name, value)
-        elif field_type == GFFFieldType.Struct:
-            super().set_struct(attr_name, value)
-        elif field_type == GFFFieldType.List:
-            super().set_list(attr_name, value)
-        elif field_type == GFFFieldType.Vector4:
-            super().set_vector4(attr_name, value)
-        elif field_type == GFFFieldType.Vector3:
-            super().set_vector3(attr_name, value)
-        else:
-            msg = f"Unsupported field type for {attr_name}"
-            raise TypeError(msg)
 
-GFFStructType = TypeVar("GFFStructType", bound=GFFStruct)
-class GFFList(List[GFFStructType]):  # type: ignore[pylance]
+StructType = TypeVar("StructType", bound=GFFStruct)
+class GFFList(List[StructType]):  # type: ignore[pylance]
     """A collection of GFFStructs."""
 
     @property
@@ -1403,17 +1536,22 @@ class GFFList(List[GFFStructType]):  # type: ignore[pylance]
         """Provided for backwards compatibility, deprecated."""
         return self
 
+    def __init__(self, wrapper: StructType | Type[GFFStruct] = GFFStruct):
+        self.parent: GFFStruct | None = None
+        self.struct_wrapper: StructType = cast(StructType, wrapper)
+
     def add(
         self,
         struct_id: int,
-    ) -> GFFStruct:
+    ) -> StructType:
         """Adds a new struct into the list.
 
         Args:
         ----
             struct_id: The StructID of the new struct.
         """
-        new_struct = GFFStruct(struct_id)
+        new_struct: StructType = self.struct_wrapper(struct_id)
+        new_struct.parent = self
         self.append(new_struct)
         return new_struct
 
