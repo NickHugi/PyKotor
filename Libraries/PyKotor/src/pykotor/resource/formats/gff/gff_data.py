@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import difflib
 import math
 
-from enum import Enum, EnumMeta, IntEnum
-from types import FunctionType
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Generic, List, Protocol, Type, TypeVar, Union, cast, runtime_checkable
+from collections.abc import Callable
+from copy import deepcopy
+from enum import Enum
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Generic, List, Type, TypeVar, cast, overload
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -19,7 +19,7 @@ from utility.system.path import PureWindowsPath
 if TYPE_CHECKING:
     import os
 
-    from collections.abc import Callable, Generator
+    from collections.abc import Generator
 
     from typing_extensions import Self
 
@@ -28,14 +28,14 @@ U = TypeVar("U")
 
 
 def format_diff(old_value: object, new_value: object, name: str) -> str:
-    # Convert values to strings if they aren't already
+#     Convert values to strings if they aren't already
     str_old_value = str(old_value).splitlines(keepends=True)
     str_new_value = str(new_value).splitlines(keepends=True)
 
-    # Generate unified diff
+#     Generate unified diff
     diff = difflib.unified_diff(str_old_value, str_new_value, fromfile=f"(old){name}", tofile=f"(new){name}", lineterm="")
 
-    # Return formatted diff
+#     Return formatted diff
     return "\n".join(diff)
 
 class GFFContent(Enum):
@@ -113,55 +113,6 @@ class GFFContent(Enum):
             gff_content = GFFContent.INV
         return gff_content
 
-class GFFFieldType(IntEnum):
-    """The different types of fields based off what kind of data it stores."""
-
-    UInt8 = 0
-    Int8 = 1
-    UInt16 = 2
-    Int16 = 3
-    UInt32 = 4
-    Int32 = 5
-    UInt64 = 6
-    Int64 = 7
-    Single = 8
-    Double = 9
-    String = 10
-    ResRef = 11
-    LocalizedString = 12
-    Binary = 13
-    Struct = 14
-    List = 15
-    Vector4 = 16
-    Vector3 = 17
-
-    def return_type(  # noqa: C901
-        self,
-    ) -> type:
-        if self in FieldGFF.INTEGER_TYPES:
-            ftype = int
-        elif self == GFFFieldType.String:
-            ftype = str
-        elif self == GFFFieldType.ResRef:
-            ftype = ResRef
-        elif self == GFFFieldType.Vector3:
-            ftype = Vector3
-        elif self == GFFFieldType.Vector4:
-            ftype = Vector4
-        elif self == GFFFieldType.LocalizedString:
-            ftype = LocalizedString
-        elif self == GFFFieldType.Struct:
-            ftype = GFFStruct
-        elif self == GFFFieldType.List:
-            ftype = GFFList
-        elif self == GFFFieldType.Binary:
-            ftype = bytes
-        elif self in FieldGFF.FLOAT_TYPES:
-            ftype = float
-        else:
-            raise ValueError(self)
-        return ftype
-
 
 class Difference:
     def __init__(self, path: os.PathLike | str, old_value: Any, new_value: Any):
@@ -195,7 +146,7 @@ class GFFCompareResult:
         self.differences: list[Difference] = []
 
     def __bool__(self):
-        # Return False if the list has any contents (meaning the objects are different), True if it's empty.
+    #     Return False if the list has any contents (meaning the objects are different), True if it's empty.
         return not bool(self.differences)
 
     def add_difference(self, path, old_value, new_value):
@@ -314,42 +265,23 @@ class GFF:
 class FieldGFF(Generic[T]):
     """Read-only immutable object representing a field stored in a GFF struct."""
 
-    INTEGER_TYPES: ClassVar[set[GFFFieldType]] = {
-        GFFFieldType.Int8,
-        GFFFieldType.UInt8,
-        GFFFieldType.Int16,
-        GFFFieldType.UInt16,
-        GFFFieldType.Int32,
-        GFFFieldType.UInt32,
-        GFFFieldType.Int64,
-        GFFFieldType.UInt64,
-    }
-    STRING_TYPES: ClassVar[set[GFFFieldType]] = {
-        GFFFieldType.String,
-        GFFFieldType.ResRef,
-    }
-    FLOAT_TYPES: ClassVar[set[GFFFieldType]] = {
-        GFFFieldType.Single,
-        GFFFieldType.Double,
-    }
-
     def __init__(
         self,
-        field_type: GFFFieldType,
+        field_type: GFFFieldType[T],
         value: T | None = None,
     ):
-        self._field_type: GFFFieldType = field_type
+        self._field_type: GFFFieldType[T] = field_type
         self._value: T = self.default(field_type) if value is None else value
 
         expected_type: type[T] = cast(Type[T], field_type.return_type())
         assert isinstance(self._value, expected_type), f"Expected value '{self._value!r}' to be {field_type.return_type().__name__}, was instead {self._value.__class__.__name__}"
 
     @classmethod
-    def default(cls, field_type: GFFFieldType) -> T:
+    def default(cls, field_type: GFFFieldType[T]) -> T:
         default = unique_sentinel
-        if field_type in cls.INTEGER_TYPES:
+        if field_type.return_type() == int:
             default = 0
-        elif field_type in cls.FLOAT_TYPES:
+        elif field_type.return_type() == float:
             default = 0.0
         elif field_type == GFFFieldType.LocalizedString:
             default = LocalizedString.from_invalid()
@@ -370,7 +302,7 @@ class FieldGFF(Generic[T]):
 
     def field_type(
         self,
-    ) -> GFFFieldType:
+    ) -> GFFFieldType[T]:
         """Returns the field type.
 
         Returns:
@@ -410,9 +342,9 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
         super().__init__(field_type, default)
         self._label: str = label
         self._game: Game | None = game
-        self._return_type: Type[U] | Callable[[T], U] | None = return_type
+        self._return_type: type[U] | Callable[[T], U] | None = return_type
 
-    def __get__(self, instance: GFFStruct | None, owner: Type[GFFStruct]) -> T | U:
+    def __get__(self, instance: GFFStruct | None, owner: type[GFFStruct]) -> T | U:
         if instance is None:
             value = self._default
         else:
@@ -423,13 +355,11 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
         if self._return_type is None:
             return value
         if isinstance(self._return_type, Callable):
-            if not isinstance(value, self._default.__class__):  # Check if value is T
-                return self._return_type(value)
-            return value
+            return self._return_type(value)
         if not isinstance(value, self._return_type):  # Check if value is U
             return self._return_type(value)
         return value
-    
+
     def __set__(self, instance: GFFStruct | None, value: T) -> None:
         assert instance is not None, "Improper access to FieldProperty.__set__ without an instance."
         assert isinstance(value, self._default.__class__), f"Incorrect type: {type(value).__name__} sent, expected {self._default.__class__.__name__}"
@@ -512,16 +442,20 @@ class GFFStruct(Dict[str, FieldGFF]):
         for label, field in self.items():
             yield label, field.field_type(), field.value()
 
-    def __setitem__(self, key: str, value: FieldGFF):
+    def __setitem__(self, key: str, value: FieldGFF[T]):
         self._validate_label(key)
         self._fields[key] = value
 
-    def __getitem__(self, key: str) -> FieldGFF[Any]:
+    def __getitem__(self, key: str) -> FieldGFF[type]:
         self._validate_label(key)
         return self._fields[key]
 
-    def get(self, *args, **kwargs):
-        return self._fields.get(*args, **kwargs)
+    @overload
+    def get(self, __key: str) -> FieldGFF: ...
+    @overload
+    def get(self, __key: str, __default: T = None) -> FieldGFF | T: ...
+    def get(self, __key: str, __default: T = None) -> FieldGFF | T:  # type: ignore[assignment]
+        return self._fields.get(__key, __default)
 
     def exists(
         self,
@@ -593,7 +527,7 @@ class GFFStruct(Dict[str, FieldGFF]):
             log_func(f"Struct ID is different at '{current_path}': '{self.struct_id}' --> '{other_gff_struct.struct_id}'")
             is_same = False
 
-        # Create dictionaries for both old and new structures
+    #     Create dictionaries for both old and new structures
         old_dict: dict[str, tuple[GFFFieldType, Any]] = {
             label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels
         }
@@ -601,7 +535,7 @@ class GFFStruct(Dict[str, FieldGFF]):
             label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels
         }
 
-        # Union of labels from both old and new structures
+    #     Union of labels from both old and new structures
         all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
 
         for label in all_labels:
@@ -612,7 +546,7 @@ class GFFStruct(Dict[str, FieldGFF]):
             if ignore_default_changes and is_ignorable_comparison(old_value, new_value):
                 continue
 
-            # Check for missing fields/values in either structure
+        #     Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
                 if new_ftype is None:
                     msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
@@ -625,13 +559,13 @@ class GFFStruct(Dict[str, FieldGFF]):
                 is_same = False
                 continue
 
-            # Check if field types have changed
+        #     Check if field types have changed
             if old_ftype != new_ftype:
                 log_func(f"Field type is different at '{child_path}': '{old_ftype.name}'-->'{new_ftype.name}'")
                 is_same = False
                 continue
 
-            # Compare values depending on their types
+        #     Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
                 assert isinstance(new_value, GFFStruct)
                 cur_struct_this: GFFStruct = old_value
@@ -1423,12 +1357,13 @@ class TypedProperty(Generic[T]):
         self.name: str = f"_{name}"
         self.field: FieldGFF[T] = field
         self.default: T = default
-    
-    def __get__(self, instance, owner) -> T:
+
+    def __get__(self, instance: GFFStruct, owner) -> T:
         return getattr(instance, self.name, self.default)
-    
-    def __set__(self, instance, value):
-        if not isinstance(value, self.field.field_type().return_type()):
+
+    def __set__(self, instance: GFFStruct, value: T):
+        field: FieldGFF[T] = self.field
+        if not isinstance(value, field.field_type().return_type()):
             raise TypeError(f"Expected value of type {self.field.field_type().return_type().__name__}, got {type(value).__name__}")
         setattr(instance, self.name, value)
 
@@ -1441,7 +1376,7 @@ class GFFStructInterface(GFFStruct):
 
     def all_fields(self) -> dict[str, FieldProperty[Any, Any]]:
         if not hasattr(self, "_all_fields"):
-            mro: list[Type] = self.__class__.mro()
+            mro: list[type] = self.__class__.mro()
             self._all_fields = {
                 key: value
                 for cls in mro
@@ -1608,14 +1543,15 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
             log_func()
             is_same_result = False
 
-        # Use the indices in the original lists as keys
+    #     Use the indices in the original lists as keys
         old_dict = dict(enumerate(self))
         new_dict = dict(enumerate(other_gff_list))
 
-        # Detect unique items in both lists
+    #     Detect unique items in both lists
         unique_to_old = set(old_dict.keys()) - set(new_dict.keys())
         unique_to_new = set(new_dict.keys()) - set(old_dict.keys())
 
+        struct: GFFStruct
         for list_index in unique_to_old:
             struct = old_dict[list_index]
             log_func(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
@@ -1634,7 +1570,7 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
             log_func()
             is_same_result = False
 
-        # For items present in both lists
+    #     For items present in both lists
         common_items = old_dict.keys() & new_dict.keys()
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
@@ -1643,3 +1579,145 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
                 is_same_result = False
 
         return is_same_result
+
+
+class GFFFieldTypeMeta(type):
+    def __instancecheck__(cls, fake_instance: object | type):
+        if isinstance(fake_instance, type):
+            return cls.__subclasscheck__(fake_instance)
+        return False
+    def __subclasscheck__(cls, subclass: type):
+        if cls is subclass:
+            return True
+        valid_attributes = {k: v for k, v in cls.__dict__.items() if not k.startswith("__")}.values()
+        return subclass in valid_attributes
+
+    def return_type(cls) -> type:
+        return cls.__base__
+
+class _FieldType(metaclass=GFFFieldTypeMeta): ...
+class GFFFieldType(type, _FieldType, Generic[T]):
+    """The different types of fields based off what kind of data it stores.
+
+    Each field type is not an object, but will behave like an instance of GFFFieldType.
+    Do not try to instantiate a fieldtype from this class using its constructor, e.g. don't do GFFFieldType.UInt8().
+    This class should only be used for type checking, whether it be static or during runtime.
+
+    isinstance() and issubclass() calls will function the same, e.g.:
+    test_uint8: GFFFieldType[int]
+    test_uint8 = GFFFieldType.UInt8
+    assert isinstance(test_uint8, GFFFieldType)
+    assert isinstance(test_uint8, GFFFieldType.UInt8)
+    assert not isinstance(test_uint8, GFFFieldType.UInt16)
+    assert issubclass(test_uint8, GFFFieldType)
+    assert issubclass(test_uint8, GFFFieldType.UInt8)
+    assert not issubclass(test_uint8, GFFFieldType.UInt16)
+    """
+    def __new__(cls, field_value_id: int):
+        if field_value_id == 0:
+            return GFFFieldType.UInt8
+        if field_value_id == 1:
+            return GFFFieldType.Int8
+        if field_value_id == 2:
+            return GFFFieldType.UInt16
+        if field_value_id == 3:
+            return GFFFieldType.Int16
+        if field_value_id == 4:
+            return GFFFieldType.UInt32
+        if field_value_id == 5:
+            return GFFFieldType.Int32
+        if field_value_id == 6:
+            return GFFFieldType.UInt64
+        if field_value_id == 7:
+            return GFFFieldType.Int64
+        if field_value_id == 8:
+            return GFFFieldType.Single
+        if field_value_id == 9:
+            return GFFFieldType.Double
+        if field_value_id == 10:
+            return GFFFieldType.String
+        if field_value_id == 11:
+            return GFFFieldType.ResRef
+        if field_value_id == 12:
+            return GFFFieldType.LocalizedString
+        if field_value_id == 13:
+            return GFFFieldType.Binary
+        if field_value_id == 14:
+            return GFFFieldType.Struct
+        if field_value_id == 15:
+            return GFFFieldType.List
+        if field_value_id == 16:
+            return GFFFieldType.Vector4
+        if field_value_id == 17:
+            return GFFFieldType.Vector3
+        raise ValueError(f"Invalid field_value_id: {field_value_id}")
+
+    UInt8: GFFFieldType[int] = type("UInt8", (int, _FieldType,), {})
+    Int8: GFFFieldType[int] = type("Int8", (int, _FieldType,), {})
+    UInt16: GFFFieldType[int] = type("UInt16", (int, _FieldType,), {})
+    Int16: GFFFieldType[int] = type("Int16", (int, _FieldType,), {})
+    UInt32: GFFFieldType[int] = type("UInt32", (int, _FieldType,), {})
+    Int32: GFFFieldType[int] = type("Int32", (int, _FieldType,), {})
+    UInt64: GFFFieldType[int] = type("UInt64", (int, _FieldType,), {})
+    Int64: GFFFieldType[int] = type("Int64", (int, _FieldType,), {})
+    Single: GFFFieldType[int] = type("Single", (float, _FieldType,), {})
+    Double: GFFFieldType[float] = type("Double", (float, _FieldType,), {})
+    String: GFFFieldType[str] = type("String", (str, _FieldType,), {})
+    ResRef: GFFFieldType[ResRef] = type("ResRef", (ResRef,_FieldType,), {})
+    LocalizedString: GFFFieldType[LocalizedString] = type("LocalizedString", (LocalizedString, _FieldType,), {})
+    Binary: GFFFieldType[bytes] = type("Binary", (bytes, _FieldType,), {})
+    Struct: GFFFieldType[GFFStruct] = type("Struct", (GFFStruct, _FieldType,), {})
+    List: GFFFieldType[GFFList] = type("List", (GFFList, _FieldType,), {})
+    Vector4: GFFFieldType[Vector4] = type("Vector4", (Vector4, _FieldType,), {})
+    Vector3: GFFFieldType[Vector3] = type("Vector3", (Vector3, _FieldType,), {})
+
+    def return_type(cls) -> T:
+        return cast(T, cls.__base__)
+#  Test 2
+#    UInt8 = int
+#    Int8 = int
+#    UInt16 = int
+#    Int16 = int
+#    UInt32 = int
+#    Int32 = int
+#    UInt64 = int
+#    Int64 = int
+#    Single = float
+#    Double = float
+#    String = str
+#    ResRef = ResRef
+#    LocalizedString = str
+#    Binary = bytes
+#    Struct = GFFStruct
+#    List = GFFList
+#    Vector4 = Vector4
+#    Vector3 = Vector3
+#  Test 3
+#    UInt8 = NewType("UInt8", int)
+#    Int8 = NewType("Int8", int)
+#    UInt16 = NewType("UInt16", int)
+#    Int16 = NewType("Int16", int)
+#    UInt32 = NewType("UInt32", int)
+#    Int32 = NewType("Int32", int)
+#    UInt64 = NewType("UInt64", int)
+#    Int64 = NewType("Int64", int)
+#    Single = NewType("Single", float)
+#    Double = NewType("Double", float)
+#    String = NewType("String", str)
+#    ResRef = NewType("ResRef", ResRef)
+#    LocalizedString = NewType("LocalizedString", LocalizedString)
+#    Binary = NewType("Binary", bytes)
+#    Struct = NewType("Struct", GFFStruct)
+#    List = NewType("List", GFFList)
+#    Vector4 = NewType("Vector4", Vector4)
+#    Vector3 = NewType("Vector3", Vector3)
+
+if __name__ == "__main__":
+    test_uint8 = GFFFieldType.UInt8
+    assert issubclass(test_uint8, GFFFieldType)
+    assert not isinstance(test_uint8(), GFFFieldType)
+    assert isinstance(test_uint8(), GFFFieldType.UInt8)
+    assert not isinstance(test_uint8, GFFFieldType.UInt16)
+    assert issubclass(test_uint8, GFFFieldType)
+    assert issubclass(test_uint8, GFFFieldType.UInt8)
+    assert not issubclass(test_uint8, GFFFieldType.UInt16)

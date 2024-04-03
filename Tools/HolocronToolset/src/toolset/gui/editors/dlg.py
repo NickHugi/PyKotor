@@ -319,8 +319,8 @@ class DLGEditor(Editor):
 
         self._dlg = dlg
         self.model.clear()
-        seenLinks: list[DLGLink] = []
-        seenNodes: list[DLGNode] = []
+        seenLinks: set[DLGLink] = set()
+        seenNodes: set[DLGNode] = set()
         for start in reversed(dlg.starters):  # reversed = ascending order
             item = QStandardItem()
             self._loadDLGRec(item, start, seenLinks, seenNodes)
@@ -330,8 +330,8 @@ class DLGEditor(Editor):
         self,
         item: QStandardItem,
         link: DLGLink,
-        seenLinks: list[DLGLink],
-        seenNodes: list[DLGNode],
+        seenLinks: set[DLGLink],
+        seenNodes: set[DLGNode],
     ):
         """Don't call this function directly.
 
@@ -341,8 +341,8 @@ class DLGEditor(Editor):
         ----
             item (QStandardItem): The item to load the node into
             link (DLGLink): The link whose node to load
-            seenLink (list[DLGLink]): Links already loaded
-            seenNode (list[DLGNode]): Nodes already loaded
+            seenLink (set[DLGLink]): Links already loaded
+            seenNode (set[DLGNode]): Nodes already loaded
 
         Processing Logic:
         ----------------
@@ -353,15 +353,15 @@ class DLGEditor(Editor):
             - Loops through child links and loads recursively if not seen.
         """
         node: DLGNode | None = link._node
-        assert_with_variable_trace(node is not None, "link.node cannot be None.")
+        assert_with_variable_trace(node is not None, "link._node cannot be None.")
         assert node is not None
         item.setData(link, _LINK_ROLE)
 
         alreadyListed: bool = link in seenLinks or node in seenNodes
         if link not in seenLinks:
-            seenLinks.append(link)
+            seenLinks.add(link)
         if node not in seenNodes:
-            seenNodes.append(node)
+            seenNodes.add(node)
 
         item.setData(alreadyListed, _COPY_ROLE)
         self.refreshItem(item)
@@ -753,7 +753,8 @@ class DLGEditor(Editor):
             - Sets the item foreground color based on the node and copy type
             - Blue for replies, red for entries, lighter if it is a copy.
         """
-        node: DLGNode = item.data(_LINK_ROLE).node
+        link: DLGLink = item.data(_LINK_ROLE)
+        node: DLGNode = link._node
         isCopy: bool = item.data(_COPY_ROLE)
         color: QColor | None = None
         if isinstance(node, DLGEntry):
@@ -869,7 +870,7 @@ class DLGEditor(Editor):
         self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
 
         # Sync DLG to tree changes
-        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
+        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE)._node.links
         link: DLGLink = links.pop(oldRow)
         links.insert(newRow, link)
 
@@ -1215,7 +1216,7 @@ class DLGEditor(Editor):
         if self.ui.dialogTree.selectedIndexes():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
-            node: DLGNode = item.data(_LINK_ROLE).node
+            node: DLGNode = item.data(_LINK_ROLE)._node
 
             dialog = EditAnimationDialog(self, self._installation)
             if dialog.exec_():
@@ -1226,7 +1227,7 @@ class DLGEditor(Editor):
         if self.ui.animsList.selectedItems():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
-            node: DLGNode = item.data(_LINK_ROLE).node
+            node: DLGNode = item.data(_LINK_ROLE)._node
 
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
             anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)

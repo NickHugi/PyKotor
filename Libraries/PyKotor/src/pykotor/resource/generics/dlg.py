@@ -6,13 +6,15 @@ from typing import TYPE_CHECKING, ClassVar, TypedDict
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
-from pykotor.common.misc import Color, Game, ResRef
+from pykotor.common.misc import Color, Game
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.formats.gff.gff_data import FieldGFF, FieldProperty, GFFFieldType, GFFStruct, GFFStructInterface  # noqa: PLC2701
+from pykotor.resource.formats.gff.gff_data import FieldProperty, GFFFieldType, GFFStruct, GFFStructInterface  # noqa: PLC2701
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.common.misc import ResRef
+    from pykotor.resource.formats.gff.gff_data import FieldGFF
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
@@ -187,7 +189,7 @@ class DLG(GFFStructInterface):
         seen_entries = set() if seen_entries is None else seen_entries
 
         for link in starting_links:
-            entry: DLGNode = link._node
+            entry = link._node
             assert isinstance(entry, DLGEntry), f"Expected DLGEntry instance, instead was '{entry.__class__.__name__}'"
             if id(entry) in seen_entries:
                 continue
@@ -215,7 +217,7 @@ class DLG(GFFStructInterface):
     def _all_replies(
         self,
         links: list[DLGLink] | None = None,
-        seen_replies: list | None = None,
+        seen_replies: set | None = None,
     ) -> list[DLGReply]:
         """Collect all replies reachable from the given links.
 
@@ -242,15 +244,15 @@ class DLG(GFFStructInterface):
             _ for link in self.starters
             for _ in link._node.links  # type: ignore
         ]
-        seen_replies = [] if seen_replies is None else seen_replies
+        seen_replies = set() if seen_replies is None else seen_replies
 
         for link in starting_links:
             reply: DLGNode = link._node
             assert isinstance(reply, DLGReply)
-            if reply in seen_replies:
+            if id(reply) in seen_replies:
                 continue
             replies.append(reply)
-            seen_replies.append(reply)
+            seen_replies.add(id(reply))
             for entry_link in reply.links:
                 entry: DLGNode = entry_link._node
                 assert isinstance(entry, DLGEntry)
@@ -320,11 +322,12 @@ class DLGNodeFields(TypedDict):
 class DLGNode(GFFStructInterface):
     """Represents a node in the dialog tree."""
 
+    links: FieldProperty[GFFList[DLGLink], GFFList[DLGLink]]
     text: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("Text", GFFFieldType.LocalizedString, LocalizedString.from_invalid())
     listener = FieldProperty("Listener", GFFFieldType.String, "")
     vo_resref = FieldProperty("VO_ResRef", GFFFieldType.ResRef)
     script1 = FieldProperty("Script", GFFFieldType.ResRef)
-    delay = FieldProperty("Delay", GFFFieldType.UInt32, 0xFFFFFFFF)
+    delay = FieldProperty("Delay", GFFFieldType.UInt32, 0xFFFFFFFF, return_type=lambda x: -1 if x == 0xFFFFFFFF else x)
     comment = FieldProperty("Comment", GFFFieldType.String, "")
     animations = FieldProperty("AnimList", GFFFieldType.List, GFFList())
     sound = FieldProperty("Sound", GFFFieldType.ResRef)
@@ -388,6 +391,9 @@ class DLGNode(GFFStructInterface):
         for animation in self.animations:
             animation.__class__ = DLGAnimation
 
+    def __hash__(self):
+        return hash((self.__class__, self.list_index))
+
 
 class DLGReplyFields(TypedDict):
     EntriesList: FieldGFF[GFFList[DLGLink]]
@@ -408,7 +414,7 @@ class DLGEntryFields(TypedDict):
 class DLGEntry(DLGNode):
     """Entries are nodes that are responses by NPCs."""
     speaker = FieldProperty("Speaker", GFFFieldType.String, "")
-    links = FieldProperty("RepliesList", GFFFieldType.List, GFFList())
+    links: FieldProperty[GFFList[GFFStruct], GFFList[DLGLink]] = FieldProperty("RepliesList", GFFFieldType.List, GFFList())
 
     def __init__(
         self,
@@ -496,6 +502,9 @@ class DLGLink(GFFStructInterface):
         self._fields: DLGLinkFields
         self._node: DLGNode = node
 
+    def __hash__(self):
+        return hash((self.__class__, self._node, self.link_index))
+
 
 class DLGStuntFields(TypedDict):
     Participant: FieldGFF[str]
@@ -528,10 +537,15 @@ def construct_dlg(
         link.__class__ = DLGLink
         link._node = relevant_nodes[link.link_index]
 
+    def construct_node(node: DLGNode, list_index: int):
+        node.list_index = list_index
+        for animation in node.animations:
+            animation.__class__ = DLGAnimation
+
     dlg: DLG = deepcopy(gff.root)  # type: ignore[assignment]
     dlg.__class__ = DLG
     all_entries: list[DLGEntry] = dlg.acquire("EntryList", GFFList())
-    all_replies: list[DLGEntry] = dlg.acquire("ReplyList", GFFList())
+    all_replies: list[DLGReply] = dlg.acquire("ReplyList", GFFList())
 
     stunt: DLGStunt
     for stunt in dlg.stunts:
@@ -539,23 +553,23 @@ def construct_dlg(
 
     starter: DLGLink
     for starter in dlg.starters:
-        construct_link(starter, all_entries)  # type: ignore
+        construct_link(starter, all_entries)  # type: ignore[covariance]
 
     reply_link: DLGLink
     entry: DLGEntry
     for i, entry in enumerate(dlg["EntryList"].value()):
         entry.__class__ = DLGEntry
-        entry.list_index = i
+        construct_node(entry, i)
         for reply_link in entry["RepliesList"].value():
-            construct_link(reply_link, all_replies)  # type: ignore
+            construct_link(reply_link, all_replies)  # type: ignore[covariance]
 
     entry_link: DLGLink
     reply: DLGReply
     for i, reply in enumerate(dlg["ReplyList"].value()):
         reply.__class__ = DLGReply
-        reply.list_index = i
+        construct_node(reply, i)
         for entry_link in reply["EntriesList"].value():
-            construct_link(entry_link, all_entries)  # type: ignore
+            construct_link(entry_link, all_entries)  # type: ignore[covariance]
 
     assert isinstance(dlg, DLG)
     return dlg
