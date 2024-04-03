@@ -598,14 +598,15 @@ def dismantle_dlg(
         for animation in node["AnimList"].value():
             animation.__class__ = GFFStruct
         node.__class__ = GFFStruct
-        del node.__dict__["list_index"]
+        #del node.__dict__["list_index"]
 
     def dismantle_link(link: DLGLink):
-        del link.__dict__["_node"]
+        #del link.__dict__["_node"]
         link.__class__ = GFFStruct
 
     gff: GFF = GFF(GFFContent.DLG)
-    gff.root._fields = deepcopy(dlg._fields)
+    gff.root = dlg.unwrap()
+    gff.root.__class__ = GFFStruct
 
     stunt: DLGStunt
     for stunt in gff.root.get_list("StuntList"):

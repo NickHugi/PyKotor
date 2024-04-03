@@ -15,7 +15,7 @@ except (ImportError, ModuleNotFoundError):
 
 
 absolute_file_path = pathlib.Path(__file__).resolve()
-TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
+TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "toolset_tests" / "files"
 
 if getattr(sys, "frozen", False) is False:
 

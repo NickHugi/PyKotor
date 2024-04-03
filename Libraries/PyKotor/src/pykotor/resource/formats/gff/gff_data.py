@@ -5,7 +5,7 @@ import math
 
 from collections.abc import Callable
 from copy import deepcopy
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Generic, List, Type, TypeVar, cast, overload
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -267,17 +267,20 @@ class FieldGFF(Generic[T]):
 
     def __init__(
         self,
-        field_type: GFFFieldType[T],
+        field_type: GFFFieldType,
         value: T | None = None,
     ):
-        self._field_type: GFFFieldType[T] = field_type
+        self._field_type: GFFFieldType = field_type
         self._value: T = self.default(field_type) if value is None else value
 
         expected_type: type[T] = cast(Type[T], field_type.return_type())
         assert isinstance(self._value, expected_type), f"Expected value '{self._value!r}' to be {field_type.return_type().__name__}, was instead {self._value.__class__.__name__}"
 
+    def __deepcopy__(self, memo):
+        return self.__class__(self._field_type, deepcopy(self.value(), memo))
+
     @classmethod
-    def default(cls, field_type: GFFFieldType[T]) -> T:
+    def default(cls, field_type: GFFFieldType) -> T:
         default = unique_sentinel
         if field_type.return_type() == int:
             default = 0
@@ -302,7 +305,7 @@ class FieldGFF(Generic[T]):
 
     def field_type(
         self,
-    ) -> GFFFieldType[T]:
+    ) -> GFFFieldType:
         """Returns the field type.
 
         Returns:
@@ -419,14 +422,11 @@ class GFFStruct(Dict[str, FieldGFF]):
 
 
     def _validate_label(self, label: str):
-        if not isinstance(label, str):
-            raise TypeError(f"Invalid field Label: '{label}'")
-        if len(label) > self.MAX_LENGTH:
-            raise ValueError(f"GFF Field Labels have a maximum length of 16, got '{label}' ({len(label)} characters)")
+        assert isinstance(label, str), f"Invalid field Label: '{label}'"
+        assert len(label) <= self.MAX_LENGTH, f"GFF Field Labels have a maximum length of 16, got '{label}' ({len(label)} characters)"
 
     def __init__(self, struct_id: int = 0):
         self.struct_id: int = struct_id
-        self.parent: GFFStruct | GFFList | None = None
         self._fields: dict[str, FieldGFF] = {}
 
     def __len__(
@@ -435,12 +435,28 @@ class GFFStruct(Dict[str, FieldGFF]):
         """Returns the number of fields."""
         return len(self._fields)
 
+    def items(
+        self,
+    ):
+        return self._fields.items()
+
     def __iter__(
         self,
     ) -> Generator[tuple[str, GFFFieldType, Any], Any, None]:
         """Iterates through the stored fields yielding each field's (label, type, value)."""
         for label, field in self.items():
             yield label, field.field_type(), field.value()
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        key_orig_to_copy: int = id(self)
+        if key_orig_to_copy in memo:
+            return memo[key_orig_to_copy]
+        shallow: Self = GFFStruct.__new__(GFFStruct)  # type: ignore[assignment]
+        memo[key_orig_to_copy] = shallow
+        shallow.struct_id = self.struct_id
+        shallow._fields = deepcopy(self._fields, memo)
+        shallow.__class__ = self.__class__
+        return shallow
 
     def __setitem__(self, key: str, value: FieldGFF[T]):
         self._validate_label(key)
@@ -917,7 +933,6 @@ class GFFStruct(Dict[str, FieldGFF]):
         """
         self._validate_label(label)
         self._fields[label] = FieldGFF(GFFFieldType.List, value)
-        value.parent = self
         return value
 
     def get_uint8(
@@ -1385,73 +1400,30 @@ class GFFStructInterface(GFFStruct):
             }
         return self._all_fields
 
-    def as_struct(self) -> GFFStruct:
-        new_struct = GFFStruct()
-        new_struct.struct_id = self.struct_id
-        for label, ftype, value in self:
+    @classmethod
+    def _recursive_unwrap(cls, struct: GFFStruct):
+        struct.__class__ = GFFStruct
+        for attr_name in struct.__dict__.copy():
+            if attr_name in {"_fields", "struct_id"}:  # e.g. struct_id, _fields
+                continue
+            if attr_name.startswith("__"):
+                continue
+            delattr(struct, attr_name)
+
+        for _label, ftype, value in struct:
             if ftype == GFFFieldType.Struct:
                 assert isinstance(value, GFFStruct)
-                new_child = GFFStruct()
-                if isinstance(value, GFFStructInterface):
-                    new_child: GFFStruct = value.as_struct()
-                else:
-                    new_child = GFFStruct(value.struct_id)
-                    new_child._fields = deepcopy(value._fields)
-                    new_struct.set_struct(label, new_child)
+                value.__class__ = GFFStruct
+                cls._recursive_unwrap(value)
             elif ftype == GFFFieldType.List:
                 assert isinstance(value, GFFList)
-                deconstructed_list = GFFList()
-                for i, child_struct in enumerate(value):
+                for child_struct in value:
                     assert isinstance(child_struct, GFFStruct)
-                    new_child = GFFStruct(child_struct.struct_id)
-                    if isinstance(child_struct, GFFStructInterface):
-                        deconstructed_list[i] = child_struct.as_struct()
-                    elif isinstance(child_struct, GFFStruct):
-                        new_child._fields = deepcopy(child_struct._fields)
-                        deconstructed_list._structs[i] = new_child
-                    else:
-                        raise ValueError(f"Expected this GFFList to have a child GFFStruct at index {i}, instead was ({child_struct.__class__.__name__}) {child_struct}")
-                new_struct.set_list(label, deconstructed_list)
-            elif ftype == GFFFieldType.UInt8:
-                new_struct.set_uint8(label, value)
-            elif ftype == GFFFieldType.Int8:
-                new_struct.set_int8(label, value)
-            elif ftype == GFFFieldType.UInt16:
-                new_struct.set_uint16(label, value)
-            elif ftype == GFFFieldType.Int16:
-                new_struct.set_int16(label, value)
-            elif ftype == GFFFieldType.UInt32:
-                new_struct.set_uint32(label, value)
-            elif ftype == GFFFieldType.Int32:
-                new_struct.set_int32(label, value)
-            elif ftype == GFFFieldType.UInt64:
-                new_struct.set_uint64(label, value)
-            elif ftype == GFFFieldType.Int64:
-                new_struct.set_int64(label, value)
-            elif ftype == GFFFieldType.Single:
-                new_struct.set_single(label, value)
-            elif ftype == GFFFieldType.Double:
-                new_struct.set_double(label, value)
-            elif ftype == GFFFieldType.String:
-                new_struct.set_string(label, value)
-            elif ftype == GFFFieldType.ResRef:
-                new_struct.set_resref(label, ResRef(str(value)))
-            elif ftype == GFFFieldType.LocalizedString:
-                assert isinstance(value, LocalizedString)
-                new_struct.set_locstring(label, deepcopy(value))
-            elif ftype == GFFFieldType.Binary:
-                new_struct.set_binary(label, value)
-            elif ftype == GFFFieldType.Vector4:
-                assert isinstance(value, Vector4)
-                copied_value = Vector4(value.x, value.y, value.z, value.w)
-                new_struct.set_vector4(label, copied_value)
-            elif ftype == GFFFieldType.Vector3:
-                assert isinstance(value, Vector3)
-                copied_value = Vector4(value.x, value.y, value.z)
-                new_struct.set_vector3(label, value)
-            else:
-                msg = f"Unsupported field type for label '{label}': {ftype!r}"
-                raise TypeError(msg)
+                    cls._recursive_unwrap(child_struct)
+
+    def unwrap(self) -> GFFStruct:
+        new_struct = deepcopy(self)
+        self._recursive_unwrap(new_struct)
         return new_struct
 
     def __getitem__(self, key: str) -> FieldGFF[Any]:
@@ -1471,8 +1443,7 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
         """Provided for backwards compatibility, deprecated."""
         return self
 
-    def __init__(self, wrapper: StructType | Type[GFFStruct] = GFFStruct):
-        self.parent: GFFStruct | None = None
+    def __init__(self, wrapper: StructType | type[GFFStruct] = GFFStruct):
         self.struct_wrapper: StructType = cast(StructType, wrapper)
 
     def add(
@@ -1486,7 +1457,6 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
             struct_id: The StructID of the new struct.
         """
         new_struct: StructType = self.struct_wrapper(struct_id)
-        new_struct.parent = self
         self.append(new_struct)
         return new_struct
 
@@ -1581,98 +1551,85 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
         return is_same_result
 
 
-class GFFFieldTypeMeta(type):
-    def __instancecheck__(cls, fake_instance: object | type):
-        if isinstance(fake_instance, type):
-            return cls.__subclasscheck__(fake_instance)
-        return False
-    def __subclasscheck__(cls, subclass: type):
-        if cls is subclass:
-            return True
-        valid_attributes = {k: v for k, v in cls.__dict__.items() if not k.startswith("__")}.values()
-        return subclass in valid_attributes
+class GFFFieldType(IntEnum):
+    """The different types of fields based off what kind of data it stores."""
 
-    def return_type(cls) -> type:
-        return cls.__base__
+    UInt8 = 0
+    Int8 = 1
+    UInt16 = 2
+    Int16 = 3
+    UInt32 = 4
+    Int32 = 5
+    UInt64 = 6
+    Int64 = 7
+    Single = 8
+    Double = 9
+    String = 10
+    ResRef = 11
+    LocalizedString = 12
+    Binary = 13
+    Struct = 14
+    List = 15
+    Vector4 = 16
+    Vector3 = 17
 
-class _FieldType(metaclass=GFFFieldTypeMeta): ...
-class GFFFieldType(type, _FieldType, Generic[T]):
-    """The different types of fields based off what kind of data it stores.
+    def __deepcopy__(self, memo):
+        return self  # do not deepcopy.
 
-    Each field type is not an object, but will behave like an instance of GFFFieldType.
-    Do not try to instantiate a fieldtype from this class using its constructor, e.g. don't do GFFFieldType.UInt8().
-    This class should only be used for type checking, whether it be static or during runtime.
+    def return_type(
+        self,
+    ) -> type[int | str | ResRef | Vector3 | Vector4 | LocalizedString | GFFStruct | GFFList | bytes | float]:
+        if self in {
+            GFFFieldType.UInt8,
+            GFFFieldType.UInt16,
+            GFFFieldType.UInt32,
+            GFFFieldType.UInt64,
+            GFFFieldType.Int8,
+            GFFFieldType.Int16,
+            GFFFieldType.Int32,
+            GFFFieldType.Int64,
+        }:
+            return int
+        if self == GFFFieldType.String:
+            return str
+        if self == GFFFieldType.ResRef:
+            return ResRef
+        if self == GFFFieldType.Vector3:
+            return Vector3
+        if self == GFFFieldType.Vector4:
+            return Vector4
+        if self == GFFFieldType.LocalizedString:
+            return LocalizedString
+        if self == GFFFieldType.Struct:
+            return GFFStruct
+        if self == GFFFieldType.List:
+            return GFFList
+        if self == GFFFieldType.Binary:
+            return bytes
+        if self in {GFFFieldType.Double, GFFFieldType.Single}:
+            return float
+        raise ValueError(self)
 
-    isinstance() and issubclass() calls will function the same, e.g.:
-    test_uint8: GFFFieldType[int]
-    test_uint8 = GFFFieldType.UInt8
-    assert isinstance(test_uint8, GFFFieldType)
-    assert isinstance(test_uint8, GFFFieldType.UInt8)
-    assert not isinstance(test_uint8, GFFFieldType.UInt16)
-    assert issubclass(test_uint8, GFFFieldType)
-    assert issubclass(test_uint8, GFFFieldType.UInt8)
-    assert not issubclass(test_uint8, GFFFieldType.UInt16)
-    """
-    def __new__(cls, field_value_id: int):
-        if field_value_id == 0:
-            return GFFFieldType.UInt8
-        if field_value_id == 1:
-            return GFFFieldType.Int8
-        if field_value_id == 2:
-            return GFFFieldType.UInt16
-        if field_value_id == 3:
-            return GFFFieldType.Int16
-        if field_value_id == 4:
-            return GFFFieldType.UInt32
-        if field_value_id == 5:
-            return GFFFieldType.Int32
-        if field_value_id == 6:
-            return GFFFieldType.UInt64
-        if field_value_id == 7:
-            return GFFFieldType.Int64
-        if field_value_id == 8:
-            return GFFFieldType.Single
-        if field_value_id == 9:
-            return GFFFieldType.Double
-        if field_value_id == 10:
-            return GFFFieldType.String
-        if field_value_id == 11:
-            return GFFFieldType.ResRef
-        if field_value_id == 12:
-            return GFFFieldType.LocalizedString
-        if field_value_id == 13:
-            return GFFFieldType.Binary
-        if field_value_id == 14:
-            return GFFFieldType.Struct
-        if field_value_id == 15:
-            return GFFFieldType.List
-        if field_value_id == 16:
-            return GFFFieldType.Vector4
-        if field_value_id == 17:
-            return GFFFieldType.Vector3
-        raise ValueError(f"Invalid field_value_id: {field_value_id}")
 
-    UInt8: GFFFieldType[int] = type("UInt8", (int, _FieldType,), {})
-    Int8: GFFFieldType[int] = type("Int8", (int, _FieldType,), {})
-    UInt16: GFFFieldType[int] = type("UInt16", (int, _FieldType,), {})
-    Int16: GFFFieldType[int] = type("Int16", (int, _FieldType,), {})
-    UInt32: GFFFieldType[int] = type("UInt32", (int, _FieldType,), {})
-    Int32: GFFFieldType[int] = type("Int32", (int, _FieldType,), {})
-    UInt64: GFFFieldType[int] = type("UInt64", (int, _FieldType,), {})
-    Int64: GFFFieldType[int] = type("Int64", (int, _FieldType,), {})
-    Single: GFFFieldType[int] = type("Single", (float, _FieldType,), {})
-    Double: GFFFieldType[float] = type("Double", (float, _FieldType,), {})
-    String: GFFFieldType[str] = type("String", (str, _FieldType,), {})
-    ResRef: GFFFieldType[ResRef] = type("ResRef", (ResRef,_FieldType,), {})
-    LocalizedString: GFFFieldType[LocalizedString] = type("LocalizedString", (LocalizedString, _FieldType,), {})
-    Binary: GFFFieldType[bytes] = type("Binary", (bytes, _FieldType,), {})
-    Struct: GFFFieldType[GFFStruct] = type("Struct", (GFFStruct, _FieldType,), {})
-    List: GFFFieldType[GFFList] = type("List", (GFFList, _FieldType,), {})
-    Vector4: GFFFieldType[Vector4] = type("Vector4", (Vector4, _FieldType,), {})
-    Vector3: GFFFieldType[Vector3] = type("Vector3", (Vector3, _FieldType,), {})
+#    UInt8: GFFFieldType[int] = type("UInt8", (int, _FieldType), {})
+#    Int8: GFFFieldType[int] = type("Int8", (int, _FieldType), {})
+#    UInt16: GFFFieldType[int] = type("UInt16", (int, _FieldType), {})
+#    Int16: GFFFieldType[int] = type("Int16", (int, _FieldType), {})
+#    UInt32: GFFFieldType[int] = type("UInt32", (int, _FieldType), {})
+#    Int32: GFFFieldType[int] = type("Int32", (int, _FieldType), {})
+#    UInt64: GFFFieldType[int] = type("UInt64", (int, _FieldType), {})
+#    Int64: GFFFieldType[int] = type("Int64", (int, _FieldType), {})
+#    Single: GFFFieldType[int] = type("Single", (float, _FieldType), {})
+#    Double: GFFFieldType[float] = type("Double", (float, _FieldType), {})
+#    String: GFFFieldType[str] = type("String", (str, _FieldType), {})
+#    ResRef: GFFFieldType[ResRef] = type("ResRef", (ResRef,_FieldType), {})
+#    LocalizedString: GFFFieldType[LocalizedString] = type("LocalizedString", (LocalizedString, _FieldType), {})
+#    Binary: GFFFieldType[bytes] = type("Binary", (bytes, _FieldType), {})
+#    Struct: GFFFieldType[GFFStruct] = type("Struct", (GFFStruct, _FieldType), {})
+#    List: GFFFieldType[GFFList] = type("List", (GFFList, _FieldType), {})
+#    Vector4: GFFFieldType[Vector4] = type("Vector4", (Vector4, _FieldType), {})
+#    Vector3: GFFFieldType[Vector3] = type("Vector3", (Vector3, _FieldType), {})
 
-    def return_type(cls) -> T:
-        return cast(T, cls.__base__)
 #  Test 2
 #    UInt8 = int
 #    Int8 = int

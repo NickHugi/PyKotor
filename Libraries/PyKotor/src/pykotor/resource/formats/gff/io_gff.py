@@ -142,7 +142,6 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Struct:
             struct_index = self._reader.read_uint32()
             new_struct = GFFStruct()
-            new_struct.parent = gff_struct
             self._load_struct(new_struct, struct_index)
             gff_struct.set_struct(label, new_struct)
         elif field_type is GFFFieldType.List:

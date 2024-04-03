@@ -30,6 +30,7 @@ from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
 from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
@@ -48,40 +49,50 @@ class TestDLG(TestCase):
     def log_func(self, *args):
         self.log_messages.extend(args)
 
+    def _validate_true_deepcopy(self, struct1: GFFStruct, struct2: GFFStruct):
+        self.assertTrue(struct1.compare(struct2, self.log_func), os.linesep.join(self.log_messages))
+        struct1.get_list("EntryList").add(52)
+        self.assertFalse(struct1.compare(struct2, self.log_func), os.linesep.join(self.log_messages))
+        self.assertEqual( 1 + len(struct2.get_list("EntryList")), len(struct1.get_list("EntryList")) )
+        elist: list[GFFStruct] = struct1._fields["EntryList"].value()
+        elist.pop()
+
     def test_k1_reconstruct(self):
         gff: GFF = read_gff(TEST_K1_FILE)
-        reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
-        result = gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True)
-        output = os.linesep.join(self.log_messages)
-        if not result:
-            expected_output = r"""
-GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\0': '14' --> '15'
-Extra 'Int32' field found at 'GFFRoot\ReplyList\0\PlotIndex': '-1'
-GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\1': '14' --> '15'
-Extra 'Int32' field found at 'GFFRoot\ReplyList\1\PlotIndex': '-1'
-GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\2': '14' --> '15'
-Extra 'Int32' field found at 'GFFRoot\ReplyList\2\PlotIndex': '-1'
-GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\3': '14' --> '15'
-Extra 'Int32' field found at 'GFFRoot\ReplyList\3\PlotIndex': '-1'
-GFFStruct: number of fields have changed at 'GFFRoot\ReplyList\4': '14' --> '15'
-Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
-"""
-            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
-        else:
-            self.assertTrue(result)
+        constructed_dlg: DLG = construct_dlg(gff)
+        self.assertTrue(gff.root.compare(constructed_dlg, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(gff.root, constructed_dlg)
+
+        reconstructed_gff: GFF = dismantle_dlg(constructed_dlg, Game.K1)
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(gff.root, reconstructed_gff.root)
+        self.assertTrue(constructed_dlg.compare(reconstructed_gff.root, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(constructed_dlg, reconstructed_gff.root)
 
     def test_k1_reconstruct_from_reconstruct(self):
+        # sourcery skip: extract-duplicate-method
         gff: GFF = read_gff(TEST_K1_FILE)
-        reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
-        re_reconstructed_gff: GFF = dismantle_dlg(construct_dlg(reconstructed_gff), Game.K1)
-        result = reconstructed_gff.compare(re_reconstructed_gff, self.log_func)
-        output = os.linesep.join(self.log_messages)
-        self.assertTrue(result, output)
+        constructed_dlg: DLG = construct_dlg(gff)
+        self.assertTrue(gff.root.compare(constructed_dlg, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(gff.root, constructed_dlg)
+
+        reconstructed_gff: GFF = dismantle_dlg(constructed_dlg, Game.K1)
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(gff.root, reconstructed_gff.root)
+        self.assertTrue(constructed_dlg.compare(reconstructed_gff.root, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(constructed_dlg, reconstructed_gff.root)
+
+        re_reconstructed_gff: GFF = dismantle_dlg(constructed_dlg, Game.K1)
+        self.assertTrue(gff.compare(re_reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(gff.root, re_reconstructed_gff.root)
+        self.assertTrue(constructed_dlg.compare(re_reconstructed_gff.root, self.log_func), os.linesep.join(self.log_messages))
+        self._validate_true_deepcopy(constructed_dlg, re_reconstructed_gff.root)
+        
 
     def test_k2_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
-        self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+        self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_k2_reconstruct_from_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
@@ -96,8 +107,11 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         "K1_PATH environment variable is not set or not found on disk.",
     )
     def test_gff_reconstruct_from_k1_installation(self):
+        #import sys
+        #sys.setrecursionlimit(50)
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for dlg_resource in (resource for resource in self.installation if resource.restype() == ResourceType.DLG):
+            print(f"Testing resource '{dlg_resource.identifier()}'")
             gff: GFF = read_gff(dlg_resource.data())
             reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K1)
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
