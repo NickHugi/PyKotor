@@ -101,7 +101,7 @@ class UTWEditorTest(unittest.TestCase):
             data, _ = self.editor.build()
             new = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff = old.compare(new, self.log_func)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
@@ -117,7 +117,7 @@ class UTWEditorTest(unittest.TestCase):
             data, _ = self.editor.build()
             new = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff = old.compare(new, self.log_func)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     def test_editor_init(self):

@@ -88,7 +88,7 @@ class DLGEditorTest(TestCase):
         data, _ = self.editor.build()
         new = read_gff(data)
 
-        diff = old.compare(new, self.log_func, ignore_default_changes=True)
+        diff = old.compare(new, self.log_func)
         self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
@@ -98,13 +98,14 @@ class DLGEditorTest(TestCase):
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for dlg_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.DLG, ResourceType.DLG_XML}):
+            print(f"Test editor save/load of '{dlg_resource.identifier()}'")
             old = read_gff(dlg_resource.data())
             self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
 
             data, _ = self.editor.build()
             new = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff = old.compare(new, self.log_func)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
@@ -120,7 +121,7 @@ class DLGEditorTest(TestCase):
             data, _ = self.editor.build()
             new = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff = old.compare(new, self.log_func)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     def test_placeholder(self): ...

@@ -64,10 +64,10 @@ class DLG(GFFStructInterface):
     BINARY_TYPE = ResourceType.DLG
 
     ambient_track: FieldProperty[ResRef, ResRef] = FieldProperty("AmbientTrack", GFFFieldType.ResRef)
-    animated_cut = FieldProperty("AnimatedCut", GFFFieldType.UInt8)
+    animated_cut: FieldProperty[int, bool] = FieldProperty("AnimatedCut", GFFFieldType.UInt8, return_type=bool)
     camera_model: FieldProperty[ResRef, ResRef] = FieldProperty("CameraModel", GFFFieldType.ResRef)
-    computer_type = FieldProperty("ComputerType", GFFFieldType.UInt8, return_type=DLGComputerType)
-    conversation_type = FieldProperty("ConversationType", GFFFieldType.Int32, return_type=DLGConversationType)
+    computer_type: FieldProperty[int, DLGComputerType] = FieldProperty("ComputerType", GFFFieldType.UInt8, return_type=DLGComputerType)
+    conversation_type: FieldProperty[int, DLGConversationType] = FieldProperty("ConversationType", GFFFieldType.Int32, return_type=DLGConversationType)
     on_abort: FieldProperty[ResRef, ResRef] = FieldProperty("EndConverAbort", GFFFieldType.ResRef)
     on_end: FieldProperty[ResRef, ResRef] = FieldProperty("EndConversation", GFFFieldType.ResRef)
     skippable: FieldProperty[int, bool] = FieldProperty("Skippable", GFFFieldType.UInt8, return_type=bool)

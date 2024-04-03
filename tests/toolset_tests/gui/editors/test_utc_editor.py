@@ -119,7 +119,7 @@ class UTCEditorTest(TestCase):
             data, _ = self.editor.build()
             new = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff = old.compare(new, self.log_func)
             self.assertTrue(
                 diff,
                 f"'{utc_resource.identifier()}' at '{utc_resource.filepath()}' failed to diff{os.linesep*2}{os.linesep.join(self.log_messages)}",
@@ -138,7 +138,7 @@ class UTCEditorTest(TestCase):
             data, _ = self.editor.build()
             new = read_gff(data)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
+            diff = old.compare(new, self.log_func)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
     def validate_io(self, utc: UTC):

@@ -368,7 +368,12 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
         assert isinstance(value, self._default.__class__), f"Incorrect type: {type(value).__name__} sent, expected {self._default.__class__.__name__}"
         self._set_value(instance, value)
 
+    def _no_change_needed(self, value: T) -> bool:
+        return value == self.value()
+
     def _set_value(self, struct: GFFStruct, value: T):
+        if self._no_change_needed(value):
+            return
         assert isinstance(value, self._field_type.return_type()), f"Cannot set {self._field_type!r} to a value of type {type(value).__name__}. Expected type {self._field_type.return_type().__name__}"
         if self._field_type == GFFFieldType.UInt8:
             struct.set_uint8(self._label, value)  # type: ignore[reportArgumentType]

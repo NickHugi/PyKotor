@@ -68,7 +68,7 @@ class TestGIT(unittest.TestCase):
         for git_resource in (resource for resource in self.installation if resource.restype() == ResourceType.GIT):
             gff: GFF = read_gff(git_resource.data())
             reconstructed_gff: GFF = dismantle_git(construct_git(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     @unittest.skip("This test is known to fail - fixme")  # FIXME:
     def test_k1_gff_reconstruct(self):
