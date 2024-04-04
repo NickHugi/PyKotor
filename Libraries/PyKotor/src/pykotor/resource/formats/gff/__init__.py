@@ -5,6 +5,8 @@ from pykotor.resource.formats.gff.gff_data import (
     GFFStruct,
     GFFFieldType,
     GFFContent,
+    FieldProperty,
+    GFFStructInterface
 )
 from pykotor.resource.formats.gff.io_gff import (
     GFFBinaryReader,

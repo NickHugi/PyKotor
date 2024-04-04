@@ -635,18 +635,18 @@ class WalkmeshRenderer(QWidget):
                 ARENorthAxis.NegativeY: 180,
                 ARENorthAxis.NegativeX: 90,
             }
-            rotation = axis_to_rotation[self._are.north_axis]
+            rotation = axis_to_rotation[self._are.map.north_axis]
             rads = math.radians(-rotation)
 
-            map_point_1_x = ((self._are.map_point_1.x - 0.5) * math.cos(rads)) - ((self._are.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
-            map_point_1_y = ((self._are.map_point_1.x - 0.5) * math.sin(rads)) + ((self._are.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
-            map_point_2_x = ((self._are.map_point_2.x - 0.5) * math.cos(rads)) - ((self._are.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
-            map_point_2_y = ((self._are.map_point_2.x - 0.5) * math.sin(rads)) + ((self._are.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_1_x = ((self._are.map.map_point_1.x - 0.5) * math.cos(rads)) - ((self._are.map.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_1_y = ((self._are.map.map_point_1.x - 0.5) * math.sin(rads)) + ((self._are.map.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_2_x = ((self._are.map.map_point_2.x - 0.5) * math.cos(rads)) - ((self._are.map.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_2_y = ((self._are.map.map_point_2.x - 0.5) * math.sin(rads)) + ((self._are.map.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
 
-            world_point_1_x = self._are.world_point_1.x
-            world_point_1_y = self._are.world_point_1.y
-            world_point_2_x = self._are.world_point_2.x
-            world_point_2_y = self._are.world_point_2.y
+            world_point_1_x = self._are.map.world_point_1.x
+            world_point_1_y = self._are.map.world_point_1.y
+            world_point_2_x = self._are.map.world_point_2.x
+            world_point_2_y = self._are.map.world_point_2.y
 
             # X% of the width of the image
             widthPercent = abs(map_point_1_x - map_point_2_x)

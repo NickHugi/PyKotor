@@ -296,6 +296,10 @@ class FieldGFF(Generic[T]):
             default = Vector4.from_null()
         elif field_type == GFFFieldType.String:
             default = ""
+        elif field_type == GFFFieldType.Struct:
+            default = GFFStruct()
+        elif field_type == GFFFieldType.List:
+            default = GFFList()
         if default is unique_sentinel:
             raise ValueError(f"Invalid gff field type in default lookup: {field_type!r}")
         expected_type = cast(Type[T], field_type.return_type())
@@ -346,8 +350,9 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
         self._label: str = label
         self._game: Game | None = game
         self._return_type: type[U] | Callable[[T], U] | None = return_type
+        self._store_type: type[T] | Callable[[U], T] | None = store_type
 
-    def __get__(self, instance: GFFStruct | None, owner: type[GFFStruct]) -> T | U:
+    def __get__(self, instance: GFFStruct | None, owner: type[GFFStruct]) -> U:
         if instance is None:
             value = self._default
         else:
@@ -356,16 +361,27 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
             if value is None:
                 raise ValueError(f"'{self._label}' {self._field_type!r} field somehow was None ({owner.__name__}).")
         if self._return_type is None:
-            return value
+            return cast(U, value)
         if isinstance(self._return_type, Callable):
             return self._return_type(value)
         if not isinstance(value, self._return_type):  # Check if value is U
             return self._return_type(value)
         return value
 
-    def __set__(self, instance: GFFStruct | None, value: T) -> None:
+    def __set__(self, instance: GFFStruct | None, value: T | U) -> None:
         assert instance is not None, "Improper access to FieldProperty.__set__ without an instance."
-        assert isinstance(value, self._default.__class__), f"Incorrect type: {type(value).__name__} sent, expected {self._default.__class__.__name__}"
+        sval = cast(T, value)
+        rval = cast(U, value)
+        if self._store_type is None:
+            self._set_value(instance, sval)
+            return
+        if isinstance(self._store_type, Callable):
+            self._set_value(instance, self._store_type(rval))
+            return
+        if not isinstance(value, self._store_type):  # Check if value is T
+            self._set_value(instance, self._store_type(rval))
+            return
+        #assert isinstance(value, self._default.__class__), f"Incorrect type: {type(value).__name__} sent, expected {self._default.__class__.__name__}"
         self._set_value(instance, value)
 
     def _no_change_needed(self, value: T) -> bool:

@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
-    from pykotor.resource.generics.are import ARERoom
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -59,7 +58,6 @@ class AREEditor(Editor):
 
         self._are: ARE = ARE()
         self._minimap = None
-        self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
         from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
 
@@ -184,17 +182,17 @@ class AREEditor(Editor):
         self.ui.stealthLossSpin.setValue(are.stealth_xp_loss)
 
         # Map
-        self.ui.mapAxisSelect.setCurrentIndex(are.north_axis)
-        self.ui.mapZoomSpin.setValue(are.map_zoom)
-        self.ui.mapResXSpin.setValue(are.map_res_x)
-        self.ui.mapImageX1Spin.setValue(are.map_point_1.x)
-        self.ui.mapImageX2Spin.setValue(are.map_point_2.x)
-        self.ui.mapImageY1Spin.setValue(are.map_point_1.y)
-        self.ui.mapImageY2Spin.setValue(are.map_point_2.y)
-        self.ui.mapWorldX1Spin.setValue(are.world_point_1.x)
-        self.ui.mapWorldX2Spin.setValue(are.world_point_2.x)
-        self.ui.mapWorldY1Spin.setValue(are.world_point_1.y)
-        self.ui.mapWorldY2Spin.setValue(are.world_point_2.y)
+        self.ui.mapAxisSelect.setCurrentIndex(are.map.north_axis)
+        self.ui.mapZoomSpin.setValue(are.map.map_zoom)
+        self.ui.mapResXSpin.setValue(are.map.map_res_x)
+        self.ui.mapImageX1Spin.setValue(are.map.map_point_1.x)
+        self.ui.mapImageX2Spin.setValue(are.map.map_point_2.x)
+        self.ui.mapImageY1Spin.setValue(are.map.map_point_1.y)
+        self.ui.mapImageY2Spin.setValue(are.map.map_point_2.y)
+        self.ui.mapWorldX1Spin.setValue(are.map.world_point_1.x)
+        self.ui.mapWorldX2Spin.setValue(are.map.world_point_2.x)
+        self.ui.mapWorldY1Spin.setValue(are.map.world_point_1.y)
+        self.ui.mapWorldY2Spin.setValue(are.map.world_point_2.y)
 
         # Weather
         self.ui.fogEnabledCheck.setChecked(are.fog_enabled)
@@ -280,13 +278,13 @@ class AREEditor(Editor):
         are.stealth_xp_loss = self.ui.stealthLossSpin.value()
 
         # Map
-        are.north_axis = ARENorthAxis(self.ui.mapAxisSelect.currentIndex())
-        are.map_zoom = self.ui.mapZoomSpin.value()
-        are.map_res_x = self.ui.mapResXSpin.value()
-        are.map_point_1 = Vector2(self.ui.mapImageX1Spin.value(), self.ui.mapImageY1Spin.value())
-        are.map_point_2 = Vector2(self.ui.mapImageX2Spin.value(), self.ui.mapImageY2Spin.value())
-        are.world_point_1 = Vector2(self.ui.mapWorldX1Spin.value(), self.ui.mapWorldY1Spin.value())
-        are.world_point_2 = Vector2(self.ui.mapWorldX2Spin.value(), self.ui.mapWorldY2Spin.value())
+        are.map.north_axis = ARENorthAxis(self.ui.mapAxisSelect.currentIndex())
+        are.map.map_zoom = self.ui.mapZoomSpin.value()
+        are.map.map_res_x = self.ui.mapResXSpin.value()
+        are.map.map_point_1 = Vector2(self.ui.mapImageX1Spin.value(), self.ui.mapImageY1Spin.value())
+        are.map.map_point_2 = Vector2(self.ui.mapImageX2Spin.value(), self.ui.mapImageY2Spin.value())
+        are.map.world_point_1 = Vector2(self.ui.mapWorldX1Spin.value(), self.ui.mapWorldY1Spin.value())
+        are.map.world_point_2 = Vector2(self.ui.mapWorldX2Spin.value(), self.ui.mapWorldY2Spin.value())
 
         # Weather
         are.fog_enabled = self.ui.fogEnabledCheck.isChecked()
@@ -395,4 +393,4 @@ class AREEditor(Editor):
             self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
 
     def generateTag(self):
-        self.ui.tagEdit.setText("newarea" if self._resname is None or self._resname == "" else self._resname)
+        self.ui.tagEdit.setText(self._resname.strip() if self._resname and self._resname.strip() else "newarea")
