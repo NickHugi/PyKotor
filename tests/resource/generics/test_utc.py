@@ -72,7 +72,7 @@ class TestUTC(TestCase):
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
-        reconstructed_gff = dismantle_utc(construct_utc(gff), Game.K2)
+        reconstructed_gff = dismantle_utc(construct_utc(gff), Game.K1)
         result = gff.compare(reconstructed_gff, self.log_func)
         output = os.linesep.join(self.log_messages)
         self.assertTrue(result, output)

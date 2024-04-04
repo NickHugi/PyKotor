@@ -476,10 +476,12 @@ def dismantle_utc(
             power.__class__ = GFFStruct
         utc_class.__class__ = GFFStruct
 
-    feat_list: GFFList[UTCFeat] = root.set_list("FeatList", GFFList())
+    feat_list: GFFList[UTCFeat] = root._fields["FeatList"].value()
     for feat in feat_list:
         feat.__class__ = GFFStruct
 
+
+    # TODO(th3w1zard1): implement into GFFStructInterface.
     equipment_list: GFFList[UTCEquipment] = root.set_list("Equip_ItemList", GFFList())
     for slot, item in utc.equipment.items():
         equipment_struct = equipment_list.add(slot.value)
