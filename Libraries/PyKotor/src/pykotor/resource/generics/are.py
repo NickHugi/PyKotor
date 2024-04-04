@@ -294,11 +294,11 @@ def dismantle_are(
     *,
     use_deprecated: bool = True,
 ) -> GFF:
-    """Converts an ARE structure to a GFF structure.
+    """Creates a new GFF object from an ARE object.
 
     Args:
     ----
-        are: ARE - The ARE structure to convert
+        are: ARE - The ARE structure to unwrap
         game: Game - The game type (K1, K2, etc)
         use_deprecated: bool - Whether to include deprecated fields
 

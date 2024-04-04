@@ -6,7 +6,7 @@ import math
 from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Generic, List, Type, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Generic, List, Type, TypeVar, Union, cast, overload
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -341,8 +341,8 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
         default: T | None = None,
         *,
         game: Game = Game.K1,
-        return_type: Type[U] | Callable[[T], U] | None = None,
-        store_type: Type[T] | Callable[[U], T] | None = None
+        return_type: type[U] | Callable[[T], U] | None = None,
+        store_type: type[T] | Callable[[U], T] | None = None
     ):
         assert isinstance(label, str), f"Expected label to be str, instead was {type(label).__name__}"
         self._default: T = self.default(field_type) if default is None else default
@@ -441,6 +441,8 @@ class GFFStruct(Dict[str, FieldGFF]):
     """
     MAX_LENGTH: ClassVar[int] = 16
 
+    def __repr__(self):
+        return repr(self._fields)
 
     def _validate_label(self, label: str):
         assert isinstance(label, str), f"Invalid field Label: '{label}'"
@@ -1406,11 +1408,16 @@ class TypedProperty(Generic[T]):
 unique_sentinel = object()
 class GFFStructInterface(GFFStruct):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, struct_id: int = 0):
+        super().__init__(struct_id)
         self._all_fields: dict[str, FieldProperty[Any, Any]] = {}
 
     def all_fields(self) -> dict[str, FieldProperty[Any, Any]]:
+        """Returns a mapping for Label to the Field.
+
+        Unfortunately this means any class inheriting GFFStructInterface must provide a FieldProperty for all fields
+        that GFFStruct may contain. Otherwise the fallback won't work (see `__getitem__`)
+        """
         if not hasattr(self, "_all_fields"):
             mro: list[type] = self.__class__.mro()
             self._all_fields = {
@@ -1443,20 +1450,24 @@ class GFFStructInterface(GFFStruct):
                     cls._recursive_unwrap(child_struct)
 
     def unwrap(self) -> GFFStruct:
+        """Take off the GFFStructInterface wrapper and return a plain GFFStruct.
+
+        More specifically, create a deepcopy of self, modify nested instances of GFFStructInterface in _fields, recurse through all and
+        set __class__ of all of them to GFFStruct.
+        """
         new_struct = deepcopy(self)
         self._recursive_unwrap(new_struct)
         return new_struct
 
     def __getitem__(self, key: str) -> FieldGFF[Any]:
-        """Fallback to default values if the field doesn't exist.
-
-        Fallbacks are only used in abstracted constructions like DLG/UTC/UTD
+        """Fallback to default values if the field doesn't exist. Defaults are grabbed dynamically from
+        class-level FieldProperty definitions.
         """
         return super().__getitem__(key) if self.exists(key) else self.all_fields()[key]
 
 
 StructType = TypeVar("StructType", bound=GFFStruct)
-class GFFList(List[StructType]):  # type: ignore[pylance]
+class GFFList(List[Union[StructType, GFFStruct]]):  # type: ignore[pylance]
     """A collection of GFFStructs."""
 
     @property
@@ -1464,27 +1475,29 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
         """Provided for backwards compatibility, deprecated."""
         return self
 
-    def __init__(self, wrapper: StructType | type[GFFStruct] = GFFStruct):
-        self.struct_wrapper: StructType = cast(StructType, wrapper)
+    def __init__(self, wrapper: type[GFFStruct] = GFFStruct):
+        self.struct_wrapper: type[GFFStruct] = wrapper
 
     def add(
         self,
         struct_id: int,
-    ) -> StructType:
+    ) -> GFFStruct:
         """Adds a new struct into the list.
 
         Args:
         ----
             struct_id: The StructID of the new struct.
         """
-        new_struct: StructType = self.struct_wrapper(struct_id)
+        new_struct: GFFStruct = self.struct_wrapper(struct_id)
         self.append(new_struct)
         return new_struct
 
     def at(
         self,
         index: int,
-    ) -> GFFStruct | None:
+        *,
+        default: T = None
+    ) -> GFFStruct | T:
         """Returns the struct at the index if it exists, otherwise returns None.
 
         Args:
@@ -1495,7 +1508,7 @@ class GFFList(List[StructType]):  # type: ignore[pylance]
         -------
             The corresponding GFFList or None.
         """
-        return self[index] if index < len(self._structs) else None
+        return self[index] if index < len(self._structs) else default
 
     def compare(
         self,

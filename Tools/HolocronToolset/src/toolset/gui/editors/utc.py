@@ -17,7 +17,7 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
-from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
+from pykotor.resource.generics.utc import UTC, UTCClass, UTCPower, read_utc, write_utc
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
@@ -201,7 +201,7 @@ class UTCEditor(Editor):
             stringref = power.get_integer("name", 0)
             text = installation.talktable().string(stringref) if stringref else power.get_string("label")
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
-            text = text or f"[Unused Power ID: {power.label()}]"
+            text = text and text.strip() or f"[Unused Power ID: {power.label()}]"
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(power.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -639,7 +639,8 @@ class UTCEditor(Editor):
                 return item
         return None
 
-    def getPowerItem(self, powerId: int) -> QListWidgetItem | None:
+    def getPowerItem(self, power: UTCPower) -> QListWidgetItem | None:
+        powerId: int = power.spell
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
