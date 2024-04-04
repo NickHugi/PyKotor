@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import struct
-
 from copy import deepcopy
 from enum import IntEnum
 from typing import TYPE_CHECKING, TypedDict, cast
@@ -227,6 +225,7 @@ class AREMap(GFFStructInterface):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._fields: AREMapFields
+
     @property
     def map_point_1(self) -> Vector2: return Vector2(self._mp1x, self._mp1y)
     @map_point_1.setter
