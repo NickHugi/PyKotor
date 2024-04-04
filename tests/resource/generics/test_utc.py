@@ -25,10 +25,10 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import EquipmentSlot, Game
+from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utc import construct_utc, dismantle_utc
+from pykotor.resource.generics.utc import UTCEquipmentSlot, construct_utc, dismantle_utc
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -75,14 +75,7 @@ class TestUTC(TestCase):
         reconstructed_gff = dismantle_utc(construct_utc(gff), Game.K2)
         result = gff.compare(reconstructed_gff, self.log_func)
         output = os.linesep.join(self.log_messages)
-        if not result:
-            expected_output = r"""
-GFFStruct: number of fields have changed at 'GFFRoot': '74' --> '75'
-Field 'LocalizedString' is different at 'GFFRoot\Description': 123 --> -1
-"""
-            self.assertEqual(output.strip().replace("\r\n", "\n"), expected_output.strip(), "Comparison output does not match expected output")
-        else:
-            self.assertTrue(result)
+        self.assertTrue(result, output)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -160,16 +153,16 @@ Field 'LocalizedString' is different at 'GFFRoot\Description': 123 --> -1
         self.assertEqual(1, utc.classes[1].class_id)
         self.assertEqual(3, utc.classes[1].class_level)
         self.assertEqual(2, len(utc.classes[1].powers))
-        self.assertEqual(9, utc.classes[1].powers[0])
+        self.assertEqual(9, utc.classes[1].powers[0]["Spell"].value())
 
         self.assertEqual(2, len(utc.equipment.items()))
-        self.assertEqual("mineruniform", utc.equipment[EquipmentSlot.ARMOR].resref)
-        self.assertTrue(utc.equipment[EquipmentSlot.ARMOR].droppable)
-        self.assertEqual("g_i_crhide008", utc.equipment[EquipmentSlot.HIDE].resref)
-        self.assertFalse(utc.equipment[EquipmentSlot.HIDE].droppable)
+        self.assertEqual("mineruniform", utc.equipment[UTCEquipmentSlot.ARMOR].resref)
+        self.assertTrue(utc.equipment[UTCEquipmentSlot.ARMOR].droppable)
+        self.assertEqual("g_i_crhide008", utc.equipment[UTCEquipmentSlot.HIDE].resref)
+        self.assertFalse(utc.equipment[UTCEquipmentSlot.HIDE].droppable)
 
         self.assertEqual(2, len(utc.feats))
-        self.assertEqual(94, utc.feats[1])
+        self.assertEqual(94, utc.feats[1]["Feat"].value())
 
         self.assertEqual(4, len(utc.inventory))
         self.assertTrue(utc.inventory[0].droppable)

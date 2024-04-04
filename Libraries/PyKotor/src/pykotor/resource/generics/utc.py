@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
+
 class UTCSkillIndex(IntEnum):
     """Represents the list indices of a UTC's 'SkillList' Field."""
     COMPUTER_USE = 0
@@ -421,6 +422,9 @@ def construct_utc(
     gff: GFF,
 ) -> UTC:
     utc: UTC = deepcopy(gff.root)  # type: ignore[assignment]
+    utc.__class__ = UTC
+    utc.inventory = []
+    utc.equipment = {}
 
     skill_list: GFFList[UTCSkill] = utc._fields["SkillList"].value()
     for skill in skill_list:
@@ -432,8 +436,6 @@ def construct_utc(
         power_list: GFFList[UTCPower] = utc_class._fields["KnownList0"].value()
         for power_struct in power_list:
             power_struct.__class__ = UTCPower
-
-        utc.classes.append(utc_class)
 
     feat_list: GFFList[UTCFeat] = utc._fields["FeatList"].value()
     for feat_struct in feat_list:
@@ -470,9 +472,9 @@ def dismantle_utc(
         skill_struct.__class__ = GFFStruct
     class_list: GFFList[UTCClass] = root._fields["ClassList"].value()
     for utc_class in class_list:
-        utc_class.__class__ = GFFStruct
         for power in utc_class.powers:
             power.__class__ = GFFStruct
+        utc_class.__class__ = GFFStruct
 
     feat_list: GFFList[UTCFeat] = root.set_list("FeatList", GFFList())
     for feat in feat_list:
