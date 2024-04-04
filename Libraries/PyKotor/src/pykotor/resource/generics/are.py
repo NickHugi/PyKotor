@@ -29,6 +29,55 @@ class ARENorthAxis(IntEnum):
     PositiveX = 2
     NegativeX = 3
 
+class AREMapFields(TypedDict):
+    MapZoom: FieldGFF[int]
+    MapResX: FieldGFF[int]
+    NorthAxis: FieldGFF[int]
+    MapPt1X: FieldGFF[float]
+    MapPt1Y: FieldGFF[float]
+    MapPt2X: FieldGFF[float]
+    MapPt2Y: FieldGFF[float]
+class AREMap(GFFStructInterface):
+    map_zoom: FieldProperty[int, int] = FieldProperty("MapZoom", GFFFieldType.Int32)
+    map_res_x: FieldProperty[int, int] = FieldProperty("MapResX", GFFFieldType.Int32)
+    north_axis: FieldProperty[int, ARENorthAxis] = FieldProperty("NorthAxis", GFFFieldType.Int32, return_type=ARENorthAxis)
+    _mp1x: FieldProperty[float, float] = FieldProperty("MapPt1X", GFFFieldType.Single)
+    _mp1y: FieldProperty[float, float] = FieldProperty("MapPt1Y", GFFFieldType.Single)
+    _mp2x: FieldProperty[float, float] = FieldProperty("MapPt2X", GFFFieldType.Single)
+    _mp2y: FieldProperty[float, float] = FieldProperty("MapPt2Y", GFFFieldType.Single)
+    _wp1x: FieldProperty[float, float] = FieldProperty("MapPt1X", GFFFieldType.Single)
+    _wp1y: FieldProperty[float, float] = FieldProperty("MapPt1Y", GFFFieldType.Single)
+    _wp2x: FieldProperty[float, float] = FieldProperty("MapPt2X", GFFFieldType.Single)
+    _wp2y: FieldProperty[float, float] = FieldProperty("MapPt2Y", GFFFieldType.Single)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._fields: AREMapFields
+
+    @property
+    def map_point_1(self) -> Vector2: return Vector2(self._mp1x, self._mp1y)
+    @map_point_1.setter
+    def map_point_1(self, value: Vector2):
+        self._mp1x, self._mp1y = value.x, value.y
+
+    @property
+    def map_point_2(self) -> Vector2: return Vector2(self._mp2x, self._mp2y)
+    @map_point_2.setter
+    def map_point_2(self, value: Vector2):
+        self._mp2x, self._mp2y = value.x, value.y
+
+    @property
+    def world_point_1(self) -> Vector2: return Vector2(self._wp1x, self._wp1y)
+    @world_point_1.setter
+    def world_point_1(self, value: Vector2):
+        self._wp1x, self._wp1y = value.x, value.y
+
+    @property
+    def world_point_2(self) -> Vector2: return Vector2(self._wp2x, self._wp2y)
+    @world_point_2.setter
+    def world_point_2(self, value: Vector2):
+        self._mp2x, self._wp2y = value.x, value.y
+
 class AREFields(TypedDict):
     Map: FieldGFF[AREMap]
     Version: FieldGFF[int]
@@ -113,7 +162,7 @@ class ARE(GFFStructInterface):
     BINARY_TYPE = ResourceType.ARE
     CONTENT_TYPE = GFFContent.ARE
 
-    map: FieldProperty[GFFStruct, AREMap] = FieldProperty("Map", GFFFieldType.Struct)
+    map: FieldProperty[GFFStruct, AREMap] = FieldProperty("Map", GFFFieldType.Struct, AREMap())
     version: FieldProperty[int, int] = FieldProperty("Version", GFFFieldType.UInt32)
 
     sun_ambient: FieldProperty[int, Color] = FieldProperty("SunAmbientColor", GFFFieldType.UInt32, store_type=Color.rgb_integer, return_type=Color.from_rgb_integer)
@@ -201,58 +250,9 @@ class ARE(GFFStructInterface):
         super().__init__(*args, **kwargs)
         self._fields: AREFields
 
-class AREMapFields(TypedDict):
-    MapZoom: FieldGFF[int]
-    MapResX: FieldGFF[int]
-    NorthAxis: FieldGFF[int]
-    MapPt1X: FieldGFF[float]
-    MapPt1Y: FieldGFF[float]
-    MapPt2X: FieldGFF[float]
-    MapPt2Y: FieldGFF[float]
-class AREMap(GFFStructInterface):
-    map_zoom: FieldProperty[int, int] = FieldProperty("MapZoom", GFFFieldType.Int32)
-    map_res_x: FieldProperty[int, int] = FieldProperty("MapResX", GFFFieldType.Int32)
-    north_axis: FieldProperty[int, ARENorthAxis] = FieldProperty("NorthAxis", GFFFieldType.Int32, return_type=ARENorthAxis)
-    _mp1x: FieldProperty[float, float] = FieldProperty("MapPt1X", GFFFieldType.Single)
-    _mp1y: FieldProperty[float, float] = FieldProperty("MapPt1Y", GFFFieldType.Single)
-    _mp2x: FieldProperty[float, float] = FieldProperty("MapPt2X", GFFFieldType.Single)
-    _mp2y: FieldProperty[float, float] = FieldProperty("MapPt2Y", GFFFieldType.Single)
-    _wp1x: FieldProperty[float, float] = FieldProperty("MapPt1X", GFFFieldType.Single)
-    _wp1y: FieldProperty[float, float] = FieldProperty("MapPt1Y", GFFFieldType.Single)
-    _wp2x: FieldProperty[float, float] = FieldProperty("MapPt2X", GFFFieldType.Single)
-    _wp2y: FieldProperty[float, float] = FieldProperty("MapPt2Y", GFFFieldType.Single)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._fields: AREMapFields
-
-    @property
-    def map_point_1(self) -> Vector2: return Vector2(self._mp1x, self._mp1y)
-    @map_point_1.setter
-    def map_point_1(self, value: Vector2):
-        self._mp1x, self._mp1y = value.x, value.y
-
-    @property
-    def map_point_2(self) -> Vector2: return Vector2(self._mp2x, self._mp2y)
-    @map_point_2.setter
-    def map_point_2(self, value: Vector2):
-        self._mp2x, self._mp2y = value.x, value.y
-
-    @property
-    def world_point_1(self) -> Vector2: return Vector2(self._wp1x, self._wp1y)
-    @world_point_1.setter
-    def world_point_1(self, value: Vector2):
-        self._wp1x, self._wp1y = value.x, value.y
-
-    @property
-    def world_point_2(self) -> Vector2: return Vector2(self._wp2x, self._wp2y)
-    @world_point_2.setter
-    def world_point_2(self, value: Vector2):
-        self._mp2x, self._wp2y = value.x, value.y
-
 class ARERoomFields(TypedDict):
     RoomName: FieldGFF[str]
-    DisableWeather: FieldGFF[bool]  # Assuming DisableWeather is the equivalent of weather in the original implementation
+    DisableWeather: FieldGFF[bool]
     EnvAudio: FieldGFF[int]
     ForceRating: FieldGFF[int]
     AmbientScale: FieldGFF[float]
