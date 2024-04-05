@@ -201,7 +201,7 @@ class InventoryEditor(QDialog):
         self.equipment = {}
         widget: DropFrame
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():  # type: ignore[reportGeneralTypeIssues]
-            # HACK: isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
+            # HACK(NickHugi): isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
             if "DropFrame" in widget.__class__.__name__ and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
@@ -865,26 +865,6 @@ class ItemModel(QStandardItemModel):
         name: str,
         slots: int,
     ):
-        """Adds an item to the resource list.
-
-        Args:
-        ----
-            resname: Name of the resource in one line.
-            category: Category of the item in one line.
-            filepath: Path to the resource file in one line.
-            name: Optional display name in one line.
-            slots: Number of slots the item uses in one line.
-
-        Returns:
-        -------
-            None: No value is returned in one line.
-
-        Processing Logic:
-        ----------------
-            - The function creates a QStandardItem with the name or resource name.
-            - Tooltip, filepath, resname, and slots are set as item data.
-            - The item is appended to the category item in the model.
-        """
         item = QStandardItem(name or resname)
         item.setToolTip(f"{resname}\n{filepath}\n{name}")
         item.setData(filepath, _FILEPATH_ROLE)

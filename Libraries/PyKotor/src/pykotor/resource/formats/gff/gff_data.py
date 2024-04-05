@@ -342,9 +342,10 @@ class FieldProperty(FieldGFF[T], Generic[T, U]):
         *,
         game: Game = Game.K1,
         return_type: type[U] | Callable[[T], U] | None = None,
-        store_type: type[T] | Callable[[U], T] | None = None
+        store_type: type[T] | Callable[[U], T] | None = None,
     ):
         assert isinstance(label, str), f"Expected label to be str, instead was {type(label).__name__}"
+        assert len(label) <= 16, f"GFF Field Label's cannot exceed 16 characters, got {label} ({len(label)} characters)"
         self._default: T = self.default(field_type) if default is None else default
         super().__init__(field_type, default)
         self._label: str = label

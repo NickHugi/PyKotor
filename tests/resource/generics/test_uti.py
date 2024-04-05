@@ -76,11 +76,7 @@ class TestUTI(TestCase):
         reconstructed_gff = dismantle_uti(construct_uti(gff), Game.K1)
         result = gff.compare(reconstructed_gff, self.log_func)
         output = os.linesep.join(self.log_messages)
-        if not result:
-            expected_output = r"Field 'LocalizedString' is different at 'GFFRoot\Description': 456 --> 5633"
-            self.assertEqual(output.strip(), expected_output.strip(), "Comparison output does not match expected output")
-        else:
-            self.assertTrue(result)
+        self.assertTrue(result, output)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -113,7 +109,7 @@ class TestUTI(TestCase):
         self.assertEqual("itemo", uti.comment)
 
         self.assertEqual(2, len(uti.properties))
-        self.assertIsNone(uti.properties[0].upgrade_type, None)
+        self.assertFalse(uti.properties[0].upgrade_type)
         self.assertEqual(100, uti.properties[1].chance_appear)
         self.assertEqual(1, uti.properties[1].cost_table)
         self.assertEqual(1, uti.properties[1].cost_value)

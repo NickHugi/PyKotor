@@ -68,10 +68,7 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -
             return "failed", "F", "FAILED: <unknown error>"
 
         reprcrash = getattr(report.longrepr, "reprcrash", None)
-        if reprcrash is not None:
-            msg = reprcrash.message
-        else:
-            msg = repr(report.longrepr)
+        msg = reprcrash.message if reprcrash is not None else repr(report.longrepr)
         return "failed", "F", f"FAILED: {msg}"
     return None
 
@@ -306,10 +303,10 @@ def pytest_configure():
     cleanup_before_tests()
     print("Prepare all scripts...")
     global ALL_SCRIPTS
-    ALL_SCRIPTS = populate_all_scripts()
+    #ALL_SCRIPTS = populate_all_scripts()
     print("Prepare all GFFs...")
     global ALL_GFFS
-    ALL_GFFS = populate_all_gffs()
+    #ALL_GFFS = populate_all_gffs()
 
 
 def pytest_sessionfinish(

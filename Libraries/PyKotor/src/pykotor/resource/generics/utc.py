@@ -4,7 +4,7 @@ from copy import deepcopy
 from enum import IntEnum
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-from pykotor.common.misc import Game, InventoryItem, ResRef
+from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, FieldProperty, GFFContent, GFFFieldType, GFFList, GFFStruct, GFFStructInterface, bytes_gff, read_gff, write_gff
 from pykotor.resource.type import ResourceType
 
@@ -35,31 +35,22 @@ class UTCStructID(IntEnum):
     POWER = 3
 
 
-class UTCEquipmentSlot(IntEnum):
-    INVALID = 0
-    HEAD = 1**0
-    ARMOR = 2**1
-    GAUNTLET = 2**3
-    RIGHT_HAND = 2**4
-    LEFT_HAND = 2**5
-    RIGHT_ARM = 2**7
-    LEFT_ARM = 2**8
-    IMPLANT = 2**9
-    BELT = 2**10
-    CLAW1 = 2**14
-    CLAW2 = 2**15
-    CLAW3 = 2**16
-    HIDE = 2**17
-    # TSL Only:
-    RIGHT_HAND_2 = 2**18
-    LEFT_HAND_2 = 2**19
-
-
 class UTCEquipmentFields(TypedDict):
-    Slot: FieldGFF[int]
-class UTCEquipment(GFFStructInterface):
-    def __init__():
-        super().__init__()
+    EquippedRes: FieldGFF[ResRef]
+    Dropable: FieldGFF[int]
+class UTCEquipment(GFFStructInterface, InventoryItem):
+    resref: FieldProperty[ResRef, ResRef] = FieldProperty("EquippedRes", GFFFieldType.ResRef)
+    droppable: FieldProperty[int, bool] = FieldProperty("Dropable", GFFFieldType.UInt8)
+    def __init__(self, slot: EquipmentSlot):
+        super().__init__(struct_id=slot.value)
+        self._fields: UTCEquipmentFields
+
+    @property
+    def slot(self) -> int:
+        return self.struct_id
+    @slot.setter
+    def slot(self, value: int):
+        self.struct_id = value
 
 
 class UTCSkillFields(TypedDict):
@@ -102,6 +93,25 @@ class UTCFeat(GFFStructInterface):
     ):
         super().__init__(struct_id=UTCStructID.FEAT.value)
         self._fields: UTCPowerFields
+
+
+class UTCItemField(TypedDict):
+    Repos_PosX: FieldGFF[int]
+    Repos_Posy: FieldGFF[int]
+    InventoryRes: FieldGFF[ResRef]
+    Dropable: FieldGFF[int]
+class UTCItem(GFFStructInterface, InventoryItem):
+    repos_x: FieldProperty[int, int] = FieldProperty("Repos_PosX", GFFFieldType.UInt16)
+    repos_y: FieldProperty[int, int] = FieldProperty("Repos_Posy", GFFFieldType.UInt16)
+    resref: FieldProperty[ResRef, ResRef] = FieldProperty("InventoryRes", GFFFieldType.ResRef)
+    droppable: FieldProperty[int, bool] = FieldProperty("Dropable", GFFFieldType.UInt8, return_type=bool)
+
+    def __init__(
+        self,
+        struct_id: int = -1
+    ):
+        super().__init__(struct_id)
+        self._fields: UTCItemField
 
 
 class UTCClassFields(TypedDict):
@@ -250,13 +260,20 @@ class UTC(GFFStructInterface):
     BINARY_TYPE = ResourceType.UTC
     CONTENT_TYPE = GFFContent.UTC
 
+    equiplist: FieldProperty[GFFList[GFFStruct], GFFList[UTCEquipment]] = FieldProperty("Equip_ItemList", GFFFieldType.List)
+
     def __init__(
         self,
     ):
         super().__init__()
         self._fields: UTCFields
-        self.inventory: list[InventoryItem] = []  # TODO(th3w1zard1): May need to hardcode this attr in __deepcopy__
-        self.equipment: dict[UTCEquipmentSlot, InventoryItem] = {}  # TODO(th3w1zard1): May need to hardcode this attr in __deepcopy__
+
+    @property
+    def equipment(self) -> dict[EquipmentSlot, UTCEquipment]:
+        return {  # Shallow copy!
+            EquipmentSlot(e.struct_id): e
+            for e in self.equiplist
+        }
 
     @staticmethod
     def default_skill_list() -> GFFList[UTCSkill]:
@@ -325,6 +342,7 @@ class UTC(GFFStructInterface):
     def treat_injury(self, value: int):
         self.set_skill(UTCSkillIndex.TREAT_INJURY, value)
 
+    inventory: FieldProperty[GFFList[UTCItem], GFFList[GFFStruct]] = FieldProperty("ItemList", GFFFieldType.List)
     classes: FieldProperty[GFFList[GFFStruct], GFFList[UTCClass]] = FieldProperty("ClassList", GFFFieldType.List)
     resref: FieldProperty[ResRef, ResRef] = FieldProperty("TemplateResRef", GFFFieldType.ResRef)
     tag: FieldProperty[str, str] = FieldProperty("Tag", GFFFieldType.String)
@@ -423,8 +441,6 @@ def construct_utc(
 ) -> UTC:
     utc: UTC = deepcopy(gff.root)  # type: ignore[assignment]
     utc.__class__ = UTC
-    utc.inventory = []
-    utc.equipment = {}
 
     skill_list: GFFList[UTCSkill] = utc._fields["SkillList"].value()
     for skill in skill_list:
@@ -433,8 +449,10 @@ def construct_utc(
     for utc_class in utc._fields["ClassList"].value():
         utc_class.__class__ = UTCClass
 
-        power_list: GFFList[UTCPower] = utc_class._fields["KnownList0"].value()
-        for power_struct in power_list:
+        power_list_field: FieldGFF[GFFList[UTCPower]] = utc_class.get("KnownList0")
+        if power_list_field is None:
+            continue
+        for power_struct in power_list_field.value():
             power_struct.__class__ = UTCPower
 
     feat_list: GFFList[UTCFeat] = utc._fields["FeatList"].value()
@@ -443,16 +461,10 @@ def construct_utc(
 
     equipment_list: GFFList = utc._fields["Equip_ItemList"].value()
     for equipment_struct in equipment_list:
-        slot = UTCEquipmentSlot(equipment_struct.struct_id)
-        resref = equipment_struct.acquire("EquippedRes", ResRef.from_blank())
-        droppable = bool(equipment_struct.acquire("Dropable", 0))
-        utc.equipment[slot] = InventoryItem(resref, droppable)
+        equipment_struct.__class__ = UTCEquipment
 
-    item_list: GFFList = utc._fields["ItemList"].value()
-    for item_struct in item_list:
-        resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
-        droppable = bool(item_struct.acquire("Dropable", 0))
-        utc.inventory.append(InventoryItem(resref, droppable))
+    for item in utc.inventory:
+        item.__class__ = UTCItem
 
     return utc
 
@@ -464,47 +476,7 @@ def dismantle_utc(
     use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTC)
-    gff.root = deepcopy(utc)
-    root = gff.root
-
-    skill_list: GFFList[UTCSkill] = root._fields["SkillList"].value()
-    for skill_struct in skill_list:
-        skill_struct.__class__ = GFFStruct
-    class_list: GFFList[UTCClass] = root._fields["ClassList"].value()
-    for utc_class in class_list:
-        for power in utc_class.powers:
-            power.__class__ = GFFStruct
-        utc_class.__class__ = GFFStruct
-
-    feat_list: GFFList[UTCFeat] = root._fields["FeatList"].value()
-    for feat in feat_list:
-        feat.__class__ = GFFStruct
-
-
-    # TODO(th3w1zard1): implement into GFFStructInterface.
-    equipment_list: GFFList[UTCEquipment] = root.set_list("Equip_ItemList", GFFList())
-    for slot, item in utc.equipment.items():
-        equipment_struct = equipment_list.add(slot.value)
-        equipment_struct.set_resref("EquippedRes", item.resref)
-        if item.droppable:
-            equipment_struct.set_uint8("Dropable", value=True)
-
-    item_list: GFFList = root.set_list("ItemList", GFFList())
-    for i, item in enumerate(utc.inventory):
-        item_struct = item_list.add(i)
-        item_struct.set_resref("InventoryRes", item.resref)
-        item_struct.set_uint16("Repos_PosX", i)
-        item_struct.set_uint16("Repos_Posy", 0)
-        if item.droppable:
-            item_struct.set_uint8("Dropable", value=True)
-
-    if game.is_k2():
-        root.set_single("BlindSpot", utc.blindspot)
-        root.set_uint8("MultiplierSet", utc.multiplier_set)
-        root.set_uint8("IgnoreCrePath", utc.ignore_cre_path)
-        root.set_uint8("Hologram", utc.hologram)
-        root.set_uint8("WillNotRender", utc.will_not_render)
-
+    gff.root = utc.unwrap()
     return gff
 
 

@@ -25,11 +25,13 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
+from pykotor.common.misc import EquipmentSlot, Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utc import UTCEquipmentSlot, construct_utc, dismantle_utc
+from pykotor.resource.generics.utc import construct_utc, dismantle_utc
 from pykotor.resource.type import ResourceType
+
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFF
@@ -51,7 +53,6 @@ class TestUTC(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    @unittest.skip("This test is known to fail - fixme")  # FIXME:
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for utc_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTC):
@@ -66,6 +67,7 @@ class TestUTC(TestCase):
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for utc_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTC):
+            get_root_logger().info(f"Testing resource '{utc_resource.identifier()}'")
             gff: GFF = read_gff(utc_resource.data())
             reconstructed_gff: GFF = dismantle_utc(construct_utc(gff))
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
@@ -155,11 +157,11 @@ class TestUTC(TestCase):
         self.assertEqual(2, len(utc.classes[1].powers))
         self.assertEqual(9, utc.classes[1].powers[0]["Spell"].value())
 
-        self.assertEqual(2, len(utc.equipment.items()))
-        self.assertEqual("mineruniform", utc.equipment[UTCEquipmentSlot.ARMOR].resref)
-        self.assertTrue(utc.equipment[UTCEquipmentSlot.ARMOR].droppable)
-        self.assertEqual("g_i_crhide008", utc.equipment[UTCEquipmentSlot.HIDE].resref)
-        self.assertFalse(utc.equipment[UTCEquipmentSlot.HIDE].droppable)
+        self.assertEqual(2, len(utc.equipment))
+        self.assertEqual("mineruniform", utc.equipment[EquipmentSlot.ARMOR].resref)
+        self.assertTrue(utc.equipment[EquipmentSlot.ARMOR].droppable)
+        self.assertEqual("g_i_crhide008", utc.equipment[EquipmentSlot.HIDE].resref)
+        self.assertFalse(utc.equipment[EquipmentSlot.HIDE].droppable)
 
         self.assertEqual(2, len(utc.feats))
         self.assertEqual(94, utc.feats[1]["Feat"].value())

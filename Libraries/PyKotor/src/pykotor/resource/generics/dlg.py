@@ -64,7 +64,7 @@ class DLG(GFFStructInterface):
     BINARY_TYPE = ResourceType.DLG
 
     ambient_track: FieldProperty[ResRef, ResRef] = FieldProperty("AmbientTrack", GFFFieldType.ResRef)
-    animated_cut: FieldProperty[int, bool] = FieldProperty("AnimatedCut", GFFFieldType.UInt8, return_type=bool)
+    animated_cut: FieldProperty[int, int] = FieldProperty("AnimatedCut", GFFFieldType.UInt8)
     camera_model: FieldProperty[ResRef, ResRef] = FieldProperty("CameraModel", GFFFieldType.ResRef)
     computer_type: FieldProperty[int, DLGComputerType] = FieldProperty("ComputerType", GFFFieldType.UInt8, return_type=DLGComputerType)
     conversation_type: FieldProperty[int, DLGConversationType] = FieldProperty("ConversationType", GFFFieldType.Int32, return_type=DLGConversationType)
@@ -74,8 +74,8 @@ class DLG(GFFStructInterface):
 
     entries: FieldProperty[GFFList[GFFStruct], GFFList[DLGEntry]] = FieldProperty("EntryList", GFFFieldType.List, GFFList())
     replies: FieldProperty[GFFList[GFFStruct], GFFList[DLGReply]] = FieldProperty("ReplyList", GFFFieldType.List, GFFList())
-    stunts: FieldProperty[GFFList[DLGStunt], GFFList[GFFStruct]] = FieldProperty("StuntList", GFFFieldType.List, GFFList())
-    starters: FieldProperty[GFFList[DLGLink], GFFList[GFFStruct]] = FieldProperty("StartingList", GFFFieldType.List, GFFList())
+    stunts: FieldProperty[GFFList[GFFStruct], GFFList[DLGStunt]] = FieldProperty("StuntList", GFFFieldType.List, GFFList())
+    starters: FieldProperty[GFFList[GFFStruct], GFFList[DLGLink]] = FieldProperty("StartingList", GFFFieldType.List, GFFList())
 
     word_count: FieldProperty[int, int] = FieldProperty("NumWords", GFFFieldType.UInt32)
     old_hit_check: FieldProperty[int, bool] = FieldProperty("OldHitCheck", GFFFieldType.UInt8, return_type=bool)
@@ -242,7 +242,7 @@ class DLG(GFFStructInterface):
 
         starting_links: list[DLGLink] = links if links is not None else [
             _ for link in self.starters
-            for _ in link._node.links  # type: ignore
+            for _ in link._node.links
         ]
         seen_replies = set() if seen_replies is None else seen_replies
 
@@ -322,7 +322,7 @@ class DLGNodeFields(TypedDict):
 class DLGNode(GFFStructInterface):
     """Represents a node in the dialog tree."""
 
-    links: FieldProperty[GFFList[DLGLink], GFFList[DLGLink]]
+    links: FieldProperty[GFFList[GFFStruct], GFFList[DLGLink]]
     text: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("Text", GFFFieldType.LocalizedString, LocalizedString.from_invalid())
     listener = FieldProperty("Listener", GFFFieldType.String, "")
     vo_resref = FieldProperty("VO_ResRef", GFFFieldType.ResRef)
@@ -594,40 +594,34 @@ def dismantle_dlg(
         GFF: The dismantled dialogue as a GFF structure
     """
     def dismantle_node(node: DLGNode):
-        animation: DLGAnimation
-        for animation in node["AnimList"].value():
+        for animation in node._fields["AnimList"].value():
             animation.__class__ = GFFStruct
         node.__class__ = GFFStruct
-        #del node.__dict__["list_index"]
 
     def dismantle_link(link: DLGLink):
-        #del link.__dict__["_node"]
         link.__class__ = GFFStruct
 
     gff: GFF = GFF(GFFContent.DLG)
     gff.root = dlg.unwrap()
     gff.root.__class__ = GFFStruct
+    root: DLG = gff.root  # type: ignore[assignment]
 
     stunt: DLGStunt
-    for stunt in gff.root.get_list("StuntList"):
+    for stunt in root.get_list("StuntList"):
         stunt.__class__ = GFFStruct
 
     starter: DLGLink
-    for starter in gff.root.get_list("StartingList"):
+    for starter in root.get_list("StartingList"):
         dismantle_link(starter)
 
-    reply_link: DLGLink
-    entry: DLGEntry
-    for entry in gff.root["EntryList"].value():
+    for entry in root._fields["EntryList"].value():
         dismantle_node(entry)
-        for reply_link in entry["RepliesList"].value():
+        for reply_link in entry._fields["RepliesList"].value():
             dismantle_link(reply_link)
 
-    entry_link: DLGLink
-    reply: DLGReply
-    for reply in gff.root["ReplyList"].value():
+    for reply in root._fields["ReplyList"].value():
         dismantle_node(reply)
-        for entry_link in reply["EntriesList"].value():
+        for entry_link in reply._fields["EntriesList"].value():
             dismantle_link(entry_link)
 
     assert isinstance(gff.root, GFFStruct)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from enum import Enum, IntEnum
+from enum import IntEnum
 from typing import TYPE_CHECKING, ClassVar, Generic, ItemsView, Iterable, Iterator, TypeVar, overload
 
 from pykotor.common.geometry import Vector3
@@ -490,7 +490,7 @@ class InventoryItem:
     ):
         self.resref: ResRef = resref
         self.droppable: bool = droppable
-        self.infinite: bool = infinite
+        self.infinite: bool = infinite  # TODO(th3w1zard1): UTM only? if so remove this attr and subclass this there.
 
     def __str__(
         self,
@@ -502,7 +502,7 @@ class InventoryItem:
         other: object,
     ):
         if isinstance(other, InventoryItem):
-            return self.resref == other.resref and self.droppable == other.droppable  # and self.infinite == other.infinite
+            return self.resref == other.resref and self.droppable == other.droppable and self.infinite == other.infinite
         return NotImplemented
 
     def __hash__(
@@ -511,7 +511,7 @@ class InventoryItem:
         return hash(self.resref)
 
 
-class EquipmentSlot(Enum):
+class EquipmentSlot(IntEnum):
     INVALID = 0
     HEAD = 1**0
     ARMOR = 2**1
