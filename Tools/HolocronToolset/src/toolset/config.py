@@ -15,13 +15,13 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b22",
+    "currentVersion": "2.2.1b23",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b22",
+    "toolsetLatestBetaVersion": "2.2.1b23",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v2.2.1-toolset-beta22",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v2.2.1-toolset-beta23",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
