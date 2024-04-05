@@ -12,7 +12,6 @@ from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
-from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -193,8 +192,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        # self.ui.featList.setSortingEnabled(True)
-        # self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.featList.setSortingEnabled(True)
+        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -207,8 +206,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        # self.ui.powerList.setSortingEnabled(True)
-        # self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.powerList.setSortingEnabled(True)
+        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)

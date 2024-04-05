@@ -135,10 +135,11 @@ class HTInstallation(Installation):
         if not queries:
             return
 
-        resources: dict[ResourceIdentifier, ResourceResult | None] = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        for res_ident, resource in resources.items():
-            if resource:
-                self._cache2da[res_ident.resname] = read_2da(resource.data)
+        resources = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+        for iden, resource in resources.items():
+            if not resource:
+                continue
+            self._cache2da[iden.resname] = read_2da(resource.data)
 
     def htClearCache2DA(self):
         self._cache2da = CaseInsensitiveDict()

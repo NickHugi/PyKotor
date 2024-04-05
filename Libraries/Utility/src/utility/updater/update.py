@@ -13,7 +13,6 @@ import zipfile
 
 from typing import TYPE_CHECKING, Any, Callable
 
-from utility.error_handling import format_exception_with_variables
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import ChDir, get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
