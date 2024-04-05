@@ -273,6 +273,7 @@ class UTCEditor(Editor):
         self.ui.genderSelect.setCurrentIndex(utc.gender_id)
         self.ui.perceptionSelect.setCurrentIndex(utc.perception_id)
         self.ui.challengeRatingSpin.setValue(utc.challenge_rating)
+        self.ui.blindSpotSpin.setMaximum(9001.0)
         self.ui.blindSpotSpin.setValue(utc.blindspot)
         self.ui.multiplierSetSpin.setValue(utc.multiplier_set)
 
