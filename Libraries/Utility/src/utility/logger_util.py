@@ -2,12 +2,30 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
+import threading
 
+from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from utility.error_handling import format_exception_with_variables
 
+if TYPE_CHECKING:
+    from io import TextIOWrapper
+
+    from typing_extensions import Literal
+
+thread_local = threading.local()
+thread_local.is_logging = False
+
+@contextmanager
+def logging_context():
+    thread_local.is_logging = True
+    try:
+        yield
+    finally:
+        thread_local.is_logging = False
 
 class ColoredConsoleHandler(logging.StreamHandler):
     try:
@@ -25,24 +43,46 @@ class ColoredConsoleHandler(logging.StreamHandler):
         logging.CRITICAL: colorama.Back.RED if USING_COLORAMA else "\033[1;41m",  # Red background
     }
 
-    RESET_CODE = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
+    RESET_CODE: str = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
 
     def format(self, record):
         msg = super().format(record)
         return f"{self.COLOR_CODES.get(record.levelno, '')}{msg}{self.RESET_CODE}"
 
+class CustomPrintToLogger:
+    def __init__(
+        self,
+        original: TextIOWrapper,
+        logger: logging.Logger,
+        log_type: Literal["stdout", "stderr"],
+    ):
+        self.original_out: TextIOWrapper = original
+        self.logger: logging.Logger = logger
+        self.log_type: Literal["stdout", "stderr"] = log_type
+
+    def write(self, message: str):
+        if getattr(thread_local, "is_logging", False):
+            self.original_out.write(message)
+        elif message.strip():
+            if self.log_type == "stderr":
+                self.logger.error(message.strip())
+            else:
+                self.logger.info(message.strip())
+
+    def flush(self): ...
+
 class CustomExceptionFormatter(logging.Formatter):
+    sep = "\n----------------------------------------------------------------\n"
     def formatException(self, ei: logging._SysExcInfoType) -> str:
         etype, value, tb = ei
         if value is None:
-            return super().formatException(ei)
-        return format_exception_with_variables(value, etype=etype, tb=tb) + "\n----------------------\n"
+            return self.sep + super().formatException(ei) + self.sep
+        return self.sep + format_exception_with_variables(value, etype=etype, tb=tb) + self.sep
 
     def format(self, record: logging.LogRecord) -> str:
         result = super().format(record)
         if record.exc_info:
-            # Here we use our custom exception formatting
-            result += "\n" + self.formatException(record.exc_info)
+            result += f"\n{self.formatException(record.exc_info)}"
         return result
 
 class JSONFormatter(logging.Formatter):
@@ -82,17 +122,18 @@ def get_root_logger() -> logging.Logger:
             logging.ERROR: "error_pykotor.log",
             logging.CRITICAL: "critical_pykotor.log",
         }
-        # Replacing StreamHandler with ColoredConsoleHandler
         console_handler = ColoredConsoleHandler()
         formatter = logging.Formatter("%(levelname)s(%(name)s): %(message)s")
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
+        # Redirect stdout and stderr
+        sys.stdout = CustomPrintToLogger(sys.__stdout__, logger, log_type="stdout")
+        sys.stderr = CustomPrintToLogger(sys.__stderr__, logger, log_type="stderr")
+
         for level, filename in log_levels.items():
             handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=5)
             handler.setLevel(level)
-
-            # Apply JSON formatting for DEBUG, CustomExceptionFormatter for others
             handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
             # Exclude lower level logs for handlers above DEBUG
