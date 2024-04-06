@@ -1298,7 +1298,7 @@ class ModuleDesignerControls3d:
             self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
 
         if self.moveCameraPlane.satisfied(buttons, keys):  # sourcery skip: extract-method
-            upward = screenDelta.y * self.renderer.scene.camera.upward(False)
+            upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_z=False)
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= (upward.z + sideward.z) * strength
