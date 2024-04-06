@@ -128,7 +128,8 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        get_root_logger().info("Start initialize Scene from module %s", module._id)
+        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        get_root_logger().info("Start initialize Scene%s", module_id_part)
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -179,7 +180,8 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
-        get_root_logger().debug("Completed pre-initialize Scene of module '%s'", module._id)
+        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        get_root_logger().debug("Completed pre-initialize Scene", module_id_part)
 
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -490,7 +492,8 @@ class Scene:
             - Render non-selected boundaries
             - Render cursor if shown.
         """
-        get_root_logger().debug("Refresh/build cache for scene on module '%s'", self.module._id)
+        module_id_part = f" with module '{self.module._id}'" if self.module is not None else ""
+        get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
 
         get_root_logger().debug("Render a frame...")
