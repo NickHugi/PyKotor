@@ -92,7 +92,7 @@ class FieldValueConstant(FieldValue):
     def __init__(self, value: Any):
         self.stored: Any = value
 
-    def value(self, memory: PatcherMemory, field_type: GFFFieldType):
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType):  # noqa: ANN201
         return self.validate(self.stored, field_type)
 
 
@@ -100,7 +100,7 @@ class FieldValue2DAMemory(FieldValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
 
-    def value(self, memory: PatcherMemory, field_type: GFFFieldType):
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType):  # noqa: ANN201
         memory_val: str | PureWindowsPath | None = memory.memory_2da.get(self.token_id, None)
         if memory_val is None:
             msg = f"2DAMEMORY{self.token_id} was not defined before use"
@@ -112,7 +112,7 @@ class FieldValueTLKMemory(FieldValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
 
-    def value(self, memory: PatcherMemory, field_type: GFFFieldType):
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType):  # noqa: ANN201
         memory_val: int | None = memory.memory_str.get(self.token_id, None)
         if memory_val is None:
             msg = f"StrRef{self.token_id} was not defined before use"
@@ -210,7 +210,7 @@ class AddStructToListGFF(ModifyGFF):
 
     def apply(
         self,
-        root_struct,
+        root_struct: GFFStruct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ):
@@ -275,7 +275,7 @@ class AddFieldGFF(ModifyGFF):
 
     def apply(
         self,
-        root_struct,
+        root_struct: GFFStruct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ):
@@ -320,15 +320,7 @@ class AddFieldGFF(ModifyGFF):
             value.apply(original, memory)
             struct_container.set_locstring(self.label, original)
 
-        def set_struct():
-            assert isinstance(value, GFFStruct)
-            struct_container.set_struct(self.label, value)
-
-        def set_list():
-            assert isinstance(value, GFFList)
-            struct_container.set_list(self.label, value)
-
-        func_map: dict[GFFFieldType, Any] = {
+        func_map: dict[GFFFieldType, Callable] = {
             GFFFieldType.Int8: lambda: struct_container.set_int8(self.label, value),
             GFFFieldType.UInt8: lambda: struct_container.set_uint8(self.label, value),
             GFFFieldType.Int16: lambda: struct_container.set_int16(self.label, value),
@@ -344,8 +336,8 @@ class AddFieldGFF(ModifyGFF):
             GFFFieldType.LocalizedString: set_locstring,
             GFFFieldType.Vector3: lambda: struct_container.set_vector3(self.label, value),
             GFFFieldType.Vector4: lambda: struct_container.set_vector4(self.label, value),
-            GFFFieldType.Struct: set_struct,
-            GFFFieldType.List: set_list,
+            GFFFieldType.Struct: lambda: struct_container.set_struct(self.label, value),
+            GFFFieldType.List: lambda: struct_container.set_list(self.label, value),
         }
         func_map[self.field_type]()
 
@@ -354,7 +346,7 @@ class AddFieldGFF(ModifyGFF):
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
-            add_field.path = newpath  # resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though (ziplongest)? Whatever, it works.
+            add_field.path = newpath  # HACK: resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though (ziplongest)? Whatever, it works.
             add_field.apply(root_struct, memory, logger)
 
 
@@ -386,7 +378,7 @@ class ModifyFieldGFF(ModifyGFF):
 
     def apply(
         self,
-        root_struct,
+        root_struct: GFFStruct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ):

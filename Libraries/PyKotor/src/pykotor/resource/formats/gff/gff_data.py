@@ -1363,7 +1363,7 @@ class GFFList:
     def compare(
         self,
         other_gff_list: GFFList,
-        log_func=print,
+        log_func: Callable[..., Any] = print,
         current_path: PureWindowsPath | None = None,
         *,
         ignore_default_changes: bool = False,
