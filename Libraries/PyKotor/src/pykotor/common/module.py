@@ -246,9 +246,9 @@ class Module:  # noqa: PLR0904
                 for lightmap in list_lightmaps(data):
                     textures.add(lightmap)
             except OSError:  # noqa: PERF203
-                get_root_logger().debug("Suppressed exception when executing %s.reload_resources() with model '{model.resname()}.{model.restype()}'", repr(self), exc_info=True)
+                get_root_logger().debug("Suppressed exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
             except Exception:  # noqa: BLE001
-                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '{model.resname()}.{model.restype()}'", repr(self), exc_info=True)
+                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
 
         for texture in textures:
             look_for.extend(

@@ -87,6 +87,7 @@ from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -127,6 +128,7 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
+        get_root_logger().info("Start initialize Scene from module %s", module._id)
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -177,6 +179,7 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
+        get_root_logger().debug("Completed pre-initialize Scene of module '%s'", module._id)
 
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -487,8 +490,10 @@ class Scene:
             - Render non-selected boundaries
             - Render cursor if shown.
         """
+        get_root_logger().debug("Refresh/build cache for scene on module '%s'", self.module._id)
         self.buildCache()
 
+        get_root_logger().debug("Render a frame...")
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -497,6 +502,7 @@ class Scene:
         else:
             glDisable(GL_CULL_FACE)
 
+        get_root_logger().debug("Handling shader...")
         glDisable(GL_BLEND)
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
@@ -507,6 +513,7 @@ class Scene:
             self._render_object(self.shader, obj, mat4())
 
         # Draw all instance types that lack a proper model
+        get_root_logger().debug("Draw all instance types that lack a proper model...")
         glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
@@ -517,11 +524,13 @@ class Scene:
             self._render_object(self.plain_shader, obj, mat4())
 
         # Draw bounding box for selected objects
+        get_root_logger().debug("Draw bounding box for selected objects...")
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
         # Draw boundary for selected objects
+        get_root_logger().debug("Draw boundary for selected objects...")
         glDisable(GL_CULL_FACE)
         self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
@@ -562,6 +571,7 @@ class Scene:
         return result
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
+        get_root_logger().debug("_render_object...")
         if self.should_hide_obj(obj):
             return
 
