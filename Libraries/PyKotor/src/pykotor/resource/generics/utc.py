@@ -4,12 +4,13 @@ from copy import deepcopy
 from enum import IntEnum
 from typing import TYPE_CHECKING, Literal, TypedDict
 
-from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
+from pykotor.common.misc import EquipmentSlot, Game, InventoryItem
 from pykotor.resource.formats.gff import GFF, FieldProperty, GFFContent, GFFFieldType, GFFList, GFFStruct, GFFStructInterface, bytes_gff, read_gff, write_gff
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from pykotor.common.language import LocalizedString
+    from pykotor.common.misc import ResRef
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.gff.gff_data import FieldGFF
     from pykotor.resource.formats.twoda import TwoDA
@@ -287,7 +288,7 @@ class UTC(GFFStructInterface):
     def get_skill(self, skill_index: UTCSkillIndex) -> UTCSkill:
         return self.skill_list.at(skill_index.value, default=UTCSkill(skill_index))
     def set_skill(self, skill_index: UTCSkillIndex, value: int):
-        skill_list: GFFList[UTCSkill] = self._fields["SkillList"].value()
+        skill_list: GFFList[UTCSkill] = self.skill_list
         skill_struct: UTCSkill = skill_list.at(skill_index.value)
         if skill_struct is None:
             skill_struct = UTCSkill(skill_index)
@@ -295,54 +296,54 @@ class UTC(GFFStructInterface):
         skill_struct.set_uint8("Rank", value)
 
     @property
-    def computer_use(self) -> int: return self.get_skill(UTCSkillIndex.COMPUTER_USE).get_uint8("Rank")
+    def computer_use(self) -> int: return self.get_skill(UTCSkillIndex.COMPUTER_USE).rank
     @computer_use.setter
     def computer_use(self, value: int):
         self.set_skill(UTCSkillIndex.COMPUTER_USE, value)
 
     @property
-    def demolitions(self) -> int: return self.get_skill(UTCSkillIndex.DEMOLITIONS).get_uint8("Rank")
+    def demolitions(self) -> int: return self.get_skill(UTCSkillIndex.DEMOLITIONS).rank
     @demolitions.setter
     def demolitions(self, value: int):
         self.set_skill(UTCSkillIndex.DEMOLITIONS, value)
 
     @property
-    def stealth(self) -> int: return self.get_skill(UTCSkillIndex.STEALTH).get_uint8("Rank")
+    def stealth(self) -> int: return self.get_skill(UTCSkillIndex.STEALTH).rank
     @stealth.setter
     def stealth(self, value: int):
         self.set_skill(UTCSkillIndex.STEALTH, value)
 
     @property
-    def awareness(self) -> int: return self.get_skill(UTCSkillIndex.AWARENESS).get_uint8("Rank")
+    def awareness(self) -> int: return self.get_skill(UTCSkillIndex.AWARENESS).rank
     @awareness.setter
     def awareness(self, value: int):
         self.set_skill(UTCSkillIndex.AWARENESS, value)
 
     @property
-    def persuade(self) -> int: return self.get_skill(UTCSkillIndex.PERSUADE).get_uint8("Rank")
+    def persuade(self) -> int: return self.get_skill(UTCSkillIndex.PERSUADE).rank
     @persuade.setter
     def persuade(self, value: int):
         self.set_skill(UTCSkillIndex.PERSUADE, value)
 
     @property
-    def repair(self) -> int: return self.get_skill(UTCSkillIndex.REPAIR).get_uint8("Rank")
+    def repair(self) -> int: return self.get_skill(UTCSkillIndex.REPAIR).rank
     @repair.setter
     def repair(self, value: int):
         self.set_skill(UTCSkillIndex.REPAIR, value)
 
     @property
-    def security(self) -> int: return self.get_skill(UTCSkillIndex.SECURITY).get_uint8("Rank")
+    def security(self) -> int: return self.get_skill(UTCSkillIndex.SECURITY).rank
     @security.setter
     def security(self, value: int):
         self.set_skill(UTCSkillIndex.SECURITY, value)
 
     @property
-    def treat_injury(self) -> int: return self.get_skill(UTCSkillIndex.TREAT_INJURY).get_uint8("Rank")
+    def treat_injury(self) -> int: return self.get_skill(UTCSkillIndex.TREAT_INJURY).rank
     @treat_injury.setter
     def treat_injury(self, value: int):
         self.set_skill(UTCSkillIndex.TREAT_INJURY, value)
 
-    inventory: FieldProperty[GFFList[UTCItem], GFFList[GFFStruct]] = FieldProperty("ItemList", GFFFieldType.List)
+    inventory: FieldProperty[GFFList[GFFStruct], GFFList[UTCItem]] = FieldProperty("ItemList", GFFFieldType.List)
     classes: FieldProperty[GFFList[GFFStruct], GFFList[UTCClass]] = FieldProperty("ClassList", GFFFieldType.List)
     resref: FieldProperty[ResRef, ResRef] = FieldProperty("TemplateResRef", GFFFieldType.ResRef)
     tag: FieldProperty[str, str] = FieldProperty("Tag", GFFFieldType.String)
@@ -351,14 +352,14 @@ class UTC(GFFStructInterface):
     first_name: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("FirstName", GFFFieldType.LocalizedString)
     last_name: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("LastName", GFFFieldType.LocalizedString)
     subrace_id: FieldProperty[int, int] = FieldProperty("SubraceIndex", GFFFieldType.Int32)
-    perception_id: FieldProperty[int, int] = FieldProperty("PerceptionRange", GFFFieldType.Int32)
-    race_id: FieldProperty[int, int] = FieldProperty("Race", GFFFieldType.Int32)
-    appearance_id: FieldProperty[int, int] = FieldProperty("Appearance_Type", GFFFieldType.Int32)
+    perception_id: FieldProperty[int, int] = FieldProperty("PerceptionRange", GFFFieldType.UInt8)
+    race_id: FieldProperty[int, int] = FieldProperty("Race", GFFFieldType.UInt8)
+    appearance_id: FieldProperty[int, int] = FieldProperty("Appearance_Type", GFFFieldType.UInt16)
     gender_id: FieldProperty[int, int] = FieldProperty("Gender", GFFFieldType.Int32)
-    faction_id: FieldProperty[int, int] = FieldProperty("FactionID", GFFFieldType.Int32)
+    faction_id: FieldProperty[int, int] = FieldProperty("FactionID", GFFFieldType.UInt16)
     walkrate_id: FieldProperty[int, int] = FieldProperty("WalkRate", GFFFieldType.Int32)
     soundset_id: FieldProperty[int, int] = FieldProperty("SoundSetFile", GFFFieldType.UInt16)
-    portrait_id: FieldProperty[int, int] = FieldProperty("PortraitId", GFFFieldType.Int32)
+    portrait_id: FieldProperty[int, int] = FieldProperty("PortraitId", GFFFieldType.UInt16)
     body_variation: FieldProperty[int, int] = FieldProperty("BodyVariation", GFFFieldType.Int32)
     texture_variation: FieldProperty[int, int] = FieldProperty("TextureVar", GFFFieldType.Int32)
     not_reorienting: FieldProperty[int, bool] = FieldProperty("NotReorienting", GFFFieldType.UInt8, return_type=bool)
@@ -369,23 +370,23 @@ class UTC(GFFStructInterface):
     interruptable: FieldProperty[int, bool] = FieldProperty("Interruptable", GFFFieldType.UInt8, return_type=bool)
     is_pc: FieldProperty[int, bool] = FieldProperty("IsPC", GFFFieldType.UInt8, return_type=bool)
     disarmable: FieldProperty[int, bool] = FieldProperty("Disarmable", GFFFieldType.UInt8, return_type=bool)
-    alignment = FieldProperty("GoodEvil", GFFFieldType.Int32)
+    alignment = FieldProperty("GoodEvil", GFFFieldType.UInt8)
     challenge_rating = FieldProperty("ChallengeRating", GFFFieldType.Single)
-    natural_ac = FieldProperty("NaturalAC", GFFFieldType.Int32)
+    natural_ac = FieldProperty("NaturalAC", GFFFieldType.UInt8)
     reflex_bonus = FieldProperty("refbonus", GFFFieldType.Int32)
     willpower_bonus = FieldProperty("willbonus", GFFFieldType.Int32)
-    fortitude_bonus = FieldProperty("fortbonus", GFFFieldType.Int32)
-    strength = FieldProperty("Str", GFFFieldType.Int32)
-    dexterity = FieldProperty("Dex", GFFFieldType.Int32)
-    constitution = FieldProperty("Con", GFFFieldType.Int32)
-    intelligence = FieldProperty("Int", GFFFieldType.Int32)
-    wisdom = FieldProperty("Wis", GFFFieldType.Int32)
-    charisma = FieldProperty("Cha", GFFFieldType.Int32)
-    current_hp = FieldProperty("CurrentHitPoints", GFFFieldType.Int32)
-    max_hp = FieldProperty("MaxHitPoints", GFFFieldType.Int32)
-    hp = FieldProperty("HitPoints", GFFFieldType.Int32)
-    fp = FieldProperty("CurrentForce", GFFFieldType.Int32)
-    max_fp = FieldProperty("ForcePoints", GFFFieldType.Int32)
+    fortitude_bonus = FieldProperty("fortbonus", GFFFieldType.Int16)
+    strength = FieldProperty("Str", GFFFieldType.UInt8)
+    dexterity = FieldProperty("Dex", GFFFieldType.UInt8)
+    constitution = FieldProperty("Con", GFFFieldType.UInt8)
+    intelligence = FieldProperty("Int", GFFFieldType.UInt8)
+    wisdom = FieldProperty("Wis", GFFFieldType.UInt8)
+    charisma = FieldProperty("Cha", GFFFieldType.UInt8)
+    current_hp = FieldProperty("CurrentHitPoints", GFFFieldType.Int16)
+    max_hp = FieldProperty("MaxHitPoints", GFFFieldType.Int16)
+    hp = FieldProperty("HitPoints", GFFFieldType.Int16)
+    fp = FieldProperty("CurrentForce", GFFFieldType.Int16)
+    max_fp = FieldProperty("ForcePoints", GFFFieldType.Int16)
     on_end_dialog: FieldProperty[ResRef, ResRef] = FieldProperty("ScriptEndDialogu", GFFFieldType.ResRef)
     on_blocked: FieldProperty[ResRef, ResRef] = FieldProperty("ScriptOnBlocked", GFFFieldType.ResRef)
     on_heartbeat: FieldProperty[ResRef, ResRef] = FieldProperty("ScriptHeartbeat", GFFFieldType.ResRef)
@@ -442,11 +443,11 @@ def construct_utc(
     utc: UTC = deepcopy(gff.root)  # type: ignore[assignment]
     utc.__class__ = UTC
 
-    skill_list: GFFList[UTCSkill] = utc._fields["SkillList"].value()
+    skill_list: GFFList[UTCSkill] = utc.skill_list
     for skill in skill_list:
         skill.__class__ = UTCSkill
 
-    for utc_class in utc._fields["ClassList"].value():
+    for utc_class in utc.classes:
         utc_class.__class__ = UTCClass
 
         power_list_field: FieldGFF[GFFList[UTCPower]] = utc_class.get("KnownList0")
@@ -455,11 +456,11 @@ def construct_utc(
         for power_struct in power_list_field.value():
             power_struct.__class__ = UTCPower
 
-    feat_list: GFFList[UTCFeat] = utc._fields["FeatList"].value()
+    feat_list: GFFList[UTCFeat] = utc.feats
     for feat_struct in feat_list:
         feat_struct.__class__ = GFFStruct
 
-    equipment_list: GFFList = utc._fields["Equip_ItemList"].value()
+    equipment_list: GFFList = utc.equiplist
     for equipment_struct in equipment_list:
         equipment_struct.__class__ = UTCEquipment
 
@@ -476,7 +477,7 @@ def dismantle_utc(
     use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTC)
-    gff.root = utc.unwrap()
+    gff.root = utc.unwrap(game=game, use_deprecated=use_deprecated)
     return gff
 
 

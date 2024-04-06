@@ -17,13 +17,14 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
-from pykotor.resource.generics.utc import UTC, UTCClass, UTCPower, read_utc, write_utc
+from pykotor.resource.generics.utc import UTC, UTCClass, UTCFeat, UTCPower, read_utc, write_utc
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     import os
@@ -442,28 +443,51 @@ class UTCEditor(Editor):
         utc.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
         utc.comment = self.ui.comments.toPlainText()
 
-        utc.classes = []
         if self.ui.class1Select.currentIndex() != -1:
             classId = self.ui.class1Select.currentIndex()
             classLevel = self.ui.class1LevelSpin.value()
-            utc.classes.append(UTCClass(classId, classLevel))
+            utcPrimaryClass = utc.classes.at(0)
+            if utcPrimaryClass is None:
+                utcPrimaryClass = UTCClass(classId, classLevel)
+                utc.classes.append(utcPrimaryClass)
+            else:
+                assert isinstance(utcPrimaryClass, UTCClass)
+                utcPrimaryClass.class_id = classId
+                utcPrimaryClass.class_level = classLevel
         if self.ui.class2Select.currentIndex() != 0:
             classId = self.ui.class2Select.currentIndex()
             classLevel = self.ui.class2LevelSpin.value()
-            utc.classes.append(UTCClass(classId, classLevel))
+            utcSecondaryClass = utc.classes.at(1)
+            if utcSecondaryClass is None:
+                utcSecondaryClass = UTCClass(classId, classLevel)
+                utc.classes.append(utcSecondaryClass)
+            else:
+                assert isinstance(utcSecondaryClass, UTCClass)
+                utcSecondaryClass.class_id = classId
+                utcSecondaryClass.class_level = classLevel
 
         item: QListWidgetItem | None
-        utc.feats = []
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
+            if item is None:
+                get_root_logger().warning(f"build featList: item was None at index {i}")
+                continue
             if item.checkState() == QtCore.Qt.Checked:
-                utc.feats.append(item.data(QtCore.Qt.UserRole))
+                featStruct = item.data(QtCore.Qt.UserRole)
+                if featStruct not in utc.feats:
+                    utc.feats.append(featStruct)
 
-        powers: list[int] = utc.classes[-1].powers
+        powers = utc.classes[-1].powers
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
+            if item is None:
+                get_root_logger().warning(f"build powerList: item was None at index {i}")
+                continue
             if item.checkState() == QtCore.Qt.Checked:
-                powers.append(item.data(QtCore.Qt.UserRole))
+                powerStruct = UTCPower()
+                powerStruct.spell = item.data(QtCore.Qt.UserRole)
+                if powerStruct not in powers:
+                    powers.append(powerStruct)
 
         use_tsl: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
         data = bytearray()

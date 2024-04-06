@@ -13,6 +13,7 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
+from utility.logger_util import get_root_logger
 from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 
@@ -650,7 +651,7 @@ class GFFStruct(Dict[str, FieldGFF]):
         label: str,
         default: T | None = None,
         *,
-        return_type: type[T] | None = None
+        return_type: type[T] | tuple[U, ...] | tuple[T, ...] | None = None
     ) -> T:
         """Gets the value from the specified field.
 
@@ -1422,7 +1423,7 @@ class GFFStructInterface(GFFStruct):
         if not hasattr(self, "_all_fields"):
             mro: list[type] = self.__class__.mro()
             self._all_fields = {
-                key: value
+                value._label: value
                 for cls in mro
                 for key, value in cls.__dict__.items()
                 if isinstance(value, FieldProperty)
@@ -1441,16 +1442,16 @@ class GFFStructInterface(GFFStruct):
 
         for _label, ftype, value in struct:
             if ftype == GFFFieldType.Struct:
-                assert isinstance(value, GFFStruct)
+                assert isinstance(value, GFFStruct), f"{type(value).__name__}, field label: {_label}"
                 value.__class__ = GFFStruct
                 cls._recursive_unwrap(value)
             elif ftype == GFFFieldType.List:
-                assert isinstance(value, GFFList)
+                assert isinstance(value, GFFList), f"{type(value).__name__}, field label: {_label}"
                 for child_struct in value:
-                    assert isinstance(child_struct, GFFStruct)
+                    assert isinstance(child_struct, GFFStruct), f"{type(child_struct).__name__}, field label: {_label}"
                     cls._recursive_unwrap(child_struct)
 
-    def unwrap(self) -> GFFStruct:
+    def unwrap(self, *, game: Game, use_deprecated: bool = False) -> GFFStruct:
         """Take off the GFFStructInterface wrapper and return a plain GFFStruct.
 
         More specifically, create a deepcopy of self, modify nested instances of GFFStructInterface in _fields, recurse through all and
@@ -1458,6 +1459,17 @@ class GFFStructInterface(GFFStruct):
         """
         new_struct = deepcopy(self)
         self._recursive_unwrap(new_struct)
+
+        if game.is_k1():
+            for label, field_property in self.all_fields().items():
+                if field_property._game.is_k2():
+                    get_root_logger().info(f"Removing k2-exclusive Field in unwrap process: {label}")
+                    del self._fields[label]
+        if use_deprecated:
+            for label in self._fields.copy():
+                if label not in self.all_fields():
+                    get_root_logger().info(f"Removing unknown/deprecated Field in unwrap process: {label}")
+                    del self._fields[label]
         return new_struct
 
     def __getitem__(self, key: str) -> FieldGFF[Any]:
@@ -1467,8 +1479,8 @@ class GFFStructInterface(GFFStruct):
         return super().__getitem__(key) if self.exists(key) else self.all_fields()[key]
 
 
-StructType = TypeVar("StructType", bound=GFFStruct)
-class GFFList(List[Union[StructType, GFFStruct]]):  # type: ignore[pylance]
+StructType_co = TypeVar("StructType_co", bound=GFFStruct, covariant=True)
+class GFFList(List[Union[StructType_co, GFFStruct]]):  # type: ignore[pylance]
     """A collection of GFFStructs."""
 
     @property
@@ -1483,11 +1495,11 @@ class GFFList(List[Union[StructType, GFFStruct]]):  # type: ignore[pylance]
         self,
         struct_id: int,
     ) -> GFFStruct:
-        """Adds a new struct into the list.
+        """Create a new struct and append it into the end of the list.
 
         Args:
         ----
-            struct_id: The StructID of the new struct.
+            struct_id (int): The StructID to use for the new struct.
         """
         new_struct: GFFStruct = self.struct_wrapper(struct_id)
         self.append(new_struct)
@@ -1509,7 +1521,13 @@ class GFFList(List[Union[StructType, GFFStruct]]):  # type: ignore[pylance]
         -------
             The corresponding GFFList or None.
         """
-        return self[index] if index < len(self._structs) else default
+        if index < len(self._structs):
+            return self[index]
+        if default is None:
+            return cast(T, None)
+        assert isinstance(default, GFFStruct), f"Default arg to GFFList.at({index}, default={default!r}) must be a GFFStruct instance."
+        self[index] = default
+        return default
 
     def compare(
         self,
@@ -1610,6 +1628,28 @@ class GFFFieldType(IntEnum):
 
     def __deepcopy__(self, memo):
         return self  # do not deepcopy.
+
+    def setter(self) -> Callable[[GFFStruct, str, Any], Any]:
+        func_map: dict[GFFFieldType, Callable[[GFFStruct, str, Any], Any]] = {
+            GFFFieldType.Int8: GFFStruct.set_int8,
+            GFFFieldType.UInt8: GFFStruct.set_uint8,
+            GFFFieldType.Int16: GFFStruct.set_int16,
+            GFFFieldType.UInt16: GFFStruct.set_uint16,
+            GFFFieldType.Int32: GFFStruct.set_int32,
+            GFFFieldType.UInt32: GFFStruct.set_uint32,
+            GFFFieldType.Int64: GFFStruct.set_int64,
+            GFFFieldType.UInt64: GFFStruct.set_uint64,
+            GFFFieldType.Single: GFFStruct.set_single,
+            GFFFieldType.Double: GFFStruct.set_double,
+            GFFFieldType.String: GFFStruct.set_string,
+            GFFFieldType.ResRef: GFFStruct.set_resref,
+            GFFFieldType.LocalizedString: GFFStruct.set_locstring,
+            GFFFieldType.Vector3: GFFStruct.set_vector3,
+            GFFFieldType.Vector4: GFFStruct.set_vector4,
+            GFFFieldType.Struct: GFFStruct.set_struct,
+            GFFFieldType.List: GFFStruct.set_list,
+        }
+        return func_map[self]
 
     def return_type(
         self,

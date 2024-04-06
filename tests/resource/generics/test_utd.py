@@ -70,7 +70,6 @@ class TestUTD(TestCase):
             reconstructed_gff: GFF = dismantle_utd(construct_utd(gff))
             self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
-    @unittest.skip("This test is known to fail - fixme")  # FIXME:
     def test_gff_reconstruct(self):
         gff = read_gff(K1_SAME_TEST_FILE)
         reconstructed_gff = dismantle_utd(construct_utd(gff))

@@ -300,14 +300,14 @@ def dismantle_are(
     ----
         are: ARE - The ARE structure to unwrap
         game: Game - The game type (K1, K2, etc)
-        use_deprecated: bool - Whether to include deprecated fields
+        use_deprecated: bool - Whether to include deprecated fields. If False then deprecated fields will be removed.
 
     Returns:
     -------
         gff: GFF - The converted GFF structure
     """
     gff = GFF(GFFContent.ARE)
-    gff.root = are.unwrap()
+    gff.root = are.unwrap(game=game, use_deprecated=use_deprecated)
     return gff
 
 
