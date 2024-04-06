@@ -131,7 +131,8 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        get_root_logger().info("Start initialize Scene from module %s", module._id)
+        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        get_root_logger().info("Start initialize Scene%s", module_id_part)
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)

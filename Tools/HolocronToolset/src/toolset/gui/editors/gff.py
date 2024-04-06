@@ -614,7 +614,10 @@ class GFFEditor(Editor):
         label: str
         ftype: GFFFieldType
         value: Any
-        label, ftype, value = item.data(_LABEL_NODE_ROLE), item.data(_TYPE_NODE_ROLE), item.data(_VALUE_NODE_ROLE)
+        try:
+            label, ftype, value = item.data(_LABEL_NODE_ROLE), item.data(_TYPE_NODE_ROLE), item.data(_VALUE_NODE_ROLE)
+        except RuntimeError:  # wrapped C/C++ object of type QStandardItem has been deleted?
+            return
 
         if ftype is None and item.parent() is None:
             text = "[ROOT]"
