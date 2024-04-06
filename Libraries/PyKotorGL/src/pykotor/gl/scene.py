@@ -960,7 +960,7 @@ class Camera:
         elif self.pitch < 0.001:
             self.pitch = 0.001
 
-    def forward(self, ignore_z: bool = True) -> vec3:
+    def forward(self, *, ignore_z: bool = True) -> vec3:
         """Calculates the forward vector from the camera's rotation.
 
         Args:
@@ -983,7 +983,7 @@ class Camera:
         eye_z: float | Literal[0] = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
-    def sideward(self, ignore_z: bool = True) -> vec3:
+    def sideward(self, *, ignore_z: bool = True) -> vec3:
         """Returns a normalized vector perpendicular to the forward direction.
 
         Args:
@@ -1002,7 +1002,7 @@ class Camera:
         """
         return glm.normalize(glm.cross(self.forward(ignore_z), vec3(0.0, 0.0, 1.0)))
 
-    def upward(self, ignore_xy: bool = True) -> vec3:
+    def upward(self, *, ignore_xy: bool = True) -> vec3:
         """Returns the upward vector of the entity.
 
         Args:
