@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -534,13 +534,6 @@ class StrType(type):
         if cls in {str, WrappedStr}:
             return subclass in {WrappedStr, str} or WrappedStr in mro or str in mro
         return cls in mro
-
-
-@runtime_checkable
-class StrictStrProtocol(Protocol):
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return subclass is str
 
 
 StrictStr = TypeVar("StrictStr", bound=str)

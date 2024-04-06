@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -34,6 +34,8 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
     from logging import Logger
+
+    from typing_extensions import Literal
 
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF

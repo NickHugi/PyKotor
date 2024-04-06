@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import math
 
+from contextlib import suppress
 from copy import copy
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import glm
 
-from OpenGL.GL import glReadPixels
+from OpenGL.GL import GL_VERSION, glGetString, glReadPixels
+from OpenGL.GLUT import GLUT_RGB, glutCreateWindow, glutDestroyWindow, glutInit, glutInitDisplayMode, glutInitWindowSize
+from OpenGL.error import GLError
 from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
     GL_BACK,
@@ -181,7 +184,7 @@ class Scene:
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
         module_id_part = f" from module '{module._id}'" if module is not None else ""
-        get_root_logger().debug("Completed pre-initialize Scene", module_id_part)
+        get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -493,10 +496,10 @@ class Scene:
             - Render cursor if shown.
         """
         module_id_part = f" with module '{self.module._id}'" if self.module is not None else ""
-        get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
+        #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
 
-        get_root_logger().debug("Render a frame...")
+        #get_root_logger().debug("Render a frame...")
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -505,7 +508,7 @@ class Scene:
         else:
             glDisable(GL_CULL_FACE)
 
-        get_root_logger().debug("Handling shader...")
+        #get_root_logger().debug("Handling shader...")
         glDisable(GL_BLEND)
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
@@ -516,7 +519,7 @@ class Scene:
             self._render_object(self.shader, obj, mat4())
 
         # Draw all instance types that lack a proper model
-        get_root_logger().debug("Draw all instance types that lack a proper model...")
+        #get_root_logger().debug("Draw all instance types that lack a proper model...")
         glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
@@ -527,13 +530,13 @@ class Scene:
             self._render_object(self.plain_shader, obj, mat4())
 
         # Draw bounding box for selected objects
-        get_root_logger().debug("Draw bounding box for selected objects...")
+        #get_root_logger().debug("Draw bounding box for selected objects...")
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
         # Draw boundary for selected objects
-        get_root_logger().debug("Draw boundary for selected objects...")
+        #get_root_logger().debug("Draw boundary for selected objects...")
         glDisable(GL_CULL_FACE)
         self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
