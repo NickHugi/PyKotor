@@ -195,7 +195,7 @@ class AddStructToListGFF(ModifyGFF):
 
         Args:
         ----
-            identifier (str): Field identifier
+            identifier (str): INI section name
             value (FieldValue): Field value object
             path (PureWindowsPath): File path
             index_to_token (int | None): Token index
