@@ -169,18 +169,18 @@ class GFFFieldType(IntEnum):
 
 
 class Difference:
-    def __init__(self, path: os.PathLike | str, old_value: Any, new_value: Any):
+    def __init__(self, path: PureWindowsPath | str, old_value: object, new_value: object):
         """Initializes a Difference instance representing a specific difference between two GFFStructs.
 
         Args:
         ----
-            path (os.PathLike | str): The path to the value within the GFFStruct where the difference was found.
-            old_value (Any): The value from the original GFFStruct at the specified path.
-            new_value (Any): The value from the compared GFFStruct at the specified path.
+            path (PureWindowsPath | str): The path to the value within the GFFStruct where the difference was found.
+            old_value (object): The value from the original GFFStruct at the specified path.
+            new_value (object): The value from the compared GFFStruct at the specified path.
         """
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
-        self.old_value: Any = old_value
-        self.new_value: Any = new_value
+        self.old_value: object = old_value
+        self.new_value: object = new_value
 
     def __repr__(self):
         return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
@@ -201,7 +201,7 @@ class GFFCompareResult:
 
     def __bool__(self):
         # Return False if the list has any contents (meaning the objects are different), True if it's empty.
-        return not bool(self.differences)
+        return not self.differences
 
     def add_difference(self, path, old_value, new_value):
         """Adds a difference to the collection of tracked differences.
@@ -214,32 +214,32 @@ class GFFCompareResult:
         """
         self.differences.append(Difference(path, old_value, new_value))
 
-    def get_changed_values(self) -> list[Difference]:
-        """Returns a list of differences where the value has changed from the original.
+    def get_changed_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where the value has changed from the original.
 
         Returns:
         -------
-            list[Difference]: The list of differences with changed values.
+            tuple[Difference]: A collection of differences with changed values.
         """
-        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value]
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value)
 
-    def get_new_values(self) -> list[Difference]:
-        """Returns a list of differences where a new value is present in the compared GFFStruct.
+    def get_new_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where a new value is present in the compared GFFStruct.
 
         Returns:
         -------
-            list[Difference]: The list of differences with new values.
+            tuple[Difference]: A collection of differences with new values.
         """
-        return [diff for diff in self.differences if diff.old_value is None and diff.new_value is not None]
+        return tuple(diff for diff in self.differences if diff.old_value is None and diff.new_value is not None)
 
-    def get_removed_values(self) -> list[Difference]:
-        """Returns a list of differences where a value is present in the original GFFStruct but not in the compared.
+    def get_removed_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where a value is present in the original GFFStruct but not in the compared.
 
         Returns:
         -------
-            list[Difference]: The list of differences with removed values.
+            tuple[Difference]: A collection of differences with removed values.
         """
-        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is None]
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is None)
 
 
 class GFF:
@@ -382,7 +382,7 @@ class GFFStruct:
         self,
     ) -> int:
         """Returns the number of fields."""
-        return len(self._fields.values())
+        return len(self._fields)
 
     def __iter__(
         self,
@@ -432,7 +432,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
-        ignore_default_changes=False,
+        ignore_default_changes: bool = False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -466,8 +466,8 @@ class GFFStruct:
             return not v or str(v) in {"0", "-1"}
 
         def is_ignorable_comparison(
-            old_value,
-            new_value,
+            old_value: object,
+            new_value: object,
         ) -> bool:
             return is_ignorable_value(old_value) and is_ignorable_value(new_value)
 
