@@ -775,7 +775,7 @@ class ConfigReader:
                 raise ValueError(msg)
             value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
-        return ModifyFieldGFF(PureWindowsPath(key), value)
+        return ModifyFieldGFF(PureWindowsPath(key), value, identifier)
 
     def add_field_gff(
         self,
@@ -818,6 +818,8 @@ class ConfigReader:
         if field_type == GFFFieldType.Struct:
             path /= ">>##INDEXINLIST##<<"
 
+        self.log.add_verbose(f"Reader: Raw fieldtype '{raw_field_type}' resolved to {field_type!r} at GFF path '{path}'")
+
         modifiers: list[ModifyGFF] = []
         index_in_list_token = None
 
@@ -839,8 +841,8 @@ class ConfigReader:
 
                 next_nested_section = CaseInsensitiveDict(self.ini[next_section_name])
                 nested_modifier: ModifyGFF = self.add_field_gff(
-                    next_section_name,
-                    next_nested_section,
+                    identifier=next_section_name,
+                    ini_data=next_nested_section,
                     current_path=path / label,
                 )
 
