@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import math
 
-from contextlib import suppress
 from copy import copy
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import glm
 
-from OpenGL.GL import GL_VERSION, glGetString, glReadPixels
-from OpenGL.GLUT import GLUT_RGB, glutCreateWindow, glutDestroyWindow, glutInit, glutInitDisplayMode, glutInitWindowSize
-from OpenGL.error import GLError
+from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
     GL_BACK,

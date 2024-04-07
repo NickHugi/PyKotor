@@ -8,12 +8,10 @@ import os
 import uuid
 
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.error_handling import format_exception_with_variables
 from utility.logger_util import get_root_logger
 from utility.string_util import WrappedStr
 
