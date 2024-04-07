@@ -27,6 +27,7 @@ def logging_context():
     finally:
         thread_local.is_logging = False
 
+
 class CustomPrintToLogger:
     def __init__(
         self,
@@ -49,6 +50,7 @@ class CustomPrintToLogger:
 
     def flush(self): ...
 
+
 class CustomExceptionFormatter(logging.Formatter):
     sep = "\n----------------------------------------------------------------\n"
     def formatException(self, ei: logging._SysExcInfoType) -> str:
@@ -63,6 +65,7 @@ class CustomExceptionFormatter(logging.Formatter):
             result += f"\n{self.formatException(record.exc_info)}"
         return result
 
+
 class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
     try:
         import colorama  # type: ignore[import-untyped, reportMissingModuleSource]
@@ -71,6 +74,7 @@ class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
     except ImportError:
         USING_COLORAMA = False
 
+    RESET_CODE: str = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
     COLOR_CODES: ClassVar[dict[int, str]] = {
         logging.DEBUG: colorama.Fore.CYAN if USING_COLORAMA else "\033[0;36m",  # Cyan
         logging.INFO: colorama.Fore.WHITE if USING_COLORAMA else "\033[0;37m",  # White
@@ -79,13 +83,12 @@ class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
         logging.CRITICAL: colorama.Back.RED if USING_COLORAMA else "\033[1;41m",  # Red background
     }
 
-    RESET_CODE: str = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
-
     def format(self, record: logging.LogRecord) -> str:
         msg = super().format(record)
         if record.exc_info:
             msg += f"\n{self.formatException(record.exc_info)}"
         return f"{self.COLOR_CODES.get(record.levelno, '')}{msg}{self.RESET_CODE}"
+
 
 class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -99,6 +102,7 @@ class JSONFormatter(logging.Formatter):
             log_record["exception"] = super().formatException(record.exc_info)
         return json.dumps(log_record)
 
+
 class LogLevelFilter(logging.Filter):
     """Filters (allows) all the log messages at or above a specific level."""
     def __init__(self, passlevel: int, reject: bool = False):  # noqa: FBT001, FBT002
@@ -110,6 +114,7 @@ class LogLevelFilter(logging.Filter):
         if self.reject:
             return record.levelno < self.passlevel
         return record.levelno >= self.passlevel
+
 
 def get_root_logger() -> logging.Logger:
     """Parameters:
@@ -145,7 +150,7 @@ def get_root_logger() -> logging.Logger:
         sys.stderr = CustomPrintToLogger(sys.__stderr__, logger, log_type="stderr")
 
         for level, filename in log_levels.items():
-            handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=5)
+            handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=3)
             handler.setLevel(level)
             handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
@@ -156,6 +161,7 @@ def get_root_logger() -> logging.Logger:
             logger.addHandler(handler)
 
     return logger
+
 
 # Example usage
 if __name__ == "__main__":

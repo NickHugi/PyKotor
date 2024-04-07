@@ -1063,10 +1063,10 @@ class ConfigReader:
         elif field_type.return_type() == str:
             value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
 
-        elif field_type.return_type() == int:
+        elif issubclass(field_type.return_type(), int):
             value = int(raw_value)
 
-        elif field_type.return_type() == float:
+        elif issubclass(field_type.return_type(), float):
             value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
 
         elif field_type.return_type() == Vector3:
