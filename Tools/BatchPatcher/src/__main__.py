@@ -563,19 +563,19 @@ def patch_nested_gff(
         child_path: PurePath = current_path / label
 
         if ftype == GFFFieldType.Struct:
-            assert isinstance(value, GFFStruct)  # noqa: S101
+            assert isinstance(value, GFFStruct), f"{type(value).__name__}: {value}"  # noqa: S101
             result_made_change, alien_vo_count = patch_nested_gff(value, gff_content, gff, child_path, made_change, alien_vo_count)
             made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.List:
-            assert isinstance(value, GFFList)  # noqa: S101
+            assert isinstance(value, GFFList), f"{type(value).__name__}: {value}"  # noqa: S101
             result_made_change, alien_vo_count = recurse_through_list(value, gff_content, gff, child_path, made_change, alien_vo_count)
             made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
-            assert isinstance(value, LocalizedString)  # noqa: S101
+            assert isinstance(value, LocalizedString), f"{type(value).__name__}: {value}"  # noqa: S101
             new_substrings: dict[int, str] = deepcopy(value._substrings)
             for lang, gender, text in value:
                 if SCRIPT_GLOBALS.pytranslator is not None and text is not None and text.strip():

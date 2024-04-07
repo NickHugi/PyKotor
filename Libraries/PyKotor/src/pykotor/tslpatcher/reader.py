@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator, KeysView, Mapping, ValuesView
 from configparser import ConfigParser, ParsingError
 from itertools import tee
 from typing import TYPE_CHECKING
@@ -371,12 +372,12 @@ class ConfigReader:
 
         def process_tlk_entries(
             tlk_filename: str,
-            dialog_tlk_keys,
-            modifications_tlk_keys,
+            dialog_tlk_indices: range,
+            mod_tlk_indices: range,
             *,
             is_replacement: bool,
         ):
-            """Processes TLK entries based on provided modifications.
+            """Processes the TLK entries based on the entries and creates ModifyTLK objects for use with the patchloop.
 
             Args:
             ----
@@ -384,56 +385,33 @@ class ConfigReader:
                 dialog_tlk_keys - Keys for dialog entries to modify
                 modifications_tlk_keys - New values for the dialog entries
                 is_replacement: bool - Whether it is replacing or modifying text
-
-            Processing Logic:
-            ----------------
-                - Zips the dialog keys and modification values
-                - Parses the keys and values to get the change indices and new values
-                - Iterates through the change indices
-                    - Skips ignored indices
-                    - Gets the TLK entry at the next value index
-                    - Creates a modifier object and adds it to the patches list
             """
-            for mod_key, mod_value in zip(
-                dialog_tlk_keys,
-                modifications_tlk_keys,
-            ):
-                change_indices: range = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key))
-                value_range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
-
-                change_iter, value_iter = tee(change_indices)
-                value_iter = iter(value_range)
-
-                for token_id in change_iter:
-                    if token_id in tlk_list_ignored_indices:
-                        continue
-                    modifier = ModifyTLK(token_id, is_replacement)
-                    modifier.mod_index = next(value_iter)
-                    modifier.tlk_filepath = self.mod_path / tlk_filename
-                    self.config.patches_tlk.modifiers.append(modifier)
+            for dialog_tlk_stringref, modded_tlk_stringref in zip(dialog_tlk_indices, mod_tlk_indices):
+                if dialog_tlk_stringref in tlk_list_ignored_indices:
+                    continue
+                modifier = ModifyTLK(dialog_tlk_stringref, is_replacement)
+                modifier.mod_index = modded_tlk_stringref
+                modifier.tlk_filepath = self.mod_path / tlk_filename
+                self.config.patches_tlk.modifiers.append(modifier)
 
         for i in tlk_list_edits:
             try:
-                if i.lower().startswith("ignore"):
-                    tlk_list_ignored_indices.update(parse_range(i[6:]))
+                if i.lower().startswith("ignore"): tlk_list_ignored_indices.update(parse_range(i[6:]))  # noqa: E701
             except ValueError as e:  # noqa: PERF203
-                msg = f"Could not parse ignore index '{i}' for modifier '{i}={tlk_list_edits[i]}' in [TLKList]"
-                raise ValueError(msg) from e
+                raise ValueError(f"Could not parse ignore index '{i}' for modifier '{i}={tlk_list_edits[i]}' in [TLKList]") from e
 
         for key, value in tlk_list_edits.items():
             lower_key: str = key.lower()
+            if lower_key.startswith("ignore"):
+                continue
             replace_file: bool = lower_key.startswith("replace")
             append_file: bool = lower_key.startswith("append")
             try:
-                if lower_key.startswith("ignore"):
-                    continue
                 if lower_key.startswith("strref"):
-                    strref_range = parse_range(lower_key[6:])
-                    token_id_range = parse_range(value)
                     process_tlk_entries(
-                        self.config.patches_tlk.sourcefile,
-                        strref_range,
-                        token_id_range,
+                        tlk_filename=self.config.patches_tlk.sourcefile,
+                        dialog_tlk_indices=parse_range(lower_key[6:]),
+                        mod_tlk_indices=parse_range(value),
                         is_replacement=False,
                     )
                 elif replace_file or append_file:
@@ -445,22 +423,23 @@ class ConfigReader:
                     next_section_dict = CaseInsensitiveDict(self.ini[next_section_name])
                     self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination, default_sourcefolder)
 
-                    process_tlk_entries(
-                        value,
+                    for dialog_tlk_key, mod_tlk_value in zip(
                         self.ini[next_section_name].keys(),
                         self.ini[next_section_name].values(),
-                        is_replacement=replace_file,
-                    )
+                    ):
+                        process_tlk_entries(
+                            tlk_filename=value,
+                            dialog_tlk_indices=parse_range(dialog_tlk_key),
+                            mod_tlk_indices=parse_range(mod_tlk_value),
+                            is_replacement=replace_file,
+                        )
                 elif "\\" in lower_key or "/" in lower_key:
                     delimiter: Literal["\\", "/"] = "\\" if "\\" in lower_key else "/"
                     token_id_str, property_name = lower_key.split(delimiter)
                     token_id = int(token_id_str)
 
                     if token_id not in modifier_dict:
-                        modifier_dict[token_id] = {
-                            "text": "",
-                            "voiceover": "",
-                        }
+                        modifier_dict[token_id] = {"text": "", "voiceover": ""}
 
                     if property_name == "text":
                         modifier = ModifyTLK(token_id, is_replacement=True)
@@ -817,8 +796,6 @@ class ConfigReader:
             path = current_path
         if field_type == GFFFieldType.Struct:
             path /= ">>##INDEXINLIST##<<"
-
-        self.log.add_verbose(f"Reader: Raw fieldtype '{raw_field_type}' resolved to {field_type!r} at GFF path '{path}'")
 
         modifiers: list[ModifyGFF] = []
         index_in_list_token = None

@@ -1192,7 +1192,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return locations
@@ -1357,7 +1357,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return textures
@@ -1498,7 +1498,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return gffs
@@ -1625,7 +1625,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return sounds
@@ -1773,7 +1773,7 @@ class Installation:  # noqa: PLR0904
                     name = self.talktable().string(locstring.stringref)
                 if name and name.strip():
                     return name
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, PERF203
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001, PERF203
                 self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
             mod_ids_to_try.add(mod_id)
 
@@ -1807,11 +1807,11 @@ class Installation:  # noqa: PLR0904
 
         Args:
         ----
-            module_filename: The name of the module file.
-            use_hardcoded: Deprecated (does nothing)
-            use_alternate: Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns
+            module_filename: str - The name of the module file.
+            use_hardcoded: bool - Deprecated (does nothing)
+            use_alternate: bool - Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns
                 the ID name that matches the existing ARE/GIT resources.
-            also_return_cached_capsules: prevent unnecessary capsule lookups. Makes the return type tuple[str, dict[Path, Capsule]]
+            also_return_cached_capsules: bool - prevent unnecessary capsule lookups. Makes the return type tuple[str, dict[Path, Capsule]]
 
         Returns:
         -------
@@ -1895,7 +1895,7 @@ class Installation:  # noqa: PLR0904
                 if mod_id and mod_id.startswith("m") or mod_id[1].isdigit():
                     found_mod_id = mod_id
         except Exception:  # noqa: BLE001
-            self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
+            self._log.exception("Installation.module_id(%s) had an unexpected exception thrown.", module_filename)
         # print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
         if also_return_cached_capsules:
             return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
@@ -1920,24 +1920,15 @@ class Installation:  # noqa: PLR0904
                     found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
                 else:
                     found_mod_id = ifo.root.get_string(attribute_name).strip()
-                if use_alternate:  # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
-                    if found_mod_id and found_mod_id.lower() in lower_root:
-                        # print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
-                        return found_mod_id, True
-                    # print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
-        except Exception as e:  # noqa: BLE001
+                if use_alternate and found_mod_id and found_mod_id.lower() in lower_root:
+                    return found_mod_id, True
+        except Exception:  # noqa: BLE001
             ...  # print(iterated_capsule.filename(), attribute_name, str(e))
         else:
-            # if found_mod_id:
-            #     print(f"Got ID '{found_mod_id}' in {attribute_name} for erf/rim '{iterated_capsule.filename()}'")
-            if not use_alternate:  # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
-                if found_mod_id and found_mod_id.strip():
-                    if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
-                        return found_mod_id, True
-                    mod_ids_to_try.add(found_mod_id)
-                    # print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                # else:
-                # print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
+            if not use_alternate and found_mod_id and found_mod_id.strip():
+                if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
+                    return found_mod_id, True
+                mod_ids_to_try.add(found_mod_id)
         return found_mod_id, False
 
     def _build_item(

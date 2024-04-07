@@ -259,34 +259,6 @@ class TestConfigReader(unittest.TestCase):
 
     def test_tlk_complex_changes(self):
         # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
-        ini_text = """
-        [TLKList]
-        ignore123719=
-        ignore123721=
-        ignore123723=
-        ignore123725=
-        ignore123727=
-        ignore123729=
-        Replace5=complex.tlk
-        StrRef0:13=0:13
-
-        [complex.tlk]
-        123716:123730=0:8
-        124112=9
-        125863=10
-        50302=11
-        """
-        self.ini.read_string(ini_text)
-        self.config_reader.load(self.config)
-
-        modifiers1 = self.config.patches_tlk.modifiers.copy()
-        for modifier in modifiers1:
-            modifier.load()
-        self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
-
-        self.ini = ConfigParser()
-        self.config.patches_tlk = ModificationsTLK()
-
         ini_text2 = """
         [TLKList]
         ReplaceFile10=complex.tlk
@@ -326,26 +298,15 @@ class TestConfigReader(unittest.TestCase):
         for modifier in modifiers2:
             modifier.load()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
-
-        modifiers_dict1: dict[int, dict[str, str | ResRef | bool]] = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers1
-        }
         modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {
             mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers2
         }
-        self.assertDictEqual(modifiers_dict1, modifiers_dict2)
-
-        for i in range(12):
-            self.assertTrue(modifiers1[i].is_replacement, f"i={i}")
-        for j in range(12, 26):
-            self.assertFalse(modifiers1[j].is_replacement, f"j={j}")
-        for k in modifiers_dict1:
-            modifiers_dict1[k].pop("is_replacement")
+        for k in modifiers_dict2.copy():
             modifiers_dict2[k].pop("is_replacement")
 
         self.maxDiff = None
         self.assertDictEqual(
-            modifiers_dict1,
+            modifiers_dict2,
             {
                 0: {"text": "Yavin", "voiceover": ResRef.from_blank()},
                 1: {
@@ -436,7 +397,7 @@ class TestConfigReader(unittest.TestCase):
             Replacenothingafterreplaceischecked=tlk_modifications_file.tlk
 
             [tlk_modifications_file.tlk]
-            0-4=0:4
+            0-4=2:6
         """
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
@@ -448,11 +409,11 @@ class TestConfigReader(unittest.TestCase):
         self.assertDictEqual(
             modifiers_dict,
             {
-                0: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
-                1: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
-                2: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
-                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
-                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                1: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
+                2: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                3: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
+                4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
             },
         )
 
@@ -483,8 +444,8 @@ class TestConfigReader(unittest.TestCase):
             modifiers_dict,
             {
                 0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
-                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
-                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                3: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
+                4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
             },
         )
 

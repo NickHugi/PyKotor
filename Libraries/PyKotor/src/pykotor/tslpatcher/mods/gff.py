@@ -315,7 +315,7 @@ class AddStructToListGFF(ModifyGFF):
             memory.memory_2da[self.index_to_token] = length
 
         for add_field in self.modifiers:
-            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF, ModifyFieldGFF))
+            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF, ModifyFieldGFF)), f"{type(add_field).__name__}: {add_field}"
             newpath = self.path / str(len(list_container) - 1)
             logger.add_verbose(f"Resolved GFFList path of [{add_field.identifier}] from '{add_field.path}' --> '{newpath}'")
             add_field.path = newpath
@@ -392,7 +392,7 @@ class AddFieldGFF(ModifyGFF):
         FIELD_TYPE_TO_SETTER[self.field_type](struct_container, self.label, value, memory)
 
         for add_field in self.modifiers:
-            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, ModifyFieldGFF, Memory2DAModifierGFF))
+            assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, ModifyFieldGFF, Memory2DAModifierGFF)), f"{type(add_field).__name__}: {add_field}"
 
             # HACK: resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though (ziplongest)? Whatever, it works.
             newpath = PureWindowsPath("")
@@ -468,7 +468,6 @@ class ModifyFieldGFF(ModifyGFF):
 
         navigated_struct: GFFStruct = navigated_container
         field_type: GFFFieldType = navigated_struct._fields[label].field_type()
-        logger.add_verbose(f"Dynamically determined field_type of INI section [{self.identifier}] to be Field of type {field_type.name}.")
 
         value: Any = self.value.value(memory, field_type)
 
@@ -486,15 +485,6 @@ class ModifyFieldGFF(ModifyGFF):
                 return
             value = from_container.value(value.name)
             logger.add_verbose(f"Acquired value '{value}' from field at !FieldPath '{stored_fieldpath}'")
-
-        def set_locstring():
-            if navigated_struct.exists(label):
-                original: LocalizedString = navigated_struct.get_locstring(label)
-                assert isinstance(value, LocalizedStringDelta)
-                value.apply(original, memory)
-                navigated_struct.set_locstring(label, original)
-            else:
-                navigated_struct.set_locstring(label, value)
 
         logger.add_verbose("Ensuring the Field exists...")
         try:
@@ -518,7 +508,7 @@ class ModifyFieldGFF(ModifyGFF):
         if not navigated_struct.exists(label):
             navigated_struct.set_locstring(label, value)
         else:
-            assert isinstance(value, LocalizedStringDelta)
+            assert isinstance(value, LocalizedStringDelta), f"{type(value).__name__}: {value}"
             original: LocalizedString = navigated_struct.get_locstring(label)
             value.apply(original, memory)
             navigated_struct.set_locstring(label, original)
