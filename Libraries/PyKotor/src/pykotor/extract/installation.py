@@ -352,14 +352,7 @@ class Installation:  # noqa: PLR0904
         resname, restype = ResourceIdentifier.from_path(filepath).unpack()
         if restype.is_invalid:
             return None
-
-        return FileResource(
-            resname,
-            restype,
-            filepath.stat().st_size,
-            offset=0,
-            filepath=filepath,
-        )
+        return FileResource(resname, restype, filepath.stat().st_size, offset=0, filepath=filepath)
 
     def _build_resource_list(
         self,
@@ -1211,7 +1204,7 @@ class Installation:  # noqa: PLR0904
 
         If the specified texture could not be found then the method returns None.
 
-        Texture is search for in the following order:
+        Texture is searched using the following default order:
             1. "folders" parameter.
             2. "capsules" parameter.
             3. Installation override folder.

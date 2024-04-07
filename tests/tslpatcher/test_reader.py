@@ -8,9 +8,7 @@ import tempfile
 import unittest
 
 from configparser import ConfigParser
-from typing import TYPE_CHECKING
-
-from pykotor.tools.path import CaseAwarePath
+from typing import TYPE_CHECKING, cast
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
@@ -45,8 +43,8 @@ from pykotor.tslpatcher.mods.gff import (
     FieldValueTLKMemory,
     LocalizedStringDelta,
     ModifyFieldGFF,
+    ModifyGFF,
 )
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import (
     AddRow2DA,
     CopyRow2DA,
@@ -299,7 +297,8 @@ class TestConfigReader(unittest.TestCase):
             modifier.load()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
         modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers2
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement}
+            for mod in modifiers2
         }
         for k in modifiers_dict2.copy():
             modifiers_dict2[k].pop("is_replacement")
@@ -452,7 +451,8 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Change Row
     def test_2da_changerow_identifier(self):
         """Test that identifier is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -465,21 +465,7 @@ class TestConfigReader(unittest.TestCase):
             [change_row_1]
             RowLabel=1
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("change_row_0", mod_0.identifier)
@@ -490,7 +476,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_changerow_targets(self):
         """Test that target values (line to modify) are loading correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -506,21 +493,7 @@ class TestConfigReader(unittest.TestCase):
             [change_row_2]
             LabelIndex=3
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_INDEX, mod_2da_0.target.target_type)
@@ -538,7 +511,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_changerow_store2da(self):
         """Test that 2DAMEMORY values are set to be stored correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -551,21 +525,7 @@ class TestConfigReader(unittest.TestCase):
             2DAMEMORY1=RowLabel
             2DAMEMORY2=label
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -584,7 +544,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_changerow_cells(self):
         """Test that cells are set to be modified correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -597,21 +558,7 @@ class TestConfigReader(unittest.TestCase):
             dialog=StrRef4
             appearance=2DAMEMORY5
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -635,7 +582,8 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Add Row
     def test_2da_addrow_identifier(self):
         """Test that identifier is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -646,21 +594,7 @@ class TestConfigReader(unittest.TestCase):
             [add_row_0]
             [add_row_1]
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("add_row_0", mod_0.identifier)
@@ -671,7 +605,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -683,21 +618,7 @@ class TestConfigReader(unittest.TestCase):
             ExclusiveColumn=label
             [add_row_1]
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, AddRow2DA)
@@ -712,7 +633,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -724,21 +646,7 @@ class TestConfigReader(unittest.TestCase):
             RowLabel=123
             [add_row_1]
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, AddRow2DA)
@@ -753,7 +661,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -765,21 +674,7 @@ class TestConfigReader(unittest.TestCase):
             2DAMEMORY1=RowLabel
             2DAMEMORY2=label
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -798,7 +693,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addrow_cells(self):
         """Test that cells will be assigned properly correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -810,21 +706,7 @@ class TestConfigReader(unittest.TestCase):
             dialog=StrRef4
             appearance=2DAMEMORY5
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -848,7 +730,8 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Copy Row
     def test_2da_copyrow_identifier(self):
         """Test that identifier is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -861,21 +744,7 @@ class TestConfigReader(unittest.TestCase):
             [copy_row_1]
             RowLabel=1
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_0", mod_0.identifier)
@@ -886,7 +755,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_high(self):
         """Test that high() is working correctly in copyrow's."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=spells_hlfp_test.2da
 
@@ -922,21 +792,7 @@ class TestConfigReader(unittest.TestCase):
             forcepriority=0
             pips=3
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -972,7 +828,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -988,21 +845,7 @@ class TestConfigReader(unittest.TestCase):
             [copy_row_2]
             LabelIndex=3
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
@@ -1020,7 +863,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1034,21 +878,7 @@ class TestConfigReader(unittest.TestCase):
             [copy_row_1]
             RowIndex=0
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, CopyRow2DA)
@@ -1063,7 +893,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1077,21 +908,7 @@ class TestConfigReader(unittest.TestCase):
             [copy_row_1]
             RowIndex=0
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, CopyRow2DA)
@@ -1106,7 +923,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1119,21 +937,7 @@ class TestConfigReader(unittest.TestCase):
             2DAMEMORY1=RowLabel
             2DAMEMORY2=label
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -1152,7 +956,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_copyrow_cells(self):
         """Test that cells will be assigned properly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1165,21 +970,7 @@ class TestConfigReader(unittest.TestCase):
             dialog=StrRef4
             appearance=2DAMEMORY5
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -1203,7 +994,8 @@ class TestConfigReader(unittest.TestCase):
     # region 2DA: Add Column
     def test_2da_addcolumn_basic(self):
         """Test that column will be inserted with correct label and default values."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1221,21 +1013,7 @@ class TestConfigReader(unittest.TestCase):
             DefaultValue=0
             2DAMEMORY2=I2
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("label", mod_0.header)
@@ -1248,7 +1026,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addcolumn_indexinsert(self):
         """Test that cells will be inserted to the new column at the given index correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1262,21 +1041,7 @@ class TestConfigReader(unittest.TestCase):
             I1=2DAMEMORY4
             I2=StrRef5
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -1294,7 +1059,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1308,21 +1074,7 @@ class TestConfigReader(unittest.TestCase):
             L1=2DAMEMORY4
             L2=StrRef5
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -1340,7 +1092,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [2DAList]
             Table0=test.2da
 
@@ -1352,21 +1105,7 @@ class TestConfigReader(unittest.TestCase):
             DefaultValue=****
             2DAMEMORY2=I2
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
@@ -1378,7 +1117,8 @@ class TestConfigReader(unittest.TestCase):
     # region SSF
     def test_ssf_replace(self):
         """Test that the replace file boolean is registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [SSFList]
             File0=test1.ssf
             Replace0=test2.ssf
@@ -1386,27 +1126,14 @@ class TestConfigReader(unittest.TestCase):
             [test1.ssf]
             [test2.ssf]
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         self.assertFalse(config.patches_ssf[0].replace_file)
         self.assertTrue(config.patches_ssf[1].replace_file)
 
     def test_ssf_stored_constant(self):
         """Test that the set sound as constant stringref is registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [SSFList]
             File0=test.ssf
 
@@ -1414,21 +1141,7 @@ class TestConfigReader(unittest.TestCase):
             Battlecry 1=123
             Battlecry 2=456
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, NoTokenUsage)
         self.assertEqual("123", mod_0.stringref.stored)  # type: ignore
@@ -1439,7 +1152,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [SSFList]
             File0=test.ssf
 
@@ -1447,21 +1161,7 @@ class TestConfigReader(unittest.TestCase):
             Battlecry 1=2DAMEMORY5
             Battlecry 2=2DAMEMORY6
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
         self.assertEqual(5, mod_0.stringref.token_id)  # type: ignore
@@ -1472,7 +1172,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [SSFList]
             File0=test.ssf
 
@@ -1480,21 +1181,7 @@ class TestConfigReader(unittest.TestCase):
             Battlecry 1=StrRef5
             Battlecry 2=StrRef6
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsageTLK)
         self.assertEqual(5, mod_0.stringref.token_id)
@@ -1505,7 +1192,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_ssf_set(self):
         """Test that each sound is mapped and will register correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [SSFList]
             File0=test.ssf
 
@@ -1539,21 +1227,7 @@ class TestConfigReader(unittest.TestCase):
             Rejoin party=27
             Poisoned=28
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_battlecry1 = config.patches_ssf[0].modifiers.pop(0)
         mod_battlecry2 = config.patches_ssf[0].modifiers.pop(0)
         mod_battlecry3 = config.patches_ssf[0].modifiers.pop(0)
@@ -1617,56 +1291,30 @@ class TestConfigReader(unittest.TestCase):
     # region GFF: Modify
     def test_gff_modify_pathing(self):
         """Test that the modify path for the field registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             ClassList\\0\\Class=123
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertEqual("ClassList\\0\\Class", str(mod_0.path))
 
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             SomeInt=123
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
@@ -1675,28 +1323,15 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_string(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             SomeString=abc
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
@@ -1705,28 +1340,15 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_vector3(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             SomeVector=1|2|3
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
@@ -1735,28 +1357,15 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_vector4(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             SomeVector=1|2|3|4
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
@@ -1765,7 +1374,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_type_locstring(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -1774,21 +1384,7 @@ class TestConfigReader(unittest.TestCase):
             LocString(lang0)=hello
             LocString(lang3)=world
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = self._assert_types_and_path(config)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(5, mod_0.value.stored.stringref.stored)
@@ -1814,7 +1410,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_2damemory(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -1822,21 +1419,7 @@ class TestConfigReader(unittest.TestCase):
             LocString(strref)=StrRef5
             SomeField=StrRef2
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
@@ -1852,28 +1435,15 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_modify_tlkmemory(self):
         """Test that the modify field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             SomeField=2DAMEMORY12
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValue2DAMemory)
@@ -1884,7 +1454,8 @@ class TestConfigReader(unittest.TestCase):
     # region GFF: Add
     def test_gff_add_ints(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -1939,21 +1510,7 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField
             Value=123
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, 123)
 
@@ -1975,7 +1532,9 @@ class TestConfigReader(unittest.TestCase):
         mod_6 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_6, 123)
 
-    def _assert_batch(self, this_mod, stored):
+    def _assert_batch(self, this_mod: ModifyGFF | AddFieldGFF, stored):
+        this_mod = cast(AddFieldGFF, this_mod)
+        this_mod.value = cast(FieldValueConstant, this_mod.value)
         self.assertIsInstance(this_mod, AddFieldGFF)
         self.assertIsInstance(this_mod.value, FieldValueConstant)
         self.assertEqual("SomeList", str(this_mod.path))
@@ -1984,7 +1543,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2004,21 +1564,7 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField
             Value=1.23
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, 1.23)
 
@@ -2027,7 +1573,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2040,27 +1587,14 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField
             Value=abc
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, "abc")
 
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2073,27 +1607,14 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField
             Value=1|2|3
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, Vector3(1, 2, 3))
 
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2106,27 +1627,14 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField
             Value=1|2|3|4
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, Vector4(1, 2, 3, 4))
 
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2139,27 +1647,14 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField
             Value=abc
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self._assert_batch(mod_0, ResRef("abc"))
 
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2181,21 +1676,7 @@ class TestConfigReader(unittest.TestCase):
             Label=SomeField2
             StrRef=StrRef8
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0, AddFieldGFF)
@@ -2224,7 +1705,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_inside_struct(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2244,21 +1726,7 @@ class TestConfigReader(unittest.TestCase):
             Label=InsideStruct
             Value=123
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0, AddFieldGFF)
@@ -2279,7 +1747,8 @@ class TestConfigReader(unittest.TestCase):
 
     def test_gff_add_inside_list(self):
         """Test that the add field modifiers are registered correctly."""
-        ini_text = """
+        config: PatcherConfig = self._setupIniAndConfig(
+            """
             [GFFList]
             File0=test.gff
 
@@ -2298,21 +1767,7 @@ class TestConfigReader(unittest.TestCase):
             TypeId=111
             2DAMEMORY5=ListIndex
             """
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
         )
-        # use case-sensitive keys
-        ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
-
-        ini.read_string(ini_text)
-
-        config = PatcherConfig()
-        ConfigReader(ini, "").load(config)
-
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         assert isinstance(mod_0, AddFieldGFF)
@@ -2330,6 +1785,14 @@ class TestConfigReader(unittest.TestCase):
         assert isinstance(mod_1.value.stored, GFFStruct)
         self.assertEqual(111, mod_1.value.stored.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
+
+    def _setupIniAndConfig(self, ini_text: str) -> PatcherConfig:
+        ini = ConfigParser(delimiters="=", allow_no_value=True, strict=False, interpolation=None)
+        ini.optionxform = lambda optionstr: optionstr
+        ini.read_string(ini_text)
+        result = PatcherConfig()
+        ConfigReader(ini, "").load(result)
+        return result
 
     # endregion
 

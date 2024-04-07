@@ -153,7 +153,7 @@ class GFFEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "zio001.git"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/zio001.git"
         editor = self.Editor(None, self.get_installation_k1())
 
         data = BinaryReader.load_file(filepath)

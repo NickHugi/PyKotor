@@ -79,7 +79,7 @@ class SSFEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "n_ithorian.ssf"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/n_ithorian.ssf"
 
         data = BinaryReader.load_file(filepath)
         old = read_ssf(data)

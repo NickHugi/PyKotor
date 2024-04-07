@@ -27,28 +27,6 @@ def logging_context():
     finally:
         thread_local.is_logging = False
 
-class ColoredConsoleHandler(logging.StreamHandler):
-    try:
-        import colorama  # type: ignore[import-untyped, reportMissingModuleSource]
-        colorama.init()
-        USING_COLORAMA = True
-    except ImportError:
-        USING_COLORAMA = False
-
-    COLOR_CODES: ClassVar[dict[int, str]] = {
-        logging.DEBUG: colorama.Fore.CYAN if USING_COLORAMA else "\033[0;36m",  # Cyan
-        logging.INFO: colorama.Fore.WHITE if USING_COLORAMA else "\033[0;37m",  # White
-        logging.WARNING: colorama.Fore.YELLOW if USING_COLORAMA else "\033[0;33m",  # Yellow
-        logging.ERROR: colorama.Fore.RED if USING_COLORAMA else "\033[0;31m",  # Red
-        logging.CRITICAL: colorama.Back.RED if USING_COLORAMA else "\033[1;41m",  # Red background
-    }
-
-    RESET_CODE: str = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
-
-    def format(self, record):
-        msg = super().format(record)
-        return f"{self.COLOR_CODES.get(record.levelno, '')}{msg}{self.RESET_CODE}"
-
 class CustomPrintToLogger:
     def __init__(
         self,
@@ -85,6 +63,30 @@ class CustomExceptionFormatter(logging.Formatter):
             result += f"\n{self.formatException(record.exc_info)}"
         return result
 
+class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
+    try:
+        import colorama  # type: ignore[import-untyped, reportMissingModuleSource]
+        colorama.init()
+        USING_COLORAMA = True
+    except ImportError:
+        USING_COLORAMA = False
+
+    COLOR_CODES: ClassVar[dict[int, str]] = {
+        logging.DEBUG: colorama.Fore.CYAN if USING_COLORAMA else "\033[0;36m",  # Cyan
+        logging.INFO: colorama.Fore.WHITE if USING_COLORAMA else "\033[0;37m",  # White
+        logging.WARNING: colorama.Fore.YELLOW if USING_COLORAMA else "\033[0;33m",  # Yellow
+        logging.ERROR: colorama.Fore.RED if USING_COLORAMA else "\033[0;31m",  # Red
+        logging.CRITICAL: colorama.Back.RED if USING_COLORAMA else "\033[1;41m",  # Red background
+    }
+
+    RESET_CODE: str = colorama.Style.RESET_ALL if USING_COLORAMA else "\033[0m"
+
+    def format(self, record: logging.LogRecord) -> str:
+        msg = super().format(record)
+        if record.exc_info:
+            msg += f"\n{self.formatException(record.exc_info)}"
+        return f"{self.COLOR_CODES.get(record.levelno, '')}{msg}{self.RESET_CODE}"
+
 class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         log_record: dict[str, str] = {
@@ -94,8 +96,7 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
         if record.exc_info:
-            formatted_exception = super().formatException(record.exc_info)
-            log_record["exception"] = formatted_exception
+            log_record["exception"] = super().formatException(record.exc_info)
         return json.dumps(log_record)
 
 class LogLevelFilter(logging.Filter):
@@ -111,6 +112,18 @@ class LogLevelFilter(logging.Filter):
         return record.levelno >= self.passlevel
 
 def get_root_logger() -> logging.Logger:
+    """Parameters:
+        - None
+    Returns:
+        - logging.Logger: The root logger with the specified handlers and formatters.
+    Processing Logic:
+        - If root logger already configured, return it. Otherwise:
+            - Sets the root logger level to DEBUG.
+            - Adds a console handler with a custom formatter.
+            - Redirects stdout and stderr to the logger.
+            - Adds rotating file handlers for different log levels.
+            - Excludes lower level logs for handlers above DEBUG.
+    """
     logger = logging.getLogger()
     if not logger.handlers:
         logger.setLevel(logging.DEBUG)

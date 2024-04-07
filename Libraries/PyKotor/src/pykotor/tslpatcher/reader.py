@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, KeysView, Mapping, ValuesView
 from configparser import ConfigParser, ParsingError
-from itertools import tee
 from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -176,7 +174,7 @@ class ConfigReader:
             ini.read_string(decode_bytes_with_fallbacks(BinaryReader.load_file(resolved_file_path)))
         except ParsingError as e:
             e.source = str(resolved_file_path)
-            raise e
+            raise e  # noqa: TRY201  # don't `raise from e` here!
 
         instance = cls(ini, resolved_file_path.parent, logger)
         instance.config = PatcherConfig()

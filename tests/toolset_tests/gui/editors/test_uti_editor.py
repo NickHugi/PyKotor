@@ -79,7 +79,7 @@ class UTIEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "baragwin.uti"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/baragwin.uti"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)
