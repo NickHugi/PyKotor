@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from configparser import ConfigParser, ParsingError
 from typing import TYPE_CHECKING
 
@@ -1055,7 +1056,7 @@ class ConfigReader:
             return field_value_memory
 
         components: list[float]
-        value: ResRef | str | int | float | Vector3 | Vector4 | None = None
+        value: ResRef | str | int | float | Vector3 | Vector4 | bytes | None = None
 
         if field_type.return_type() == ResRef:
             value = ResRef(raw_value)
@@ -1077,11 +1078,24 @@ class ConfigReader:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             value = Vector4(*components)
 
+        elif field_type.return_type() == bytes:
+            if not raw_value.strip().replace("1", "").replace("0", ""):
+                value = bytes(int(raw_value[i : i+8], 2) for i in range(0, len(raw_value), 8))
+            elif raw_value.strip().lower().startswith("0x"):
+                hex_string = raw_value[2:]
+                if len(hex_string) % 2:
+                    hex_string = f"0{hex_string}"
+                value = bytes.fromhex(hex_string.strip())
+            else:
+                try:
+                    value = base64.b64decode(raw_value)
+                except Exception as e:
+                    raise ValueError(f"The raw value for the binary field specified was invalid: '{raw_value}'") from e
+
         if value is None:
             return None
 
         return FieldValueConstant(value)
-
     #################
 
     def discern_2da(
@@ -1501,7 +1515,7 @@ class ConfigReader:
         """
         fieldname_to_fieldtype = CaseInsensitiveDict(
             {
-                "Byte": GFFFieldType.UInt8,
+                "Byte": GFFFieldType.Binary,
                 "Char": GFFFieldType.Int8,
                 "Word": GFFFieldType.UInt16,
                 "Short": GFFFieldType.Int16,
