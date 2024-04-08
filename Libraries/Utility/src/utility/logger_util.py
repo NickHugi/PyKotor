@@ -116,12 +116,19 @@ class LogLevelFilter(logging.Filter):
         return record.levelno >= self.passlevel
 
 
-def get_root_logger() -> logging.Logger:
-    """Parameters:
-        - None
+def get_root_logger(use_level: int = logging.DEBUG) -> logging.Logger:
+    """Setup a logger with some standard features.
+
+    Args:
+    ----
+        use_level(int): Logging level to setup for this application.
+
     Returns:
-        - logging.Logger: The root logger with the specified handlers and formatters.
+    -------
+        logging.Logger: The root logger with the specified handlers and formatters.
+
     Processing Logic:
+    ----------------
         - If root logger already configured, return it. Otherwise:
             - Sets the root logger level to DEBUG.
             - Adds a console handler with a custom formatter.
@@ -131,7 +138,7 @@ def get_root_logger() -> logging.Logger:
     """
     logger = logging.getLogger()
     if not logger.handlers:
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(use_level)
 
         log_levels = {
             logging.DEBUG: "debug_pykotor.log",
