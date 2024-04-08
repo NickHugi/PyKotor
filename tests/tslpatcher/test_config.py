@@ -41,7 +41,7 @@ class TestLookupResourceFunction(unittest.TestCase):
         self.output_container_path = Path("test_output_container_path")
 
     def tearDown(self):
-        pass
+        Path("test.mod").unlink(missing_ok=True)
 
     @unittest.skip("broken test")
     def test_lookup_resource_replace_file_true(self):
