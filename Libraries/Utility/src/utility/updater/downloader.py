@@ -249,7 +249,7 @@ class FileDownloader:
 
     @staticmethod
     def _get_content_length(
-        data: urllib3.BaseHTTPResponse,
+        data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
         log = get_root_logger()
