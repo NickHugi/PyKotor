@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import io
 import os
 import pathlib
 import sys
-import types
 from typing import TextIO, Type, TYPE_CHECKING
 import unittest
 
-from unittest import TestCase, TestResult
+from unittest import TestCase
 
 from utility.error_handling import format_exception_with_variables
 
@@ -53,6 +51,7 @@ from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    import types
     from toolset.data.installation import HTInstallation
     from PySide2.QtWidgets import QApplication
 

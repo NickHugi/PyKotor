@@ -13,7 +13,7 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
-from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
+from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
