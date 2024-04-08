@@ -389,7 +389,7 @@ class ConfigReader:
                     continue
                 modifier = ModifyTLK(dialog_tlk_stringref, is_replacement)
                 modifier.mod_index = modded_tlk_stringref
-                modifier.tlk_filepath = self.mod_path / tlk_filename
+                modifier.tlk_filepath = self.mod_path / self.config.patches_tlk.sourcefolder / tlk_filename
                 self.config.patches_tlk.modifiers.append(modifier)
 
         for i in tlk_list_edits:
