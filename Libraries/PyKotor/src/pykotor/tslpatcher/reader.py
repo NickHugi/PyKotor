@@ -1515,7 +1515,7 @@ class ConfigReader:
         """
         fieldname_to_fieldtype = CaseInsensitiveDict(
             {
-                "Byte": GFFFieldType.Binary,
+                "Byte": GFFFieldType.UInt8,
                 "Char": GFFFieldType.Int8,
                 "Word": GFFFieldType.UInt16,
                 "Short": GFFFieldType.Int16,
