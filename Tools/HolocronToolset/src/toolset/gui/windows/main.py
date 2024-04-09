@@ -401,7 +401,7 @@ class ToolWindow(QMainWindow):
 
         try:
             if is_mod_file(r_save_filepath):
-                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name)
+                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name, self.active.game())
                 QMessageBox(QMessageBox.Information, "Module Saved", f"Module saved to '{r_save_filepath}'").exec_()
                 return
 
