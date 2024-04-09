@@ -1429,7 +1429,7 @@ class App:
                 LogLevel.ERRORS: LogType.WARNING,
                 LogLevel.GENERAL: LogType.WARNING,
                 LogLevel.FULL: LogType.VERBOSE,
-                LogLevel.WARNINGS: LogType.WARNING,
+                LogLevel.WARNINGS: LogType.NOTE,
                 LogLevel.NOTHING: LogType.WARNING
             }
             return log_map[self.log_level]
