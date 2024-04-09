@@ -378,7 +378,7 @@ class App:
                     self.root,
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
-                    ["Reinstall", "Cancel"],
+                    ["Reinstall"],
                 )
                 if dialog.result == "Reinstall":
                     self._run_autoupdate(latest_version, updateInfoData)
