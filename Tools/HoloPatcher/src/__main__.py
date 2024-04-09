@@ -1466,8 +1466,8 @@ def main():
 
 
 def my_cleanup_function(app: App):
-    """Prevents the toolset from running in the background after sys.exit is called..."""
-    #print("Fully shutting down Holocron Patcher...")
+    """Prevents the patcher from running in the background after sys.exit is called."""
+    #print("Fully shutting down Holo Patcher...")
     #kill_self_pid()
     #app.root.destroy()
 
