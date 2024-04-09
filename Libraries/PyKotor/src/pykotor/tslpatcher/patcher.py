@@ -187,7 +187,7 @@ class ModInstaller:
                 else:
                     msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
                     raise FileNotFoundError(msg)
-            elif module_root not in tslrcm_omitted_rims and is_rim_file(output_container_path):
+            elif module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}! Patching RIMs is highly incompatible, not recommended, and frankly lazy. Please request the mod developer to fix this.")
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
