@@ -331,8 +331,8 @@ class App:
 
         self.main_text.tag_configure("DEBUG", foreground="#6495ED")  # Cornflower Blue
         self.main_text.tag_configure("INFO", foreground="#000000")   # Black
-        self.main_text.tag_configure("WARNING", foreground="#FFA500", font=bold_font)  # Orange with bold font
-        self.main_text.tag_configure("ERROR", foreground="#B22222", font=bold_font)  # Firebrick with bold font
+        self.main_text.tag_configure("WARNING", foreground="#CC4E00", background="#FFF3E0", font=bold_font)  # Orange with bold font
+        self.main_text.tag_configure("ERROR", foreground="#DC143C", font=bold_font)  # Firebrick with bold font
         self.main_text.tag_configure("CRITICAL", foreground="#FFFFFF", background="#8B0000", font=bold_font)  # White on Dark Red with bold font
 
     def on_combobox_focus_in(
