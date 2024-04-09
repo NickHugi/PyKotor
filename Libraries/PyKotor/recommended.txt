@@ -1,2 +1,3 @@
 defusedxml>=0.7
 charset-normalizer>=2.0
+pycryptodome  # Tested with 3.20.0
