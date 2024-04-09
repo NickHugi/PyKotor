@@ -1473,12 +1473,6 @@ def onAppCrash(
 sys.excepthook = onAppCrash
 
 
-def main():
-    app = App()
-    app.root.mainloop()
-    atexit.register(lambda: my_cleanup_function(app))
-
-
 def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
     #print("Fully shutting down Holo Patcher...")
@@ -1486,6 +1480,18 @@ def my_cleanup_function(app: App):
     #app.root.destroy()
 
 
+def main():
+    app = App()
+    app.root.mainloop()
+    atexit.register(lambda: my_cleanup_function(app))
+
+def is_running_from_temp():
+    app_path = Path(sys.executable)
+    temp_dir = tempfile.gettempdir()
+    return str(app_path).startswith(temp_dir)
 
 if __name__ == "__main__":
+    if is_running_from_temp():
+        messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+        sys.exit("Exiting: Application was run from a temporary or zip directory.")
     main()
