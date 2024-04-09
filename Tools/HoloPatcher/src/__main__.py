@@ -793,6 +793,7 @@ class App:
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
+            self.log_level = reader.config.log_level
 
             # Filter the listed games in the combobox with the mod's supported ones.
             game_number: int | None = reader.config.game_number
