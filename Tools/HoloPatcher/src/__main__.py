@@ -62,6 +62,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
+from pykotor.tslpatcher.config import LogLevel
 from pykotor.tslpatcher.logger import LogType, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
@@ -170,6 +171,7 @@ class App:
         self.task_running: bool = False
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
+        self.log_level: LogLevel = LogLevel.WARNINGS
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -1422,19 +1424,30 @@ class App:
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
+        def log_type_to_level() -> LogType:
+            log_map: dict[LogLevel, LogType] = {
+                LogLevel.ERRORS: LogType.WARNING,
+                LogLevel.GENERAL: LogType.WARNING,
+                LogLevel.FULL: LogType.VERBOSE,
+                LogLevel.WARNINGS: LogType.WARNING,
+                LogLevel.NOTHING: LogType.WARNING
+            }
+            return log_map[self.log_level]
         def log_to_tag(this_log: PatchLog) -> str:
             if this_log.log_type == LogType.NOTE:
                 return "INFO"
             if this_log.log_type == LogType.VERBOSE:
                 return "DEBUG"
             return this_log.log_type.name
+        with self.log_file_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(f"{log.formatted_message}\n")
+        if log.log_type.value < log_type_to_level().value:
+            return
 
         self.main_text.config(state=tk.NORMAL)
         self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
-        with self.log_file_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"{log.formatted_message}\n")
 
 
 def onAppCrash(

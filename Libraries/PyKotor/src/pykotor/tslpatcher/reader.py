@@ -12,6 +12,7 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath
+from pykotor.tslpatcher.config import LogLevel
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -227,6 +228,7 @@ class ConfigReader:
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
         self.config.save_processed_scripts = int(settings_ini.get("SaveProcessedScripts", 0))
+        self.config.log_level = LogLevel(int(settings_ini.get("LogLevel", LogLevel.WARNINGS.value)))
 
         # HoloPatcher optional
         self.config.ignore_file_extensions = bool(settings_ini.get("IgnoreExtensions")) or False
