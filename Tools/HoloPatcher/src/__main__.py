@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 from contextlib import suppress
 from datetime import datetime, timezone
 from enum import IntEnum
-from queue import Queue
+from multiprocessing import Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -72,11 +72,13 @@ from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
+from utility.tkinter.updater import TkProgressDialog
 
 if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Callable
     from datetime import timedelta
+    from multiprocessing import Process
     from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
@@ -407,8 +409,7 @@ class App:
             links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
 
         progress_queue: Queue = Queue()
-        progress_dialog = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
-        # self.hide()  # TODO: figure out how to hide.
+        progress_dialog: Process = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             progress_queue.put(data)
 
@@ -418,6 +419,7 @@ class App:
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
             progress_queue.put({"action": "shutdown"})
+            TkProgressDialog.monitor_and_terminate(progress_dialog)
             if kill_self_here:
                 time.sleep(3)
                 self.root.destroy()
@@ -449,7 +451,7 @@ class App:
             updater.extract_restart()
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)
