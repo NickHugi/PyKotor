@@ -538,7 +538,7 @@ class App:
                 print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def askyesno(title, message) -> bool | None:
+            def askyesno(title, message):
                 """Console-based replacement for messagebox.askyesno and similar."""
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
@@ -1392,7 +1392,7 @@ class App:
         from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
         from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
 
-        with open(file_path, "rb") as file:
+        with Path.pathify(file_path).open("rb") as file:
             rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
             doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
         self.main_text.config(state=tk.NORMAL)
