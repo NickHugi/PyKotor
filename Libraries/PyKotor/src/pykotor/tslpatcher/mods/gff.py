@@ -362,7 +362,7 @@ class AddFieldGFF(ModifyGFF):
             - Sets the field on the struct instance using the appropriate setter based on field type
             - Applies any modifier patches recursively
         """
-        logger.add_verbose(f"Apply patch from INI section [{self.identifier}] field value {self.field_type} gff path '{self.path}'")
+        logger.add_verbose(f"Apply patch from INI section [{self.identifier}] FieldType: {self.field_type.name} GFF Path: '{self.path}'")
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path)
         if isinstance(navigated_container, GFFStruct):
             struct_container = navigated_container
@@ -388,7 +388,7 @@ class AddFieldGFF(ModifyGFF):
             value = from_container.value(value.name)
             logger.add_verbose(f"Acquired value '{value}' from 2DAMEMORY !FieldPath({stored_fieldpath})")
 
-        logger.add_verbose(f"AddField: Setting field of type '{self.field_type.name}' at GFF path '{self.path}'. INI section: [{self.identifier}]")
+        logger.add_verbose(f"AddField: Creating field of type '{self.field_type.name}' with the value '{value}' at GFF path '{self.path}'. INI section: [{self.identifier}]")
         FIELD_TYPE_TO_SETTER[self.field_type](struct_container, self.label, value, memory)
 
         for add_field in self.modifiers:
