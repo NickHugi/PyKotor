@@ -199,7 +199,8 @@ class App:
 
         # Set the dimensions and position
         self.root.geometry(f"{width}x{height}+{x_position}+{y_position}")
-        self.root.resizable(width=False, height=False)
+        self.root.resizable(width=True, height=True)
+        self.root.minsize(width=width, height=height)
 
     def initialize_logger(self):
         self.logger = PatchLogger()
