@@ -287,7 +287,7 @@ class AddStructToListGFF(ModifyGFF):
         """
         list_container: GFFList | None = None
         if self.path.name == ">>##INDEXINLIST##<<":
-            logger.add_verbose(f"Removing unique sentinel from AddStructToListGFF instance (ini section [{self.identifier}]). Path: '{self.path}'")
+            #logger.add_verbose(f"Removing unique sentinel from AddStructToListGFF instance (ini section [{self.identifier}]). Path: '{self.path}'")
             self.path = self.path.parent  # HACK: idk why conditional parenting is necessary but it works
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path) if self.path.name else root_struct
         if navigated_container is root_struct:
@@ -317,7 +317,7 @@ class AddStructToListGFF(ModifyGFF):
         for add_field in self.modifiers:
             assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF, ModifyFieldGFF)), f"{type(add_field).__name__}: {add_field}"
             newpath = self.path / str(len(list_container) - 1)
-            logger.add_verbose(f"Resolved GFFList path of [{add_field.identifier}] from '{add_field.path}' --> '{newpath}'")
+            #logger.add_verbose(f"Resolved GFFList path of [{add_field.identifier}] from '{add_field.path}' --> '{newpath}'")
             add_field.path = newpath
             add_field.apply(root_struct, memory, logger)
 
@@ -383,12 +383,12 @@ class AddFieldGFF(ModifyGFF):
             from_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, stored_fieldpath.parent)
             if not isinstance(from_container, GFFStruct):
                 reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
-                logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{stored_fieldpath}' {reason}")
+                logger.add_error(f"Unable to use !FieldPath from 2DAMEMORY. Parent field at '{stored_fieldpath}' {reason}")
                 return
             value = from_container.value(value.name)
             logger.add_verbose(f"Acquired value '{value}' from 2DAMEMORY !FieldPath({stored_fieldpath})")
-        logger.add_verbose(f"AddField: Setting field of type '{self.field_type.name}' at GFF path '{self.path}'. INI section: [{self.identifier}]")
 
+        logger.add_verbose(f"AddField: Setting field of type '{self.field_type.name}' at GFF path '{self.path}'. INI section: [{self.identifier}]")
         FIELD_TYPE_TO_SETTER[self.field_type](struct_container, self.label, value, memory)
 
         for add_field in self.modifiers:
@@ -398,7 +398,7 @@ class AddFieldGFF(ModifyGFF):
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
-            logger.add_verbose(f"Resolved gff path of INI section [{add_field.identifier}] from relative '{add_field.path}' --> absolute '{newpath}'")
+            #logger.add_verbose(f"Resolved gff path of INI section [{add_field.identifier}] from relative '{add_field.path}' --> absolute '{newpath}'")
             add_field.path = newpath
 
             add_field.apply(root_struct, memory, logger)
@@ -486,14 +486,13 @@ class ModifyFieldGFF(ModifyGFF):
             value = from_container.value(value.name)
             logger.add_verbose(f"Acquired value '{value}' from field at !FieldPath '{stored_fieldpath}'")
 
-        logger.add_verbose("Ensuring the Field exists...")
         try:
             orig_value = FIELD_TYPE_TO_GETTER[field_type](navigated_struct, label)
             logger.add_verbose(f"Found original value of '{orig_value}' ({orig_value!r}) at GFF Path {self.path}: Patch section: [{self.identifier}]")
         except KeyError:
             msg = (
                 f"The field {field_type.name} did not exist at {self.path} in INI section [{self.identifier}]. Use AddField if you need to create fields/structs."
-                "\nDue to the above error, no value will be set."
+                "\nDue to the above error, no value will be set here."
             )
             get_root_logger().exception(msg)
             logger.add_error(msg)
