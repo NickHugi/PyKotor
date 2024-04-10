@@ -2038,7 +2038,7 @@ class BinaryWriterBytearray(BinaryWriter):
         for language, gender, substring in value:
             string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding(), errors="replace")
 
         locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
