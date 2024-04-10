@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Generator
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
@@ -12,7 +11,6 @@ from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
-from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -542,7 +540,7 @@ class UTCEditor(Editor):
             pixmap = self._build_pixmap(index)
         self.ui.portraitPicture.setPixmap(pixmap)
 
-    def _build_pixmap(self, index):
+    def _build_pixmap(self, index: int) -> QPixmap:
         """Builds a portrait pixmap based on character alignment.
 
         Args:

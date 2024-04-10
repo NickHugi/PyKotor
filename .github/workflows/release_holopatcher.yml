@@ -14,7 +14,7 @@ env:
 on:
   push:
     tags:
-      - '*-patcher*'
+      - '*patcher*'
   workflow_dispatch:
 
 permissions:
@@ -248,10 +248,10 @@ jobs:
       if: ${{ success() || failure() }}
       env:
         MATRIX_ARCH: ${{ matrix.architecture }}
-      id: patcher_deps
+      id: holopatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
-          . ./install_python_venv.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
+          . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
           Write-Host "Python executable path: $pythonExePath"
           & $pythonExePath -m pip install --upgrade pip
           if ("${{ runner.os }}" -eq "Windows") {
@@ -260,15 +260,14 @@ jobs:
             } elseif ("${{ matrix.python-version }}" -eq "3.11") {
               pip install "pyinstaller==5.13.2" --prefer-binary
             } else {
-              pip install "pyinstaller==5.13.2" --prefer-binary
+              pip install "pyinstaller==5.4" --prefer-binary
             }
           } else {
             pip install pyinstaller -U --prefer-binary
           }
-          #$env:QT_API = if (-not [string]::IsNullOrEmpty($env:QT_API)) { $env:QT_API } else { "{{ matrix.qt_version }}" }
           $output = ""
           $errorLines = @()
-          . ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
+          . ./compile/deps_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} 2>&1 | ForEach-Object {
             Write-Output $_.ToString()
             $output += $_.ToString() + "`n"
             if($_ -match 'ERROR:') {
@@ -311,9 +310,9 @@ jobs:
       shell: pwsh
 
     - name: HoloPatcher - Adjust RPATH for shared libraries in the virtual environment
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.patcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
         sudo apt-get update && sudo apt-get install -y patchelf
 
@@ -336,12 +335,13 @@ jobs:
       shell: pwsh
 
     - name: Compile HoloPatcher
-      if: ${{ (success() || failure()) && steps.patcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
-        . ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        $env:PYTHONOPTIMIZE = "1"
+        . ./compile/compile_holopatcher.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"
           if($_ -match 'ERROR:') {
@@ -372,9 +372,9 @@ jobs:
       shell: pwsh
 
     - name: HoloPatcher - Create Static Binary
-      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.patcher_deps.outputs.success == 'true' }}
+      if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_patcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install staticx
         staticx ./dist/HoloPatcher ./dist/HoloPatcher-static
         # Rename the static binary for clarity and consistency
@@ -462,12 +462,12 @@ jobs:
         run: |
           if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
             git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-            # Get all tags ending with '-patcher', then pick the most recent one based on how they're listed
-            $tag = git tag --list '*-patcher*' | Select-Object -Last 1
+            # Get all tags ending with 'patcher', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*patcher*' | Select-Object -Last 1
           } else {
             git fetch --depth=1 origin '+refs/tags/*:refs/tags/*'
-            # Get all tags ending with '-patcher', then pick the most recent one based on how they're listed
-            $tag = git tag --list '*-patcher*' | Select-Object -Last 1
+            # Get all tags ending with 'patcher', then pick the most recent one based on how they're listed
+            $tag = git tag --list '*patcher*' | Select-Object -Last 1
           }
           if (-not $tag) {
             echo "No matching tag found ending with 'patcher'."
@@ -490,7 +490,7 @@ jobs:
         if: ${{ failure() }}
         id: get_release_id
         run: |
-          # Filter tags ending with '-patcher', sort them by date, and pick the most recent one
+          # Filter tags ending with 'patcher', sort them by date, and pick the most recent one
           $uri = "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.get_tag.outputs.tag }}"
           $headers = @{Authorization = "token ${{ secrets.GITHUB_TOKEN }}"}
           $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers

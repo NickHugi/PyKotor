@@ -79,7 +79,7 @@ class UTMEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "m_chano.utm"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/m_chano.utm"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

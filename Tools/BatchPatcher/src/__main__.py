@@ -5,6 +5,7 @@ import os
 import pathlib
 import platform
 import sys
+import tempfile
 import tkinter as tk
 import traceback
 
@@ -478,7 +479,10 @@ def get_font_paths() -> list[Path]:
     raise NotImplementedError(msg)
 
 
-def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
+def relative_path_from_to(
+    src: PurePath,
+    dst: PurePath,
+) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
@@ -509,7 +513,10 @@ def log_output(*args, **kwargs):
     SCRIPT_GLOBALS.patchlogger.add_note("\t".join(str(arg) for arg in args))
 
 
-def visual_length(s: str, tab_length=8) -> int:
+def visual_length(
+    s: str,
+    tab_length=8,
+) -> int:
     if "\t" not in s:
         return len(s)
 
@@ -522,7 +529,12 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False):
+def log_output_with_separator(
+    message,
+    below=True,
+    above=False,
+    surround=False,
+):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -546,7 +558,7 @@ def patch_nested_gff(
             delay = gff_struct.acquire("Delay", None)
             if delay == 0:
                 vo_resref = gff_struct.acquire("VO_ResRef", "")
-                if vo_resref and vo_resref.strip():
+                if vo_resref and str(vo_resref) and str(vo_resref).strip():
                     log_output(f"Changing Delay at '{current_path}' from {delay} to -1")
                     gff_struct.set_uint32("Delay", 0xFFFFFFFF)
                     made_change = True
@@ -563,19 +575,19 @@ def patch_nested_gff(
         child_path: PurePath = current_path / label
 
         if ftype == GFFFieldType.Struct:
-            assert isinstance(value, GFFStruct)  # noqa: S101
+            assert isinstance(value, GFFStruct), f"{type(value).__name__}: {value}"  # noqa: S101
             result_made_change, alien_vo_count = patch_nested_gff(value, gff_content, gff, child_path, made_change, alien_vo_count)
             made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.List:
-            assert isinstance(value, GFFList)  # noqa: S101
+            assert isinstance(value, GFFList), f"{type(value).__name__}: {value}"  # noqa: S101
             result_made_change, alien_vo_count = recurse_through_list(value, gff_content, gff, child_path, made_change, alien_vo_count)
             made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
-            assert isinstance(value, LocalizedString)  # noqa: S101
+            assert isinstance(value, LocalizedString), f"{type(value).__name__}: {value}"  # noqa: S101
             new_substrings: dict[int, str] = deepcopy(value._substrings)
             for lang, gender, text in value:
                 if SCRIPT_GLOBALS.pytranslator is not None and text is not None and text.strip():
@@ -684,6 +696,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 gff,
                 resource._path_ident_obj,  # noqa: SLF001
             )
+            made_change: bool = False
             if alien_vo_count < 3 and alien_owner in {0, "0", None} and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
@@ -713,7 +726,10 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
     return None
 
 
-def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
+def patch_and_save_noncapsule(
+    resource: FileResource,
+    savedir: Path | None = None,
+):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
@@ -803,7 +819,11 @@ def patch_capsule_file(c_file: Path):
         write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
 
 
-def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
+def patch_erf_or_rim(
+    resources: list[FileResource],
+    filename: str,
+    erf_or_rim: RIM | ERF,
+) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
@@ -875,7 +895,7 @@ def patch_install(install_path: os.PathLike | str):
     k_install = Installation(install_path)
     k_install.reload_all()
     log_output_with_separator("Patching modules...")
-    for module_name, resources in k_install._modules.items():
+    for module_name, resources in k_install._modules.items():  # noqa: SLF001
         res_ident = ResourceIdentifier.from_path(module_name)
         filename = str(res_ident)
         filepath = k_install.path().joinpath("Modules", filename)
@@ -1388,8 +1408,15 @@ class KOTORPatchingToolUI:
             self.install_button.config(state=tk.DISABLED)
         return None
 
+def is_running_from_temp():
+    app_path = Path(sys.executable)
+    temp_dir = tempfile.gettempdir()
+    return str(app_path).startswith(temp_dir)
 
 if __name__ == "__main__":
+    if is_running_from_temp():
+        messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+        sys.exit("Exiting: Application was run from a temporary or zip directory.")
     try:
         root = tk.Tk()
         APP = KOTORPatchingToolUI(root)

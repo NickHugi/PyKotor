@@ -78,7 +78,7 @@ class UTSEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "low_air_01.uts"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/low_air_01.uts"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

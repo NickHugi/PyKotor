@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import os
 import pathlib
 import sys
 import unittest
 
-from unittest.mock import patch
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")

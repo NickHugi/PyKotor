@@ -79,7 +79,7 @@ class NSSEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "90sk99.ncs"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/90sk99.ncs"
 
         data = BinaryReader.load_file(filepath)
         old = read_ncs(data)

@@ -190,7 +190,7 @@ class DLG(GFFStructInterface):
 
         for link in starting_links:
             entry = link._node
-            assert isinstance(entry, DLGEntry), f"Expected DLGEntry instance, instead was '{entry.__class__.__name__}'"
+            assert isinstance(entry, DLGEntry), f"Expected DLGEntry instance, instead was '{type(entry).__name__}'"
             if id(entry) in seen_entries:
                 continue
 
@@ -198,7 +198,7 @@ class DLG(GFFStructInterface):
             seen_entries.add(id(entry))
             for reply_link in entry.links:
                 reply = reply_link._node
-                assert isinstance(reply, DLGReply), f"Expected DLGReply instance, instead was '{entry.__class__.__name__}'"
+                assert isinstance(reply, DLGReply), f"Expected DLGReply instance, instead was '{type(entry).__name__}'"
                 entries.extend(self._all_entries(reply.links, seen_entries))
 
         return entries
@@ -248,7 +248,7 @@ class DLG(GFFStructInterface):
 
         for link in starting_links:
             reply: DLGNode = link._node
-            assert isinstance(reply, DLGReply)
+            assert isinstance(reply, DLGReply), f"{type(reply).__name__}: {reply}"  # noqa: S101
             if id(reply) in seen_replies:
                 continue
             replies.append(reply)

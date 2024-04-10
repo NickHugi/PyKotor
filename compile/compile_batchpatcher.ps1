@@ -156,6 +156,8 @@ $argumentsArray += "__main__.py"
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"
+$env:PLAYWRIGHT_BROWSERS_PATH="0"
+playwright install chromium
 & $pythonExePath $argumentsArray
 
 # Check if the final executable exists

@@ -17,7 +17,7 @@ def main():
 
     # Extract project metadata
     project_metadata = setup_params.get("project", {})
-    assert isinstance(project_metadata, dict)
+    assert isinstance(project_metadata, dict), f"{type(project_metadata).__name__}: {project_metadata}"
 
     build_system = setup_params.get("build-system", {})
     AUTHORS = project_metadata.get("authors", [{"name": "", "email": ""}])

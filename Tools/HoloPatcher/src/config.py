@@ -12,9 +12,9 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "1.5.3a1",
+    "currentVersion": "1.6.0b2",
     "holopatcherLatestVersion": "1.5.2",
-    "holopatcherLatestBetaVersion": "1.5.3a1",
+    "holopatcherLatestBetaVersion": "1.6.0a1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py?ref=bleeding-edge",
     "holopatcherDownloadLink": "https://deadlystream.com/files/file/1982-holocron-holopatcher",

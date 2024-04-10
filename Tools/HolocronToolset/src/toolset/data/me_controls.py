@@ -522,16 +522,16 @@ class DCEffect(ABC):
             output = -(forward.y + sideward.y)
 
         elif value == "cpdx":
-            sideward = dx * controls.renderer.scene.camera.sideward(False)
-            upward = dy * controls.renderer.scene.camera.upward(False)
+            sideward = dx * controls.renderer.scene.camera.sideward(ignore_z=False)
+            upward = dy * controls.renderer.scene.camera.upward(ignore_z=False)
             output = -(upward.x + sideward.x)
         elif value == "cpdy":
-            sideward = dx * controls.renderer.scene.camera.sideward(False)
-            upward = dy * controls.renderer.scene.camera.upward(False)
+            sideward = dx * controls.renderer.scene.camera.sideward(ignore_z=False)
+            upward = dy * controls.renderer.scene.camera.upward(ignore_z=False)
             output = -(upward.y + sideward.y)
         elif value == "cpdz":
-            sideward = dx * controls.renderer.scene.camera.sideward(False)
-            upward = dy * controls.renderer.scene.camera.upward(False)
+            sideward = dx * controls.renderer.scene.camera.sideward(ignore_z=False)
+            upward = dy * controls.renderer.scene.camera.upward(ignore_z=False)
             output = -(upward.z + sideward.z)
 
         elif value == "cpxFlat":
@@ -542,13 +542,13 @@ class DCEffect(ABC):
             output = forward.y
 
         elif value == "cpx":
-            forward = controls.renderer.scene.camera.sideward(False)
+            forward = controls.renderer.scene.camera.sideward(ignore_z=False)
             output = forward.x
         elif value == "cpy":
-            forward = controls.renderer.scene.camera.sideward(False)
+            forward = controls.renderer.scene.camera.sideward(ignore_z=False)
             output = forward.y
         elif value == "cpz":
-            forward = controls.renderer.scene.camera.sideward(False)
+            forward = controls.renderer.scene.camera.sideward(ignore_z=False)
             output = forward.z
 
         elif value == "cry":
