@@ -57,7 +57,7 @@ class TestUTE(TestCase):
         for ute_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTE):
             gff: GFF = read_gff(ute_resource.data())
             reconstructed_gff: GFF = dismantle_ute(construct_ute(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -68,7 +68,7 @@ class TestUTE(TestCase):
         for ute_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTE):
             gff: GFF = read_gff(ute_resource.data())
             reconstructed_gff: GFF = dismantle_ute(construct_ute(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_k2_reconstruct(self):
         gff = read_gff(TEST_FILE)

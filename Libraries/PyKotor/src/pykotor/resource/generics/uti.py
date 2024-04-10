@@ -1,138 +1,121 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from copy import deepcopy
+from functools import wraps
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
+from pykotor.common.misc import Game
+from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import FieldProperty, GFFFieldType, GFFStructInterface
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.common.language import LocalizedString
+    from pykotor.common.misc import ResRef
+    from pykotor.resource.formats.gff import GFFList
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
-ARMOR_BASE_ITEMS = {
-    35,
-    36,
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    53,
-    58,
-    63,
-    64,
-    65,
-    69,
-    71,
-    85,
-    89,
-    98,
-    100,
-    102,
-    103,
-}
+ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """
 
+T = TypeVar("T")
 
-class UTI:
+def typed_property(name: str, type_: T) -> Any:
+    """Creates a typed property that allows static type checkers to correctly infer the type."""
+
+    @property
+    @wraps(typed_property, assigned=("__annotations__",))
+    def prop(self: GFFStruct) -> T:
+        return self.acquire(name, self.FIELDS[name]._value())
+
+    @prop.setter
+    def prop(self: GFFStruct, value: T) -> None:
+        self.set(name, value)
+
+    prop.__annotations__ = {"return": type_}
+    return prop
+
+def add_typed_properties(cls):
+    """Class decorator that dynamically adds typed properties based on FIELDS and K2_FIELDS definitions."""
+    for name, field in cls.FIELDS.items():
+        setattr(cls, name, typed_property(name, field.field_type().return_type()))
+
+    if hasattr(cls, "K2_FIELDS"):
+        for name, field in cls.K2_FIELDS.items():
+            setattr(cls, name, typed_property(name, field.field_type().return_type()))
+
+    return cls
+
+
+#@add_typed_properties
+class UTI(GFFStructInterface):
     """Stores item data."""
 
     BINARY_TYPE = ResourceType.UTI
 
+    resref: FieldProperty[ResRef, ResRef] = FieldProperty("TemplateResRef", GFFFieldType.ResRef)
+    base_item: FieldProperty[int, int] = FieldProperty("BaseItem", GFFFieldType.Int32)
+    name: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("LocalizedName", GFFFieldType.LocalizedString)
+    description: FieldProperty[LocalizedString, LocalizedString] = FieldProperty("DescIdentified", GFFFieldType.LocalizedString)
+    tag: FieldProperty[str, str] = FieldProperty("Tag", GFFFieldType.String)
+    charges: FieldProperty[int, int] = FieldProperty("Charges", GFFFieldType.UInt8)
+    cost: FieldProperty[int, int] = FieldProperty("Cost", GFFFieldType.UInt32)
+    stack_size: FieldProperty[int, int] = FieldProperty("StackSize", GFFFieldType.UInt16)
+    plot: FieldProperty[int, int] = FieldProperty("Plot", GFFFieldType.UInt8)
+    add_cost: FieldProperty[int, int] = FieldProperty("AddCost", GFFFieldType.UInt32)
+    palette_id: FieldProperty[int, int] = FieldProperty("PaletteID", GFFFieldType.UInt8)
+    comment: FieldProperty[str, str] = FieldProperty("Comment", GFFFieldType.String)
+    properties: FieldProperty[GFFList[GFFStruct], GFFList[UTIProperty]] = FieldProperty("PropertiesList", GFFFieldType.List)
+
+    # Armor Items Only:
+    model_variation: FieldProperty[int, int] = FieldProperty("ModelVariation", GFFFieldType.UInt8)
+    body_variation: FieldProperty[int, int] = FieldProperty("BodyVariation", GFFFieldType.UInt8)
+    texture_variation: FieldProperty[int, int] = FieldProperty("TextureVar", GFFFieldType.UInt8)
+
+    # KOTOR 2 Specific Fields
+    upgrade_level: FieldProperty[int, int] = FieldProperty("UpgradeLevel", GFFFieldType.UInt8, game=Game.K2)
+
+    # Deprecated:
+    stolen: FieldProperty[int, int] = FieldProperty("Stolen", GFFFieldType.UInt8)
+    identified: FieldProperty[int, int] = FieldProperty("Identified", GFFFieldType.UInt8)
+
     def __init__(
         self,
     ):
-        self.resref: ResRef = ResRef.from_blank()
-        self.base_item: int = 0
-        self.name: LocalizedString = LocalizedString.from_invalid()
-        self.description: LocalizedString = LocalizedString.from_invalid()
-        self.description2: LocalizedString = LocalizedString.from_invalid()
-        self.tag: str = ""
-        self.charges: int = 0
-        self.cost: int = 0
-        self.stack_size: int = 0
-        self.plot: int = 0
-        self.add_cost: int = 0
-        self.palette_id: int = 0
-        self.comment: str = ""
+        super().__init__()
+        #self._fields: UTIFields
 
-        self.upgrade_level: int = 0
-
-        self.properties: list[UTIProperty] = []
-
-        # Armor Items Only:
-        self.body_variation: int = 0
-        self.model_variation: int = 0
-        self.texture_variation: int = 0
-
-        # Deprecated:
-        self.stolen: int = 0
-        self.identified: int = 0
-
-    def is_armor(
+    def is_armor(  # TODO(th3w1zard1): Accept a TwoDA object argument instead of hardcoding the base item numbers
         self,
     ) -> bool:
-        return self.base_item in ARMOR_BASE_ITEMS
+        return self._fields["BaseItem"] in ARMOR_BASE_ITEMS
 
 
-class UTIProperty:
+class UTIProperty(GFFStructInterface):
+    cost_table = FieldProperty("CostTable", GFFFieldType.UInt8)
+    cost_value = FieldProperty("CostValue", GFFFieldType.UInt16)
+    param1 = FieldProperty("Param1", GFFFieldType.UInt8)
+    param1_value = FieldProperty("Param1Value", GFFFieldType.UInt8)
+    property_name = FieldProperty("PropertyName", GFFFieldType.UInt16)
+    subtype = FieldProperty("Subtype", GFFFieldType.UInt16)
+    chance_appear = FieldProperty("ChanceAppear", GFFFieldType.UInt8)
+    upgrade_type = FieldProperty("UpgradeType", GFFFieldType.UInt8)
+
     def __init__(
         self,
     ):
-        self.cost_table: int = 0
-        self.cost_value: int = 0
-        self.param1: int = 0
-        self.param1_value: int = 0
-        self.property_name: int = 0
-        self.subtype: int = 0
-        self.chance_appear: int = 100
-        self.upgrade_type: int | None = None
+        super().__init__(struct_id=0)
 
 
 def construct_uti(
     gff: GFF,
 ) -> UTI:
-    uti = UTI()
-
-    root = gff.root
-    uti.resref = root.acquire("TemplateResRef", ResRef.from_blank())
-    uti.base_item = root.acquire("BaseItem", 0)
-    uti.name = root.acquire("LocalizedName", LocalizedString.from_invalid())
-    uti.description = root.acquire("DescIdentified", LocalizedString.from_invalid())
-    uti.description2 = root.acquire("Description", LocalizedString.from_invalid())
-    uti.tag = root.acquire("Tag", "")
-    uti.charges = root.acquire("Charges", 0)
-    uti.cost = root.acquire("Cost", 0)
-    uti.stack_size = root.acquire("StackSize", 0)
-    uti.plot = root.acquire("Plot", 0)
-    uti.add_cost = root.acquire("AddCost", 0)
-    uti.palette_id = root.acquire("PaletteID", 0)
-    uti.comment = root.acquire("Comment", "")
-    uti.model_variation = root.acquire("ModelVariation", 0)
-    uti.body_variation = root.acquire("BodyVariation", 0)
-    uti.texture_variation = root.acquire("TextureVar", 0)
-    uti.upgrade_level = root.acquire("UpgradeLevel", 0)
-    uti.stolen = root.acquire("Stolen", 0)
-    uti.identified = root.acquire("Identified", 0)
-
-    for property_struct in root.acquire("PropertiesList", GFFList()):
-        prop = UTIProperty()
-        uti.properties.append(prop)
-        prop.cost_table = property_struct.acquire("CostTable", 0)
-        prop.cost_value = property_struct.acquire("CostValue", 0)
-        prop.param1 = property_struct.acquire("Param1", 0)
-        prop.param1_value = property_struct.acquire("Param1Value", 0)
-        prop.property_name = property_struct.acquire("PropertyName", 0)
-        prop.subtype = property_struct.acquire("Subtype", 0)
-        prop.chance_appear = property_struct.acquire("ChanceAppear", 100)
-
-        if property_struct.exists("UpgradeType"):
-            prop.upgrade_type = property_struct.acquire("UpgradeType", 0)
-
+    uti: UTI = deepcopy(gff.root)
+    uti.__class__ = UTI
+    for property_struct in uti._fields["PropertiesList"].value():
+        property_struct.__class__ = UTIProperty
     return uti
 
 
@@ -143,46 +126,7 @@ def dismantle_uti(
     use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTI)
-
-    root = gff.root
-    root.set_resref("TemplateResRef", uti.resref)
-    root.set_int32("BaseItem", uti.base_item)
-    root.set_locstring("LocalizedName", uti.name)
-    root.set_locstring("Description", uti.description2)
-    root.set_locstring("DescIdentified", uti.description)
-    root.set_string("Tag", uti.tag)
-    root.set_uint8("Charges", uti.charges)
-    root.set_uint32("Cost", uti.cost)
-    root.set_uint16("StackSize", uti.stack_size)
-    root.set_uint8("Plot", uti.plot)
-    root.set_uint32("AddCost", uti.add_cost)
-    root.set_uint8("PaletteID", uti.palette_id)
-    root.set_string("Comment", uti.comment)
-
-    properties_list: GFFList = root.set_list("PropertiesList", GFFList())
-    for prop in uti.properties:
-        properties_struct = properties_list.add(0)
-        properties_struct.set_uint8("CostTable", prop.cost_table)
-        properties_struct.set_uint16("CostValue", prop.cost_value)
-        properties_struct.set_uint8("Param1", prop.param1)
-        properties_struct.set_uint8("Param1Value", prop.param1_value)
-        properties_struct.set_uint16("PropertyName", prop.property_name)
-        properties_struct.set_uint16("Subtype", prop.subtype)
-        properties_struct.set_uint8("ChanceAppear", prop.chance_appear)
-        if prop.upgrade_type is not None:
-            properties_struct.set_uint8("UpgradeType", prop.upgrade_type)
-
-    root.set_uint8("ModelVariation", uti.model_variation)
-    root.set_uint8("BodyVariation", uti.body_variation)
-    root.set_uint8("TextureVar", uti.texture_variation)
-
-    if game.is_k2():
-        root.set_uint8("UpgradeLevel", uti.upgrade_level)
-
-    if use_deprecated:
-        root.set_uint8("Stolen", uti.stolen)
-        root.set_uint8("Identified", uti.identified)
-
+    gff.root = uti.unwrap()
     return gff
 
 

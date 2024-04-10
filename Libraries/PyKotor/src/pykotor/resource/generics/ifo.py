@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, GFFStruct, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import ResourceType
 
@@ -153,7 +153,7 @@ def construct_ifo(
     dir_y = root.acquire("Mod_Entry_Dir_Y", 0.0)
     ifo.entry_direction = Vector2(dir_x, dir_y).angle()
 
-    ifo.area_name = root.acquire("Mod_Area_list", GFFList()).at(0).acquire("Area_Name", ResRef.from_blank())
+    ifo.area_name = root.acquire("Mod_Area_list", GFFList()).at(0, default=GFFStruct()).acquire("Area_Name", ResRef.from_blank())
 
     return ifo
 

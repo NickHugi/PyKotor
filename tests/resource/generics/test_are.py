@@ -58,9 +58,10 @@ class TestARE(unittest.TestCase):
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.ARE):
+            print(f"Test generic ARE '{are_resource.identifier()}'")
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_are(construct_are(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -69,9 +70,10 @@ class TestARE(unittest.TestCase):
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.ARE):
+            print(f"Test generic ARE '{are_resource.identifier()}'")
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_are(construct_are(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)

@@ -579,13 +579,13 @@ class IndoorMap:
         self.are.tag = self.moduleId
         self.are.dynamic_light = self.lighting
         self.are.name = self.name
-        self.are.map_point_1 = minimap.imagePointMin
-        self.are.map_point_2 = minimap.imagePointMax
-        self.are.world_point_1 = minimap.worldPointMin
-        self.are.world_point_2 = minimap.worldPointMax
-        self.are.map_zoom = 1
-        self.are.map_res_x = 1
-        self.are.north_axis = ARENorthAxis.NegativeY
+        self.are.map.map_point_1 = minimap.imagePointMin
+        self.are.map.map_point_2 = minimap.imagePointMax
+        self.are.map.world_point_1 = minimap.worldPointMin
+        self.are.map.world_point_2 = minimap.worldPointMax
+        self.are.map.map_zoom = 1
+        self.are.map.map_res_x = 1
+        self.are.map.north_axis = ARENorthAxis.NegativeY
 
     def set_ifo_attributes(self):
         """Sets attributes of IFO object.

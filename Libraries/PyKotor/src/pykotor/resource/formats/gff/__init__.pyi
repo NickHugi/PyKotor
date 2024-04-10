@@ -6,10 +6,12 @@ from pykotor.resource.formats.gff.gff_auto import (
 )
 from pykotor.resource.formats.gff.gff_data import (
     GFF as GFF,
+    FieldProperty as FieldProperty,
     GFFContent as GFFContent,
     GFFFieldType as GFFFieldType,
     GFFList as GFFList,
     GFFStruct as GFFStruct,
+    GFFStructInterface as GFFStructInterface,
 )
 from pykotor.resource.formats.gff.io_gff import (
     GFFBinaryReader as GFFBinaryReader,

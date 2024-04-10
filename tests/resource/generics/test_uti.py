@@ -58,7 +58,7 @@ class TestUTI(TestCase):
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTI):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_uti(construct_uti(gff), Game.K1)
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -69,18 +69,14 @@ class TestUTI(TestCase):
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTI):
             gff: GFF = read_gff(are_resource.data())
             reconstructed_gff: GFF = dismantle_uti(construct_uti(gff))
-            self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
+            self.assertTrue(gff.compare(reconstructed_gff, self.log_func), os.linesep.join(self.log_messages))
 
     def test_gff_reconstruct(self):
         gff = read_gff(TEST_FILE)
         reconstructed_gff = dismantle_uti(construct_uti(gff), Game.K1)
         result = gff.compare(reconstructed_gff, self.log_func)
         output = os.linesep.join(self.log_messages)
-        if not result:
-            expected_output = r"Field 'LocalizedString' is different at 'GFFRoot\Description': 456 --> 5633"
-            self.assertEqual(output.strip(), expected_output.strip(), "Comparison output does not match expected output")
-        else:
-            self.assertTrue(result)
+        self.assertTrue(result, output)
 
     def test_io_construct(self):
         gff = read_gff(TEST_FILE)
@@ -113,7 +109,7 @@ class TestUTI(TestCase):
         self.assertEqual("itemo", uti.comment)
 
         self.assertEqual(2, len(uti.properties))
-        self.assertIsNone(uti.properties[0].upgrade_type, None)
+        self.assertFalse(uti.properties[0].upgrade_type)
         self.assertEqual(100, uti.properties[1].chance_appear)
         self.assertEqual(1, uti.properties[1].cost_table)
         self.assertEqual(1, uti.properties[1].cost_value)

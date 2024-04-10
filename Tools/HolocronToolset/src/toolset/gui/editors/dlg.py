@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pyperclip
 
@@ -319,8 +319,8 @@ class DLGEditor(Editor):
 
         self._dlg = dlg
         self.model.clear()
-        seenLinks: list[DLGLink] = []
-        seenNodes: list[DLGNode] = []
+        seenLinks: set[DLGLink] = set()
+        seenNodes: set[DLGNode] = set()
         for start in reversed(dlg.starters):  # reversed = ascending order
             item = QStandardItem()
             self._loadDLGRec(item, start, seenLinks, seenNodes)
@@ -330,8 +330,8 @@ class DLGEditor(Editor):
         self,
         item: QStandardItem,
         link: DLGLink,
-        seenLinks: list[DLGLink],
-        seenNodes: list[DLGNode],
+        seenLinks: set[DLGLink],
+        seenNodes: set[DLGNode],
     ):
         """Don't call this function directly.
 
@@ -341,8 +341,8 @@ class DLGEditor(Editor):
         ----
             item (QStandardItem): The item to load the node into
             link (DLGLink): The link whose node to load
-            seenLink (list[DLGLink]): Links already loaded
-            seenNode (list[DLGNode]): Nodes already loaded
+            seenLink (set[DLGLink]): Links already loaded
+            seenNode (set[DLGNode]): Nodes already loaded
 
         Processing Logic:
         ----------------
@@ -352,21 +352,22 @@ class DLGEditor(Editor):
             - Refreshes the item
             - Loops through child links and loads recursively if not seen.
         """
-        node: DLGNode | None = link.node
-        assert_with_variable_trace(node is not None, "link.node cannot be None.")
+        node: DLGNode | None = link._node
+        assert_with_variable_trace(node is not None, "link._node cannot be None.")
         assert node is not None
         item.setData(link, _LINK_ROLE)
 
         alreadyListed: bool = link in seenLinks or node in seenNodes
         if link not in seenLinks:
-            seenLinks.append(link)
+            seenLinks.add(link)
         if node not in seenNodes:
-            seenNodes.append(node)
+            seenNodes.add(node)
 
         item.setData(alreadyListed, _COPY_ROLE)
         self.refreshItem(item)
 
         if not alreadyListed:
+            assert isinstance(node, (DLGEntry, DLGReply))
             for child_link in reversed(node.links):  # reversed = ascending order
                 child_item = QStandardItem()
                 self._loadDLGRec(child_item, child_link, seenLinks, seenNodes)
@@ -533,7 +534,7 @@ class DLGEditor(Editor):
             item: QStandardItem | None = self.model.itemFromIndex(indexes[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode | None = link.node
+            node: DLGNode | None = link._node
             assert_with_variable_trace(node is not None, "node cannot be None")
             dialog = LocalizedStringDialog(self, self._installation, node.text)
             if dialog.exec_() and not isCopy:
@@ -597,6 +598,7 @@ class DLGEditor(Editor):
         self._add_node_main(DLGEntry(), self._dlg.starters, False, self.model)
 
     def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
+        assert isinstance(target, (DLGEntry, DLGReply))
         self._add_node_main(source, target.links, True, item)
 
     def _add_node_main(self, source: DLGNode, target_links: list[DLGLink], _copy_role_data: bool, item: QStandardItem | QStandardItemModel | None):
@@ -626,6 +628,7 @@ class DLGEditor(Editor):
         """
         sourceCopy: DLGNode = deepcopy(source)
         newLink = DLGLink(sourceCopy)
+        assert isinstance(target, (DLGEntry, DLGReply))
         target.links.append(newLink)
 
         newItem = QStandardItem()
@@ -662,21 +665,21 @@ class DLGEditor(Editor):
             - Remove link from parent's links and row from parent.
         """
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode = link._node
         parent: QStandardItem | None = item.parent()
 
         if parent is None:
             for link in copy(self._dlg.starters):
-                if link.node is node:
+                if link._node is node:
                     self._dlg.starters.remove(link)
             self.model.removeRow(item.row())
         else:
             parentItem: QStandardItem | None = parent
             parentLink: DLGLink = parentItem.data(_LINK_ROLE)
-            parentNode: DLGNode = parentLink.node
+            parentNode: DLGEntry | DLGReply = parentLink._node
 
             for link in copy(parentNode.links):
-                if link.node is node:
+                if link._node is node:
                     parentNode.links.remove(link)
             parentItem.removeRow(item.row())
 
@@ -721,14 +724,14 @@ class DLGEditor(Editor):
             - If no match is found, print a failure message.
         """
         copiedLink: DLGLink = sourceItem.data(_LINK_ROLE)
-        copiedNode: DLGNode = copiedLink.node
+        copiedNode: DLGNode = copiedLink._node
 
         items: list[QStandardItem | None] = [self.model.item(i, 0) for i in range(self.model.rowCount())]
         while items:
             item: QStandardItem | None = items.pop()
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            if link.node is copiedNode and not isCopy:
+            if link._node is copiedNode and not isCopy:
                 self.expandToRoot(item)
                 self.ui.dialogTree.setCurrentIndex(item.index())
                 break
@@ -750,7 +753,8 @@ class DLGEditor(Editor):
             - Sets the item foreground color based on the node and copy type
             - Blue for replies, red for entries, lighter if it is a copy.
         """
-        node: DLGNode = item.data(_LINK_ROLE).node
+        link: DLGLink = item.data(_LINK_ROLE)
+        node: DLGNode = link._node
         isCopy: bool = item.data(_COPY_ROLE)
         color: QColor | None = None
         if isinstance(node, DLGEntry):
@@ -763,6 +767,8 @@ class DLGEditor(Editor):
             prefix = "N"
 
         list_prefix: str = f"{prefix}{node.list_index}: "
+
+        assert isinstance(node, (DLGEntry, DLGReply))
         if not node.links:
             item.setText(f"{list_prefix}[End Dialog]")
         else:
@@ -864,7 +870,7 @@ class DLGEditor(Editor):
         self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
 
         # Sync DLG to tree changes
-        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
+        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE)._node.links
         link: DLGLink = links.pop(oldRow)
         links.insert(newRow, link)
 
@@ -914,7 +920,7 @@ class DLGEditor(Editor):
         """
         link: DLGLink = item.data(_LINK_ROLE)
         isCopy: bool = item.data(_COPY_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode = link._node
 
         menu = QMenu(self)
 
@@ -994,7 +1000,7 @@ class DLGEditor(Editor):
             item: QStandardItem | None = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
-            node: DLGNode | None = link.node
+            node: DLGNode | None = link._node
 
             if isinstance(node, DLGEntry):
                 self.ui.speakerEdit.setEnabled(True)
@@ -1057,6 +1063,7 @@ class DLGEditor(Editor):
 
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
             self.ui.cameraAnimSpin.__class__ = GFFFieldSpinBox
+            self.ui.cameraAnimSpin = cast(GFFFieldSpinBox, self.ui.cameraAnimSpin)
             self.ui.cameraAnimSpin.min_value=1200
             self.ui.cameraAnimSpin.max_value=65534
             self.ui.cameraAnimSpin.specialValueTextMapping = {0: "0", -1: "-1"}
@@ -1098,7 +1105,7 @@ class DLGEditor(Editor):
         item: QStandardItem | None = self.model.itemFromIndex(index)
 
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode | None = link.node
+        node: DLGNode | None = link._node
         assert node is not None
 
         node.listener = self.ui.listenerEdit.text()
@@ -1209,7 +1216,7 @@ class DLGEditor(Editor):
         if self.ui.dialogTree.selectedIndexes():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
-            node: DLGNode = item.data(_LINK_ROLE).node
+            node: DLGNode = item.data(_LINK_ROLE)._node
 
             dialog = EditAnimationDialog(self, self._installation)
             if dialog.exec_():
@@ -1220,7 +1227,7 @@ class DLGEditor(Editor):
         if self.ui.animsList.selectedItems():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
-            node: DLGNode = item.data(_LINK_ROLE).node
+            node: DLGNode = item.data(_LINK_ROLE)._node
 
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
             anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
@@ -1258,7 +1265,7 @@ class DLGEditor(Editor):
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
             item: QStandardItem | None = self.model.itemFromIndex(index)
             link: DLGLink = item.data(_LINK_ROLE)
-            node: DLGNode = link.node
+            node: DLGNode = link._node
 
             animations_2da: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
             for anim in node.animations:
