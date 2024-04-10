@@ -680,7 +680,13 @@ class ToolWindow(QMainWindow):
         if not res_ident.restype:
             return
         _filepath, _editor = openResourceEditor(
-            erf_filepath, res_ident.resname, res_ident.restype, BinaryReader.load_file(erf_filepath), self.active, self, gff_specialized=useSpecializedEditor
+            erf_filepath,
+            res_ident.resname,
+            res_ident.restype,
+            BinaryReader.load_file(erf_filepath),
+            self.active,
+            self,
+            gff_specialized=useSpecializedEditor,
         )
 
     # endregion

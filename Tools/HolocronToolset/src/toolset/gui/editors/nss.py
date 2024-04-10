@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from collections import namedtuple
 from contextlib import contextmanager
 from operator import attrgetter
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
@@ -143,8 +142,13 @@ class NSSEditor(Editor):
             item.setData(QtCore.Qt.UserRole, constant)
             self.ui.constantList.addItem(item)
 
-    # A context that can be saved and restored by _snapshotResTypeContext.
-    SavedContext = namedtuple("SavedContext", ["filepath", "resname", "restype", "revert", "saved_connection"])
+    class SavedContext(NamedTuple):
+        """A context that can be saved and restored by _snapshotResTypeContext."""
+        filepath: Path
+        resname: str
+        restype: ResourceType
+        revert: bytes
+        saved_connection: Any  # Specify the actual type here instead of 'any' if possible
 
     @contextmanager
     def _snapshotResTypeContext(self, saved_file_callback=None):
