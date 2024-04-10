@@ -168,6 +168,8 @@ class TPCEditor(Editor):
         data: bytes | bytearray = bytearray()
 
         if self._restype in {ResourceType.TPC, ResourceType.TGA}:
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
             write_tpc(self._tpc, data, self._restype)
             return bytes(data), b""
 
