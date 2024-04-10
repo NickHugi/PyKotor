@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QFile, QTextStream, QMetaObject, Qt
+from qtpy.QtCore import QFile, QMetaObject, QTextStream, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
 from qtpy.QtWidgets import (
     QAction,
