@@ -1,45 +1,42 @@
 from __future__ import annotations
 
+import atexit
 import cProfile
 import multiprocessing
 import os
 import pathlib
 import sys
 import tempfile
-import traceback
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QFile, QTextStream, QThread
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QThread
+from PyQt5.QtWidgets import QApplication, QMessageBox
 
 if TYPE_CHECKING:
     from types import TracebackType
 
 
-def is_frozen() -> bool:  # sourcery skip: assign-if-exp, boolean-if-exp-identity, reintroduce-else, remove-unnecessary-cast
-    # Check for sys.frozen attribute
-    if getattr(sys, "frozen", False):
-        return True
-    # Check if the executable is in a temp directory (common for frozen apps)
-    if tempfile.gettempdir() in sys.executable:
-        return True
-    return False
+def is_frozen() -> bool:
+    return (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+        or tempfile.gettempdir() in sys.executable
+    )
+
 
 def onAppCrash(
     etype: type[BaseException],
     e: BaseException,
     tback: TracebackType | None,
 ):
-    from utility.error_handling import format_exception_with_variables  # noqa: PLC0415  # pylint: disable=C0415
-    with pathlib.Path("errorlog.txt").open("a", encoding="utf-8") as file:
-        try:
-            file.writelines(format_exception_with_variables(e, etype, tback))
-        except Exception:  # pylint: disable=W0702,W0718  # pylint: disable=W0718  # noqa: BLE001
-            file.writelines(str(e))
-        file.write("\n----------------------\n")
-    # Mimic default behavior by printing the traceback to stderr
-    traceback.print_exception(etype, e, tback)
+    from utility.logger_util import get_root_logger
+    if issubclass(etype, KeyboardInterrupt):
+        sys.__excepthook__(etype, e, tback)
+        return
+    logger = get_root_logger()
+    logger.critical("Uncaught exception", exc_info=(etype, e, tback))
+
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
@@ -57,6 +54,7 @@ def fix_sys_and_cwd_path():
         - Also checks for toolset package and changes cwd to that directory if exists.
         - This ensures packages and scripts can be located correctly on import.
     """
+
     def update_sys_path(path: pathlib.Path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -78,8 +76,12 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
-if __name__ == "__main__":
+def is_running_from_temp():
+    app_path = Path(sys.executable)
+    temp_dir = tempfile.gettempdir()
+    return str(app_path).startswith(temp_dir)
 
+if __name__ == "__main__":
     if os.name == "nt":
         os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
     os.environ["QT_DEBUG_PLUGINS"] = "1"
@@ -89,10 +91,12 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
     if is_frozen():
-        print("App is frozen - doing multiprocessing.freeze_support()")
+        from utility.logger_util import get_root_logger
+        get_root_logger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
+    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
 
     from utility.system.path import Path
 
@@ -115,17 +119,46 @@ if __name__ == "__main__":
     app.thread().setPriority(QThread.HighestPriority)
 
     sys.excepthook = onAppCrash
+    if is_running_from_temp():
+        # Show error message using PyQt5's QMessageBox
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Critical)
+        msgBox.setWindowTitle("Error")
+        msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+        msgBox.exec_()
+        sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
     from toolset.gui.windows.main import ToolWindow
 
-    window = ToolWindow()
-    window.show()
-
-    profiler = True  # Set to False or None to disable profiler
+    profiler = False  # Set to False or None to disable profiler
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
 
+    window = ToolWindow()
+    window.show()
+    window.checkForUpdates(silent=True)
+    def qt_cleanup():
+        """Cleanup so we can exit."""
+        from toolset.utils.window import WINDOWS
+        from utility.logger_util import get_root_logger
+        get_root_logger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
+        for window in WINDOWS:
+            window.close()
+            window.destroy()
+        WINDOWS.clear()
+
+    def last_resort_cleanup():
+        """Prevents the toolset from running in the background after sys.exit is called..."""
+        from utility.logger_util import get_root_logger
+        from utility.system.os_helper import kill_self_pid
+        get_root_logger().info("Fully shutting down Holocron Toolset...")
+        kill_self_pid()
+
+    app.aboutToQuit.connect(qt_cleanup)
+    atexit.register(last_resort_cleanup)
+
+    # Start main app loop.
     app.exec_()
 
     if profiler:

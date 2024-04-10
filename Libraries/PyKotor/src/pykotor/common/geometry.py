@@ -1,4 +1,5 @@
 """This module holds classes relating to geometry."""
+
 from __future__ import annotations
 
 import math
@@ -867,22 +868,10 @@ class Vector4:
         pitch: float = y
         yaw: float = z
 
-        qx: float = (
-            math.sin(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2)
-            - math.cos(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
-        )
-        qy: float = (
-            math.cos(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2)
-            + math.sin(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2)
-        )
-        qz: float = (
-            math.cos(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2)
-            - math.sin(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2)
-        )
-        qw: float = (
-            math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2)
-            + math.sin(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
-        )
+        qx: float = math.sin(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) - math.cos(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
+        qy: float = math.cos(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2) + math.sin(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2)
+        qz: float = math.cos(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2) - math.sin(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2)
+        qw: float = math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) + math.sin(roll / 2) * math.sin(pitch / 2) * math.sin(yaw / 2)
 
         return Vector4(qx, qy, qz, qw)
 

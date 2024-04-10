@@ -57,8 +57,7 @@ class MDLEditor(Editor):
 
         self.new()
 
-    def _setupSignals(self):
-        ...
+    def _setupSignals(self): ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Loads a model resource and its associated data.

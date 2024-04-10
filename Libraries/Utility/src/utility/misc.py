@@ -7,7 +7,7 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, SupportsFloat, SupportsInt, TypeVar
+from typing import TYPE_CHECKING, Any, SupportsFloat, SupportsInt, TypeVar
 
 from utility.system.path import Path
 
@@ -44,8 +44,7 @@ class ProcessorArchitecture(Enum):
     def get_dashed_bitness(self):
         return self._get("32-bit", "64-bit")
 
-    # TODO Rename this here and in `get_machine_repr`, `get_int` and `get_dashed_bitness`
-    def _get(self, arg0, arg1):
+    def _get(self, arg0, arg1) -> Any:  # sourcery skip: assign-if-exp, reintroduce-else  # noqa: ANN001
         if self == self.BIT_32:
             return arg0
         if self == self.BIT_64:
@@ -114,25 +113,29 @@ def get_system_info():
     if GPUtil is not None:
         gpus = GPUtil.getGPUs()
         gpu_info = []
-        for gpu in gpus:
-            gpu_info.append((
-                gpu.id, gpu.name, f"{gpu.memoryTotal}MB", f"{gpu.memoryUsed}MB",
-                f"{gpu.memoryFree}MB", f"{gpu.driver}", f"{gpu.temperature} C",
-            ))
+        gpu_info.extend(
+            (
+                gpu.id,
+                gpu.name,
+                f"{gpu.memoryTotal}MB",
+                f"{gpu.memoryUsed}MB",
+                f"{gpu.memoryFree}MB",
+                f"{gpu.driver}",
+                f"{gpu.temperature} C",
+            )
+            for gpu in gpus
+        )
         info["GPU Details"] = format_gpu_info(gpu_info, headers=("id", "name", "total memory", "used memory", "free memory", "driver", "temperature"))
 
     return info
 
+
 T = TypeVar("T")
 
 
-def remove_duplicates(my_list: list[T], *, case_insensitive=False) -> list[T]:
+def remove_duplicates(my_list: list[T], *, case_insensitive: bool = False) -> list[T]:
     seen = set()
-    return [
-        x.lower() if case_insensitive and isinstance(x, str) else x
-        for x in my_list
-        if not (x in seen or seen.add(x))
-    ]
+    return [x.lower() if case_insensitive and isinstance(x, str) else x for x in my_list if not (x in seen or seen.add(x))]
 
 
 def is_debug_mode() -> bool:

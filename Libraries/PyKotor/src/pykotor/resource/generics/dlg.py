@@ -168,7 +168,7 @@ class DLG:
         for link in links:
             entry: DLGNode = link.node
             if entry not in seen_entries:  # sourcery skip: class-extract-method
-                assert isinstance(entry, DLGEntry)  # noqa: S101
+                assert isinstance(entry, DLGEntry), f"{type(entry).__name__}: {entry}"  # noqa: S101
                 entries.append(entry)
                 seen_entries.append(entry)
                 for reply_link in entry.links:
@@ -220,7 +220,7 @@ class DLG:
         for link in links:
             reply = link.node
             if reply not in seen_replies:  # sourcery skip: class-extract-method
-                assert isinstance(reply, DLGReply)  # noqa: S101
+                assert isinstance(reply, DLGReply), f"{type(reply).__name__}: {reply}"  # noqa: S101
                 replies.append(reply)
                 seen_replies.append(reply)
                 for entry_link in reply.links:
@@ -495,6 +495,7 @@ def construct_dlg(
         - Populates DLG object with nodes, links, and metadata
         - Loops through GFF lists to populate all nodes and links.
     """
+
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
@@ -733,6 +734,7 @@ def dismantle_dlg(
         - dismantle_node handles populating node fields
         - dismantle_link handles populating link fields.
     """
+
     def dismantle_link(
         gff_struct: GFFStruct,
         link: DLGLink,
@@ -941,6 +943,7 @@ def dismantle_dlg(
         entry: DLGEntry = all_entries[struct.struct_id]
         struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index
         return struct.struct_id
+
     def sort_reply(struct: GFFStruct) -> int:
         reply: DLGReply = all_replies[struct.struct_id]
         struct.struct_id = struct.struct_id if reply.list_index == -1 else reply.list_index

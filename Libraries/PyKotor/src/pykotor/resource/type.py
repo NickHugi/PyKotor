@@ -1,4 +1,5 @@
 """This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
+
 from __future__ import annotations
 
 import io
@@ -7,16 +8,15 @@ import os
 import uuid
 
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.error_handling import format_exception_with_variables
-from utility.string import WrappedStr
+from utility.logger_util import get_root_logger
+from utility.string_util import WrappedStr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
@@ -58,12 +58,7 @@ class ResourceTuple(NamedTuple):
     category: str
     contents: str
     is_invalid: bool = False
-
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def keys(self) -> Iterable[str]:
-        return self._fields  # pylint: disable=no-member
+    target_member: str | None = None
 
 
 class ResourceType(Enum):
@@ -119,7 +114,7 @@ class ResourceType(Enum):
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
     ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
-    BTT = ResourceTuple(2031, "bit", "Triggers", "gff")
+    BTT = ResourceTuple(2031, "btt", "Triggers", "gff")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
     UTS = ResourceTuple(2035, "uts", "Sounds", "gff")
@@ -159,7 +154,7 @@ class ResourceType(Enum):
     TTF = ResourceTuple(2072, "ttf", "Fonts", "binary")
     TTC = ResourceTuple(2073, "ttc", "Unused", "binary")
     CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")
-    KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
+    KA = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
     ICO = ResourceTuple(2077, "ico", "Images", "binary")
     OGG = ResourceTuple(2078, "ogg", "Audio", "binary")
@@ -204,31 +199,31 @@ class ResourceType(Enum):
     TLK_XML = ResourceTuple(50001, "tlk.xml", "Talk Tables", "plaintext")
     MDL_ASCII = ResourceTuple(50002, "mdl.ascii", "Models", "plaintext")
     TwoDA_CSV = ResourceTuple(50003, "2da.csv", "2D Arrays", "plaintext")
-    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext")
-    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext")
-    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext")
-    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext")
-    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext")
-    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext")
+    GFF_XML = ResourceTuple(50004, "gff.xml", "Other", "plaintext", target_member="GFF")
+    IFO_XML = ResourceTuple(50005, "ifo.xml", "Module Data", "plaintext", target_member="IFO")
+    GIT_XML = ResourceTuple(50006, "git.xml", "Module Data", "plaintext", target_member="GIT")
+    UTI_XML = ResourceTuple(50007, "uti.xml", "Items", "plaintext", target_member="UTI")
+    UTC_XML = ResourceTuple(50008, "utc.xml", "Creatures", "plaintext", target_member="UTC")
+    DLG_XML = ResourceTuple(50009, "dlg.xml", "Dialogs", "plaintext", target_member="DLG")
     ITP_XML = ResourceTuple(50010, "itp.xml", "Palettes", "plaintext")
-    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext")
-    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext")
-    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext")
-    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext")
-    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext")
-    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext")
-    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext")
-    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext")
-    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext")
-    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext")
-    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext")
-    LIP_XML = ResourceTuple(50022, "lip.xml", "Lips", "plaintext")
-    SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext")
-    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext")
-    TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext")
-    TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext")
-    LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext")
-    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext")
+    UTT_XML = ResourceTuple(50011, "utt.xml", "Triggers", "plaintext", target_member="UTT")
+    UTS_XML = ResourceTuple(50012, "uts.xml", "Sounds", "plaintext", target_member="UTS")
+    FAC_XML = ResourceTuple(50013, "fac.xml", "Factions", "plaintext", target_member="FAC")
+    UTE_XML = ResourceTuple(50014, "ute.xml", "Encounters", "plaintext", target_member="UTE")
+    UTD_XML = ResourceTuple(50015, "utd.xml", "Doors", "plaintext", target_member="UTD")
+    UTP_XML = ResourceTuple(50016, "utp.xml", "Placeables", "plaintext", target_member="UTP")
+    GUI_XML = ResourceTuple(50017, "gui.xml", "GUIs", "plaintext", target_member="GUI")
+    UTM_XML = ResourceTuple(50018, "utm.xml", "Merchants", "plaintext", target_member="UTM")
+    JRL_XML = ResourceTuple(50019, "jrl.xml", "Journals", "plaintext", target_member="JRL")
+    UTW_XML = ResourceTuple(50020, "utw.xml", "Waypoints", "plaintext", target_member="UTW")
+    PTH_XML = ResourceTuple(50021, "pth.xml", "Paths", "plaintext", target_member="PTH")
+    LIP_XML = ResourceTuple(50022, "lip.xml", "Lips", "plaintext", target_member="LIP")
+    SSF_XML = ResourceTuple(50023, "ssf.xml", "Soundsets", "plaintext", target_member="SSF")
+    ARE_XML = ResourceTuple(50023, "are.xml", "Module Data", "plaintext", target_member="ARE")
+    TwoDA_JSON = ResourceTuple(50024, "2da.json", "2D Arrays", "plaintext", target_member="TwoDA")
+    TLK_JSON = ResourceTuple(50025, "tlk.json", "Talk Tables", "plaintext", target_member="TLK")
+    LIP_JSON = ResourceTuple(50026, "lip.json", "Lips", "plaintext", target_member="LIP")
+    RES_XML = ResourceTuple(50027, "res.xml", "Save Data", "plaintext", target_member="RES")
 
     def __new__(cls, *args, **kwargs):
         obj: ResourceType = object.__new__(cls)  # type: ignore[annotation-unchecked]
@@ -246,19 +241,24 @@ class ResourceType(Enum):
         category: str,
         contents: str,
         is_invalid: bool = False,  # noqa: FBT001, FBT002
+        target_member: str | None = None,
     ):
-        self.type_id: int = type_id  # type: ignore[misc]
+        self.type_id: int = type_id
         self.extension: str = extension.strip().lower()
         self.category: str = category
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
+        self.target_member: str | None = target_member
+
+    def target_type(self):
+        return self if self.target_member is None else self.__class__.__members__[self.target_member]
 
     def __bool__(self) -> bool:
         return not self.is_invalid
 
     def __repr__(
         self,
-    ) -> str:
+    ) -> str:  # sourcery skip: simplify-fstring-formatting
         if self.name == "INVALID" or not self.is_invalid:
             return f"{self.__class__.__name__}.{self.name}"
 
@@ -324,11 +324,7 @@ class ResourceType(Enum):
             type_id = int(type_id)
 
         return next(
-            (
-                restype
-                for restype in ResourceType.__members__.values()
-                if type_id == restype
-            ),
+            (restype for restype in ResourceType.__members__.values() if type_id == restype),
             ResourceType.from_invalid(type_id=type_id),
         )
 
@@ -353,11 +349,7 @@ class ResourceType(Enum):
         if lower_ext.startswith("."):
             lower_ext = lower_ext[1:]
         return next(
-            (
-                restype
-                for restype in ResourceType.__members__.values()
-                if lower_ext == restype.extension
-            ),
+            (restype for restype in ResourceType.__members__.values() if lower_ext == restype.extension),
             ResourceType.from_invalid(extension=lower_ext),
         )
 
@@ -373,8 +365,22 @@ class ResourceType(Enum):
         while name in cls.__members__:
             name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
-        instance._value_ = ResourceTuple(**{**cls.INVALID.value, **kwargs, "is_invalid": True})
-        instance.__init__(**instance.value)  # type: ignore[misc]
+        instance._value_ = ResourceTuple(
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member)
+        )
+        instance.__init__(
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member)
+        )
         return super().__new__(cls, instance)
 
     def validate(self):
@@ -382,6 +388,7 @@ class ResourceType(Enum):
             msg = f"Invalid ResourceType: '{self!r}'"
             raise ValueError(msg)
         return self
+
 
 R = TypeVar("R")
 
@@ -391,11 +398,8 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-                msg = "Tried to load an unsupported or corrupted file."
+            msg = "Tried to load an unsupported or corrupted file."
+            get_root_logger().exception(msg)
             raise ValueError(msg) from e
         finally:
             if auto_close:

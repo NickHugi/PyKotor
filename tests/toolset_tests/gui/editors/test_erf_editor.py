@@ -7,6 +7,8 @@ import unittest
 
 from unittest import TestCase
 
+from pykotor.resource.formats.erf.erf_data import ERFType
+
 try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
@@ -18,21 +20,23 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
-    pykotor_path = absolute_file_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+
+    pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
-    gl_path = absolute_file_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    gl_path = absolute_file_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
     if gl_path.exists():
         add_sys_path(gl_path.parent)
-    utility_path = absolute_file_path.parents[6] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[4] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
         add_sys_path(utility_path.parent)
-    toolset_path = absolute_file_path.parents[3] / "toolset"
+    toolset_path = absolute_file_path.parents[4] / "Tools" / "HolocronToolset" / "src" / "toolset"
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
@@ -59,8 +63,10 @@ class ERFEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.erf import ERFEditor
+
         cls.ERFEditor = ERFEditor
         from toolset.data.installation import HTInstallation
+
         # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
@@ -91,7 +97,7 @@ class ERFEditorTest(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self):
+    def test_erf_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for erf_resource in (resource for resource in self.installation if resource.restype() in {ERFType.__members__[erf_type] for erf_type in ERFType.__members__}):
             old = read_erf(erf_resource.data())
@@ -106,7 +112,7 @@ class ERFEditorTest(TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self):
+    def test_erf_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for erf_resource in (resource for resource in self.installation if resource.restype() in {ERFType.__members__[erf_type] for erf_type in ERFType.__members__}):
             old = read_erf(erf_resource.data())
@@ -136,8 +142,7 @@ class ERFEditorTest(TestCase):
         else:
             self.assertEqual(obj1, obj2, context)
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

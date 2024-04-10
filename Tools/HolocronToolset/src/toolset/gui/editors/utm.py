@@ -25,7 +25,12 @@ if TYPE_CHECKING:
 
 
 class UTMEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation
+        | None = None,
+    ):
         """Initialize the Merchant Editor window.
 
         Args:
@@ -46,6 +51,7 @@ class UTMEditor(Editor):
         self._utm: UTM = UTM()
 
         from toolset.uic.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -77,7 +83,13 @@ class UTMEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         utm: UTM = read_utm(data)

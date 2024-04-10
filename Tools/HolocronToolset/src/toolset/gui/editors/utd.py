@@ -65,6 +65,7 @@ class UTDEditor(Editor):
         self._utd: UTD = UTD()
 
         from toolset.uic.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -131,7 +132,13 @@ class UTDEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         utd = read_utd(data)
@@ -305,9 +312,7 @@ class UTDEditor(Editor):
         search = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
-                                 "Do you wish to create a file in the override?",
-                                 QMessageBox.Yes | QMessageBox.No).exec_()
+            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
             if QMessageBox.Yes == msgbox:
                 data = bytearray()
 

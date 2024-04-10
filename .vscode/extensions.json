@@ -14,6 +14,13 @@
     "tylerleonhardt.vscode-inline-values-powershell",
     "almenon.arepl",
     "rogalmic.bash-debug",
-    "mads-hartmann.bash-ide-vscode"
+    "mads-hartmann.bash-ide-vscode",
+    "formulahendry.github-actions",
+    "me-dutour-mathieu.vscode-github-actions",
+    "ms-vscode-remote.remote-wsl",
+    "redhat.vscode-yaml",
+    "shakram02.bash-beautify",
+    "be5invis.toml",
+    "github.vscode-github-actions"
   ]
 }
