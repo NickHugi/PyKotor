@@ -159,8 +159,7 @@ jobs:
           $archiveName = "upx-${{ env.UPX_VERSION }}-src.tar.xz"
         }
         $url = "https://github.com/upx/upx/releases/download/v${{ env.UPX_VERSION }}/$archiveName"
-    
-        # Write to the GITHUB_OUTPUT environment file
+
         Add-Content -Path $env:GITHUB_OUTPUT -Value "build=$build"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "url=$url"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "archiveName=$archiveName"
@@ -186,7 +185,6 @@ jobs:
           if ($ext -eq "zip") {
             $fileNameWithoutExtension = [System.IO.Path]::GetFileNameWithoutExtension($archiveName)
             Expand-Archive -Path $archiveName -DestinationPath "temp_folder_upx"
-            # Ensure upx-dir exists; create it if it doesn't
             if (-not (Test-Path -Path "upx-dir")) {
                 New-Item -ItemType Directory -Path "upx-dir"
             }
@@ -302,8 +300,7 @@ jobs:
           } else {
               Write-Host -ForegroundColor Red "No script stack trace available."
           }
-      
-          # Log the error to GitHub Actions output or another logging mechanism
+
           Add-Content -Path $env:GITHUB_OUTPUT -Value "success=false"
           exit 1
         }

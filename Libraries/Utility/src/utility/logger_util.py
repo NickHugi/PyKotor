@@ -2,32 +2,35 @@ from __future__ import annotations
 
 import json
 import logging
+import multiprocessing
 import sys
 import threading
 
 from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
+from queue import Empty
 from typing import TYPE_CHECKING, ClassVar
 
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
+    from types import TracebackType
 
     from typing_extensions import Literal
 
-thread_local = threading.local()
-thread_local.is_logging = False
+# region threading
+THREAD_LOCAL = threading.local()
+THREAD_LOCAL.is_logging = False
 
 @contextmanager
 def logging_context():
-    prev_state = getattr(thread_local, "is_logging", False)
-    thread_local.is_logging = True
+    prev_state = getattr(THREAD_LOCAL, "is_logging", False)
+    THREAD_LOCAL.is_logging = True
     try:
         yield
     finally:
-        thread_local.is_logging = prev_state
-
+        THREAD_LOCAL.is_logging = prev_state
 
 class CustomPrintToLogger:
     def __init__(
@@ -40,8 +43,11 @@ class CustomPrintToLogger:
         self.logger: logging.Logger = logger
         self.log_type: Literal["stdout", "stderr"] = log_type
 
-    def write(self, message: str):
-        if getattr(thread_local, "is_logging", False):
+    def write(
+        self,
+        message: str,
+    ):
+        if getattr(THREAD_LOCAL, "is_logging", False):
             self.original_out.write(message)
         elif message.strip():
             # Use the logging_context to prevent recursive calls
@@ -52,17 +58,121 @@ class CustomPrintToLogger:
                     self.logger.info(message.strip())
 
     def flush(self): ...
+# endregion
+
+class SafeEncodingLogger(logging.Logger):
+    """A custom logger that safely handles log messages containing characters
+    that cannot be represented in the default system encoding. It overrides
+    the standard log methods to encode and decode messages with a safe
+    handling for unmappable characters.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(name, *args, **kwargs)
+
+    def _safe_log(self, level: int, msg: str, *args, **kwargs):
+        try:
+            # Encode to UTF-8 and decode back with 'replace' to handle unencodable chars
+            safe_msg = msg.encode("utf-8", "replace").decode("utf-8", "replace")
+        except Exception as e:  # noqa: BLE001
+            safe_msg = f"Failed to encode message: {e}"
+        super()._log(level, safe_msg, args, **kwargs)
+
+    def debug(self, msg: str, *args, **kwargs):
+        if self.isEnabledFor(logging.DEBUG):
+            self._safe_log(logging.DEBUG, msg, *args, **kwargs)
+
+    def info(self, msg: str, *args, **kwargs):
+        if self.isEnabledFor(logging.INFO):
+            self._safe_log(logging.INFO, msg, *args, **kwargs)
+
+    def warning(self, msg: str, *args, **kwargs):
+        if self.isEnabledFor(logging.WARNING):
+            self._safe_log(logging.WARNING, msg, *args, **kwargs)
+
+    def error(self, msg: str, *args, **kwargs):
+        if self.isEnabledFor(logging.ERROR):
+            self._safe_log(logging.ERROR, msg, *args, **kwargs)
+
+    def critical(self, msg: str, *args, **kwargs):
+        if self.isEnabledFor(logging.CRITICAL):
+            self._safe_log(logging.CRITICAL, msg, *args, **kwargs)
+
+
+# region multiprocessing
+
+LISTENER_THREAD: threading.Thread | None = None
+LOG_QUEUE = multiprocessing.Queue()
+
+
+def setup_main_listener():
+    import atexit
+    global LISTENER_THREAD
+    LISTENER_THREAD = threading.Thread(target=listener_thread_function, args=(LOG_QUEUE,))
+    LISTENER_THREAD.daemon = True
+    LISTENER_THREAD.start()
+    atexit.register(stop_listener)
+
+
+def listener_thread_function(queue: multiprocessing.Queue):
+    """Function run by the listener thread to process log messages."""
+    while True:
+        try:
+            record: logging.LogRecord = queue.get(timeout=2)
+            if record == "STOP":
+                break
+            logger = logging.getLogger(record.name)
+            logger.handle(record)
+        except Empty:  # noqa: S112
+            continue
+
+
+def stop_listener():
+    LOG_QUEUE.put("STOP")
+    if LISTENER_THREAD is not None:
+        LISTENER_THREAD.join()
+
+class QueueLogHandler(logging.Handler):
+    """A handler that writes logs to a shared multiprocessing queue."""
+
+    def __init__(
+        self,
+        log_queue: multiprocessing.Queue,
+    ):
+        super().__init__()
+        self.log_queue: multiprocessing.Queue = log_queue
+
+    def emit(
+        self,
+        record: logging.LogRecord,
+    ):
+        self.log_queue.put(record)
+# endregion
+
+
+logging.setLoggerClass(SafeEncodingLogger)
 
 
 class CustomExceptionFormatter(logging.Formatter):
     sep = "\n----------------------------------------------------------------\n"
-    def formatException(self, ei: logging._SysExcInfoType) -> str:
+    def formatException(
+        self,
+        ei: tuple[type[BaseException], BaseException, TracebackType | None] | tuple[None, None, None],
+    ) -> str:
         etype, value, tb = ei
         if value is None:
             return self.sep + super().formatException(ei) + self.sep
         return self.sep + format_exception_with_variables(value, etype=etype, tb=tb) + self.sep
 
-    def format(self, record: logging.LogRecord) -> str:
+    def format(
+        self,
+        record: logging.LogRecord,
+    ) -> str:
         result = super().format(record)
         if record.exc_info:
             result += f"\n{self.formatException(record.exc_info)}"
@@ -108,18 +218,28 @@ class JSONFormatter(logging.Formatter):
 
 class LogLevelFilter(logging.Filter):
     """Filters (allows) all the log messages at or above a specific level."""
-    def __init__(self, passlevel: int, reject: bool = False):  # noqa: FBT001, FBT002
+    def __init__(
+        self,
+        passlevel: int,
+        *,
+        reject: bool = False,
+    ):  # noqa: FBT001, FBT002
         super().__init__()
         self.passlevel: int = passlevel
         self.reject: bool = reject
 
-    def filter(self, record: logging.LogRecord) -> bool:
+    def filter(
+        self,
+        record: logging.LogRecord,
+    ) -> bool:
         if self.reject:
             return record.levelno < self.passlevel
         return record.levelno >= self.passlevel
 
 
-def get_root_logger(use_level: int = logging.DEBUG) -> logging.Logger:
+def get_root_logger(
+    use_level: int = logging.DEBUG,
+) -> logging.Logger:
     """Setup a logger with some standard features.
 
     Args:
@@ -140,16 +260,22 @@ def get_root_logger(use_level: int = logging.DEBUG) -> logging.Logger:
             - Excludes lower level logs for handlers above DEBUG.
     """
     logger = logging.getLogger()
+    if multiprocessing.current_process().name == "MainProcess":
+        if not logger.handlers:
+            setup_main_listener()
+    else:
+        logger.setLevel(use_level)
+        handler = QueueLogHandler(LOG_QUEUE)
+        logger.addHandler(handler)
+        return logger
+
     if not logger.handlers:
         logger.setLevel(use_level)
 
-        log_levels = {
-            logging.DEBUG: "debug_pykotor.log",
-            logging.INFO: "info_pykotor.log",
-            logging.WARNING: "warning_pykotor.log",
-            logging.ERROR: "error_pykotor.log",
-            logging.CRITICAL: "critical_pykotor.log",
-        }
+        everything_log_file = "debug_pykotor.log"
+        info_warning_log_file = "pykotor.log"
+        error_critical_log_file = "errors_pykotor.log"
+
         console_handler = ColoredConsoleHandler()
         formatter = logging.Formatter("%(levelname)s(%(name)s): %(message)s")
         console_handler.setFormatter(formatter)
@@ -159,16 +285,25 @@ def get_root_logger(use_level: int = logging.DEBUG) -> logging.Logger:
         sys.stdout = CustomPrintToLogger(sys.__stdout__, logger, log_type="stdout")
         sys.stderr = CustomPrintToLogger(sys.__stderr__, logger, log_type="stderr")
 
-        for level, filename in log_levels.items():
-            handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=3, delay=True)
-            handler.setLevel(level)
-            handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        # Handler for everything (DEBUG and above)
+        everything_handler = RotatingFileHandler(everything_log_file, maxBytes=1048576, backupCount=3, delay=True)
+        everything_handler.setLevel(logging.DEBUG)
+        everything_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger.addHandler(everything_handler)
 
-            # Exclude lower level logs for handlers above DEBUG
-            if level > logging.DEBUG:
-                handler.addFilter(LogLevelFilter(level))
+        # Handler for INFO and WARNING
+        info_warning_handler = RotatingFileHandler(info_warning_log_file, maxBytes=1048576, backupCount=3, delay=True)
+        info_warning_handler.setLevel(logging.INFO)
+        info_warning_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
+        logger.addHandler(info_warning_handler)
 
-            logger.addHandler(handler)
+        # Handler for ERROR and CRITICAL
+        error_critical_handler = RotatingFileHandler(error_critical_log_file, maxBytes=1048576, backupCount=3, delay=True)
+        error_critical_handler.setLevel(logging.ERROR)
+        error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
+        error_critical_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        logger.addHandler(error_critical_handler)
 
     return logger
 
@@ -183,4 +318,4 @@ if __name__ == "__main__":
     logger.critical("This is a critical message.")
 
     # Uncomment to test uncaught exception logging
-    # raise RuntimeError("Test uncaught exception")
+    raise RuntimeError("Test uncaught exception")

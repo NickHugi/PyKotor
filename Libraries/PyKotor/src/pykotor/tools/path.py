@@ -21,9 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
     from pykotor.common.misc import Game
-    from utility.system.path import (
-        PathElem,
-    )
+    from utility.system.path import PathElem
 
 
 def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
