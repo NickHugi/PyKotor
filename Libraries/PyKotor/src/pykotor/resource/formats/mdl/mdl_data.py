@@ -555,8 +555,7 @@ class MDLMesh:
 
     def gen_normals(
         self,
-    ):
-        ...
+    ): ...
 
 
 class MDLSkin:

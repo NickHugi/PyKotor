@@ -3,12 +3,13 @@ from __future__ import annotations
 import os
 import re
 
-from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from typing_extensions import LiteralString, Self, SupportsIndex
+
 
 def insert_newlines(text: str, length: int = 100) -> str:
     words = text.split(" ")
@@ -17,16 +18,17 @@ def insert_newlines(text: str, length: int = 100) -> str:
 
     for word in words:
         if len(current_line) + len(word) + 1 <= length:
-            current_line += word + " "
+            current_line += f"{word} "
         else:
             new_string += current_line.rstrip() + "\n"
-            current_line = word + " "
+            current_line = f"{word} "
 
     # Add the last line if there's any content left.
     if current_line:
         new_string += current_line.rstrip()
 
     return new_string
+
 
 def ireplace(original: str, target: str, replacement: str) -> str:
     if not original or not target:
@@ -56,7 +58,7 @@ def ireplace(original: str, target: str, replacement: str) -> str:
     return result
 
 
-def format_text(text, max_chars_before_newline: int = 20) -> str:
+def format_text(text: object, max_chars_before_newline: int = 20) -> str:
     text_str = str(text)
     if "\n" in text_str or len(text_str) > max_chars_before_newline:
         return f'"""{os.linesep}{text_str}{os.linesep}"""'
@@ -66,22 +68,18 @@ def format_text(text, max_chars_before_newline: int = 20) -> str:
 def first_char_diff_index(str1: str, str2: str) -> int:
     """Find the index of the first differing character in two strings."""
     min_length = min(len(str1), len(str2))
-    for i in range(min_length):
-        if str1[i] != str2[i]:
-            return i
-    if len(str1) != len(str2):
-        return min_length  # Difference due to length
-    return -1  # No difference
+    return next(
+        (i for i in range(min_length) if str1[i] != str2[i]),
+        min_length if len(str1) != len(str2) else -1,
+    )
 
 
 def generate_diff_marker_line(index: int, length: int) -> str:
     """Generate a line of spaces with a '^' at the specified index."""
-    if index == -1:
-        return ""
-    return " " * index + "^" + " " * (length - index - 1)
+    return "" if index == -1 else " " * index + "^" + " " * (length - index - 1)
 
 
-def compare_and_format(old_value, new_value) -> tuple[str, str]:
+def compare_and_format(old_value: object, new_value: object) -> tuple[str, str]:
     """Compares and formats two values for diff display.
 
     Args:
@@ -122,7 +120,7 @@ def compare_and_format(old_value, new_value) -> tuple[str, str]:
     return os.linesep.join(formatted_old), os.linesep.join(formatted_new)
 
 
-def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
+def striprtf(text: str) -> str:  # noqa: C901, PLR0915, PLR0912
     """Removes RTF tags from a string.
 
     Strips RTF encoding utterly and completely
@@ -143,7 +141,32 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
     """
     pattern: re.Pattern[str] = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.IGNORECASE)
     # control words which specify a "destination".
-    destinations = frozenset(("aftncn", "aftnsep", "aftnsepc", "annotation", "atnauthor", "atndate", "atnicn", "atnid", "atnparent", "atnref", "atntime", "atrfend", "atrfstart", "author", "background", "bkmkend", "bkmkstart", "blipuid", "buptim", "category", "colorschememapping", "colortbl", "comment", "company", "creatim", "datafield", "datastore", "defchp", "defpap", "do", "doccomm", "docvar", "dptxbxtext", "ebcend", "ebcstart", "factoidname", "falt", "fchars", "ffdeftext", "ffentrymcr", "ffexitmcr", "ffformat", "ffhelptext", "ffl", "ffname", "ffstattext", "field", "file", "filetbl", "fldinst", "fldrslt", "fldtype", "fname", "fontemb", "fontfile", "fonttbl", "footer", "footerf", "footerl", "footerr", "footnote", "formfield", "ftncn", "ftnsep", "ftnsepc", "g", "generator", "gridtbl", "header", "headerf", "headerl", "headerr", "hl", "hlfr", "hlinkbase", "hlloc", "hlsrc", "hsv", "htmltag", "info", "keycode", "keywords", "latentstyles", "lchars", "levelnumbers", "leveltext", "lfolevel", "linkval", "list", "listlevel", "listname", "listoverride", "listoverridetable", "listpicture", "liststylename", "listtable", "listtext", "lsdlockedexcept", "macc", "maccPr", "mailmerge", "maln", "malnScr", "manager", "margPr", "mbar", "mbarPr", "mbaseJc", "mbegChr", "mborderBox", "mborderBoxPr", "mbox", "mboxPr", "mchr", "mcount", "mctrlPr", "md", "mdeg", "mdegHide", "mden", "mdiff", "mdPr", "me", "mendChr", "meqArr", "meqArrPr", "mf", "mfName", "mfPr", "mfunc", "mfuncPr", "mgroupChr", "mgroupChrPr", "mgrow", "mhideBot", "mhideLeft", "mhideRight", "mhideTop", "mhtmltag", "mlim", "mlimloc", "mlimlow", "mlimlowPr", "mlimupp", "mlimuppPr", "mm", "mmaddfieldname", "mmath", "mmathPict", "mmathPr", "mmaxdist", "mmc", "mmcJc", "mmconnectstr", "mmconnectstrdata", "mmcPr", "mmcs", "mmdatasource", "mmheadersource", "mmmailsubject", "mmodso", "mmodsofilter", "mmodsofldmpdata", "mmodsomappedname", "mmodsoname", "mmodsorecipdata", "mmodsosort", "mmodsosrc", "mmodsotable", "mmodsoudl", "mmodsoudldata", "mmodsouniquetag", "mmPr", "mmquery", "mmr", "mnary", "mnaryPr", "mnoBreak", "mnum", "mobjDist", "moMath", "moMathPara", "moMathParaPr", "mopEmu", "mphant", "mphantPr", "mplcHide", "mpos", "mr", "mrad", "mradPr", "mrPr", "msepChr", "mshow", "mshp", "msPre", "msPrePr", "msSub", "msSubPr", "msSubSup", "msSubSupPr", "msSup", "msSupPr", "mstrikeBLTR", "mstrikeH", "mstrikeTLBR", "mstrikeV", "msub", "msubHide", "msup", "msupHide", "mtransp", "mtype", "mvertJc", "mvfmf", "mvfml", "mvtof", "mvtol", "mzeroAsc", "mzeroDesc", "mzeroWid", "nesttableprops", "nextfile", "nonesttables", "objalias", "objclass", "objdata", "object", "objname", "objsect", "objtime", "oldcprops", "oldpprops", "oldsprops", "oldtprops", "oleclsid", "operator", "panose", "password", "passwordhash", "pgp", "pgptbl", "picprop", "pict", "pn", "pnseclvl", "pntext", "pntxta", "pntxtb", "printim", "private", "propname", "protend", "protstart", "protusertbl", "pxe", "result", "revtbl", "revtim", "rsidtbl", "rxe", "shp", "shpgrp", "shpinst", "shppict", "shprslt", "shptxt", "sn", "sp", "staticval", "stylesheet", "subject", "sv", "svb", "tc", "template", "themedata", "title", "txe", "ud", "upr", "userprops", "wgrffmtfilter", "windowcaption", "writereservation", "writereservhash", "xe", "xform", "xmlattrname", "xmlattrvalue", "xmlclose", "xmlname", "xmlnstbl", "xmlopen"))
+    destinations = frozenset(
+        (
+            "aftncn", "aftnsep", "aftnsepc", "annotation", "atnauthor", "atndate", "atnicn", "atnid", "atnparent", "atnref", "atntime", "atrfend", "atrfstart",
+            "author", "background", "bkmkend", "bkmkstart", "blipuid", "buptim", "category", "colorschememapping", "colortbl", "comment", "company", "creatim",
+            "datafield", "datastore", "defchp", "defpap", "do", "doccomm", "docvar", "dptxbxtext", "ebcend", "ebcstart", "factoidname", "falt", "fchars", "ffdeftext",
+            "ffentrymcr", "ffexitmcr", "ffformat", "ffhelptext", "ffl", "ffname", "ffstattext", "field", "file", "filetbl", "fldinst", "fldrslt", "fldtype", "fname",
+            "fontemb", "fontfile", "fonttbl", "footer", "footerf", "footerl", "footerr", "footnote", "formfield", "ftncn", "ftnsep", "ftnsepc", "g", "generator", "gridtbl",
+            "header", "headerf", "headerl", "headerr", "hl", "hlfr", "hlinkbase", "hlloc", "hlsrc", "hsv", "htmltag", "info", "keycode", "keywords", "latentstyles",
+            "lchars", "levelnumbers", "leveltext", "lfolevel", "linkval", "list", "listlevel", "listname", "listoverride", "listoverridetable", "listpicture", "liststylename",
+            "listtable", "listtext", "lsdlockedexcept", "macc", "maccPr", "mailmerge", "maln", "malnScr", "manager", "margPr", "mbar", "mbarPr", "mbaseJc", "mbegChr",
+            "mborderBox", "mborderBoxPr", "mbox", "mboxPr", "mchr", "mcount", "mctrlPr", "md", "mdeg", "mdegHide", "mden", "mdiff", "mdPr", "me", "mendChr", "meqArr",
+            "meqArrPr", "mf", "mfName", "mfPr", "mfunc", "mfuncPr", "mgroupChr", "mgroupChrPr", "mgrow", "mhideBot", "mhideLeft", "mhideRight", "mhideTop", "mhtmltag",
+            "mlim", "mlimloc", "mlimlow", "mlimlowPr", "mlimupp", "mlimuppPr", "mm", "mmaddfieldname", "mmath", "mmathPict", "mmathPr", "mmaxdist", "mmc", "mmcJc",
+            "mmconnectstr", "mmconnectstrdata", "mmcPr", "mmcs", "mmdatasource", "mmheadersource", "mmmailsubject", "mmodso", "mmodsofilter", "mmodsofldmpdata",
+            "mmodsomappedname", "mmodsoname", "mmodsorecipdata", "mmodsosort", "mmodsosrc", "mmodsotable", "mmodsoudl", "mmodsoudldata", "mmodsouniquetag", "mmPr",
+            "mmquery", "mmr", "mnary", "mnaryPr", "mnoBreak", "mnum", "mobjDist", "moMath", "moMathPara", "moMathParaPr", "mopEmu", "mphant", "mphantPr", "mplcHide",
+            "mpos", "mr", "mrad", "mradPr", "mrPr", "msepChr", "mshow", "mshp", "msPre", "msPrePr", "msSub", "msSubPr", "msSubSup", "msSubSupPr", "msSup", "msSupPr",
+            "mstrikeBLTR", "mstrikeH", "mstrikeTLBR", "mstrikeV", "msub", "msubHide", "msup", "msupHide", "mtransp", "mtype", "mvertJc", "mvfmf", "mvfml", "mvtof",
+            "mvtol", "mzeroAsc", "mzeroDesc", "mzeroWid", "nesttableprops", "nextfile", "nonesttables", "objalias", "objclass", "objdata", "object", "objname", "objsect",
+            "objtime", "oldcprops", "oldpprops", "oldsprops", "oldtprops", "oleclsid", "operator", "panose", "password", "passwordhash", "pgp", "pgptbl", "picprop",
+            "pict", "pn", "pnseclvl", "pntext", "pntxta", "pntxtb", "printim", "private", "propname", "protend", "protstart", "protusertbl", "pxe", "result", "revtbl",
+            "revtim", "rsidtbl", "rxe", "shp", "shpgrp", "shpinst", "shppict", "shprslt", "shptxt", "sn", "sp", "staticval", "stylesheet", "subject", "sv", "svb", "tc",
+            "template", "themedata", "title", "txe", "ud", "upr", "userprops", "wgrffmtfilter", "windowcaption", "writereservation", "writereservhash", "xe", "xform",
+            "xmlattrname", "xmlattrvalue", "xmlclose", "xmlname", "xmlnstbl", "xmlopen"
+        )
+    )
     # Translation of some special characters.
     specialchars: dict[str, str] = {
         "par": "\n",
@@ -160,7 +183,7 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
         "lquote": "\u2018",
         "rquote": "\u2019",
         "ldblquote": "\201C",
-        "rdblquote": "\u201D",
+        "rdblquote": "\u201d",
     }
     stack: list[tuple[int, bool]] = []
     ignorable = False  # Whether this group (and all inside it) are "ignorable".
@@ -181,7 +204,7 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
             curskip = 0
             if char == "~":
                 if not ignorable:
-                    out.append("\xA0")
+                    out.append("\xa0")
             elif char in "{}\\":
                 if not ignorable:
                     out.append(char)
@@ -217,7 +240,7 @@ def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
     return "".join(out)
 
 
-def is_string_like(obj) -> bool:  # sourcery skip: use-fstring-for-concatenation
+def is_string_like(obj: Any) -> bool:  # sourcery skip: use-fstring-for-concatenation
     try:
         _ = obj + ""
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
@@ -241,26 +264,17 @@ class StrType(type):
         return cls in mro
 
 
-@runtime_checkable
-class StrictStrProtocol(Protocol):
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return subclass is str
-
 StrictStr = TypeVar("StrictStr", bound=str)
 
 
 class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
-
-    __slots__: tuple[str, ...] = (
-        "_content",
-    )
+    __slots__: tuple[str, ...] = ("_content",)
 
     @classmethod
     def _assert_str_type(
         cls: type[Self],
         var: str,
-    ) -> str:
+    ) -> str:  # sourcery skip: remove-unnecessary-cast
         if var is None:
             return None  # type: ignore[return-value]
         if not isinstance(var, (cls, str)):
@@ -283,7 +297,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
             msg = f"Cannot initialize {self.__class__.__name__}(None), expected a str-like argument"
             raise RuntimeError(msg)
         if isinstance(content, WrappedStr):
-            content = content._content
+            content = content._content  # noqa: SLF001
         self._content: str = content
 
     @classmethod
@@ -371,11 +385,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __value: LiteralString | str | WrappedStr | tuple[LiteralString, ...] | tuple[str, ...] | tuple[WrappedStr, ...],
     ):
-        parsed_value: tuple[str, ...] | str = (
-            tuple(self._assert_str_type(s) for s in __value)
-            if isinstance(__value, tuple)
-            else self._assert_str_type(__value)
-        )
+        parsed_value: tuple[str, ...] | str = tuple(self._assert_str_type(s) for s in __value) if isinstance(__value, tuple) else self._assert_str_type(__value)
         return self.__class__(self._content % parsed_value)
 
     def __mul__(
@@ -474,11 +484,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
         Return True if S ends with the specified suffix, False otherwise. With optional start, test S beginning at that position. With optional end, stop comparing S at that position. suffix can also be a tuple of strings to try.
         """  # noqa: D415, D400, D402
-        parsed_suffix: tuple[str, ...] | str = (
-            tuple(self._assert_str_type(s) for s in __suffix)
-            if isinstance(__suffix, tuple)
-            else self._assert_str_type(__suffix)
-        )
+        parsed_suffix: tuple[str, ...] | str = tuple(self._assert_str_type(s) for s in __suffix) if isinstance(__suffix, tuple) else self._assert_str_type(__suffix)
         return self._content.endswith(parsed_suffix, __start, __end)
 
     def expandtabs(
@@ -519,7 +525,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
     def format_map(
         self,
-        map,  # noqa: A002
+        map,  # noqa: A002, ANN001
     ) -> Self:
         """S.format_map(mapping) -> str
 
@@ -682,7 +688,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     ) -> Self:
         parsed_prefix: str = self._assert_str_type(__prefix)
         if self._content.startswith(parsed_prefix):
-            return self.__class__(self._content[:len(parsed_prefix)])
+            return self.__class__(self._content[: len(parsed_prefix)])
         return self.__class__(self._content)
 
     def removesuffix(
@@ -691,7 +697,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
     ) -> Self:
         parsed_suffix: str = self._assert_str_type(__suffix)
         if self._content.endswith(parsed_suffix):
-            return self.__class__(self._content[-len(parsed_suffix):])
+            return self.__class__(self._content[-len(parsed_suffix) :])
         return self.__class__(self._content)
 
     def replace(
@@ -893,16 +899,13 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
 
 class CaseInsensitiveWrappedStr(WrappedStr):
-
-    __slots__: tuple[str, ...] = (
-        "_lower_content",
-    )
+    __slots__: tuple[str, ...] = ("_lower_content",)
 
     @classmethod
     def _coerce_str(
         cls,
         item,
-    ) -> str:
+    ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
         if isinstance(item, WrappedStr):
             return str(item._content).casefold()
         if isinstance(item, str):
@@ -959,8 +962,8 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         idx: int = match.start()
         return (
             self.__class__(self._content[:idx]),
-            self.__class__(self._content[idx:idx + len(__sep)]),
-            self.__class__(self._content[idx + len(__sep):]),
+            self.__class__(self._content[idx : idx + len(__sep)]),
+            self.__class__(self._content[idx + len(__sep) :]),
         )
 
     def replace(
@@ -994,8 +997,8 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         idx: int = match.start()
         return (
             self.__class__(self._content[:idx]),
-            self.__class__(self._content[idx:idx + len(__sep)]),
-            self.__class__(self._content[idx + len(__sep):]),
+            self.__class__(self._content[idx : idx + len(__sep)]),
+            self.__class__(self._content[idx + len(__sep) :]),
         )
 
     def rfind(

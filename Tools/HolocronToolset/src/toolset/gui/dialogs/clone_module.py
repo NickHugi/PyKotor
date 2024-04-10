@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
@@ -53,6 +54,7 @@ class CloneModuleDialog(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
+
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -99,20 +101,36 @@ class CloneModuleDialog(QDialog):
         keepPathing = self.ui.keepPathingCheckbox.isChecked()
 
         def task():
-            return module.clone_module(root, identifier, prefix, name, installation,
-                                        copy_textures=copyTextures, copy_lightmaps=copyLightmaps,
-                                        keep_doors=keepDoors, keep_placeables=keepPlaceables, keep_sounds=keepSounds, keep_pathing=keepPathing)
+            return module.clone_module(
+                root,
+                identifier,
+                prefix,
+                name,
+                installation,
+                copy_textures=copyTextures,
+                copy_lightmaps=copyLightmaps,
+                keep_doors=keepDoors,
+                keep_placeables=keepPlaceables,
+                keep_sounds=keepSounds,
+                keep_pathing=keepPathing,
+            )
 
         if copyTextures:
-            QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
-                        "texture. This process may add a few extra minutes to the waiting time.").exec_()
+            QMessageBox(
+                QMessageBox.Information,
+                "This may take a while",
+                "You have selected to create copies of the " "texture. This process may add a few extra minutes to the waiting time.",
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            ).exec_()
 
         if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
             return
 
         QMessageBox(
             QMessageBox.Information,
-            "Clone Successful", f"You can now warp to the cloned module '{identifier}'."
+            "Clone Successful",
+            f"You can now warp to the cloned module '{identifier}'.",
+            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
         ).exec_()
 
     def loadModules(self):

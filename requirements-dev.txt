@@ -15,4 +15,5 @@ autoflake
 pytest
 pytest-xdist
 pytest-html
-aqtinstall
+#aqtinstall
+types-Pillow

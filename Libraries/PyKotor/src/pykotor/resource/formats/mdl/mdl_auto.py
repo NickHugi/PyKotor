@@ -38,6 +38,7 @@ def detect_mdl(
     -------
         The format of the MDL data.
     """
+
     def check(first4):
         if first4 == b"\x00\x00\x00\x00":
             return ResourceType.MDL
@@ -49,6 +50,7 @@ def detect_mdl(
         # if "," in first4:
         #    return ResourceType.MDL_CSV
         # return ResourceType.INVALID
+
     try:
         if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:

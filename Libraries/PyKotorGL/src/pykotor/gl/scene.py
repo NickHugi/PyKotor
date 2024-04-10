@@ -87,6 +87,7 @@ from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -127,6 +128,8 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
+        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        get_root_logger().info("Start initialize Scene%s", module_id_part)
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -176,6 +179,8 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
+        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -270,7 +275,7 @@ class Scene:
         rhand_obj.set_transform(arg1.global_transform())
         obj.children.append(rhand_obj)
 
-    def buildCache(self, clear_cache: bool = False):
+    def buildCache(self, *, clear_cache: bool = False):
         """Builds and caches game objects from the module.
 
         Args:
@@ -486,26 +491,18 @@ class Scene:
             - Render non-selected boundaries
             - Render cursor if shown.
         """
+        #module_id_part = f" with module '{self.module._id}'" if self.module is not None else ""
+        #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
 
-        glClearColor(0.5, 0.5, 1, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        if self.backface_culling:
-            glEnable(GL_CULL_FACE)
-        else:
-            glDisable(GL_CULL_FACE)
-
-        glDisable(GL_BLEND)
-        self.shader.use()
-        self.shader.set_matrix4("view", self.camera.view())
-        self.shader.set_matrix4("projection", self.camera.projection())
+        self._prepare_gl_and_shader()
         self.shader.set_bool("enableLightmap", self.use_lightmap)
         group1: list[RenderObject] = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
         # Draw all instance types that lack a proper model
+        #get_root_logger().debug("Draw all instance types that lack a proper model...")
         glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
@@ -516,11 +513,13 @@ class Scene:
             self._render_object(self.plain_shader, obj, mat4())
 
         # Draw bounding box for selected objects
+        #get_root_logger().debug("Draw bounding box for selected objects...")
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
         # Draw boundary for selected objects
+        #get_root_logger().debug("Draw boundary for selected objects...")
         glDisable(GL_CULL_FACE)
         self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
@@ -573,7 +572,7 @@ class Scene:
 
     def picker_render(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore[]
 
         if self.backface_culling:
             glEnable(GL_CULL_FACE)
@@ -603,13 +602,22 @@ class Scene:
         for child in obj.children:
             self._picker_render_object(child, obj.transform())
 
-    def pick(self, x, y) -> RenderObject:
+    def pick(
+        self,
+        x: float,
+        y: float,
+    ) -> RenderObject | None:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
         instances = list(self.objects.values())
         return instances[pixel] if pixel != 0xFFFFFF else None
 
-    def select(self, target: RenderObject | GITInstance, clear_existing: bool = True):
+    def select(
+        self,
+        target: RenderObject | GITInstance,
+        *,
+        clear_existing: bool = True,
+    ):
         if clear_existing:
             self.selection.clear()
 
@@ -626,23 +634,12 @@ class Scene:
         self.selection.append(actual_target)
 
     def screenToWorld(self, x: int, y: int) -> Vector3:
-        glClearColor(0.5, 0.5, 1, 1.0)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        if self.backface_culling:
-            glEnable(GL_CULL_FACE)
-        else:
-            glDisable(GL_CULL_FACE)
-
-        glDisable(GL_BLEND)
-        self.shader.use()
-        self.shader.set_matrix4("view", self.camera.view())
-        self.shader.set_matrix4("projection", self.camera.projection())
+        self._prepare_gl_and_shader()
         group1: list[RenderObject] = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
-        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]  # FIXME: "__getitem__" method not defined on type "int"
+        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]  # type: ignore[]
         cursor: vec3 = glm.unProject(
             vec3(x, self.camera.height - y, zpos),
             self.camera.view(),
@@ -650,6 +647,18 @@ class Scene:
             vec4(0, 0, self.camera.width, self.camera.height),
         )
         return Vector3(cursor.x, cursor.y, cursor.z)
+
+    def _prepare_gl_and_shader(self):
+        glClearColor(0.5, 0.5, 1, 1.0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore[]
+        if self.backface_culling:
+            glEnable(GL_CULL_FACE)
+        else:
+            glDisable(GL_CULL_FACE)
+        glDisable(GL_BLEND)
+        self.shader.use()
+        self.shader.set_matrix4("view", self.camera.view())
+        self.shader.set_matrix4("projection", self.camera.projection())
 
     def texture(self, name: str) -> Texture:
         if name in self.textures:
@@ -669,8 +678,8 @@ class Scene:
                 print(f"Finished checking installation for texture '{name}'")
             if tpc is None:
                 print(f"NOT FOUND ANYWHERE: Texture '{name}'")
-        except Exception as e:  # noqa: BLE001
-            print(format_exception_with_variables(e))
+        except Exception:  # noqa: BLE001
+            get_root_logger().exception("Exception thrown while loading texture.")
             # If an error occurs during the loading process, just use a blank image.
             tpc = TPC()
 
@@ -775,7 +784,7 @@ class RenderObject:
     def set_transform(self, transform: mat4):
         self._transform = transform
         rotation = quat()
-        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())  # FIXME: Type "mat4" cannot be assigned to type "F32Matrix3x3 | mat3x3 | Tuple[Tuple[Number, Number, Number]]"
+        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())
         self._rotation = glm.eulerAngles(rotation)
 
     def _recalc_transform(self):
@@ -824,7 +833,14 @@ class RenderObject:
             abs(cube.max_point.z),
         )
 
-    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3):
+    def _cube_rec(
+        self,
+        scene: Scene,
+        transform: mat4,
+        obj: RenderObject,
+        min_point: vec3,
+        max_point: vec3,
+    ):
         obj_min, obj_max = scene.model(obj.model).box()
         obj_min = transform * obj_min
         obj_max = transform * obj_max
@@ -940,7 +956,7 @@ class Camera:
         elif self.pitch < 0.001:
             self.pitch = 0.001
 
-    def forward(self, ignore_z: bool = True) -> vec3:
+    def forward(self, *, ignore_z: bool = True) -> vec3:
         """Calculates the forward vector from the camera's rotation.
 
         Args:
@@ -963,7 +979,7 @@ class Camera:
         eye_z: float | Literal[0] = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
-    def sideward(self, ignore_z: bool = True) -> vec3:
+    def sideward(self, *, ignore_z: bool = True) -> vec3:
         """Returns a normalized vector perpendicular to the forward direction.
 
         Args:
@@ -980,9 +996,9 @@ class Camera:
             - Normalize sideward vector to get unit sideward vector
             - Return normalized sideward vector
         """
-        return glm.normalize(glm.cross(self.forward(ignore_z), vec3(0.0, 0.0, 1.0)))
+        return glm.normalize(glm.cross(self.forward(ignore_z=ignore_z), vec3(0.0, 0.0, 1.0)))
 
-    def upward(self, ignore_xy: bool = True) -> vec3:
+    def upward(self, *, ignore_xy: bool = True) -> vec3:
         """Returns the upward vector of the entity.
 
         Args:

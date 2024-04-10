@@ -20,8 +20,7 @@ class PatcherMemory:
 
 class TokenUsage(ABC):
     @abstractmethod
-    def value(self, memory: PatcherMemory) -> str:
-        ...
+    def value(self, memory: PatcherMemory) -> str: ...
 
 
 class NoTokenUsage(TokenUsage):

@@ -1,6 +1,5 @@
 """This module holds various unrelated classes and methods."""
 
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -138,7 +137,7 @@ class ResRef:
         text: str,
         *,
         truncate: bool = False,
-    ):    # sourcery skip: remove-unnecessary-cast
+    ):  # sourcery skip: remove-unnecessary-cast
         """Sets the ResRef.
 
         Args:
@@ -164,7 +163,7 @@ class ResRef:
             if not truncate:
                 ...
                 # raise self.ExceedsMaxLengthError(parsed_text)  # pykotor isn't stable enough to enforce this yet.
-            parsed_text = parsed_text[:self.MAX_LENGTH]
+            parsed_text = parsed_text[: self.MAX_LENGTH]
 
         # Ensure text doesn't start/end with whitespace.
         if parsed_text != parsed_text.strip():
@@ -632,9 +631,9 @@ class CaseInsensitiveDict(Generic[T]):
 
         return case_insensitive_dict
 
-#    @classmethod
-#    def __class_getitem__(cls, item: Any) -> GenericAlias:
-#        return GenericAlias(cls, item)
+    #    @classmethod
+    #    def __class_getitem__(cls, item: Any) -> GenericAlias:
+    #        return GenericAlias(cls, item)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, (dict, CaseInsensitiveDict)):
@@ -697,7 +696,7 @@ class CaseInsensitiveDict(Generic[T]):
     def __ror__(self, other):
         if not isinstance(other, (dict, CaseInsensitiveDict)):
             return NotImplemented
-        other_dict: CaseInsensitiveDict[T] = (other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other))
+        other_dict: CaseInsensitiveDict[T] = other if isinstance(other, CaseInsensitiveDict) else CaseInsensitiveDict.from_dict(other)
         new_dict: CaseInsensitiveDict[T] = other_dict.copy()
         new_dict.update(self)
         return new_dict
@@ -710,11 +709,9 @@ class CaseInsensitiveDict(Generic[T]):
         return reversed(list(self._dictionary.keys()))
 
     @overload
-    def pop(self, __key: str) -> T:
-        ...
+    def pop(self, __key: str) -> T: ...
     @overload
-    def pop(self, __key: str, __default: VT = None) -> VT | T:
-        ...
+    def pop(self, __key: str, __default: VT = None) -> VT | T: ...
 
     def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
         lower_key: str = __key.lower()
@@ -752,11 +749,9 @@ class CaseInsensitiveDict(Generic[T]):
                 self[key] = value
 
     @overload
-    def get(self, __key: str) -> T:
-        ...
+    def get(self, __key: str) -> T: ...
     @overload
-    def get(self, __key: str, __default: VT = None) -> VT | T:
-        ...
+    def get(self, __key: str, __default: VT = None) -> VT | T: ...
 
     def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
         key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]

@@ -114,7 +114,7 @@ class Model:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
             for i in range(vertex_count):
                 index = i * node.mesh.mdx_size + node.mesh.mdx_vertex
-                data = node.mesh.vertex_data[index:index + 12]
+                data = node.mesh.vertex_data[index : index + 12]
                 x, y, z = struct.unpack("fff", data)
                 position = transform * vec3(x, y, z)
                 min_point.x = min(min_point.x, position.x)
@@ -142,7 +142,7 @@ class Node:
 
         self._recalc_transform()
 
-    def root(self) -> Node:
+    def root(self) -> Node | None:
         ancestor: Node | None = self._parent
         while ancestor:
             ancestor = ancestor._parent
@@ -205,7 +205,6 @@ class Node:
         self._recalc_transform()
 
     def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
-        # TODO: use multi-threading to accumulate texture data, then draw all at once.
         transform = transform * self._transform
 
         if self.mesh and self.render:
@@ -216,8 +215,7 @@ class Node:
 
 
 class Mesh:
-    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags,
-                 vertex_offset, normal_offset, texture_offset, lightmap_offset):
+    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags, vertex_offset, normal_offset, texture_offset, lightmap_offset):
         """Initializes a Mesh object.
 
         Args:
@@ -306,7 +304,12 @@ class Mesh:
 
 
 class Cube:
-    def __init__(self, scene: Scene, min_point: vec3 | None = None, max_point: vec3 | None = None):
+    def __init__(
+        self,
+        scene: Scene,
+        min_point: vec3 | None = None,
+        max_point: vec3 | None = None,
+    ):
         """Initializes a cube mesh.
 
         Args:
@@ -327,31 +330,24 @@ class Cube:
         min_point = vec3(-1.0, -1.0, -1.0) if min_point is None else min_point
         max_point = vec3(1.0, 1.0, 1.0) if max_point is None else max_point
 
-        vertices = np.array([
-            min_point.x, min_point.y, max_point.z,
-            max_point.x, min_point.y, max_point.z,
-            max_point.x, max_point.y, max_point.z,
-            min_point.x, max_point.y, max_point.z,
-            min_point.x, min_point.y, min_point.z,
-            max_point.x, min_point.y, min_point.z,
-            max_point.x, max_point.y, min_point.z,
-            min_point.x, max_point.y, min_point.z,
-        ], dtype="float32")
+        vertices = np.array(
+            [
+                min_point.x, min_point.y, max_point.z,
+                max_point.x, min_point.y, max_point.z,
+                max_point.x, max_point.y, max_point.z,
+                min_point.x, max_point.y, max_point.z,
+                min_point.x, min_point.y, min_point.z,
+                max_point.x, min_point.y, min_point.z,
+                max_point.x, max_point.y, min_point.z,
+                min_point.x, max_point.y, min_point.z
+            ],
+            dtype="float32",
+        )
 
-        elements = np.array([
-            0, 1, 2,
-            2, 3, 0,
-            1, 5, 6,
-            6, 2, 1,
-            7, 6, 5,
-            5, 4, 7,
-            4, 0, 3,
-            3, 7, 4,
-            4, 5, 1,
-            1, 0, 4,
-            3, 2, 6,
-            6, 7, 3,
-        ], dtype="int16")
+        elements = np.array(
+            [0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 7, 6, 5, 5, 4, 7, 4, 0, 3, 3, 7, 4, 4, 5, 1, 1, 0, 4, 3, 2, 6, 6, 7, 3],
+            dtype="int16",
+        )
 
         self.min_point: vec3 = min_point
         self.max_point: vec3 = max_point
@@ -483,5 +479,4 @@ class Empty:
     def __init__(self, scene: Scene):
         self._scene: Scene = scene
 
-    def draw(self, shader: Shader, transform: mat4):
-        ...
+    def draw(self, shader: Shader, transform: mat4): ...

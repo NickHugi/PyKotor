@@ -69,10 +69,7 @@ def get_body_model(
 
             model_column = f"model{armor_variation}"
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
-            override_texture = (
-                appearance.get_row(utc.appearance_id).get_string(tex_column)
-                + str(armor_uti.texture_variation).rjust(2, "0")
-            )
+            override_texture = appearance.get_row(utc.appearance_id).get_string(tex_column) + str(armor_uti.texture_variation).rjust(2, "0")
 
     if body_model == "":
         body_model = appearance.get_row(utc.appearance_id).get_string("race")

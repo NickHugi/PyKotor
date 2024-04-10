@@ -1,7 +1,7 @@
-
 """Parse a css document into a python class that can be used to apply the
 style to a BeautifulSoup document.
 """
+
 from __future__ import annotations
 
 import re
@@ -74,7 +74,7 @@ class CSS:
         syntax.  This is not bullet proof.
         """
         rulesets = self.ruleset_re.findall(css)
-        for (selector, declarations) in rulesets:
+        for selector, declarations in rulesets:
             rule = Rule(self.parse_selector(selector))
             rule.properties = self.parse_declarations(declarations)
             self.rules.append(rule)
@@ -123,4 +123,3 @@ class CSS:
     def is_super(self, node):
         properties = self.get_properties(node)
         return properties.get("vertical-align") == "super"
-

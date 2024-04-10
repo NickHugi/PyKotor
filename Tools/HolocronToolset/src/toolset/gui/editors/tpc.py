@@ -23,7 +23,11 @@ if TYPE_CHECKING:
 
 
 class TPCEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: Installation | None = None,
+    ):
         """Initializes the texture viewer window.
 
         Args:
@@ -51,19 +55,19 @@ class TPCEditor(Editor):
         self._setupSignals()
 
         self._tpc: TPC = TPC()
-        self._tpc.set_single(
-            256,
-            256,
-            bytes(0 for _ in range(256 * 256 * 4)),
-            TPCTextureFormat.RGBA
-        )
+        self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
 
         self.new()
 
-    def _setupSignals(self):
-        ...
+    def _setupSignals(self): ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Load a resource into the editor.
 
         Args:
@@ -125,7 +129,7 @@ class TPCEditor(Editor):
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
         if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA:
-            self.setToolTip(self._tpc.original_datatype_code.name + " - " + orig_format.name)
+            self.setToolTip(f"{self._tpc.original_datatype_code.name} - {orig_format.name}")
         elif orig_format is not None:
             self.setToolTip(orig_format.name)
 

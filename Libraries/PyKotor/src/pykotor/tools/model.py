@@ -445,7 +445,7 @@ def convert_to_k2(
     if detect_version(data) == Game.K2:
         return data
 
-    offsets: dict[int, int] = {}        # Maps the offset for an offset to its offset
+    offsets: dict[int, int] = {}  # Maps the offset for an offset to its offset
     mesh_offsets: list[list[int]] = []  # tuple of (Offset to every mesh node, Node type)
     anim_offsets: list[int] = []
 
@@ -479,9 +479,7 @@ def convert_to_k2(
                     if indicies_array_count == 1:
                         indices_locations_offset = offsets[base_offset + 188]
                         reader.seek(indices_locations_offset)
-                        offsets[
-                            indices_locations_offset
-                        ] = reader.read_uint32()  # Vertex indices locations array -> Vertex indices array
+                        offsets[indices_locations_offset] = reader.read_uint32()  # Vertex indices locations array -> Vertex indices array
 
                     reader.seek(base_offset + 200)
                     offsets[base_offset + 200] = reader.read_uint32()  # Node header -> Inverted counter array

@@ -15,10 +15,14 @@ import pytest
 THIS_SCRIPT_PATH = pathlib.Path(__file__)
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[5].joinpath("Utility", "src").resolve()
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").is_dir():
     add_sys_path(PYKOTOR_PATH)
     os.chdir(PYKOTOR_PATH.parent)
@@ -70,6 +74,7 @@ def setup_logger():
 
     return logger
 
+
 logger = setup_logger()
 
 
@@ -99,6 +104,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> TestR
         return report
     return None
 
+
 def log_file(
     *args,
     filepath: os.PathLike | str | None = None,
@@ -116,13 +122,10 @@ def log_file(
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
 
-    filepath = (
-        Path.cwd().joinpath(f"{LOG_FILENAME}.txt")
-        if filepath is None
-        else Path.pathify(filepath)
-    )
+    filepath = Path.cwd().joinpath(f"{LOG_FILENAME}.txt") if filepath is None else Path.pathify(filepath)
     with filepath.open(mode="a", encoding="utf-8", errors="strict") as f:
         f.write(msg)
+
 
 def bizarre_compiler(
     script: str,
@@ -133,12 +136,7 @@ def bizarre_compiler(
     if not library:
         library = KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY
     _nssLexer = NssLexer()
-    nssParser = NssParser(
-        library=library,
-        constants=KOTOR_CONSTANTS,
-        functions=KOTOR_FUNCTIONS,
-        library_lookup=library_lookup
-    )
+    nssParser = NssParser(library=library, constants=KOTOR_CONSTANTS, functions=KOTOR_FUNCTIONS, library_lookup=library_lookup)
 
     parser: yacc.LRParser = nssParser.parser
     t = parser.parse(script, tracking=True)
@@ -146,6 +144,7 @@ def bizarre_compiler(
     ncs = NCS()
     t.compile(ncs)
     return ncs
+
 
 # Don't trust pytest's logger, use fallbacks to ensure information isn't lost.
 def _handle_compile_exc(
@@ -176,6 +175,8 @@ CUR_FAILED_EXT: dict[Game, set[ResourceIdentifier]] = {
     Game.K1: set(),
     Game.K2: set(),
 }
+
+
 def compile_with_abstract_compatible(
     compiler: NCSCompiler,
     file_res: FileResource,
@@ -222,9 +223,7 @@ def compare_external_results(
 ):
     """Compare results between compilers. No real point since having any of them match is rare."""
     # Ensure all non-None results are the same
-    non_none_results: dict[str, bytes] = {
-        cp: result for cp, result in compiler_result.items() if result is not None and cp is not None
-    }
+    non_none_results: dict[str, bytes] = {cp: result for cp, result in compiler_result.items() if result is not None and cp is not None}
 
     if not non_none_results:
         pytest.skip("No compilers were available or produced output for comparison.")
@@ -254,6 +253,7 @@ def compare_external_results(
 
     if matches:
         print("\n".join(matches))
+
 
 # def test_ktool_nwnnsscomp(
 #    script_data: tuple[Game, tuple[FileResource, Path, Path]],
@@ -326,6 +326,7 @@ def test_tslpatcher_nwnnsscomp(
         with unique_ncs_path.open("rb") as f:
             compiler_result[compiler_path] = f.read()
 
+
 # def test_kscript_tool_nwnnsscomp(
 #    script_data: tuple[Game, tuple[FileResource, Path, Path]],
 # ):
@@ -371,9 +372,7 @@ def test_tslpatcher_nwnnsscomp(
 #            compiler_result[compiler_path] = f.read()
 
 
-def test_inbuilt_compiler(
-    script_data: tuple[Game, tuple[FileResource, Path, Path]]
-):
+def test_inbuilt_compiler(script_data: tuple[Game, tuple[FileResource, Path, Path]]):
     compiler = InbuiltNCSCompiler()
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
@@ -383,9 +382,8 @@ def test_inbuilt_compiler(
         return
     compile_with_abstract_compatible(compiler, file_res, nss_path, ncs_path.with_stem(f"{ncs_path.stem}_inbuilt"), game, "inbuilt")
 
-def test_bizarre_compiler(
-    script_data: tuple[Game, tuple[FileResource, Path, Path]]
-):
+
+def test_bizarre_compiler(script_data: tuple[Game, tuple[FileResource, Path, Path]]):
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
     if file_res.identifier() in CUR_FAILED_EXT[game]:
@@ -415,9 +413,7 @@ def test_bizarre_compiler(
         _handle_compile_exc(e, file_res, nss_path, "Bizarre Compiler", game)
 
 
-def test_pykotor_compile_nss(
-    script_data: tuple[Game, tuple[FileResource, Path, Path]]
-):
+def test_pykotor_compile_nss(script_data: tuple[Game, tuple[FileResource, Path, Path]]):
     game, script_info = script_data
     file_res, nss_path, ncs_path = script_info
     if file_res.identifier() in CUR_FAILED_EXT[game]:
@@ -455,12 +451,12 @@ def save_profiler_output(
     profiler_output_file_str = str(profiler_output_file)
     profiler.dump_stats(profiler_output_file_str)
 
+
 if __name__ == "__main__":
     profiler: cProfile.Profile = True  # type: ignore[reportAssignmentType, assignment]
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
-
 
     result: int | pytest.ExitCode = pytest.main(
         [

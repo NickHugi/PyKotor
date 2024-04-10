@@ -222,7 +222,7 @@ class NCSBinaryReader(ResourceReader):
         elif instruction.ins_type in {  # noqa: SIM114
             NCSInstructionType.SHLEFTII,
             NCSInstructionType.SHRIGHTII,
-            NCSInstructionType.USHRIGHTII
+            NCSInstructionType.USHRIGHTII,
         }:
             ...
 
@@ -275,9 +275,13 @@ class NCSBinaryReader(ResourceReader):
         }:
             ...
 
-        elif instruction.ins_type == NCSInstructionType.COMPI or instruction.ins_type in {  # noqa: SIM114
-            # NCSInstructionType.STORE_STATEALL,
-        }:
+        elif (
+            instruction.ins_type == NCSInstructionType.COMPI
+            or instruction.ins_type
+            in {  # noqa: SIM114
+                # NCSInstructionType.STORE_STATEALL,
+            }
+        ):
             ...
 
         elif instruction.ins_type == NCSInstructionType.RETN:  # noqa: SIM114
@@ -288,7 +292,7 @@ class NCSBinaryReader(ResourceReader):
 
         elif instruction.ins_type in {  # noqa: SIM114
             NCSInstructionType.SAVEBP,
-            NCSInstructionType.RESTOREBP
+            NCSInstructionType.RESTOREBP,
         }:
             ...
 
@@ -323,7 +327,7 @@ class NCSBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._ncs: NCS = ncs
         self._offsets: dict[NCSInstruction, int] = {}
-        self._sizes:   dict[NCSInstruction, int] = {}
+        self._sizes: dict[NCSInstruction, int] = {}
 
     @autoclose
     def write(
@@ -371,8 +375,10 @@ class NCSBinaryWriter(ResourceWriter):
         size = 2  # Base size for opcode and type
 
         if instruction.ins_type in {
-            NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
-            NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP,
+            NCSInstructionType.CPDOWNSP,
+            NCSInstructionType.CPTOPSP,
+            NCSInstructionType.CPDOWNBP,
+            NCSInstructionType.CPTOPBP,
             NCSInstructionType.DESTRUCT,
         }:
             size += 6
@@ -388,19 +394,24 @@ class NCSBinaryWriter(ResourceWriter):
 
         elif instruction.ins_type in {
             NCSInstructionType.MOVSP,
-            NCSInstructionType.JMP, NCSInstructionType.JSR,
-            NCSInstructionType.JZ, NCSInstructionType.JNZ,
+            NCSInstructionType.JMP,
+            NCSInstructionType.JSR,
+            NCSInstructionType.JZ,
+            NCSInstructionType.JNZ,
         }:
             size += 4  # 4 bytes for the value/offset, total 6 bytes
 
         elif instruction.ins_type in {
-            NCSInstructionType.DECISP, NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
+            NCSInstructionType.DECISP,
+            NCSInstructionType.INCISP,
+            NCSInstructionType.DECIBP,
+            NCSInstructionType.INCIBP,
         }:
             size += 4
 
         elif instruction.ins_type in {
-            NCSInstructionType.CONSTI, NCSInstructionType.CONSTF,
+            NCSInstructionType.CONSTI,
+            NCSInstructionType.CONSTF,
             NCSInstructionType.CONSTO,
         }:
             size += 4  # 4 bytes for the constant value/object ID, total 6 bytes
@@ -428,30 +439,32 @@ class NCSBinaryWriter(ResourceWriter):
                 - Relative jump offsets
             - Raises error for unsupported instructions
         """
+
         def to_signed_32bit(n):  # FIXME: Presumably this issue happens further up the call stack, fix later.
             # Assuming n is provided as an unsigned 32-bit integer
             # Convert it to a signed 32-bit integer
             if n >= 2**31:
                 n -= 2**32
             return n
+
         def to_signed_16bit(n):  # FIXME: Only seen this issue happen with 32bit but better safe than sorry, remove this once above issue is fixed.
             if n >= 2**15:
                 n -= 2**16
             return n
+
         self._writer.write_uint8(int(instruction.ins_type.value.byte_code))
         self._writer.write_uint8(int(instruction.ins_type.value.qualifier))
 
         # Handle instruction-specific arguments
         if instruction.ins_type in {
-            NCSInstructionType.DECISP, NCSInstructionType.INCISP,
-            NCSInstructionType.DECIBP, NCSInstructionType.INCIBP,
+            NCSInstructionType.DECISP,
+            NCSInstructionType.INCISP,
+            NCSInstructionType.DECIBP,
+            NCSInstructionType.INCIBP,
         }:
             self._writer.write_int32(instruction.args[0], big=True)
 
-        elif instruction.ins_type in {
-            NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
-            NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP
-        }:
+        elif instruction.ins_type in {NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP, NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP}:
             self._writer.write_int32(instruction.args[0], big=True)
             self._writer.write_uint16(4, big=True)  # TODO: 12 for float support
 
@@ -538,7 +551,7 @@ class NCSBinaryWriter(ResourceWriter):
         elif instruction.ins_type in {  # noqa: SIM114
             NCSInstructionType.SHLEFTII,
             NCSInstructionType.SHRIGHTII,
-            NCSInstructionType.USHRIGHTII
+            NCSInstructionType.USHRIGHTII,
         }:
             ...
 
@@ -598,9 +611,12 @@ class NCSBinaryWriter(ResourceWriter):
             # MOVSP to adjust the stack pointer
             self._writer.write_int32(to_signed_32bit(instruction.args[0]), big=True)
 
-        elif instruction.ins_type in {
-            # NCSInstructionType.STORE_STATEALL,
-        }:
+        elif (
+            instruction.ins_type
+            in {
+                # NCSInstructionType.STORE_STATEALL,
+            }
+        ):
             ...
 
         elif instruction.ins_type in {
@@ -625,10 +641,7 @@ class NCSBinaryWriter(ResourceWriter):
         elif instruction.ins_type == NCSInstructionType.NOTI:  # noqa: SIM114
             ...
 
-        elif instruction.ins_type in {
-            NCSInstructionType.SAVEBP,
-            NCSInstructionType.RESTOREBP
-        }:
+        elif instruction.ins_type in {NCSInstructionType.SAVEBP, NCSInstructionType.RESTOREBP}:
             ...
 
         elif instruction.ins_type == NCSInstructionType.STORE_STATE:

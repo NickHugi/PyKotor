@@ -6,6 +6,7 @@ import sys
 import traceback
 
 if getattr(sys, "frozen", False) is False:
+
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir in sys.path:
@@ -31,9 +32,7 @@ parser_args, unknown = parser.parse_known_args()
 parser.print_help()
 while True:
     parser_args.input = Path(
-        parser_args.input
-        or (unknown[0] if len(unknown) > 0 else None)
-        or input("Path to the MDL/MDX file/folder of MDL files: "),
+        parser_args.input or (unknown[0] if len(unknown) > 0 else None) or input("Path to the MDL/MDX file/folder of MDL files: "),
     ).resolve()
     if parser_args.input.safe_exists():
         break
@@ -52,9 +51,7 @@ while True:
     parser_args.output = None
 while True:
     parser_args.compile = str(
-        parser_args.compile
-        or (unknown[2] if len(unknown) > 2 else None)
-        or input("Would you like to compile or decompile? (enter 'c', 'compile' 'd', or 'decompile'): "),
+        parser_args.compile or (unknown[2] if len(unknown) > 2 else None) or input("Would you like to compile or decompile? (enter 'c', 'compile' 'd', or 'decompile'): "),
     )
     if parser_args.compile.lower().strip() in {"compile", "c"}:
         parser_args.compile = True
@@ -67,7 +64,7 @@ while True:
         parser_args.compile = None
 
 
-def process_file(mdl_file: Path, output_path: Path, should_compile: bool):
+def process_file(mdl_file: Path, output_path: Path, *, should_compile: bool):
     model = read_mdl(mdl_file)
     if should_compile:
         write_mdl(
@@ -90,7 +87,7 @@ def main():
         input_path: Path = parser_args.input
 
         if input_path.safe_isfile():
-            process_file(input_path, parser_args.output, parser_args.compile)
+            process_file(input_path, parser_args.output, should_compile=parser_args.compile)
 
         elif input_path.safe_isdir():
             for gui_file in input_path.safe_rglob("*.gui"):
@@ -98,7 +95,7 @@ def main():
                     relative_path: Path = gui_file.relative_to(input_path)
                     new_output_dir: Path = parser_args.output / relative_path.parent / gui_file.stem
                     new_output_dir.mkdir(parents=True, exist_ok=True)
-                    process_file(gui_file, new_output_dir, parser_args.compile)
+                    process_file(gui_file, new_output_dir, should_compile=parser_args.compile)
                 except KeyboardInterrupt:  # noqa: PERF203
                     raise
                 except Exception:  # pylint: disable=W0718  # noqa: BLE001

@@ -206,6 +206,7 @@ class ModuleRenderer(QOpenGLWidget):
 
     def mouseDown(self) -> set[int]:
         return copy(self._mouseDown)
+
     # endregion
 
     # region Camera Transformations
@@ -229,14 +230,14 @@ class ModuleRenderer(QOpenGLWidget):
         forward_vec: vec3 = forward * self.scene.camera.forward()
         sideward = right * self.scene.camera.sideward()
 
-        self.scene.camera.x += (forward_vec.x + sideward.x)
-        self.scene.camera.y += (forward_vec.y + sideward.y)
+        self.scene.camera.x += forward_vec.x + sideward.x
+        self.scene.camera.y += forward_vec.y + sideward.y
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float):
-        forward_vec: vec3 = forward * self.scene.camera.forward(False)
-        sideward = right * self.scene.camera.sideward(False)
-        upward = -up * self.scene.camera.upward(False)
+        forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
+        sideward = right * self.scene.camera.sideward(ignore_z=False)
+        upward = -up * self.scene.camera.upward(ignore_z=False)
 
         self.scene.camera.x += upward.x + sideward.x + forward_vec.x
         self.scene.camera.y += upward.y + sideward.y + forward_vec.y
@@ -260,6 +261,7 @@ class ModuleRenderer(QOpenGLWidget):
     def zoomCamera(self, distance: float):
         self.scene.camera.distance -= distance
         self.scene.camera.distance = max(self.scene.camera.distance, 0)
+
     # endregion
 
     # region Events
@@ -322,4 +324,5 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown.discard(e.key())
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
+
     # endregion

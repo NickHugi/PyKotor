@@ -1,4 +1,5 @@
 """This module handles classes relating to editing ERF files."""
+
 from __future__ import annotations
 
 from enum import Enum

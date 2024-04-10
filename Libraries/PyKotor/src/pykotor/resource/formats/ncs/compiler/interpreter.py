@@ -603,8 +603,7 @@ class Stack:
         value2 = self._stack.pop()
         self.add(value1.data_type, int(value2.value <= value1.value))
 
-    def store_state(self):
-        ...
+    def store_state(self): ...
 
 
 class StackObject:

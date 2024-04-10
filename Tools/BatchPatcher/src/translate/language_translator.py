@@ -286,7 +286,7 @@ class TranslationOption(Enum):
             return 1024
         return 1024
 
-    def get_lang_code(self, lang: Language):
+    def get_lang_code(self, lang: Language) -> str | None:
         if self is TranslationOption.MY_MEMORY_TRANSLATOR and lang is Language.ENGLISH:
             return "english us"
         return {
@@ -342,11 +342,7 @@ class TranslationOption(Enum):
 
     @staticmethod
     def get_available_translators() -> set[TranslationOption]:
-        return {
-            translator
-            for translator in TranslationOption
-            if translator.value is not None
-        }
+        return {translator for translator in TranslationOption if translator.value is not None}
 
 
 def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
@@ -354,7 +350,7 @@ def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> s
     return f"__{counter}__"
 
 
-def replace_curly_braces(original_string: str):
+def replace_curly_braces(original_string: str) -> tuple[str, list[str]]:
     replaced_text: list[str] = []
     counter = 0
 
@@ -369,7 +365,7 @@ def replace_curly_braces(original_string: str):
     return modified_string, replaced_text
 
 
-def restore_original_text(modified_string: str, replaced_text: list[str]):
+def restore_original_text(modified_string: str, replaced_text: list[str]) -> str:
     counter = -1
     for counter, original_text in enumerate(replaced_text):
         placeholder = f"__{counter}__"
@@ -520,7 +516,7 @@ class Translator:
             return text
 
         # Function to chunk the text into segments with a maximum of 500 characters
-        def chunk_text(text: str, size) -> list[str]:
+        def chunk_text(text: str, size: int) -> list[str]:
             """Splits a text into chunks of given size.
 
             Args:
@@ -556,19 +552,14 @@ class Translator:
                 text = text[cut_off:].lstrip()  # Remove leading whitespace from next chunk
             return chunks
 
-        def fix_encoding(text: str, encoding: str):
+        def fix_encoding(text: str, encoding: str) -> str:
             return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore")
 
         def validate_translated_result(translated_chunk: str):
             if (
                 not translated_chunk
                 or not translated_chunk
-                or (
-                    "Czech" in translated_chunk
-                    and "Danish" in translated_chunk
-                    and "French" in translated_chunk
-                    and "Indonesian" in translated_chunk
-                )
+                or ("Czech" in translated_chunk and "Danish" in translated_chunk and "French" in translated_chunk and "Indonesian" in translated_chunk)
             ):
                 msg = "No text returned."
                 raise ValueError(msg)
@@ -605,7 +596,6 @@ class Translator:
                 TranslationOption.DL_TRANSLATE,
                 TranslationOption.TEXTBLOB,
                 TranslationOption.ARGOS_TRANSLATE,
-                TranslationOption.YANDEX_TRANSLATOR,
             }:
                 # if self.from_lang is None and option == TranslationOption.LIBRE:
                 #    msg = "LibreTranslate requires a specified source language."  # noqa: ERA001
@@ -684,8 +674,7 @@ class Translator:
                 break
             except MinimumLengthError:
                 print(
-                    f"Using a fallback translator because {option.name} requires a minimum"
-                    f" of {option.min_chunk_length()} characters to translate.",
+                    f"Using a fallback translator because {option.name} requires a minimum" f" of {option.min_chunk_length()} characters to translate.",
                 )
                 if minimum_length_failed_translate_option is None:
                     minimum_length_failed_translate_option = option

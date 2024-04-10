@@ -1,4 +1,5 @@
 """This module handles classes relating to editing RIM files."""
+
 from __future__ import annotations
 
 from copy import copy
@@ -128,11 +129,7 @@ class RIM:
             resname: The resource reference filename.
             restype: The resource type.
         """
-        self._resources = [
-            res
-            for res in self._resources
-            if res.resref != resname and res.restype != restype
-        ]
+        self._resources = [res for res in self._resources if res.resref != resname and res.restype != restype]
 
     def to_erf(
         self,

@@ -1,4 +1,5 @@
 """Stuff for format implementations to subclass / use."""
+
 from __future__ import annotations
 
 
@@ -9,7 +10,7 @@ class PythReader:
     """
 
     @classmethod
-    def read(self, source):
+    def read(cls, source):
         """source: An object to read the document from.
         Usually (but not necessarily) a file object.
 
@@ -24,7 +25,7 @@ class PythWriter:
     """
 
     @classmethod
-    def write(self, document, target=None):
+    def write(cls, document, target=None):
         """document: An instance of pyth.document.Document.
 
         target: An object to write the document to.

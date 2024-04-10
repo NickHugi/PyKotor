@@ -23,7 +23,11 @@ if TYPE_CHECKING:
 
 
 class UTEEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize the trigger editor window.
 
         Args:
@@ -43,6 +47,7 @@ class UTEEditor(Editor):
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         from toolset.uic.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -73,7 +78,10 @@ class UTEEditor(Editor):
         self.ui.addCreatureButton.clicked.connect(self.addCreature)
         self.ui.removeCreatureButton.clicked.connect(self.removeSelectedCreature)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setupInstallation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation details in the UI.
 
         Args:
@@ -99,7 +107,13 @@ class UTEEditor(Editor):
         self.ui.factionSelect.clear()
         self.ui.difficultySelect.setItems(factions.get_column("label"))
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         ute = read_ute(data)
@@ -247,7 +261,12 @@ class UTEEditor(Editor):
         else:
             self._setInfiniteRespawnMain(val=0, enabled=True)
 
-    def _setInfiniteRespawnMain(self, val: int, enabled: bool):
+    def _setInfiniteRespawnMain(
+        self,
+        val: int,
+        *,
+        enabled: bool,
+    ):
         self.ui.respawnCountSpin.setMinimum(val)
         self.ui.respawnCountSpin.setValue(val)
         self.ui.respawnCountSpin.setEnabled(enabled)

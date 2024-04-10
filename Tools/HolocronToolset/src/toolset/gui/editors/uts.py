@@ -104,7 +104,13 @@ class UTSEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         uts: UTS = read_uts(data)
@@ -262,6 +268,7 @@ class UTSEditor(Editor):
             self.ui.intervalGroup.setEnabled(boolean)
             self.ui.orderGroup.setEnabled(boolean)
             self.ui.variationGroup.setEnabled(boolean)
+
         _set_ui_style_groups(True)
         if self.ui.styleSeamlessRadio.isChecked():
             _set_ui_style_groups(False)
@@ -275,6 +282,7 @@ class UTSEditor(Editor):
             self.ui.rangeGroup.setEnabled(boolean)
             self.ui.heightGroup.setEnabled(boolean)
             self.ui.distanceGroup.setEnabled(boolean)
+
         _set_ui_play_groups(True)
         if self.ui.playRandomRadio.isChecked():
             ...

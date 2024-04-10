@@ -1289,8 +1289,8 @@ class MDLBinaryReader:
 
         if auto_close:
             self._reader.close()
-            if self._reader_ext is not None:
-                self._reader_ext.close()
+        if auto_close and self._reader_ext is not None:
+            self._reader_ext.close()
 
         return self._mdl
 

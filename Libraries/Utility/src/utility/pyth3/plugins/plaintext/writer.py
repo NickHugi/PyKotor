@@ -1,4 +1,5 @@
 """Render documents as plaintext."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -9,7 +10,6 @@ from utility.pyth3.format import PythWriter
 
 
 class PlaintextWriter(PythWriter):
-
     @classmethod
     def write(cls, document, target=None, newline="\n") -> StringIO | Any:
         if target is None:
@@ -23,13 +23,10 @@ class PlaintextWriter(PythWriter):
         self.target = target
         self.newline = newline
         self.indent = -1
-        self.paragraphDispatch = {
-            document.List: self.list,
-            document.Paragraph: self.paragraph
-        }
+        self.paragraphDispatch = {document.List: self.list, document.Paragraph: self.paragraph}
 
     def go(self):
-        for (_i, paragraph) in enumerate(self.document.content):
+        for _i, paragraph in enumerate(self.document.content):
             handler = self.paragraphDispatch[paragraph.__class__]
             handler(paragraph)
             self.target.write("\n")
@@ -54,14 +51,9 @@ class PlaintextWriter(PythWriter):
 
     def list(self, list, prefix=None):
         self.indent += 1
-        for (_i, entry) in enumerate(list.content):
-            for (j, paragraph) in enumerate(entry.content):
+        for _i, entry in enumerate(list.content):
+            for j, paragraph in enumerate(entry.content):
                 prefix = "* " if j == 0 else "  "
                 handler = self.paragraphDispatch[paragraph.__class__]
                 handler(paragraph, prefix)
         self.indent -= 1
-
-
-
-
-

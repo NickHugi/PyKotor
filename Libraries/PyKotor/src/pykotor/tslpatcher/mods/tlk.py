@@ -25,6 +25,7 @@ class ModificationsTLK(PatcherModifications):
     DEFAULT_SOURCEFILE_F = "appendf.tlk"
     DEFAULT_SAVEAS_FILE = "dialog.tlk"
     DEFAULT_SAVEAS_FILE_F = "dialogf.tlk"
+
     def __init__(
         self,
         filename: str = DEFAULT_SOURCEFILE,

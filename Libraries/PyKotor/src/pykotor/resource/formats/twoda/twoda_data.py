@@ -1,4 +1,5 @@
 """This module handles classes related to reading, modifying and writing 2DA files."""
+
 from __future__ import annotations
 
 from contextlib import suppress
@@ -26,6 +27,11 @@ class TwoDA:
         self._rows: list[dict[str, str]] = []
         self._headers: list[str] = [] if headers is None else headers  # for columns
         self._labels: list[str] = []  # for rows
+
+    def __repr__(
+        self,
+    ):
+        return f"{self.__class__.__name__}(headers={self._headers!r}, labels={self._labels!r}, rows={self._rows!r})"
 
     def __iter__(
         self,
@@ -391,7 +397,7 @@ class TwoDA:
         """
         max_found = -1
         for cell in self.get_column(header):
-            with suppress(ValueError):
+            with suppress(ValueError, IndexError):
                 max_found = max(int(cell), max_found)
 
         return max_found + 1
@@ -418,7 +424,7 @@ class TwoDA:
         """
         max_found = -1
         for label in self.get_labels():
-            with suppress(ValueError):
+            with suppress(ValueError, IndexError):
                 max_found = max(int(label), max_found)
 
         return max_found + 1
@@ -587,7 +593,7 @@ class TwoDARow:
             raise KeyError(msg)
 
         value: int | T = default
-        with suppress(ValueError):  # FIXME: this should not be suppressed
+        with suppress(ValueError, IndexError):
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
         return value
@@ -616,7 +622,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        with suppress(ValueError):  # FIXME: this should not be suppressed
+        with suppress(ValueError, IndexError):
             cell = self._data[header]
             return float(cell)
         return default

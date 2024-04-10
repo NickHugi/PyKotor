@@ -76,4 +76,6 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionLoadWalkmesh.setText(_translate("MainWindow", "Load Walkmesh"))
+
+
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer

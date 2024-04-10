@@ -18,6 +18,7 @@ class EncounterDialog(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.instance.encounter import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

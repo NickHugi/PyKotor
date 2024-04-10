@@ -269,7 +269,14 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QSpinBox" name="entryDelaySpin"/>
+                 <widget class="QSpinBox" name="entryDelaySpin">
+                  <property name="minimum">
+                   <number>-2147483648</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
                 </item>
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_45">
@@ -279,7 +286,14 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QSpinBox" name="replyDelaySpin"/>
+                 <widget class="QSpinBox" name="replyDelaySpin">
+                  <property name="minimum">
+                   <number>-2147483648</number>
+                  </property>
+                  <property name="maximum">
+                   <number>2147483647</number>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </item>
@@ -1134,7 +1148,14 @@
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="QSpinBox" name="questEntrySpin"/>
+               <widget class="QSpinBox" name="questEntrySpin">
+                <property name="minimum">
+                 <number>-2147483648</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
               </item>
               <item row="1" column="1">
                <widget class="QDoubleSpinBox" name="plotXpSpin"/>
@@ -1198,7 +1219,14 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QSpinBox" name="cameraAnimSpin"/>
+               <widget class="QSpinBox" name="cameraAnimSpin">
+                <property name="minimum">
+                 <number>-2147483648</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
               </item>
               <item row="3" column="0">
                <widget class="QLabel" name="label_29">
