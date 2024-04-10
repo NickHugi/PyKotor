@@ -20,28 +20,62 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
 # region threading
+
+# Global lock for thread-safe operations
+logging_lock = threading.Lock()
 THREAD_LOCAL = threading.local()
 THREAD_LOCAL.is_logging = False
 
 @contextmanager
 def logging_context():
-    prev_state = getattr(THREAD_LOCAL, "is_logging", False)
-    THREAD_LOCAL.is_logging = True
+    global logging_lock
+    with logging_lock:
+        prev_state = getattr(THREAD_LOCAL, "is_logging", False)
+        THREAD_LOCAL.is_logging = True
+
     try:
         yield
     finally:
-        THREAD_LOCAL.is_logging = prev_state
+        with logging_lock:
+            THREAD_LOCAL.is_logging = prev_state
+
+class UTF8StreamWrapper:
+    def __init__(self, original_stream):
+        self.original_stream = original_stream
+
+    def write(self, message):
+        # Ensure message is a string, encode to UTF-8 with errors replaced,
+        # then write to the original stream's buffer directly.
+        if isinstance(message, str):
+            message = message.encode("utf-8", errors="replace")
+        self.original_stream.buffer.write(message)
+
+    def flush(self):
+        self.original_stream.flush()
+
+    def __getattr__(self, attr):
+        # Delegate any other method calls to the original stream
+        return getattr(self.original_stream, attr)
+
+
 
 class CustomPrintToLogger:
     def __init__(
         self,
-        original: TextIOWrapper,
         logger: logging.Logger,
+        original: TextIOWrapper,
         log_type: Literal["stdout", "stderr"],
     ):
         self.original_out: TextIOWrapper = original
-        self.logger: logging.Logger = logger
         self.log_type: Literal["stdout", "stderr"] = log_type
+        self.logger: logging.Logger = logger
+        self.configure_logger_stream()
+
+    def configure_logger_stream(self):
+        utf8_wrapper = UTF8StreamWrapper(self.original_out)
+        for handler in self.logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                handler.setStream(utf8_wrapper)
 
     def write(
         self,
@@ -249,15 +283,6 @@ def get_root_logger(
     Returns:
     -------
         logging.Logger: The root logger with the specified handlers and formatters.
-
-    Processing Logic:
-    ----------------
-        - If root logger already configured, return it. Otherwise:
-            - Sets the root logger level to DEBUG.
-            - Adds a console handler with a custom formatter.
-            - Redirects stdout and stderr to the logger.
-            - Adds rotating file handlers for different log levels.
-            - Excludes lower level logs for handlers above DEBUG.
     """
     logger = logging.getLogger()
     if multiprocessing.current_process().name == "MainProcess":
@@ -282,24 +307,24 @@ def get_root_logger(
         logger.addHandler(console_handler)
 
         # Redirect stdout and stderr
-        sys.stdout = CustomPrintToLogger(sys.__stdout__, logger, log_type="stdout")
-        sys.stderr = CustomPrintToLogger(sys.__stderr__, logger, log_type="stderr")
+        sys.stdout = CustomPrintToLogger(logger, sys.__stdout__, log_type="stdout")
+        sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
 
         # Handler for everything (DEBUG and above)
-        everything_handler = RotatingFileHandler(everything_log_file, maxBytes=1048576, backupCount=3, delay=True)
+        everything_handler = RotatingFileHandler(everything_log_file, maxBytes=1048576, backupCount=3, delay=True, encoding="utf8")
         everything_handler.setLevel(logging.DEBUG)
         everything_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(everything_handler)
 
         # Handler for INFO and WARNING
-        info_warning_handler = RotatingFileHandler(info_warning_log_file, maxBytes=1048576, backupCount=3, delay=True)
+        info_warning_handler = RotatingFileHandler(info_warning_log_file, maxBytes=1048576, backupCount=3, delay=True, encoding="utf8")
         info_warning_handler.setLevel(logging.INFO)
         info_warning_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
         logger.addHandler(info_warning_handler)
 
         # Handler for ERROR and CRITICAL
-        error_critical_handler = RotatingFileHandler(error_critical_log_file, maxBytes=1048576, backupCount=3, delay=True)
+        error_critical_handler = RotatingFileHandler(error_critical_log_file, maxBytes=1048576, backupCount=3, delay=True, encoding="utf8")
         error_critical_handler.setLevel(logging.ERROR)
         error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
         error_critical_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
