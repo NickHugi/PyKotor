@@ -33,6 +33,7 @@ class LocalizedStringLineEdit(QWidget):
         super().__init__(parent)
 
         from toolset.uic.widgets.locstring_edit import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

@@ -43,6 +43,7 @@ class TPC:
         self._height: int = 4
         self.txi: str = ""
         from pykotor.resource.formats.tpc.io_tga import _DataTypes
+
         self.original_datatype_code: _DataTypes = _DataTypes.NO_IMAGE_DATA
 
         # TODO: cube maps
@@ -196,7 +197,7 @@ class TPC:
             source_start = row * row_length
             source_end = source_start + row_length
             dest_start = (height - 1 - row) * row_length
-            flipped_data[dest_start:dest_start + row_length] = data[source_start:source_end]
+            flipped_data[dest_start : dest_start + row_length] = data[source_start:source_end]
 
         return bytes(flipped_data)
 
@@ -242,17 +243,17 @@ class TPC:
         # max_dimension = max(width, height)
         # expected_mipmap_count = 1 + math.floor(math.log2(max_dimension))
         # if len(mipmaps) != expected_mipmap_count:
-            # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
+        # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
         # Iterate over mipmaps and check if their data sizes match the expected sizes.
         # current_width, current_height = width, height
         # for i, mipmap in enumerate(mipmaps):
-            # expected_size = (current_width * current_height * bits_per_pixel) // 8
-            # if len(mipmap) != expected_size:
-                # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
+        # expected_size = (current_width * current_height * bits_per_pixel) // 8
+        # if len(mipmap) != expected_size:
+        # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
 
-            # Update dimensions for the next mipmap level.
-            # current_width = max(1, current_width // 2)
-            # current_height = max(1, current_height // 2)
+        # Update dimensions for the next mipmap level.
+        # current_width = max(1, current_width // 2)
+        # current_height = max(1, current_height // 2)
 
         self._texture_format = texture_format
         self._mipmaps = mipmaps
@@ -312,9 +313,7 @@ class TPC:
         return indices
 
     @staticmethod
-    def _select_representative_colors(
-        rgba_block: list[tuple[int, int, int, int]]
-    ) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    def _select_representative_colors(rgba_block: list[tuple[int, int, int, int]]) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         """Select representative colors for DXT1 compression."""
         colors = sorted(rgba_block, key=lambda x: (x[0] << 16) + (x[1] << 8) + x[2])
         return colors[0][:3], colors[-1][:3]
@@ -329,8 +328,9 @@ class TPC:
         compressed_data = bytearray()
         for y, x in tpc_itertools.product(range(0, height, 4), range(0, width, 4)):
             rgba_block: list[tuple[int, int, int, int]] = [
-                cast(Tuple[int, int, int, int], tuple(rgba_data[i:i + 4]))
-                for dy in range(4) for dx in range(4)
+                cast(Tuple[int, int, int, int], tuple(rgba_data[i : i + 4]))
+                for dy in range(4)
+                for dx in range(4)
                 for i in range((y * width + x + dy * width + dx) * 4, (y * width + x + dy * width + dx) * 4 + 4, 4)
             ]
             c0, c1 = TPC._select_representative_colors(rgba_block)
@@ -409,7 +409,7 @@ class TPC:
                         int((4.0 * alpha0 + 3.0 * alpha1 + 3) / 7),
                         int((3.0 * alpha0 + 4.0 * alpha1 + 3) / 7),
                         int((2.0 * alpha0 + 5.0 * alpha1 + 3) / 7),
-                        int((1.0 * alpha0 + 6.0 * alpha1 + 3) / 7)
+                        int((1.0 * alpha0 + 6.0 * alpha1 + 3) / 7),
                     )
                 )
             else:
@@ -420,7 +420,7 @@ class TPC:
                         int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5),
                         int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5),
                         0,
-                        255
+                        255,
                     )
                 )
             for y in (3, 2, 1, 0):

@@ -40,4 +40,6 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.editButton.setText(_translate("Form", "..."))
+
+
 from toolset.gui.widgets.long_spinbox import LongSpinBox

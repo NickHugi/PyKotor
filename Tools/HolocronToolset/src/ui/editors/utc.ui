@@ -668,7 +668,14 @@
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="QSpinBox" name="multiplierSetSpin"/>
+               <widget class="QSpinBox" name="multiplierSetSpin">
+                <property name="minimum">
+                 <number>-2147483648</number>
+                </property>
+                <property name="maximum">
+                 <number>2147483647</number>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>
@@ -712,7 +719,14 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="computerUseSpin"/>
+              <widget class="QSpinBox" name="computerUseSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="1" column="0">
               <widget class="QLabel" name="label_18">
@@ -722,7 +736,14 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="demolitionsSpin"/>
+              <widget class="QSpinBox" name="demolitionsSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_19">
@@ -732,7 +753,14 @@
               </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QSpinBox" name="stealthSpin"/>
+              <widget class="QSpinBox" name="stealthSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="3" column="0">
               <widget class="QLabel" name="label_20">
@@ -742,7 +770,14 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QSpinBox" name="awarenessSpin"/>
+              <widget class="QSpinBox" name="awarenessSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="4" column="0">
               <widget class="QLabel" name="label_21">
@@ -752,7 +787,14 @@
               </widget>
              </item>
              <item row="4" column="1">
-              <widget class="QSpinBox" name="persuadeSpin"/>
+              <widget class="QSpinBox" name="persuadeSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="5" column="0">
               <widget class="QLabel" name="label_22">
@@ -762,7 +804,14 @@
               </widget>
              </item>
              <item row="5" column="1">
-              <widget class="QSpinBox" name="repairSpin"/>
+              <widget class="QSpinBox" name="repairSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="6" column="0">
               <widget class="QLabel" name="label_23">
@@ -772,7 +821,14 @@
               </widget>
              </item>
              <item row="6" column="1">
-              <widget class="QSpinBox" name="securitySpin"/>
+              <widget class="QSpinBox" name="securitySpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="7" column="0">
               <widget class="QLabel" name="label_24">
@@ -782,7 +838,14 @@
               </widget>
              </item>
              <item row="7" column="1">
-              <widget class="QSpinBox" name="treatInjurySpin"/>
+              <widget class="QSpinBox" name="treatInjurySpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -801,7 +864,14 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="fortitudeSpin"/>
+              <widget class="QSpinBox" name="fortitudeSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="1" column="0">
               <widget class="QLabel" name="label_32">
@@ -818,10 +888,24 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="reflexSpin"/>
+              <widget class="QSpinBox" name="reflexSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QSpinBox" name="willSpin"/>
+              <widget class="QSpinBox" name="willSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -840,7 +924,14 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="armorClassSpin"/>
+              <widget class="QSpinBox" name="armorClassSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -876,7 +967,14 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="strengthSpin"/>
+              <widget class="QSpinBox" name="strengthSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="1" column="0">
               <widget class="QLabel" name="label_26">
@@ -886,7 +984,14 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="dexteritySpin"/>
+              <widget class="QSpinBox" name="dexteritySpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_27">
@@ -896,7 +1001,14 @@
               </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QSpinBox" name="constitutionSpin"/>
+              <widget class="QSpinBox" name="constitutionSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="3" column="0">
               <widget class="QLabel" name="label_28">
@@ -906,7 +1018,14 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QSpinBox" name="intelligenceSpin"/>
+              <widget class="QSpinBox" name="intelligenceSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="4" column="0">
               <widget class="QLabel" name="label_29">
@@ -916,7 +1035,14 @@
               </widget>
              </item>
              <item row="4" column="1">
-              <widget class="QSpinBox" name="wisdomSpin"/>
+              <widget class="QSpinBox" name="wisdomSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="5" column="0">
               <widget class="QLabel" name="label_30">
@@ -926,7 +1052,14 @@
               </widget>
              </item>
              <item row="5" column="1">
-              <widget class="QSpinBox" name="charismaSpin"/>
+              <widget class="QSpinBox" name="charismaSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -959,13 +1092,34 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="baseHpSpin"/>
+              <widget class="QSpinBox" name="baseHpSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="currentHpSpin"/>
+              <widget class="QSpinBox" name="currentHpSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QSpinBox" name="maxHpSpin"/>
+              <widget class="QSpinBox" name="maxHpSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -984,7 +1138,14 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="currentFpSpin"/>
+              <widget class="QSpinBox" name="currentFpSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item row="1" column="0">
               <widget class="QLabel" name="label_40">
@@ -994,7 +1155,14 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="maxFpSpin"/>
+              <widget class="QSpinBox" name="maxFpSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -1033,7 +1201,14 @@
               <widget class="ComboBox2DA" name="class1Select"/>
              </item>
              <item>
-              <widget class="QSpinBox" name="class1LevelSpin"/>
+              <widget class="QSpinBox" name="class1LevelSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item>
               <spacer name="horizontalSpacer_8">
@@ -1056,7 +1231,14 @@
               <widget class="ComboBox2DA" name="class2Select"/>
              </item>
              <item>
-              <widget class="QSpinBox" name="class2LevelSpin"/>
+              <widget class="QSpinBox" name="class2LevelSpin">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item>
               <spacer name="horizontalSpacer_9">

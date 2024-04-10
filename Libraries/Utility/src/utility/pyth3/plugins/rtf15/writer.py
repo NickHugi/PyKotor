@@ -2,6 +2,7 @@
 
 http://www.biblioscape.com/rtf15_spec.htm
 """
+
 from __future__ import annotations
 
 from io import StringIO
@@ -21,7 +22,6 @@ _styleFlags = {
 
 
 class Rtf15Writer(PythWriter):
-
     # Calibri is the default font in Office2007.
     # So we'll use that for swiss, and let it fall back
     # to Arial everywhere else.
@@ -31,7 +31,7 @@ class Rtf15Writer(PythWriter):
     }
 
     @classmethod
-    def write(klass, document, target=None, fontFamily="roman"):
+    def write(cls, document, target=None, fontFamily="roman"):
         if target is None:
             target = StringIO()
 
@@ -43,18 +43,12 @@ class Rtf15Writer(PythWriter):
         self.target = target
 
         if family not in self.fonts:
-            msg = (
-                "Family {} not found (Try {})".format(
-                family, " or ".join("'%s'" % fam for fam in self.fonts))
-            )
+            msg = "Family {} not found (Try {})".format(family, " or ".join("'%s'" % fam for fam in self.fonts))
             raise ValueError(msg)
 
         self.fontFamily = family
 
-        self._paragraphDispatch = {
-            document.List: self._list,
-            document.Paragraph: self._paragraph
-        }
+        self._paragraphDispatch = {document.List: self._list, document.Paragraph: self._paragraph}
 
     def go(self):
         self.list_level = -1
@@ -78,13 +72,7 @@ class Rtf15Writer(PythWriter):
         # Not strictly necessary
         self.target.write("\n")
 
-        for part in (fontTable,
-                     self._getColorTable(),
-                     self._getStyleSheet(),
-                     self._getListTable(),
-                     self._getListOverrides(),
-                     self._getRevTable()):
-
+        for part in (fontTable, self._getColorTable(), self._getStyleSheet(), self._getListTable(), self._getListOverrides(), self._getRevTable()):
             if part:
                 self.target.write(part)
                 self.target.write("\n")
@@ -105,9 +93,7 @@ class Rtf15Writer(PythWriter):
 
     def _getColorTable(self) -> str:
         # We only need black, and blue (for hyperlinks)
-        return (r"{\colortbl;"
-                r"\red0\green0\blue0;"
-                r"\red0\green0\blue255;}")
+        return r"{\colortbl;" r"\red0\green0\blue0;" r"\red0\green0\blue255;}"
 
     def _getStyleSheet(self) -> str:
         # OpenOffice won't render bullets unless there's a stylesheet entry
@@ -121,11 +107,15 @@ class Rtf15Writer(PythWriter):
         output = [r"{\*\listtable{\list\listid1\listtemplateid1"]
 
         for _i in range(9):
-            output.append((
-                r"{\listlevel\levelstartat1\levelnfc23\leveljc0\levelfollow0"
-                r"{\leveltext \'01\u61623 ?;}"  # The bullet character
-                r"\fi-180\f%d"  # Indent the bullet left, and use the symbol font
-                "}") % self.symbolFontNumber)
+            output.append(
+                (
+                    r"{\listlevel\levelstartat1\levelnfc23\leveljc0\levelfollow0"
+                    r"{\leveltext \'01\u61623 ?;}"  # The bullet character
+                    r"\fi-180\f%d"  # Indent the bullet left, and use the symbol font
+                    "}"
+                )
+                % self.symbolFontNumber
+            )
 
         output.append("}}")
         return "".join(output)
@@ -143,11 +133,7 @@ class Rtf15Writer(PythWriter):
     # Document section
 
     def _writeDocument(self):
-
-        for part in (self._getInfo(),
-                     self._getDocFormat(),
-                     self._getSecFormat()):
-
+        for part in (self._getInfo(), self._getDocFormat(), self._getSecFormat()):
             if part:
                 self.target.write(part)
                 self.target.write("\n")
@@ -169,7 +155,6 @@ class Rtf15Writer(PythWriter):
     # Content
 
     def _paragraph(self, paragraph, spacing=PARAGRAPH_SPACING):
-
         if self.addSpacing is not None:
             self.target.write(r"\sb%d" % self.addSpacing)
             self.addSpacing = None
@@ -190,8 +175,7 @@ class Rtf15Writer(PythWriter):
             for paragraph in entry.content:
                 # It doesn't seem like RTF supports multiple paragraphs
                 # in the same list item, so just let them be an item each.
-                self.target.write(r"\ilvl%d\ls0\li%d\s1" % (
-                    self.list_level, 720 * (self.list_level + 1)))
+                self.target.write(r"\ilvl%d\ls0\li%d\s1" % (self.list_level, 720 * (self.list_level + 1)))
                 handler = self._paragraphDispatch[paragraph.__class__]
                 handler(paragraph, spacing=LIST_ITEM_SPACING)
 
@@ -203,11 +187,8 @@ class Rtf15Writer(PythWriter):
             self.addSpacing = 150
 
     def _text(self, text):
-
         if "url" in text.properties:
-            self.target.write(
-                r"{\field{\*\fldinst HYPERLINK %s}{\fldrslt \*\cf2\ul "
-                % text.properties["url"])
+            self.target.write(r"{\field{\*\fldinst HYPERLINK %s}{\fldrslt \*\cf2\ul " % text.properties["url"])
 
         props = []
 

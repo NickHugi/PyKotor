@@ -33,8 +33,7 @@ class MainWindowList(QWidget):
     sectionChanged = QtCore.pyqtSignal(object)
 
     @abstractmethod
-    def selectedResources(self) -> list[FileResource]:
-        ...
+    def selectedResources(self) -> list[FileResource]: ...
 
 
 class ResourceList(MainWindowList):
@@ -92,12 +91,21 @@ class ResourceList(MainWindowList):
     def currentSection(self) -> str:
         return self.ui.sectionCombo.currentData()
 
-    def changeSection(self, section: str):
+    def changeSection(
+        self,
+        section: str,
+    ):
         for i in range(self.ui.sectionCombo.count()):
             if section in self.ui.sectionCombo.itemText(i):
                 self.ui.sectionCombo.setCurrentIndex(i)
 
-    def setResources(self, resources: list[FileResource], customCategory: str | None = None, *, clear_existing: bool = True):
+    def setResources(
+        self,
+        resources: list[FileResource],
+        customCategory: str | None = None,
+        *,
+        clear_existing: bool = True,
+    ):
         """Adds and removes FileResources from the modules model.
 
         Args:
@@ -137,12 +145,18 @@ class ResourceList(MainWindowList):
         # Remove unused categories
         self.modulesModel.removeUnusedCategories()
 
-    def setSections(self, sections: list[QStandardItem]):
+    def setSections(
+        self,
+        sections: list[QStandardItem],
+    ):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
-    def setResourceSelection(self, resource: FileResource):
+    def setResourceSelection(
+        self,
+        resource: FileResource,
+    ):
         """Sets the selected resource in the resource tree.
 
         Args:
@@ -199,21 +213,22 @@ class ResourceList(MainWindowList):
                 - Add "Open" and "Open with GFF Editor" actions
                 - Connect actions to emit signals to open resource.
         """
-        menu = QMenu(self)
-
         resources: list[FileResource] = self.selectedResources()
         if len(resources) == 1:
             resource: FileResource = resources[0]
             if resource.restype().contents == "gff":
+                menu = QMenu(self)
+
                 def open1():
                     return self.requestOpenResource.emit(resources, False)
 
                 def open2():
                     return self.requestOpenResource.emit(resources, True)
+
                 menu.addAction("Open").triggered.connect(open2)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
-        menu.popup(self.ui.resourceTree.mapToGlobal(point))
+                menu.popup(self.ui.resourceTree.mapToGlobal(point))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
@@ -282,11 +297,7 @@ class ResourceModel(QStandardItemModel):
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
-        resources = (
-            category.child(i, 0)
-            for category in self._categoryItems.values()
-            for i in range(category.rowCount())
-        )
+        resources = (category.child(i, 0) for category in self._categoryItems.values() for i in range(category.rowCount()))
         return [item for item in resources if item is not None]
 
     def removeUnusedCategories(self):
@@ -330,10 +341,7 @@ class TextureList(MainWindowList):
 
         self._taskQueue = multiprocessing.JoinableQueue()
         self._resultQueue = multiprocessing.Queue()
-        self._consumers: list[TextureListConsumer] = [
-            TextureListConsumer(self._taskQueue, self._resultQueue)
-            for _ in range(multiprocessing.cpu_count())
-        ]
+        self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for _ in range(multiprocessing.cpu_count())]
         for consumer in self._consumers:
             consumer.start()
 
@@ -492,7 +500,11 @@ class TextureList(MainWindowList):
 
 
 class TextureListConsumer(multiprocessing.Process):
-    def __init__(self, taskQueue, resultQueue):
+    def __init__(
+        self,
+        taskQueue: multiprocessing.JoinableQueue,
+        resultQueue: multiprocessing.Queue,
+    ):
         multiprocessing.Process.__init__(self)
         self.taskQueue: multiprocessing.JoinableQueue = taskQueue
         self.resultQueue: multiprocessing.Queue = resultQueue
@@ -508,7 +520,12 @@ class TextureListConsumer(multiprocessing.Process):
 
 
 class TextureListTask:
-    def __init__(self, row: int, tpc: TPC, resname: str):
+    def __init__(
+        self,
+        row: int,
+        tpc: TPC,
+        resname: str,
+    ):
         self.row: int = row
         self.tpc: TPC = tpc
         self.resname: str = resname

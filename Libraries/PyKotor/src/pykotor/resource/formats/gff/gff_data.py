@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import difflib
 import math
-import os
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
@@ -11,23 +11,42 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from utility.string import compare_and_format, format_text
+from utility.error_handling import safe_repr
+from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
+    import os
+
     from collections.abc import Callable, Generator, Iterator
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 
+def format_diff(old_value: object, new_value: object, name: str) -> str:
+    # Convert values to strings if they aren't already
+    str_old_value = str(old_value).splitlines(keepends=True)
+    str_new_value = str(new_value).splitlines(keepends=True)
+
+    # Generate unified diff
+    diff = difflib.unified_diff(str_old_value, str_new_value, fromfile=f"(old){name}", tofile=f"(new){name}", lineterm="")
+
+    # Return formatted diff
+    return "\n".join(diff)
+
 class GFFContent(Enum):
     """The different resources that the GFF can represent."""
 
     GFF = "GFF "
-    IFO = "IFO "
-    ARE = "ARE "
-    GIT = "GIT "
+    BIC = "BIC "
+    BTC = "BTC "
+    BTD = "BTD "  # guess
+    BTE = "BTE "  # guess
+    BTI = "BTI "
+    BTP = "BTP "  # guess
+    BTM = "BTM "  # guess
+    BTT = "BTT "  # guess
     UTC = "UTC "
     UTD = "UTD "
     UTE = "UTE "
@@ -37,15 +56,17 @@ class GFFContent(Enum):
     UTM = "UTM "
     UTT = "UTT "
     UTW = "UTW "
+    ARE = "ARE "
     DLG = "DLG "
-    JRL = "JRL "
     FAC = "FAC "
-    ITP = "ITP "
-    BIC = "BIC "
+    GIT = "GIT "
     GUI = "GUI "
+    IFO = "IFO "
+    ITP = "ITP "
+    JRL = "JRL "
     PTH = "PTH "
     NFO = "NFO "  # savenfo.res
-    PT = "PT  "  # partytable.res
+    PT  = "PT  "  # partytable.res
     GVT = "GVT "  # GLOBALVARS.res
     INV = "INV "  # inventory in SAVEGAME.res
 
@@ -145,6 +166,80 @@ class GFFFieldType(IntEnum):
         if self in {GFFFieldType.Double, GFFFieldType.Single}:
             return float
         raise ValueError(self)
+
+
+class Difference:
+    def __init__(self, path: PureWindowsPath | str, old_value: object, new_value: object):
+        """Initializes a Difference instance representing a specific difference between two GFFStructs.
+
+        Args:
+        ----
+            path (PureWindowsPath | str): The path to the value within the GFFStruct where the difference was found.
+            old_value (object): The value from the original GFFStruct at the specified path.
+            new_value (object): The value from the compared GFFStruct at the specified path.
+        """
+        self.path: PureWindowsPath = PureWindowsPath.pathify(path)
+        self.old_value: object = old_value
+        self.new_value: object = new_value
+
+    def __repr__(self):
+        return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
+
+
+class GFFCompareResult:
+    """A comparison result from gff.compare/GFFStruct.compare.
+
+    Contains enough differential information between the two GFF structs that it can be used to take one gff and reconstruct the other.
+    Helper methods also exist for working with the data in other code.
+
+    Backwards-compatibility note: the original gff.compare used to return a simple boolean. True if the gffs were the same, False if not. This class
+    attempts to keep backwards compatibility while ensuring we can still return a type that's more detailed and informative.
+    """
+
+    def __init__(self):
+        self.differences: list[Difference] = []
+
+    def __bool__(self):
+        # Return False if the list has any contents (meaning the objects are different), True if it's empty.
+        return not self.differences
+
+    def add_difference(self, path, old_value, new_value):
+        """Adds a difference to the collection of tracked differences.
+
+        Args:
+        ----
+            path (str): The path to the value where the difference was found.
+            old_value (Any): The original value at the specified path.
+            new_value (Any): The new value at the specified path that differs from the original.
+        """
+        self.differences.append(Difference(path, old_value, new_value))
+
+    def get_changed_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where the value has changed from the original.
+
+        Returns:
+        -------
+            tuple[Difference]: A collection of differences with changed values.
+        """
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value)
+
+    def get_new_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where a new value is present in the compared GFFStruct.
+
+        Returns:
+        -------
+            tuple[Difference]: A collection of differences with new values.
+        """
+        return tuple(diff for diff in self.differences if diff.old_value is None and diff.new_value is not None)
+
+    def get_removed_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where a value is present in the original GFFStruct but not in the compared.
+
+        Returns:
+        -------
+            tuple[Difference]: A collection of differences with removed values.
+        """
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is None)
 
 
 class GFF:
@@ -287,7 +382,7 @@ class GFFStruct:
         self,
     ) -> int:
         """Returns the number of fields."""
-        return len(self._fields.values())
+        return len(self._fields)
 
     def __iter__(
         self,
@@ -328,7 +423,7 @@ class GFFStruct:
 
         Returns:
         -------
-            A GFFFieldType value.
+            A boolean result of whether the field exists or not.
         """
         return label in self._fields
 
@@ -337,7 +432,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
-        ignore_default_changes=False,
+        ignore_default_changes: bool = False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -366,12 +461,13 @@ class GFFStruct:
             "KTInfoVersion",
             "EditorInfo",
         }
+
         def is_ignorable_value(v) -> bool:
             return not v or str(v) in {"0", "-1"}
 
         def is_ignorable_comparison(
-            old_value,
-            new_value,
+            old_value: object,
+            new_value: object,
         ) -> bool:
             return is_ignorable_value(old_value) and is_ignorable_value(new_value)
 
@@ -386,8 +482,12 @@ class GFFStruct:
             is_same = False
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels}
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self) if label not in ignore_labels
+        }
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct) if label not in ignore_labels
+        }
 
         # Union of labels from both old and new structures
         all_labels: set[str] = set(old_dict.keys()) | set(new_dict.keys())
@@ -405,11 +505,11 @@ class GFFStruct:
                 if new_ftype is None:
                     msg = f"new_ftype shouldn't be None here. Relevance: old_ftype={old_ftype!r}, old_value={old_value!r}, new_value={new_value!r}"
                     raise RuntimeError(msg)
-                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}")
+                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(safe_repr(new_value))}")
                 is_same = False
                 continue
             if new_value is None or new_ftype is None:
-                log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
+                log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(safe_repr(old_value))}")
                 is_same = False
                 continue
 
@@ -421,7 +521,7 @@ class GFFStruct:
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
-                assert isinstance(new_value, GFFStruct)
+                assert isinstance(new_value, GFFStruct), f"{type(new_value).__name__}: {new_value}"
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
@@ -446,23 +546,12 @@ class GFFStruct:
 
                 is_same = False
                 if str(old_value) == str(new_value):
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
+                    log_func(
+                        f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
+                    )
                     continue
-
-                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                newlines_in_old: int = formatted_old_value.count("\n")
-                newlines_in_new: int = formatted_new_value.count("\n")
-
-                if newlines_in_old > 1 or newlines_in_new > 1:
-                    formatted_old_value, formatted_new_value = compare_and_format(formatted_old_value, formatted_new_value)
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}<-vvv->{format_text(formatted_new_value)}")
-                    continue
-
-                if newlines_in_old == 1 or newlines_in_new == 1:
-                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {os.linesep}{formatted_old_value}{os.linesep}<-vvv->{os.linesep}{formatted_new_value}")
-                    continue
-
-                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {formatted_old_value} --> {formatted_new_value}")
+                log_func(f"Field '{old_ftype.name}' is different at '{child_path}':")
+                log_func(format_diff(old_value, new_value, label))
 
         return is_same
 
@@ -490,7 +579,7 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
-        assert isinstance(default, object)
+        assert isinstance(default, object), f"{type(default).__name__}: {default}"
         value: T = default
         if object_type is None:
             object_type = default.__class__
@@ -1274,7 +1363,7 @@ class GFFList:
     def compare(
         self,
         other_gff_list: GFFList,
-        log_func=print,
+        log_func: Callable[..., Any] = print,
         current_path: PureWindowsPath | None = None,
         *,
         ignore_default_changes: bool = False,

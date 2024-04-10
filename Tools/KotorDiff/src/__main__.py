@@ -9,6 +9,7 @@ from io import StringIO
 from typing import TYPE_CHECKING
 
 if getattr(sys, "frozen", False) is False:
+
     def update_sys_path(path):
         working_dir = str(path)
         if working_dir in sys.path:
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     import os
 
     from pykotor.extract.file import FileResource
+    from utility.system.path import PurePath
 
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
@@ -61,11 +63,7 @@ def log_output(*args, **kwargs):
 
     if not OUTPUT_LOG:
         while True:
-            chosen_log_file_path: str = (
-                PARSER_ARGS.output_log
-                or input("Filepath of the desired output logfile: ").strip()
-                or "log_install_differ.log"
-            )
+            chosen_log_file_path: str = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
             OUTPUT_LOG = Path(chosen_log_file_path).resolve()
             if OUTPUT_LOG.parent.safe_isdir():
                 break
@@ -77,7 +75,7 @@ def log_output(*args, **kwargs):
         f.write(msg)
 
 
-def relative_path_from_to(src, dst) -> Path:
+def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
@@ -89,7 +87,7 @@ def relative_path_from_to(src, dst) -> Path:
     return Path(*rel_parts)
 
 
-def visual_length(s: str, tab_length=8) -> int:
+def visual_length(s: str, tab_length: int = 8) -> int:
     if "\t" not in s:
         return len(s)
 
@@ -158,19 +156,13 @@ def diff_data(
         try:
             twoda1 = twoda.read_2da(data1)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            if (
-                file1_rel.parent.name.lower() == "rims"
-                and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
-            ):
+            if file1_rel.parent.name.lower() == "rims" and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}:
                 return True
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            if (
-                file1_rel.parent.name.lower() == "rims"
-                and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}
-            ):
+            if file1_rel.parent.name.lower() == "rims" and file1_rel.name.lower() in {"global.rim", "miniglobal.rim"}:
                 return True
             return log_output(f"Error loading 2DA {file2_rel.parent / where}!\n{universal_simplify_exception(e)}")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
@@ -247,7 +239,7 @@ def diff_data(
     return True
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False):
+def log_output_with_separator(message, *, below=True, above=False, surround=False):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -330,7 +322,7 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    # TODO: use pykotor.extract.installation
+    # TODO(th3w1zard1): use pykotor.extract.installation
     rinstall_path1: CaseAwarePath = CaseAwarePath.pathify(install_path1).resolve()
     rinstall_path2: CaseAwarePath = CaseAwarePath.pathify(install_path2).resolve()
     log_output()
@@ -357,14 +349,10 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
     is_same_result = diff_directories(lips_path1, lips_path2) and is_same_result
 
     streamwaves_path1: CaseAwarePath = (
-        rinstall_path1.joinpath("streamwaves")
-        if rinstall_path1.joinpath("streamwaves").safe_isdir()
-        else rinstall_path1.joinpath("streamvoice")
+        rinstall_path1.joinpath("streamwaves") if rinstall_path1.joinpath("streamwaves").safe_isdir() else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
-        rinstall_path2.joinpath("streamwaves")
-        if rinstall_path2.joinpath("streamwaves").safe_isdir()
-        else rinstall_path2.joinpath("streamvoice")
+        rinstall_path2.joinpath("streamwaves") if rinstall_path2.joinpath("streamwaves").safe_isdir() else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
     return is_same_result  # noqa: RET504
@@ -411,9 +399,7 @@ def main():
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
     while True:
         PARSER_ARGS.path1 = Path(
-            PARSER_ARGS.path1
-            or (unknown[0] if len(unknown) > 0 else None)
-            or input("Path to the first K1/TSL install, file, or directory to diff: "),
+            PARSER_ARGS.path1 or (unknown[0] if len(unknown) > 0 else None) or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path1.safe_exists():
             break
@@ -422,9 +408,7 @@ def main():
         PARSER_ARGS.path1 = None
     while True:
         PARSER_ARGS.path2 = Path(
-            PARSER_ARGS.path2
-            or (unknown[1] if len(unknown) > 1 else None)
-            or input("Path to the second K1/TSL install, file, or directory to diff: "),
+            PARSER_ARGS.path2 or (unknown[1] if len(unknown) > 1 else None) or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path2.safe_exists():
             break

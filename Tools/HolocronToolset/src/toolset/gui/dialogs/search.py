@@ -15,9 +15,11 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     from PyQt5.QtWidgets import QWidget
 
+
 @dataclass
 class FileSearchQuery:
     """Encapsulates search parameters for file search operations."""
+
     installation: HTInstallation
     caseSensitive: bool
     filenamesOnly: bool
@@ -29,13 +31,13 @@ class FileSearchQuery:
 
 
 class FileSearcher(QDialog):
-
     fileResults = QtCore.pyqtSignal(list, HTInstallation)
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
         from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
+
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
         assert len(installations) > 0, "No installations passed to FileSearcher"
@@ -73,23 +75,40 @@ class FileSearcher(QDialog):
         searchOverride = self.ui.overrideCheck.isChecked()
 
         checkTypes: list[ResourceType] = []
-        if self.ui.typeARECheck.isChecked(): checkTypes.append(ResourceType.ARE)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeGITCheck.isChecked(): checkTypes.append(ResourceType.GIT)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeIFOCheck.isChecked(): checkTypes.append(ResourceType.IFO)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeDLGCheck.isChecked(): checkTypes.append(ResourceType.DLG)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeJRLCheck.isChecked(): checkTypes.append(ResourceType.JRL)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTCCheck.isChecked(): checkTypes.append(ResourceType.UTC)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTDCheck.isChecked(): checkTypes.append(ResourceType.UTD)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTECheck.isChecked(): checkTypes.append(ResourceType.UTE)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTICheck.isChecked(): checkTypes.append(ResourceType.UTI)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTPCheck.isChecked(): checkTypes.append(ResourceType.UTP)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTMCheck.isChecked(): checkTypes.append(ResourceType.UTM)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTWCheck.isChecked(): checkTypes.append(ResourceType.UTW)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTSCheck.isChecked(): checkTypes.append(ResourceType.UTS)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeUTTCheck.isChecked(): checkTypes.append(ResourceType.UTT)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.type2DACheck.isChecked(): checkTypes.append(ResourceType.TwoDA)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeNSSCheck.isChecked(): checkTypes.append(ResourceType.NSS)  # noqa: E701  # pylint: disable=multiple-statements
-        if self.ui.typeNCSCheck.isChecked(): checkTypes.append(ResourceType.NCS)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeARECheck.isChecked():
+            checkTypes.append(ResourceType.ARE)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeGITCheck.isChecked():
+            checkTypes.append(ResourceType.GIT)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeIFOCheck.isChecked():
+            checkTypes.append(ResourceType.IFO)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeDLGCheck.isChecked():
+            checkTypes.append(ResourceType.DLG)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeJRLCheck.isChecked():
+            checkTypes.append(ResourceType.JRL)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTCCheck.isChecked():
+            checkTypes.append(ResourceType.UTC)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTDCheck.isChecked():
+            checkTypes.append(ResourceType.UTD)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTECheck.isChecked():
+            checkTypes.append(ResourceType.UTE)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTICheck.isChecked():
+            checkTypes.append(ResourceType.UTI)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTPCheck.isChecked():
+            checkTypes.append(ResourceType.UTP)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTMCheck.isChecked():
+            checkTypes.append(ResourceType.UTM)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTWCheck.isChecked():
+            checkTypes.append(ResourceType.UTW)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTSCheck.isChecked():
+            checkTypes.append(ResourceType.UTS)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeUTTCheck.isChecked():
+            checkTypes.append(ResourceType.UTT)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.type2DACheck.isChecked():
+            checkTypes.append(ResourceType.TwoDA)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeNSSCheck.isChecked():
+            checkTypes.append(ResourceType.NSS)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeNCSCheck.isChecked():
+            checkTypes.append(ResourceType.NCS)  # noqa: E701  # pylint: disable=multiple-statements
 
         query = FileSearchQuery(
             installation=installation,
@@ -99,7 +118,7 @@ class FileSearcher(QDialog):
             searchCore=searchCore,
             searchModules=searchModules,
             searchOverride=searchOverride,
-            checkTypes=checkTypes
+            checkTypes=checkTypes,
         )
 
         self.search(query)
@@ -173,6 +192,7 @@ class FileResults(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.search_result import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import Game
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
@@ -23,7 +24,7 @@ from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import assert_with_variable_trace
-from utility.string import ireplace
+from utility.string_util import ireplace
 
 if TYPE_CHECKING:
     import os
@@ -228,10 +229,13 @@ def clone_module(
                     new_lightmap_name = f"{identifier}_lm_{len(new_lightmaps.keys())}"
                     new_lightmaps[lightmap] = new_lightmap_name
 
-                    tpc = installation.texture(
-                        lightmap,
-                        [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
-                    ) or TPC()
+                    tpc = (
+                        installation.texture(
+                            lightmap,
+                            [SearchLocation.CHITIN, SearchLocation.OVERRIDE],
+                        )
+                        or TPC()
+                    )
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
@@ -265,6 +269,7 @@ def rim_to_mod(
     filepath: os.PathLike | str,
     rim_folderpath: os.PathLike | str | None = None,
     module_root: str | None = None,
+    game: Game | None = None,
 ):
     """Creates a MOD file at the given filepath and copies the resources from the corresponding RIM files.
 
@@ -301,7 +306,7 @@ def rim_to_mod(
         for res in read_rim(filepath_rim_s):
             mod.set_data(str(res.resref), res.restype, res.data)
 
-    if filepath_dlg_erf.is_file():
+    if (game is None or game.is_k2()) and filepath_dlg_erf.is_file():
         for res in read_erf(filepath_dlg_erf):
             mod.set_data(str(res.resref), res.restype, res.data)
 
