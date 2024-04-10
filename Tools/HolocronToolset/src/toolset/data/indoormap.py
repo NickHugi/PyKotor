@@ -938,6 +938,7 @@ class IndoorMapRoom:
     def hookPosition(
         self,
         hook: KitComponentHook,
+        *,
         worldOffset: bool = True,
     ) -> Vector3:
         """Calculates the position of a hook relative to the component.
