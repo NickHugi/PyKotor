@@ -157,7 +157,7 @@ def get_root_logger(use_level: int = logging.DEBUG) -> logging.Logger:
         sys.stderr = CustomPrintToLogger(sys.__stderr__, logger, log_type="stderr")
 
         for level, filename in log_levels.items():
-            handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=3)
+            handler = RotatingFileHandler(filename, maxBytes=1048576, backupCount=3, delay=True)
             handler.setLevel(level)
             handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
