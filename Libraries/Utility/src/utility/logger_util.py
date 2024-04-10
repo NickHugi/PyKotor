@@ -21,11 +21,12 @@ thread_local.is_logging = False
 
 @contextmanager
 def logging_context():
+    prev_state = getattr(thread_local, "is_logging", False)
     thread_local.is_logging = True
     try:
         yield
     finally:
-        thread_local.is_logging = False
+        thread_local.is_logging = prev_state
 
 
 class CustomPrintToLogger:
@@ -43,10 +44,12 @@ class CustomPrintToLogger:
         if getattr(thread_local, "is_logging", False):
             self.original_out.write(message)
         elif message.strip():
-            if self.log_type == "stderr":
-                self.logger.error(message.strip())
-            else:
-                self.logger.info(message.strip())
+            # Use the logging_context to prevent recursive calls
+            with logging_context():
+                if self.log_type == "stderr":
+                    self.logger.error(message.strip())
+                else:
+                    self.logger.info(message.strip())
 
     def flush(self): ...
 
