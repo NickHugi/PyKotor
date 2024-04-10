@@ -64,7 +64,7 @@ class AudioPlayer(QMainWindow):
     def open(self):
         filepath: str = QFileDialog.getOpenFileName(self, "Select an audio file")[0]
         if filepath:
-            resname, restype = ResourceIdentifier.from_path(filepath).validate()
+            resname, restype = ResourceIdentifier.from_path(filepath).validate().unpack()
             data: bytes = BinaryReader.load_file(filepath)
             self.load(filepath, resname, restype, data)
 
@@ -87,15 +87,9 @@ class AudioPlayer(QMainWindow):
         position: int = self.ui.timeSlider.value()
         self.player.setPosition(position)
 
-    def hideEvent(self, event):
-        # closeEvent doesn't get called for whatever reason.
-        super().hideEvent(event)
+    def closeEvent(self, e: QCloseEvent | None = None):
         self.player.stop()
 
-    def closeEvent(self, e: QCloseEvent | None = None):  # FIXME: this event never gets called.
-        print("Closing window and stopping player")  # Debugging line to confirm this method is called
-        self.player.stop()  # Stop the player
-
         if e is not None:
-            e.accept()  # Notify the event system that the event has been handled
-            super().closeEvent(e)  # Call the parent class's closeEvent method
+            e.accept()
+            super().closeEvent(e)

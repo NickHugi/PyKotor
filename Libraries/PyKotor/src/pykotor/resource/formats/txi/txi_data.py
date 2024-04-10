@@ -69,7 +69,7 @@ class TXIFontInformation(TXIBaseInformation):
         "dialogfont16x16a",
         "dialogfont16x16b",
         "dialogfont32x32",
-        "fnt_console",     # 127 chars, also has a large horizontally-wide rectangle probably used as the consolebox display
+        "fnt_console",  # 127 chars, also has a large horizontally-wide rectangle probably used as the consolebox display
         "fnt_credits",
         "fnt_creditsa",
         "fnt_creditsb",
@@ -108,7 +108,9 @@ class TXIFontInformation(TXIBaseInformation):
         self.numchars: int = 256  # Tested. Unsure if this is actually required, or if the game simply takes from the 'upperleftcoords' and 'lowerrightcoords' sizes.
         self.spacingR: float = 0  # Untested. Float between 0 and 1. According to research, should NEVER exceed the maximum of 0.002600
         self.spacingB: float = 0  # Confirmed. Float between 0 and 1. Spacing between each multiline string rendered ingame.
-        self.caretindent: float = -0.010000  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted so this checks out.
+        self.caretindent: float = (
+            -0.010000
+        )  # Untested. Probably determines the accent information above the character. Probably negative since Y is inverted so this checks out.
         self.fontwidth: float = 1.000000  # Tested. Float between 0 and 1. Was told this actually stretches text down somehow. But in k1 tests, changing this does not yield any noticeable ingame result.
 
         # This could easily be used for DBCS (double byte encodings).
@@ -122,8 +124,12 @@ class TXIFontInformation(TXIBaseInformation):
         self.baselineheight: float  # Untested. Float between 0 and 1.
         self.texturewidth: float  # Tested. Float between 0 and 1. Actual displayed width of the texture, allows stretching/compressing along the X axis.
 
-        self.upper_left_coords: list[tuple[float, float, int]]  # Confirmed. The top left coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
-        self.lower_right_coords: list[tuple[float, float, int]]  # Confirmed. The bottom right coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.upper_left_coords: list[
+            tuple[float, float, int]
+        ]  # Confirmed. The top left coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
+        self.lower_right_coords: list[
+            tuple[float, float, int]
+        ]  # Confirmed. The bottom right coordinates for the character box the game draws. each float is 0 to 1. 3rd tuple int is always 0
         #
         # The 3rd int in the upperleftcoords and bottomright coords is unknown. It could be any of the following:
         #
@@ -162,6 +168,7 @@ upperleftcoords {self.ul_coords_count}
 lowerrightcoords {self.lr_coords_count}
 {lr_coords_str}
 """
+
     @property
     def ul_coords_count(self) -> int:
         return len(self.upper_left_coords)
@@ -204,9 +211,7 @@ lowerrightcoords {self.lr_coords_count}
         return boxes
 
     def normalize_coords(
-        self,
-        boxes: list[tuple[float, float, float, float]],
-        resolution: tuple[int, int]
+        self, boxes: list[tuple[float, float, float, float]], resolution: tuple[int, int]
     ) -> tuple[list[tuple[float, float, int]], list[tuple[float, float, int]]]:
         """Converts boxes to normalized coordinates.
 
@@ -262,4 +267,3 @@ lowerrightcoords {self.lr_coords_count}
         # EDIT: Editing fontwidth yields no changes in K1. Might do something in K2.
         # self.fontwidth = self.texturewidth / self.fontheight * max_char_height / resolution[0]
         # assert int(round(self.fontwidth)) == 1
-

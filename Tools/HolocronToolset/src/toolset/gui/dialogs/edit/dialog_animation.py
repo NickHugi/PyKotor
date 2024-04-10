@@ -16,6 +16,7 @@ class EditAnimationDialog(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.edit_animation import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

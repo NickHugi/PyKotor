@@ -15,8 +15,13 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
 
 parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
 parser.add_argument("--input", type=str, help="Path to the K1/TSL GUI file.")
@@ -57,60 +62,42 @@ def log(message: str):
             log_file.write(message + "\n")
 
 
-def scale_value(value, scale_factor):
+def scale_value(value: float, scale_factor: float):
     return int(value * scale_factor)
 
 
-def adjust_controls_for_resolution(gui_data: GFF, target_width, target_height):
+def adjust_controls_for_resolution(gui_data: GFF, target_width: int, target_height: int) -> GFF:
     new_gff = GFF(GFFContent.GUI)
-    new_gff.root._fields = deepcopy(gui_data.root._fields)
+    new_gff.root = deepcopy(gui_data.root)
 
-    width_scale_factor = target_width / (new_gff.root._fields["EXTENT"]._value.get_int32("WIDTH"))
-    height_scale_factor = target_height / (new_gff.root._fields["EXTENT"]._value.get_int32("HEIGHT"))
+    # Determine the scaling factor from the root extent.
+    root_extent_struct = new_gff.root.get_struct("EXTENT")
+    width_scale_factor = target_width / (root_extent_struct.get_int32("WIDTH"))
+    height_scale_factor = target_height / (root_extent_struct.get_int32("HEIGHT"))
+    root_extent_struct.set_int32("WIDTH", target_width)
+    root_extent_struct.set_int32("HEIGHT", target_height)
 
-    new_gff.root._fields["EXTENT"]._value.set_int32("WIDTH", target_width)
-    new_gff.root._fields["EXTENT"]._value.set_int32("HEIGHT", target_height)
+    controls_list: GFFList[GFFStruct] = new_gff.root.get_list("CONTROLS")
+    for control_struct in controls_list:
+        if control_struct.get("SCROLLBAR") is not None:
+            scrollbar: GFFStruct = control_struct.get_struct("SCROLLBAR")
+            scrollbar_extent: GFFStruct = scrollbar.get_struct("EXTENT")
+            resize_extent_by_factor(scrollbar_extent, height_scale_factor, width_scale_factor)
 
-    for i, control_struct in enumerate(gui_data.root._fields["CONTROLS"]._value):
-        if new_gff.root._fields["CONTROLS"]._value._structs[i]._fields.get("SCROLLBAR"):
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields[
-                "EXTENT"]._value.set_int32(
-                "TOP",
-                scale_value(control_struct._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["TOP"],
-                            height_scale_factor),
-            )
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields[
-                "EXTENT"]._value.set_int32(
-                "LEFT",
-                scale_value(control_struct._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["LEFT"],
-                            width_scale_factor),
-            )
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields[
-                "EXTENT"]._value.set_int32(
-                "HEIGHT",
-                scale_value(control_struct._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["HEIGHT"],
-                            height_scale_factor),
-            )
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields[
-                "EXTENT"]._value.set_int32(
-                "WIDTH",
-                scale_value(control_struct._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["WIDTH"],
-                            width_scale_factor),
-            )
-        new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32(
-            "TOP", scale_value(control_struct._fields["EXTENT"]._value["TOP"], height_scale_factor),
-        )
-        new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32(
-            "LEFT", scale_value(control_struct._fields["EXTENT"]._value["LEFT"], width_scale_factor),
-        )
-        new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32(
-            "HEIGHT", scale_value(control_struct._fields["EXTENT"]._value["HEIGHT"], height_scale_factor),
-        )
-        new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32(
-            "WIDTH", scale_value(control_struct._fields["EXTENT"]._value["WIDTH"], width_scale_factor),
-        )
-
+        extent = control_struct.get_struct("EXTENT")
+        resize_extent_by_factor(extent, height_scale_factor, width_scale_factor)
     return new_gff
+
+
+def resize_extent_by_factor(
+    extent_struct: GFFStruct,
+    height_scale_factor: float,
+    width_scale_factor: float,
+):
+    extent_struct.set_int32("TOP", int(extent_struct.get_int32("TOP") * height_scale_factor))
+    extent_struct.set_int32("HEIGHT", int(extent_struct.get_int32("HEIGHT") * height_scale_factor))
+    extent_struct.set_int32("LEFT", int(extent_struct.get_int32("LEFT") * width_scale_factor))
+    extent_struct.set_int32("WIDTH", int(extent_struct.get_int32("WIDTH") * width_scale_factor))
 
 
 # Define a normalization function
@@ -220,15 +207,15 @@ ASPECT_RATIO_TO_RESOLUTION = {
 
 def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
     if gui_file.suffix.lower() != ".gui":
-        print(f"Invalid GUI file: {gui_file}")
+        print(f"Invalid GUI file: '{gui_file}'")
         return
 
     gui_data: GFF | None = read_gff(gui_file)
     if not gui_data:
-        print(f"Could not read GUI file: {gui_file}")
+        print(f"Could not read GUI file: '{gui_file}'")
         return
 
-    log(f"Processing GUI file: {gui_file}")
+    log(f"Processing GUI file: '{gui_file}'")
 
     # Processing and saving the resolutions based on the ASPECT_RATIO_TO_RESOLUTION dictionary
     for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:

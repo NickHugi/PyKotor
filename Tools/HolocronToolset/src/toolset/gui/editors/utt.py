@@ -20,7 +20,12 @@ if TYPE_CHECKING:
 
 
 class UTTEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation
+        | None = None,
+    ):
         """Initialize the trigger editor window.
 
         Args:
@@ -40,6 +45,7 @@ class UTTEditor(Editor):
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         from toolset.uic.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -55,7 +61,10 @@ class UTTEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setupInstallation(
+        self,
+        installation: HTInstallation,
+    ):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
@@ -79,7 +88,10 @@ class UTTEditor(Editor):
         utt: UTT = read_utt(data)
         self._loadUTT(utt)
 
-    def _loadUTT(self, utt: UTT):
+    def _loadUTT(
+        self,
+        utt: UTT,
+    ):
         """Loads UTT data into UI elements.
 
         Args:
