@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tools.path import CaseAwarePath
@@ -35,7 +35,7 @@ class TargetType(IntEnum):
 class Target:
     def __init__(self, target_type: TargetType, value: str | int):
         self.target_type: TargetType = target_type
-        self.value: str | int = value
+        self.value: str | int | RowValueTLKMemory | RowValue2DAMemory = value
 
         if target_type == TargetType.ROW_INDEX and isinstance(value, str):
             msg = "Target value must be int if type is row index."

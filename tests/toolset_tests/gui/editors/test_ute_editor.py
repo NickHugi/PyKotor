@@ -78,7 +78,7 @@ class UTEEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "newtransition.ute"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/newtransition.ute"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

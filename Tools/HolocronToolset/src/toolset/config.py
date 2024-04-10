@@ -5,57 +5,53 @@ import json
 import re
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import requests
 
 from PyQt5.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
-
-if TYPE_CHECKING:
-    import os
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b20",
+    "currentVersion": "2.2.1b22",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b20",
+    "toolsetLatestBetaVersion": "2.2.1b22",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://mega.nz/folder/cGJDAKaa#WzsWF8LgUkM8U2FDEoeeRA",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v2.2.1-toolset-beta22",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/0LxE3JYR#NUpzCQGQ8YThU9KPo2Ikql4c8jcBPnLfLwxsoVQtmN4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac_x64.zip"]
         },
         "Linux": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/JOwW0RII#SbP3HsQxKbhpTBzmL5P1ynwwovJcuJOK6NbB1QvzI_8", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux_x64.zip"]
         },
         "Windows": {
-            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
-            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
+            "32bit": ["https://mega.nz/file/laAkmJxS#-CTNluRAhkoWeRvyrj8HGRwRgQMLVT-jlFdYMsKvLLE", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x86.zip"],
+            "64bit": ["https://mega.nz/file/0ex33YTJ#RlBxTx3AOdxj8tBmgFg8SsCMSdO5i9SYu2FNsktrtzc", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x64.zip"]
         }
     },
     "toolsetBetaDirectLinks": {
         "Darwin": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/MTxwnJCS#HnGxOlMRn-u9jCVfdyUjAVnS5hwy0r8IyRb6dwIwLQ4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/0LxE3JYR#NUpzCQGQ8YThU9KPo2Ikql4c8jcBPnLfLwxsoVQtmN4", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Mac_x64.zip"]
         },
         "Linux": {
             "32bit": [],
-            "64bit": ["https://mega.nz/file/UO5wjRIL#x74llCH5G--Mls9vtkSLkzldYHSkgnqBoyZtJBhKJ8E", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux-x64.tar.gz"]
+            "64bit": ["https://mega.nz/file/JOwW0RII#SbP3HsQxKbhpTBzmL5P1ynwwovJcuJOK6NbB1QvzI_8", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Linux_x64.zip"]
         },
         "Windows": {
-            "32bit": ["https://mega.nz/file/4SADjRJK#0nUAwpLUkvKgNGNE8VS_6161hhN1q44ZbIfX7W14Ix0", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x86.zip"],
-            "64bit": ["https://mega.nz/file/VaI3BbKJ#Ht7yS35JoVGYwZlUsbP_bMHxGLr7UttQ_1xgWnjj4bU", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows-x64.zip"]
+            "32bit": ["https://mega.nz/file/laAkmJxS#-CTNluRAhkoWeRvyrj8HGRwRgQMLVT-jlFdYMsKvLLE", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x86.zip"],
+            "64bit": ["https://mega.nz/file/0ex33YTJ#RlBxTx3AOdxj8tBmgFg8SsCMSdO5i9SYu2FNsktrtzc", "https://github.com/NickHugi/PyKotor/releases/download/{tag}/HolocronToolset_Windows_x64.zip"]
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Fixed help booklet, and other various bugfixes. Update when you are able :)",
+    "toolsetLatestBetaNotes": "Performance improvements, bugfixes, and a dialog to upgrade/downgrade your toolset installation straight from github.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
@@ -87,7 +83,7 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
-        json_str = json_data_match.group(1)
+        json_str = json_data_match[1]
         remoteInfo = json.loads(json_str)
         if not isinstance(remoteInfo, dict):
             raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
@@ -125,81 +121,31 @@ def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
     return version_check
 
 
-def download_github_file(
-    url_or_repo: str,
-    local_path: os.PathLike | str,
-    repo_path: os.PathLike | str | None = None,
-    timeout: int | None = None,
-):
-    timeout = 180 if timeout is None else timeout
-    local_path = Path(local_path).absolute()
-    local_path.parent.mkdir(parents=True, exist_ok=True)
+def version_to_toolset_tag(version: str) -> str:
+    major_minor_patch_count = 2
+    if version.count(".") == major_minor_patch_count:
+        second_dot_index = version.find(".", version.find(".") + 1)  # Find the index of the second dot
+        version = version[:second_dot_index] + version[second_dot_index + 1:]  # Remove the second dot by slicing and concatenating
+    return f"v{version}-toolset"
 
-    if repo_path is not None:
-        # Construct the API URL for the file in the repository
-        owner, repo = PurePath(url_or_repo).parts[-2:]
-        api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
+def toolset_tag_to_version(tag: str) -> str:
+    numeric_part: str = "".join([c for c in tag if c.isdigit() or c == "."])
+    parts = numeric_part.split(".")
 
-        file_info: dict[str, str] = _request_api_data(api_url)
-        # Check if it's a file and get the download URL
-        if file_info["type"] == "file":
-            download_url = file_info["download_url"]
-        else:
-            msg = "The provided repo_path does not point to a file."
-            raise ValueError(msg)
-    else:
-        # Direct URL
-        download_url = url_or_repo
+    major_minor_patch_len = 3
+    if len(parts) == major_minor_patch_len:
+        return ".".join(parts)
+    major_minor_len = 2
+    if len(parts) == major_minor_len:
+        return ".".join(parts)
 
-    # Download the file
-    with requests.get(download_url, stream=True, timeout=timeout) as r:
-        r.raise_for_status()
-        with local_path.open("wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+    # Handle the legacy typo format (missing second dot)
+    major_len = 1
+    major: str = parts[0]
+    if len(parts) > major_len:
+        # Assume the minor version always precedes the concatenated patch version
+        minor = parts[1][0]  # Take the first digit as the minor version
+        patch = parts[1][1:]  # The rest is considered the patch
+        return f"{major}.{minor}.{patch}"
 
-
-def download_github_directory(
-    repo: os.PathLike | str,
-    local_dir: os.PathLike | str,
-    repo_path: os.PathLike | str,
-):
-    """This method should not be used due to github's api restrictions. Use download_file to get a .zip of the folder instead."""  # noqa: D404
-    repo = PurePath(repo)
-    repo_path = PurePath(repo_path)
-    api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-    data = _request_api_data(api_url)
-    for item in data:
-        item_path = Path(item["path"])
-        local_path = item_path.relative_to("toolset")
-
-        if item["type"] == "file":
-            download_github_file(item["download_url"], Path(local_dir, local_path))
-        elif item["type"] == "dir":
-            download_github_directory(repo, item_path, local_path)
-
-
-def download_github_directory_fallback(
-    repo: os.PathLike | str,
-    local_dir: os.PathLike | str,
-    repo_path: os.PathLike | str,
-):
-    """There were two versions of this function and I can't remember which one worked."""
-    repo = PurePath.pathify(repo)
-    repo_path = PurePath.pathify(repo_path)
-    api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-    data = _request_api_data(api_url)
-    for item in data:
-        item_path = Path(item["path"])
-        local_path = item_path.relative_to("toolset")
-
-        if item["type"] == "file":
-            download_github_file(item["download_url"], local_path)
-        elif item["type"] == "dir":
-            download_github_directory(repo, item_path, local_path)
-
-
-def _request_api_data(api_url: str) -> Any:
-    response: requests.Response = requests.get(api_url, timeout=15)
-    response.raise_for_status()
-    return response.json()
+    return f"{major}.0.0"  # In case there's only a major version

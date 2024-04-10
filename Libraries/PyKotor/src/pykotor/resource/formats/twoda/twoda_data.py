@@ -31,7 +31,7 @@ class TwoDA:
     def __repr__(
         self,
     ):
-        return self.__class__.__name__ + f"(headers={self._headers!r}, labels={self._labels!r}, rows={self._rows!r})"
+        return f"{self.__class__.__name__}(headers={self._headers!r}, labels={self._labels!r}, rows={self._rows!r})"
 
     def __iter__(
         self,
@@ -397,7 +397,7 @@ class TwoDA:
         """
         max_found = -1
         for cell in self.get_column(header):
-            with suppress(ValueError):
+            with suppress(ValueError, IndexError):
                 max_found = max(int(cell), max_found)
 
         return max_found + 1
@@ -424,7 +424,7 @@ class TwoDA:
         """
         max_found = -1
         for label in self.get_labels():
-            with suppress(ValueError):
+            with suppress(ValueError, IndexError):
                 max_found = max(int(label), max_found)
 
         return max_found + 1
@@ -593,7 +593,7 @@ class TwoDARow:
             raise KeyError(msg)
 
         value: int | T = default
-        with suppress(ValueError):  # FIXME: this should not be suppressed
+        with suppress(ValueError, IndexError):
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
         return value
@@ -622,7 +622,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        with suppress(ValueError):  # FIXME: this should not be suppressed
+        with suppress(ValueError, IndexError):
             cell = self._data[header]
             return float(cell)
         return default

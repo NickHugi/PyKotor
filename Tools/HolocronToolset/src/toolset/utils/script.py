@@ -38,7 +38,7 @@ class NoOpRegistrySpoofer:
         log.debug("Enter NoOpRegistrySpoofer")
         return self
     def __exit__(self, exc_type, exc_val, exc_tb):
-        log.debug("NoOpRegistrySpoofer.__exit__({exc_type}, {exc_val}, {exc_tb})")
+        log.debug(f"NoOpRegistrySpoofer.__exit__({exc_type}, {exc_val}, {exc_tb})")
 
 
 def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool) -> str:

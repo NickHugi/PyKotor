@@ -184,12 +184,27 @@ class FileDownloader:
                     # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))
                     self._start_hooks(content_length)
+                    start_time = time.time()
                     with file_path.open("wb") as f:
+                        chunk_start = 0
                         for chunk in r.iter_content(chunk_size=8192):
                             if not chunk:
                                 continue
                             f.write(chunk)
-                            self._progress_hooks(len(chunk), content_length)
+                            chunk_start += len(chunk)
+                            for hook in self.progress_hooks:
+                                hook(
+                                    {
+                                        "action": "update_progress",
+                                        "data": {
+                                            "total": content_length,
+                                            "downloaded": chunk_start,
+                                            "status": "downloading",
+                                            "percent_complete": self._calc_progress_percent(chunk_start, content_length),
+                                            "time": self._calc_eta(start_time, time.time(), content_length, chunk_start),
+                                        }
+                                    }
+                                )
                     success = self._check_hash()
                     if success:
                         break
@@ -234,7 +249,7 @@ class FileDownloader:
 
     @staticmethod
     def _get_content_length(
-        data: urllib3.BaseHTTPResponse,
+        data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
         log = get_root_logger()
@@ -409,9 +424,7 @@ def _download_file(
                 try:
                     ph(status)
                 except Exception as err:  # noqa: PERF203
-                    log.debug("Exception in callback: %s", ph.__name__)
-                    log.error(format_exception_with_variables(err))  # noqa: TRY400
-                    log.exception()
+                    log.exception("Exception in callback: %s", ph.__name__)
         log.debug(f"Status - {file_info.st_size / file_size * 100:.2f} downloaded")  # noqa: G004
         log.debug(f"{file_info.st_size} of {file_size} downloaded")  # noqa: G004
 

@@ -26,7 +26,7 @@ class UpdateStrategy(Enum):  # pragma: no cover
 class RestartStrategy(Enum):
     DEFAULT = "default"
     BATCH = "batch"
-    EXEC1 = "exec1"
+    JOIN = "join"
 
 class Restarter:
     def __init__(
@@ -51,14 +51,14 @@ class Restarter:
         self.r_strategy: RestartStrategy = restart_strategy
 
         self.data_dir = TemporaryDirectory("_restarter", "holotoolset_")
-        data_dirpath = Path(self.data_dir.name)
+        self.data_dirpath = Path(self.data_dir.name)
+        self.log.debug("Restart script dir: %s", self.data_dirpath)
         self.exithook = exithook
         self.updated_app: Path = Path.pathify(updated_app)
         self.log.debug("Update path: %s", self.updated_app)
+        if not self.updated_app.exists():
+            self.updated_app = self.updated_app.joinpath(self.updated_app.name)
         assert self.updated_app.exists()
-        if os.name == "nt": # and self.strategy == UpdateStrategy.OVERWRITE:
-            self.bat_file = data_dirpath / "update.bat"
-            self.log.debug("Restart script dir: %s", self.data_dir)
 
     def cleanup(self):
         self.data_dir.cleanup()
@@ -67,18 +67,11 @@ class Restarter:
         self.log.info("Restarter.process() called")
         if os.name == "nt":
             if self.current_app == self.updated_app:
-                self.log.warning("Current app and updated app path are exactly the same, I guess they only wanted us to restart? path: %s", self.current_app)
+                self.log.info("Current app and updated app path are exactly the same, I guess they only wanted us to restart? path: %s", self.current_app)
             if self.u_strategy == UpdateStrategy.OVERWRITE:
                 self._win_overwrite()
-            if self.r_strategy == RestartStrategy.DEFAULT:
-                if is_frozen():
-                    self._join()
-                else:
-                    self._win_restart()
-            elif self.r_strategy == RestartStrategy.BATCH:
+            else:
                 self._win_restart()
-            elif self.r_strategy == RestartStrategy.EXEC1:
-                self._join()
             return
 
         self._join()
@@ -89,10 +82,6 @@ class Restarter:
         self.log.debug("Starting updated app at '%s'...", self.current_app)
         cmd_exe_path = str(self.win_get_system32_dir() / "cmd.exe")
         run_script_cmd: list[str] = [cmd_exe_path, "/C", "start", "", f"{self.current_app}"]
-        flags = 0
-        flags |= 0x00000008  # DETACHED_PROCESS
-        flags |= 0x00000200  # CREATE_NEW_PROCESS_GROUP
-        flags |= 0x08000000  # CREATE_NO_WINDOW
         subprocess.Popen(
             run_script_cmd,
             text=True,
@@ -100,7 +89,7 @@ class Restarter:
             #check=True,
             close_fds=True,
             start_new_session=True,
-            creationflags=flags,
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW,
         )
         time.sleep(5)
         #self.log.debug(
@@ -110,7 +99,7 @@ class Restarter:
         #)
         self.log.info("Finally exiting app '%s'", sys.executable)
         if self.exithook is not None:
-            self.exithook(True)
+            self.exithook(True)  # noqa: FBT003
         #try:
         #    self._win_kill_self()
         #finally:
@@ -118,15 +107,16 @@ class Restarter:
         #    os._exit(0)
 
     def _join(self):
+        assert os.name == "posix"
         #if not is_frozen():
         #    self.log.warning("Cannot call os.exec1() from non-frozen executables.")
         #    return
         if self.exithook is not None:
-            self.exithook(False)
+            self.exithook(False)  # noqa: FBT003
         self.log.debug("Setting executable permissions on %s | %s", self.current_app, self.filename)
         self.current_app.gain_access(mode=7)
         self.log.info("Replacing current process with new app '%s' | %s", self.current_app, self.filename)
-        os.execl(self.current_app, self.filename, *sys.argv[1:])
+        os.execl(self.current_app, self.filename, *sys.argv[1:])  # noqa: S606
 
     def _win_overwrite(self):  # sourcery skip: class-extract-method
         self.log.info("Calling _win_overwrite for updated app '%s'", self.updated_app)
@@ -136,7 +126,8 @@ class Restarter:
         else:
             needs_admin = requires_admin(self.current_app)
         self.log.debug(f"Admin required to update={needs_admin}")  # noqa: G004
-        with self.bat_file.open("w", encoding="utf-8") as batchfile_writer:
+        bat_file = self.data_dirpath / "update.bat"
+        with bat_file.open("w", encoding="utf-8") as batchfile_writer:
             if is_folder:
                 batchfile_writer.write(
                     f"""
@@ -155,19 +146,19 @@ ping 127.0.0.1 -n 5 -w 1000 > NUL
 move /Y "{self.updated_app}" "{self.current_app}"
 """
                 )
-        self._win_batch_mover(admin=needs_admin)
+        self._win_batch_mover(bat_file=bat_file, admin=needs_admin)
 
-    def _win_batch_mover(self, *, admin: bool):
-        self.log.info(f"Executing restart script @ {self.bat_file}")  # noqa: G004
+    def _win_batch_mover(self, *, bat_file: Path, admin: bool):
+        self.log.info(f"Executing restart script @ {bat_file}")  # noqa: G004
         if admin:
             run_script_cmd: list[str] = [
                 "Powershell",
                 "-Command",
-                f"Start-Process cmd.exe -ArgumentList '/C \"{self.bat_file}\"' -Verb RunAs -WindowStyle Hidden -Wait",
+                f"Start-Process cmd.exe -ArgumentList '/C \"{bat_file}\"' -Verb RunAs -WindowStyle Hidden -Wait",
             ]
             try:
                 result = subprocess.run(
-                    run_script_cmd,
+                    run_script_cmd,  # noqa: S603
                 #    executable=cmd_exe_path,
                     text=True,
                     capture_output=True,
@@ -189,11 +180,11 @@ move /Y "{self.updated_app}" "{self.current_app}"
             run_script_cmd: list[str] = [
                 cmd_exe_path,
                 "/C",
-                str(self.bat_file)
+                str(bat_file)
             ]
             try:
                 result = subprocess.run(
-                    run_script_cmd,
+                    run_script_cmd,  # noqa: S603
                 #    executable=cmd_exe_path,
                     text=True,
                     capture_output=True,
@@ -212,16 +203,18 @@ move /Y "{self.updated_app}" "{self.current_app}"
     @staticmethod
     def win_get_system32_dir() -> Path:
         import ctypes
-
-        from ctypes import wintypes
-
-        ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [wintypes.LPWSTR, wintypes.UINT]
-        ctypes.windll.kernel32.GetSystemDirectoryW.restype = wintypes.UINT
-        # Buffer size (MAX_PATH is generally 260 as defined by Windows)
-        buffer = ctypes.create_unicode_buffer(260)
-        # Call the function
-        ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
-        return Path(buffer.value)
+        try:  # PyInstaller sometimes fails to import wintypes.
+            ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
+            ctypes.windll.kernel32.GetSystemDirectoryW.restype = ctypes.c_uint
+            # Buffer size (MAX_PATH is generally 260 as defined by Windows)
+            buffer = ctypes.create_unicode_buffer(260)
+            ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
+            return Path(buffer.value)
+        except Exception:  # noqa: BLE001
+            get_root_logger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+            buffer = ctypes.create_unicode_buffer(260)
+            ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
+            return Path(buffer.value).joinpath("system32")
 
     @classmethod
     def _win_kill_self(cls):

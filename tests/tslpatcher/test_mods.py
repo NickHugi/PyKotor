@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import pathlib
 import sys
 import unittest
@@ -23,7 +22,7 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -72,7 +71,7 @@ if TYPE_CHECKING:
         ModifyGFF,
     )
 
-# TODO Error, Warning tracking
+# TODO(NickHugi): Error, Warning tracking
 
 
 class TestManipulateTLK(TestCase):
@@ -191,9 +190,9 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             ChangeRow2DA(
-                "",
-                Target(TargetType.LABEL_COLUMN, "d"),
-                {"Col2": RowValueConstant("X")},
+                identifier="",
+                target=Target(TargetType.LABEL_COLUMN, "d"),
+                cells={"Col2": RowValueConstant("X")},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -264,9 +263,9 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             ChangeRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 1),
-                {},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 1),
+                cells={},
                 store_2da={5: RowValueRowIndex()},
             )
         )
@@ -287,9 +286,9 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             ChangeRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 1),
-                {},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 1),
+                cells={},
                 store_2da={5: RowValueRowLabel()},
             )
         )
@@ -310,9 +309,9 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             ChangeRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 1),
-                {},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 1),
+                cells={},
                 store_2da={5: RowValueRowCell("label")},
             )
         )
@@ -366,10 +365,10 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddRow2DA(
-                "",
-                "Col1",
-                None,
-                {"Col1": RowValueConstant("123"), "Col2": RowValueConstant("ABC")},
+                identifier="",
+                exclusive_column="Col1",
+                row_label=None,
+                cells={"Col1": RowValueConstant("123"), "Col2": RowValueConstant("ABC")},
             )
         )
         twoda = read_2da(config.patch_resource(bytes_2da(twoda), memory, logger, Game.K1))
@@ -388,10 +387,10 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddRow2DA(
-                "",
-                "Col1",
-                "2",
-                {
+                identifier="",
+                exclusive_column="Col1",
+                row_label="2",
+                cells={
                     "Col1": RowValueConstant("g"),
                     "Col2": RowValueConstant("h"),
                     "Col3": RowValueConstant("i"),
@@ -418,10 +417,10 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddRow2DA(
-                "",
-                "Col1",
-                "3",
-                {
+                identifier="",
+                exclusive_column="Col1",
+                row_label="3",
+                cells={
                     "Col1": RowValueConstant("g"),
                     "Col2": RowValueConstant("X"),
                     "Col3": RowValueConstant("Y"),
@@ -457,10 +456,10 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddRow2DA(
-                "",
-                "",
-                "2",
-                {
+                identifier="",
+                exclusive_column="",
+                row_label="2",
+                cells={
                     "Col1": RowValueConstant("g"),
                     "Col2": RowValueConstant("h"),
                     "Col3": RowValueConstant("i"),
@@ -469,10 +468,10 @@ class TestManipulate2DA(TestCase):
         )
         config.modifiers.append(
             AddRow2DA(
-                "",
-                None,
-                "3",
-                {
+                identifier="",
+                exclusive_column=None,
+                row_label="3",
+                cells={
                     "Col1": RowValueConstant("j"),
                     "Col2": RowValueConstant("k"),
                     "Col3": RowValueConstant("l"),
@@ -538,19 +537,19 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddRow2DA(
-                "",
-                "Col1",
-                "1",
-                {"Col1": RowValueConstant("X")},
+                identifier="",
+                exclusive_column="Col1",
+                row_label="1",
+                cells={"Col1": RowValueConstant("X")},
                 store_2da={5: RowValueRowIndex()},
             )
         )
         config.modifiers.append(
             AddRow2DA(
-                "",
-                None,
-                "2",
-                {"Col1": RowValueConstant("Y")},
+                identifier="",
+                exclusive_column=None,
+                row_label="2",
+                cells={"Col1": RowValueConstant("Y")},
                 store_2da={6: RowValueRowIndex()},
             )
         )
@@ -575,14 +574,14 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                None,
-                None,
-                {"Col2": RowValueConstant("X")},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column=None,
+                row_label=None,
+                cells={"Col2": RowValueConstant("X")},
             )
         )
-        twoda: TwoDA = read_2da(config.patch_resource(bytes_2da(twoda), memory, logger, Game.K1))
+        twoda: TwoDA = read_2da(cast(bytes, config.patch_resource(bytes_2da(twoda), memory, logger, Game.K1)))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -599,11 +598,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_LABEL, "1"),
-                None,
-                None,
-                {"Col2": RowValueConstant("X")},
+                identifier="",
+                target=Target(TargetType.ROW_LABEL, "1"),
+                exclusive_column=None,
+                row_label=None,
+                cells={"Col2": RowValueConstant("X")},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -622,11 +621,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                "Col1",
-                None,
-                {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column="Col1",
+                row_label=None,
+                cells={"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -646,11 +645,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                "Col1",
-                None,
-                {"Col1": RowValueConstant("a"), "Col2": RowValueConstant("X")},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column="Col1",
+                row_label=None,
+                cells={"Col1": RowValueConstant("a"), "Col2": RowValueConstant("X")},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -670,20 +669,20 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                None,
-                None,
-                {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column=None,
+                row_label=None,
+                cells={"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")},
             )
         )
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                "",
-                "r2",
-                {"Col1": RowValueConstant("e"), "Col2": RowValueConstant("f")},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column="",
+                row_label="r2",
+                cells={"Col1": RowValueConstant("e"), "Col2": RowValueConstant("f")},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -721,11 +720,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                None,
-                None,
-                {"Col2": RowValueHigh("Col2")},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column=None,
+                row_label=None,
+                cells={"Col2": RowValueHigh("Col2")},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -746,11 +745,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                None,
-                None,
-                {"Col2": RowValueTLKMemory(0)},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column=None,
+                row_label=None,
+                cells={"Col2": RowValueTLKMemory(0)},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -770,11 +769,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                None,
-                None,
-                {"Col2": RowValue2DAMemory(0)},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column=None,
+                row_label=None,
+                cells={"Col2": RowValue2DAMemory(0)},
             )
         )
         config.apply(twoda, memory, logger, Game.K1)
@@ -793,11 +792,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             CopyRow2DA(
-                "",
-                Target(TargetType.ROW_INDEX, 0),
-                None,
-                None,
-                {},
+                identifier="",
+                target=Target(TargetType.ROW_INDEX, 0),
+                exclusive_column=None,
+                row_label=None,
+                cells={},
                 store_2da={5: RowValueRowIndex()},
             )
         )
@@ -903,11 +902,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddColumn2DA(
-                "",
-                "Col3",
-                "",
-                {0: RowValueConstant("X"), 1: RowValueConstant("Y")},
-                {},
+                identifier="",
+                header="Col3",
+                default="",
+                index_insert={0: RowValueConstant("X"), 1: RowValueConstant("Y")},
+                label_insert={},
                 store_2da={0: "I0"},
             )
         )
@@ -929,11 +928,11 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(
             AddColumn2DA(
-                "",
-                "Col3",
-                "",
-                {0: RowValueConstant("X"), 1: RowValueConstant("Y")},
-                {},
+                identifier="",
+                header="Col3",
+                default="",
+                index_insert={0: RowValueConstant("X"), 1: RowValueConstant("Y")},
+                label_insert={},
                 store_2da={0: "L1"},
             )
         )
@@ -955,7 +954,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_uint8("Field1"))
 
@@ -966,7 +965,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_int8("Field1"))
 
@@ -977,7 +976,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_uint16("Field1"))
 
@@ -988,7 +987,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_int16("Field1"))
 
@@ -999,7 +998,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_uint32("Field1"))
 
@@ -1010,7 +1009,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_int32("Field1"))
 
@@ -1021,7 +1020,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_uint64("Field1"))
 
@@ -1032,7 +1031,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2, gff.root.get_int64("Field1"))
 
@@ -1043,7 +1042,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2.3450000286102295, gff.root.get_single("Field1"))
 
@@ -1054,7 +1053,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345678))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(2.345678, gff.root.get_double("Field1"))
 
@@ -1065,7 +1064,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant("def"))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual("def", gff.root.get_string("Field1"))
 
@@ -1085,7 +1084,7 @@ class TestManipulateGFF(TestCase):
                 )
             ],
         )
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(1, gff.root.get_locstring("Field1").stringref)
 
@@ -1096,7 +1095,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(Vector3(1, 2, 3)))])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(Vector3(1, 2, 3), gff.root.get_vector3("Field1"))
 
@@ -1111,7 +1110,7 @@ class TestManipulateGFF(TestCase):
             False,
             [ModifyFieldGFF("Field1", FieldValueConstant(Vector4(1, 2, 3, 4)))],
         )
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(Vector4(1, 2, 3, 4), gff.root.get_vector4("Field1"))
 
@@ -1125,7 +1124,7 @@ class TestManipulateGFF(TestCase):
         modifiers: list[ModifyGFF] = [ModifyFieldGFF(PureWindowsPath("List\\0\\String"), FieldValueConstant("abc"))]
 
         config = ModificationsGFF("", False, modifiers)
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
         patched_gff_list = gff.root.get_list("List")
         patched_gff_struct = patched_gff_list.at(0)
 
@@ -1142,7 +1141,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(ModifyFieldGFF("String", FieldValue2DAMemory(5)))
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValue2DAMemory(5)))
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1158,7 +1157,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(ModifyFieldGFF("String", FieldValueTLKMemory(5)))
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValueTLKMemory(5)))
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1177,7 +1176,7 @@ class TestManipulateGFF(TestCase):
         add_field2.modifiers.append(add_field3)
 
         config = ModificationsGFF("", False, [add_field1])
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertIsNotNone(gff.root.get_list("List"))
         self.assertIsNotNone(gff.root.get_list("List").at(0))
@@ -1201,7 +1200,7 @@ class TestManipulateGFF(TestCase):
                 path=PureWindowsPath("List\\0"),
             )
         )
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
         patched_gff_list = gff.root.get_list("List")
         patched_gff_struct = patched_gff_list.at(0)
 
@@ -1216,7 +1215,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValue2DAMemory(5), PureWindowsPath("")))
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValue2DAMemory(5), PureWindowsPath("")))
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1230,7 +1229,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValueTLKMemory(5), PureWindowsPath("")))
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValueTLKMemory(5), PureWindowsPath("")))
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1262,12 +1261,8 @@ class TestManipulateGFF(TestCase):
             )
         ]
 
-        config = ModificationsGFF(
-            "",
-            False,
-            modifiers,
-        )
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        config = ModificationsGFF("", False, modifiers)
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
 
         self.assertEqual(123, gff.root.get_locstring("Field1").stringref)
 
@@ -1282,7 +1277,7 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddStructToListGFF("test2", FieldValueConstant(GFFStruct(3)), "List", None))
         config.modifiers.append(AddStructToListGFF("test3", FieldValueConstant(GFFStruct(1)), "List", None))
 
-        gff = read_gff(config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1))
+        gff = read_gff(cast(bytes, config.patch_resource(bytes_gff(gff), memory, PatchLogger(), Game.K1)))
         patched_gff_list = gff.root.get_list("List")
 
         self.assertEqual(5, patched_gff_list.at(0).struct_id)  # type: ignore

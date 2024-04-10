@@ -53,9 +53,7 @@ class PatcherConfig:
         self.required_file: str | None = None
         self.required_message: str = ""
         self.save_processed_scripts: int = 0
-
-        # optional hp features
-        self.ignore_file_extensions: bool = False
+        self.log_level: LogLevel = LogLevel.WARNINGS
 
         self.install_list: list[InstallFile] = []
         self.patches_2da: list[Modifications2DA] = []
@@ -64,6 +62,9 @@ class PatcherConfig:
         self.patches_nss: list[ModificationsNSS] = []
         self.patches_ncs: list[ModificationsNCS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
+
+        # optional hp features
+        self.ignore_file_extensions: bool = False
 
     def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None):
         """Loads configuration from a TSLPatcher changes ini text string.

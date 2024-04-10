@@ -91,12 +91,21 @@ class ResourceList(MainWindowList):
     def currentSection(self) -> str:
         return self.ui.sectionCombo.currentData()
 
-    def changeSection(self, section: str):
+    def changeSection(
+        self,
+        section: str,
+    ):
         for i in range(self.ui.sectionCombo.count()):
             if section in self.ui.sectionCombo.itemText(i):
                 self.ui.sectionCombo.setCurrentIndex(i)
 
-    def setResources(self, resources: list[FileResource], customCategory: str | None = None, *, clear_existing: bool = True):
+    def setResources(
+        self,
+        resources: list[FileResource],
+        customCategory: str | None = None,
+        *,
+        clear_existing: bool = True,
+    ):
         """Adds and removes FileResources from the modules model.
 
         Args:
@@ -136,12 +145,18 @@ class ResourceList(MainWindowList):
         # Remove unused categories
         self.modulesModel.removeUnusedCategories()
 
-    def setSections(self, sections: list[QStandardItem]):
+    def setSections(
+        self,
+        sections: list[QStandardItem],
+    ):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
-    def setResourceSelection(self, resource: FileResource):
+    def setResourceSelection(
+        self,
+        resource: FileResource,
+    ):
         """Sets the selected resource in the resource tree.
 
         Args:
@@ -485,7 +500,11 @@ class TextureList(MainWindowList):
 
 
 class TextureListConsumer(multiprocessing.Process):
-    def __init__(self, taskQueue, resultQueue):
+    def __init__(
+        self,
+        taskQueue: multiprocessing.JoinableQueue,
+        resultQueue: multiprocessing.Queue,
+    ):
         multiprocessing.Process.__init__(self)
         self.taskQueue: multiprocessing.JoinableQueue = taskQueue
         self.resultQueue: multiprocessing.Queue = resultQueue
@@ -501,7 +520,12 @@ class TextureListConsumer(multiprocessing.Process):
 
 
 class TextureListTask:
-    def __init__(self, row: int, tpc: TPC, resname: str):
+    def __init__(
+        self,
+        row: int,
+        tpc: TPC,
+        resname: str,
+    ):
         self.row: int = row
         self.tpc: TPC = tpc
         self.resname: str = resname

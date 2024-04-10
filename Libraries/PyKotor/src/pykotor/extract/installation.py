@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 import re
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -30,6 +30,8 @@ from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from logging import Logger
+
+    from typing_extensions import Literal
 
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
@@ -138,7 +140,9 @@ class Installation:  # noqa: PLR0904
         ResourceType.DDS,
     ]
 
-    def __init__(self, path: os.PathLike | str):
+    def __init__(self, path: os.PathLike | str, *, multithread: bool = False):
+        self.use_multithreading: bool = multithread
+
         self._log: Logger = get_root_logger()
         self._path: CaseAwarePath = CaseAwarePath.pathify(path)
 
@@ -341,100 +345,126 @@ class Installation:  # noqa: PLR0904
     # endregion
 
     # region Load Data
-    def load_single_resource(
+    def _build_single_resource(
         self,
         filepath: Path | CaseAwarePath,
-        capsule_check: Callable | None = None,
-    ) -> tuple[Path, list[FileResource] | FileResource | None]:
+    ) -> FileResource | None:
+        resname, restype = ResourceIdentifier.from_path(filepath).unpack()
+        if restype.is_invalid:
+            return None
+        return FileResource(resname, restype, filepath.stat().st_size, offset=0, filepath=filepath)
+
+    def _build_resource_list(
+        self,
+        filepath: Path | CaseAwarePath,
+        capsule_check: Callable,
+    ) -> tuple[Path, list[FileResource] | None]:
         # sourcery skip: extract-method
-        try:
-            if capsule_check:
-                if not capsule_check(filepath):
-                    return filepath, None
-                return filepath, list(Capsule(filepath))
+        if not capsule_check(filepath):
+            return filepath, None
+        return filepath, list(Capsule(filepath))
 
-            resname: str
-            restype: ResourceType
-            resname, restype = ResourceIdentifier.from_path(filepath).unpack()
-            if restype.is_invalid:
-                return filepath, None
-
-            return filepath, FileResource(
-                resname,
-                restype,
-                filepath.stat().st_size,
-                offset=0,
-                filepath=filepath,
-            )
-        except Exception:  # noqa: BLE001
-            self._log.exception("Error while gathering resources in worker")
-        return filepath, None
-
-    def load_resources(
+    def load_resources_dict(
         self,
         path: CaseAwarePath,
-        capsule_check: Callable | None = None,
+        capsule_check: Callable,
         *,
         recurse: bool = False,
-    ) -> dict[str, list[FileResource]] | list[FileResource]:
-        """Load resources for a given path and store them in a new list/dict.
+    ) -> dict[str, list[FileResource]]:
+        """Load resources for a given path and store them in a new dict.
 
         Args:
         ----
             path (os.PathLike | str): path for lookup.
             recurse (bool): whether to recurse into subfolders (default is False)
-            capsule_check (Callable returns bool or None): Determines whether to use a resource dict or resource list. If the check doesn't pass, the resource isn't added.
+            capsule_check (Callable returns bool): If the check doesn't pass, the resource isn't added.
 
         Returns:
         -------
-            list[FileResource]: The list where resources at the path have been stored.
-             or
             dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
-
         r_path = Path(path)
         if not r_path.safe_isdir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
-            return resources
+            return {}
 
-        self._log.info("Loading %s...", r_path.relative_to(self._path))
+        self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
         files_iter = (
             path.safe_rglob("*")
             if recurse
             else path.safe_iterdir()
         )
 
-        # Determine number of workers dynamically based on available CPUs
-        num_cores = os.cpu_count() or 1  # Ensure at least one core is returned
-        max_workers = num_cores * 4  # Use 4x the number of cores
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit tasks to the executor
-            futures = [
-                executor.submit(self.load_single_resource, file, capsule_check)
-                for file in files_iter
-            ]
+        resources_dict: dict[str, list[FileResource]] = {}
 
-            # Gather resources and omit `None` values (errors or skips)
-            if isinstance(resources, dict):
-                for f in futures:
-                    filepath, resource = f.result()
-                    if resource is None:
+        if self.use_multithreading:
+            num_cores = os.cpu_count() or 1
+            max_workers = num_cores * 4
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for future in as_completed(executor.submit(self._build_resource_list, file, capsule_check) for file in files_iter):
+                    filepath, resource = future.result()
+                    if not resource:
                         continue
-                    if not isinstance(resource, list):
-                        continue
-                    resources[filepath.name] = resource
-            else:
-                for f in futures:
-                    filepath, resource = f.result()
-                    if resource is None:
-                        continue
-                    if isinstance(resource, FileResource):
-                        resources.append(resource)
-
-        if not resources:
+                    resources_dict[filepath.name] = resource
+        else:
+            for file in files_iter:
+                filepath, resource = self._build_resource_list(file, capsule_check)
+                if not resource:
+                    continue
+                resources_dict[filepath.name] = resource
+        if not resources_dict:
             self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
-        return resources
+        return resources_dict
+
+    def load_resources_list(
+        self,
+        path: CaseAwarePath,
+        *,
+        recurse: bool = False,
+    ) -> list[FileResource]:
+        """Load resources for a given path and store them in a new list.
+
+        Args:
+        ----
+            path (os.PathLike | str): path for lookup.
+            recurse (bool): whether to recurse into subfolders (default is False)
+
+        Returns:
+        -------
+            list[FileResource]: The list where resources at the path have been stored.
+        """
+        r_path = Path(path)
+        if not r_path.safe_isdir():
+            self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
+            return []
+
+        self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
+        files_iter = (
+            path.safe_rglob("*")
+            if recurse
+            else path.safe_iterdir()
+        )
+
+        resources_list: list[FileResource] = []
+
+        if self.use_multithreading:
+            num_cores = os.cpu_count() or 1
+            max_workers = num_cores * 4
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for future in as_completed(executor.submit(self._build_single_resource, file) for file in files_iter):
+                    resource = future.result()
+                    if not resource:
+                        continue
+                    resources_list.append(resource)
+        else:
+            for file in files_iter:
+                resource = self._build_single_resource(file)
+                if not resource:
+                    continue
+                resources_list.append(resource)
+        if not resources_list:
+            self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
+        return resources_list
 
     def load_chitin(self):
         """Reloads the list of resources in the Chitin linked to the Installation."""
@@ -453,11 +483,11 @@ class Installation:  # noqa: PLR0904
         self,
     ):
         """Reloads the list of modules in the lips folder linked to the Installation."""
-        self._lips = self.load_resources(self.lips_path(), capsule_check=is_mod_file)  # type: ignore[assignment]
+        self._lips = self.load_resources_dict(self.lips_path(), capsule_check=is_mod_file)
 
     def load_modules(self):
         """Reloads the list of modules files in the modules folder linked to the Installation."""
-        self._modules = self.load_resources(self.module_path(), capsule_check=is_capsule_file)  # type: ignore[assignment]
+        self._modules = self.load_resources_dict(self.module_path(), capsule_check=is_capsule_file)
 
     def reload_module(self, module: str):
         """Reloads the list of resources in specified module in the modules folder linked to the Installation.
@@ -474,13 +504,13 @@ class Installation:  # noqa: PLR0904
         self,
     ):
         """Reloads the list of module files in the rims folder linked to the Installation."""
-        self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[assignment]
+        self._rims = self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
 
     def load_textures(
         self,
     ):
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
-        self._texturepacks = self.load_resources(self.texturepacks_path(), capsule_check=is_erf_file)  # type: ignore[assignment]
+        self._texturepacks = self.load_resources_dict(self.texturepacks_path(), capsule_check=is_erf_file)
 
     def load_override(self, directory: str | None = None):
         """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
@@ -510,7 +540,7 @@ class Installation:  # noqa: PLR0904
 
         for folder in target_dirs:
             relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
-            self._override[relative_folder] = self.load_resources(folder)  # type: ignore[assignment]
+            self._override[relative_folder] = self.load_resources_list(folder, recurse=True)
 
     def reload_override(
         self,
@@ -560,25 +590,25 @@ class Installation:  # noqa: PLR0904
         self,
     ):
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
-        self._streammusic = self.load_resources(self.streammusic_path())  # type: ignore[assignment]
+        self._streammusic = self.load_resources_list(self.streammusic_path())
 
     def load_streamsounds(
         self,
     ):
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
-        self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[assignment]
+        self._streamsounds = self.load_resources_list(self.streamsounds_path())
 
     def load_streamwaves(
         self,
     ):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)  # type: ignore[assignment]
+        self._streamwaves = self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)
 
     def load_streamvoice(
         self,
     ):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)  # type: ignore[assignment]
+        self._streamwaves = self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)
 
     # endregion
 
@@ -1155,7 +1185,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return locations
@@ -1174,7 +1204,7 @@ class Installation:  # noqa: PLR0904
 
         If the specified texture could not be found then the method returns None.
 
-        Texture is search for in the following order:
+        Texture is searched using the following default order:
             1. "folders" parameter.
             2. "capsules" parameter.
             3. Installation override folder.
@@ -1320,7 +1350,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return textures
@@ -1461,7 +1491,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return gffs
@@ -1588,7 +1618,7 @@ class Installation:  # noqa: PLR0904
         }
 
         for item in order:
-            assert isinstance(item, SearchLocation)
+            assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
         return sounds
@@ -1736,7 +1766,7 @@ class Installation:  # noqa: PLR0904
                     name = self.talktable().string(locstring.stringref)
                 if name and name.strip():
                     return name
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001, PERF203
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001, PERF203
                 self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
             mod_ids_to_try.add(mod_id)
 
@@ -1770,11 +1800,11 @@ class Installation:  # noqa: PLR0904
 
         Args:
         ----
-            module_filename: The name of the module file.
-            use_hardcoded: Deprecated (does nothing)
-            use_alternate: Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns
+            module_filename: str - The name of the module file.
+            use_hardcoded: bool - Deprecated (does nothing)
+            use_alternate: bool - Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns
                 the ID name that matches the existing ARE/GIT resources.
-            also_return_cached_capsules: prevent unnecessary capsule lookups. Makes the return type tuple[str, dict[Path, Capsule]]
+            also_return_cached_capsules: bool - prevent unnecessary capsule lookups. Makes the return type tuple[str, dict[Path, Capsule]]
 
         Returns:
         -------
@@ -1858,7 +1888,7 @@ class Installation:  # noqa: PLR0904
                 if mod_id and mod_id.startswith("m") or mod_id[1].isdigit():
                     found_mod_id = mod_id
         except Exception:  # noqa: BLE001
-            self._log.debug("This exception has been suppressed in pykotor.extract.installation.", exc_info=True)
+            self._log.exception("Installation.module_id(%s) had an unexpected exception thrown.", module_filename)
         # print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
         if also_return_cached_capsules:
             return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
@@ -1883,24 +1913,15 @@ class Installation:  # noqa: PLR0904
                     found_mod_id = self._get_mod_id_from_area_list(mod_area_list)
                 else:
                     found_mod_id = ifo.root.get_string(attribute_name).strip()
-                if use_alternate:  # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
-                    if found_mod_id and found_mod_id.lower() in lower_root:
-                        # print(f"Alternate: Found {attribute_name} '{found_mod_id}' in '{lower_root}'")
-                        return found_mod_id, True
-                    # print(f"Alternate: {attribute_name} '{found_mod_id}' not in '{lower_root}'")
-        except Exception as e:  # noqa: BLE001
+                if use_alternate and found_mod_id and found_mod_id.lower() in lower_root:
+                    return found_mod_id, True
+        except Exception:  # noqa: BLE001
             ...  # print(iterated_capsule.filename(), attribute_name, str(e))
         else:
-            # if found_mod_id:
-            #     print(f"Got ID '{found_mod_id}' in {attribute_name} for erf/rim '{iterated_capsule.filename()}'")
-            if not use_alternate:  # noqa: SIM102  # sourcery skip: remove-str-from-print, merge-nested-ifs, swap-nested-ifs
-                if found_mod_id and found_mod_id.strip():
-                    if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
-                        return found_mod_id, True
-                    mod_ids_to_try.add(found_mod_id)
-                    # print(f"{attribute_name} entry '{found_mod_id}' invalid? erf/rim '{iterated_capsule.filename()}'")
-                # else:
-                # print(f"{attribute_name} not defined? erf/rim '{iterated_capsule.filename()}'")
+            if not use_alternate and found_mod_id and found_mod_id.strip():
+                if iterated_capsule.info(found_mod_id, ResourceType.ARE) is not None:
+                    return found_mod_id, True
+                mod_ids_to_try.add(found_mod_id)
         return found_mod_id, False
 
     def _build_item(

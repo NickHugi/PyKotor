@@ -76,7 +76,7 @@ class UTWEditorTest(unittest.TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "tar05_sw05aa10.utw"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/tar05_sw05aa10.utw"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
-from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -23,13 +22,11 @@ from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QWidget
+    from PyQt5.QtWidgets import QMainWindow, QWidget
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
@@ -47,7 +44,7 @@ class UTCEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QWidget | QObject | None = None,
+        mainwindow: QMainWindow | None = None,
     ):
         """Initializes the Creature Editor window.
 
@@ -194,8 +191,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
-        # self.ui.featList.setSortingEnabled(True)
-        # self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.featList.setSortingEnabled(True)
+        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -208,8 +205,8 @@ class UTCEditor(Editor):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
-        # self.ui.powerList.setSortingEnabled(True)
-        # self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.powerList.setSortingEnabled(True)
+        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
@@ -298,7 +295,7 @@ class UTCEditor(Editor):
         self.ui.wisdomSpin.setValue(utc.wisdom)
         self.ui.charismaSpin.setValue(utc.charisma)
 
-        # TODO(th3w1zard1): Fix the maximum. Use max due to uncertainty, but it's probably always 150.
+        # TODO(th3w1zard1): Fix the maximum. Use max() due to uncertainty, but it's probably always 150.
         self.ui.baseHpSpin.setMaximum(max(self.ui.baseHpSpin.maximum(), utc.hp))
         self.ui.currentHpSpin.setMaximum(max(self.ui.currentHpSpin.maximum(), utc.current_hp))
         self.ui.maxHpSpin.setMaximum(max(self.ui.maxHpSpin.maximum(), utc.max_hp))
@@ -519,7 +516,7 @@ class UTCEditor(Editor):
             pixmap = self._build_pixmap(index)
         self.ui.portraitPicture.setPixmap(pixmap)
 
-    def _build_pixmap(self, index):
+    def _build_pixmap(self, index: int) -> QPixmap:
         """Builds a portrait pixmap based on character alignment.
 
         Args:
@@ -540,7 +537,7 @@ class UTCEditor(Editor):
         portraits: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
         portrait: str = portraits.get_cell(index, "baseresref")
 
-        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO: document these magic numbers
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):  # TODO(th3w1zard1): document these magic numbers
             portrait = portraits.get_cell(index, "baseresrefe")
         elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):
             portrait = portraits.get_cell(index, "baseresrefve")
@@ -612,17 +609,15 @@ class UTCEditor(Editor):
             - Refreshes item count and 3D preview.
         """
         droid: bool = self.ui.raceSelect.currentIndex() == 0
-        capsules: list[Capsule] = []
-
-        try:
-            assert self._filepath is not None, f"self._filepath cannot be None in {self!r}.openInventory(). Relevance: (droid={droid!r})"
-            root: str = Module.get_root(self._filepath)
-            capsulesPaths: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
-            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            print(format_exception_with_variables(e, message="This exception has been suppressed by default."))
-
-        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
+        inventoryEditor = InventoryEditor(
+            self,
+            self._installation,
+            Module.get_capsules(self._installation, Module.get_root(self._filepath.name)),
+            [],
+            self._utc.inventory,
+            self._utc.equipment,
+            droid=droid,
+        )
         if inventoryEditor.exec_():
             self._utc.inventory = inventoryEditor.inventory
             self._utc.equipment = inventoryEditor.equipment
@@ -637,7 +632,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
                 print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
-                return None
+                continue
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
         return None
@@ -647,7 +642,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
                 print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
-                return None
+                continue
             if item.data(QtCore.Qt.UserRole) == powerId:
                 return item
         return None
@@ -671,7 +666,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
                 print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
-                return
+                continue
 
             if item.checkState() == QtCore.Qt.Checked:
                 summary += f"{item.text()}\n"
@@ -692,7 +687,7 @@ class UTCEditor(Editor):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
                 print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
-                return
+                continue
 
             if item.checkState() == QtCore.Qt.Checked:
                 summary += f"{item.text()}\n"

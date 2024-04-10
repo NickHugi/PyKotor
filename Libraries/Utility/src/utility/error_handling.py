@@ -16,7 +16,9 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
 
-def universal_simplify_exception(e: BaseException) -> tuple[str, str]:
+def universal_simplify_exception(
+    e: BaseException,
+) -> tuple[str, str]:
     """Simplify exceptions into a standardized format.
 
     Args:
@@ -107,7 +109,13 @@ def is_builtin_class_instance(obj: Any) -> bool:
 _currently_processing: ContextVar[list] = ContextVar("_currently_processing", default=[])
 
 
-def safe_repr(obj: Any, max_length: int = 200, indent_level: int = 0, max_depth: int = 3, _depth: int = 0) -> str:
+def safe_repr(
+    obj: Any,
+    max_length: int = 200,
+    indent_level: int = 0,
+    max_depth: int = 3,
+    _depth: int = 0,
+) -> str:
     """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
     if is_builtin_class_instance(obj):
         try:
@@ -223,7 +231,9 @@ def format_var_str(
     return f"  {var} = {display_value}"
 
 
-def format_frame_info(frame_info: inspect.FrameInfo) -> list[str]:
+def format_frame_info(
+    frame_info: inspect.FrameInfo,
+) -> list[str]:
     """Extract and format information from a frame."""
     (
         frame,
@@ -296,7 +306,10 @@ def is_assertion_removal_enabled() -> bool:
 IT = TypeVar("IT")
 
 
-def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
+def enforce_instance_cast(
+    obj: object,
+    type_: type[IT],
+) -> IT:
     instance_check: bool = isinstance(obj, type_)
     if is_assertion_removal_enabled():
         # don't enforce the instance check if the assertion optimizers are being used.
@@ -308,7 +321,10 @@ def enforce_instance_cast(obj: object, type_: type[IT]) -> IT:
     return obj  # type: ignore[return-value]
 
 
-def assert_with_variable_trace(condition: bool, message: str = "Assertion Failed"):
+def assert_with_variable_trace(
+    condition: bool,
+    message: str = "Assertion Failed",
+):
     if condition:
         return
     # Capture the current stack trace

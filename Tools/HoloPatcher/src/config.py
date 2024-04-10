@@ -12,9 +12,9 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "1.5.3a1",
+    "currentVersion": "1.6.0b2",
     "holopatcherLatestVersion": "1.5.2",
-    "holopatcherLatestBetaVersion": "1.5.3a1",
+    "holopatcherLatestBetaVersion": "1.6.0a1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py?ref=bleeding-edge",
     "holopatcherDownloadLink": "https://deadlystream.com/files/file/1982-holocron-holopatcher",
@@ -61,24 +61,24 @@ def getRemoteHolopatcherUpdateInfo(*, use_beta_channel: bool = False, silent: bo
 
         if not json_data_match:
             raise ValueError(f"JSON data not found or markers are incorrect: {json_data_match}")  # noqa: TRY301
-        json_str = json_data_match.group(1)
+        json_str = json_data_match[1]
         remote_info = json.loads(json_str)
         if not isinstance(remote_info, dict):
             raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remote_info.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001
         err_msg = str(universal_simplify_exception(e))
-        result = silent or messagebox.askyesno(
+        if silent or messagebox.askyesno(
             "Error occurred fetching update information.",
             (
                 "An error occurred while fetching the latest toolset information.\n\n"
                 + err_msg
                 + "\n\n"
                 + "Would you like to check against the local database instead?"
-            )
-        )
-        if not result:
+            ),
+        ):
+            remote_info = LOCAL_PROGRAM_INFO
+        else:
             return e
-        remote_info = LOCAL_PROGRAM_INFO
     return remote_info
 
 

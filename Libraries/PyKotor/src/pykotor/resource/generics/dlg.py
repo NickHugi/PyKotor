@@ -168,7 +168,7 @@ class DLG:
         for link in links:
             entry: DLGNode = link.node
             if entry not in seen_entries:  # sourcery skip: class-extract-method
-                assert isinstance(entry, DLGEntry)  # noqa: S101
+                assert isinstance(entry, DLGEntry), f"{type(entry).__name__}: {entry}"  # noqa: S101
                 entries.append(entry)
                 seen_entries.append(entry)
                 for reply_link in entry.links:
@@ -220,7 +220,7 @@ class DLG:
         for link in links:
             reply = link.node
             if reply not in seen_replies:  # sourcery skip: class-extract-method
-                assert isinstance(reply, DLGReply)  # noqa: S101
+                assert isinstance(reply, DLGReply), f"{type(reply).__name__}: {reply}"  # noqa: S101
                 replies.append(reply)
                 seen_replies.append(reply)
                 for entry_link in reply.links:

@@ -24,6 +24,17 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 
+def format_diff(old_value: object, new_value: object, name: str) -> str:
+    # Convert values to strings if they aren't already
+    str_old_value = str(old_value).splitlines(keepends=True)
+    str_new_value = str(new_value).splitlines(keepends=True)
+
+    # Generate unified diff
+    diff = difflib.unified_diff(str_old_value, str_new_value, fromfile=f"(old){name}", tofile=f"(new){name}", lineterm="")
+
+    # Return formatted diff
+    return "\n".join(diff)
+
 class GFFContent(Enum):
     """The different resources that the GFF can represent."""
 
@@ -158,18 +169,18 @@ class GFFFieldType(IntEnum):
 
 
 class Difference:
-    def __init__(self, path: os.PathLike | str, old_value: Any, new_value: Any):
+    def __init__(self, path: PureWindowsPath | str, old_value: object, new_value: object):
         """Initializes a Difference instance representing a specific difference between two GFFStructs.
 
         Args:
         ----
-            path (os.PathLike | str): The path to the value within the GFFStruct where the difference was found.
-            old_value (Any): The value from the original GFFStruct at the specified path.
-            new_value (Any): The value from the compared GFFStruct at the specified path.
+            path (PureWindowsPath | str): The path to the value within the GFFStruct where the difference was found.
+            old_value (object): The value from the original GFFStruct at the specified path.
+            new_value (object): The value from the compared GFFStruct at the specified path.
         """
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
-        self.old_value: Any = old_value
-        self.new_value: Any = new_value
+        self.old_value: object = old_value
+        self.new_value: object = new_value
 
     def __repr__(self):
         return f"Difference(path={self.path}, old_value={self.old_value}, new_value={self.new_value})"
@@ -190,7 +201,7 @@ class GFFCompareResult:
 
     def __bool__(self):
         # Return False if the list has any contents (meaning the objects are different), True if it's empty.
-        return not bool(self.differences)
+        return not self.differences
 
     def add_difference(self, path, old_value, new_value):
         """Adds a difference to the collection of tracked differences.
@@ -203,32 +214,32 @@ class GFFCompareResult:
         """
         self.differences.append(Difference(path, old_value, new_value))
 
-    def get_changed_values(self) -> list[Difference]:
-        """Returns a list of differences where the value has changed from the original.
+    def get_changed_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where the value has changed from the original.
 
         Returns:
         -------
-            list[Difference]: The list of differences with changed values.
+            tuple[Difference]: A collection of differences with changed values.
         """
-        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value]
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value)
 
-    def get_new_values(self) -> list[Difference]:
-        """Returns a list of differences where a new value is present in the compared GFFStruct.
+    def get_new_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where a new value is present in the compared GFFStruct.
 
         Returns:
         -------
-            list[Difference]: The list of differences with new values.
+            tuple[Difference]: A collection of differences with new values.
         """
-        return [diff for diff in self.differences if diff.old_value is None and diff.new_value is not None]
+        return tuple(diff for diff in self.differences if diff.old_value is None and diff.new_value is not None)
 
-    def get_removed_values(self) -> list[Difference]:
-        """Returns a list of differences where a value is present in the original GFFStruct but not in the compared.
+    def get_removed_values(self) -> tuple[Difference, ...]:
+        """Returns a tuple of differences where a value is present in the original GFFStruct but not in the compared.
 
         Returns:
         -------
-            list[Difference]: The list of differences with removed values.
+            tuple[Difference]: A collection of differences with removed values.
         """
-        return [diff for diff in self.differences if diff.old_value is not None and diff.new_value is None]
+        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is None)
 
 
 class GFF:
@@ -371,7 +382,7 @@ class GFFStruct:
         self,
     ) -> int:
         """Returns the number of fields."""
-        return len(self._fields.values())
+        return len(self._fields)
 
     def __iter__(
         self,
@@ -421,7 +432,7 @@ class GFFStruct:
         other_gff_struct: GFFStruct,
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
-        ignore_default_changes=False,
+        ignore_default_changes: bool = False,
     ) -> bool:
         """Recursively compares two GFFStructs.
 
@@ -455,8 +466,8 @@ class GFFStruct:
             return not v or str(v) in {"0", "-1"}
 
         def is_ignorable_comparison(
-            old_value,
-            new_value,
+            old_value: object,
+            new_value: object,
         ) -> bool:
             return is_ignorable_value(old_value) and is_ignorable_value(new_value)
 
@@ -510,7 +521,7 @@ class GFFStruct:
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
-                assert isinstance(new_value, GFFStruct)
+                assert isinstance(new_value, GFFStruct), f"{type(new_value).__name__}: {new_value}"
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
@@ -539,10 +550,8 @@ class GFFStruct:
                         f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference)."
                     )
                     continue
-
-                formatted_old_value, formatted_new_value = map(str, (old_value, new_value))
-                diff = difflib.ndiff(formatted_old_value.splitlines(keepends=True), formatted_new_value.splitlines(keepends=True))
-                log_func("\n".join(diff))
+                log_func(f"Field '{old_ftype.name}' is different at '{child_path}':")
+                log_func(format_diff(old_value, new_value, label))
 
         return is_same
 
@@ -570,7 +579,7 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
-        assert isinstance(default, object)
+        assert isinstance(default, object), f"{type(default).__name__}: {default}"
         value: T = default
         if object_type is None:
             object_type = default.__class__
@@ -1354,7 +1363,7 @@ class GFFList:
     def compare(
         self,
         other_gff_list: GFFList,
-        log_func=print,
+        log_func: Callable[..., Any] = print,
         current_path: PureWindowsPath | None = None,
         *,
         ignore_default_changes: bool = False,
