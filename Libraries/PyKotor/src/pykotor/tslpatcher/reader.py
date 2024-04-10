@@ -1091,7 +1091,7 @@ class ConfigReader:
             else:
                 try:
                     value = base64.b64decode(raw_value)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     raise ValueError(f"The raw value for the binary field specified was invalid: '{raw_value}'") from e
 
         if value is None:
@@ -1517,6 +1517,7 @@ class ConfigReader:
         """
         fieldname_to_fieldtype = CaseInsensitiveDict(
             {
+                "Binary": GFFFieldType.Binary,
                 "Byte": GFFFieldType.UInt8,
                 "Char": GFFFieldType.Int8,
                 "Word": GFFFieldType.UInt16,

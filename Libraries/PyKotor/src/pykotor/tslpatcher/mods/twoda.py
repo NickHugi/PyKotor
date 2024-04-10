@@ -35,7 +35,7 @@ class TargetType(IntEnum):
 class Target:
     def __init__(self, target_type: TargetType, value: str | int):
         self.target_type: TargetType = target_type
-        self.value: str | int = value
+        self.value: str | int | RowValueTLKMemory | RowValue2DAMemory = value
 
         if target_type == TargetType.ROW_INDEX and isinstance(value, str):
             msg = "Target value must be int if type is row index."
