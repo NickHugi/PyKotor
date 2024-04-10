@@ -547,7 +547,7 @@ def patch_nested_gff(
             delay = gff_struct.acquire("Delay", None)
             if delay == 0:
                 vo_resref = gff_struct.acquire("VO_ResRef", "")
-                if vo_resref and vo_resref.strip():
+                if vo_resref and str(vo_resref) and str(vo_resref).strip():
                     log_output(f"Changing Delay at '{current_path}' from {delay} to -1")
                     gff_struct.set_uint32("Delay", 0xFFFFFFFF)
                     made_change = True
