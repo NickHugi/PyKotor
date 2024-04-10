@@ -164,6 +164,7 @@ class ARE:
         self.tag: str = ""
         self.unescapable: bool = False
 
+        self.map_original_struct_id: int = 0
         self.map_point_1: Vector2 = Vector2.from_null()
         self.map_point_2: Vector2 = Vector2.from_null()
         self.world_point_1: Vector2 = Vector2.from_null()
@@ -250,26 +251,29 @@ def construct_are(
     are = ARE()
 
     root = gff.root
+    map_struct = root.acquire("Map", GFFStruct())
+    are.map_original_struct_id = map_struct.struct_id
+
     are.north_axis = ARENorthAxis(
-        root.acquire("Map", GFFStruct()).acquire("NorthAxis", 0),
+        map_struct.acquire("NorthAxis", 0),
     )
-    are.map_zoom = root.acquire("Map", GFFStruct()).acquire("MapZoom", 0)
-    are.map_res_x = root.acquire("Map", GFFStruct()).acquire("MapResX", 0)
+    are.map_zoom = map_struct.acquire("MapZoom", 0)
+    are.map_res_x = map_struct.acquire("MapResX", 0)
     are.map_point_1 = Vector2(
-        root.acquire("Map", GFFStruct()).acquire("MapPt1X", 0.0),
-        root.acquire("Map", GFFStruct()).acquire("MapPt1Y", 0.0),
+        map_struct.acquire("MapPt1X", 0.0),
+        map_struct.acquire("MapPt1Y", 0.0),
     )
     are.map_point_2 = Vector2(
-        root.acquire("Map", GFFStruct()).acquire("MapPt2X", 0.0),
-        root.acquire("Map", GFFStruct()).acquire("MapPt2Y", 0.0),
+        map_struct.acquire("MapPt2X", 0.0),
+        map_struct.acquire("MapPt2Y", 0.0),
     )
     are.world_point_1 = Vector2(
-        root.acquire("Map", GFFStruct()).acquire("WorldPt1X", 0.0),
-        root.acquire("Map", GFFStruct()).acquire("WorldPt1Y", 0.0),
+        map_struct.acquire("WorldPt1X", 0.0),
+        map_struct.acquire("WorldPt1Y", 0.0),
     )
     are.world_point_2 = Vector2(
-        root.acquire("Map", GFFStruct()).acquire("WorldPt2X", 0.0),
-        root.acquire("Map", GFFStruct()).acquire("WorldPt2Y", 0.0),
+        map_struct.acquire("WorldPt2X", 0.0),
+        map_struct.acquire("WorldPt2Y", 0.0),
     )
     are.version = root.acquire("Version", 0)
     are.tag = root.acquire("Tag", "")
@@ -350,7 +354,7 @@ def construct_are(
         ambient_scale = room_struct.acquire("AmbientScale", 0.0)
         env_audio = room_struct.acquire("EnvAudio", 0)
         room_name = room_struct.acquire("RoomName", "")
-        disable_weather = room_struct.acquire("DisableWeather", 0.0)  # FIXME
+        disable_weather = bool(room_struct.acquire("DisableWeather", 0))
         force_rating = room_struct.acquire("ForceRating", 0)
         are.rooms.append(ARERoom(room_name, disable_weather, env_audio, force_rating, ambient_scale))
 
@@ -387,7 +391,7 @@ def dismantle_are(
 
     root = gff.root
 
-    map_struct = root.set_struct("Map", GFFStruct())
+    map_struct = root.set_struct("Map", GFFStruct(are.map_original_struct_id))
     map_struct.set_int32("MapZoom", are.map_zoom)
     map_struct.set_int32("MapResX", are.map_res_x)
     map_struct.set_int32("NorthAxis", are.north_axis.value)

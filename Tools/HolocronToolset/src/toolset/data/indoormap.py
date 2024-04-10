@@ -193,7 +193,6 @@ class IndoorMap:
             - Attaches the generated lightmap texture to the corresponding face.
         """
         for i, room in enumerate(self.rooms):
-
             # Set model name
             modelname = f"{self.moduleId}_room{i}"
             self.roomNames[room] = modelname
@@ -431,11 +430,7 @@ class IndoorMap:
                     kit = cRoom.component.kit
                     doorIndex = kit.doors.index(cHook.door)
                     height = altHook.door.height * 100
-                    paddingKey = (
-                        min((i for i in kit.top_padding[doorIndex] if i > height), default=None)
-                        if doorIndex in kit.top_padding
-                        else None
-                    )
+                    paddingKey = min((i for i in kit.top_padding[doorIndex] if i > height), default=None) if doorIndex in kit.top_padding else None
                     if paddingKey is not None:
                         paddingName = f"{self.moduleId}_tpad{paddingCount}"
                         paddingCount += 1
@@ -466,11 +461,7 @@ class IndoorMap:
                     kit: Kit = cRoom.component.kit
                     doorIndex: int = kit.doors.index(cHook.door)
                     width: float = altHook.door.width * 100
-                    paddingKey: int | None = (
-                        min((i for i in kit.side_padding[doorIndex] if i > width), default=None)
-                        if doorIndex in kit.side_padding
-                        else None
-                    )
+                    paddingKey: int | None = min((i for i in kit.side_padding[doorIndex] if i > width), default=None) if doorIndex in kit.side_padding else None
                     if paddingKey is not None:
                         paddingName = f"{self.moduleId}_tpad{paddingCount}"
                         paddingCount += 1

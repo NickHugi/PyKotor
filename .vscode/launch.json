@@ -3,7 +3,14 @@
   "preLaunchTask": "install_requirements",
   "dependsOn": "install_requirements",
   "configurations": [
-
+    {
+      "type": "bashdb",
+      "request": "launch",
+      "name": "Bash-Debug (current file)",
+      "cwd": "${workspaceFolder}",
+      "program": "${file}",
+      "args": []
+    },
     {
       "name": "PowerShell Launch Current File",
       "type": "PowerShell",

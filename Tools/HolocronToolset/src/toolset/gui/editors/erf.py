@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QMimeData
+from PyQt5.QtCore import QMimeData, Qt
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView
 
@@ -17,7 +17,8 @@ from pykotor.tools.misc import is_capsule_file
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -29,6 +30,13 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
 
+
+def human_readable_size(byte_size: float) -> str:
+    for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
+        if byte_size < 1024:  # noqa: PLR2004
+            return f"{round(byte_size, 2)} {unit}"
+        byte_size /= 1024
+    return str(byte_size)
 
 class ERFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
@@ -107,6 +115,7 @@ class ERFEditor(Editor):
             data: File data
 
         Load resource file:
+        ------------------
             - Clear existing model data
             - Set model column count to 3 and header labels
             - Enable refresh button
@@ -124,13 +133,6 @@ class ERFEditor(Editor):
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
-
-        def human_readable_size(byte_size: float) -> str:
-            for unit in ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]:
-                if byte_size < 1024:  # noqa: PLR2004
-                    return f"{round(byte_size, 2)} {unit}"
-                byte_size /= 1024
-            return str(byte_size)
 
         if restype.name in ERFType.__members__:
             erf: ERF = read_erf(data)
@@ -156,6 +158,7 @@ class ERFEditor(Editor):
                 "Unable to load file",
                 "The file specified is not a MOD/ERF type file.",
                 parent=self,
+                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
             ).show()
 
     def build(self) -> tuple[bytes, bytes]:
@@ -291,18 +294,17 @@ class ERFEditor(Editor):
                 resrefItem = QStandardItem(str(resource.resref))
                 resrefItem.setData(resource)
                 restypeItem = QStandardItem(resource.restype.extension.upper())
-                sizeItem = QStandardItem(str(len(resource.data)))
+                resourceSizeStr = human_readable_size(len(resource.data))
+                sizeItem = QStandardItem(resourceSizeStr)
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
             except Exception as e:
-                with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                    lines = format_exception_with_variables(e)
-                    file.writelines(lines)
-                    file.write("\n----------------------\n")
+                get_root_logger().exception("Failed to add resource at %s", c_filepath.absolute())
                 error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
                     f"Could not add resource at {c_filepath.absolute()}:<br><br>{error_msg}",
+                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
                 ).exec_()
 
     def selectFilesToAdd(self):
@@ -335,6 +337,7 @@ class ERFEditor(Editor):
                     "You are attempting to open a nested ERF/RIM. Any action besides extracting from them will not work. You've been warned.",
                     QMessageBox.Ok,
                     self,
+                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
                 ).exec_()
             new_filepath = self._filepath
             if resource.restype.name in ERFType.__members__ or resource.restype == ResourceType.RIM:
@@ -348,7 +351,8 @@ class ERFEditor(Editor):
                 self._installation,
                 self,
             )
-            editor.savedFile.connect(self.resourceSaved)
+            if isinstance(editor, Editor):
+                editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self):
         data: bytes = BinaryReader.load_file(self._filepath)
@@ -364,11 +368,11 @@ class ERFEditor(Editor):
             - If rows are selected, enable UI controls by calling _set_ui_controls_state(True).
         """
         if len(self.ui.tableView.selectedIndexes()) == 0:
-            self._set_ui_controls_state(False)
+            self._set_ui_controls_state(state=False)
         else:
-            self._set_ui_controls_state(True)
+            self._set_ui_controls_state(state=True)
 
-    def _set_ui_controls_state(self, state: bool):
+    def _set_ui_controls_state(self, *, state: bool):
         self.ui.extractButton.setEnabled(state)
         self.ui.openButton.setEnabled(state)
         self.ui.unloadButton.setEnabled(state)
@@ -396,8 +400,11 @@ class ERFEditor(Editor):
 
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item: ERFResource = self.model.itemFromIndex(index).data()
-            if item.resref == resname and item.restype == restype:
-                item.data = data
+            if item.resref != resname:
+                continue
+            if item.restype != restype:
+                continue
+            item.data = data
 
 
 class ERFEditorTable(QTableView):
@@ -446,7 +453,7 @@ class ERFEditorTable(QTableView):
         tempDir = Path(GlobalSettings().extractPath)
 
         if not tempDir or not tempDir.safe_isdir():
-            print(f"Temp directory not valid: {tempDir}")
+            get_root_logger().error(f"Temp directory not valid: {tempDir}")
             return
 
         urls: list[QtCore.QUrl] = []

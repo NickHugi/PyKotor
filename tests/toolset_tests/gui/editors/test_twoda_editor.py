@@ -18,21 +18,23 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
-    pykotor_path = absolute_file_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+
+    pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
-    gl_path = absolute_file_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    gl_path = absolute_file_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
     if gl_path.exists():
         add_sys_path(gl_path.parent)
-    utility_path = absolute_file_path.parents[6] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[4] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
         add_sys_path(utility_path.parent)
-    toolset_path = absolute_file_path.parents[3] / "toolset"
+    toolset_path = absolute_file_path.parents[4] / "Tools" / "HolocronToolset" / "src" / "toolset"
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
@@ -59,10 +61,12 @@ class TwoDAEditorTest(TestCase):
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):
         from toolset.gui.editors.twoda import TwoDAEditor
+
         self.app = QApplication([])
         self.editor = TwoDAEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
@@ -74,7 +78,7 @@ class TwoDAEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "appearance.2da"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/appearance.2da"
 
         data = BinaryReader.load_file(filepath)
         old = read_2da(data)
@@ -138,8 +142,7 @@ class TwoDAEditorTest(TestCase):
         else:
             self.assertEqual(obj1, obj2, context)
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

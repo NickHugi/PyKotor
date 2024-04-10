@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
-from utility.event import Observable
+from utility.event_util import Observable
 
+if TYPE_CHECKING:
+    from typing_extensions import LiteralString
 
 class LogType(IntEnum):
     VERBOSE = 0
@@ -12,7 +15,7 @@ class LogType(IntEnum):
     WARNING = 2
     ERROR = 3
 
-    def __str__(self):
+    def __str__(self) -> LiteralString:
         return self.name.title()
 
 

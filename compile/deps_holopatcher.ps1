@@ -21,23 +21,23 @@ if ((Get-OS) -eq "Mac") {
     $versionObject = Get-Python-Version $pythonExePath
     $pyVersion = "{0}.{1}" -f $versionObject.Major, $versionObject.Minor
     Write-Host "pyversion: $versionObject major/minor $pyVersion"
-    brew update
-    brew install python-tk@$pyVersion tcl-tk
+    #brew update
+    #brew install python-tk@$pyVersion tcl-tk --force --overwrite  # don't use, instead install from the main install_python_venv. brew will constantly try to install other python versions.
 } elseif ((Get-OS) -eq "Linux") {
     if (Test-Path -Path "/etc/os-release") {
         switch ((Get-Linux-Distro-Name)) {
             "debian" {
                 sudo apt-get update
-                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk python3-pip
                 break
             }
             "ubuntu" {
                 sudo apt-get update
-                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk
+                sudo apt-get install -y tcl8.6 tk8.6 tcl8.6-dev tk8.6-dev python3-tk python3-pip
                 break
             }
             "fedora" {
-                sudo dnf install -y tk-devel tcl-devel python3-tkinter
+                sudo dnf install -y tk-devel tcl-devel python3-tkinter python3-pip
                 break
             }
             "almalinux" {
@@ -77,3 +77,4 @@ Write-Host "Installing required packages to build holopatcher..."
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "HoloPatcher" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "recommended.txt") --prefer-binary --progress-bar on
