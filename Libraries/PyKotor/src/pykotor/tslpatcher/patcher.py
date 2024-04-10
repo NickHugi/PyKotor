@@ -183,7 +183,12 @@ class ModInstaller:
                         +  f"\n    Modules/{module_root}_s.rim"
                         + (f"\n    Modules/{module_root}_dlg.erf" if self.game is not None and self.game.is_k2() else "")
                     )
-                    rim_to_mod(output_container_path, self.game_path / "Modules", module_root, self.game)
+                    try:
+                        rim_to_mod(output_container_path, self.game_path / "Modules", module_root, self.game)
+                    except Exception as e:  # noqa: BLE001
+                        msg = f"Failed to build module '{output_container_path.name}': {e}"
+                        self.log.add_error(msg)
+                        raise
                 else:
                     msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
                     raise FileNotFoundError(msg)
