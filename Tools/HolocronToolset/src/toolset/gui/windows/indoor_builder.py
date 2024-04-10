@@ -69,7 +69,11 @@ if TYPE_CHECKING:
 
 
 class IndoorMapBuilder(QMainWindow):
-    def __init__(self, parent: QWidget, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize indoor builder window.
 
         Args:
@@ -265,7 +269,12 @@ class IndoorMapBuilder(QMainWindow):
         currentItem: QListWidgetItem | None = self.ui.componentList.currentItem()
         return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
 
-    def setWarpPoint(self, x: float, y: float, z: float):
+    def setWarpPoint(
+        self,
+        x: float,
+        y: float,
+        z: float,
+    ):
         self._map.warpPoint = Vector3(x, y, z)
 
     def onKitSelected(self):
@@ -301,7 +310,13 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
+    def onMouseMoved(
+        self,
+        screen: Vector2,
+        delta: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         """Handles events when the mouse is moved in the ui.
 
         Args:
@@ -343,14 +358,19 @@ class IndoorMapBuilder(QMainWindow):
                 hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
                 if hook1 is not None:
                     assert hook2 is not None, assert_with_variable_trace(hook2 is not None)
-                    shift: Vector3 = (room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)) - active.position
+                    shift: Vector3 = (room.position - active.hookPosition(hook1, worldOffset=False) + room.hookPosition(hook2, worldOffset=False)) - active.position
                     for snapping in rooms:
                         snapping.position = shift + snapping.position
                         # snapping.position += shift
                     # active.position = room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
             self._map.rebuildRoomConnections()
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def onMousePressed(
+        self,
+        screen: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         """Handles mouse press events on the map view.
 
         Args:
@@ -382,14 +402,17 @@ class IndoorMapBuilder(QMainWindow):
                 clearExisting: bool = QtCore.Qt.Key_Shift not in keys
                 room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
                 if room is not None:
-                    self.ui.mapRenderer.selectRoom(room, clearExisting)
+                    self.ui.mapRenderer.selectRoom(room, clearExisting=clearExisting)
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
         if QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
             self.ui.mapRenderer.toggleCursorFlip()
 
-    def _build_indoor_map_room_and_refresh(self, component):
+    def _build_indoor_map_room_and_refresh(
+        self,
+        component: KitComponent,
+    ):
         """Builds an indoor map room and refreshes the map.
 
         Args:
@@ -417,13 +440,23 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer._cursorFlipX = False
         self.ui.mapRenderer._cursorFlipY = False
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def onMouseScrolled(
+        self,
+        delta: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         if QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
         else:
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
-    def onMouseDoubleClicked(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def onMouseDoubleClicked(
+        self,
+        delta: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
         if QtCore.Qt.LeftButton in buttons and room:
             self.ui.mapRenderer.clearSelectedRooms()
@@ -444,7 +477,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.keyReleaseEvent(e)
 
     def addConnectedToSelection(self, room: IndoorMapRoom):
-        self.ui.mapRenderer.selectRoom(room, False)
+        self.ui.mapRenderer.selectRoom(room, clearExisting=False)
         for hookIndex, _hook in enumerate(room.component.hooks):
             hook: IndoorMapRoom | None = room.hooks[hookIndex]
             if hook is not None and hook not in self.ui.mapRenderer.selectedRooms():
@@ -515,7 +548,12 @@ class IndoorMapRenderer(QWidget):
     def setCursorComponent(self, component: KitComponent | None):
         self._cursorComponent = component
 
-    def selectRoom(self, room: IndoorMapRoom, clearExisting: bool):
+    def selectRoom(
+        self,
+        room: IndoorMapRoom,
+        *,
+        clearExisting: bool,
+    ):
         if clearExisting:
             self._selectedRooms.clear()
         if room in self._selectedRooms:
@@ -601,7 +639,11 @@ class IndoorMapRenderer(QWidget):
         y2 = x * sin + y * cos
         return Vector2(x2, y2)
 
-    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple[KitComponentHook | None, KitComponentHook | None]:
+    def getConnectedHooks(
+        self,
+        room1: IndoorMapRoom,
+        room2: IndoorMapRoom,
+    ) -> tuple[KitComponentHook | None, KitComponentHook | None]:
         """Get connected hooks between two rooms.
 
         Args:
@@ -735,7 +777,15 @@ class IndoorMapRenderer(QWidget):
 
     # endregion
 
-    def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2, rotation: float, flip_x: bool, flip_y: bool):
+    def _drawImage(
+        self,
+        painter: QPainter,
+        image: QImage,
+        coords: Vector2,
+        rotation: float,
+        flip_x: bool,  # noqa: FBT001
+        flip_y: bool,  # noqa: FBT001
+    ):
         """Draws an image.
 
         Args:
@@ -772,7 +822,12 @@ class IndoorMapRenderer(QWidget):
 
         painter.setTransform(original)
 
-    def _drawRoomHighlight(self, painter: QPainter, room: IndoorMapRoom, alpha: int):
+    def _drawRoomHighlight(
+        self,
+        painter: QPainter,
+        room: IndoorMapRoom,
+        alpha: int,
+    ):
         bwm: BWM = deepcopy(room.component.bwm)
         bwm.flip(room.flip_x, room.flip_y)
         bwm.rotate(room.rotation)
@@ -936,7 +991,7 @@ class IndoorMapRenderer(QWidget):
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+                    self._cursorPoint = room.position - fakeCursorRoom.hookPosition(hook1, worldOffset=False) + room.hookPosition(hook2, worldOffset=False)
 
         self._underMouseRoom = None
         for room in self._map.rooms:
@@ -945,26 +1000,26 @@ class IndoorMapRenderer(QWidget):
                 self._underMouseRoom = room
                 break
 
-    def mousePressEvent(self, e: QMouseEvent | None):
+    def mousePressEvent(self, e: QMouseEvent):
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseReleaseEvent(self, e: QMouseEvent | None):
+    def mouseReleaseEvent(self, e: QMouseEvent):
         self._mouseDown.discard(e.button())
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseDoubleClickEvent(self, e: QMouseEvent | None):
+    def mouseDoubleClickEvent(self, e: QMouseEvent):
         mouseDown: set[int] = copy(self._mouseDown)
         mouseDown.add(e.button())  # Called after release event so we need to manually include it
         self.mouseDoubleClicked.emit(Vector2(e.x(), e.y()), mouseDown, self._keysDown)
 
-    def keyPressEvent(self, e: QKeyEvent | None):
+    def keyPressEvent(self, e: QKeyEvent):
         self._keysDown.add(e.key())
 
-    def keyReleaseEvent(self, e: QKeyEvent | None):
+    def keyReleaseEvent(self, e: QKeyEvent):
         self._keysDown.discard(e.key())
 
     # endregion
@@ -1051,7 +1106,11 @@ class KitDownloader(QDialog):
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()
 
-    def _downloadButtonPressed(self, button: QPushButton, infoDict: dict):
+    def _downloadButtonPressed(
+        self,
+        button: QPushButton,
+        infoDict: dict,
+    ):
         button.setText("Downloading")
         button.setEnabled(False)
 
