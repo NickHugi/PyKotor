@@ -479,7 +479,10 @@ def get_font_paths() -> list[Path]:
     raise NotImplementedError(msg)
 
 
-def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
+def relative_path_from_to(
+    src: PurePath,
+    dst: PurePath,
+) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
@@ -510,7 +513,10 @@ def log_output(*args, **kwargs):
     SCRIPT_GLOBALS.patchlogger.add_note("\t".join(str(arg) for arg in args))
 
 
-def visual_length(s: str, tab_length=8) -> int:
+def visual_length(
+    s: str,
+    tab_length=8,
+) -> int:
     if "\t" not in s:
         return len(s)
 
@@ -523,7 +529,12 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False):
+def log_output_with_separator(
+    message,
+    below=True,
+    above=False,
+    surround=False,
+):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -715,7 +726,10 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
     return None
 
 
-def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
+def patch_and_save_noncapsule(
+    resource: FileResource,
+    savedir: Path | None = None,
+):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
@@ -805,7 +819,11 @@ def patch_capsule_file(c_file: Path):
         write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
 
 
-def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
+def patch_erf_or_rim(
+    resources: list[FileResource],
+    filename: str,
+    erf_or_rim: RIM | ERF,
+) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
@@ -877,7 +895,7 @@ def patch_install(install_path: os.PathLike | str):
     k_install = Installation(install_path)
     k_install.reload_all()
     log_output_with_separator("Patching modules...")
-    for module_name, resources in k_install._modules.items():
+    for module_name, resources in k_install._modules.items():  # noqa: SLF001
         res_ident = ResourceIdentifier.from_path(module_name)
         filename = str(res_ident)
         filepath = k_install.path().joinpath("Modules", filename)
