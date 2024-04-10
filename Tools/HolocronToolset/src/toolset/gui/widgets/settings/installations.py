@@ -181,7 +181,7 @@ class InstallationConfig:
             self._settings.setValue("installations", installations)
         except Exception:
             log = get_root_logger()
-            log.exception()
+            log.exception("InstallationConfig.path property raised an exception.")
 
     @property
     def tsl(self) -> bool:
