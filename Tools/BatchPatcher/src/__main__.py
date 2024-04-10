@@ -685,6 +685,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 gff,
                 resource._path_ident_obj,  # noqa: SLF001
             )
+            made_change: bool = False
             if alien_vo_count < 3 and alien_owner in {0, "0", None} and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
