@@ -33,7 +33,7 @@ class FileSearchQuery:
 
 
 class FileSearcher(QDialog):
-    fileResults = QtCore.pyqtSignal(list, HTInstallation)
+    fileResults = QtCore.Signal(list, HTInstallation)
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)

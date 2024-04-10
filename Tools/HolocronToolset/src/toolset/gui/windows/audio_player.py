@@ -91,7 +91,7 @@ class AudioPlayer(QMainWindow):
             if not self.buffer.open(QIODevice.ReadOnly):
                 print("Audio player Buffer not ready?")
                 return
-            from PyQt5.QtMultimedia import QMediaContent
+            from qtpy.QtMultimedia import QMediaContent
             self.player.setMedia(QMediaContent(), self.buffer)
         QtCore.QTimer.singleShot(0, self.player.play)
 
