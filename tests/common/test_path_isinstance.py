@@ -8,10 +8,14 @@ import unittest
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
+
+
 def add_sys_path(p: pathlib.Path):
     working_dir = str(p)
     if working_dir not in sys.path:
         sys.path.append(working_dir)
+
+
 if PYKOTOR_PATH.joinpath("pykotor").exists():
     add_sys_path(PYKOTOR_PATH)
 if UTILITY_PATH.joinpath("utility").exists():
@@ -20,8 +24,8 @@ if UTILITY_PATH.joinpath("utility").exists():
 from pykotor.tools.path import CaseAwarePath
 from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
-class TestPathInheritance(unittest.TestCase):
 
+class TestPathInheritance(unittest.TestCase):
     def test_path_attributes(self):
         self.assertIs(PureWindowsPath("mypath").__class__, PureWindowsPath)
         self.assertIs(PurePath("mypath").__class__, PurePosixPath if os.name == "posix" else PureWindowsPath)
@@ -30,7 +34,7 @@ class TestPathInheritance(unittest.TestCase):
             self.assertIs(WindowsPath("mypath").__class__, WindowsPath)
         else:
             self.assertIs(PosixPath("mypath").__class__, PosixPath)
-        
+
         self.assertIs(Path("mypath").__class__, PosixPath if os.name == "posix" else WindowsPath)
         self.assertIs(CaseAwarePath("mypath").__class__, CaseAwarePath)
         self.assertIs(PureWindowsPath("mypath").__class__.__base__, PurePath)
@@ -95,7 +99,6 @@ class TestPathInheritance(unittest.TestCase):
     def test_purepath_not_isinstance_path(self):
         self.assertNotIsInstance(PurePath("mypath"), Path)
         self.assertFalse(issubclass(PurePath, Path))
-
 
     def test_pathlib_pure_windows_path_isinstance(self):
         self.assertIsInstance(PureWindowsPath("mypath"), pathlib.PurePath)
@@ -163,6 +166,7 @@ class TestPathInheritance(unittest.TestCase):
         self.assertFalse(issubclass(PurePath, pathlib.Path))
         self.assertNotIsInstance(pathlib.PurePath("mypath"), Path)
         self.assertFalse(issubclass(pathlib.PurePath, Path))
+
 
 if __name__ == "__main__":
     unittest.main()

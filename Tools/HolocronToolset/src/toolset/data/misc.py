@@ -38,4 +38,3 @@ class ControlItem:
         if exactKeys:
             return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)
         return (self.mouse == buttons or self.mouse is None) and (self.keys.issubset(keys))
-

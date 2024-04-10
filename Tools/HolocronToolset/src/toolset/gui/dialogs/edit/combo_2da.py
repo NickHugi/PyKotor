@@ -30,4 +30,3 @@ class ModdedValueSpinboxDialog(QDialog):
 
     def value(self) -> int:
         return self.ui.spinBox.value()
-

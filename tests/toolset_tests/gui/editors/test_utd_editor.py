@@ -18,11 +18,13 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
+
     pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
@@ -66,6 +68,7 @@ class UTDEditorTest(TestCase):
 
     def setUp(self):
         from toolset.gui.editors.utd import UTDEditor
+
         self.app = QApplication([])
         self.editor = UTDEditor(None, self.INSTALLATION)
         self.log_messages: list[str] = [os.linesep]
@@ -121,8 +124,7 @@ class UTDEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

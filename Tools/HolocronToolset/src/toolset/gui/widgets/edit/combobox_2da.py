@@ -33,8 +33,7 @@ class ComboBox2DA(QComboBox):
             row = self.count()
         super().addItem(text, row)
 
-    def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
-                 ignoreBlanks: bool = False):
+    def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True, ignoreBlanks: bool = False):
         self._sortAlphabetically = sortAlphabetically
         self.clear()
 
@@ -60,10 +59,7 @@ class ComboBox2DA(QComboBox):
         self._sortAlphabetically = False
         selected = self.currentData()
 
-        items: list[tuple[Any, str]] = [
-            (self.itemData(index), self.itemText(index))
-            for index in range(self.count())
-        ]
+        items: list[tuple[Any, str]] = [(self.itemData(index), self.itemText(index)) for index in range(self.count())]
         self.clear()
 
         for index, text in sorted(items, key=lambda x: x[0]):

@@ -1,10 +1,12 @@
 """Abstract document representation."""
+
 from __future__ import annotations
 
 
 class _PythBase:
     validProperties: tuple[str, ...] = ()
     contentType: type
+
     def __init__(self, properties: dict | None = None, content: list | None = None):
         if properties is None:
             properties = {}
@@ -94,10 +96,37 @@ class Paragraph(_PythBase):
 class Image(Paragraph):
     """An image is stored in bytes. All properties of images from the rtf definition are allowed."""
 
-    validProperties = ("emfblip", "pngblip", "jpegblip", "macpict", "pmmetafile", "wmetafile", "dibitmap", "wbitmap", "wbmbitspixel",
-                       "wbmplanes", "wbmwidthbytes", "picw", "pich", "picwgoal", "pichgoal", "picscalex",
-                       "picscaley", "picscaled", "piccropt", "piccropb", "piccropr", "piccropl", "picbmp", "picbpp", "bin",
-                       "blipupi", "blipuid", "bliptag", "wbitmap")
+    validProperties = (
+        "emfblip",
+        "pngblip",
+        "jpegblip",
+        "macpict",
+        "pmmetafile",
+        "wmetafile",
+        "dibitmap",
+        "wbitmap",
+        "wbmbitspixel",
+        "wbmplanes",
+        "wbmwidthbytes",
+        "picw",
+        "pich",
+        "picwgoal",
+        "pichgoal",
+        "picscalex",
+        "picscaley",
+        "picscaled",
+        "piccropt",
+        "piccropb",
+        "piccropr",
+        "piccropl",
+        "picbmp",
+        "picbpp",
+        "bin",
+        "blipupi",
+        "blipuid",
+        "bliptag",
+        "wbitmap",
+    )
     contentType = bytes
 
     def __repr__(self):

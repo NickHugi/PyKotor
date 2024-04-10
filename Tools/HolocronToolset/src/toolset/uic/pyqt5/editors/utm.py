@@ -70,6 +70,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.idSpin = QtWidgets.QSpinBox(self.tab)
+        self.idSpin.setMinimum(-2147483648)
+        self.idSpin.setMaximum(2147483647)
         self.idSpin.setObjectName("idSpin")
         self.horizontalLayout.addWidget(self.idSpin)
         spacerItem = QtWidgets.QSpacerItem(29, 17, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)

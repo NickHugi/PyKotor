@@ -87,9 +87,7 @@ def status_bar_decorator(func):
         editor = self if isinstance(self, PTHEditor) else self.editor
         try:
             editor.stdout.updateStatusBar(func_call_repr)
-            result = func(self, *args, **kwargs)
-            # Update the status bar to show the function call
-            return result
+            return func(self, *args, **kwargs)
         except Exception as e:
             traceback.print_exc()
             error_message = str(universal_simplify_exception(e))
@@ -101,6 +99,7 @@ def status_bar_decorator(func):
 
 def auto_decorate_methods(decorator: Callable[..., Any]) -> Callable[..., Any]:
     """Class decorator to automatically apply a decorator to all methods."""
+
     def class_decorator(cls):
         # Iterate over all attributes of cls
         for attr_name, attr_value in cls.__dict__.items():
@@ -109,6 +108,7 @@ def auto_decorate_methods(decorator: Callable[..., Any]) -> Callable[..., Any]:
                 # Wrap the method with the decorator
                 setattr(cls, attr_name, decorator(attr_value))
         return cls
+
     return class_decorator
 
 
@@ -213,14 +213,10 @@ class PTHEditor(Editor):
     ):
         # Update the text of each label
         try:
-            self._core_update_status_bar(
-                left_status, center_status, right_status
-            )
+            self._core_update_status_bar(left_status, center_status, right_status)
         except RuntimeError:  # wrapped C/C++ object of type QLabel has been deleted
             self.setupStatusBar()
-            self._core_update_status_bar(
-                left_status, center_status, right_status
-            )
+            self._core_update_status_bar(left_status, center_status, right_status)
 
     # TODO Rename this here and in `updateStatusBar`
     def _core_update_status_bar(self, left_status, center_status, right_status):
@@ -392,6 +388,7 @@ class PTHEditor(Editor):
         if e is None:
             return
         self.ui.renderArea.keyReleaseEvent(e)
+
     # endregion
 
 
@@ -444,8 +441,7 @@ class PTHControlScheme:
             self.editor.selectNodeUnderMouse()
 
     @status_bar_decorator
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
@@ -461,8 +457,7 @@ class PTHControlScheme:
             self.editor.removeNode(node)
 
     @status_bar_decorator
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def onRenderContextMenu(self, world: Vector2, screen: QPoint):

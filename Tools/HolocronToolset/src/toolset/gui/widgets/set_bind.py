@@ -105,4 +105,3 @@ class SetBindWidget(QWidget):
                 text += "+"
 
         self.ui.setKeysEdit.setText(text.upper())
-

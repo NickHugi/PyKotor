@@ -5,6 +5,7 @@ param(
   [string]$upx_dir
 )
 $this_noprompt = $noprompt
+$exclusive_whitelist = $true
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
@@ -19,9 +20,71 @@ if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
+# List all Python modules available in the environment
+$pythonCommand = "import pkgutil; [print(m.name) for m in pkgutil.iter_modules()]"
+$modulesArray = & $pythonExePath -c $pythonCommand | ForEach-Object { $_.Trim() }
+
+# Path to the site-packages directory
+$venvPath = Join-Path -Path $rootPath -ChildPath "$venv_name\Lib\site-packages"
+
+# Define size threshold
+$sizeThreshold = 1KB
+
+# Find directories and files in site-packages matching module names, check sizes
+$largeModules = @()
+foreach ($moduleName in $modulesArray) {
+    $modulePath = Join-Path -Path $venvPath -ChildPath $moduleName
+    if (Test-Path $modulePath) {
+        $dirSize = (Get-ChildItem -Path $modulePath -Recurse | Measure-Object -Property Length -Sum).Sum
+        if ($dirSize -ge $sizeThreshold) {
+            #Write-Output "Found large module $modulePath with size $dirSize (exceeding threshold $sizeThreshold)"
+            $largeModules += $moduleName
+        }
+    }
+}
+
+# Whitelisted modules to keep (the base packages listed here are incomplete, but the site-packages should be complete in this definition)
+$whitelistedModules = @(
+    'sys', 'os', "collections", "encodings", "codecs", "io",
+    "abc", "stat", "_collections_abc", "ntpath", "genericpath",
+    "__future__", "contextlib", "operator", "keyword", "heapq",
+    "reprlib", "functools", "types", "ctypes", "_ctypes", "inspect",
+    "dis", "opcode", "enum", "importlib", "warnings", "linecache",
+    "tokenize", "re", "sre_compile",
+    "requests", "urllib3", "charset-normalizer", 'pykotor', 'ply',
+    "charset_normalizer", "idna", "certifi", "Crypto"
+)
+
+# Exclude these large modules, don't fill excludes with an element if it's in the whitelist.
+$excludeModules = @($largeModules | Where-Object { $whitelistedModules -notcontains $_ })
+$excludedPaths = @(
+    (Resolve-Path -LiteralPath "$rootPath\Libraries\PyKotorGL\src"),
+    (Resolve-Path -LiteralPath "$rootPath\Libraries\PyKotorFont\src")
+)
+
+# Split PYTHONPATH into an array, filter out excluded paths, then rejoin
+$filteredPythonPath = ($env:PYTHONPATH -split ';' | Where-Object {
+    $currentPath = $_
+    $isExcluded = $false
+    foreach ($excludedPath in $excludedPaths) {
+        if ($currentPath -like "*$excludedPath*") {
+            $isExcluded = $true
+            break
+        }
+    }
+    -not $isExcluded
+}) -join ';'
+
+# Update PYTHONPATH to the filtered version
+Write-Host "Old PYTHONPATH: $env:PYTHONPATH"
+$env:PYTHONPATH = $filteredPythonPath
+Write-Host "New PYTHONPATH: $env:PYTHONPATH"
+
+
 $src_path = (Resolve-Path -LiteralPath "$rootPath/Tools/HoloPatcher/src")
 $current_working_dir = (Get-Location).Path
 Set-Location -LiteralPath $src_path
+Write-Host "SRC_PATH: $src_path cwd: $current_working_dir"
 
 # Determine the final executable path
 $finalExecutablePath = $null
@@ -47,7 +110,6 @@ $pyInstallerArgs = @{
         'PIL',
         'Pillow',
         'matplotlib',
-        'multiprocessing',
         'PyOpenGL',
         'PyGLM',
         'dl_translate',
@@ -84,8 +146,53 @@ $pyInstallerArgs = @{
         'cssselect',
         'beautifulsoup4'
     )
+    'upx-exclude' = @(
+        '_uuid.pyd',
+        'api-ms-win-crt-environment-l1-1-0.dll',
+        'api-ms-win-crt-string-l1-1-0.dll',
+        'api-ms-win-crt-convert-l1-1-0.dll',
+        'api-ms-win-crt-heap-l1-1-0.dll',
+        'api-ms-win-crt-conio-l1-1-0.dll',
+        'api-ms-win-crt-filesystem-l1-1-0.dll',
+        'api-ms-win-crt-stdio-l1-1-0.dll',
+        'api-ms-win-crt-process-l1-1-0.dll',
+        'api-ms-win-crt-locale-l1-1-0.dll',
+        'api-ms-win-crt-time-l1-1-0.dll',
+        'api-ms-win-crt-math-l1-1-0.dll',
+        'api-ms-win-crt-runtime-l1-1-0.dll',
+        'api-ms-win-crt-utility-l1-1-0.dll',
+        'python3.dll',
+        'api-ms-win-crt-private-l1-1-0.dll',
+        'api-ms-win-core-timezone-l1-1-0.dll',
+        'api-ms-win-core-file-l1-1-0.dll',
+        'api-ms-win-core-processthreads-l1-1-1.dll',
+        'api-ms-win-core-processenvironment-l1-1-0.dll',
+        'api-ms-win-core-debug-l1-1-0.dll',
+        'api-ms-win-core-localization-l1-2-0.dll',
+        'api-ms-win-core-processthreads-l1-1-0.dll',
+        'api-ms-win-core-errorhandling-l1-1-0.dll',
+        'api-ms-win-core-handle-l1-1-0.dll',
+        'api-ms-win-core-util-l1-1-0.dll',
+        'api-ms-win-core-profile-l1-1-0.dll',
+        'api-ms-win-core-rtlsupport-l1-1-0.dll',
+        'api-ms-win-core-namedpipe-l1-1-0.dll',
+        'api-ms-win-core-libraryloader-l1-1-0.dll',
+        'api-ms-win-core-file-l1-2-0.dll',
+        'api-ms-win-core-synch-l1-2-0.dll',
+        'api-ms-win-core-sysinfo-l1-1-0.dll',
+        'api-ms-win-core-console-l1-1-0.dll',
+        'api-ms-win-core-string-l1-1-0.dll',
+        'api-ms-win-core-memory-l1-1-0.dll',
+        'api-ms-win-core-synch-l1-1-0.dll',
+        'api-ms-win-core-interlocked-l1-1-0.dll',
+        'api-ms-win-core-datetime-l1-1-0.dll',
+        'api-ms-win-core-file-l2-1-0.dll',
+        'api-ms-win-core-heap-l1-1-0.dll'
+    )
+    #'debug' = 'imports'
+    'log-level' = 'INFO'
     'clean' = $true
-    'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
+    'windowed' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
     'distpath' = ($rootPath + $pathSep + "dist")
@@ -102,7 +209,17 @@ $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
         # Handle array values
         $arr = @()
         foreach ($elem in $value) {
+            if ($key -eq "exclude-module" -and $whitelistedModules.Contains($key)) {
+                Write-Host "Not excluding whitelisted module: $elem"
+                continue
+            }
             $arr += "--$key=$elem"
+        }
+        if ($key -eq "exclude-module" -and $exclusive_whitelist -eq $true) {
+            Write-Host "Handling excluded whitelist: excluding $(($excludeModules | Measure-Object).Count) more found modules"
+            foreach ($elem in $excludeModules) {
+                $arr += "--$key=$elem"
+            }
         }
         $arr
     } else {
@@ -186,8 +303,3 @@ if (-not (Test-Path -LiteralPath $finalExecutablePath)) {
     Write-Host "HoloPatcher was compiled to '$finalExecutablePath'"
 }
 Set-Location -LiteralPath $current_working_dir
-
-if (-not $this_noprompt) {
-    Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-}

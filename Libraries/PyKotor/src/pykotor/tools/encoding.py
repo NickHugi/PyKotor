@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import codecs
-import contextlib
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -68,7 +68,7 @@ def decode_bytes_with_fallbacks(
 
         # Attempt decoding with provided encoding
         if provided_encoding is not None:
-            with contextlib.suppress(UnicodeDecodeError):
+            with suppress(UnicodeDecodeError):
                 return byte_content.decode(provided_encoding, errors=attempt_errors)
 
         # Detect encoding using charset_normalizer
@@ -77,11 +77,7 @@ def decode_bytes_with_fallbacks(
         # Filter the charset-normalizer results to encodings with a maximum of 256 characters
         if only_8bit_encodings:
             max_8bit_characters: int = 256
-            detected_8bit_encodings: list[CharsetMatch] = [
-                enc_match
-                for enc_match in detected_encodings
-                if len(enc_match.alphabets) <= max_8bit_characters
-            ]
+            detected_8bit_encodings: list[CharsetMatch] = [enc_match for enc_match in detected_encodings if len(enc_match.alphabets) <= max_8bit_characters]
             best_8bit_encoding = "windows-1252"
             if detected_8bit_encodings:
                 best_match: CharsetMatch = detected_8bit_encodings[0]
@@ -91,7 +87,7 @@ def decode_bytes_with_fallbacks(
         result_detect: CharsetMatch | None = detected_encodings.best()
         if result_detect is None:
             # Semi-Final fallback (utf-8) if no encoding is detected
-            with contextlib.suppress(UnicodeDecodeError):
+            with suppress(UnicodeDecodeError):
                 return byte_content.decode(encoding="utf-8", errors=attempt_errors)
             # Final fallback (latin1) if no encoding is detected
             return byte_content.decode(encoding="latin1", errors=attempt_errors)
@@ -114,7 +110,7 @@ def decode_bytes_with_fallbacks(
         return byte_content.decode(encoding=best_encoding, errors=attempt_errors)
 
     # Attempt strict first for more accurate results.
-    with contextlib.suppress(UnicodeDecodeError):
+    with suppress(UnicodeDecodeError):
         return _decode_attempt(attempt_errors="strict")
     return _decode_attempt(attempt_errors=errors)
 
@@ -180,13 +176,13 @@ def get_cp950_charset() -> list[str]:
                     # Apply formula based on Big5 to Unicode PUA mapping
                     unicode_val: int = -1  # Placeholder for ranges not covered
                     if 0x81 <= i <= 0x8D:
-                        unicode_val = 0xeeb8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xEEB8 + (157 * (i - 0x81)) + (j - 0x40 if j < 0x80 else j - 0x62)
                     elif 0x8E <= i <= 0xA0:
-                        unicode_val = 0xe311 + (157 * (i - 0x8E)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xE311 + (157 * (i - 0x8E)) + (j - 0x40 if j < 0x80 else j - 0x62)
                     elif 0xC6 <= i <= 0xC8:
-                        unicode_val = 0xf672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xF672 + (157 * (i - 0xC6)) + (j - 0x40 if j < 0x80 else j - 0x62)
                     elif 0xFA <= i <= 0xFE:
-                        unicode_val = 0xe000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
+                        unicode_val = 0xE000 + (157 * (i - 0xFA)) + (j - 0x40 if j < 0x80 else j - 0x62)
 
                     if unicode_val != -1:
                         try:

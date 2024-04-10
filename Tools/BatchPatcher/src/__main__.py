@@ -5,6 +5,7 @@ import os
 import pathlib
 import platform
 import sys
+import tempfile
 import tkinter as tk
 import traceback
 
@@ -25,6 +26,7 @@ from pykotor.common.misc import ResRef
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(path: pathlib.Path):
         working_dir = str(path)
         if working_dir not in sys.path:
@@ -62,17 +64,15 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.logger import LogType, PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-
     from collections.abc import Callable
 
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
-    from pykotor.tslpatcher.logger import PatchLog
 
 APP: KOTORPatchingToolUI
 OUTPUT_LOG: Path
@@ -398,7 +398,7 @@ ALIEN_SOUNDS = {  # Same in k1 and tsl.
     "n_genbith_grt": {"_id": "295", "comment": "Bith_Greeting_Short"},
     "n_genbith_coms1": {"_id": "296", "comment": "Bith_Generic_Comment_-_Short_1"},
     "n_genbith_comm1": {"_id": "297", "comment": "Bith_Generic_Comment_-_Medium_1"},
-    "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"}
+    "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"},
 }
 
 
@@ -432,6 +432,7 @@ class Globals:
         # Equivalent to getting an attribute, returns None if not found
         return self.__dict__.get(key, None)
 
+
 SCRIPT_GLOBALS = Globals()
 
 
@@ -447,6 +448,7 @@ def get_font_paths_macos() -> list[Path]:
 
 def get_font_paths_windows() -> list[Path]:
     import winreg
+
     font_registry_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
     fonts_dir = Path("C:/Windows/Fonts")
     font_paths = set()
@@ -477,16 +479,15 @@ def get_font_paths() -> list[Path]:
     raise NotImplementedError(msg)
 
 
-def relative_path_from_to(src: PurePath, dst: PurePath) -> Path:
+def relative_path_from_to(
+    src: PurePath,
+    dst: PurePath,
+) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
     common_length = next(
-        (
-            i
-            for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts))
-            if src_part != dst_part
-        ),
+        (i for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts)) if src_part != dst_part),
         len(src_parts),
     )
     rel_parts: list[str] = dst_parts[common_length:]
@@ -512,7 +513,10 @@ def log_output(*args, **kwargs):
     SCRIPT_GLOBALS.patchlogger.add_note("\t".join(str(arg) for arg in args))
 
 
-def visual_length(s: str, tab_length=8) -> int:
+def visual_length(
+    s: str,
+    tab_length=8,
+) -> int:
     if "\t" not in s:
         return len(s)
 
@@ -525,7 +529,12 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-def log_output_with_separator(message, below=True, above=False, surround=False):
+def log_output_with_separator(
+    message,
+    below=True,
+    above=False,
+    surround=False,
+):
     if above or surround:
         log_output(visual_length(message) * "-")
     log_output(message)
@@ -549,7 +558,7 @@ def patch_nested_gff(
             delay = gff_struct.acquire("Delay", None)
             if delay == 0:
                 vo_resref = gff_struct.acquire("VO_ResRef", "")
-                if vo_resref and vo_resref.strip():
+                if vo_resref and str(vo_resref) and str(vo_resref).strip():
                     log_output(f"Changing Delay at '{current_path}' from {delay} to -1")
                     gff_struct.set_uint32("Delay", 0xFFFFFFFF)
                     made_change = True
@@ -566,19 +575,19 @@ def patch_nested_gff(
         child_path: PurePath = current_path / label
 
         if ftype == GFFFieldType.Struct:
-            assert isinstance(value, GFFStruct)  # noqa: S101
+            assert isinstance(value, GFFStruct), f"{type(value).__name__}: {value}"  # noqa: S101
             result_made_change, alien_vo_count = patch_nested_gff(value, gff_content, gff, child_path, made_change, alien_vo_count)
             made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.List:
-            assert isinstance(value, GFFList)  # noqa: S101
+            assert isinstance(value, GFFList), f"{type(value).__name__}: {value}"  # noqa: S101
             result_made_change, alien_vo_count = recurse_through_list(value, gff_content, gff, child_path, made_change, alien_vo_count)
             made_change |= result_made_change
             continue
 
         if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
-            assert isinstance(value, LocalizedString)  # noqa: S101
+            assert isinstance(value, LocalizedString), f"{type(value).__name__}: {value}"  # noqa: S101
             new_substrings: dict[int, str] = deepcopy(value._substrings)
             for lang, gender, text in value:
                 if SCRIPT_GLOBALS.pytranslator is not None and text is not None and text.strip():
@@ -625,7 +634,9 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def process_translations(tlk: TLK, from_lang):
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
-            future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk}
+            future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {
+                executor.submit(translate_entry, tlkentry, from_lang): strref for strref, tlkentry in tlk
+            }
 
             for future in concurrent.futures.as_completed(future_to_strref):
                 strref: int = future_to_strref[future]
@@ -657,10 +668,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
 
         from_lang: Language = tlk.language
         new_filename_stem = f"{resource.resname()}_" + (SCRIPT_GLOBALS.pytranslator.to_lang.get_bcp47_code() or "UNKNOWN")
-        new_file_path = (
-            resource.filepath().parent
-            / f"{new_filename_stem}.{resource.restype().extension}"
-        )
+        new_file_path = resource.filepath().parent / f"{new_filename_stem}.{resource.restype().extension}"
         tlk.language = SCRIPT_GLOBALS.pytranslator.to_lang
         process_translations(tlk, from_lang)
         write_tlk(tlk, new_file_path)
@@ -686,20 +694,23 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 gff.root,
                 gff.content,
                 gff,
-                resource._path_ident_obj  # noqa: SLF001
+                resource._path_ident_obj,  # noqa: SLF001
             )
-            if (
-                alien_vo_count < 3
-                and alien_owner in {0, "0", None}
-                and alien_vo_count != -1
-                and SCRIPT_GLOBALS.set_unskippable
-                and gff.content == GFFContent.DLG
-            ):
+            made_change: bool = False
+            if alien_vo_count < 3 and alien_owner in {0, "0", None} and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
                     if conversationtype not in {"1", 1}:
-                        log_output("Skippable", skippable, "alien_vo_count", alien_vo_count, "ConversationType", conversationtype, f"Setting dialog as unskippable in {resource._path_ident_obj}")
+                        log_output(
+                            "Skippable",
+                            skippable,
+                            "alien_vo_count",
+                            alien_vo_count,
+                            "ConversationType",
+                            conversationtype,
+                            f"Setting dialog as unskippable in {resource._path_ident_obj}",
+                        )
                         made_change = True
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
@@ -715,7 +726,10 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
     return None
 
 
-def patch_and_save_noncapsule(resource: FileResource, savedir: Path | None = None):
+def patch_and_save_noncapsule(
+    resource: FileResource,
+    savedir: Path | None = None,
+):
     patched_data: GFF | TPC | None = patch_resource(resource)
     if patched_data is None:
         return
@@ -773,7 +787,6 @@ def patch_capsule_file(c_file: Path):
     new_resources: list[tuple[str, ResourceType, bytes]] = []
     omitted_resources: list[ResourceIdentifier] = []
     for resource in file_capsule:
-
         patched_data: GFF | TPC | None = patch_resource(resource)
         if isinstance(patched_data, GFF):
             new_data = bytes_gff(patched_data) if patched_data else resource.data()
@@ -806,7 +819,11 @@ def patch_capsule_file(c_file: Path):
         write_rim(erf_or_rim, new_filepath)  # type: ignore[arg-type, reportArgumentType]
 
 
-def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: RIM | ERF) -> PurePath:
+def patch_erf_or_rim(
+    resources: list[FileResource],
+    filename: str,
+    erf_or_rim: RIM | ERF,
+) -> PurePath:
     omitted_resources: list[ResourceIdentifier] = []
     new_filename = PurePath(filename)
     if SCRIPT_GLOBALS.translate:
@@ -823,12 +840,7 @@ def patch_erf_or_rim(resources: list[FileResource], filename: str, erf_or_rim: R
         elif isinstance(patched_data, TPC):
             log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
             txi_resource: FileResource | None = next(
-                (
-                    res
-                    for res in resources
-                    if res.resname() == resource.resname()
-                    and res.restype() == ResourceType.TXI
-                ),
+                (res for res in resources if res.resname() == resource.resname() and res.restype() == ResourceType.TXI),
                 None,
             )
             if txi_resource:
@@ -883,7 +895,7 @@ def patch_install(install_path: os.PathLike | str):
     k_install = Installation(install_path)
     k_install.reload_all()
     log_output_with_separator("Patching modules...")
-    for module_name, resources in k_install._modules.items():
+    for module_name, resources in k_install._modules.items():  # noqa: SLF001
         res_ident = ResourceIdentifier.from_path(module_name)
         filename = str(res_ident)
         filepath = k_install.path().joinpath("Modules", filename)
@@ -1159,6 +1171,7 @@ class KOTORPatchingToolUI:
         # Max threads
         def on_value_change():
             SCRIPT_GLOBALS.max_threads = int(spinbox_value.get())
+
         ttk.Label(self.root, text="Max Translation Threads:").grid(row=row, column=0)
         spinbox_value = tk.StringVar(value=str(SCRIPT_GLOBALS.max_threads))
         self.spinbox = tk.Spinbox(root, from_=1, to=2, increment=1, command=on_value_change, textvariable=spinbox_value)
@@ -1268,7 +1281,9 @@ class KOTORPatchingToolUI:
 
         if value is not None and varname is not None:
             self.translation_applied = False
-            ttk.Button(self.translation_options_frame, text="Apply Options", command=lambda: self.apply_translation_option(varname=varname, value=value)).grid(row=row, column=2)
+            ttk.Button(self.translation_options_frame, text="Apply Options", command=lambda: self.apply_translation_option(varname=varname, value=value)).grid(
+                row=row, column=2
+            )
         else:
             self.translation_applied = True
 
@@ -1283,7 +1298,6 @@ class KOTORPatchingToolUI:
         self.translation_applied = True
 
     def create_language_checkbuttons(self, row):
-
         # Show/Hide Languages
         self.show_hide_language = tk.BooleanVar(value=False)
         ttk.Checkbutton(self.root, text="Show/Hide Languages:", command=lambda: self.toggle_language_frame(self.show_hide_language)).grid(row=row, column=1)
@@ -1394,7 +1408,15 @@ class KOTORPatchingToolUI:
             self.install_button.config(state=tk.DISABLED)
         return None
 
+def is_running_from_temp():
+    app_path = Path(sys.executable)
+    temp_dir = tempfile.gettempdir()
+    return str(app_path).startswith(temp_dir)
+
 if __name__ == "__main__":
+    if is_running_from_temp():
+        messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+        sys.exit("Exiting: Application was run from a temporary or zip directory.")
     try:
         root = tk.Tk()
         APP = KOTORPatchingToolUI(root)

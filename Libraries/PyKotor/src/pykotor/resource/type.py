@@ -1,4 +1,5 @@
 """This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both games."""
+
 from __future__ import annotations
 
 import io
@@ -7,16 +8,15 @@ import os
 import uuid
 
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.error_handling import format_exception_with_variables
-from utility.string import WrappedStr
+from utility.logger_util import get_root_logger
+from utility.string_util import WrappedStr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
@@ -154,7 +154,7 @@ class ResourceType(Enum):
     TTF = ResourceTuple(2072, "ttf", "Fonts", "binary")
     TTC = ResourceTuple(2073, "ttc", "Unused", "binary")
     CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")
-    KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
+    KA = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
     ICO = ResourceTuple(2077, "ico", "Images", "binary")
     OGG = ResourceTuple(2078, "ogg", "Audio", "binary")
@@ -324,11 +324,7 @@ class ResourceType(Enum):
             type_id = int(type_id)
 
         return next(
-            (
-                restype
-                for restype in ResourceType.__members__.values()
-                if type_id == restype
-            ),
+            (restype for restype in ResourceType.__members__.values() if type_id == restype),
             ResourceType.from_invalid(type_id=type_id),
         )
 
@@ -353,11 +349,7 @@ class ResourceType(Enum):
         if lower_ext.startswith("."):
             lower_ext = lower_ext[1:]
         return next(
-            (
-                restype
-                for restype in ResourceType.__members__.values()
-                if lower_ext == restype.extension
-            ),
+            (restype for restype in ResourceType.__members__.values() if lower_ext == restype.extension),
             ResourceType.from_invalid(extension=lower_ext),
         )
 
@@ -373,25 +365,22 @@ class ResourceType(Enum):
         while name in cls.__members__:
             name = f"INVALID_{kwargs.get('extension', kwargs.get('type_id', cls.INVALID.extension))}{uuid.uuid4().hex}"
         instance._name_ = name
-        # Create a new ResourceTuple with updated fields
-        invalid_value = cls.INVALID.value
         instance._value_ = ResourceTuple(
-            type_id=kwargs.get('type_id', invalid_value.type_id),
-            extension=kwargs.get('extension', invalid_value.extension),
-            category=kwargs.get('category', invalid_value.category),
-            contents=kwargs.get('contents', invalid_value.contents),
-            is_invalid=True,  # Explicitly set to True for invalid instances
-            target_member=kwargs.get('target_member', invalid_value.target_member)
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member)
         )
-        
         instance.__init__(
-            type_id=instance._value_.type_id,
-            extension=instance._value_.extension,
-            category=instance._value_.category,
-            contents=instance._value_.contents,
-            is_invalid=instance._value_.is_invalid,
-            target_member=instance._value_.target_member
-        )  # type: ignore[misc]
+            type_id=kwargs.get("type_id", cls.INVALID.type_id),
+            extension=kwargs.get("extension", cls.INVALID.extension),
+            category=kwargs.get("category", cls.INVALID.category),
+            contents=kwargs.get("contents", cls.INVALID.contents),
+            is_invalid=kwargs.get("is_invalid", cls.INVALID.is_invalid),
+            target_member=kwargs.get("target_member", cls.INVALID.target_member)
+        )
         return super().__new__(cls, instance)
 
     def validate(self):
@@ -399,6 +388,7 @@ class ResourceType(Enum):
             msg = f"Invalid ResourceType: '{self!r}'"
             raise ValueError(msg)
         return self
+
 
 R = TypeVar("R")
 
@@ -408,11 +398,8 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-                msg = "Tried to load an unsupported or corrupted file."
+            msg = "Tried to load an unsupported or corrupted file."
+            get_root_logger().exception(msg)
             raise ValueError(msg) from e
         finally:
             if auto_close:

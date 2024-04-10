@@ -50,6 +50,7 @@ class UTI:
         self.base_item: int = 0
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.description: LocalizedString = LocalizedString.from_invalid()
+        self.description2: LocalizedString = LocalizedString.from_invalid()
         self.tag: str = ""
         self.charges: int = 0
         self.cost: int = 0
@@ -102,6 +103,7 @@ def construct_uti(
     uti.base_item = root.acquire("BaseItem", 0)
     uti.name = root.acquire("LocalizedName", LocalizedString.from_invalid())
     uti.description = root.acquire("DescIdentified", LocalizedString.from_invalid())
+    uti.description2 = root.acquire("Description", LocalizedString.from_invalid())
     uti.tag = root.acquire("Tag", "")
     uti.charges = root.acquire("Charges", 0)
     uti.cost = root.acquire("Cost", 0)
@@ -146,7 +148,7 @@ def dismantle_uti(
     root.set_resref("TemplateResRef", uti.resref)
     root.set_int32("BaseItem", uti.base_item)
     root.set_locstring("LocalizedName", uti.name)
-    root.set_locstring("Description", uti.description)
+    root.set_locstring("Description", uti.description2)
     root.set_locstring("DescIdentified", uti.description)
     root.set_string("Tag", uti.tag)
     root.set_uint8("Charges", uti.charges)

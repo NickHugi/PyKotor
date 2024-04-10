@@ -120,4 +120,6 @@ class Ui_MainWindow(object):
         self.actionDeleteSelected.setText(_translate("MainWindow", "Delete Selected"))
         self.actionDownloadKits.setText(_translate("MainWindow", "Download Kits"))
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
+
+
 from toolset.gui.windows.indoor_builder import IndoorMapRenderer

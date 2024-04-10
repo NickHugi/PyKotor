@@ -24,7 +24,11 @@ if TYPE_CHECKING:
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the 2DA editor.
 
         Args:
@@ -104,7 +108,13 @@ class TwoDAEditor(Editor):
         self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads data from a file into the model.
 
         Args:
@@ -240,7 +250,10 @@ class TwoDAEditor(Editor):
         self.model.clear()
         self.model.setRowCount(0)
 
-    def doFilter(self, text: str):
+    def doFilter(
+        self,
+        text: str,
+    ):
         self.proxyModel.setFilterFixedString(text)
 
     def toggleFilter(self):
@@ -393,7 +406,11 @@ class TwoDAEditor(Editor):
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
-    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: str | None = None):
+    def setVerticalHeaderOption(
+        self,
+        option: VerticalHeaderOption,
+        column: str | None = None,
+    ):
         self.verticalHeaderOption = option
         assert_with_variable_trace(column is not None, "column cannot be None")
         self.verticalHeaderColumn = column or ""
@@ -431,8 +448,7 @@ class TwoDAEditor(Editor):
                     columnIndex = i
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
-            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
-                                                              "QHeaderView::section:checked { color: #000000; }")
+            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
             headers = ["⯈" for _ in range(self.model.rowCount())]
 
         for i in range(self.model.rowCount()):
@@ -444,7 +460,11 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._filterString: str = ""
 
-    def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
+    def filterAcceptsRow(
+        self,
+        sourceRow,
+        sourceParent,
+    ) -> bool:
         """Filters rows based on regular expression pattern match.
 
         Args:

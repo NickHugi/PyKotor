@@ -45,6 +45,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.jumpBox)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.jumpSpinbox = QtWidgets.QSpinBox(self.jumpBox)
+        self.jumpSpinbox.setMinimum(-2147483648)
+        self.jumpSpinbox.setMaximum(2147483647)
         self.jumpSpinbox.setObjectName("jumpSpinbox")
         self.horizontalLayout_4.addWidget(self.jumpSpinbox)
         self.jumpButton = QtWidgets.QPushButton(self.jumpBox)
