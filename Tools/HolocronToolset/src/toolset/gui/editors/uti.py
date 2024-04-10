@@ -26,7 +26,12 @@ if TYPE_CHECKING:
 
 
 class UTIEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation
+        | None = None,
+    ):
         """Initializes the Item Editor window.
 
         Args:
@@ -82,7 +87,10 @@ class UTIEditor(Editor):
         self.ui.textureVarSpin.valueChanged.connect(self.onUpdateIcon)
         self.ui.baseSelect.currentIndexChanged.connect(self.onUpdateIcon)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setupInstallation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation for editing.
 
         Args:
@@ -132,7 +140,13 @@ class UTIEditor(Editor):
                 child.setData(0, QtCore.Qt.UserRole + 1, j)
                 item.addChild(child)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         uti = read_uti(data)
@@ -312,7 +326,10 @@ class UTIEditor(Editor):
         index = self.ui.assignedPropertiesList.selectedIndexes()[0]
         self.ui.assignedPropertiesList.takeItem(index.row())
 
-    def propertySummary(self, utiProperty: UTIProperty) -> str:
+    def propertySummary(
+        self,
+        utiProperty: UTIProperty,
+    ) -> str:
         """Retrieve the property, subproperty and cost names from the UTIEditor.
 
         Processing Logic:
@@ -353,14 +370,21 @@ class UTIEditor(Editor):
         self.removeSelectedProperty()
 
     @staticmethod
-    def propertyName(installation: HTInstallation, prop: int) -> str:
+    def propertyName(
+        installation: HTInstallation,
+        prop: int,
+    ) -> str:
         properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         stringref: int | None = properties.get_row(prop).get_integer("name")
         assert stringref is not None, assert_with_variable_trace(stringref is not None)
         return installation.talktable().string(stringref)
 
     @staticmethod
-    def subpropertyName(installation: HTInstallation, prop: int, subprop: int) -> None | str:
+    def subpropertyName(
+        installation: HTInstallation,
+        prop: int,
+        subprop: int,
+    ) -> None | str:
         """Gets the name of a subproperty of an item property.
 
         Args:
@@ -391,7 +415,11 @@ class UTIEditor(Editor):
         return installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
 
     @staticmethod
-    def costName(installation: HTInstallation, cost: int, value: int):
+    def costName(
+        installation: HTInstallation,
+        cost: int,
+        value: int,
+    ) -> str | None:
         costtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
         costtable: TwoDA = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
         try:
@@ -403,7 +431,11 @@ class UTIEditor(Editor):
         return None
 
     @staticmethod
-    def paramName(installation: HTInstallation, paramtable: int, param: int):
+    def paramName(
+        installation: HTInstallation,
+        paramtable: int,
+        param: int,
+    ) -> str | None:
         paramtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
         paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
         try:
@@ -416,7 +448,11 @@ class UTIEditor(Editor):
 
 
 class PropertyEditor(QDialog):
-    def __init__(self, installation: HTInstallation, utiProperty: UTIProperty):
+    def __init__(
+        self,
+        installation: HTInstallation,
+        utiProperty: UTIProperty,
+    ):
         """Initializes the UTI property editor dialog.
 
         Args:

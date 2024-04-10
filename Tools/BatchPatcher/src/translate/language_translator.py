@@ -286,7 +286,7 @@ class TranslationOption(Enum):
             return 1024
         return 1024
 
-    def get_lang_code(self, lang: Language):
+    def get_lang_code(self, lang: Language) -> str | None:
         if self is TranslationOption.MY_MEMORY_TRANSLATOR and lang is Language.ENGLISH:
             return "english us"
         return {
@@ -350,7 +350,7 @@ def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> s
     return f"__{counter}__"
 
 
-def replace_curly_braces(original_string: str):
+def replace_curly_braces(original_string: str) -> tuple[str, list[str]]:
     replaced_text: list[str] = []
     counter = 0
 
@@ -365,7 +365,7 @@ def replace_curly_braces(original_string: str):
     return modified_string, replaced_text
 
 
-def restore_original_text(modified_string: str, replaced_text: list[str]):
+def restore_original_text(modified_string: str, replaced_text: list[str]) -> str:
     counter = -1
     for counter, original_text in enumerate(replaced_text):
         placeholder = f"__{counter}__"
@@ -516,7 +516,7 @@ class Translator:
             return text
 
         # Function to chunk the text into segments with a maximum of 500 characters
-        def chunk_text(text: str, size) -> list[str]:
+        def chunk_text(text: str, size: int) -> list[str]:
             """Splits a text into chunks of given size.
 
             Args:
@@ -552,7 +552,7 @@ class Translator:
                 text = text[cut_off:].lstrip()  # Remove leading whitespace from next chunk
             return chunks
 
-        def fix_encoding(text: str, encoding: str):
+        def fix_encoding(text: str, encoding: str) -> str:
             return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore")
 
         def validate_translated_result(translated_chunk: str):

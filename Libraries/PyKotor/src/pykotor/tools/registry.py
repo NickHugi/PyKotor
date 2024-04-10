@@ -223,7 +223,7 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
         log.exception("An unexpected error occurred while creating a registry path.")
 
-def get_retail_key(game: Game):
+def get_retail_key(game: Game) -> str:
     if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
         return (
             r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2"
