@@ -99,7 +99,7 @@ class Settings:
                 raw_value = this.settings.value(name, serialized_default, str)
                 value = jsonpickle.decode(raw_value)
                 return reconstruct_value(value)
-            except JSONDecodeError as e:
+            except (TypeError, JSONDecodeError) as e:
                 print(f"Exception in settings getter: {e}")
                 return this.settings.value(name, l_default, l_default.__class__)
 
