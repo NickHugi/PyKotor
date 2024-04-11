@@ -139,6 +139,10 @@ class LibUpdate:
             return [
                 f"{self.filestem}_Win_{str_arch}.zip",
                 f"{self.filestem}_Windows_{str_arch}.zip"
+                f"{self.filestem}_Windows_PyQt5_{str_arch}.zip"
+                f"{self.filestem}_Windows_PySide2_{str_arch}.zip"
+                f"{self.filestem}_Windows_PyQt6_{str_arch}.zip"
+                f"{self.filestem}_Windows_PySide6_{str_arch}.zip"
             ]
         if lookup_os_name == "Linux":
             return [
@@ -146,6 +150,10 @@ class LibUpdate:
                 f"{self.filestem}_Linux_{str_arch}.tar.gz",
                 f"{self.filestem}_Linux_{str_arch}.tar.bz2",
                 f"{self.filestem}_Linux_{str_arch}.tar.xz",
+                f"{self.filestem}_Linux_PyQt5_{str_arch}.zip"
+                f"{self.filestem}_Linux_PySide2_{str_arch}.zip"
+                f"{self.filestem}_Linux_PyQt6_{str_arch}.zip"
+                f"{self.filestem}_Linux_PySide6_{str_arch}.zip"
             ]
         if lookup_os_name == "Darwin":
             return [
@@ -157,6 +165,10 @@ class LibUpdate:
                 f"{self.filestem}_macOS_{str_arch}.tar.xz",
                 f"{self.filestem}_Mac_{str_arch}.zip",
                 f"{self.filestem}_macOS_{str_arch}.zip"
+                f"{self.filestem}_macOS_PyQt5_{str_arch}.zip"
+                f"{self.filestem}_macOS_PySide2_{str_arch}.zip"
+                f"{self.filestem}_macOS_PyQt6_{str_arch}.zip"
+                f"{self.filestem}_macOS_PySide6_{str_arch}.zip"
             ]
 
         raise ValueError(f"Unexpected and unsupported OS: {lookup_os_name}")
