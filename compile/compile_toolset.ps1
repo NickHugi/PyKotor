@@ -98,24 +98,24 @@ $pyInstallerArgs = @{
 }
 switch ($qtApi) {
     "PyQt5" {
-       $pyInstallerArgs['exclude-module'] += "PyQt6"
-       $pyInstallerArgs['exclude-module'] += "PySide2"
-       $pyInstallerArgs['exclude-module'] += "PySide6"
+        $tempArray = $pyInstallerArgs['exclude-module']
+        $tempArray += "PyQt6", "PySide2", "PySide6"
+        $pyInstallerArgs['exclude-module'] = $tempArray
     }
     "PyQt6" {
-        $pyInstallerArgs['exclude-module'] += "PyQt5"
-        $pyInstallerArgs['exclude-module'] += "PySide2"
-        $pyInstallerArgs['exclude-module'] += "PySide6"
+        $tempArray = $pyInstallerArgs['exclude-module']
+        $tempArray += "PyQt5", "PySide2", "PySide6"
+        $pyInstallerArgs['exclude-module'] = $tempArray
     }
     "PySide2" {
-        $pyInstallerArgs['exclude-module'] += "PyQt6"
-        $pyInstallerArgs['exclude-module'] += "PyQt5"
-        $pyInstallerArgs['exclude-module'] += "PySide6"
+        $tempArray = $pyInstallerArgs['exclude-module']
+        $tempArray += "PyQt6", "PyQt5", "PySide6"
+        $pyInstallerArgs['exclude-module'] = $tempArray
     }
     "PySide6" {
-        $pyInstallerArgs['exclude-module'] += "PyQt6"
-        $pyInstallerArgs['exclude-module'] += "PySide2"
-        $pyInstallerArgs['exclude-module'] += "PyQt5"
+        $tempArray = $pyInstallerArgs['exclude-module']
+        $tempArray += "PyQt6", "PySide2", "PyQt5"
+        $pyInstallerArgs['exclude-module'] = $tempArray
     }
     default {
     }
