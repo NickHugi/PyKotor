@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Performance improvements, bugfixes, and a dialog to upgrade/downgrade your toolset installation straight from github.",
+    "toolsetLatestBetaNotes": "Various bugfixes<br> - Fix updater breaking when HT is running on a drive other than C:/<br> - Fix MDL viewer unable to open caused by last release.<br> - Other various bugfixes.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
