@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QMessageBox
+import qtpy
+
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QDialog, QMessageBox
 
 from pykotor.common.module import Module
 from pykotor.tools import module
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -53,7 +55,16 @@ class CloneModuleDialog(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs import clone_module  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)

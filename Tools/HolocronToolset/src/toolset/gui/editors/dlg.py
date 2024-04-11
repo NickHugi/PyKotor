@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import os
+
 from copy import copy, deepcopy
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import pyperclip
+import qtpy
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
+from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
@@ -31,13 +36,13 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
+from utility.system.path import Path
 
 if TYPE_CHECKING:
-    import os
 
-    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
-    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+    from qtpy.QtCore import QItemSelection, QModelIndex, QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QPlainTextEdit, QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -149,7 +154,16 @@ class DLGEditor(Editor):
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -793,6 +807,35 @@ class DLGEditor(Editor):
             - Starts playback of the sound using a single shot timer to avoid blocking.
             - Displays an error message if the sound resource is not found.
         """
+        if qtpy.API_NAME in ["PyQt5", "PySide2"]:
+            # PyQt5 and PySide2 code path
+            from qtpy.QtMultimedia import QMediaContent
+
+            def set_media(data: bytes | None):
+                if data:
+                    self.buffer = QBuffer(self)
+                    self.buffer.setData(data)
+                    self.buffer.open(QIODevice.ReadOnly)
+                    self.player.setMedia(QMediaContent(), self.buffer)
+                    QtCore.QTimer.singleShot(0, self.player.play)
+                else:
+                    self.blinkWindow()
+
+        elif qtpy.API_NAME in ["PyQt6", "PySide6"]:
+            # PyQt6 and PySide6 code path
+            def set_media(data: bytes | None):
+                if data:
+                    with TemporaryDirectory() as tmpdir:
+                        tmpdir_path = Path(tmpdir)
+                        tmpmediafile = (tmpdir_path / tmpdir_path.stem).with_suffix(".wav")
+                        BinaryWriter.dump(tmpmediafile, data)
+                        self.player.setSource(str(tmpmediafile))
+                        QTimer.singleShot(0, self.player.play)
+                else:
+                    self.blinkWindow()
+        else:
+            raise ValueError(f"Unsupported QT_API value: {qtpy.API_NAME}")
+
         self.player.stop()
 
         data: bytes | None = self._installation.sound(
@@ -800,14 +843,7 @@ class DLGEditor(Editor):
             [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
 
-        if data:
-            self.buffer = QBuffer(self)
-            self.buffer.setData(data)
-            self.buffer.open(QIODevice.ReadOnly)
-            self.player.setMedia(QMediaContent(), self.buffer)
-            QtCore.QTimer.singleShot(0, self.player.play)
-        else:
-            self.blinkWindow()
+        set_media(data)
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.

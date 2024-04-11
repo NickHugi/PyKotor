@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSize, QSortFilterProxyModel, QThread
-from PyQt5.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import (
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QSize, QSortFilterProxyModel, QThread
+from qtpy.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import (
     QAction,
     QDialog,
     QFrame,
@@ -32,9 +34,9 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QModelIndex, QPoint
-    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-    from PyQt5.QtWidgets import QLabel, QWidget
+    from qtpy.QtCore import QModelIndex, QPoint
+    from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from qtpy.QtWidgets import QLabel
 
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.tlk import TLK
@@ -91,7 +93,16 @@ class InventoryEditor(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.inventory import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -424,7 +435,7 @@ class ItemContainer:
 
 
 class DropFrame(ItemContainer, QFrame):
-    itemDropped = QtCore.pyqtSignal(object, object, object)
+    itemDropped = QtCore.Signal(object, object, object)
 
     def __init__(self, parent):
         QFrame.__init__(self)
@@ -779,8 +790,8 @@ class ItemBuilderDialog(QDialog):
 
 
 class ItemBuilderWorker(QThread):
-    utiLoaded = QtCore.pyqtSignal(object, object)
-    finished = QtCore.pyqtSignal()
+    utiLoaded = QtCore.Signal(object, object)
+    finished = QtCore.Signal()
 
     def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__()

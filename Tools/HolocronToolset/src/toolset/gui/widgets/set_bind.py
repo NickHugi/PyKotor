@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QWidget
 
 from toolset.utils.misc import getStringFromKey
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent
+    from qtpy.QtGui import QKeyEvent
 
     from toolset.data.misc import Bind
 
@@ -33,7 +35,16 @@ class SetBindWidget(QWidget):
         self.keybind: set[int] = set()
         self.recordBind: bool = False
 
-        from toolset.uic.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.set_bind import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)

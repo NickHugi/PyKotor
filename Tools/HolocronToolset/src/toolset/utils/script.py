@@ -4,7 +4,9 @@ import os
 import re
 import uuid
 
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from contextlib import suppress
+
+from qtpy.QtWidgets import QFileDialog, QMessageBox
 
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter

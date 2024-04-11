@@ -9,10 +9,12 @@ from multiprocessing import Process, Queue
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QFile, QTextStream, Qt
-from PyQt5.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
-from PyQt5.QtWidgets import (
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QFile, QMetaObject, QTextStream, Qt
+from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
+from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QFileDialog,
@@ -29,7 +31,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
@@ -87,11 +89,10 @@ if TYPE_CHECKING:
 
     from typing import NoReturn
 
-    from PyQt5 import QtGui
-    from PyQt5.QtGui import QCloseEvent
+    from qtpy import QtGui
+    from qtpy.QtGui import QCloseEvent
     from watchdog.observers.api import BaseObserver
 
-    from pykotor.extract.file import FileResource
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
@@ -210,8 +211,8 @@ def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress"
 
 
 class ToolWindow(QMainWindow):
-    moduleFilesUpdated = QtCore.pyqtSignal(object, object)
-    overrideFilesUpdate = QtCore.pyqtSignal(object, object)
+    moduleFilesUpdated = QtCore.Signal(object, object)
+    overrideFilesUpdate = QtCore.Signal(object, object)
 
     GFF_TYPES: ClassVar[list[ResourceType]] = [
         ResourceType.GFF,
@@ -259,7 +260,16 @@ class ToolWindow(QMainWindow):
         self.original_style = self.style().objectName()
         self.original_palette = self.palette()
 
-        from toolset.uic.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -582,15 +592,20 @@ class ToolWindow(QMainWindow):
         elif len(resources) >= 1:
             # Player saves resources with original name to a specific directory
             folderpath: str = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
-            if folderpath:
-                loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
+            if not folderpath:
+                return
+            loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
 
-                for resource in resources:
-                    filename = f"{resource.resname()}.{resource.restype().extension}"
-                    filepath = str(Path(folderpath, filename))
-                    loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
+            for resource in resources:
+                filename = f"{resource.resname()}.{resource.restype().extension}"
+                filepath = str(Path(folderpath, filename))
+                # Use QMetaObject.invokeMethod to ensure that _extractResource is called in the main thread
+                QMetaObject.invokeMethod(self, "_extractResource", Qt.QueuedConnection,
+                                    Qt.Q_ARG(FileResource, resource),
+                                    Qt.Q_ARG(str, filepath),
+                                    Qt.Q_ARG(AsyncBatchLoader, loader))
 
-                loader.exec_()
+            loader.exec_()
         elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.currentSection()):
             module_name = resourceWidget.currentSection()
             self._saveCapsuleFromToolUI(module_name)

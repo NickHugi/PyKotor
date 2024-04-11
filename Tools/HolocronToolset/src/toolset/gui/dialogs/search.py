@@ -3,8 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog, QListWidgetItem
 
 from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
@@ -13,7 +15,7 @@ from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 
 @dataclass
@@ -31,12 +33,21 @@ class FileSearchQuery:
 
 
 class FileSearcher(QDialog):
-    fileResults = QtCore.pyqtSignal(list, HTInstallation)
+    fileResults = QtCore.Signal(list, HTInstallation)
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            pass  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            pass  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            pass  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            pass  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
@@ -166,7 +177,7 @@ class FileSearcher(QDialog):
 
 
 class FileResults(QDialog):
-    selectionSignal = QtCore.pyqtSignal(FileResource)
+    selectionSignal = QtCore.Signal(FileResource)
 
     def __init__(
         self,
@@ -191,7 +202,16 @@ class FileResults(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.search_result import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

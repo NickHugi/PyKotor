@@ -10,8 +10,8 @@ import tempfile
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from qtpy.QtCore import QThread
+from qtpy.QtWidgets import QApplication, QMessageBox
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -97,6 +97,21 @@ if __name__ == "__main__":
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
+
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
+    os.environ["QT_DEBUG_PLUGINS"] = "1"
+    os.environ["QT_API"] = os.environ.get("QT_API", "pyqt5")  # supports pyqt5, pyqt6, pyside2, pyside6
+
+    import qtpy
+    print(f"Using qt bindings '{qtpy.API_NAME}'")
+
+    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
+    # os.environ["QT_SCALE_FACTOR"] = "1"
+
+    from qtpy.QtCore import QThread
+    from qtpy.QtWidgets import QApplication
 
     from utility.system.path import Path
 

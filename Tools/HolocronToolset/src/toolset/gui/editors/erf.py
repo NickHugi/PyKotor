@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QMimeData, Qt
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView
+import qtpy
+
+from qtpy import QtCore, QtGui
+from qtpy.QtCore import QMimeData, Qt
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -24,8 +26,8 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
@@ -61,7 +63,16 @@ class ERFEditor(Editor):
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.erf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -408,7 +419,7 @@ class ERFEditor(Editor):
 
 
 class ERFEditorTable(QTableView):
-    resourceDropped = QtCore.pyqtSignal(object)
+    resourceDropped = QtCore.Signal(object)
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)

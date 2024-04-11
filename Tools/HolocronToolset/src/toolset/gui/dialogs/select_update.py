@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Any
 import markdown
 import requests
 
-from PyQt5.QtCore import QThread, Qt
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
+from qtpy.QtCore import QThread, Qt
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
 
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog

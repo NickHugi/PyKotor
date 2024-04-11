@@ -4,9 +4,11 @@ from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QRect, QRegExp, QSize
-from PyQt5.QtGui import (
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QRect, QRegularExpression, QSize
+from qtpy.QtGui import (
     QColor,
     QFont,
     QFontMetricsF,
@@ -15,7 +17,7 @@ from PyQt5.QtGui import (
     QTextCharFormat,
     QTextFormat,
 )
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+from qtpy.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.resource.type import ResourceType
@@ -29,7 +31,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import (
+    from qtpy.QtGui import (
         QPaintEvent,
         QResizeEvent,
         QTextBlock,
@@ -64,7 +66,16 @@ class NSSEditor(Editor):
         supported: list[ResourceType] = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from toolset.uic.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.nss import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -599,8 +610,8 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
     OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
-    COMMENT_BLOCK_START = QRegExp("/\\*")
-    COMMENT_BLOCK_END = QRegExp("\\*/")
+    COMMENT_BLOCK_START = QRegularExpression("/\\*")
+    COMMENT_BLOCK_END = QRegularExpression("\\*/")
 
     BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
@@ -650,7 +661,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             (r"//[^\n]*", 0, self.styles["comment"]),
         ]
 
-        self.rules: list[tuple[QtCore.QRegExp, int, QTextCharFormat]] = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
+        self.rules: list[tuple[QtCore.QRegularExpression, int, QTextCharFormat]] = [(QtCore.QRegularExpression(pat), index, fmt) for (pat, index, fmt) in rules]
 
     def highlightBlock(self, text: str | None):
         """Highlights blocks of text.
@@ -658,45 +669,38 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         Args:
         ----
             text (str | None): The text to highlight.
-
-        Returns:
-        -------
-            None: No value is returned.
-
-        Processing Logic:
-        ----------------
-            1. Checks if text is None and returns if so.
-            2. Loops through rules to find expressions and apply formatting.
-            3. Sets current block state to 0.
-            4. Finds comment blocks and applies comment formatting.
         """
         if text is None:
-            print("text cannot be None", "highlightBlock")
             return
-        for expression, nth, format in self.rules:
-            index: int = expression.indexIn(text, 0)
 
-            while index >= 0:
-                index = expression.pos(nth)
-                length: int = len(expression.cap(nth))
-                self.setFormat(index, length, format)
-                index = expression.indexIn(text, index + length)
+        for expression, nth, format in self.rules:
+            matchIterator = expression.globalMatch(text)
+            while matchIterator.hasNext():
+                match = matchIterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), format)
 
         self.setCurrentBlockState(0)
 
         startIndex = 0
         if self.previousBlockState() != 1:
-            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex)
+            match = SyntaxHighlighter.COMMENT_BLOCK_START.match(text)
+            startIndex = match.capturedStart() if match.hasMatch() else -1
 
         while startIndex >= 0:
-            endIndex = SyntaxHighlighter.COMMENT_BLOCK_END.indexIn(text, startIndex)
+            match = SyntaxHighlighter.COMMENT_BLOCK_END.match(text, startIndex)
+            endIndex = match.capturedStart() if match.hasMatch() else -1
+
             if endIndex == -1:
                 self.setCurrentBlockState(1)
                 commentLength = len(text) - startIndex
             else:
-                commentLength = endIndex - startIndex + 2
+                commentLength = endIndex - startIndex + match.capturedLength()
+
             self.setFormat(startIndex, commentLength, self.styles["comment"])
-            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
+            if endIndex == -1:
+                break  # Exit the loop if no end comment marker is found
+            match = SyntaxHighlighter.COMMENT_BLOCK_START.match(text, startIndex + commentLength)
+            startIndex = match.capturedStart() if match.hasMatch() else -1
 
     def getCharFormat(
         self,
