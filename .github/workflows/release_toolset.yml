@@ -352,6 +352,9 @@ jobs:
 
     - name: Compile Holocron Toolset
       if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
+        QT_API: ${{ matrix.qt_version }}
       run: |
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
