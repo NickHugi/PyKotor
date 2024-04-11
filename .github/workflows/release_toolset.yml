@@ -250,10 +250,16 @@ jobs:
         Remove-Item -Path $output
       shell: pwsh
 
+    - name: Set QT_API for macOS
+      if: runner.os == 'macOS'
+      run: echo "QT_API=${{ matrix.qt_version }}" >> $GITHUB_ENV
+      shell: bash
+
     - name: Install Holocron Toolset dependencies
       if: ${{ success() || failure() }}
       env:
         MATRIX_ARCH: ${{ matrix.architecture }}
+        QT_API: ${{ matrix.qt_version }}
       id: toolset_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
@@ -318,6 +324,9 @@ jobs:
 
     - name: HolocronToolset - Adjust RPATH for shared libraries in the virtual environment
       if: ${{ (success() || failure()) && runner.os == 'Disabled_Linux' && steps.toolset_deps.outputs.success == 'true' }}
+      env:
+        MATRIX_ARCH: ${{ matrix.architecture }}
+        QT_API: ${{ matrix.qt_version }}
       run: |
         . ./install_python_venv.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         # Ensure patchelf is installed
