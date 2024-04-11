@@ -223,7 +223,9 @@ def main():  # sourcery skip: use-contextlib-suppress
         color_code = colorchooser.askcolor(title=f"Choose {color_type} Color")[1]
         if color_code:
             tag_name = f"{color_type}_{color_code}"
-            text_area.tag_configure(tag_name, **{color_type: color_code})
+            # Ensure color_type is correctly passed as a keyword argument
+            config_kwargs = {"foreground": color_code} if color_type else {"background": color_code}
+            text_area.tag_configure(tag_name, **config_kwargs)
             text_area.tag_add(tag_name, "sel.first", "sel.last")
 
     def undo():
