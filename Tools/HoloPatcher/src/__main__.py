@@ -527,19 +527,19 @@ class App:
 
         class MessageboxOverride:
             @staticmethod
-            def showinfo(title, message):
+            def showinfo(title, message, **options):
                 print(f"[Note] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def showwarning(title, message):
+            def showwarning(title, message, **options):
                 print(f"[Warning] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def showerror(title, message):
+            def showerror(title, message, **options):
                 print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def askyesno(title, message):
+            def askyesno(title, message, **options):
                 """Console-based replacement for messagebox.askyesno and similar."""
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
