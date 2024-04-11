@@ -39,19 +39,19 @@ class FileSearcher(QDialog):
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PySide6":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt5":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
         elif qtpy.API_NAME == "PyQt6":
-            pass  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
-        assert len(installations) > 0, "No installations passed to FileSearcher"
+        assert installations, "No installations passed to FileSearcher"
 
         self._installations: dict[str, HTInstallation] = installations
         for name, installation in installations.items():
