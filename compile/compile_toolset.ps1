@@ -118,6 +118,7 @@ switch ($qtApi) {
         $pyInstallerArgs['exclude-module'] = $tempArray
     }
     default {
+        throw;
     }
 }
 
