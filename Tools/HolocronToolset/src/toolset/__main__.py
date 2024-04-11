@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import atexit
 import cProfile
-from contextlib import suppress
 import multiprocessing
 import os
 import pathlib
