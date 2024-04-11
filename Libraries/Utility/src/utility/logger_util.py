@@ -46,11 +46,15 @@ class UTF8StreamWrapper:
     def write(self, message):
         # Ensure message is a string, encode to UTF-8 with errors replaced,
         # then write to the original stream's buffer directly.
+        if self.original_stream is None:  # windowed mode PyInstaller
+            return
         if isinstance(message, str):
             message = message.encode("utf-8", errors="replace")
         self.original_stream.buffer.write(message)
 
     def flush(self):
+        if self.original_stream is None:  # windowed mode PyInstaller
+            return
         self.original_stream.flush()
 
     def __getattr__(self, attr):
