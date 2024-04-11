@@ -7,6 +7,7 @@ import os
 import re
 import tkinter as tk
 
+from contextlib import suppress
 from functools import partial
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from typing import Any
@@ -152,10 +153,12 @@ def main():  # sourcery skip: use-contextlib-suppress
                 print(tag_name, tagStart, tagEnd)
 
     def undo():
-        text_area.edit_undo()
+        with suppress(tk.TclError):
+            text_area.edit_undo()
 
     def redo():
-        text_area.edit_redo()
+        with suppress(tk.TclError):
+            text_area.edit_redo()
 
     def apply_list(list_type="bullet"):
         # Check if there's a selection
@@ -279,7 +282,7 @@ def main():  # sourcery skip: use-contextlib-suppress
     app_name = "Rich Text Editor"
     root.title(app_name)
 
-    text_area = tk.Text(root, font=f"{font_name} 15", relief=tk.FLAT)
+    text_area = tk.Text(root, font=f"{font_name} 15", relief=tk.FLAT, undo=True, autoseparators=True, maxundo=-1)
     text_area.pack(fill=tk.BOTH, expand=tk.TRUE, padx=padding, pady=padding)
     text_area.bind("<Key>", keyDown)
 
@@ -313,6 +316,12 @@ def main():  # sourcery skip: use-contextlib-suppress
     format_menu.add_command(label="Align Left", command=lambda: align_text('align_left'))
     format_menu.add_command(label="Align Center", command=lambda: align_text('align_center'))
     format_menu.add_command(label="Align Right", command=lambda: align_text('align_right'))
+
+    # Bind the undo and redo functions to Ctrl+Z and Ctrl+Y
+    root.bind_all("<Control-z>", lambda _event: undo())
+    root.bind_all("<Control-y>", lambda _event: redo())
+    root.bind_all("<Control-Shift-z>", lambda _event: text_area.edit_redo())
+    root.bind_all("<Control-Shift-Z>", lambda _event: text_area.edit_redo())  # different keyboard layouts ig
 
     root.mainloop()
 
