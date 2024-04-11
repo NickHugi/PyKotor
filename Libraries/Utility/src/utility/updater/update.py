@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import errno
 import os
 import platform
@@ -12,6 +11,7 @@ import threading
 import uuid
 import zipfile
 
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable
 
 from utility.logger_util import get_root_logger
