@@ -96,6 +96,30 @@ $pyInstallerArgs = @{
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
 }
+switch ($qtApi) {
+    "PyQt5" {
+       $pyInstallerArgs['exclude-module'] += "PyQt6"
+       $pyInstallerArgs['exclude-module'] += "PySide2"
+       $pyInstallerArgs['exclude-module'] += "PySide6"
+    }
+    "PyQt6" {
+        $pyInstallerArgs['exclude-module'] += "PyQt5"
+        $pyInstallerArgs['exclude-module'] += "PySide2"
+        $pyInstallerArgs['exclude-module'] += "PySide6"
+    }
+    "PySide2" {
+        $pyInstallerArgs['exclude-module'] += "PyQt6"
+        $pyInstallerArgs['exclude-module'] += "PyQt5"
+        $pyInstallerArgs['exclude-module'] += "PySide6"
+    }
+    "PySide6" {
+        $pyInstallerArgs['exclude-module'] += "PyQt6"
+        $pyInstallerArgs['exclude-module'] += "PySide2"
+        $pyInstallerArgs['exclude-module'] += "PyQt5"
+    }
+    default {
+    }
+}
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     $key = $_.Key
