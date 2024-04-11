@@ -805,7 +805,11 @@ def patch_capsule_file(c_file: Path):
             new_resources.append((resource.resname(), ResourceType.TPC, new_data))
             omitted_resources.append(resource.identifier())
 
-    erf_or_rim: ERF | RIM = ERF(ERFType.from_extension(new_filepath)) if is_any_erf_type_file(c_file) else RIM()
+    erf_or_rim: ERF | RIM = (
+        ERF(ERFType.from_extension(new_filepath))
+        if is_any_erf_type_file(c_file)
+        else RIM()
+    )
     for resource in file_capsule:
         if resource.identifier() not in omitted_resources:
             erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())

@@ -241,7 +241,11 @@ class TLKEditor(Editor):
         )
         loader.setModal(False)
         loader.show()
-        loader.optionalFinishHook.connect(lambda results: self.handleSearchCompleted(stringref, results, self._installation))
+        loader.optionalFinishHook.connect(
+            lambda results: self.handleSearchCompleted(
+                stringref, results, self._installation
+            )
+        )
         loader.startWorker()
         addWindow(loader)
 

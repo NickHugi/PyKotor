@@ -312,8 +312,6 @@ class ToolWindow(QMainWindow):
 
         self.toggle_stylesheet(self.settings.selectedTheme)
 
-        self.checkForUpdates(silent=True)
-
     # Overriding mouse event handlers to enable dragging of the window
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
