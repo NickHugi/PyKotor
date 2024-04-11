@@ -103,6 +103,10 @@ jobs:
           - python_pypy: "pypy"
             python-version: '3.10'
             os: 'windows-2019'
+          - qt_version: 'PyQt6'
+            architecture: x86
+          - qt_version: 'PySide6'
+            architecture: x86
 
     outputs:
       matrix-os: ${{ toJson(matrix.os) }}
