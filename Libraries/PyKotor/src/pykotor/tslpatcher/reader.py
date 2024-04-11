@@ -659,7 +659,7 @@ class ConfigReader:
         for identifier, file in compilelist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
-            modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
+            modifications.nwnnsscomp_path = self.mod_path / modifications.sourcefolder / "nwnnsscomp.exe"
             modifications.destination = default_destination
             modifications.sourcefolder = default_source_folder
 
