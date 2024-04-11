@@ -61,6 +61,7 @@ $qtVersion = switch ($qtApi) {
     "pyside6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
     default { "5.15.2" }
 }
+Write-Host "Using $qtApi Version $qtVersion"
 
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
