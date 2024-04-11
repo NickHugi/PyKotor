@@ -1437,19 +1437,20 @@ class App:
         document = json.loads(rte_content)
 
         # Clear existing content in the Text widget
-        self.main_text.delete(1.0, tk.END)
-
-        # Insert new content
+        self.main_text.delete("1.0", tk.END)
         self.main_text.insert("1.0", document["content"])
+        for tag in self.main_text.tag_names():
+            if tag not in ["sel"]:
+                self.main_text.tag_delete(tag)
 
-        # Apply styles
-        for tag_name, positions in document["tags"].items():
-            for start_pos, end_pos in positions:
-                self.main_text.tag_add(tag_name, start_pos, end_pos)
+        if "tag_configs" in document:
+            for tag, config in document["tag_configs"].items():
+                self.main_text.tag_configure(tag, **config)
 
-        # Configure tags based on tag_types
-        for tag, config in tag_types.items():
-            self.main_text.tag_configure(tag.lower(), **config)
+        # Add To the Document
+        for tag_name in document["tags"]:
+            for tag_range in document["tags"][tag_name]:
+                self.main_text.tag_add(tag_name, *tag_range)
         self.main_text.config(state=tk.DISABLED)
 
     def load_rtf_file(self, file_path: os.PathLike | str):
