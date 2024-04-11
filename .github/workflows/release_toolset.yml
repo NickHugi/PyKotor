@@ -9,7 +9,7 @@ env:
   PYTHON_VERSIONS_JSON: '["3.8"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
   INTERPRETERS_JSON: '["python"]'
-  QT_VERSIONS_JSON: '["PyQt5", "PySide2", "PyQt6", "PySide6"]'
+  QT_VERSIONS_JSON: '["PyQt5"]'
   UPX_VERSION: '4.2.2'
   
 on:
