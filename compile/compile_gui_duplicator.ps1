@@ -51,7 +51,6 @@ $pyInstallerArgs = @{
         'PIL',
         'Pillow',
         'matplotlib',
-        'multiprocessing',
         'PyOpenGL',
         'PyGLM',
         'dl_translate',

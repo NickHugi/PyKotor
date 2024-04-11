@@ -46,7 +46,6 @@ $pyInstallerArgs = @{
         'PyOpenGL'
         'PyGLM'
         'numpy'
-        'multiprocessing'
         'pykotor-gl'
     )
     'upx-exclude' = @(
