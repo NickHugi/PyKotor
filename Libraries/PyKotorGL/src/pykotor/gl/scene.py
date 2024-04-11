@@ -564,7 +564,6 @@ class Scene:
         return result
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4):
-        get_root_logger().debug("_render_object...")
         if self.should_hide_obj(obj):
             return
 

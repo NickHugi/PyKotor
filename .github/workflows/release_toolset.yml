@@ -341,6 +341,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
+        $env:PYTHONOPTIMIZE = "1"
         . ./compile/compile_toolset.ps1 -noprompt -venv_name .venv_toolset_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           $output += $_.ToString() + "`n"

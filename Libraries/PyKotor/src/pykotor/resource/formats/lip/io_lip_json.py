@@ -38,7 +38,7 @@ class LIPJSONReader(ResourceReader):
 
         self._lip.length = float(self._json["lip"]["duration"])
 
-        for subelement in self._json["lip"]["elements"]:  # Assuming a structure here
+        for subelement in self._json["lip"]["elements"]:
             time = float(subelement["time"])
             shape = LIPShape(int(subelement["shape"]))
             self._lip.add(time, shape)

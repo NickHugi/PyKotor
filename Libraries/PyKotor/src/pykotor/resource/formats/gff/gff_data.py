@@ -521,7 +521,7 @@ class GFFStruct:
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
-                assert isinstance(new_value, GFFStruct)
+                assert isinstance(new_value, GFFStruct), f"{type(new_value).__name__}: {new_value}"
                 cur_struct_this: GFFStruct = old_value
                 if cur_struct_this.struct_id != new_value.struct_id:
                     log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{new_value.struct_id}'")
@@ -579,7 +579,7 @@ class GFFStruct:
         -------
             The field value. If the field does not exist or the value type does not match the specified type then the default is returned instead.
         """
-        assert isinstance(default, object)
+        assert isinstance(default, object), f"{type(default).__name__}: {default}"
         value: T = default
         if object_type is None:
             object_type = default.__class__

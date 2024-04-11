@@ -11,7 +11,7 @@ import tempfile
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -76,6 +76,10 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
+def is_running_from_temp():
+    app_path = Path(sys.executable)
+    temp_dir = tempfile.gettempdir()
+    return str(app_path).startswith(temp_dir)
 
 if __name__ == "__main__":
     if os.name == "nt":
@@ -115,6 +119,14 @@ if __name__ == "__main__":
     app.thread().setPriority(QThread.HighestPriority)
 
     sys.excepthook = onAppCrash
+    if is_running_from_temp():
+        # Show error message using PyQt5's QMessageBox
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Critical)
+        msgBox.setWindowTitle("Error")
+        msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+        msgBox.exec_()
+        sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
     from toolset.gui.windows.main import ToolWindow
 

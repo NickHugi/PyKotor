@@ -249,7 +249,7 @@ class FileDownloader:
 
     @staticmethod
     def _get_content_length(
-        data: urllib3.BaseHTTPResponse,
+        data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
         log = get_root_logger()
@@ -424,9 +424,7 @@ def _download_file(
                 try:
                     ph(status)
                 except Exception as err:  # noqa: PERF203
-                    log.debug("Exception in callback: %s", ph.__name__)
-                    log.error(format_exception_with_variables(err))  # noqa: TRY400
-                    log.exception()
+                    log.exception("Exception in callback: %s", ph.__name__)
         log.debug(f"Status - {file_info.st_size / file_size * 100:.2f} downloaded")  # noqa: G004
         log.debug(f"{file_info.st_size} of {file_size} downloaded")  # noqa: G004
 

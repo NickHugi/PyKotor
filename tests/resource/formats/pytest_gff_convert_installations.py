@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import cProfile
-import os
 
 from typing import TYPE_CHECKING, Any
 
@@ -27,6 +26,7 @@ from pykotor.resource.type import ResourceType
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+    import os
     from pykotor.extract.file import FileResource
 
 

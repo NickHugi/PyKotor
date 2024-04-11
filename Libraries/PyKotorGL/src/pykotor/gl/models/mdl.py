@@ -142,7 +142,7 @@ class Node:
 
         self._recalc_transform()
 
-    def root(self) -> Node:
+    def root(self) -> Node | None:
         ancestor: Node | None = self._parent
         while ancestor:
             ancestor = ancestor._parent
@@ -205,7 +205,6 @@ class Node:
         self._recalc_transform()
 
     def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
-        # TODO: use multi-threading to accumulate texture data, then draw all at once.
         transform = transform * self._transform
 
         if self.mesh and self.render:
@@ -321,7 +320,12 @@ class Mesh:
 
 
 class Cube:
-    def __init__(self, scene: Scene, min_point: vec3 | None = None, max_point: vec3 | None = None):
+    def __init__(
+        self,
+        scene: Scene,
+        min_point: vec3 | None = None,
+        max_point: vec3 | None = None,
+    ):
         """Initializes a cube mesh.
 
         Args:
@@ -344,73 +348,20 @@ class Cube:
 
         vertices = np.array(
             [
-                min_point.x,
-                min_point.y,
-                max_point.z,
-                max_point.x,
-                min_point.y,
-                max_point.z,
-                max_point.x,
-                max_point.y,
-                max_point.z,
-                min_point.x,
-                max_point.y,
-                max_point.z,
-                min_point.x,
-                min_point.y,
-                min_point.z,
-                max_point.x,
-                min_point.y,
-                min_point.z,
-                max_point.x,
-                max_point.y,
-                min_point.z,
-                min_point.x,
-                max_point.y,
-                min_point.z,
+                min_point.x, min_point.y, max_point.z,
+                max_point.x, min_point.y, max_point.z,
+                max_point.x, max_point.y, max_point.z,
+                min_point.x, max_point.y, max_point.z,
+                min_point.x, min_point.y, min_point.z,
+                max_point.x, min_point.y, min_point.z,
+                max_point.x, max_point.y, min_point.z,
+                min_point.x, max_point.y, min_point.z
             ],
             dtype="float32",
         )
 
         elements = np.array(
-            [
-                0,
-                1,
-                2,
-                2,
-                3,
-                0,
-                1,
-                5,
-                6,
-                6,
-                2,
-                1,
-                7,
-                6,
-                5,
-                5,
-                4,
-                7,
-                4,
-                0,
-                3,
-                3,
-                7,
-                4,
-                4,
-                5,
-                1,
-                1,
-                0,
-                4,
-                3,
-                2,
-                6,
-                6,
-                7,
-                3,
-            ],
+            [0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 7, 6, 5, 5, 4, 7, 4, 0, 3, 3, 7, 4, 4, 5, 1, 1, 0, 4, 3, 2, 6, 6, 7, 3],
             dtype="int16",
         )
 

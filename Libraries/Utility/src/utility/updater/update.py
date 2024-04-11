@@ -512,24 +512,24 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         old_exe_name = f"{exe_name}.old"
         old_app_path = self._current_app_dir / old_exe_name
-        updated_app_filepath = self.update_temp_path.joinpath(exe_name)
+        temp_app_filepath = self.update_temp_path.joinpath(exe_name)
 
         # Ensure it's a file.
-        if not updated_app_filepath.safe_isfile():
+        if not temp_app_filepath.safe_isfile():
             # Detect if archive expanded some folder with the same name as the archive.
             # This assumes all dots in the archive filename are extensions of the file archive.
-            updated_app_filepath = updated_app_filepath.parent
+            temp_app_filepath = temp_app_filepath.parent
             for archive_name in self.get_archive_names():
                 archive_stem = archive_name[:archive_name.find(".")]
-                check_path = updated_app_filepath.joinpath(archive_stem, exe_name)
+                check_path = temp_app_filepath.joinpath(archive_stem, exe_name)
                 if check_path.safe_isfile():
-                    updated_app_filepath = check_path
+                    temp_app_filepath = check_path
                     break
-            if updated_app_filepath.safe_isdir():
+            if temp_app_filepath.safe_isdir():
                 self.log.warning("The rename strategy is only supported for one file bundled executables. Falling back to overwrite strategy.")
                 self._win_overwrite(restart=True)
-            elif not updated_app_filepath.safe_exists():
-                self.log.error("Updated app filepath: %s not found", updated_app_filepath)
+            elif not temp_app_filepath.safe_exists():
+                self.log.error("Updated app filepath: %s not found", temp_app_filepath)
 
 
         # Remove the old app from previous updates
@@ -551,13 +551,13 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
         # Any operation from here forward will require rollback on failure
         try:
-            self.log.info("Rename '%s' --> '%s'", updated_app_filepath, cur_app_filepath)
-            updated_app_filepath = updated_app_filepath.rename(cur_app_filepath)
+            self.log.info("Copy '%s' --> '%s'", temp_app_filepath, cur_app_filepath)
+            shutil.copy(str(temp_app_filepath), str(cur_app_filepath))
         except OSError:
             self.log.exception("Failed to move updated app into position, rolling back")
             self._win_rollback_on_exception(cur_app_filepath, old_app_path)
 
-        assert updated_app_filepath.safe_isfile()
+        assert temp_app_filepath.safe_isfile()
         if is_frozen() or old_app_path.safe_isfile():  # exe may not exist if running from .py source
             try:
                 # Hide the old app
@@ -569,13 +569,14 @@ class AppUpdate(LibUpdate):  # pragma: no cover
                     raise ctypes.WinError()
             except OSError:
                 # Failed to hide file, which is fine - we can still continue
-                self.log.exception("Failed to hide file")
+                self.log.info("Failed to hide file. This is fine - we can still continue", exc_info=True)
 
         if not restart:
             return old_app_path, cur_app_filepath
 
         try:
-            r = Restarter(cur_app_filepath, updated_app_filepath, restart_strategy=self.r_strategy, filename=self.filename, update_strategy=self.u_strategy, exithook=self.exithook)
+            r = Restarter(cur_app_filepath, temp_app_filepath, restart_strategy=self.r_strategy, filename=self.filename,
+                          update_strategy=self.u_strategy, exithook=self.exithook)
             r.process()
         except OSError:
             if not is_frozen():

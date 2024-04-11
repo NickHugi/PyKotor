@@ -166,17 +166,6 @@ class TPC:
                 rgba_data = TPC._grey_to_rgba(raw_data, width, height)
                 data = TPC._rgba_to_rgb(rgba_data, width, height)
 
-        if y_flip:
-            bytes_per_pixel = 0
-            if convert_format == TPCTextureFormat.Greyscale:
-                bytes_per_pixel = 1
-            elif convert_format in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
-                bytes_per_pixel = 4 if convert_format == TPCTextureFormat.RGBA else 3
-
-            # If the image needs to be flipped and it's an uncompressed format
-            if bytes_per_pixel > 0:
-                data = bytearray(self.flip_image_data(data, width, height, bytes_per_pixel))
-
         return TPCConvertResult(width, height, data)
 
     def get_bytes_per_pixel(self):

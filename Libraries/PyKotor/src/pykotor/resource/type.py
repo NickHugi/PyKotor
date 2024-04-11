@@ -8,12 +8,12 @@ import os
 import uuid
 
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 from utility.string_util import CaseInsensitiveWrappedStr, WrappedStr
 
 if TYPE_CHECKING:
@@ -399,11 +399,8 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-                msg = "Tried to load an unsupported or corrupted file."
+            msg = "Tried to load an unsupported or corrupted file."
+            get_root_logger().exception(msg)
             raise ValueError(msg) from e
         finally:
             if auto_close:

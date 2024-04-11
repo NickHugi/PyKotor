@@ -211,15 +211,6 @@ def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress"
     sys.exit(app.exec_())
 
 
-def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
-    app = QApplication(sys.argv)
-    dialog = ProgressDialog(progress_queue, title)
-    icon = app.style().standardIcon(QStyle.SP_MessageBoxInformation)
-    dialog.setWindowIcon(QIcon(icon))
-    dialog.show()
-    sys.exit(app.exec_())
-
-
 class ToolWindow(QMainWindow):
     moduleFilesUpdated = QtCore.pyqtSignal(object, object)
     overrideFilesUpdate = QtCore.pyqtSignal(object, object)
@@ -697,7 +688,7 @@ class ToolWindow(QMainWindow):
 
         try:
             if is_mod_file(r_save_filepath):
-                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name)
+                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name, self.active.game())
                 QMessageBox(QMessageBox.Information, "Module Saved", f"Module saved to '{r_save_filepath}'").exec_()
                 return
 
@@ -752,7 +743,13 @@ class ToolWindow(QMainWindow):
         if not res_ident.restype:
             return
         _filepath, _editor = openResourceEditor(
-            erf_filepath, res_ident.resname, res_ident.restype, BinaryReader.load_file(erf_filepath), self.active, self, gff_specialized=useSpecializedEditor
+            erf_filepath,
+            res_ident.resname,
+            res_ident.restype,
+            BinaryReader.load_file(erf_filepath),
+            self.active,
+            self,
+            gff_specialized=useSpecializedEditor,
         )
 
     # endregion

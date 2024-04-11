@@ -79,7 +79,7 @@ class UTTEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "newtransition9.utt"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/newtransition9.utt"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

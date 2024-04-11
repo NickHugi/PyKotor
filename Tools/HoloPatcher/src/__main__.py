@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 from contextlib import suppress
 from datetime import datetime, timezone
 from enum import IntEnum
-from queue import Queue
+from multiprocessing import Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -62,6 +62,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
+from pykotor.tslpatcher.config import LogLevel
 from pykotor.tslpatcher.logger import LogType, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
@@ -71,11 +72,13 @@ from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
+from utility.tkinter.updater import TkProgressDialog
 
 if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Callable
     from datetime import timedelta
+    from multiprocessing import Process
     from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
@@ -171,6 +174,7 @@ class App:
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.last_mod_install: Path | None = None  # used for basic checks, make sure user doesn't press install multiple times for the same mod
+        self.log_level: LogLevel = LogLevel.WARNINGS
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -196,7 +200,8 @@ class App:
 
         # Set the dimensions and position
         self.root.geometry(f"{width}x{height}+{x_position}+{y_position}")
-        self.root.resizable(width=False, height=False)
+        self.root.resizable(width=True, height=True)
+        self.root.minsize(width=width, height=height)
 
     def initialize_logger(self):
         self.logger = PatchLogger()
@@ -332,8 +337,8 @@ class App:
 
         self.main_text.tag_configure("DEBUG", foreground="#6495ED")  # Cornflower Blue
         self.main_text.tag_configure("INFO", foreground="#000000")   # Black
-        self.main_text.tag_configure("WARNING", foreground="#FFA500", font=bold_font)  # Orange with bold font
-        self.main_text.tag_configure("ERROR", foreground="#B22222", font=bold_font)  # Firebrick with bold font
+        self.main_text.tag_configure("WARNING", foreground="#CC4E00", background="#FFF3E0", font=bold_font)  # Orange with bold font
+        self.main_text.tag_configure("ERROR", foreground="#DC143C", font=bold_font)  # Firebrick with bold font
         self.main_text.tag_configure("CRITICAL", foreground="#FFFFFF", background="#8B0000", font=bold_font)  # White on Dark Red with bold font
 
     def on_combobox_focus_in(
@@ -377,7 +382,7 @@ class App:
                     self.root,
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
-                    ["Reinstall", "Cancel"],
+                    ["Reinstall"],
                 )
                 if dialog.result == "Reinstall":
                     self._run_autoupdate(latest_version, updateInfoData)
@@ -406,8 +411,7 @@ class App:
             links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
 
         progress_queue: Queue = Queue()
-        progress_dialog = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
-        # self.hide()  # TODO: figure out how to hide.
+        progress_dialog: Process = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             progress_queue.put(data)
 
@@ -417,6 +421,7 @@ class App:
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
             progress_queue.put({"action": "shutdown"})
+            TkProgressDialog.monitor_and_terminate(progress_dialog)
             if kill_self_here:
                 time.sleep(3)
                 self.root.destroy()
@@ -448,7 +453,7 @@ class App:
             updater.extract_restart()
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             with Path("errorlog.txt").open("a", encoding="utf-8") as file:
                 lines = format_exception_with_variables(e)
                 file.writelines(lines)
@@ -535,7 +540,7 @@ class App:
                 print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def askyesno(title, message) -> bool | None:
+            def askyesno(title, message):
                 """Console-based replacement for messagebox.askyesno and similar."""
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
@@ -795,6 +800,7 @@ class App:
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
+            self.log_level = reader.config.log_level
 
             # Filter the listed games in the combobox with the mod's supported ones.
             game_number: int | None = reader.config.game_number
@@ -1399,7 +1405,7 @@ class App:
         from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
         from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
 
-        with open(file_path, "rb") as file:
+        with Path.pathify(file_path).open("rb") as file:
             rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
             doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
         self.main_text.config(state=tk.NORMAL)
@@ -1434,19 +1440,30 @@ class App:
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
+        def log_type_to_level() -> LogType:
+            log_map: dict[LogLevel, LogType] = {
+                LogLevel.ERRORS: LogType.WARNING,
+                LogLevel.GENERAL: LogType.WARNING,
+                LogLevel.FULL: LogType.VERBOSE,
+                LogLevel.WARNINGS: LogType.NOTE,
+                LogLevel.NOTHING: LogType.WARNING
+            }
+            return log_map[self.log_level]
         def log_to_tag(this_log: PatchLog) -> str:
             if this_log.log_type == LogType.NOTE:
                 return "INFO"
             if this_log.log_type == LogType.VERBOSE:
                 return "DEBUG"
             return this_log.log_type.name
+        with self.log_file_path.open("a", encoding="utf-8") as log_file:
+            log_file.write(f"{log.formatted_message}\n")
+        if log.log_type.value < log_type_to_level().value:
+            return
 
         self.main_text.config(state=tk.NORMAL)
         self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
-        with self.log_file_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"{log.formatted_message}\n")
 
 
 def onAppCrash(
@@ -1471,19 +1488,25 @@ def onAppCrash(
 sys.excepthook = onAppCrash
 
 
+def my_cleanup_function(app: App):
+    """Prevents the patcher from running in the background after sys.exit is called."""
+    #print("Fully shutting down Holo Patcher...")
+    #kill_self_pid()
+    #app.root.destroy()
+
+
 def main():
     app = App()
     app.root.mainloop()
     atexit.register(lambda: my_cleanup_function(app))
 
-
-def my_cleanup_function(app: App):
-    """Prevents the toolset from running in the background after sys.exit is called..."""
-    #print("Fully shutting down Holocron Patcher...")
-    #kill_self_pid()
-    #app.root.destroy()
-
-
+def is_running_from_temp():
+    app_path = Path(sys.executable)
+    temp_dir = tempfile.gettempdir()
+    return str(app_path).startswith(temp_dir)
 
 if __name__ == "__main__":
+    if is_running_from_temp():
+        messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+        sys.exit("Exiting: Application was run from a temporary or zip directory.")
     main()

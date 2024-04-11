@@ -51,6 +51,7 @@ class UTI:
         self.base_item: int = 0
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.description: LocalizedString = LocalizedString.from_invalid()
+        self.description2: LocalizedString = LocalizedString.from_invalid()
         self.tag: str = ""
         self.charges: int = 0
         self.cost: int = 0
@@ -151,7 +152,7 @@ def dismantle_uti_to_struct(
     root.set_resref("TemplateResRef", uti.resref)
     root.set_int32("BaseItem", uti.base_item)
     root.set_locstring("LocalizedName", uti.name)
-    root.set_locstring("Description", uti.description)
+    root.set_locstring("Description", uti.description2)
     root.set_locstring("DescIdentified", uti.description)
     root.set_string("Tag", uti.tag)
     root.set_uint8("Charges", uti.charges)

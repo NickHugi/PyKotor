@@ -223,7 +223,7 @@ def create_registry_path(hive, path):  # sourcery skip: raise-from-previous-erro
     except Exception:  # pylint: disable=W0718  # noqa: BLE001
         log.exception("An unexpected error occurred while creating a registry path.")
 
-def get_retail_key(game: Game):
+def get_retail_key(game: Game) -> str:
     if ProcessorArchitecture.from_os() == ProcessorArchitecture.BIT_64:
         return (
             r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2"
@@ -274,7 +274,7 @@ class SpoofKotorRegistry:
         exc_tb: types.TracebackType | None,
     ):
         # Revert the registry key to its original value if it was altered
-        if self.original_value is not None:
+        if self.original_value is not None and self.spoofed_path != self.original_value:
             set_registry_key_value(self.registry_path, self.key, self.original_value)
         # TODO(th3w1zard1): Determine what to do if the regpath never existed, as deleting it isn't easy. Set it to ""?
 

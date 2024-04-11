@@ -77,7 +77,7 @@ class TLKEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "dialog.tlk"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/dialog.tlk"
 
         data = BinaryReader.load_file(filepath)
         old = read_tlk(data)

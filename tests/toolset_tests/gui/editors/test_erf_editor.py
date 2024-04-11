@@ -7,6 +7,8 @@ import unittest
 
 from unittest import TestCase
 
+from pykotor.resource.formats.erf.erf_data import ERFType
+
 try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
@@ -94,7 +96,7 @@ class ERFEditorTest(TestCase):
         not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k1_installation(self):
+    def test_erf_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for erf_resource in (resource for resource in self.installation if resource.restype() in {ERFType.__members__[erf_type] for erf_type in ERFType.__members__}):
             old = read_erf(erf_resource.data())
@@ -109,7 +111,7 @@ class ERFEditorTest(TestCase):
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
-    def test_gff_reconstruct_from_k2_installation(self):
+    def test_erf_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
         for erf_resource in (resource for resource in self.installation if resource.restype() in {ERFType.__members__[erf_type] for erf_type in ERFType.__members__}):
             old = read_erf(erf_resource.data())

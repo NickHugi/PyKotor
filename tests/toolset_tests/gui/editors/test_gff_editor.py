@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import io
 import os
 import pathlib
 import sys
-import types
 from typing import TextIO, Type, TYPE_CHECKING
 import unittest
 
-from unittest import TestCase, TestResult
+from unittest import TestCase
 
 from utility.error_handling import format_exception_with_variables
 
@@ -52,6 +50,7 @@ from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    import types
     from toolset.data.installation import HTInstallation
     from PySide2.QtWidgets import QApplication
 
@@ -147,7 +146,7 @@ class GFFEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "zio001.git"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/zio001.git"
         editor = self.Editor(None, self.get_installation_k1())
 
         data = BinaryReader.load_file(filepath)

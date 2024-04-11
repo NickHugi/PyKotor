@@ -77,7 +77,7 @@ class UTCEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):  # sourcery skip: class-extract-method
-        filepath = TESTS_FILES_PATH / "p_hk47.utc"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/p_hk47.utc"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

@@ -77,7 +77,7 @@ class UTPEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "ebcont001.utp"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/ebcont001.utp"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

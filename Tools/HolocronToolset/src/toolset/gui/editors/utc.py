@@ -518,7 +518,7 @@ class UTCEditor(Editor):
             pixmap = self._build_pixmap(index)
         self.ui.portraitPicture.setPixmap(pixmap)
 
-    def _build_pixmap(self, index):
+    def _build_pixmap(self, index: int) -> QPixmap:
         """Builds a portrait pixmap based on character alignment.
 
         Args:
