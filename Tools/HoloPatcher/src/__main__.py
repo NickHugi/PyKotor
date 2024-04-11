@@ -1180,6 +1180,10 @@ class App:
         self.set_state(state=True)
         self.install_running = True
         self.clear_main_text()
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.insert(tk.END, f"Starting install...{os.linesep}")
+        self.main_text.see(tk.END)
+        self.main_text.config(state=tk.DISABLED)
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
             self._execute_mod_install(installer, should_cancel_thread)
