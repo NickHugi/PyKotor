@@ -96,6 +96,10 @@ $pyInstallerArgs = @{
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
 }
+$qtApi = $env:QT_API
+if (-not $qtApi) {
+    $qtApi = "pyqt5"  # Default to PyQt5 if QT_API is not set
+}
 switch ($qtApi) {
     "PyQt5" {
         $tempArray = $pyInstallerArgs['exclude-module']
