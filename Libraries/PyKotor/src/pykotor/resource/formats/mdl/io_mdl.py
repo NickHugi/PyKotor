@@ -1254,9 +1254,11 @@ class MDLBinaryReader:
         source_ext: SOURCE_TYPES | None = None,
         offset_ext: int = 0,
         size_ext: int = 0,
+        game: Game | None = None,
     ):
         self._mdl: MDL | None = None
         self._reader: BinaryReader = BinaryReader.from_auto(source, offset)
+        self.game = game or Game.K1
 
         self._reader_ext: BinaryReader | None = None if source_ext is None else BinaryReader.from_auto(source_ext, offset_ext)
 
@@ -1515,6 +1517,7 @@ class MDLBinaryWriter:
         mdl: MDL,
         target: TARGET_TYPES,
         target_ext: TARGET_TYPES,
+        game: Game | None = None,
     ):
         self._mdl = mdl
 
@@ -1523,7 +1526,7 @@ class MDLBinaryWriter:
         self._writer = BinaryWriter.to_bytearray()
         self._writer_ext = BinaryWriter.to_bytearray()
 
-        self.game: Game = Game.K1
+        self.game: Game = game or Game.K1
 
         self._name_offsets: list[int] = []
         self._anim_offsets: list[int] = []
