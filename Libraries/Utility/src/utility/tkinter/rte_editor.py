@@ -9,6 +9,7 @@ import tkinter as tk
 
 from contextlib import suppress
 from functools import partial
+from tkinter import colorchooser
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from typing import Any
 
@@ -23,6 +24,7 @@ file_path = None
 # initial directory to be the current directory
 initialdir = "."
 
+
 # Define File Types that can be choosen
 valid_file_types: tuple[tuple[str, str], ...] = (
     ("Rich Text (JSON)", "*.rte"),
@@ -30,6 +32,8 @@ valid_file_types: tuple[tuple[str, str], ...] = (
 )
 
 # Setting the font and Padding for the Text Area
+# Common fonts
+fonts = ["Arial", "Helvetica", "Times New Roman", "Courier New", "Verdana", "Georgia", "Palatino", "Garamond", "Bookman", "Comic Sans MS"]
 font_name: str = "Bahnschrift"
 padding: int = 60
 
@@ -74,6 +78,55 @@ tag_types: dict[str, dict[str, str]] = {
     "Align Left": {"justify": "left"},
     "Align Center": {"justify": "center"},
     "Align Right": {"justify": "right"},
+}
+
+tag_categories = {
+    "Font Styles": {
+        "Bold": {"font": f"{font_name} 15 bold"},
+        "Italic": {"font": f"{font_name} 15 italic"},
+        "Underline": {"underline": True},
+        "Overstrike": {"overstrike": True}
+    },
+    "Font Sizes": {
+        "Small": {"font": f"{font_name} 8"},
+        "Medium": {"font": f"{font_name} 12"},
+        "Large": {"font": f"{font_name} 18"},
+        "Extra Large": {"font": f"{font_name} 24"}
+    },
+    "Text Colors": {
+        "Black": {"foreground": "#000000"},
+        "Red": {"foreground": "#FF0000"},
+        "Green": {"foreground": "#00FF00"},
+        "Blue": {"foreground": "#0000FF"},
+        "Custom Color...": "custom_color"
+    },
+    "Background Colors": {
+        "Yellow": {"background": "#FFFF00"},
+        "Light Blue": {"background": "#ADD8E6"},
+        "Light Green": {"background": "#90EE90"},
+        "Custom Color...": "custom_background_color"
+    },
+    "Paragraph Alignment": {
+        "Left": {"justify": "left"},
+        "Center": {"justify": "center"},
+        "Right": {"justify": "right"},
+        "Justify": {"justify": "full"}
+    },
+    "Spacing": {
+        "Single": {"spacing1": "0", "spacing3": "0"},
+        "1.5": {"spacing1": "3", "spacing3": "3"},
+        "Double": {"spacing1": "6", "spacing3": "6"}
+    },
+    "Indentation": {
+        "No Indent": {"lmargin1": "0", "lmargin2": "0"},
+        "First Line": {"lmargin1": "20", "lmargin2": "0"},
+        "Hanging": {"lmargin1": "0", "lmargin2": "20"},
+        "Both": {"lmargin1": "20", "lmargin2": "20"}
+    },
+    "Lists": {
+        "Bullet List": "bullet_list",
+        "Numbered List": "numbered_list"
+    }
 }
 
 
@@ -152,6 +205,27 @@ def main():  # sourcery skip: use-contextlib-suppress
                 text_area.tag_add(tag_name, tagStart, tagEnd)
                 print(tag_name, tagStart, tagEnd)
 
+    def apply_font(font_name):
+        current_tags = text_area.tag_names("sel.first")
+        for tag in current_tags:
+            if tag.startswith("font_"):
+                text_area.tag_remove(tag, "sel.first", "sel.last")
+        tag_name = f"font_{font_name.replace(' ', '_')}"
+        text_area.tag_configure(tag_name, font=(font_name, 12))
+        text_area.tag_add(tag_name, "sel.first", "sel.last")
+
+    def apply_font_size(size):
+        tag_name = f"size_{size}"
+        text_area.tag_configure(tag_name, font=(None, size))
+        text_area.tag_add(tag_name, "sel.first", "sel.last")
+
+    def apply_color(color_type):
+        color_code = colorchooser.askcolor(title=f"Choose {color_type} Color")[1]
+        if color_code:
+            tag_name = f"{color_type}_{color_code}"
+            text_area.tag_configure(tag_name, **{color_type: color_code})
+            text_area.tag_add(tag_name, "sel.first", "sel.last")
+
     def undo():
         with suppress(tk.TclError):
             text_area.edit_undo()
@@ -159,29 +233,6 @@ def main():  # sourcery skip: use-contextlib-suppress
     def redo():
         with suppress(tk.TclError):
             text_area.edit_redo()
-
-    def apply_list(list_type="bullet"):
-        # Check if there's a selection
-        try:
-            selection_start = text_area.index("sel.first")
-            selection_end = text_area.index("sel.last")
-            # Get the selected text
-            selected_text = text_area.get(selection_start, selection_end)
-            # Process each line of the selected text
-            listified_text = ""
-            if list_type == "bullet":
-                bullet_char = "•"
-                for line in selected_text.splitlines():
-                    listified_text += f"{bullet_char} {line}\n"
-            elif list_type == "number":
-                for i, line in enumerate(selected_text.splitlines(), start=1):
-                    listified_text += f"{i}. {line}\n"
-            # Replace the selected text with the listified text
-            text_area.delete(selection_start, selection_end)
-            text_area.insert(selection_start, listified_text.rstrip())
-        except tk.TclError:
-            # If nothing is selected, do nothing
-            pass
 
     def tagToggle(tag_name: str):
         # Check if there is a selection
@@ -217,7 +268,7 @@ def main():  # sourcery skip: use-contextlib-suppress
             selection_start = text_area.index("sel.first")
             selection_end = text_area.index("sel.last")
             selected_text = text_area.get(selection_start, selection_end)
-            
+
             # Determine if we're adding or removing list formatting
             if any(line.startswith("• ") for line in selected_text.splitlines()) and list_type == "bullet":
                 process = "remove"
@@ -239,12 +290,11 @@ def main():  # sourcery skip: use-contextlib-suppress
                     else:
                         # Line is not formatted, keep it as is
                         new_text_lines.append(line)
-                else:
-                    if list_type == "bullet":
-                        new_text_lines.append(f"• {line}")
-                    elif list_type == "number":
-                        # Add a placeholder for numbers; actual numbers will be added later
-                        new_text_lines.append(f"{line}")
+                elif list_type == "bullet":
+                    new_text_lines.append(f"• {line}")
+                elif list_type == "number":
+                    # Add a placeholder for numbers; actual numbers will be added later
+                    new_text_lines.append(f"{line}")
 
             # Replace the selected text with the new text
             text_area.delete(selection_start, selection_end)
@@ -274,6 +324,59 @@ def main():  # sourcery skip: use-contextlib-suppress
         # Add the new alignment tag to the selected range
         text_area.tag_add(alignment, start_index, end_index)
 
+    def apply_tag_from_category(category, option):
+        if category in ["Text Colors", "Background Colors"] and option == "Custom Color...":
+            apply_color(color_type=(category == "Text Colors"))
+        elif category == "Lists":
+            if option == "Bullet List":
+                # Your implementation for applying bullet list
+                pass
+            elif option == "Numbered List":
+                # Your implementation for applying numbered list
+                pass
+        else:
+            # General case for applying tags
+            properties = tag_categories[category][option]
+            tag_name = f"{category}_{option}"
+            text_area.tag_configure(tag_name, **properties)
+            text_area.tag_add(tag_name, "sel.first", "sel.last")
+
+
+    def toggle_format(tag, properties=None):
+        """Toggle formatting for the selected text based on the tag.
+
+        If properties are given, configure the tag with these properties.
+        """
+        if properties:
+            text_area.tag_configure(tag, **properties)
+        current_tags = text_area.tag_names("sel.first")
+        if tag in current_tags:
+            text_area.tag_remove(tag, "sel.first", "sel.last")
+        else:
+            text_area.tag_add(tag, "sel.first", "sel.last")
+
+    def check_menu_item(menu, index, tag):
+        """Check or uncheck the menu item based on whether the tag is applied to the current selection."""
+        current_tags = text_area.tag_names("sel.first")
+        if tag in current_tags:
+            menu.entryconfig(index, onvalue=1)
+        else:
+            menu.entryconfig(index, onvalue=0)
+
+    def build_format_menu(menu):
+        """Dynamically build the format menu with checkable items based on tag_categories."""
+        for category, options in tag_categories.items():
+            submenu = tk.Menu(menu, tearoff=0)
+            menu.add_cascade(label=category, menu=submenu)
+            for option, properties in options.items():
+                tag_name = f"{category}_{option}".replace(" ", "_")
+                if isinstance(properties, dict):
+                    submenu.add_checkbutton(label=option, command=partial(toggle_format, tag_name, properties))
+                else:
+                    submenu.add_command(label=option, command=lambda c=category, o=option: apply_tag_from_category(c, o))
+                # Update check status when opening the menu
+                menu.bind("<Enter>", lambda event, menu=submenu, tag=tag_name, index=submenu.index(option): check_menu_item(menu, index, tag), add="+")
+
     # Setup
     root = tk.Tk()
     root.geometry("600x600")
@@ -302,8 +405,26 @@ def main():  # sourcery skip: use-contextlib-suppress
 
     file_menu.add_command(label="Exit", command=root.destroy)
 
+    # Font Menu
+    font_menu = tk.Menu(menu, tearoff=0)
+    menu.add_cascade(label="Fonts", menu=font_menu)
+    for f in fonts:
+        font_menu.add_command(label=f, command=lambda f=f: apply_font(f))
+
+    build_format_menu(menu)  # Reuse the build_format_menu function
+
     format_menu = tk.Menu(menu, tearoff=0)
     menu.add_cascade(label="Format", menu=format_menu)
+
+    color_menu = tk.Menu(format_menu, tearoff=0)
+    format_menu.add_cascade(label="Color", menu=color_menu)
+    color_menu.add_command(label="Text Color", command=lambda: apply_color("foreground"))
+    color_menu.add_command(label="Background Color", command=lambda: apply_color("background"))
+
+    size_menu = tk.Menu(format_menu, tearoff=0)
+    format_menu.add_cascade(label="Size", menu=size_menu)
+    for size in range(8, 25):  # Example sizes
+        size_menu.add_command(label=str(size), command=lambda size=size: apply_font_size(size))
 
     for tag_type in tag_types:
         if tag_type.startswith("Align"):
@@ -313,15 +434,26 @@ def main():  # sourcery skip: use-contextlib-suppress
     format_menu.add_command(label="Bullet List", command=lambda: apply_list("bullet"))
     format_menu.add_command(label="Numbered List", command=lambda: apply_list("number"))
     format_menu.add_separator()
-    format_menu.add_command(label="Align Left", command=lambda: align_text('align_left'))
-    format_menu.add_command(label="Align Center", command=lambda: align_text('align_center'))
-    format_menu.add_command(label="Align Right", command=lambda: align_text('align_right'))
+    format_menu.add_command(label="Align Left", command=lambda: align_text("align_left"))
+    format_menu.add_command(label="Align Center", command=lambda: align_text("align_center"))
+    format_menu.add_command(label="Align Right", command=lambda: align_text("align_right"))
+
+    # Context (right-click) menu setup
+    def show_context_menu(event):
+        """Show the right-click context menu."""
+        try:
+            format_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            format_menu.grab_release()
+    build_format_menu(format_menu)  # Reuse the build_format_menu function
+
+    text_area.bind("<Button-3>", show_context_menu)
 
     # Bind the undo and redo functions to Ctrl+Z and Ctrl+Y
     root.bind_all("<Control-z>", lambda _event: undo())
     root.bind_all("<Control-y>", lambda _event: redo())
-    root.bind_all("<Control-Shift-z>", lambda _event: text_area.edit_redo())
-    root.bind_all("<Control-Shift-Z>", lambda _event: text_area.edit_redo())  # different keyboard layouts ig
+    root.bind_all("<Control-Shift-z>", lambda _event: redo())
+    root.bind_all("<Control-Shift-Z>", lambda _event: redo())  # different keyboard layouts ig
 
     root.mainloop()
 
