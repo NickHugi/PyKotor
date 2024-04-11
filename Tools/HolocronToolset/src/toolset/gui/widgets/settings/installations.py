@@ -263,6 +263,10 @@ class GlobalSettings(Settings):
         "ncsDecompilerPath",
         "",
     )
+    selectedTheme = Settings.addSetting(
+        "selectedTheme",
+        "Fusion (Dark)",  # Default theme
+    )
     moduleSortOption = Settings.addSetting(
         "moduleSortOption",
         1,

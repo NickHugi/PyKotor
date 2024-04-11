@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+
 from configparser import ConfigParser, ParsingError
 from typing import TYPE_CHECKING
 

@@ -208,7 +208,6 @@ class PTHEditor(Editor):
             self.setupStatusBar()
             self._core_update_status_bar(left_status, center_status, right_status)
 
-    # TODO Rename this here and in `updateStatusBar`
     def _core_update_status_bar(self, left_status, center_status, right_status):
         if left_status and left_status.strip():
             self.leftLabel.setText(left_status)
