@@ -242,9 +242,7 @@ class App:
         # PCGamingWiki submenu
         pcgamingwiki_menu = tk.Menu(help_menu, tearoff=0)
         pcgamingwiki_menu.add_command(label="KOTOR 1", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"))
-        pcgamingwiki_menu.add_command(
-            label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
-        )
+        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"))
         help_menu.add_cascade(label="PCGamingWiki", menu=pcgamingwiki_menu)
 
         # About menu
@@ -282,7 +280,13 @@ class App:
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
         self.expand_namespace_description_button: ttk.Button = ttk.Button(
-            top_frame, width=1, text="?", command=lambda *args: messagebox.showinfo(self.namespaces_combobox.get(), self.get_namespace_description(*args))
+            top_frame,
+            width=1,
+            text="?",
+            command=lambda *args: messagebox.showinfo(
+                self.namespaces_combobox.get(),
+                self.get_namespace_description(*args),
+            ),
         )
         self.expand_namespace_description_button.grid(row=0, column=2, padx=2, pady=2, stick="e")
 

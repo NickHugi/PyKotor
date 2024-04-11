@@ -4,6 +4,7 @@ from __future__ import annotations
 import ctypes
 import json
 import os
+import re
 import tkinter as tk
 
 from functools import partial
@@ -47,7 +48,6 @@ default_content: dict[str, Any] = {
 def rgbToHex(rgb) -> str:
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
-
 # Add Different Types of Tags that can be added to the document.
 tag_types: dict[str, dict[str, str]] = {
     # Font Settings
@@ -69,10 +69,14 @@ tag_types: dict[str, dict[str, str]] = {
     "Text Blue": {"foreground": rgbToHex((0, 0, 255))},
     "Text green": {"foreground": rgbToHex((0, 255, 0))},
     "Text Red": {"foreground": rgbToHex((255, 0, 0))},
+    # Alignment options
+    "Align Left": {"justify": "left"},
+    "Align Center": {"justify": "center"},
+    "Align Right": {"justify": "right"},
 }
 
 
-def main():
+def main():  # sourcery skip: use-contextlib-suppress
     # Handle File Events
     def handle_file_manager(
         event: tk.Tk | None = None,
@@ -147,15 +151,34 @@ def main():
                 text_area.tag_add(tag_name, tagStart, tagEnd)
                 print(tag_name, tagStart, tagEnd)
 
-    def resetTags():
-        for tag in text_area.tag_names():
-            text_area.tag_remove(tag, "1.0", "end")
+    def undo():
+        text_area.edit_undo()
 
-        for tag_type in tag_types:
-            text_area.tag_configure(tag_type.lower(), tag_types[tag_type])
+    def redo():
+        text_area.edit_redo()
 
-    def keyDown(event: tk.Tk | None = None):
-        root.title(f"{app_name} - *{file_path}")
+    def apply_list(list_type="bullet"):
+        # Check if there's a selection
+        try:
+            selection_start = text_area.index("sel.first")
+            selection_end = text_area.index("sel.last")
+            # Get the selected text
+            selected_text = text_area.get(selection_start, selection_end)
+            # Process each line of the selected text
+            listified_text = ""
+            if list_type == "bullet":
+                bullet_char = "•"
+                for line in selected_text.splitlines():
+                    listified_text += f"{bullet_char} {line}\n"
+            elif list_type == "number":
+                for i, line in enumerate(selected_text.splitlines(), start=1):
+                    listified_text += f"{i}. {line}\n"
+            # Replace the selected text with the listified text
+            text_area.delete(selection_start, selection_end)
+            text_area.insert(selection_start, listified_text.rstrip())
+        except tk.TclError:
+            # If nothing is selected, do nothing
+            pass
 
     def tagToggle(tag_name: str):
         # Check if there is a selection
@@ -172,6 +195,81 @@ def main():
         except (ValueError, tk.TclError):
             # This block will execute if there is no selection, i.e., 'sel' tag doesn't exist
             ...
+
+    def resetTags():
+        for tag in text_area.tag_names():
+            text_area.tag_remove(tag, "1.0", "end")
+
+        for tag_type in tag_types:
+            text_area.tag_configure(tag_type.lower(), tag_types[tag_type])
+        text_area.tag_configure("align_left", justify="left")
+        text_area.tag_configure("align_center", justify="center")
+        text_area.tag_configure("align_right", justify="right")
+
+    def keyDown(event: tk.Tk | None = None):
+        root.title(f"{app_name} - *{file_path}")
+
+    def apply_list(list_type="bullet"):
+        try:
+            selection_start = text_area.index("sel.first")
+            selection_end = text_area.index("sel.last")
+            selected_text = text_area.get(selection_start, selection_end)
+            
+            # Determine if we're adding or removing list formatting
+            if any(line.startswith("• ") for line in selected_text.splitlines()) and list_type == "bullet":
+                process = "remove"
+            elif any(re.match(r"^\d+\.\s", line) for line in selected_text.splitlines()) and list_type == "number":
+                process = "remove"
+            else:
+                process = "add"
+
+            # Process each line of the selected text
+            new_text_lines = []
+            for line in selected_text.splitlines():
+                if process == "remove":
+                    if list_type == "bullet" and line.startswith("• "):
+                        # Remove bullet
+                        new_text_lines.append(line[2:])
+                    elif list_type == "number" and re.match(r"^\d+\.\s", line):
+                        # Remove numbering
+                        new_text_lines.append(re.sub(r"^\d+\.\s", "", line))
+                    else:
+                        # Line is not formatted, keep it as is
+                        new_text_lines.append(line)
+                else:
+                    if list_type == "bullet":
+                        new_text_lines.append(f"• {line}")
+                    elif list_type == "number":
+                        # Add a placeholder for numbers; actual numbers will be added later
+                        new_text_lines.append(f"{line}")
+
+            # Replace the selected text with the new text
+            text_area.delete(selection_start, selection_end)
+            # If numbering and we're adding numbers, add them here
+            if list_type == "number" and process == "add":
+                new_text_lines = [f"{i+1}. {line}" for i, line in enumerate(new_text_lines)]
+            text_area.insert(selection_start, "\n".join(new_text_lines))
+
+        except tk.TclError:
+            # If nothing is selected, do nothing
+            pass
+
+    def align_text(alignment):
+        # Get current selection or the current line if nothing is selected
+        try:
+            start_index = text_area.index("sel.first")
+            end_index = text_area.index("sel.last")
+        except tk.TclError:
+            # If nothing is selected, get the current line
+            start_index = text_area.index("insert linestart")
+            end_index = text_area.index("insert lineend")
+
+        # Remove any previous alignment tags from the selected range
+        for align_tag in ("align_left", "align_center", "align_right"):
+            text_area.tag_remove(align_tag, start_index, end_index)
+
+        # Add the new alignment tag to the selected range
+        text_area.tag_add(alignment, start_index, end_index)
 
     # Setup
     root = tk.Tk()
@@ -205,7 +303,16 @@ def main():
     menu.add_cascade(label="Format", menu=format_menu)
 
     for tag_type in tag_types:
+        if tag_type.startswith("Align"):
+            continue
         format_menu.add_command(label=tag_type, command=partial(tagToggle, tag_name=tag_type.lower()))
+    format_menu.add_separator()
+    format_menu.add_command(label="Bullet List", command=lambda: apply_list("bullet"))
+    format_menu.add_command(label="Numbered List", command=lambda: apply_list("number"))
+    format_menu.add_separator()
+    format_menu.add_command(label="Align Left", command=lambda: align_text('align_left'))
+    format_menu.add_command(label="Align Center", command=lambda: align_text('align_center'))
+    format_menu.add_command(label="Align Right", command=lambda: align_text('align_right'))
 
     root.mainloop()
 
