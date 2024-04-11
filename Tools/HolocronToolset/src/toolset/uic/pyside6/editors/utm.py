@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utm.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -121,6 +121,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.idSpin = QSpinBox(self.tab)
         self.idSpin.setObjectName(u"idSpin")
+        self.idSpin.setMinimum(-2147483648)
+        self.idSpin.setMaximum(2147483647)
 
         self.horizontalLayout.addWidget(self.idSpin)
 

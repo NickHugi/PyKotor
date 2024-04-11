@@ -496,7 +496,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         return permission_value
 
     def safe_relative_to(self, *other: PathElem) -> Self:
-        with contextlib.suppress(ValueError):
+        with suppress(ValueError):
             return super().relative_to(*other)
         return self.__class__(os.path.relpath(self, self.__class__(*other)))
 

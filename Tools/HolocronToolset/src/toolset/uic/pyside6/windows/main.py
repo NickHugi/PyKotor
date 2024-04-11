@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -164,6 +164,12 @@ class Ui_MainWindow(object):
         self.actionGeometryEditor = QAction(MainWindow)
         self.actionGeometryEditor.setObjectName(u"actionGeometryEditor")
         self.actionGeometryEditor.setEnabled(False)
+        self.defaultLight = QAction(MainWindow)
+        self.defaultLight.setObjectName(u"defaultLight")
+        self.breezeDark = QAction(MainWindow)
+        self.breezeDark.setObjectName(u"breezeDark")
+        self.darkManualTheme2 = QAction(MainWindow)
+        self.darkManualTheme2.setObjectName(u"darkManualTheme2")
         self.actionIndoorMapBuilder = QAction(MainWindow)
         self.actionIndoorMapBuilder.setObjectName(u"actionIndoorMapBuilder")
         self.actionIndoorMapBuilder.setEnabled(False)
@@ -339,6 +345,8 @@ class Ui_MainWindow(object):
         self.menuNew.setObjectName(u"menuNew")
         self.menuEdit = QMenu(self.menubar)
         self.menuEdit.setObjectName(u"menuEdit")
+        self.menuTheme = QMenu(self.menubar)
+        self.menuTheme.setObjectName(u"menuTheme")
         self.menuTools = QMenu(self.menubar)
         self.menuTools.setObjectName(u"menuTools")
         self.menuHelp = QMenu(self.menubar)
@@ -353,6 +361,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
+        self.menubar.addAction(self.menuTheme.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menuFile.addAction(self.menuNew.menuAction())
         self.menuFile.addAction(self.openAction)
@@ -381,6 +390,9 @@ class Ui_MainWindow(object):
         self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.actionEditTLK)
         self.menuEdit.addAction(self.actionEditJRL)
+        self.menuTheme.addAction(self.defaultLight)
+        self.menuTheme.addAction(self.breezeDark)
+        self.menuTheme.addAction(self.darkManualTheme2)
         self.menuTools.addAction(self.actionModuleDesigner)
         self.menuTools.addAction(self.actionIndoorMapBuilder)
         self.menuTools.addSeparator()
@@ -444,6 +456,9 @@ class Ui_MainWindow(object):
         self.actionEditJRL.setText(QCoreApplication.translate("MainWindow", u"Edit Journal", None))
         self.actionFileSearch.setText(QCoreApplication.translate("MainWindow", u"File Search", None))
         self.actionGeometryEditor.setText(QCoreApplication.translate("MainWindow", u"Geometry Editor", None))
+        self.defaultLight.setText(QCoreApplication.translate("MainWindow", u"Default (Light)", None))
+        self.breezeDark.setText(QCoreApplication.translate("MainWindow", u"Breeze (Dark)", None))
+        self.darkManualTheme2.setText(QCoreApplication.translate("MainWindow", u"Fusion (Dark)", None))
         self.actionIndoorMapBuilder.setText(QCoreApplication.translate("MainWindow", u"Indoor Map Builder", None))
         self.actionEditModule.setText(QCoreApplication.translate("MainWindow", u"Edit Module", None))
         self.actionInstructions.setText(QCoreApplication.translate("MainWindow", u"Instructions", None))
@@ -467,6 +482,7 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuNew.setTitle(QCoreApplication.translate("MainWindow", u"New", None))
         self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))
+        self.menuTheme.setTitle(QCoreApplication.translate("MainWindow", u"Theme", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
         self.menuDiscord.setTitle(QCoreApplication.translate("MainWindow", u"Discord", None))

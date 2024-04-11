@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utc.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -485,6 +485,8 @@ class Ui_MainWindow(object):
 
         self.multiplierSetSpin = QSpinBox(self.k2onlyBox)
         self.multiplierSetSpin.setObjectName(u"multiplierSetSpin")
+        self.multiplierSetSpin.setMinimum(-2147483648)
+        self.multiplierSetSpin.setMaximum(2147483647)
 
         self.formLayout_24.setWidget(2, QFormLayout.FieldRole, self.multiplierSetSpin)
 
@@ -518,6 +520,8 @@ class Ui_MainWindow(object):
 
         self.computerUseSpin = QSpinBox(self.groupBox_6)
         self.computerUseSpin.setObjectName(u"computerUseSpin")
+        self.computerUseSpin.setMinimum(-2147483648)
+        self.computerUseSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(0, QFormLayout.FieldRole, self.computerUseSpin)
 
@@ -528,6 +532,8 @@ class Ui_MainWindow(object):
 
         self.demolitionsSpin = QSpinBox(self.groupBox_6)
         self.demolitionsSpin.setObjectName(u"demolitionsSpin")
+        self.demolitionsSpin.setMinimum(-2147483648)
+        self.demolitionsSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(1, QFormLayout.FieldRole, self.demolitionsSpin)
 
@@ -538,6 +544,8 @@ class Ui_MainWindow(object):
 
         self.stealthSpin = QSpinBox(self.groupBox_6)
         self.stealthSpin.setObjectName(u"stealthSpin")
+        self.stealthSpin.setMinimum(-2147483648)
+        self.stealthSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(2, QFormLayout.FieldRole, self.stealthSpin)
 
@@ -548,6 +556,8 @@ class Ui_MainWindow(object):
 
         self.awarenessSpin = QSpinBox(self.groupBox_6)
         self.awarenessSpin.setObjectName(u"awarenessSpin")
+        self.awarenessSpin.setMinimum(-2147483648)
+        self.awarenessSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(3, QFormLayout.FieldRole, self.awarenessSpin)
 
@@ -558,6 +568,8 @@ class Ui_MainWindow(object):
 
         self.persuadeSpin = QSpinBox(self.groupBox_6)
         self.persuadeSpin.setObjectName(u"persuadeSpin")
+        self.persuadeSpin.setMinimum(-2147483648)
+        self.persuadeSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(4, QFormLayout.FieldRole, self.persuadeSpin)
 
@@ -568,6 +580,8 @@ class Ui_MainWindow(object):
 
         self.repairSpin = QSpinBox(self.groupBox_6)
         self.repairSpin.setObjectName(u"repairSpin")
+        self.repairSpin.setMinimum(-2147483648)
+        self.repairSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(5, QFormLayout.FieldRole, self.repairSpin)
 
@@ -578,6 +592,8 @@ class Ui_MainWindow(object):
 
         self.securitySpin = QSpinBox(self.groupBox_6)
         self.securitySpin.setObjectName(u"securitySpin")
+        self.securitySpin.setMinimum(-2147483648)
+        self.securitySpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(6, QFormLayout.FieldRole, self.securitySpin)
 
@@ -588,6 +604,8 @@ class Ui_MainWindow(object):
 
         self.treatInjurySpin = QSpinBox(self.groupBox_6)
         self.treatInjurySpin.setObjectName(u"treatInjurySpin")
+        self.treatInjurySpin.setMinimum(-2147483648)
+        self.treatInjurySpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(7, QFormLayout.FieldRole, self.treatInjurySpin)
 
@@ -605,6 +623,8 @@ class Ui_MainWindow(object):
 
         self.fortitudeSpin = QSpinBox(self.groupBox_8)
         self.fortitudeSpin.setObjectName(u"fortitudeSpin")
+        self.fortitudeSpin.setMinimum(-2147483648)
+        self.fortitudeSpin.setMaximum(2147483647)
 
         self.formLayout_6.setWidget(0, QFormLayout.FieldRole, self.fortitudeSpin)
 
@@ -620,11 +640,15 @@ class Ui_MainWindow(object):
 
         self.reflexSpin = QSpinBox(self.groupBox_8)
         self.reflexSpin.setObjectName(u"reflexSpin")
+        self.reflexSpin.setMinimum(-2147483648)
+        self.reflexSpin.setMaximum(2147483647)
 
         self.formLayout_6.setWidget(1, QFormLayout.FieldRole, self.reflexSpin)
 
         self.willSpin = QSpinBox(self.groupBox_8)
         self.willSpin.setObjectName(u"willSpin")
+        self.willSpin.setMinimum(-2147483648)
+        self.willSpin.setMaximum(2147483647)
 
         self.formLayout_6.setWidget(2, QFormLayout.FieldRole, self.willSpin)
 
@@ -642,6 +666,8 @@ class Ui_MainWindow(object):
 
         self.armorClassSpin = QSpinBox(self.groupBox_9)
         self.armorClassSpin.setObjectName(u"armorClassSpin")
+        self.armorClassSpin.setMinimum(-2147483648)
+        self.armorClassSpin.setMaximum(2147483647)
 
         self.formLayout_7.setWidget(0, QFormLayout.FieldRole, self.armorClassSpin)
 
@@ -668,6 +694,8 @@ class Ui_MainWindow(object):
 
         self.strengthSpin = QSpinBox(self.groupBox_7)
         self.strengthSpin.setObjectName(u"strengthSpin")
+        self.strengthSpin.setMinimum(-2147483648)
+        self.strengthSpin.setMaximum(2147483647)
 
         self.formLayout_5.setWidget(0, QFormLayout.FieldRole, self.strengthSpin)
 
@@ -678,6 +706,8 @@ class Ui_MainWindow(object):
 
         self.dexteritySpin = QSpinBox(self.groupBox_7)
         self.dexteritySpin.setObjectName(u"dexteritySpin")
+        self.dexteritySpin.setMinimum(-2147483648)
+        self.dexteritySpin.setMaximum(2147483647)
 
         self.formLayout_5.setWidget(1, QFormLayout.FieldRole, self.dexteritySpin)
 
@@ -688,6 +718,8 @@ class Ui_MainWindow(object):
 
         self.constitutionSpin = QSpinBox(self.groupBox_7)
         self.constitutionSpin.setObjectName(u"constitutionSpin")
+        self.constitutionSpin.setMinimum(-2147483648)
+        self.constitutionSpin.setMaximum(2147483647)
 
         self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.constitutionSpin)
 
@@ -698,6 +730,8 @@ class Ui_MainWindow(object):
 
         self.intelligenceSpin = QSpinBox(self.groupBox_7)
         self.intelligenceSpin.setObjectName(u"intelligenceSpin")
+        self.intelligenceSpin.setMinimum(-2147483648)
+        self.intelligenceSpin.setMaximum(2147483647)
 
         self.formLayout_5.setWidget(3, QFormLayout.FieldRole, self.intelligenceSpin)
 
@@ -708,6 +742,8 @@ class Ui_MainWindow(object):
 
         self.wisdomSpin = QSpinBox(self.groupBox_7)
         self.wisdomSpin.setObjectName(u"wisdomSpin")
+        self.wisdomSpin.setMinimum(-2147483648)
+        self.wisdomSpin.setMaximum(2147483647)
 
         self.formLayout_5.setWidget(4, QFormLayout.FieldRole, self.wisdomSpin)
 
@@ -718,6 +754,8 @@ class Ui_MainWindow(object):
 
         self.charismaSpin = QSpinBox(self.groupBox_7)
         self.charismaSpin.setObjectName(u"charismaSpin")
+        self.charismaSpin.setMinimum(-2147483648)
+        self.charismaSpin.setMaximum(2147483647)
 
         self.formLayout_5.setWidget(5, QFormLayout.FieldRole, self.charismaSpin)
 
@@ -745,16 +783,22 @@ class Ui_MainWindow(object):
 
         self.baseHpSpin = QSpinBox(self.groupBox_10)
         self.baseHpSpin.setObjectName(u"baseHpSpin")
+        self.baseHpSpin.setMinimum(-2147483648)
+        self.baseHpSpin.setMaximum(2147483647)
 
         self.formLayout_8.setWidget(0, QFormLayout.FieldRole, self.baseHpSpin)
 
         self.currentHpSpin = QSpinBox(self.groupBox_10)
         self.currentHpSpin.setObjectName(u"currentHpSpin")
+        self.currentHpSpin.setMinimum(-2147483648)
+        self.currentHpSpin.setMaximum(2147483647)
 
         self.formLayout_8.setWidget(1, QFormLayout.FieldRole, self.currentHpSpin)
 
         self.maxHpSpin = QSpinBox(self.groupBox_10)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
+        self.maxHpSpin.setMinimum(-2147483648)
+        self.maxHpSpin.setMaximum(2147483647)
 
         self.formLayout_8.setWidget(2, QFormLayout.FieldRole, self.maxHpSpin)
 
@@ -772,6 +816,8 @@ class Ui_MainWindow(object):
 
         self.currentFpSpin = QSpinBox(self.groupBox_11)
         self.currentFpSpin.setObjectName(u"currentFpSpin")
+        self.currentFpSpin.setMinimum(-2147483648)
+        self.currentFpSpin.setMaximum(2147483647)
 
         self.formLayout_9.setWidget(0, QFormLayout.FieldRole, self.currentFpSpin)
 
@@ -782,6 +828,8 @@ class Ui_MainWindow(object):
 
         self.maxFpSpin = QSpinBox(self.groupBox_11)
         self.maxFpSpin.setObjectName(u"maxFpSpin")
+        self.maxFpSpin.setMinimum(-2147483648)
+        self.maxFpSpin.setMaximum(2147483647)
 
         self.formLayout_9.setWidget(1, QFormLayout.FieldRole, self.maxFpSpin)
 
@@ -813,6 +861,8 @@ class Ui_MainWindow(object):
 
         self.class1LevelSpin = QSpinBox(self.groupBox_13)
         self.class1LevelSpin.setObjectName(u"class1LevelSpin")
+        self.class1LevelSpin.setMinimum(-2147483648)
+        self.class1LevelSpin.setMaximum(2147483647)
 
         self.horizontalLayout_13.addWidget(self.class1LevelSpin)
 
@@ -835,6 +885,8 @@ class Ui_MainWindow(object):
 
         self.class2LevelSpin = QSpinBox(self.groupBox_13)
         self.class2LevelSpin.setObjectName(u"class2LevelSpin")
+        self.class2LevelSpin.setMinimum(-2147483648)
+        self.class2LevelSpin.setMaximum(2147483647)
 
         self.horizontalLayout_14.addWidget(self.class2LevelSpin)
 

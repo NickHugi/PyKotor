@@ -125,6 +125,4 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionCompile.setText(_translate("MainWindow", "Compile"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-
-
 from toolset.gui.editors.nss import CodeEditor

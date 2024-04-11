@@ -225,6 +225,8 @@ class Ui_MainWindow(object):
 
         self.entryDelaySpin = QSpinBox(self.fileTab)
         self.entryDelaySpin.setObjectName(u"entryDelaySpin")
+        self.entryDelaySpin.setMinimum(-2147483648)
+        self.entryDelaySpin.setMaximum(2147483647)
 
         self.formLayout_7.setWidget(0, QFormLayout.FieldRole, self.entryDelaySpin)
 
@@ -235,6 +237,8 @@ class Ui_MainWindow(object):
 
         self.replyDelaySpin = QSpinBox(self.fileTab)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
+        self.replyDelaySpin.setMinimum(-2147483648)
+        self.replyDelaySpin.setMaximum(2147483647)
 
         self.formLayout_7.setWidget(1, QFormLayout.FieldRole, self.replyDelaySpin)
 
@@ -841,6 +845,8 @@ class Ui_MainWindow(object):
 
         self.questEntrySpin = QSpinBox(self.journalTab)
         self.questEntrySpin.setObjectName(u"questEntrySpin")
+        self.questEntrySpin.setMinimum(-2147483648)
+        self.questEntrySpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.questEntrySpin)
 
@@ -894,6 +900,8 @@ class Ui_MainWindow(object):
 
         self.cameraAnimSpin = QSpinBox(self.cameraTab)
         self.cameraAnimSpin.setObjectName(u"cameraAnimSpin")
+        self.cameraAnimSpin.setMinimum(-2147483648)
+        self.cameraAnimSpin.setMaximum(2147483647)
 
         self.formLayout_4.setWidget(1, QFormLayout.FieldRole, self.cameraAnimSpin)
 

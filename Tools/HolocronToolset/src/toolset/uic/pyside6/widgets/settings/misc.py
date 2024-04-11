@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'misc.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -62,10 +62,14 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.mergeRimCheck)
 
-        self.useModuleFilenamesCheck = QCheckBox(self.scrollAreaWidgetContents)
-        self.useModuleFilenamesCheck.setObjectName(u"useModuleFilenamesCheck")
+        self.moduleSortOptionComboBox = QComboBox(self.scrollAreaWidgetContents)
+        self.moduleSortOptionComboBox.addItem("")
+        self.moduleSortOptionComboBox.addItem("")
+        self.moduleSortOptionComboBox.addItem("")
+        self.moduleSortOptionComboBox.setObjectName(u"moduleSortOptionComboBox")
+        self.moduleSortOptionComboBox.setEditable(False)
 
-        self.verticalLayout.addWidget(self.useModuleFilenamesCheck)
+        self.verticalLayout.addWidget(self.moduleSortOptionComboBox)
 
         self.greyRimCheck = QCheckBox(self.scrollAreaWidgetContents)
         self.greyRimCheck.setObjectName(u"greyRimCheck")
@@ -185,7 +189,10 @@ class Ui_Form(object):
         self.useBetaChannel.setText(QCoreApplication.translate("Form", u"Check for beta updates and take me to their download link when they're available.", None))
         self.alsoCheckReleaseVersion.setText(QCoreApplication.translate("Form", u"Also check release version if it is newer than beta version.", None))
         self.mergeRimCheck.setText(QCoreApplication.translate("Form", u"Merge RIM files in the Modules tab of the Main Window.", None))
-        self.useModuleFilenamesCheck.setText(QCoreApplication.translate("Form", u"Sort by filename rather than area name in the Modules tab.", None))
+        self.moduleSortOptionComboBox.setItemText(0, QCoreApplication.translate("Form", u"Sort by filename", None))
+        self.moduleSortOptionComboBox.setItemText(1, QCoreApplication.translate("Form", u"Sort by humanized area name", None))
+        self.moduleSortOptionComboBox.setItemText(2, QCoreApplication.translate("Form", u"Sort by area name", None))
+
         self.greyRimCheck.setText(QCoreApplication.translate("Form", u"Set RIM files to have grey text in the Modules tab of the Main Window.", None))
         self.showPreviewUTCCheck.setText(QCoreApplication.translate("Form", u"Show 3D Preview in UTC Editor", None))
         self.showPreviewUTPCheck.setText(QCoreApplication.translate("Form", u"Show 3D Preview in UTP Editor", None))

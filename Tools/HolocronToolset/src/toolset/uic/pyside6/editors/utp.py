@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utp.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -267,6 +267,8 @@ class Ui_MainWindow(object):
 
         self.animationState = QSpinBox(self.groupBox_17)
         self.animationState.setObjectName(u"animationState")
+        self.animationState.setMinimum(-2147483648)
+        self.animationState.setMaximum(2147483647)
 
         self.formLayout_11.setWidget(1, QFormLayout.FieldRole, self.animationState)
 
@@ -284,6 +286,8 @@ class Ui_MainWindow(object):
 
         self.currenHpSpin = QSpinBox(self.groupBox_4)
         self.currenHpSpin.setObjectName(u"currenHpSpin")
+        self.currenHpSpin.setMinimum(-2147483648)
+        self.currenHpSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.currenHpSpin)
 
@@ -299,6 +303,8 @@ class Ui_MainWindow(object):
 
         self.hardnessSpin = QSpinBox(self.groupBox_4)
         self.hardnessSpin.setObjectName(u"hardnessSpin")
+        self.hardnessSpin.setMinimum(-2147483648)
+        self.hardnessSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.hardnessSpin)
 
@@ -309,6 +315,8 @@ class Ui_MainWindow(object):
 
         self.fortitudeSpin = QSpinBox(self.groupBox_4)
         self.fortitudeSpin.setObjectName(u"fortitudeSpin")
+        self.fortitudeSpin.setMinimum(-2147483648)
+        self.fortitudeSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.fortitudeSpin)
 
@@ -319,6 +327,8 @@ class Ui_MainWindow(object):
 
         self.reflexSpin = QSpinBox(self.groupBox_4)
         self.reflexSpin.setObjectName(u"reflexSpin")
+        self.reflexSpin.setMinimum(-2147483648)
+        self.reflexSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.reflexSpin)
 
@@ -329,11 +339,15 @@ class Ui_MainWindow(object):
 
         self.willSpin = QSpinBox(self.groupBox_4)
         self.willSpin.setObjectName(u"willSpin")
+        self.willSpin.setMinimum(-2147483648)
+        self.willSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(5, QFormLayout.FieldRole, self.willSpin)
 
         self.maxHpSpin = QSpinBox(self.groupBox_4)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
+        self.maxHpSpin.setMinimum(-2147483648)
+        self.maxHpSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.maxHpSpin)
 
@@ -414,16 +428,22 @@ class Ui_MainWindow(object):
 
         self.openLockSpin = QSpinBox(self.groupBox_2)
         self.openLockSpin.setObjectName(u"openLockSpin")
+        self.openLockSpin.setMinimum(-2147483648)
+        self.openLockSpin.setMaximum(2147483647)
 
         self.formLayout.setWidget(0, QFormLayout.FieldRole, self.openLockSpin)
 
         self.difficultySpin = QSpinBox(self.groupBox_2)
         self.difficultySpin.setObjectName(u"difficultySpin")
+        self.difficultySpin.setMinimum(-2147483648)
+        self.difficultySpin.setMaximum(2147483647)
 
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.difficultySpin)
 
         self.difficultyModSpin = QSpinBox(self.groupBox_2)
         self.difficultyModSpin.setObjectName(u"difficultyModSpin")
+        self.difficultyModSpin.setMinimum(-2147483648)
+        self.difficultyModSpin.setMaximum(2147483647)
 
         self.formLayout.setWidget(2, QFormLayout.FieldRole, self.difficultyModSpin)
 

@@ -64,6 +64,8 @@ class Ui_MainWindow(object):
         self.categoryPlanetSelect.setObjectName("categoryPlanetSelect")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.ItemRole.FieldRole, self.categoryPlanetSelect)
         self.categoryPlotSpin = QtWidgets.QSpinBox(parent=self.categoryPage)
+        self.categoryPlotSpin.setMinimum(-2147483648)
+        self.categoryPlotSpin.setMaximum(2147483647)
         self.categoryPlotSpin.setObjectName("categoryPlotSpin")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.ItemRole.FieldRole, self.categoryPlotSpin)
         self.label_4 = QtWidgets.QLabel(parent=self.categoryPage)

@@ -112,6 +112,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.idSpin = QSpinBox(self.tab)
         self.idSpin.setObjectName(u"idSpin")
+        self.idSpin.setMinimum(-2147483648)
+        self.idSpin.setMaximum(2147483647)
 
         self.horizontalLayout.addWidget(self.idSpin)
 

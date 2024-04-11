@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utt.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -250,6 +250,8 @@ class Ui_MainWindow(object):
 
         self.detectDcSpin = QSpinBox(self.tab_2)
         self.detectDcSpin.setObjectName(u"detectDcSpin")
+        self.detectDcSpin.setMinimum(-2147483648)
+        self.detectDcSpin.setMaximum(2147483647)
 
         self.formLayout.setWidget(0, QFormLayout.FieldRole, self.detectDcSpin)
 
@@ -270,6 +272,8 @@ class Ui_MainWindow(object):
 
         self.disarmDcSpin = QSpinBox(self.tab_2)
         self.disarmDcSpin.setObjectName(u"disarmDcSpin")
+        self.disarmDcSpin.setMinimum(-2147483648)
+        self.disarmDcSpin.setMaximum(2147483647)
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.disarmDcSpin)
 

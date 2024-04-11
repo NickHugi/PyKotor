@@ -75,6 +75,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.jumpSpinbox = QSpinBox(self.jumpBox)
         self.jumpSpinbox.setObjectName(u"jumpSpinbox")
+        self.jumpSpinbox.setMinimum(-2147483648)
+        self.jumpSpinbox.setMaximum(2147483647)
 
         self.horizontalLayout_4.addWidget(self.jumpSpinbox)
 

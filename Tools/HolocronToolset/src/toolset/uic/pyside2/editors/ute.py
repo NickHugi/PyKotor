@@ -121,6 +121,8 @@ class Ui_MainWindow(object):
 
         self.minCreatureSpin = QSpinBox(self.tab)
         self.minCreatureSpin.setObjectName(u"minCreatureSpin")
+        self.minCreatureSpin.setMinimum(-2147483648)
+        self.minCreatureSpin.setMaximum(2147483647)
 
         self.formLayout_10.setWidget(4, QFormLayout.FieldRole, self.minCreatureSpin)
 
@@ -131,6 +133,8 @@ class Ui_MainWindow(object):
 
         self.maxCreatureSpin = QSpinBox(self.tab)
         self.maxCreatureSpin.setObjectName(u"maxCreatureSpin")
+        self.maxCreatureSpin.setMinimum(-2147483648)
+        self.maxCreatureSpin.setMaximum(2147483647)
 
         self.formLayout_10.setWidget(5, QFormLayout.FieldRole, self.maxCreatureSpin)
 
@@ -210,6 +214,8 @@ class Ui_MainWindow(object):
 
         self.respawnTimeSpin = QSpinBox(self.tab_2)
         self.respawnTimeSpin.setObjectName(u"respawnTimeSpin")
+        self.respawnTimeSpin.setMinimum(-2147483648)
+        self.respawnTimeSpin.setMaximum(2147483647)
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.respawnTimeSpin)
 

@@ -103,6 +103,8 @@ class Ui_MainWindow(object):
 
         self.categoryPlotSpin = QSpinBox(self.categoryPage)
         self.categoryPlotSpin.setObjectName(u"categoryPlotSpin")
+        self.categoryPlotSpin.setMinimum(-2147483648)
+        self.categoryPlotSpin.setMaximum(2147483647)
 
         self.formLayout.setWidget(2, QFormLayout.FieldRole, self.categoryPlotSpin)
 
