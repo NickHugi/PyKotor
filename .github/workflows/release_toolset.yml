@@ -9,7 +9,7 @@ env:
   PYTHON_VERSIONS_JSON: '["3.8"]'
   ARCHITECTURES_JSON: '["x86", "x64"]'
   INTERPRETERS_JSON: '["python"]'
-  QT_VERSIONS_JSON: '["pyqt5", "pyside2", "pyqt6", "pyside6"]'
+  QT_VERSIONS_JSON: '["PyQt5", "PySide2", "PyQt6", "PySide6"]'
   UPX_VERSION: '4.2.2'
   
 on:
@@ -95,11 +95,11 @@ jobs:
             python-version: '3.12'
           # PyQt5 doesn't seem to be compatible with PyPy
           - python_pypy: "pypy"
-            qt_version: 'pyqt5'
+            qt_version: 'PyQt5'
           - python_pypy: "pypy"
-            qt_version: 'pyside2'
+            qt_version: 'PySide2'
           - python_pypy: "pypy"
-            qt_version: 'pyqt6'
+            qt_version: 'PyQt6'
           - python_pypy: "pypy"
             python-version: '3.10'
             os: 'windows-2019'
