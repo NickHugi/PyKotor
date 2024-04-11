@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
@@ -12,7 +10,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from qtpy.QtMultimedia import QMediaContent, QMediaPlayer
+from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
@@ -39,6 +37,8 @@ from utility.error_handling import assert_with_variable_trace
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+
+    import os
 
     from qtpy.QtCore import QItemSelection, QModelIndex, QPoint
     from qtpy.QtGui import QKeyEvent, QMouseEvent
