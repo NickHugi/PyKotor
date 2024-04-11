@@ -90,13 +90,13 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
+    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
     if is_frozen():
         from utility.logger_util import get_root_logger
         get_root_logger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
     else:
         fix_sys_and_cwd_path()
-    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
 
     from utility.system.path import Path
 
