@@ -106,7 +106,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
     def test_gain_file_access(self):  # sourcery skip: extract-method
         test_file = Path("this file has no permissions.txt").absolute()
         try:
-            with test_file.open("w") as f:
+            with test_file.open("w", encoding="utf-8") as f:
                 f.write("test")
         except PermissionError as e:
             ...

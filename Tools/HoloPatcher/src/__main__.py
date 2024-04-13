@@ -871,7 +871,7 @@ class App:
     ):
         detailed_msg = format_exception_with_variables(exc, message=custom_msg)
         print(detailed_msg)
-        with Path.cwd().joinpath("errorlog.txt").open("a") as f:
+        with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
             f.write(detailed_msg)
         error_name, msg = universal_simplify_exception(exc)
         if msgbox:
@@ -1524,7 +1524,7 @@ def onAppCrash(
     title, short_msg = universal_simplify_exception(e)
     detailed_msg = format_exception_with_variables(e, etype, tback)
     print(detailed_msg)
-    with Path.cwd().joinpath("errorlog.txt").open("a") as f:
+    with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
         f.write(f"\n{detailed_msg}")
 
     with suppress(Exception):

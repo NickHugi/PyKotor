@@ -718,7 +718,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 script_path_str = str(script_path)
 
                 # Write the commands to a batch file
-                with script_path.open("w") as file:
+                with script_path.open("w", encoding="utf-8") as file:
                     for command in cmd:
                         file.write(command + "\n")
                     if pause_after_command and not hide_window:

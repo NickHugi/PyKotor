@@ -329,7 +329,7 @@ class RichTextEditor:
         if self.file_path.suffix.lower() != ".rte":
             self.file_path = self.file_path.with_suffix(".rte")
 
-        with self.file_path.open("w") as f:
+        with self.file_path.open("w", encoding="utf-8") as f:
             f.write(json.dumps(document))
 
         self.root.title(f"Rich Text Editor - {self.file_path.name}")

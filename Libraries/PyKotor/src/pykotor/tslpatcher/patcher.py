@@ -427,7 +427,7 @@ class ModInstaller:
                 fmt_exc_str = f"{exc_type}: {exc_msg}"
                 self.log.add_error(f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n")
                 detailed_error = format_exception_with_variables(e)
-                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
                     f.write(f"\n{detailed_error}")
             if progress_update_func is not None:
                 progress_update_func()

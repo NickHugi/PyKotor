@@ -569,7 +569,7 @@ class Modifications2DA(PatcherModifications):
             except Exception as e:  # noqa: PERF203, BLE001
                 msg = f"{universal_simplify_exception(e)} when patching the file '{self.saveas}'"
                 detailed_msg = format_exception_with_variables(e)
-                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
                     f.write(f"\n{detailed_msg}")
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)

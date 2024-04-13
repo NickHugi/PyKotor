@@ -118,7 +118,7 @@ def requires_admin(path: os.PathLike | str) -> bool:  # pragma: no cover
 def file_requires_admin(file_path: os.PathLike | str) -> bool:  # pragma: no cover
     """Check if a file requires admin permissions change."""
     try:
-        with Path.pathify(file_path).open("a"):
+        with Path.pathify(file_path).open("a", encoding="utf-8"):
             ...
     except PermissionError:
         return True
@@ -133,7 +133,7 @@ def dir_requires_admin(_dir: os.PathLike | str) -> bool:  # pragma: no cover
     _dirpath = Path.pathify(_dir)
     dummy_filepath = _dirpath / str(uuid.uuid4())
     try:
-        with dummy_filepath.open("w"):
+        with dummy_filepath.open("w", encoding="utf-8"):
             ...
         remove_any(dummy_filepath)
     except OSError:

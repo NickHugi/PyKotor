@@ -404,7 +404,7 @@ def with_variable_trace(
                 elif action == "print":
                     print(full_message)  # noqa: T201
                 if log:
-                    with Path("errorlog.txt", encoding="utf-8").open("a") as outfile:
+                    with Path("errorlog.txt", encoding="utf-8").open("a", encoding="utf-8") as outfile:
                         outfile.write(full_message)
                 if rethrow:
                     # Raise an exception with the detailed message
