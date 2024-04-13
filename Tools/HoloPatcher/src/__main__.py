@@ -847,6 +847,9 @@ class App:
             if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
                 messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
+            for tag in self.main_text.tag_names():
+                if tag not in ["sel"]:
+                    self.main_text.tag_delete(tag)
             if info_rte_path.safe_isfile():
                 data: bytes = BinaryReader.load_file(info_rte_path)
                 rtf_text: str = decode_bytes_with_fallbacks(data)
@@ -1193,7 +1196,11 @@ class App:
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self, should_cancel_thread: Event, update_progress_func: Callable | None = None):
+    def begin_install_thread(
+        self,
+        should_cancel_thread: Event,
+        update_progress_func: Callable | None = None,
+    ):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -1423,7 +1430,10 @@ class App:
 
         start_rte_editor()
 
-    def load_rte_content(self, rte_content: str | bytes | bytearray | None = None):
+    def load_rte_content(
+        self,
+        rte_content: str | bytes | bytearray | None = None,
+    ):
         if rte_content is None:
             file_path_str = filedialog.askopenfilename()
             if not file_path_str:
