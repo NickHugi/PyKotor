@@ -534,19 +534,19 @@ class ToolWindow(QMainWindow):
             return
         file_or_folder_path = Path(self.active.override_path(), file_or_folder)
         if not file_or_folder_path.is_relative_to(self.active.override_path()):
-            print(f"{file_or_folder_path} is not relative to the override folder, cannot reload")
+            print(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
             return
         if file_or_folder_path.safe_isfile():
+            rel_folderpath = file_or_folder_path.parent.relative_to(self.active.override_path())
             self.active.reload_override_file(file_or_folder_path)
-            folder_path = file_or_folder_path.parent
         else:
-            folder_path = file_or_folder_path
-            self.active.load_override(folder_path)
+            rel_folderpath = file_or_folder_path.relative_to(self.active.override_path())
+            self.active.load_override(str(rel_folderpath))
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
-                Path._fix_path_formatting(str(folder_path.relative_to(self.active.override_path())).replace(str(self.active.override_path()), ""))
-                if folder_path not in self.active.override_path().parents
-                else "."
+                str(rel_folderpath)
+                if rel_folderpath.name
+                else None
             )
         )
 

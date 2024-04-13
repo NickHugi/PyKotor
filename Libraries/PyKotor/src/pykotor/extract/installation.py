@@ -574,7 +574,7 @@ class Installation:  # noqa: PLR0904
             self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
         resource = FileResource(
-            *identifier,
+            *identifier.unpack(),
             filepath.stat().st_size,
             0,
             filepath,
