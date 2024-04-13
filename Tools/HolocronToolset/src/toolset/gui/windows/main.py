@@ -599,9 +599,9 @@ class ToolWindow(QMainWindow):
             self.active.load_override(str(rel_folderpath))
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
-                "."
-                if rel_folderpath == self.active.override_path()
-                else str(rel_folderpath)
+                str(rel_folderpath)
+                if rel_folderpath.name
+                else None
             )
         )
 
