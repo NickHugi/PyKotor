@@ -135,7 +135,7 @@ class AsyncLoader(QDialog, Generic[T]):
 
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self.value: T = None  # type: ignore[assignment]
+        self.value: T | None = None
         self.error: Exception | None = None
         self.errorTitle: str | None = errorTitle
 

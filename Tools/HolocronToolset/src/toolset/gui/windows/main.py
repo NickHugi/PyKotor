@@ -596,7 +596,7 @@ class ToolWindow(QMainWindow):
             folder_path = file_or_folder_path.parent
         else:
             folder_path = file_or_folder_path
-            self.active.load_override(folder_path)
+            self.active.load_override(str(folder_path))
         self.ui.overrideWidget.setResources(
             self.active.override_resources(
                 str(folder_path.relative_to(str(self.active.override_path())))
@@ -1221,6 +1221,10 @@ class ToolWindow(QMainWindow):
             loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
             loader.exec_()
             overrideItems = loader.value
+            if overrideItems is None:
+                if loader.error is None:
+                    QMessageBox(QMessageBox.Critical, "Error refreshing override list.", "AsyncLoader was aborted.").exec_()
+                return
         self.ui.overrideWidget.setSections(overrideItems)
 
     def _getTexturePackList(
