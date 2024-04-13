@@ -311,27 +311,25 @@ class BWM:
                     adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge
                     next_face = adj_edge_index // 3
                     next_edge = ((adj_edge_index % 3) + 1) % 3
-
-                else:
-                    edge_index = next_face * 3 + next_edge
-                    if edge_index in visited:
-                        next_face = -1
-                        edges[-1].final = True
-                        perimeters.append(perimeter_length)
-
-                    else:
-                        face_id, edge_id = divmod(edge_index, 3)
-                        transition: int | None = None
-                        if edge_id == 0 and self.faces[face_id].trans1 is not None:
-                            transition = self.faces[face_id].trans1
-                        if edge_id == 1 and self.faces[face_id].trans2 is not None:
-                            transition = self.faces[face_id].trans2
-                        if edge_id == 2 and self.faces[face_id].trans3 is not None:
-                            transition = self.faces[face_id].trans3
-                        edges.append(BWMEdge(self.faces[next_face], edge_index, -1 if transition is None else transition))
-                        perimeter_length += 1
-                        visited.add(edge_index)
-                        next_edge = (edge_index + 1) % 3
+                    continue
+                edge_index = next_face * 3 + next_edge
+                if edge_index in visited:
+                    next_face = -1
+                    edges[-1].final = True
+                    perimeters.append(perimeter_length)
+                    continue
+                face_id, edge_id = divmod(edge_index, 3)
+                transition: int | None = None
+                if edge_id == 0 and self.faces[face_id].trans1 is not None:
+                    transition = self.faces[face_id].trans1
+                if edge_id == 1 and self.faces[face_id].trans2 is not None:
+                    transition = self.faces[face_id].trans2
+                if edge_id == 2 and self.faces[face_id].trans3 is not None:
+                    transition = self.faces[face_id].trans3
+                edges.append(BWMEdge(self.faces[next_face], edge_index, -1 if transition is None else transition))
+                perimeter_length += 1
+                visited.add(edge_index)
+                next_edge = (edge_index + 1) % 3
 
         return edges
 
