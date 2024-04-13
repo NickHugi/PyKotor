@@ -17,7 +17,7 @@ class ControlItem:
         *,
         exactKeys: bool = True,
     ) -> bool:
-        """Determines if mouse/keyboard events are our hotkey action.
+        """Handles the key/mouse events, determine if the conditions are met.
 
         Args:
         ----
