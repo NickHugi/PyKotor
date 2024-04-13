@@ -223,7 +223,7 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass,
+        other: UTCClass | object,
     ):
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
@@ -488,7 +488,7 @@ def dismantle_utc(
     # Might be better to use GFFStructInterface from that PR.
     feat_list._structs = sorted(feat_list._structs, key=lambda feat: utc._original_feat_mapping.get(feat.get_uint16("Feat"), float("inf")))
 
-    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif
+    # Not sure what these are for, verified they exist in K1's 'c_drdg.utc' in data\templates.bif. Might be unused in which case this can be deleted.
     if utc._extra_unimplemented_skills:
         for val in utc._extra_unimplemented_skills:
             skill_list.add(0).set_uint8("Rank", val)

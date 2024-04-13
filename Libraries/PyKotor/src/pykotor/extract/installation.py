@@ -1280,7 +1280,7 @@ class Installation:  # noqa: PLR0904
                 ),
                 None,
             )
-            return decode_txi(txi_resource.data()) if txi_resource is not None else ""
+            return "" if txi_resource is None else decode_txi(txi_resource.data())
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
@@ -1571,9 +1571,10 @@ class Installation:  # noqa: PLR0904
             for resource in values:
                 case_resname: str = resource.resname().casefold()
                 if case_resname in case_resnames and resource.restype() in sound_formats:
+                    print(f"Found sound at '{resource.filepath()}'")
                     case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
-                    sounds[resource.resname()] = deobfuscate_audio(sound_data) if sound_data else b""
+                    sounds[resource.resname()] = deobfuscate_audio(sound_data)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1585,8 +1586,9 @@ class Installation:  # noqa: PLR0904
                             break
                     if sound_data is None:  # No sound data found in this list.
                         continue
+                    print(f"Found sound at '{capsule.path()}'")
                     case_resnames.remove(case_resname)
-                    sounds[case_resname] = deobfuscate_audio(sound_data) if sound_data else b""
+                    sounds[case_resname] = deobfuscate_audio(sound_data)
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1601,9 +1603,10 @@ class Installation:  # noqa: PLR0904
                     )
                 )
             for sound_file in queried_sound_files:
+                print(f"Found sound at '{sound_file}'")
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = deobfuscate_audio(sound_data) if sound_data else b""
+                sounds[sound_file.stem] = deobfuscate_audio(sound_data)
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),

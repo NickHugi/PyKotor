@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import pyperclip
+import qtpy
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
+from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtMultimedia import QMediaPlayer
+from qtpy.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
@@ -31,13 +34,15 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
+from utility.system.path import Path
 
 if TYPE_CHECKING:
+
     import os
 
-    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
-    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+    from qtpy.QtCore import QItemSelection, QModelIndex, QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QPlainTextEdit, QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -52,8 +57,13 @@ _COPY_ROLE = QtCore.Qt.UserRole + 2
 
 
 class GFFFieldSpinBox(QSpinBox):
-
-    def __init__(self, *args, min_value: int = 1200, max_value: int = 65534, **kwargs):
+    def __init__(
+        self,
+        *args,
+        min_value: int = 1200,
+        max_value: int = 65534,
+        **kwargs,
+    ):
         self._no_validate: bool = False
         super().__init__(*args, **kwargs)
         self.specialValueTextMapping: dict[int, str] = {0: "0", -1: "-1"}
@@ -89,7 +99,12 @@ class GFFFieldSpinBox(QSpinBox):
                 self.setValue(self.max_value)
 
     @classmethod
-    def from_spinbox(cls, originalSpin: QSpinBox, min_value: int = 0, max_value: int = 100) -> GFFFieldSpinBox:
+    def from_spinbox(
+        cls,
+        originalSpin: QSpinBox,
+        min_value: int = 0,
+        max_value: int = 100,
+    ) -> GFFFieldSpinBox:
         if not isinstance(originalSpin, QSpinBox):
             raise TypeError("The provided widget is not a QSpinBox.")
 
@@ -128,7 +143,11 @@ class GFFFieldSpinBox(QSpinBox):
         return customSpin
 
 class DLGEditor(Editor):
-    def __init__(self, parent: QWidget | None = None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the Dialog Editor window.
 
         Args:
@@ -149,7 +168,16 @@ class DLGEditor(Editor):
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -262,7 +290,13 @@ class DLGEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads a dialogue file.
 
         Args:
@@ -541,7 +575,11 @@ class DLGEditor(Editor):
                 item.setText(self._installation.string(node.text, "(continue)"))
                 self._loadLocstring(self.ui.textEdit, node.text)
 
-    def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString):
+    def _loadLocstring(
+        self,
+        textbox: QPlainTextEdit,
+        locstring: LocalizedString,
+    ):
         """Load a localized string into a text box.
 
         Args:
@@ -559,7 +597,11 @@ class DLGEditor(Editor):
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
-    def addNode(self, item: QStandardItem | None, node: DLGNode):
+    def addNode(
+        self,
+        item: QStandardItem | None,
+        node: DLGNode,
+    ):
         """Adds a node to the dialog tree.
 
         Args:
@@ -599,7 +641,13 @@ class DLGEditor(Editor):
     def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
         self._add_node_main(source, target.links, True, item)
 
-    def _add_node_main(self, source: DLGNode, target_links: list[DLGLink], _copy_role_data: bool, item: QStandardItem | QStandardItemModel | None):
+    def _add_node_main(
+        self,
+        source: DLGNode,
+        target_links: list[DLGLink],
+        _copy_role_data: bool,
+        item: QStandardItem | QStandardItemModel | None,
+    ):
         newLink = DLGLink(source)
         target_links.append(newLink)
         newItem = QStandardItem()
@@ -608,7 +656,12 @@ class DLGEditor(Editor):
         self.refreshItem(newItem)
         item.appendRow(newItem)
 
-    def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode):
+    def addCopy(
+        self,
+        item: QStandardItem,
+        target: DLGNode,
+        source: DLGNode,
+    ):
         """Adds a copy of a node to a target node.
 
         Args:
@@ -793,6 +846,35 @@ class DLGEditor(Editor):
             - Starts playback of the sound using a single shot timer to avoid blocking.
             - Displays an error message if the sound resource is not found.
         """
+        if qtpy.API_NAME in ["PyQt5", "PySide2"]:
+            # PyQt5 and PySide2 code path
+            from qtpy.QtMultimedia import QMediaContent
+
+            def set_media(data: bytes | None):
+                if data:
+                    self.buffer = QBuffer(self)
+                    self.buffer.setData(data)
+                    self.buffer.open(QIODevice.ReadOnly)
+                    self.player.setMedia(QMediaContent(), self.buffer)
+                    QtCore.QTimer.singleShot(0, self.player.play)
+                else:
+                    self.blinkWindow()
+
+        elif qtpy.API_NAME in ["PyQt6", "PySide6"]:
+            # PyQt6 and PySide6 code path
+            def set_media(data: bytes | None):
+                if data:
+                    with TemporaryDirectory() as tmpdir:
+                        tmpdir_path = Path(tmpdir)
+                        tmpmediafile = (tmpdir_path / tmpdir_path.stem).with_suffix(".wav")
+                        BinaryWriter.dump(tmpmediafile, data)
+                        self.player.setSource(str(tmpmediafile))
+                        QTimer.singleShot(0, self.player.play)
+                else:
+                    self.blinkWindow()
+        else:
+            raise ValueError(f"Unsupported QT_API value: {qtpy.API_NAME}")
+
         self.player.stop()
 
         data: bytes | None = self._installation.sound(
@@ -800,14 +882,7 @@ class DLGEditor(Editor):
             [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
 
-        if data:
-            self.buffer = QBuffer(self)
-            self.buffer.setData(data)
-            self.buffer.open(QIODevice.ReadOnly)
-            self.player.setMedia(QMediaContent(), self.buffer)
-            QtCore.QTimer.singleShot(0, self.player.play)
-        else:
-            self.blinkWindow()
+        set_media(data)
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.
@@ -837,7 +912,11 @@ class DLGEditor(Editor):
         self.model.appendRow(item)
         return item
 
-    def shiftItem(self, item: QStandardItem, amount: int):
+    def shiftItem(
+        self,
+        item: QStandardItem,
+        amount: int,
+    ):
         """Shifts an item in the tree by a given amount.
 
         Args:
@@ -894,7 +973,11 @@ class DLGEditor(Editor):
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def _set_context_menu_actions(self, item: QStandardItem, point: QPoint):
+    def _set_context_menu_actions(
+        self,
+        item: QStandardItem,
+        point: QPoint,
+    ):
         """Sets context menu actions for a dialog tree item.
 
         Args:
@@ -1055,7 +1138,7 @@ class DLGEditor(Editor):
             self.ui.questEdit.setText(node.quest)
             self.ui.questEntrySpin.setValue(node.quest_entry or 0)
 
-            self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
+            self.ui.cameraIdSpin.setValue(-1 if node.camera_id is None else node.camera_id)
             self.ui.cameraAnimSpin.__class__ = GFFFieldSpinBox
             self.ui.cameraAnimSpin.min_value=1200
             self.ui.cameraAnimSpin.max_value=65534
@@ -1063,9 +1146,9 @@ class DLGEditor(Editor):
             self.ui.cameraAnimSpin.setMinimum(-1)
             self.ui.cameraAnimSpin.setMaximum(65534)
 
-            self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
-            self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
+            self.ui.cameraAnimSpin.setValue(-1 if node.camera_anim is None else node.camera_anim)
+            self.ui.cameraAngleSelect.setCurrentIndex(0 if node.camera_angle is None else node.camera_angle)
+            self.ui.cameraEffectSelect.setCurrentIndex(0 if node.camera_effect is None else node.camera_effect + 1)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)

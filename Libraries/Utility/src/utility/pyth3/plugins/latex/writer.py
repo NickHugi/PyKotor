@@ -35,7 +35,7 @@ class LatexWriter(PythWriter):
         """
         self.document = doc
         self.stylesheet = stylesheet
-        self.target = target if target is not None else StringIO()
+        self.target = StringIO() if target is None else target
 
     @property
     def full_stylesheet(self):

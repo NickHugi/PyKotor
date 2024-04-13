@@ -38,6 +38,7 @@ BINARY_TEST_FILE = "tests/files/test.ncs"
 
 class TestNCS(TestCase):
     def test_binary_io(self):
+        """This test fails due to reading unknown bytecode 0x00. No idea why it fails so far into the NCS."""
         ncs = NCSBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(ncs)
 

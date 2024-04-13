@@ -31,7 +31,7 @@ class Chitin:
         game: Game | None = None,
     ):
         self._key_path: CaseAwarePath = CaseAwarePath.pathify(key_path)
-        base_path = base_path if base_path is not None else self._key_path.parent
+        base_path = self._key_path.parent if base_path is None else base_path
         self._base_path: CaseAwarePath = CaseAwarePath.pathify(base_path)
 
         self._resources: list[FileResource]

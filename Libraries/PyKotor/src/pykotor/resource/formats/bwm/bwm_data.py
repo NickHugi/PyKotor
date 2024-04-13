@@ -218,6 +218,60 @@ class BWM:
         aabb.right = aabbs[-1]
         self._aabbs_rec(aabbs, faces_right, rlevel + 1)
 
+    def edges_new_logic(self) -> list[BWMEdge]:
+        """Potential new logic to fix infinite loops/bad parsing."""
+        walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
+        adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
+
+        visited: set[int] = set()
+        edges: list[BWMEdge] = []
+        perimeters: list[int] = []
+        for i, j in itertools.product(range(len(walkable)), range(3)):
+            if adjacencies[i][j] is not None:
+                continue
+            edge_index: int = i * 3 + j
+            if edge_index in visited:
+                continue
+            next_face: int = i
+            next_edge: int = j
+            perimeter_started = False
+            while next_face != -1:
+                edge_index = 3 * next_face + next_edge  # Re-calculate edge_index to ensure accuracy
+                if edge_index in visited:
+                    # If revisiting an edge, we finalize the last edge and stop
+                    if perimeter_started:
+                        edges[-1].final = True
+                        perimeters.append(len(edges) - sum(perimeters))  # Correct the perimeter count
+                    break
+
+                visited.add(edge_index)
+                perimeter_started = True
+                adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
+                if adj_edge is not None:
+                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge
+                    next_face = adj_edge_index // 3
+                    next_edge = (adj_edge_index % 3 + 1) % 3
+                else:
+                    face_id: int = edge_index // 3
+                    edge_id: int = edge_index % 3
+                    transition: int | None = None
+                    if edge_id == 0 and self.faces[face_id].trans1 is not None:
+                        transition = self.faces[face_id].trans1
+                    elif edge_id == 1 and self.faces[face_id].trans2 is not None:
+                        transition = self.faces[face_id].trans2
+                    elif edge_id == 2 and self.faces[face_id].trans3 is not None:
+                        transition = self.faces[face_id].trans3
+                    new_edge = BWMEdge(self.faces[next_face], edge_index, -1 if transition is None else transition)
+                    edges.append(new_edge)
+                    next_face = -1  # Terminate if no adjacency
+
+        # Check if the last edge loop was completed without finalization
+        if edges and not edges[-1].final and perimeter_started:
+            edges[-1].final = True
+            perimeters.append(len(edges) - sum(perimeters))
+
+        return edges
+
     def edges(
         self,
     ) -> list[BWMEdge]:
@@ -245,42 +299,40 @@ class BWM:
         edges: list[BWMEdge] = []
         perimeters: list[int] = []
         for i, j in itertools.product(range(len(walkable)), range(3)):
-            if adjacencies[i][j] is not None:
-                continue
             edge_index: int = i * 3 + j
-            if edge_index in visited:
-                continue
+            if adjacencies[i][j] is not None or edge_index in visited:
+                continue  # Skip if adjacency exists or edge has been visited
             next_face: int = i
             next_edge: int = j
+            perimeter_length: int = 0
             while next_face != -1:
                 adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
-                adj_edge_index: int = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
-                if adj_edge is None:
-                    edge_index = 3 * next_face + next_edge
-                    if edge_index not in visited:
-                        face_id: int = edge_index // 3
-                        edge_id: int = edge_index % 3
-                        transition: int | None = -1
-                        if edge_id == 0 and self.faces[face_id].trans1 is not None:
-                            transition = self.faces[face_id].trans1
-                        if edge_id == 1 and self.faces[face_id].trans2 is not None:
-                            transition = self.faces[face_id].trans2
-                        if edge_id == 2 and self.faces[face_id].trans3 is not None:
-                            transition = self.faces[face_id].trans3
-
-                        edges.append(BWMEdge(self.faces[next_face], next_edge, transition or -1))
-
-                        visited.add(edge_index)
-                        next_edge = (next_edge + 1) % 3
-                    else:
-                        next_face = -1
-                        edges[-1].final = True
-                        perimeters.append(len(edges))
-                else:
+                if adj_edge is not None:
+                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge
                     next_face = adj_edge_index // 3
                     next_edge = ((adj_edge_index % 3) + 1) % 3
+                    continue
+                edge_index = next_face * 3 + next_edge
+                if edge_index in visited:
+                    next_face = -1
+                    edges[-1].final = True
+                    perimeters.append(perimeter_length)
+                    continue
+                face_id, edge_id = divmod(edge_index, 3)
+                transition: int | None = None
+                if edge_id == 0 and self.faces[face_id].trans1 is not None:
+                    transition = self.faces[face_id].trans1
+                if edge_id == 1 and self.faces[face_id].trans2 is not None:
+                    transition = self.faces[face_id].trans2
+                if edge_id == 2 and self.faces[face_id].trans3 is not None:
+                    transition = self.faces[face_id].trans3
+                edges.append(BWMEdge(self.faces[next_face], edge_index, -1 if transition is None else transition))
+                perimeter_length += 1
+                visited.add(edge_index)
+                next_edge = (edge_index + 1) % 3
 
         return edges
+
 
     def adjacencies(
         self,

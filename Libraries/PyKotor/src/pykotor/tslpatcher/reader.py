@@ -659,7 +659,6 @@ class ConfigReader:
         for identifier, file in compilelist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
-            modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
             modifications.destination = default_destination
             modifications.sourcefolder = default_source_folder
 
@@ -668,6 +667,7 @@ class ConfigReader:
                 file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
+            modifications.nwnnsscomp_path = self.mod_path / modifications.sourcefolder / "nwnnsscomp.exe"
             self.config.patches_nss.append(modifications)
 
     def load_hack_list(self):

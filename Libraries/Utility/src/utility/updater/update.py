@@ -11,6 +11,7 @@ import threading
 import uuid
 import zipfile
 
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable
 
 from utility.logger_util import get_root_logger
@@ -135,10 +136,15 @@ class LibUpdate:
 
         lookup_os_name = platform.system()
         str_arch = proc_arch.get_machine_repr()
+        qt_name = ""
+        with suppress(Exception):
+            import qtpy
+            qt_name = qtpy.API_NAME
         if lookup_os_name == "Windows":
             return [
                 f"{self.filestem}_Win_{str_arch}.zip",
                 f"{self.filestem}_Windows_{str_arch}.zip"
+                f"{self.filestem}_Windows_{qt_name}_{str_arch}.zip"
             ]
         if lookup_os_name == "Linux":
             return [
@@ -146,6 +152,10 @@ class LibUpdate:
                 f"{self.filestem}_Linux_{str_arch}.tar.gz",
                 f"{self.filestem}_Linux_{str_arch}.tar.bz2",
                 f"{self.filestem}_Linux_{str_arch}.tar.xz",
+                f"{self.filestem}_Linux_{qt_name}_{str_arch}.zip",
+                f"{self.filestem}_Linux_{qt_name}_{str_arch}.tar.gz",
+                f"{self.filestem}_Linux_{qt_name}_{str_arch}.tar.bz2",
+                f"{self.filestem}_Linux_{qt_name}_{str_arch}.tar.xz"
             ]
         if lookup_os_name == "Darwin":
             return [
@@ -156,7 +166,11 @@ class LibUpdate:
                 f"{self.filestem}_Mac_{str_arch}.tar.xz",
                 f"{self.filestem}_macOS_{str_arch}.tar.xz",
                 f"{self.filestem}_Mac_{str_arch}.zip",
-                f"{self.filestem}_macOS_{str_arch}.zip"
+                f"{self.filestem}_macOS_{str_arch}.zip",
+                f"{self.filestem}_macOS_{qt_name}_{str_arch}.zip",
+                f"{self.filestem}_macOS_{qt_name}_{str_arch}.tar.gz",
+                f"{self.filestem}_macOS_{qt_name}_{str_arch}.tar.bz2",
+                f"{self.filestem}_macOS_{qt_name}_{str_arch}.tar.xz"
             ]
 
         raise ValueError(f"Unexpected and unsupported OS: {lookup_os_name}")

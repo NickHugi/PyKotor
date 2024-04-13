@@ -65,7 +65,7 @@ class TLKBinaryReader(ResourceReader):
             msg = "Invalid file version."
             raise ValueError(msg)
 
-        self._tlk.language = self._language if self._language is not None else Language(language_id)
+        self._tlk.language = Language(language_id) if self._language is None else self._language
         self._tlk.resize(string_count)
 
         self._texts_offset = entries_offset

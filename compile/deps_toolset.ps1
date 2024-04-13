@@ -55,12 +55,13 @@ if (-not $qtApi) {
 
 # Define the Qt version and modules to install based on $qtApi
 $qtVersion = switch ($qtApi) {
-    "pyqt5" { "5.15.2" } # Last LTS version of Qt5
-    "pyside2" { "5.15.2" } # Last LTS version of Qt5
-    "pyqt6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
-    "pyside6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
+    "PyQt5" { "5.15.2" } # Last LTS version of Qt5
+    "PySide2" { "5.15.2" } # Last LTS version of Qt5
+    "PyQt6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
+    "PySide6" { "6.2.2" }  # A stable Qt6 version, adjust as needed
     default { "5.15.2" }
 }
+Write-Host "Using $qtApi Version $qtVersion"
 
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
@@ -76,10 +77,10 @@ if ((Get-OS) -eq "Mac") {
     $qtOs = "mac"
     $qtArch = "clang_64" # i'm not even going to bother to test wasm_32.
     switch ($qtApi) {
-        "pyqt5"   { & bash -c "brew install qt@5 --overwrite --force" }
-        "pyqt6"   { & bash -c "brew install qt@6 --overwrite --force" }
-        "pyside2" { & bash -c "brew install qt@5 --overwrite --force" }  # PySide2 typically uses Qt5
-        "pyside6" { & bash -c "brew install qt@6 --overwrite --force" }
+        "PyQt5"   { & bash -c "brew install qt@5 --overwrite --force" }
+        "PyQt6"   { & bash -c "brew install qt@6 --overwrite --force" }
+        "PySide2" { & bash -c "brew install qt@5 --overwrite --force" }  # PySide2 typically uses Qt5
+        "PySide6" { & bash -c "brew install qt@6 --overwrite --force" }
         default   { & bash -c "brew install qt@5 --overwrite --force" }
     }
     . $pythonExePath -m pip install $qtApi qtpy -U --prefer-binary
@@ -209,16 +210,16 @@ if ($useAqtInstall -eq $true) {  # Windows seems to always have qt5/6?
 Write-Host "Installing pip packages to run the holocron toolset..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 switch ($qtApi) {
-    "pyqt5" {
+    "PyQt5" {
        # . $pythonExePath -m pip install -U PyQt5 PyQt5-Qt5 PyQt5-sip --prefer-binary --progress-bar on
     }
-    "pyqt6" {
+    "PyQt6" {
         . $pythonExePath -m pip install -U PyQt6 --prefer-binary --progress-bar on
     }
-    "pyside2" {
+    "PySide2" {
         . $pythonExePath -m pip install -U PySide2 --prefer-binary --progress-bar on
     }
-    "pyside6" {
+    "PySide6" {
         . $pythonExePath -m pip install -U PySide6 --prefer-binary --progress-bar on
     }
     default {

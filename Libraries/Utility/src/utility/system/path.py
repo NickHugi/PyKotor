@@ -365,7 +365,12 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         self: PurePath = self  # type: ignore[] # noqa: PLW0127
         return self.with_name(stem + self.suffix)  # type: ignore[return-value]
 
-    def endswith(self, text: str | tuple[str, ...], *, case_sensitive: bool = False) -> bool:  # type: ignore[override]
+    def endswith(
+        self,
+        text: str | tuple[str, ...],
+        *,
+        case_sensitive: bool = False,
+    ) -> bool:  # type: ignore[override]
         """Checks if string ends with the specified str or tuple of strings.
 
         Args:
@@ -494,6 +499,11 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         if execute_permission:
             permission_value += 0o1  # Add 1 for execute permission (001 in binary)
         return permission_value
+
+    def safe_relative_to(self, *other: PathElem) -> Self:
+        with suppress(ValueError):
+            return super().relative_to(*other)
+        return self.__class__(os.path.relpath(self, self.__class__(*other)))
 
     def has_access(
         self,
@@ -872,8 +882,8 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         ) -> int:
             """Similar to get_highest_permission but will not take runtime elevation (e.g. sudo) into account."""
             # Retrieve the current user's UID and GID
-            current_uid = uid if uid is not None else os.getuid()
-            current_gid = gid if gid is not None else os.getgid()
+            current_uid = os.getuid() if uid is None else uid
+            current_gid = os.getuid() if gid is None else gid
 
 
 class PosixPath(Path):  # type: ignore[misc]

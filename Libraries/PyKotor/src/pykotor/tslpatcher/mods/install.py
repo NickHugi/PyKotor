@@ -120,6 +120,7 @@ if ($null -eq $mostRecentBackupFolder -or -not $mostRecentBackupFolder -or -not 
     $mostRecentBackupFolder = "{backup_dir}"
     if (-not (Test-Path -LiteralPath $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
         Write-Host "No backups found in '$($backupParentFolder.FullName)'"
+        Pause
         exit
     }}
     Write-Host "Using hardcoded backup dir: '$mostRecentBackupFolder'"
@@ -230,6 +231,7 @@ if [[ ! -d "$mostRecentBackupFolder" ]]; then
     mostRecentBackupFolder="{backup_dir}"
     if [[ ! -d "$mostRecentBackupFolder" ]]; then
         echo "No backups found in '$backupParentFolder'"
+        read -rp "Press enter to continue..."
         exit 1
     fi
     echo "Using hardcoded backup dir: '$mostRecentBackupFolder'"

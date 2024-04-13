@@ -10,8 +10,8 @@ import tempfile
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from qtpy.QtCore import QThread
+from qtpy.QtWidgets import QApplication, QMessageBox
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -76,10 +76,31 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
+
+def set_qt_api():
+    available_apis = ["pyqt5", "pyqt6", "pyside2", "pyside6"]
+    for api in available_apis:
+        try:
+            if api == "pyqt5":
+                __import__("PyQt5.QtCore")
+            elif api == "pyqt6":
+                __import__("PyQt6.QtCore")
+            elif api == "pyside2":
+                __import__("PySide2.QtCore")
+            elif api == "pyside6":
+                __import__("PySide6.QtCore")
+            os.environ["QT_API"] = api
+            print(f"QT_API set to '{api}'.")
+            break
+        except (ImportError, ModuleNotFoundError):  # noqa: S112
+            continue
+
+
 def is_running_from_temp():
     app_path = Path(sys.executable)
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
+
 
 if __name__ == "__main__":
     if os.name == "nt":
@@ -95,8 +116,30 @@ if __name__ == "__main__":
         from utility.logger_util import get_root_logger
         get_root_logger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
+        set_qt_api()
     else:
         fix_sys_and_cwd_path()
+        os.environ["QT_API"] = os.environ.get("QT_API", "")  # supports pyqt5, pyqt6, pyside2, pyside6
+        if not os.environ["QT_API"]:
+            set_qt_api()
+
+    try:
+        import qtpy
+        print(f"Using Qt bindings: {qtpy.API_NAME}")
+    except ImportError as e:
+        print(e)
+        sys.exit("QtPy is not available. Ensure QtPy is installed and accessible.")
+
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
+    os.environ["QT_DEBUG_PLUGINS"] = "1"
+
+    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
+    # os.environ["QT_SCALE_FACTOR"] = "1"
+
+    from qtpy.QtCore import QThread
+    from qtpy.QtWidgets import QApplication
 
     from utility.system.path import Path
 

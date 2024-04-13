@@ -3,10 +3,10 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
 
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -31,7 +31,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
@@ -45,9 +45,9 @@ class Editor(QMainWindow):
     Provides methods for saving and loading files that are stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
 
-    newFile = QtCore.pyqtSignal()
-    savedFile = QtCore.pyqtSignal(object, object, object, object)
-    loadedFile = QtCore.pyqtSignal(object, object, object, object)
+    newFile = QtCore.Signal()
+    savedFile = QtCore.Signal(object, object, object, object)
+    loadedFile = QtCore.Signal(object, object, object, object)
 
     def __init__(
         self,

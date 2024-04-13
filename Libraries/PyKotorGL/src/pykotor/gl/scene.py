@@ -112,7 +112,12 @@ SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocat
 class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
-    def __init__(self, *, installation: Installation | None = None, module: Module | None = None):
+    def __init__(
+        self,
+        *,
+        installation: Installation | None = None,
+        module: Module | None = None,
+    ):
         """Initializes the renderer.
 
         Args:
@@ -128,7 +133,7 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        module_id_part = "" if module is None else f" from module '{module._id}'"
         get_root_logger().info("Start initialize Scene%s", module_id_part)
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
@@ -179,7 +184,7 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
-        module_id_part = f" from module '{module._id}'" if module is not None else ""
+        module_id_part = "" if module is None else f" from module '{module._id}'"
         get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
@@ -189,7 +194,11 @@ class Scene:
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-    def getCreatureRenderObject(self, instance: GITCreature, utc: UTC | None = None) -> RenderObject:
+    def getCreatureRenderObject(
+        self,
+        instance: GITCreature,
+        utc: UTC | None = None,
+    ) -> RenderObject:
         """Generates a render object for a creature instance.
 
         Args:
@@ -491,7 +500,7 @@ class Scene:
             - Render non-selected boundaries
             - Render cursor if shown.
         """
-        #module_id_part = f" with module '{self.module._id}'" if self.module is not None else ""
+        #module_id_part = "" if self.module is None else f" from module '{self.module._id}'"
         #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
 
@@ -669,7 +678,7 @@ class Scene:
             if self.module is not None:
                 print(f"Loading texture '{name}' from {self.module._root}")
                 module_tex = self.module.texture(name)
-                tpc = module_tex.resource() if module_tex is not None else None
+                tpc = None if module_tex is None else module_tex.resource()
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
@@ -768,8 +777,8 @@ class RenderObject:
         self.model: str = model
         self.children: list[RenderObject] = []
         self._transform: mat4 = mat4()
-        self._position: vec3 = position if position is not None else vec3()
-        self._rotation: vec3 = rotation if rotation is not None else vec3()
+        self._position: vec3 = vec3() if position is None else position
+        self._rotation: vec3 = vec3() if rotation is None else rotation
         self._cube: Cube | None = None
         self._boundary: Boundary | Empty | None = None
         self.genBoundary: Callable[[], Boundary] | None = gen_boundary

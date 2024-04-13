@@ -662,7 +662,7 @@ class GITSound(GITInstance):
 
     def yaw(
         self,
-    ) -> float:
+    ) -> None:
         return None
 
 
@@ -1102,7 +1102,7 @@ def dismantle_git(
         door_struct.set_single("Y", door.position.y)
         door_struct.set_single("Z", door.position.z)
         if game.is_k2():
-            tweak_color = door.tweak_color.bgr_integer() if door.tweak_color is not None else 0
+            tweak_color = 0 if door.tweak_color is None else door.tweak_color.bgr_integer()
             door_struct.set_uint32("TweakColor", tweak_color)
             door_struct.set_uint8("UseTweakColor", 0 if door.tweak_color is None else 1)
 
@@ -1138,7 +1138,7 @@ def dismantle_git(
         placeable_struct.set_single("Y", placeable.position.y)
         placeable_struct.set_single("Z", placeable.position.z)
         if game.is_k2():
-            tweak_color = placeable.tweak_color.bgr_integer() if placeable.tweak_color is not None else 0
+            tweak_color = 0 if placeable.tweak_color is None else placeable.tweak_color.bgr_integer()
             placeable_struct.set_uint32("TweakColor", tweak_color)
             placeable_struct.set_uint8(
                 "UseTweakColor",

@@ -6,7 +6,7 @@ import sys
 
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -354,7 +354,11 @@ class ModInstaller:
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(self, should_cancel: Event | None = None):  # noqa: C901
+    def install(
+        self,
+        should_cancel: Event | None = None,
+        progress_update_func: Callable | None = None,
+    ):  # noqa: C901
         """Install patches from the config file.
 
         Processing Logic:
@@ -425,6 +429,8 @@ class ModInstaller:
                 detailed_error = format_exception_with_variables(e)
                 with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
                     f.write(f"\n{detailed_error}")
+            if progress_update_func is not None:
+                progress_update_func()
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
             self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")  # noqa: E501

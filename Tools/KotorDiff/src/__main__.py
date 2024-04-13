@@ -295,7 +295,7 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
             res2: FileResource = capsule2_resources[resref]
             ext: str = res1.restype().extension.lower()
             result: bool | None = diff_data(res1.data(), res2.data(), c_file1_rel, c_file2_rel, ext, resref) and is_same_result
-            is_same_result = result and is_same_result if result is not None else None
+            is_same_result = None if result is None else result and is_same_result
         return is_same_result
     return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, c_file1_rel.suffix.lower()[1:])
 
@@ -316,7 +316,7 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     is_same_result: bool | None = True
     for rel_path in all_files:
         result: bool | None = diff_files(c_dir1 / rel_path, c_dir2 / rel_path)
-        is_same_result = result and is_same_result if result is not None else None
+        is_same_result = None if result is None else result and is_same_result
 
     return is_same_result
 
@@ -349,10 +349,14 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
     is_same_result = diff_directories(lips_path1, lips_path2) and is_same_result
 
     streamwaves_path1: CaseAwarePath = (
-        rinstall_path1.joinpath("streamwaves") if rinstall_path1.joinpath("streamwaves").safe_isdir() else rinstall_path1.joinpath("streamvoice")
+        rinstall_path1.joinpath("streamwaves")
+        if rinstall_path1.joinpath("streamwaves").safe_isdir()
+        else rinstall_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
-        rinstall_path2.joinpath("streamwaves") if rinstall_path2.joinpath("streamwaves").safe_isdir() else rinstall_path2.joinpath("streamvoice")
+        rinstall_path2.joinpath("streamwaves")
+        if rinstall_path2.joinpath("streamwaves").safe_isdir()
+        else rinstall_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
     return is_same_result  # noqa: RET504
@@ -399,7 +403,9 @@ def main():
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
     while True:
         PARSER_ARGS.path1 = Path(
-            PARSER_ARGS.path1 or (unknown[0] if len(unknown) > 0 else None) or input("Path to the first K1/TSL install, file, or directory to diff: "),
+            PARSER_ARGS.path1
+            or (unknown[0] if len(unknown) > 0 else None)
+            or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path1.safe_exists():
             break
@@ -408,7 +414,9 @@ def main():
         PARSER_ARGS.path1 = None
     while True:
         PARSER_ARGS.path2 = Path(
-            PARSER_ARGS.path2 or (unknown[1] if len(unknown) > 1 else None) or input("Path to the second K1/TSL install, file, or directory to diff: "),
+            PARSER_ARGS.path2
+            or (unknown[1] if len(unknown) > 1 else None)
+            or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path2.safe_exists():
             break

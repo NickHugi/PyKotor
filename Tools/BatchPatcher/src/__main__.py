@@ -563,7 +563,7 @@ def patch_nested_gff(
                     gff_struct.set_uint32("Delay", 0xFFFFFFFF)
                     made_change = True
         sound: ResRef | None = gff_struct.acquire("Sound", None, ResRef)
-        sound_str = str(sound).strip().lower() if sound is not None else ""
+        sound_str = "" if sound is None else str(sound).strip().lower()
         if sound and sound_str.strip() and sound_str in ALIEN_SOUNDS:
             log_output(sound_str, "found in:", str(current_path))
             alien_vo_count += 1

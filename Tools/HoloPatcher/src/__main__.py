@@ -242,9 +242,7 @@ class App:
         # PCGamingWiki submenu
         pcgamingwiki_menu = tk.Menu(help_menu, tearoff=0)
         pcgamingwiki_menu.add_command(label="KOTOR 1", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"))
-        pcgamingwiki_menu.add_command(
-            label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords")
-        )
+        pcgamingwiki_menu.add_command(label="KOTOR 2: TSL", command=lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"))
         help_menu.add_cascade(label="PCGamingWiki", menu=pcgamingwiki_menu)
 
         # About menu
@@ -282,7 +280,13 @@ class App:
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
         self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
         self.expand_namespace_description_button: ttk.Button = ttk.Button(
-            top_frame, width=1, text="?", command=lambda *args: messagebox.showinfo(self.namespaces_combobox.get(), self.get_namespace_description(*args))
+            top_frame,
+            width=1,
+            text="?",
+            command=lambda *args: messagebox.showinfo(
+                self.namespaces_combobox.get(),
+                self.get_namespace_description(*args),
+            ),
         )
         self.expand_namespace_description_button.grid(row=0, column=2, padx=2, pady=2, stick="e")
 
@@ -321,6 +325,39 @@ class App:
         self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
         self.install_button.pack(side="right", padx=5, pady=5)
         self.simple_thread_event: Event = Event()
+        self.progress_value = tk.IntVar(value=0)
+        # Bottom area for buttons and progress bar
+        bottom_frame = tk.Frame(self.root)
+        bottom_frame.grid(row=2, column=0, sticky="ew")
+        bottom_frame.grid_columnconfigure(0, weight=1)  # This will allow the progress bar to expand
+
+        # Reconfigure the frame to use grid layout for better control
+        self.exit_button = ttk.Button(bottom_frame, text="Exit", command=self.handle_exit_button)
+        self.exit_button.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+        self.install_button = ttk.Button(bottom_frame, text="Install", command=self.begin_install)
+        self.install_button.grid(row=0, column=1, padx=5, pady=5, sticky="e")
+
+        # Adjust the progress bar to span across the bottom frame
+        self.progress_bar = ttk.Progressbar(bottom_frame, maximum=100, variable=self.progress_value)
+        self.progress_bar.grid(row=1, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
+
+    def update_progress_bar_directly(
+        self,
+        value: int = 1,
+    ):
+        """Directly update the progress bar; this is the target callable for installer.install."""
+        # Safely request an update from the Tkinter main thread
+        self.root.after(0, self.update_progress_value, value)
+
+    def update_progress_value(
+        self,
+        value: int = 1,
+    ):
+        """Actual update to the progress bar, guaranteed to run in the main thread."""
+        new_value = self.progress_value.get() + value
+        self.progress_value.set(new_value)
+        self.progress_bar["value"] = new_value
 
     def set_text_font(
         self,
@@ -527,19 +564,19 @@ class App:
 
         class MessageboxOverride:
             @staticmethod
-            def showinfo(title, message):
+            def showinfo(title, message, **options):
                 print(f"[Note] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def showwarning(title, message):
+            def showwarning(title, message, **options):
                 print(f"[Warning] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def showerror(title, message):
+            def showerror(title, message, **options):
                 print(f"[Error] - {title}: {message}")  # noqa: T201
 
             @staticmethod
-            def askyesno(title, message):
+            def askyesno(title, message, **options):
                 """Console-based replacement for messagebox.askyesno and similar."""
                 print(f"{title}\n{message}")  # noqa: T201
                 while True:
@@ -1150,13 +1187,13 @@ class App:
         try:
             if not self.preinstall_validate_chosen():
                 return
-            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event,))
+            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
             self.task_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self, should_cancel_thread: Event):
+    def begin_install_thread(self, should_cancel_thread: Event, update_progress_func: Callable | None = None):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -1180,9 +1217,13 @@ class App:
         self.set_state(state=True)
         self.install_running = True
         self.clear_main_text()
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.insert(tk.END, f"Starting install...{os.linesep}")
+        self.main_text.see(tk.END)
+        self.main_text.config(state=tk.DISABLED)
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
-            self._execute_mod_install(installer, should_cancel_thread)
+            self._execute_mod_install(installer, should_cancel_thread, update_progress_func)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
@@ -1227,6 +1268,9 @@ class App:
             - Handles enabling/disabling buttons during task process.
         """
         if state:
+            self.progress_bar["value"] = 0
+            self.progress_bar["maximum"] = 100
+            self.progress_value.set(0)
             self.task_running = True
             self.install_button.config(state=tk.DISABLED)
             self.gamepaths_browse_button.config(state=tk.DISABLED)
@@ -1247,6 +1291,7 @@ class App:
         self,
         installer: ModInstaller,
         should_cancel_thread: Event,
+        progress_update_func: Callable | None = None
     ):
         """Executes the mod installation.
 
@@ -1268,11 +1313,29 @@ class App:
         confirm_msg: str = installer.config().confirm_message.strip()
         if confirm_msg and not self.one_shot and confirm_msg != "N/A" and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
             return
+        if progress_update_func is not None:
+            self.progress_bar["maximum"] = len(
+            [
+                *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
+                *installer.get_tlk_patches(installer.config()),
+                *installer.config().patches_2da,
+                *installer.config().patches_gff,
+                *installer.config().patches_nss,
+                *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
+                *installer.config().patches_ssf,
+            ]
+        )
         # profiler = cProfile.Profile()
         # profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-        installer.install(should_cancel_thread)
+        installer.install(should_cancel_thread, progress_update_func)
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
+        if progress_update_func is not None:
+            self.progress_value.set(99)
+            self.progress_bar["value"] = 99
+            self.progress_bar["maximum"] = 100
+            self.update_progress_bar_directly()
+            self.root.update_idletasks()
         # profiler.disable()
         # profiler_output_file = Path("profiler_output.pstat").resolve()
         # profiler.dump_stats(str(profiler_output_file))
@@ -1361,8 +1424,6 @@ class App:
         start_rte_editor()
 
     def load_rte_content(self, rte_content: str | bytes | bytearray | None = None):
-        from utility.tkinter.rte_editor import tag_types
-
         if rte_content is None:
             file_path_str = filedialog.askopenfilename()
             if not file_path_str:
@@ -1374,19 +1435,20 @@ class App:
         document = json.loads(rte_content)
 
         # Clear existing content in the Text widget
-        self.main_text.delete(1.0, tk.END)
-
-        # Insert new content
+        self.main_text.delete("1.0", tk.END)
         self.main_text.insert("1.0", document["content"])
+        for tag in self.main_text.tag_names():
+            if tag not in ["sel"]:
+                self.main_text.tag_delete(tag)
 
-        # Apply styles
-        for tag_name, positions in document["tags"].items():
-            for start_pos, end_pos in positions:
-                self.main_text.tag_add(tag_name, start_pos, end_pos)
+        if "tag_configs" in document:
+            for tag, config in document["tag_configs"].items():
+                self.main_text.tag_configure(tag, **config)
 
-        # Configure tags based on tag_types
-        for tag, config in tag_types.items():
-            self.main_text.tag_configure(tag.lower(), **config)
+        # Add To the Document
+        for tag_name in document["tags"]:
+            for tag_range in document["tags"][tag_name]:
+                self.main_text.tag_add(tag_name, *tag_range)
         self.main_text.config(state=tk.DISABLED)
 
     def load_rtf_file(self, file_path: os.PathLike | str):
