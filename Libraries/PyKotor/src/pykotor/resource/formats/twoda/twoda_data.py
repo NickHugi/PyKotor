@@ -728,7 +728,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        self._set_value(header, value.value if value is not None else None)
+        self._set_value(header, None if value is None else value.value)
 
     def _set_value(self, header: str, value: Enum | float | str | None):
         if header not in self._data:

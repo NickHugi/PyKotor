@@ -722,7 +722,7 @@ class ItemBuilderDialog(QDialog):
 
     def utiLoaded(self, uti: UTI, result: ResourceResult):
         baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        name = self._installation.string(uti.name, result.resname) if uti is not None else result.resname
+        name = result.resname if uti is None else self._installation.string(uti.name, result.resname)
 
         # Split category by base item:
         # TODO(th3w1zard1): What is this for and why is it commented out?
@@ -730,7 +730,7 @@ class ItemBuilderDialog(QDialog):
         #  categoryLabel = baseitems.get_cell(uti.base_item, "label")
         #  category = self._tlk.get(categoryNameID).text if self._tlk.get(categoryNameID) is not None else categoryLabel
 
-        slots: int = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else 0
+        slots: int = 0 if uti is None else baseitems.get_row(uti.base_item).get_integer("equipableslots", 0)
         category: str = self.getCategory(uti)
 
         if result.filepath.suffix.lower() in {".bif", ".key"}:
@@ -761,8 +761,8 @@ class ItemBuilderDialog(QDialog):
             - Return default categories if no slots match.
         """
         baseitems: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        slots: int = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else -1
-        droid: bool = baseitems.get_row(uti.base_item).get_integer("droidorhuman", 0) == 2 if uti is not None else False
+        slots: int = -1 if uti is None else baseitems.get_row(uti.base_item).get_integer("equipableslots", 0)
+        droid: bool = False if uti is None else baseitems.get_row(uti.base_item).get_integer("droidorhuman", 0) == 2
 
         if slots & (EquipmentSlot.CLAW1.value | EquipmentSlot.CLAW2.value | EquipmentSlot.CLAW3.value):
             return "Creature Claw"

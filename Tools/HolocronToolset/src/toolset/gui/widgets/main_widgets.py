@@ -491,7 +491,7 @@ class TextureList(MainWindowList):
             self._scannedTextures.add(item_text.casefold())
 
             cache_tpc: TPC | None = textures.get(item_text)
-            tpc: TPC = cache_tpc if cache_tpc is not None else TPC()
+            tpc: TPC = TPC() if cache_tpc is None else cache_tpc
 
             task = TextureListTask(item.row(), tpc, item_text)
             self._taskQueue.put(task)

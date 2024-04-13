@@ -423,7 +423,7 @@ class UTIEditor(Editor):
         subproperties: TwoDA = installation.htGetCache2DA(subtypeResname)
         headerStrref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
-        return installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
+        return subproperties.get_cell(subprop, "label") if nameStrref is None else installation.talktable().string(nameStrref)
 
     @staticmethod
     def costName(

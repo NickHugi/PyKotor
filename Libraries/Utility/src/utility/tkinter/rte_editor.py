@@ -22,7 +22,7 @@ class RichTextEditor:
     def __init__(self, master: tk.Tk, initialdir: Path | None = None):
         self.root: tk.Tk = master
         self.root.title("Rich Text Editor")
-        self.initialdir = initialdir if initialdir is not None else Path.cwd()
+        self.initialdir = Path.cwd() if initialdir is None else initialdir
         self.root.geometry("800x600")
         self.default_content: dict[str, Any] = {"content": "", "tags": {}}
         self.valid_file_types: tuple[tuple[str, str], ...] = (

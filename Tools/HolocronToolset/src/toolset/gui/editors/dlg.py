@@ -1091,7 +1091,7 @@ class DLGEditor(Editor):
             self.ui.questEdit.setText(node.quest)
             self.ui.questEntrySpin.setValue(node.quest_entry or 0)
 
-            self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
+            self.ui.cameraIdSpin.setValue(-1 if node.camera_id is None else node.camera_id)
             self.ui.cameraAnimSpin.__class__ = GFFFieldSpinBox
             self.ui.cameraAnimSpin.min_value=1200
             self.ui.cameraAnimSpin.max_value=65534
@@ -1099,9 +1099,9 @@ class DLGEditor(Editor):
             self.ui.cameraAnimSpin.setMinimum(-1)
             self.ui.cameraAnimSpin.setMaximum(65534)
 
-            self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
-            self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
+            self.ui.cameraAnimSpin.setValue(-1 if node.camera_anim is None else node.camera_anim)
+            self.ui.cameraAngleSelect.setCurrentIndex(0 if node.camera_angle is None else node.camera_angle)
+            self.ui.cameraEffectSelect.setCurrentIndex(0 if node.camera_effect is None else node.camera_effect + 1)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)

@@ -575,7 +575,7 @@ class DCEffectAlterCameraPosition(DCEffect):
         x = super().determineFloat(self.x, controls, dx, dy)
         y = super().determineFloat(self.y, controls, dx, dy)
         z = super().determineFloat(self.z, controls, dx, dy)
-        sensitivity = controls.getValue(self.sensitivityVar) if self.sensitivityVar is not None else 1.0
+        sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.alterCameraPosition(x * sensitivity, y * sensitivity, z * sensitivity)
 
 
@@ -603,7 +603,7 @@ class DCEffectAlterCameraRotation(DCEffect):
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         pitch = super().determineFloat(self.pitch, controls, dx, dy)
         yaw = super().determineFloat(self.yaw, controls, dx, dy)
-        sensitivity = controls.getValue(self.sensitivityVar) if self.sensitivityVar is not None else 1.0
+        sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.alterCameraRotation(yaw * sensitivity, pitch * sensitivity)
 
 
@@ -627,7 +627,7 @@ class DCEffectAlterCameraZoom(DCEffect):
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         amount = super().determineFloat(self.amount, controls, dx, dy)
-        sensitivity = controls.getValue(self.sensitivityVar) if self.sensitivityVar is not None else 1.0
+        sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.alterCameraZoom(amount * sensitivity)
 
 
@@ -644,7 +644,7 @@ class DCEffectAlterObjectPosition(DCEffect):
         x = super().determineFloat(self.x, controls, dx, dy)
         y = super().determineFloat(self.y, controls, dx, dy)
         z = super().determineFloat(self.z, controls, dx, dy)
-        sensitivity = controls.getValue(self.sensitivityVar) if self.sensitivityVar is not None else 1.0
+        sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.translateSelectedObjects(self.snapToWalkmesh, -x * sensitivity, -y * sensitivity, z * sensitivity)
 
 
@@ -656,7 +656,7 @@ class DCEffectAlterObjectRotation(DCEffect):
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
         yaw = super().determineFloat(self.yaw, controls, dx, dy)
-        sensitivity = controls.getValue(self.sensitivityVar) if self.sensitivityVar is not None else 1.0
+        sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.rotateSelectedObjects(yaw * sensitivity, 0.0)
 
 

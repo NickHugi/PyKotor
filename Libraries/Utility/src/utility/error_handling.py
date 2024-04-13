@@ -259,8 +259,8 @@ def format_exception_with_variables(
     tb: types.TracebackType | None = None,
     message: str = "",
 ) -> str:
-    etype = etype if etype is not None else value.__class__
-    tb = tb if tb is not None else value.__traceback__
+    etype = type(value) if etype is None else etype
+    tb = value.__traceback__ if tb is None else tb
 
     # Check if the arguments are of the correct type
     if not issubclass(etype, BaseException):

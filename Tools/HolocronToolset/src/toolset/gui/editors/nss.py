@@ -270,7 +270,7 @@ class NSSEditor(Editor):
         with self._snapshotResTypeContext(self._compiledResourceSaved):
             try:
                 self._restype = ResourceType.NCS
-                filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
+                filepath: Path = Path.cwd() / "untitled_script.ncs" if self._filepath is None else self._filepath
                 if is_any_erf_type_file(filepath.name) or is_rim_file(filepath.name):
                     # Save the NCS resource into the given ERF/RIM.
                     # If this is not allowed save() will find a new path to save at.

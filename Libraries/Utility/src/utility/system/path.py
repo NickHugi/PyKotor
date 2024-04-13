@@ -877,8 +877,8 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         ) -> int:
             """Similar to get_highest_permission but will not take runtime elevation (e.g. sudo) into account."""
             # Retrieve the current user's UID and GID
-            current_uid = uid if uid is not None else os.getuid()
-            current_gid = gid if gid is not None else os.getgid()
+            current_uid = os.getuid() if uid is None else uid
+            current_gid = os.getuid() if gid is None else gid
 
 
 class PosixPath(Path):  # type: ignore[misc]

@@ -295,7 +295,7 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
             res2: FileResource = capsule2_resources[resref]
             ext: str = res1.restype().extension.lower()
             result: bool | None = diff_data(res1.data(), res2.data(), c_file1_rel, c_file2_rel, ext, resref) and is_same_result
-            is_same_result = result and is_same_result if result is not None else None
+            is_same_result = None if result is None else result and is_same_result
         return is_same_result
     return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, c_file1_rel.suffix.lower()[1:])
 
@@ -316,7 +316,7 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     is_same_result: bool | None = True
     for rel_path in all_files:
         result: bool | None = diff_files(c_dir1 / rel_path, c_dir2 / rel_path)
-        is_same_result = result and is_same_result if result is not None else None
+        is_same_result = None if result is None else result and is_same_result
 
     return is_same_result
 

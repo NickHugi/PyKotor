@@ -165,21 +165,21 @@ class RowValueHigh(RowValue):
             - If column is not None, return maximum value in that column
             - Else return overall maximum label value.
         """
-        return str(twoda.column_max(self.column)) if self.column is not None else str(twoda.label_max())
+        return str(twoda.label_max()) if self.column is None else str(twoda.column_max(self.column))
 
 
 class RowValueRowIndex(RowValue):
     def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return str(twoda.row_index(row)) if row is not None else ""
+        return "" if row is None else str(twoda.row_index(row))
 
 
 class RowValueRowLabel(RowValue):
     def __init__(self): ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return row.label() if row is not None else ""
+        return "" if row is None else row.label()
 
 
 class RowValueRowCell(RowValue):
@@ -190,7 +190,7 @@ class RowValueRowCell(RowValue):
         return f"{self.__class__.__name__}(column='{self.column}')"
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return row.get_string(self.column) if row is not None else ""
+        return "" if row is None else row.get_string(self.column)
 
 
 # endregion

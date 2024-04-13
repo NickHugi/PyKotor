@@ -1280,7 +1280,7 @@ class Installation:  # noqa: PLR0904
                 ),
                 None,
             )
-            return decode_txi(txi_resource.data()) if txi_resource is not None else ""
+            return "" if txi_resource is None else decode_txi(txi_resource.data())
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():

@@ -229,27 +229,27 @@ class BWMBinaryWriter(ResourceWriter):
             aabb_data += struct.pack("fff", aabb.bb_max.x, aabb.bb_max.y, aabb.bb_max.z)
             aabb_data += struct.pack(
                 "I",
-                faces.index(aabb.face) if aabb.face is not None else 0xFFFFFFFF,
+                0xFFFFFFFF if aabb.face is None else faces.index(aabb.face),
             )
             aabb_data += struct.pack("I", 4)
             aabb_data += struct.pack("I", aabb.sigplane.value)
             aabb_data += struct.pack(
                 "I",
-                aabbs.index(aabb.left) + 1 if aabb.left is not None else 0xFFFFFFFF,
+                0xFFFFFFFF if aabb.left is None else aabbs.index(aabb.left) + 1,
             )
             aabb_data += struct.pack(
                 "I",
-                aabbs.index(aabb.right) + 1 if aabb.right is not None else 0xFFFFFFFF,
+                0xFFFFFFFF if aabb.right is None else aabbs.index(aabb.right) + 1,
             )
 
         adjacency_offset = aabb_offset + len(aabb_data)
         adjacency_data = bytearray()
         for face in walkable:
-            adjancencies: tuple[BWMAdjacency, BWMAdjacency, BWMAdjacency] = self._wok.adjacencies(face)
+            adjancencies: tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None] = self._wok.adjacencies(face)
             indexes: list[int] = [
-                faces.index(adjacency.face) * 3 + adjacency.edge
-                if adjacency is not None
-                else -1 for adjacency in adjancencies
+                -1 if adjacency is None
+                else faces.index(adjacency.face) * 3 + adjacency.edge
+                for adjacency in adjancencies
             ]
             adjacency_data += struct.pack("iii", *indexes)
 

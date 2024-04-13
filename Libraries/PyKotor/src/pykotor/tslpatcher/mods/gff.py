@@ -524,7 +524,7 @@ class ModificationsGFF(PatcherModifications):
         modifiers: list[ModifyGFF] | None = None,
     ):
         super().__init__(filename, replace)
-        self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
+        self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
     def patch_resource(
         self,
