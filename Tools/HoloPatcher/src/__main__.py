@@ -1424,8 +1424,6 @@ class App:
         start_rte_editor()
 
     def load_rte_content(self, rte_content: str | bytes | bytearray | None = None):
-        from utility.tkinter.rte_editor import tag_types
-
         if rte_content is None:
             file_path_str = filedialog.askopenfilename()
             if not file_path_str:
