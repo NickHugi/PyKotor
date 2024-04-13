@@ -58,8 +58,7 @@ class RichTextEditor:
             "Paragraph Alignment": {
                 "Left": {"justify": "left"},
                 "Center": {"justify": "center"},
-                "Right": {"justify": "right"},
-                "Justify": {"justify": "full"}
+                "Right": {"justify": "right"}
             },
             "Spacing": {
                 "Single": {"spacing1": "0", "spacing3": "0"},
