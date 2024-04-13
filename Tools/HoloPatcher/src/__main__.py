@@ -791,7 +791,7 @@ class App:
                                 dir_path.rename(str_new_dir_path)
                                 made_change = True
                     Path(directory).rename(Path._fix_path_formatting(str(directory).lower()))
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
                 finally:
                     self.set_state(state=False)
@@ -801,7 +801,7 @@ class App:
 
             self.task_thread = Thread(target=task)
             self.task_thread.start()
-        except Exception as e2:
+        except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
@@ -839,7 +839,11 @@ class App:
             game_number: int | None = reader.config.game_number
             if game_number:
                 game = Game(game_number)
-                self.gamepaths["values"] = [str(path) for game_key in ([game] + ([Game.K1] if game == Game.K2 else [])) for path in find_kotor_paths_from_default()[game_key]]
+                self.gamepaths["values"] = [
+                    str(path)
+                    for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
+                    for path in find_kotor_paths_from_default()[game_key]
+                ]
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
@@ -847,9 +851,7 @@ class App:
             if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
                 messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
-            for tag in self.main_text.tag_names():
-                if tag not in ["sel"]:
-                    self.main_text.tag_delete(tag)
+
             if info_rte_path.safe_isfile():
                 data: bytes = BinaryReader.load_file(info_rte_path)
                 rtf_text: str = decode_bytes_with_fallbacks(data)
@@ -1292,6 +1294,9 @@ class App:
     def clear_main_text(self):
         self.main_text.config(state=tk.NORMAL)
         self.main_text.delete(1.0, tk.END)
+        for tag in self.main_text.tag_names():
+            if tag not in ["sel"]:
+                self.main_text.tag_delete(tag)
         self.main_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(
@@ -1434,6 +1439,8 @@ class App:
         self,
         rte_content: str | bytes | bytearray | None = None,
     ):
+        self.clear_main_text()
+        self.main_text.config(state=tk.NORMAL)
         if rte_content is None:
             file_path_str = filedialog.askopenfilename()
             if not file_path_str:
@@ -1444,8 +1451,6 @@ class App:
 
         document = json.loads(rte_content)
 
-        # Clear existing content in the Text widget
-        self.main_text.delete("1.0", tk.END)
         self.main_text.insert("1.0", document["content"])
         for tag in self.main_text.tag_names():
             if tag not in ["sel"]:
@@ -1454,8 +1459,6 @@ class App:
         if "tag_configs" in document:
             for tag, config in document["tag_configs"].items():
                 self.main_text.tag_configure(tag, **config)
-
-        # Add To the Document
         for tag_name in document["tags"]:
             for tag_range in document["tags"][tag_name]:
                 self.main_text.tag_add(tag_name, *tag_range)
@@ -1479,6 +1482,7 @@ class App:
     ):
         """Strips the info.rtf of all RTF related text and displays it in the UI."""
         stripped_content: str = striprtf(rtf_text)
+        self.clear_main_text()
         self.main_text.config(state=tk.NORMAL)
         self.main_text.delete(1.0, tk.END)
         self.main_text.insert(tk.END, stripped_content)
