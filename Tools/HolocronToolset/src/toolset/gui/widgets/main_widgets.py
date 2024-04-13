@@ -286,20 +286,32 @@ class ResourceModel(QStandardItemModel):
             self.appendRow([categoryItem, unusedItem])
         return self._categoryItems[chosen_category]
 
-    def addResource(self, resource: FileResource, customCategory: str | None = None):
+    def addResource(
+        self,
+        resource: FileResource,
+        customCategory: str | None = None,
+    ):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
         item2 = QStandardItem(resource.restype().extension.upper())
         self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 
-    def resourceFromIndexes(self, indexes: list[QModelIndex], *, proxy: bool = True) -> list[FileResource]:
+    def resourceFromIndexes(
+        self,
+        indexes: list[QModelIndex],
+        *,
+        proxy: bool = True,
+    ) -> list[FileResource]:
         items = []
         for index in indexes:
             sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
             items.append(self.itemFromIndex(sourceIndex))
         return self.resourceFromItems(items)
 
-    def resourceFromItems(self, items: list[QStandardItem]) -> list[FileResource]:
+    def resourceFromItems(
+        self,
+        items: list[QStandardItem],
+    ) -> list[FileResource]:
         return [item.resource for item in items if hasattr(item, "resource")]  # type: ignore[reportAttributeAccessIssue]
 
     def allResourcesItems(self) -> list[QStandardItem]:
@@ -382,7 +394,10 @@ class TextureList(MainWindowList):
     def setInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-    def setResources(self, resources: list[FileResource]):
+    def setResources(
+        self,
+        resources: list[FileResource],
+    ):
         blankImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
         blankIcon = QIcon(QPixmap.fromImage(blankImage))
 
@@ -397,7 +412,10 @@ class TextureList(MainWindowList):
         if self._installation is not None:
             self.onTextureListScrolled()
 
-    def setSections(self, sections: list[QStandardItem]):
+    def setSections(
+        self,
+        sections: list[QStandardItem],
+    ):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)

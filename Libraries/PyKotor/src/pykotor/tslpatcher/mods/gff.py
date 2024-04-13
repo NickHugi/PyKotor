@@ -169,7 +169,7 @@ class FieldValueTLKMemory(FieldValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
 
-    def value(self, memory: PatcherMemory, field_type: GFFFieldType):  # noqa: ANN201
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType,):  # noqa: ANN201
         memory_val: int | None = memory.memory_str.get(self.token_id, None)
         if memory_val is None:
             msg = f"StrRef{self.token_id} was not defined before use!"

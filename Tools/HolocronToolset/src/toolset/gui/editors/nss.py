@@ -46,7 +46,11 @@ class NSSEditor(Editor):
     TAB_SIZE = 4
     TAB_AS_SPACE = True
 
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None,
+    ):
         """Initialize the script editor window.
 
         Args:
@@ -182,7 +186,13 @@ class NSSEditor(Editor):
             saved_connection = self.savedFile.connect(saved_file_callback)
         else:
             saved_connection = None
-        context = NSSEditor.SavedContext(self._filepath, self._resname, self._restype, self._revert, saved_connection)
+        context = NSSEditor.SavedContext(
+            self._filepath,
+            self._resname,
+            self._restype,
+            self._revert,
+            saved_connection,
+        )
         try:
             yield context
         finally:
@@ -196,7 +206,13 @@ class NSSEditor(Editor):
                 self._revert = context.revert
                 self.refreshWindowTitle()
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads a resource into the editor.
 
         Args:
@@ -287,7 +303,13 @@ class NSSEditor(Editor):
             except OSError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
 
-    def _compiledResourceSaved(self, filepath: str, resname: str, restype: ResourceType, data: bytes):
+    def _compiledResourceSaved(
+        self,
+        filepath: str,
+        resname: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Shows a messagebox after compileCurrentScript successfully saves an NCS resource."""
         savePath = Path(filepath)
         if is_any_erf_type_file(savePath.name) or is_rim_file(savePath.name):
@@ -346,7 +368,11 @@ class NSSEditor(Editor):
             insert = f"{function.name}()"
             self.insertTextAtCursor(insert, insert.index("(") + 1)
 
-    def insertTextAtCursor(self, insert: str, offset: int | None = None):
+    def insertTextAtCursor(
+        self,
+        insert: str,
+        offset: int | None = None,
+    ):
         """Inserts the given text at the cursors location and then shifts the cursor position by the offset specified. If
         no offset is specified then the cursor is moved to the end of the inserted text.
 
@@ -546,7 +572,10 @@ class CodeEditor(QPlainTextEdit):
         cr: QRect = self.contentsRect()
         self._lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
 
-    def _updateLineNumberAreaWidth(self, newBlockCount: int):
+    def _updateLineNumberAreaWidth(
+        self,
+        newBlockCount: int,
+    ):
         self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
 
     def _highlightCurrentLine(self):
@@ -577,7 +606,11 @@ class CodeEditor(QPlainTextEdit):
 
         self.setExtraSelections(extraSelections)
 
-    def _updateLineNumberArea(self, rect: QRect, dy: int):
+    def _updateLineNumberArea(
+        self,
+        rect: QRect,
+        dy: int,
+    ):
         if dy:
             self._lineNumberArea.scroll(0, dy)
         else:
@@ -615,7 +648,11 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
     BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
-    def __init__(self, parent: QTextDocument, installation: HTInstallation):
+    def __init__(
+        self,
+        parent: QTextDocument,
+        installation: HTInstallation,
+    ):
         """Initializes the syntax highlighter.
 
         Args:

@@ -12,7 +12,6 @@ from functools import partial
 from tkinter import colorchooser, filedialog, font
 from typing import Any
 
-from utility.error_handling import format_exception_with_variables
 from utility.system.path import Path
 
 if os.name == "nt":

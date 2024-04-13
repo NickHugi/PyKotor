@@ -34,20 +34,6 @@ def getMouseCode(string: str):
 
 
 def getKeyCode(string: str):
-    """Returns the Qt key code for a given string key name.
-
-    Args:
-    ----
-        string: The key name as a string.
-
-    Returns:
-    -------
-        int: The Qt key code integer.
-
-    - Maps common key names "CTRL", "ALT", and 'SHIFT" to their Qt key code integer.
-    - Uses QKeySequence to parse more complex key names into their key code.
-    - Returns the mapped key code if found, otherwise returns the first key code from parsing the key name.
-    """
     KEY_MAP = {
         "CTRL": QtCore.Qt.Key_Control,
         "ALT": QtCore.Qt.Key_Alt,
@@ -95,11 +81,22 @@ class ModuleEditorControls(ABC):
             None,
         )
 
-    def wz(self, x: float, y: float, z: float) -> float:
+    def wz(
+        self,
+        x: float,
+        y: float,
+        z: float,
+    ) -> float:
         point = self.renderer.walkmeshPoint(x, y, z)
         return z - point.z
 
-    def translateSelectedObjects(self, snap: bool, dx: float, dy: float, dz: float):
+    def translateSelectedObjects(
+        self,
+        snap: bool,
+        dx: float,
+        dy: float,
+        dz: float,
+    ):
         """Translates selected objects.
 
         Args:
@@ -137,23 +134,29 @@ class ModuleEditorControls(ABC):
             instance: GITInstance = obj.data
             instance.rotate(yaw / 80, 0, 0)
 
-    def alterCameraPosition(self, dx: float, dy: float, dz: float):
+    def alterCameraPosition(
+        self,
+        dx: float,
+        dy: float,
+        dz: float,
+    ):
         self.renderer.scene.camera.x += dx
         self.renderer.scene.camera.y += dy
         self.renderer.scene.camera.z += dz
 
-    def snapCameraPosition(self, x: float | None = None, y: float | None = None, z: float | None = None):
+    def snapCameraPosition(
+        self,
+        x: float | None = None,
+        y: float | None = None,
+        z: float | None = None,
+    ):
         """Snap camera position to provided coordinates.
 
         Args:
         ----
-            x: X coordinate of camera position
-            y: Y coordinate of camera position
-            z: Z coordinate of camera position
-
-        - If x is provided, set camera's x position to the value of x
-        - If y is provided, set camera's y position to the value of y
-        - If z is provided, set camera's z position to the value of z.
+            x: float | None - X coordinate of camera position
+            y: float | None - Y coordinate of camera position
+            z: float | None - Z coordinate of camera position
         """
         if x is not None:
             self.renderer.scene.camera.x = x
@@ -183,7 +186,11 @@ class ModuleEditorControls(ABC):
 
 
 class DynamicModuleEditorControls(ModuleEditorControls):
-    def __init__(self, renderer: ModuleRenderer, filepath: str | None = None):
+    def __init__(
+        self,
+        renderer: ModuleRenderer,
+        filepath: str | None = None,
+    ):
         super().__init__(renderer)
 
         self.name: str = ""
@@ -299,37 +306,66 @@ class DynamicModuleEditorControls(ModuleEditorControls):
 
             array.append(DCItem(keys, mouse, effects))
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
+    def onMouseMoved(
+        self,
+        screen: Vector2,
+        delta: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         for event in self.mouseMoveEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+    def onMouseScrolled(
+        self,
+        delta: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         for event in self.mouseScrollEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def onMousePressed(
+        self,
+        screen: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         for event in self.mousePressEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
+    def onMouseReleased(
+        self,
+        screen: Vector2,
+        buttons: set[int],
+        keys: set[int],
+    ):
         for event in self.mouseReleaseEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
-    def onKeyPressed(self, buttons: set[int], keys: set[int]):
+    def onKeyPressed(
+        self,
+        buttons: set[int],
+        keys: set[int],
+    ):
         for event in self.keyPressEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
-    def onKeyReleased(self, buttons: set[int], keys: set[int]):
+    def onKeyReleased(
+        self,
+        buttons: set[int],
+        keys: set[int],
+    ):
         for event in self.keyReleaseEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
@@ -395,7 +431,12 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
 
 
 class DCItem:
-    def __init__(self, keys: set[int], mouse: set[int], effects: list[DCEffect]):
+    def __init__(
+        self,
+        keys: set[int],
+        mouse: set[int],
+        effects: list[DCEffect],
+    ):
         self.keys: set[int] = keys
         self.mouse: set[int] = mouse
         self.effects: list[DCEffect] = effects
@@ -459,7 +500,12 @@ class DCVariableBool(DCVariable):
 
 
 class DCVariableString(DCVariable):
-    def __init__(self, name: str, value: str, allowed: list[str]):
+    def __init__(
+        self,
+        name: str,
+        value: str,
+        allowed: list[str],
+    ):
         super().__init__(name)
         self._value: str = value
         self._allowed: list[str] = allowed
@@ -476,10 +522,20 @@ class DCVariableString(DCVariable):
 
 class DCEffect(ABC):
     @abstractmethod
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float): ...
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ): ...
 
     @staticmethod
-    def determineFloat(value: float | str, controls: ModuleEditorControls, dx: float, dy: float) -> float:
+    def determineFloat(
+        value: float | str,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ) -> float:
         """Determines a float value from a value or string.
 
         Args:
@@ -565,13 +621,24 @@ class DCEffect(ABC):
 # region Effect Classes
 # alterCameraPosition
 class DCEffectAlterCameraPosition(DCEffect):
-    def __init__(self, sensitivityVar: str | None, x: float | str, y: float | str, z: float | str):
+    def __init__(
+        self,
+        sensitivityVar: str | None,
+        x: float | str,
+        y: float | str,
+        z: float | str,
+    ):
         self.sensitivityVar: str | None = sensitivityVar
         self.x: float | str = x
         self.y: float | str = y
         self.z: float | str = z
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         x = super().determineFloat(self.x, controls, dx, dy)
         y = super().determineFloat(self.y, controls, dx, dy)
         z = super().determineFloat(self.z, controls, dx, dy)
@@ -581,12 +648,22 @@ class DCEffectAlterCameraPosition(DCEffect):
 
 # setCameraPosition
 class DCEffectSetCameraPosition(DCEffect):
-    def __init__(self, x: float | str, y: float | str, z: float | str):
+    def __init__(
+        self,
+        x: float | str,
+        y: float | str,
+        z: float | str,
+    ):
         self.x: float | str = x
         self.y: float | str = y
         self.z: float | str = z
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         x = super().determineFloat(self.x, controls, dx, dy)
         y = super().determineFloat(self.y, controls, dx, dy)
         z = super().determineFloat(self.z, controls, dx, dy)
@@ -595,12 +672,22 @@ class DCEffectSetCameraPosition(DCEffect):
 
 # alterCameraRotation
 class DCEffectAlterCameraRotation(DCEffect):
-    def __init__(self, sensitivityVar: str | None, yaw: float | str, pitch: float | str):
+    def __init__(
+        self,
+        sensitivityVar: str | None,
+        yaw: float | str,
+        pitch: float | str,
+    ):
         self.sensitivityVar: str | None = sensitivityVar
         self.yaw: float | str = yaw
         self.pitch: float | str = pitch
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         pitch = super().determineFloat(self.pitch, controls, dx, dy)
         yaw = super().determineFloat(self.yaw, controls, dx, dy)
         sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
@@ -609,11 +696,20 @@ class DCEffectAlterCameraRotation(DCEffect):
 
 # setCameraRotation
 class DCEffectSetCameraRotation(DCEffect):
-    def __init__(self, yaw: float | str, pitch: float | str):
+    def __init__(
+        self,
+        yaw: float | str,
+        pitch: float | str,
+    ):
         self.yaw: float | str = yaw
         self.pitch: float | str = pitch
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         yaw = super().determineFloat(self.yaw, controls, dx, dy)
         pitch = super().determineFloat(self.pitch, controls, dx, dy)
         controls.setCameraRotation(yaw, pitch)
@@ -621,11 +717,20 @@ class DCEffectSetCameraRotation(DCEffect):
 
 # alterCameraZoom
 class DCEffectAlterCameraZoom(DCEffect):
-    def __init__(self, sensitivityVar: str | None, amount: float | str):
+    def __init__(
+        self,
+        sensitivityVar: str | None,
+        amount: float | str,
+    ):
         self.sensitivityVar: str | None = sensitivityVar
         self.amount: float | str = amount
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         amount = super().determineFloat(self.amount, controls, dx, dy)
         sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.alterCameraZoom(amount * sensitivity)
@@ -633,14 +738,26 @@ class DCEffectAlterCameraZoom(DCEffect):
 
 # alterObjectPosition
 class DCEffectAlterObjectPosition(DCEffect):
-    def __init__(self, sensitivityVar: str | None, snapToWalkmesh: bool, x: float | str, y: float | str, z: float | str):
+    def __init__(
+        self,
+        sensitivityVar: str | None,
+        snapToWalkmesh: bool,
+        x: float | str,
+        y: float | str,
+        z: float | str,
+    ):
         self.sensitivityVar: str | None = sensitivityVar
         self.snapToWalkmesh: bool = snapToWalkmesh
         self.x: float | str = x
         self.y: float | str = y
         self.z: float | str = z
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         x = super().determineFloat(self.x, controls, dx, dy)
         y = super().determineFloat(self.y, controls, dx, dy)
         z = super().determineFloat(self.z, controls, dx, dy)
@@ -650,11 +767,20 @@ class DCEffectAlterObjectPosition(DCEffect):
 
 # alterObjectRotation
 class DCEffectAlterObjectRotation(DCEffect):
-    def __init__(self, sensitivityVar: str | None, yaw: float | str):
+    def __init__(
+        self,
+        sensitivityVar: str | None,
+        yaw: float | str,
+    ):
         self.sensitivityVar: str | None = sensitivityVar
         self.yaw: float | str = yaw
 
-    def apply(self, controls: ModuleEditorControls, dx: float, dy: float):
+    def apply(
+        self,
+        controls: ModuleEditorControls,
+        dx: float,
+        dy: float,
+    ):
         yaw = super().determineFloat(self.yaw, controls, dx, dy)
         sensitivity = 1.0 if self.sensitivityVar is None else controls.getValue(self.sensitivityVar)
         controls.rotateSelectedObjects(yaw * sensitivity, 0.0)

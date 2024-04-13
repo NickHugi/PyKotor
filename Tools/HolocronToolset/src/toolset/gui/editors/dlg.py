@@ -57,8 +57,13 @@ _COPY_ROLE = QtCore.Qt.UserRole + 2
 
 
 class GFFFieldSpinBox(QSpinBox):
-
-    def __init__(self, *args, min_value: int = 1200, max_value: int = 65534, **kwargs):
+    def __init__(
+        self,
+        *args,
+        min_value: int = 1200,
+        max_value: int = 65534,
+        **kwargs,
+    ):
         self._no_validate: bool = False
         super().__init__(*args, **kwargs)
         self.specialValueTextMapping: dict[int, str] = {0: "0", -1: "-1"}
@@ -94,7 +99,12 @@ class GFFFieldSpinBox(QSpinBox):
                 self.setValue(self.max_value)
 
     @classmethod
-    def from_spinbox(cls, originalSpin: QSpinBox, min_value: int = 0, max_value: int = 100) -> GFFFieldSpinBox:
+    def from_spinbox(
+        cls,
+        originalSpin: QSpinBox,
+        min_value: int = 0,
+        max_value: int = 100,
+    ) -> GFFFieldSpinBox:
         if not isinstance(originalSpin, QSpinBox):
             raise TypeError("The provided widget is not a QSpinBox.")
 
@@ -133,7 +143,11 @@ class GFFFieldSpinBox(QSpinBox):
         return customSpin
 
 class DLGEditor(Editor):
-    def __init__(self, parent: QWidget | None = None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the Dialog Editor window.
 
         Args:
@@ -276,7 +290,13 @@ class DLGEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads a dialogue file.
 
         Args:
@@ -555,7 +575,11 @@ class DLGEditor(Editor):
                 item.setText(self._installation.string(node.text, "(continue)"))
                 self._loadLocstring(self.ui.textEdit, node.text)
 
-    def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString):
+    def _loadLocstring(
+        self,
+        textbox: QPlainTextEdit,
+        locstring: LocalizedString,
+    ):
         """Load a localized string into a text box.
 
         Args:
@@ -573,7 +597,11 @@ class DLGEditor(Editor):
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
-    def addNode(self, item: QStandardItem | None, node: DLGNode):
+    def addNode(
+        self,
+        item: QStandardItem | None,
+        node: DLGNode,
+    ):
         """Adds a node to the dialog tree.
 
         Args:
@@ -613,7 +641,13 @@ class DLGEditor(Editor):
     def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
         self._add_node_main(source, target.links, True, item)
 
-    def _add_node_main(self, source: DLGNode, target_links: list[DLGLink], _copy_role_data: bool, item: QStandardItem | QStandardItemModel | None):
+    def _add_node_main(
+        self,
+        source: DLGNode,
+        target_links: list[DLGLink],
+        _copy_role_data: bool,
+        item: QStandardItem | QStandardItemModel | None,
+    ):
         newLink = DLGLink(source)
         target_links.append(newLink)
         newItem = QStandardItem()
@@ -622,7 +656,12 @@ class DLGEditor(Editor):
         self.refreshItem(newItem)
         item.appendRow(newItem)
 
-    def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode):
+    def addCopy(
+        self,
+        item: QStandardItem,
+        target: DLGNode,
+        source: DLGNode,
+    ):
         """Adds a copy of a node to a target node.
 
         Args:
@@ -873,7 +912,11 @@ class DLGEditor(Editor):
         self.model.appendRow(item)
         return item
 
-    def shiftItem(self, item: QStandardItem, amount: int):
+    def shiftItem(
+        self,
+        item: QStandardItem,
+        amount: int,
+    ):
         """Shifts an item in the tree by a given amount.
 
         Args:
@@ -930,7 +973,11 @@ class DLGEditor(Editor):
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def _set_context_menu_actions(self, item: QStandardItem, point: QPoint):
+    def _set_context_menu_actions(
+        self,
+        item: QStandardItem,
+        point: QPoint,
+    ):
         """Sets context menu actions for a dialog tree item.
 
         Args:

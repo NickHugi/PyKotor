@@ -44,7 +44,11 @@ class Target:
     def __repr__(self):
         return f"{self.__class__.__name__}(target_type={self.target_type.__class__.__name__}.{self.target_type.name}, value={self.value!r})"
 
-    def search(self, twoda: TwoDA, memory: PatcherMemory) -> TwoDARow | None:
+    def search(
+        self,
+        twoda: TwoDA,
+        memory: PatcherMemory,
+    ) -> TwoDARow | None:
         """Searches a TwoDA for a row matching the target.
 
         Args:

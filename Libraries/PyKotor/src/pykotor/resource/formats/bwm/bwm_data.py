@@ -254,7 +254,7 @@ class BWM:
             next_edge: int = j
             while next_face != -1:
                 adj_edge: BWMAdjacency | None = adjacencies[next_face][next_edge]
-                adj_edge_index: int = -1 if adj_edge is None else self.faces.index(adj_edge.face) * 3 + adj_edge.edge
+                adj_edge_index: int = -1 if adj_edge is None else self.faces.index(adj_edge.face) * 3 + adj_edge.edge  # FIXME: This check for adj_edge makes no sense.
                 if adj_edge is None:
                     edge_index = 3 * next_face + next_edge
                     if edge_index not in visited:

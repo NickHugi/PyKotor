@@ -112,7 +112,12 @@ SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocat
 class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
-    def __init__(self, *, installation: Installation | None = None, module: Module | None = None):
+    def __init__(
+        self,
+        *,
+        installation: Installation | None = None,
+        module: Module | None = None,
+    ):
         """Initializes the renderer.
 
         Args:
@@ -189,7 +194,11 @@ class Scene:
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-    def getCreatureRenderObject(self, instance: GITCreature, utc: UTC | None = None) -> RenderObject:
+    def getCreatureRenderObject(
+        self,
+        instance: GITCreature,
+        utc: UTC | None = None,
+    ) -> RenderObject:
         """Generates a render object for a creature instance.
 
         Args:

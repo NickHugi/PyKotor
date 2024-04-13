@@ -365,7 +365,12 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         self: PurePath = self  # type: ignore[] # noqa: PLW0127
         return self.with_name(stem + self.suffix)  # type: ignore[return-value]
 
-    def endswith(self, text: str | tuple[str, ...], *, case_sensitive: bool = False) -> bool:  # type: ignore[override]
+    def endswith(
+        self,
+        text: str | tuple[str, ...],
+        *,
+        case_sensitive: bool = False,
+    ) -> bool:  # type: ignore[override]
         """Checks if string ends with the specified str or tuple of strings.
 
         Args:

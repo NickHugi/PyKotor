@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     import os
 
     from qtpy.QtCore import QModelIndex, QPoint
-    from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QWidget
     from qtpy.QtWidgets import QLabel
 
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -252,7 +252,11 @@ class InventoryEditor(QDialog):
     def getItemImage(self, uti: UTI | None) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[str, str, UTI]:
+    def getItem(
+        self,
+        resname: str,
+        filepath: os.PathLike | str,
+    ) -> tuple[str, str, UTI]:
         """Gets item resource data from filepath or installation.
 
         Args:
@@ -293,7 +297,13 @@ class InventoryEditor(QDialog):
             uti = read_uti(BinaryReader.load_file(filepath))
         return str(filepath), name, uti
 
-    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = ""):
+    def setEquipment(
+        self,
+        slot: EquipmentSlot,
+        resname: str,
+        filepath: str = "",
+        name: str = "",
+    ):
         """Sets equipment in a given slot.
 
         Args:
@@ -334,7 +344,11 @@ class InventoryEditor(QDialog):
         self.ui.modulesTree.model().setFilterFixedString(text)
         self.ui.overrideTree.model().setFilterFixedString(text)
 
-    def openItemContextMenu(self, widget: DropFrame | ItemContainer, point: QPoint):
+    def openItemContextMenu(
+        self,
+        widget: DropFrame | ItemContainer,
+        point: QPoint,
+    ):
         """Opens an item context menu at a given point.
 
         Args:
@@ -437,7 +451,7 @@ class ItemContainer:
 class DropFrame(ItemContainer, QFrame):
     itemDropped = QtCore.Signal(object, object, object)
 
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget | None):
         QFrame.__init__(self)
         ItemContainer.__init__(self)
         self.setFrameShape(QFrame.Box)
@@ -543,7 +557,12 @@ class InventoryTable(QTableWidget):
         self.customContextMenuRequested.connect(self.openContextMenu)
         self.is_store: bool = False
 
-    def addItem(self, resname: str, droppable: bool, infinite: bool):
+    def addItem(
+        self,
+        resname: str,
+        droppable: bool,
+        infinite: bool,
+    ):
         """Adds an item to the inventory table.
 
         Args:
@@ -602,7 +621,13 @@ class InventoryTable(QTableWidget):
             resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
             self._set_row(rowID, iconItem, resnameItem, nameItem)
 
-    def _set_row(self, rowID, iconItem, resnameItem, nameItem):
+    def _set_row(
+        self,
+        rowID: int,
+        iconItem: QTableWidgetItem,
+        resnameItem: InventoryTableResnameItem,
+        nameItem: QTableWidgetItem,
+    ):
         self.setItem(rowID, 0, iconItem)
         self.setItem(rowID, 1, resnameItem)
         self.setItem(rowID, 2, nameItem)
@@ -682,7 +707,14 @@ class InventoryTable(QTableWidget):
 
 
 class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
-    def __init__(self, resname: str, filepath: str, name: str, droppable: bool, infinite: bool):
+    def __init__(
+        self,
+        resname: str,
+        filepath: str,
+        name: str,
+        droppable: bool,
+        infinite: bool,
+    ):
         ItemContainer.__init__(self, droppable, infinite)
         QTableWidgetItem.__init__(self, resname)
         self.setItem(resname, filepath, name, droppable, infinite)
@@ -694,7 +726,12 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
 class ItemBuilderDialog(QDialog):
     """Popup dialog responsible for extracting a list of resources from the game files."""
 
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule]):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        capsules: list[Capsule],
+    ):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)

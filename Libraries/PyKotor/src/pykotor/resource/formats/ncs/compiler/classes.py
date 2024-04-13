@@ -651,7 +651,11 @@ class FunctionDefinitionParam:
 
 
 class IncludeScript(TopLevelObject):
-    def __init__(self, file: StringExpression, library: dict[str, bytes] | None = None):
+    def __init__(
+        self,
+        file: StringExpression,
+        library: dict[str, bytes] | None = None,
+    ):
         self.file: StringExpression = file
         self.library: dict[str, bytes] = {} if library is None else library
 

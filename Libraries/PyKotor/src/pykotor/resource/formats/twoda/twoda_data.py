@@ -429,7 +429,11 @@ class TwoDA:
 
         return max_found + 1
 
-    def compare(self, other: TwoDA, log_func: Callable = print) -> bool:
+    def compare(
+        self,
+        other: TwoDA,
+        log_func: Callable = print,
+    ) -> bool:
         """Compares two TwoDA objects.
 
         Args:

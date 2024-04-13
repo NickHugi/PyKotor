@@ -654,7 +654,7 @@ class GITSound(GITInstance):
 
     def yaw(
         self,
-    ) -> float:
+    ) -> None:
         return None
 
 

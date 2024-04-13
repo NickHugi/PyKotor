@@ -300,7 +300,11 @@ class UTIEditor(Editor):
         subtypeId = item.data(0, QtCore.Qt.UserRole + 1)
         self._add_property_main(propertyId, subtypeId)
 
-    def _add_property_main(self, propertyId, subtypeId):
+    def _add_property_main(
+        self,
+        propertyId: int,
+        subtypeId: int,
+    ):
         """Adds a property to an item.
 
         Args:
@@ -340,7 +344,7 @@ class UTIEditor(Editor):
     def propertySummary(
         self,
         utiProperty: UTIProperty,
-    ) -> str:
+    ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
         """Retrieve the property, subproperty and cost names from the UTIEditor.
 
         Processing Logic:
