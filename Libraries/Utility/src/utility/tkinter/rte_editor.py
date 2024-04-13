@@ -133,9 +133,9 @@ class RichTextEditor:
         def show_context_menu(event):
             """Show the right-click context menu."""
             try:
-                self.root.tk_popup(event.x_root, event.y_root)
+                self.menu_bar.tk_popup(event.x_root, event.y_root)
             finally:
-                self.root.grab_release()
+                self.menu_bar.grab_release()
         self.text_area.bind("<Button-3>", show_context_menu)
         self.root.config(menu=self.menu_bar)
 
@@ -327,7 +327,7 @@ class RichTextEditor:
             if config:
                 document["tag_configs"][tag_name] = config
 
-        if not self.file_path.suffix.lower() == ".rte":
+        if self.file_path.suffix.lower() != ".rte":
             self.file_path = self.file_path.with_suffix(".rte")
 
         with self.file_path.open("w") as f:
