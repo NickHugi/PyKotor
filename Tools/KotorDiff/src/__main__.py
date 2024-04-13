@@ -399,7 +399,9 @@ def main():
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
     while True:
         PARSER_ARGS.path1 = Path(
-            PARSER_ARGS.path1 or (unknown[0] if len(unknown) > 0 else None) or input("Path to the first K1/TSL install, file, or directory to diff: "),
+            PARSER_ARGS.path1
+            or (unknown[0] if len(unknown) > 0 else None)
+            or input("Path to the first K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path1.safe_exists():
             break
@@ -408,7 +410,9 @@ def main():
         PARSER_ARGS.path1 = None
     while True:
         PARSER_ARGS.path2 = Path(
-            PARSER_ARGS.path2 or (unknown[1] if len(unknown) > 1 else None) or input("Path to the second K1/TSL install, file, or directory to diff: "),
+            PARSER_ARGS.path2
+            or (unknown[1] if len(unknown) > 1 else None)
+            or input("Path to the second K1/TSL install, file, or directory to diff: "),
         ).resolve()
         if PARSER_ARGS.path2.safe_exists():
             break
