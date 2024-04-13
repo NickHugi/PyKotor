@@ -948,7 +948,6 @@ class Camera:
             - Increments yaw by yaw argument
             - Clips pitch to valid range between 0 and pi radians to avoid gimbal lock
         """
-        print("rotating")
         self.pitch += pitch
         self.yaw += yaw
 
