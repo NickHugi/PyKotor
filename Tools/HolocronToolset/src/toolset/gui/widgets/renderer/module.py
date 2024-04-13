@@ -252,7 +252,6 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
             snapRotations:
         """
-        print("rotateCamera")
         self.scene.camera.rotate(yaw, pitch)
         if self.scene.camera.pitch < math.pi / 2 and snapRotations:
             self.scene.camera.pitch = math.pi / 2
