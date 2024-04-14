@@ -152,7 +152,7 @@ def remove_any(path):
         if x.safe_isdir():
             shutil.rmtree(str(x), ignore_errors=True)
         else:
-            path_obj.unlink(missing_ok=True)
+            x.unlink(missing_ok=True)
 
     if sys.platform != "win32":
         _remove_any(path_obj)
@@ -167,7 +167,7 @@ def remove_any(path):
                 break
         else:
             try:
-                _remove_any(path)
+                _remove_any(path_obj)
             except Exception as err:
                 log.debug(err, exc_info=True)
 

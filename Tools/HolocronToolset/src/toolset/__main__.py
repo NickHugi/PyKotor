@@ -78,6 +78,7 @@ def fix_sys_and_cwd_path():
 
 
 def set_qt_api():
+    # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     available_apis = ["pyqt5", "pyqt6", "pyside2", "pyside6"]
     for api in available_apis:
         try:
@@ -145,7 +146,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    import ui.stylesheet_resources as stylesheet_resources  # noqa: F401
+    from ui import stylesheet_resources  # noqa: F401
 
     # set stylesheet
     #file = QFile(":/dark/stylesheet.qss")
