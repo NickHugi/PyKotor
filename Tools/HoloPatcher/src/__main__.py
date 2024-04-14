@@ -70,6 +70,7 @@ from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
+from utility.system.os_helper import win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 from utility.tkinter.updater import TkProgressDialog
@@ -716,10 +717,11 @@ class App:
         pid = os.getpid()
         try:
             if sys.platform == "win32":
-                subprocess.run(["taskkill", "/F", "/PID", str(pid)], check=True)
+                system32_path = win_get_system32_dir()
+                subprocess.run([str(system32_path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)  # noqa: S603
             else:
                 subprocess.run(["kill", "-9", str(pid)], check=True)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "Failed to kill process", msgbox=False)
         finally:
             # This code might not be reached, but it's here for completeness

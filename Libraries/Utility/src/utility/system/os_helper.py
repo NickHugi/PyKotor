@@ -186,6 +186,22 @@ def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
     return Path.pathify(directory).parents[2]
 
 
+def win_get_system32_dir() -> Path:
+    import ctypes
+    try:  # PyInstaller sometimes fails to import wintypes.
+        ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
+        ctypes.windll.kernel32.GetSystemDirectoryW.restype = ctypes.c_uint
+        # Buffer size (MAX_PATH is generally 260 as defined by Windows)
+        buffer = ctypes.create_unicode_buffer(260)
+        ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
+        return Path(buffer.value)
+    except Exception:  # noqa: BLE001
+        get_root_logger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+        buffer = ctypes.create_unicode_buffer(260)
+        ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
+        return Path(buffer.value).joinpath("system32")
+
+
 class ChDir:
     def __init__(self, path: os.PathLike | str, logger: Logger | None = None):
         self.old_dir: Path = Path.cwd()
