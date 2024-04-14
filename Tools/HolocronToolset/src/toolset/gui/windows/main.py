@@ -721,6 +721,8 @@ class ToolWindow(QMainWindow):
             filepath: str = url.toLocalFile()
             data = BinaryReader.load_file(filepath)
             resname, restype = ResourceIdentifier.from_path(filepath).unpack()
+            if not restype:
+                continue
             openResourceEditor(
                 filepath,
                 resname,
