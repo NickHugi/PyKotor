@@ -597,13 +597,11 @@ function Install-PythonUnixSource {
     Invoke-BashCommand -Command "tar -xvf Python-$pyVersion.tgz"
     $current_working_dir = (Get-Location).Path
     Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
-    $env:LDFLAGS="-static"  # Ensure static linking
 
-    # Configuration options for static linking
-    $configureOptions = "--enable-optimizations --with-ensurepip=install --disable-shared"
+    # Conditionally apply --disable-new-dtags based on platform
+    $configureOptions = "--enable-optimizations --with-ensurepip=install  --disable-shared"
     if ((Get-OS) -eq "Linux") {
-        $env:LDFLAGS="-Wl,-Bstatic -Wl,--disable-new-dtags $env:LDFLAGS"
-        $configureOptions += " LDFLAGS='-static -static-libgcc'"
+        $configureOptions += ' LDFLAGS="-Wl,--disable-new-dtags"'
     }
 
     Invoke-BashCommand -Command "sudo ./configure $configureOptions"
@@ -612,10 +610,11 @@ function Install-PythonUnixSource {
     $makeParallel = if ((Get-OS) -eq "Linux") { "$(Invoke-BashCommand -Command 'nproc')" } elseif ((Get-OS) -eq "Mac") { "$(Invoke-BashCommand -Command 'sysctl -n hw.ncpu')" } else { "1" }
 
     Invoke-BashCommand -Command "sudo make -j $makeParallel"
+    # Do NOT use `make install`. `make altinstall` will install it system-wide, but not as the default system python. (e.g. /usr/local/bin/python3.8)
+    # Using `make install` may break system packages, so we use `make altinstall` here.
     Invoke-BashCommand -Command "sudo make altinstall"
     Set-Location -LiteralPath $current_working_dir
 }
-
 
 function RefreshEnvVar {
     Param (
