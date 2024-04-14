@@ -742,6 +742,7 @@ class ToolWindow(QMainWindow):
                 _resref, restype = ResourceIdentifier.from_path(filepath).unpack()
                 if not restype:
                     print(f"Not loading dropped file '{filepath}'. Invalid resource")
+                    continue
                 e.accept()
 
     # endregion
