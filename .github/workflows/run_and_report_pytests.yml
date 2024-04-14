@@ -16,7 +16,7 @@ on:
     types: [opened, reopened]
   workflow_dispatch:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: '0 5 * * 1'  # Runs every Monday at 05:00 UTC
 
 permissions:
   contents: write
