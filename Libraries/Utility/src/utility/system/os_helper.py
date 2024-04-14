@@ -44,7 +44,7 @@ def kill_child_processes(
                     import signal
                     os.kill(child.pid, signal.SIGKILL)  # Use SIGKILL as a last resort
             except Exception:
-                log.critical("Failed to kill process", msgbox=False)
+                log.critical("Failed to kill process", exc_info=True)
 
 def kill_self_pid(timeout=3):
     """Waits for a specified timeout for threads to complete.
