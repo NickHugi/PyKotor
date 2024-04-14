@@ -510,7 +510,7 @@ class ToolWindow(QMainWindow):
         if self.settings.joinRIMsTogether:
             if is_rim_file(moduleFile):
                 resources += self.active.module_resources(f"{PurePath(moduleFile).stem}_s.rim")
-            if is_erf_file(moduleFile):
+            if self.active.game().is_k2() and is_erf_file(moduleFile):
                 resources += self.active.module_resources(f"{PurePath(moduleFile).stem}_dlg.erf")
 
         self.active.reload_module(moduleFile)
@@ -588,6 +588,7 @@ class ToolWindow(QMainWindow):
                 loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
                 loader.addTask(lambda: self._extractResource(resources[0], filepath, loader))
                 loader.exec_()
+                #QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {len(resources)} resources to '{filepath}'").exec_()
 
         elif len(resources) >= 1:
             # Player saves resources with original name to a specific directory
@@ -613,8 +614,8 @@ class ToolWindow(QMainWindow):
     def _saveCapsuleFromToolUI(self, module_name: str):
         c_filepath = self.active.module_path() / module_name
 
-        capsuleFilter = "Module file (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
-        capsule_type = "module"
+        capsuleFilter = "Module (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
+        capsule_type = "mod"
         if is_erf_file(c_filepath):
             capsule_type = "erf"
         elif is_rim_file(c_filepath):
@@ -632,14 +633,18 @@ class ToolWindow(QMainWindow):
             capsuleFilter,
             extension_to_filter[c_filepath.suffix.lower()],  # defaults to the original extension.
         )
-        if not filepath_str.strip():
+        if not filepath_str or not filepath_str.strip():
             return
         r_save_filepath = Path(filepath_str)
 
         try:
             if is_mod_file(r_save_filepath):
-                module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name, self.active.game())
-                QMessageBox(QMessageBox.Information, "Module Saved", f"Module saved to '{r_save_filepath}'").exec_()
+                if capsule_type == "mod":
+                    write_erf(read_erf(c_filepath), r_save_filepath)
+                    QMessageBox(QMessageBox.Information, "Module Saved", f"Module saved to '{r_save_filepath}'").exec_()
+                else:
+                    module.rim_to_mod(r_save_filepath, self.active.module_path(), module_name, self.active.game())
+                    QMessageBox(QMessageBox.Information, "Module Built", f"Module built from relevant RIMs/ERFs and saved to '{r_save_filepath}'").exec_()
                 return
 
             erf_or_rim: ERF | RIM = read_erf(c_filepath) if is_any_erf_type_file(c_filepath) else read_rim(c_filepath)
@@ -657,10 +662,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
+            get_root_logger().exception("Error extracting capsule %s", module_name)
             QMessageBox(QMessageBox.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
 
     def onOpenResources(
@@ -688,9 +690,11 @@ class ToolWindow(QMainWindow):
             return
         erf_filepath = self.active.module_path() / filename
         if not erf_filepath.safe_isfile():
+            print(f"Not loading '{erf_filepath}'. File does not exist")
             return
         res_ident = ResourceIdentifier.from_path(erf_filepath)
         if not res_ident.restype:
+            print(f"Not loading '{erf_filepath}'. Invalid resource")
             return
         _filepath, _editor = openResourceEditor(
             erf_filepath,
@@ -716,8 +720,16 @@ class ToolWindow(QMainWindow):
         for url in e.mimeData().urls():
             filepath: str = url.toLocalFile()
             data = BinaryReader.load_file(filepath)
-            resref, restype = ResourceIdentifier.from_path(filepath)
-            openResourceEditor(filepath, resref, restype, data, self.active, self)
+            resname, restype = ResourceIdentifier.from_path(filepath).unpack()
+            openResourceEditor(
+                filepath,
+                resname,
+                restype,
+                data,
+                self.active,
+                self,
+                gff_specialized=GlobalSettings().gff_specializedEditors,
+            )
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
@@ -726,7 +738,10 @@ class ToolWindow(QMainWindow):
             return
         for url in e.mimeData().urls():
             with suppress(Exception):
-                _resref, _restype = ResourceIdentifier.from_path(url.toLocalFile()).validate()
+                filepath = url.toLocalFile()
+                _resref, restype = ResourceIdentifier.from_path(filepath).unpack()
+                if not restype:
+                    print(f"Not loading dropped file '{filepath}'. Invalid resource")
                 e.accept()
 
     # endregion
@@ -792,6 +807,9 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def openModuleDesigner(self):
+        if self.active is None:
+            QMessageBox(QMessageBox.Information, "No installation loaded.", "Load an installation before opening the Module Designer.").exec_()
+            return
         designer = ModuleDesigner(None, self.active)
         addWindow(designer)
 
@@ -806,11 +824,17 @@ class ToolWindow(QMainWindow):
 
         If there is no active information, show a message box instead.
         """
+        if self.active is None:
+            QMessageBox(QMessageBox.Information, "No installation loaded.", "Load an installation before opening the TalkTable Editor.").exec_()
+            return
         filepath = self.active.path() / "dialog.tlk"
         data = BinaryReader.load_file(filepath)
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self):
+        if self.active is None:
+            QMessageBox(QMessageBox.Information, "No installation loaded.", "Load an installation before opening the Journal Editor.").exec_()
+            return
         self.active.load_override(".")
         res = self.active.resource(
             "global",
@@ -818,7 +842,7 @@ class ToolWindow(QMainWindow):
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
         if res is None:
-            print("res cannot be None in openActiveJournal")
+            QMessageBox(QMessageBox.Critical, "global.jrl not found", "Could not open the journal editor: 'global.jrl' not found.").exec_()
             return
         openResourceEditor(
             res.filepath,
@@ -894,11 +918,7 @@ class ToolWindow(QMainWindow):
         try:
             self._check_toolset_update(silent=silent)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-            print(lines)
+            self.log.exception("Failed to check for updates.")
             if not silent:
                 etype, msg = universal_simplify_exception(e)
                 QMessageBox(
@@ -1011,7 +1031,6 @@ class ToolWindow(QMainWindow):
             progress_queue.put(packaged_data)
             ProgressDialog.monitor_and_terminate(progress_process)
             if kill_self_here:
-                #Restarter._win_kill_self()  # noqa: SLF001
                 sys.exit(0)
 
         updater = AppUpdate(
@@ -1068,7 +1087,7 @@ class ToolWindow(QMainWindow):
 
         def sortAlgo(moduleFileName: str) -> str:
             lowerModuleFileName = moduleFileName.lower()
-            if "stunt" in lowerModuleFileName:  # keep the least used stunt modules at the bottom.
+            if "stunt" in lowerModuleFileName:  # keep the stunt modules at the bottom.
                 sortStr = "zzzzz"
             elif self.settings.moduleSortOption == 0:  # "Sort by filename":
                 sortStr = ""
@@ -1089,7 +1108,7 @@ class ToolWindow(QMainWindow):
             if self.settings.joinRIMsTogether:
                 if lower_module_name.endswith("_s.rim"):
                     continue
-                if lower_module_name.endswith("_dlg.erf"):
+                if self.active.game().is_k2() and lower_module_name.endswith("_dlg.erf"):
                     continue
 
             item = QStandardItem(f"{areaNames[moduleName]} [{moduleName}]")
@@ -1175,7 +1194,7 @@ class ToolWindow(QMainWindow):
     def refreshTexturePackList(self, *, reload=True):
         sections = self._getTexturePackList(reload=reload)
         if sections is None:
-            self.log.debug("sections was None in refreshTexturePackList(reload=%s)", reload)
+            self.log.debug("sections was None in refreshTexturePackList(reload=%s)", reload, stack_info=True)
             return
         self.ui.texturesWidget.setSections(sections)
 
@@ -1250,7 +1269,8 @@ class ToolWindow(QMainWindow):
         if index <= 0:
             if index < 0:
                 print(f"Index out of range - self.changeActiveInstallation({index})")
-                self.ui.gameCombo.setCurrentIndex(0)
+                return  # Comment this line and uncomment below to invalidate the current selected installation.
+                #self.ui.gameCombo.setCurrentIndex(0)
             self.active = None
             if self.dogObserver is not None:
                 self.dogObserver.stop()
@@ -1267,7 +1287,7 @@ class ToolWindow(QMainWindow):
         # If the user has not set a path for the particular game yet, ask them too.
         if not path or not Path(path).safe_isdir():
             if path and path.strip():
-                QMessageBox(QMessageBox.Warning, f"installation '{path}' not found", "Select another path now.").exec_()
+                QMessageBox(QMessageBox.Warning, f"Installation '{path}' not found", "Select another path now.").exec_()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}")
 
         # If the user still has not set a path, then return them to the [None] option.
@@ -1335,7 +1355,12 @@ class ToolWindow(QMainWindow):
         self.settings.installations()[name].path = path
         self.installations[name] = self.active
 
-    def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader):
+    def _extractResource(
+        self,
+        resource: FileResource,
+        filepath: os.PathLike | str,
+        loader: AsyncBatchLoader,
+    ):
         """Extracts a resource file from a FileResource object.
 
         Args:
@@ -1386,8 +1411,6 @@ class ToolWindow(QMainWindow):
             msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
             self.log.exception(msg)
             raise RuntimeError(msg) from e
-        # FIXME: DO NOT USE THIS MESSAGEBOX. Causes instant crash due to QThread!
-        #QMessageBox(QMessageBox.Information, "Finished extracting", f"Extracted {resource.resname()} to {r_filepath}").exec_()
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
         with filepath.with_suffix(".txi").open("wb") as file:
@@ -1406,7 +1429,13 @@ class ToolWindow(QMainWindow):
         write_mdl(mdl, data, ResourceType.MDL_ASCII)
         return data
 
-    def _extractMdlTextures(self, resource: FileResource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):
+    def _extractMdlTextures(
+        self,
+        resource: FileResource,
+        folderpath: Path,
+        loader: AsyncBatchLoader,
+        data: bytes,
+    ):
         try:
             for texture in model.list_textures(data):
                 try:

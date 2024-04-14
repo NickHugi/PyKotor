@@ -134,7 +134,7 @@ class RIM:
     def to_erf(
         self,
     ):
-        """Returns a ERF with the same resources.
+        """Returns a ERF with the same resources. Defaults to an ERF with ERFType.ERF set.
 
         Returns:
         -------

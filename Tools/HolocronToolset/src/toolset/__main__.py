@@ -21,7 +21,7 @@ def is_frozen() -> bool:
     return (
         getattr(sys, "frozen", False)
         or getattr(sys, "_MEIPASS", False)
-        or tempfile.gettempdir() in sys.executable
+        # or tempfile.gettempdir() in sys.executable
     )
 
 
@@ -41,18 +41,8 @@ def onAppCrash(
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
 
-    This function will determine whether they have the source files downloaded for pykotor in the expected directory. If they do, we
-    insert the source path to pykotor to the beginning of sys.path so it'll have priority over pip's pykotor package if that is installed.
-    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m toolset`
     This function should never be used in frozen code.
     This function also ensures a user can run toolset/__main__.py directly.
-
-    Processing Logic:
-    ----------------
-        - Checks if PyKotor package exists in parent directory of calling file.
-        - If exists, removes parent directory from sys.path and adds to front.
-        - Also checks for toolset package and changes cwd to that directory if exists.
-        - This ensures packages and scripts can be located correctly on import.
     """
 
     def update_sys_path(path: pathlib.Path):
