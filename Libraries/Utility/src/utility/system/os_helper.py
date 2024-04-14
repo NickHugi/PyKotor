@@ -38,8 +38,7 @@ def kill_child_processes(
                 log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
                 # Forcefully terminate the child process if it didn't terminate in time
                 if sys.platform == "win32":
-                    from utility.updater.restarter import Restarter
-                    sys32path = Restarter.win_get_system32_dir()
+                    sys32path = win_get_system32_dir()
                     subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], check=True)  # noqa: S603
                 else:
                     import signal
