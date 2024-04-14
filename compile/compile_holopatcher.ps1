@@ -189,7 +189,7 @@ $pyInstallerArgs = @{
         'api-ms-win-core-file-l2-1-0.dll',
         'api-ms-win-core-heap-l1-1-0.dll'
     )
-    #'debug' = 'imports'
+    'debug' = 'imports'
     'log-level' = 'INFO'
     'clean' = $true
     'windowed' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w

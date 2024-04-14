@@ -202,7 +202,7 @@ jobs:
       shell: pwsh
 
     - name: Set UPX directory path
-      if: runner.os != 'macOS'
+      if: runner.os == 'Windows'
       id: upx_dir
       run: |
         $upx_dir = "./upx-dir"
@@ -251,6 +251,7 @@ jobs:
       id: holopatcher_deps
       run: |  # known pyinstaller versions that work with upx compressions, not all are available on all python versions.
         try {
+          $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
           . ./install_python_venv.ps1 -noprompt -venv_name .venv_holopatcher_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
           Write-Host "Python executable path: $pythonExePath"
           & $pythonExePath -m pip install --upgrade pip
@@ -337,6 +338,7 @@ jobs:
     - name: Compile HoloPatcher
       if: ${{ (success() || failure()) && steps.holopatcher_deps.outputs.success == 'true' }}
       run: |
+        $env:LD_LIBRARY_PATH = "/usr/local/lib:$env:LD_LIBRARY_PATH"
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $output = ""
