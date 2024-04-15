@@ -248,24 +248,24 @@ def openResourceEditor(
 
         except Exception as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "An unexpected error has occurred",
                 str(universal_simplify_exception(e)),
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parentWindowWidget,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).show()
             raise
         else:
             return filepath, editor
     else:
         QMessageBox(
-            QMessageBox.Critical,
+            QMessageBox.Icon.Critical,
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
-            QMessageBox.Ok,
+            QMessageBox.StandardButton.Ok,
             parentWindowWidget,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).show()
 
     return None, None

@@ -150,13 +150,13 @@ if __name__ == "__main__":
     # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     # app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-    app.thread().setPriority(QThread.HighestPriority)
+    app.thread().setPriority(QThread.Priority.HighestPriority)
 
     sys.excepthook = onAppCrash
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox
         msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Critical)
+        msgBox.setIcon(QMessageBox.Icon.Critical)
         msgBox.setWindowTitle("Error")
         msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         msgBox.exec_()

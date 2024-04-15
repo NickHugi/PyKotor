@@ -74,7 +74,7 @@ class ResourceList(MainWindowList):
         self.modulesModel = ResourceModel()
         self.modulesModel.proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.ui.resourceTree.setModel(self.modulesModel.proxyModel())
-        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
         self.sectionModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)
@@ -197,10 +197,10 @@ class ResourceList(MainWindowList):
         self.modulesModel.proxyModel().setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
-        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onReloadClicked(self):
-        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onRefreshClicked(self):
         self.requestRefresh.emit()
@@ -405,8 +405,8 @@ class TextureList(MainWindowList):
         for resource in resources:
             item = QStandardItem(blankIcon, resource.resname())
             item.setToolTip(resource.resname())
-            item.setData(False, QtCore.Qt.UserRole)
-            item.setData(resource, QtCore.Qt.UserRole + 1)
+            item.setData(False, QtCore.Qt.ItemDataRole.UserRole)
+            item.setData(resource, QtCore.Qt.ItemDataRole.UserRole + 1)
             self.texturesModel.appendRow(item)
 
         if self._installation is not None:
@@ -425,7 +425,7 @@ class TextureList(MainWindowList):
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
             item = self.texturesModel.item(sourceIndex.row())
-            resources.append(item.data(QtCore.Qt.UserRole + 1))
+            resources.append(item.data(QtCore.Qt.ItemDataRole.UserRole + 1))
         return resources
 
     def visibleItems(self) -> list[QStandardItem]:
@@ -483,10 +483,10 @@ class TextureList(MainWindowList):
         self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
-        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onReloadClicked(self):
-        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onRefreshClicked(self):
         self.requestRefresh.emit()
@@ -513,7 +513,7 @@ class TextureList(MainWindowList):
 
             task = TextureListTask(item.row(), tpc, item_text)
             self._taskQueue.put(task)
-            item.setData(True, QtCore.Qt.UserRole)
+            item.setData(True, QtCore.Qt.ItemDataRole.UserRole)
 
     def onIconUpdate(
         self,

@@ -31,10 +31,10 @@ If powershell is not an option for you, you can install Python manually from htt
 Once 'install_python_venv.ps1' finishes, you can run any of the provided tools, such as HoloPatcher, KotorDiff, or the Toolset, like this:
 ```commandline
 pip install -r Tools/HoloPatcher/requirements.txt --prefer-binary
-python ./Tools/HoloPatcher/src/__main__.py
+python -m holopatcher
 pip install -r Tools/HolocronToolset/requirements.txt --prefer-binary
-python Tools/HolocronToolset/src/toolset/__main__.py
-python Tools/KotorDiff/__main__.py
+python -m toolset
+python -m kotordiff
 ```
 
 see [HoloPatcher's readme](https://github.com/NickHugi/PyKotor/tree/master/Tools/HoloPatcher#readme) for more information

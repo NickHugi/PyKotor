@@ -1,7 +1,7 @@
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
-  [string]$venv_name = ".venv_fedora",
+  [string]$venv_name = ".venv",
   [string]$force_python_version
 )
 $global:force_python_version = $force_python_version
@@ -419,7 +419,7 @@ function Install-Python-Linux {
                 }
             }
             Find-Python -installIfNotFound $false
-            if ( $global:pythonInstallPath -eq "" ) {
+            if ( -not $global:pythonInstallPath ) {
                 throw "Python not found/installed"
             }
         } catch {
@@ -588,6 +588,7 @@ function Install-PythonUnixSource {
         "3.10" { "3.10.13" }
         "3.11" { "3.11.8" }
         "3.12" { "3.12.2" }
+        "3.13" { "3.13.0a5" }
         default { throw "Unsupported Python version: $pythonVersion" }
     }
 
@@ -614,6 +615,7 @@ function Install-PythonUnixSource {
     # Using `make install` may break system packages, so we use `make altinstall` here.
     Invoke-BashCommand -Command "sudo make altinstall"
     Set-Location -LiteralPath $current_working_dir
+    $global:pythonInstallPath = "/usr/local/bin/python$pythonVersion"
 }
 
 function RefreshEnvVar {
@@ -815,6 +817,17 @@ function Find-Python {
     Param (
         [bool]$installIfNotFound
     )
+    if ($global:pythonInstallPath) {
+        $testVersion = Get-Python-Version -pythonPath $global:pythonInstallPath
+        if ($testVersion -ne [Version]"0.0.0") {
+            $global:pythonVersion = Get-Python-Version $global:pythonInstallPath
+            if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+                Write-Host "Found python command with version $global:pythonVersion at path $global:pythonInstallPath"
+                return
+            }
+        }
+    }
+
     # Check for Python 3 command and version
     if ($global:force_python_version) {
         $fallbackVersion = $global:force_python_version

@@ -51,7 +51,7 @@ class Ui_MainWindow(object):
         self.renderArea.setSizePolicy(sizePolicy)
         self.renderArea.setMouseTracking(True)
         self.renderArea.setFocusPolicy(Qt.StrongFocus)
-        self.renderArea.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.renderArea.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.renderArea.setStyleSheet(u"background: black;")
 
         self.gridLayout.addWidget(self.renderArea, 0, 0, 1, 1)

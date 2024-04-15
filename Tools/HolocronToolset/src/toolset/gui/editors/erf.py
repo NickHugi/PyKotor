@@ -165,11 +165,11 @@ class ERFEditor(Editor):
 
         else:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Unable to load file",
                 "The file specified is not a MOD/ERF type file.",
                 parent=self,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).show()
 
     def build(self) -> tuple[bytes, bytes]:
@@ -312,10 +312,10 @@ class ERFEditor(Editor):
                 get_root_logger().exception("Failed to add resource at %s", c_filepath.absolute())
                 error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 QMessageBox(
-                    QMessageBox.Critical,
+                    QMessageBox.Icon.Critical,
                     "Failed to add resource",
                     f"Could not add resource at {c_filepath.absolute()}:<br><br>{error_msg}",
-                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                    flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
                 ).exec_()
 
     def selectFilesToAdd(self):
@@ -334,7 +334,7 @@ class ERFEditor(Editor):
             - Opens the resource in an editor window.
         """
         if self._filepath is None:
-            QMessageBox(QMessageBox.Critical, "Cannot edit resource", "Save the ERF and try again.", QMessageBox.Ok, self).exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Cannot edit resource", "Save the ERF and try again.", QMessageBox.StandardButton.Ok, self).exec_()
             return
 
         for index in self.ui.tableView.selectionModel().selectedRows(0):
@@ -343,12 +343,12 @@ class ERFEditor(Editor):
 
             if resource.restype.name in ERFType.__members__:
                 QMessageBox(
-                    QMessageBox.Warning,
+                    QMessageBox.Icon.Warning,
                     "Nested ERF/RIM files is mostly unsupported.",
                     "You are attempting to open a nested ERF/RIM. Any action besides extracting from them will not work. You've been warned.",
-                    QMessageBox.Ok,
+                    QMessageBox.StandardButton.Ok,
                     self,
-                    flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                    flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
                 ).exec_()
             new_filepath = self._filepath
             if resource.restype.name in ERFType.__members__ or resource.restype == ResourceType.RIM:
@@ -469,7 +469,7 @@ class ERFEditorTable(QTableView):
 
         urls: list[QtCore.QUrl] = []
         for index in (index for index in self.selectedIndexes() if not index.column()):
-            resource: ERFResource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
+            resource: ERFResource = self.model().itemData(index)[QtCore.Qt.ItemDataRole.UserRole + 1]
             file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath = Path(tempDir, f"{file_stem}.{file_ext}")
             with filepath.open("wb") as file:

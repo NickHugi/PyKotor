@@ -172,7 +172,7 @@ foreach ($arg in $pyInstallerArgs) {
 }
 
 # Append the final script path
-$argumentsArray += "__main__.py"
+$argumentsArray += "kotordiff/__main__.py"
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"

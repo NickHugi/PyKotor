@@ -322,7 +322,7 @@ class UTSEditor(Editor):
             self.player.setMedia(QMediaContent(), self.buffer)
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
-            QMessageBox(QMessageBox.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
+            QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 
     def addSound(self):
         item = QListWidgetItem("new sound")

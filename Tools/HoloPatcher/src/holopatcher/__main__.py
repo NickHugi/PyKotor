@@ -56,7 +56,7 @@ if not is_frozen():
             update_sys_path(utility_path.parent)
 
 
-from config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
+from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier

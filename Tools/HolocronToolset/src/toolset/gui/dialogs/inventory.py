@@ -43,9 +43,9 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.uti import UTI
 
-_RESNAME_ROLE = QtCore.Qt.UserRole + 1
-_FILEPATH_ROLE = QtCore.Qt.UserRole + 2
-_SLOTS_ROLE = QtCore.Qt.UserRole + 3
+_RESNAME_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_FILEPATH_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
+_SLOTS_ROLE = QtCore.Qt.ItemDataRole.UserRole + 3
 
 
 class SlotMapping(NamedTuple):
@@ -110,11 +110,11 @@ class InventoryEditor(QDialog):
         self.ui.contentsTable.is_store = is_store
 
         self.ui.coreTree.setSortingEnabled(True)
-        self.ui.coreTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
+        self.ui.coreTree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
         self.ui.modulesTree.setSortingEnabled(True)
-        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
+        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
         self.ui.overrideTree.setSortingEnabled(True)
-        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
+        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
         self.ui.coreSearchEdit.textEdited.connect(self.doSearch)
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)

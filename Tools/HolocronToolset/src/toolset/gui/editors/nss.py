@@ -149,12 +149,12 @@ class NSSEditor(Editor):
 
         for function in functions:
             item = QListWidgetItem(function.name)
-            item.setData(QtCore.Qt.UserRole, function)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, function)
             self.ui.functionList.addItem(item)
 
         for constant in constants:
             item = QListWidgetItem(constant.name)
-            item.setData(QtCore.Qt.UserRole, constant)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, constant)
             self.ui.constantList.addItem(item)
 
     class SavedContext(NamedTuple):
@@ -239,10 +239,10 @@ class NSSEditor(Editor):
                 self.ui.codeEdit.setPlainText(source)
                 self._is_decompiled = True
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
                 self.new()
             except NoConfigurationSetError as e:
-                QMessageBox(QMessageBox.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
                 self.new()
 
     def build(self) -> tuple[bytes | None, bytes]:
@@ -299,9 +299,9 @@ class NSSEditor(Editor):
                 # Save using the overridden filepath and resource type.
                 self.save()
             except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to compile", str(universal_simplify_exception(e))).exec_()
             except OSError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to save file", str(universal_simplify_exception(e))).exec_()
 
     def _compiledResourceSaved(
         self,
@@ -316,7 +316,7 @@ class NSSEditor(Editor):
             # Format as /full/path/to/file.mod/resname.ncs
             savePath = savePath / f"{resname}.ncs"
         QMessageBox(
-            QMessageBox.Information,
+            QMessageBox.Icon.Information,
             "Success",
             f"Compiled script successfully saved to:\n {savePath}.",
         ).exec_()
@@ -342,12 +342,12 @@ class NSSEditor(Editor):
 
         if self.ui.tabWidget.currentIndex() == 0 and self.ui.functionList.selectedItems():  # Functions tab
             item = self.ui.functionList.selectedItems()[0]
-            function = item.data(QtCore.Qt.UserRole)
+            function = item.data(QtCore.Qt.ItemDataRole.UserRole)
             text = function.description + "\n" + str(function)
             self.ui.descriptionEdit.setPlainText(text)
         elif self.ui.tabWidget.currentIndex() == 1 and self.ui.constantList.selectedItems():  # Constants tab
             item = self.ui.constantList.selectedItems()[0]
-            constant = item.data(QtCore.Qt.UserRole)
+            constant = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.ui.descriptionEdit.setPlainText(str(constant))
 
     def insertSelectedConstant(self):
@@ -355,7 +355,7 @@ class NSSEditor(Editor):
         then shifted to the end of the newly inserted constant.
         """  # noqa: D205
         if self.ui.constantList.selectedItems():
-            constant = self.ui.constantList.selectedItems()[0].data(QtCore.Qt.UserRole)
+            constant = self.ui.constantList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
             insert = constant.name
             self.insertTextAtCursor(insert)
 
@@ -364,7 +364,7 @@ class NSSEditor(Editor):
         then shifted to the start of the first parameter of the inserted function.
         """  # noqa: D205
         if self.ui.functionList.selectedItems():
-            function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(QtCore.Qt.UserRole)
+            function: ScriptFunction = self.ui.functionList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
             insert = f"{function.name}()"
             self.insertTextAtCursor(insert, insert.index("(") + 1)
 
