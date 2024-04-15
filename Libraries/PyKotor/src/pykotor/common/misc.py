@@ -132,6 +132,19 @@ class ResRef:
         resname = ResourceIdentifier.from_path(file_path).resname
         return cls(resname)
 
+    def is_valid(self, text: str) -> bool:
+        if not isinstance(text, str):
+            return False
+        return next(
+            (False for char in self.INVALID_CHARACTERS if char in text),
+            (
+                text != ""
+                and text.isascii()
+                and len(text) <= self.MAX_LENGTH
+                and text == text.strip()
+            ),
+        )
+
     def set_data(
         self,
         text: str,
@@ -162,19 +175,19 @@ class ResRef:
         if len(parsed_text) > self.MAX_LENGTH:
             if not truncate:
                 ...
-                # raise self.ExceedsMaxLengthError(parsed_text)  # pykotor isn't stable enough to enforce this yet.
+                # raise self.ExceedsMaxLengthError(parsed_text)  # FIXME: pykotor isn't stable enough to enforce this yet.
             parsed_text = parsed_text[: self.MAX_LENGTH]
 
         # Ensure text doesn't start/end with whitespace.
         if parsed_text != parsed_text.strip():
             msg = f"ResRef '{text}' cannot start or end with a space."
-            # raise self.InvalidFormatError(msg)  # pykotor isn't stable enough to enforce this yet.
+            # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
 
         # Ensure text doesn't contain any invalid ASCII characters.
         for i in range(len(parsed_text)):
             if parsed_text[i] in self.INVALID_CHARACTERS:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
-                # raise self.InvalidFormatError(msg)  # pykotor isn't stable enough to enforce this yet.
+                # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
 
         self._value = parsed_text
 
