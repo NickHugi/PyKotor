@@ -70,7 +70,7 @@ from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
-from utility.system.os_helper import win_get_system32_dir
+from utility.system.os_helper import kill_self_pid, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 from utility.tkinter.updater import TkProgressDialog
@@ -295,7 +295,11 @@ class App:
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
-        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
+        self.gamepaths["values"] = [
+            str(path)
+            for game in find_kotor_paths_from_default().values()
+            for path in game
+        ]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=self.open_kotor)
@@ -1565,9 +1569,9 @@ sys.excepthook = onAppCrash
 
 def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
-    #print("Fully shutting down Holo Patcher...")
-    #kill_self_pid()
-    #app.root.destroy()
+    print("Fully shutting down HoloPatcher...")
+    kill_self_pid()
+    app.root.destroy()
 
 
 def main():

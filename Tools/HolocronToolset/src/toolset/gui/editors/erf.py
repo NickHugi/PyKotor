@@ -432,14 +432,14 @@ class ERFEditorTable(QTableView):
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         if event.mimeData().hasUrls:
-            event.setDropAction(QtCore.Qt.CopyAction)
+            event.setDropAction(QtCore.Qt.DropAction.CopyAction)
             event.accept()
         else:
             event.ignore()
 
     def dropEvent(self, event: QDropEvent):
         if event.mimeData().hasUrls:
-            event.setDropAction(QtCore.Qt.CopyAction)
+            event.setDropAction(QtCore.Qt.DropAction.CopyAction)
             event.accept()
             links: list[str] = [str(url.toLocalFile()) for url in event.mimeData().urls()]
             self.resourceDropped.emit(links)
@@ -480,4 +480,4 @@ class ERFEditorTable(QTableView):
         mimeData.setUrls(urls)
         drag = QtGui.QDrag(self)
         drag.setMimeData(mimeData)
-        drag.exec_(QtCore.Qt.CopyAction, QtCore.Qt.CopyAction)
+        drag.exec_(QtCore.Qt.DropAction.CopyAction, QtCore.Qt.DropAction.CopyAction)

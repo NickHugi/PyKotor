@@ -191,7 +191,7 @@ jobs:
             if (-not (Test-Path -Path "upx-dir")) {
                 New-Item -ItemType Directory -Path "upx-dir"
             }
-            Get-ChildItem -Path "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
+            Get-ChildItem -LiteralPath "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
             Remove-Item "temp_folder_upx" -Recurse -Force -ErrorAction SilentlyContinue
           } else {
             tar -xvf $archiveName --strip-components=1 -C "upx-dir"
@@ -322,13 +322,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -451,7 +451,7 @@ jobs:
           $originalDir = Get-Location
           $sourceFolder = Join-Path -Path $originalDir -ChildPath "published_workflow_builds"
           Set-Location $sourceFolder
-          Get-ChildItem -Path "." -Directory | ForEach-Object {
+          Get-ChildItem -LiteralPath "." -Directory | ForEach-Object {
             $folderName = $_.Name
             $archiveName = "$folderName.zip"
             zip -r -9 $archiveName $folderName
@@ -530,7 +530,7 @@ jobs:
             $archivePath = "published_workflow_builds/*.zip"
             $releaseId = $env:RELEASE_ID
             $token = "${{ secrets.GITHUB_TOKEN }}""
-            Get-ChildItem -Path $archivePath | ForEach-Object {
+            Get-ChildItem -LiteralPath $archivePath | ForEach-Object {
               $filePath = $_.FullName
               $fileName = $_.Name
               $uploadUrl = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$releaseId/assets?name=$fileName&label=$fileName"

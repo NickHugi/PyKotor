@@ -48,7 +48,7 @@ class Ui_Dialog(object):
         self.coreTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.coreTree.setDragEnabled(True)
         self.coreTree.setDragDropMode(QAbstractItemView.DragOnly)
-        self.coreTree.setDefaultDropAction(Qt.CopyAction)
+        self.coreTree.setDefaultDropAction(Qt.DropAction.CopyAction)
         self.coreTree.setAlternatingRowColors(True)
         self.coreTree.header().setVisible(False)
 
@@ -69,7 +69,7 @@ class Ui_Dialog(object):
         self.modulesTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.modulesTree.setDragEnabled(True)
         self.modulesTree.setDragDropMode(QAbstractItemView.DragOnly)
-        self.modulesTree.setDefaultDropAction(Qt.CopyAction)
+        self.modulesTree.setDefaultDropAction(Qt.DropAction.CopyAction)
         self.modulesTree.setAlternatingRowColors(True)
         self.modulesTree.setHeaderHidden(True)
 
@@ -90,7 +90,7 @@ class Ui_Dialog(object):
         self.overrideTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.overrideTree.setDragEnabled(True)
         self.overrideTree.setDragDropMode(QAbstractItemView.DragOnly)
-        self.overrideTree.setDefaultDropAction(Qt.CopyAction)
+        self.overrideTree.setDefaultDropAction(Qt.DropAction.CopyAction)
         self.overrideTree.setAlternatingRowColors(True)
         self.overrideTree.setHeaderHidden(True)
 

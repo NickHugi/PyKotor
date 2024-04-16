@@ -35,7 +35,7 @@ $largeModules = @()
 foreach ($moduleName in $modulesArray) {
     $modulePath = Join-Path -Path $venvPath -ChildPath $moduleName
     if (Test-Path $modulePath) {
-        $dirSize = (Get-ChildItem -Path $modulePath -Recurse | Measure-Object -Property Length -Sum).Sum
+        $dirSize = (Get-ChildItem -LiteralPath $modulePath -Recurse | Measure-Object -Property Length -Sum).Sum
         if ($dirSize -ge $sizeThreshold) {
             #Write-Output "Found large module $modulePath with size $dirSize (exceeding threshold $sizeThreshold)"
             $largeModules += $moduleName
