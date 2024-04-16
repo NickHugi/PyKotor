@@ -173,6 +173,7 @@ def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes |
         log.debug("user exited")
         return None
 
+    # This should never be reached, leave in for static type checkers.
     raise ValueError("Could not get the NCS bytes.")  # noqa: TRY003, EM101
 
 def _prompt_additional_include_dirs(
