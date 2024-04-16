@@ -249,43 +249,8 @@ def _win_setup_nwnnsscomp_compiler(
     gameEnum: Game = Game.K2 if tsl else Game.K1
     extCompiler = ExternalNCSCompiler(global_settings.nssCompilerPath)
 
-    # Use polymorphism to allow easy conditional usage of the registry spoofer.
-    reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer
-    if extCompiler.get_info() in {
-        KnownExternalCompilers.KOTOR_SCRIPTING_TOOL,
-        KnownExternalCompilers.KOTOR_TOOL,
-    }:
-        reg_spoofer = SpoofKotorRegistry(installation_path, gameEnum)
-    else:
-        reg_spoofer = NoOpRegistrySpoofer()
-    try:
-        with reg_spoofer:
-            try:
-                stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
-                log.debug("stdout: %s\nstderr: %s", stdout, stderr)
-            except EntryPointError:
-                QMessageBox.warning(
-                    None,
-                    "Include scripts cannot be compiled",
-                    "This script is an include script, compiling it serves no purpose. If this warning is incorrect, check that your script has an entry point and then compile again.",
-                )
-                raise  # TODO(th3w1zard1): return something ignorable.
-            else:
-                if stderr:
-                    stdout, stderr = _prompt_additional_include_dirs(
-                        extCompiler,
-                        source,
-                        stderr,
-                        tempSourcePath,
-                        tempCompiledPath,
-                        extract_path,
-                        gameEnum
-                    )
-                if stderr:
-                    raise ValueError(f"{stdout}\n{stderr}")
-    except PermissionError as e:
-        handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
-        try:  # TODO(th3w1zard1): move this block to a function to extract duplicate logic
+    def _try_compile_script():
+        try:
             stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
             log.debug("stdout: %s\nstderr: %s", stdout, stderr)
         except EntryPointError:
@@ -308,6 +273,23 @@ def _win_setup_nwnnsscomp_compiler(
                 )
             if stderr:
                 raise ValueError(f"{stdout}\n{stderr}")
+
+    # Use polymorphism to allow easy conditional usage of the registry spoofer.
+    reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer
+    if extCompiler.get_info() in {
+        KnownExternalCompilers.KOTOR_SCRIPTING_TOOL,
+        KnownExternalCompilers.KOTOR_TOOL,
+    }:
+        reg_spoofer = SpoofKotorRegistry(installation_path, gameEnum)
+    else:
+        reg_spoofer = NoOpRegistrySpoofer()
+
+    try:
+        with reg_spoofer:
+            _try_compile_script()
+    except PermissionError as e:
+        handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
+        _try_compile_script()
 
     # TODO(NickHugi): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
     # I do not think this version matches the versions used by Mac/Linux.
