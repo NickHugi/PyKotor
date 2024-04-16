@@ -183,7 +183,7 @@ def _prompt_additional_include_dirs(
     tempCompiledPath: os.PathLike | str,
     extract_path: Path,
     gameEnum: Game,
-):
+) -> tuple[str, str]:
     include_missing_errstr = "Unable to open the include file"
     pattern = rf'{include_missing_errstr} "([^"\n]*)"'
     while include_missing_errstr in stderr:
@@ -191,7 +191,7 @@ def _prompt_additional_include_dirs(
         include_path_str = QFileDialog.getExistingDirectory(
             None,
             f"Script requires include file '{Path(match[1]).name if match else '<unknown>'}', please choose the directory it's in.",
-            options=QFileDialog.Options(),
+            options=QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
         )
         if not include_path_str or not include_path_str.strip():
             log.debug("user cancelled include dir lookup for nss compilation with nwnnsscomp")
@@ -218,7 +218,7 @@ def _prompt_additional_include_dirs(
         stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
         log.debug("stdout: %s\nstderr: %s", stdout, stderr)
 
-    return "Error: Syntax error" not in stderr
+    return stdout, stderr
 
 def _win_setup_nwnnsscomp_compiler(
     global_settings: GlobalSettings,
@@ -266,9 +266,8 @@ def _win_setup_nwnnsscomp_compiler(
                 )
                 raise  # TODO(th3w1zard1): return something ignorable.
             else:
-                next_result = True
                 if stderr:
-                    next_result = _prompt_additional_include_dirs(
+                    stdout, stderr = _prompt_additional_include_dirs(
                         extCompiler,
                         source,
                         stderr,
@@ -277,7 +276,7 @@ def _win_setup_nwnnsscomp_compiler(
                         extract_path,
                         gameEnum
                     )
-                if not next_result:
+                if stderr:
                     raise ValueError(f"{stdout}\n{stderr}")
     except PermissionError as e:
         handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
