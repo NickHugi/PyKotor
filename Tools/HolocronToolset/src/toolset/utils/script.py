@@ -281,6 +281,29 @@ def _win_setup_nwnnsscomp_compiler(
                     raise ValueError(f"{stdout}\n{stderr}")
     except PermissionError as e:
         handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
+        try:  # TODO(th3w1zard1): move this block to a function to extract duplicate logic
+            stdout, stderr = extCompiler.compile_script(tempSourcePath, tempCompiledPath, gameEnum)
+            log.debug("stdout: %s\nstderr: %s", stdout, stderr)
+        except EntryPointError:
+            QMessageBox.warning(
+                None,
+                "Include scripts cannot be compiled",
+                "This script is an include script, compiling it serves no purpose. If this warning is incorrect, check that your script has an entry point and then compile again.",
+            )
+            raise  # TODO(th3w1zard1): return something ignorable.
+        else:
+            if stderr:
+                stdout, stderr = _prompt_additional_include_dirs(
+                    extCompiler,
+                    source,
+                    stderr,
+                    tempSourcePath,
+                    tempCompiledPath,
+                    extract_path,
+                    gameEnum
+                )
+            if stderr:
+                raise ValueError(f"{stdout}\n{stderr}")
 
     # TODO(NickHugi): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
     # I do not think this version matches the versions used by Mac/Linux.
