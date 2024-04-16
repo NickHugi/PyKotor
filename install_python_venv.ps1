@@ -860,7 +860,7 @@ function Find-Python {
                             Write-Host "Check 4: $resolvedPath has $thisVersion which matches our version range."
                             # Valid path or better recommended path found.
                             if (-not $global:pythonInstallPath -or $thisVersion -le $recommendedVersion) {
-                                Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
+                                Write-Host "Found better python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
 
@@ -878,16 +878,19 @@ function Find-Python {
             }
         }
     }
-    if ($installIfNotFound) {
-        # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-        # Example: while a venv can be partially created, the 
-        # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-        # they'll also be missing things like pip. This step fixes that.
-        if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
+    
+    # Even if python is installed, debian-based distros need python3-venv packages and a few others.
+    # Example: while a venv can be partially created, the 
+    # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
+    # they'll also be missing things like pip. This step fixes that.
+    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
+        try {
             $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-            $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-            Install-Python-Linux -pythonVersion $shortVersion
+        } catch {
+            $versionTypeObj = New-Object -TypeName "System.Version" $fallbackVersion
         }
+        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
+        Install-Python-Linux -pythonVersion $shortVersion
     }
 
     if ( -not $global:pythonInstallPath ) {
@@ -925,20 +928,6 @@ function Find-Python {
             Write-Host "Find python again now that it's been installed."
             Find-Python -installIfNotFound $false
         }
-    }
-    
-    # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-    # Example: while a venv can be partially created, the 
-    # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-    # they'll also be missing things like pip. This step fixes that.
-    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
-        try {
-            $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-        } catch {
-            $versionTypeObj = New-Object -TypeName "System.Version" $fallbackVersion
-        }
-        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-        Install-Python-Linux -pythonVersion $shortVersion
     }
 }
 
