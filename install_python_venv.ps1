@@ -866,8 +866,10 @@ function Find-Python {
                             }
 
                             # HACK: to prevent ubuntu/debian reinstalls
-                            if ($global:pythonInstallPath.StartsWith("/usr/local/bin/python")) {
-                                Write-Host "altinstall detected, not running custom install hook."
+                            if ($global:pythonInstallPath.StartsWith("/usr/local/bin/python" -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu"))) {
+                                Write-Host "altinstall detected with version $thisVersion at path '$resolvedPath', not running custom install hook."
+                                $global:pythonInstallPath = $resolvedPath
+                                $global:pythonVersion = $thisVersion
                                 return
                             }
                         }
