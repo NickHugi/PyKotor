@@ -215,7 +215,21 @@ class Node:
 
 
 class Mesh:
-    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags, vertex_offset, normal_offset, texture_offset, lightmap_offset):
+    def __init__(
+        self,
+        scene: Scene,
+        node: Node,
+        texture: str,
+        lightmap: str,
+        vertex_data: bytearray,
+        element_data: bytearray,
+        block_size: int,
+        data_bitflags: int,
+        vertex_offset: int,
+        normal_offset: int,
+        texture_offset: int,
+        lightmap_offset: int,
+    ):
         """Initializes a Mesh object.
 
         Args:
@@ -224,8 +238,8 @@ class Mesh:
             node: Node - The node object
             texture: str - The texture path
             lightmap: str - The lightmap path
-            vertex_data: list - The vertex data
-            element_data: list - The element data
+            vertex_data: bytearray - The vertex data
+            element_data: bytearray - The element data
             block_size: int - The block size
             data_bitflags: int - The data bitflags
             vertex_offset: int - The vertex offset
