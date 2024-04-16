@@ -860,11 +860,11 @@ class App:
 
             if info_rte_path.safe_isfile():
                 data: bytes = BinaryReader.load_file(info_rte_path)
-                rtf_text: str = decode_bytes_with_fallbacks(data)
+                rtf_text: str = decode_bytes_with_fallbacks(data, errors="replace")
                 self.load_rte_content(rtf_text)
             elif info_rtf_path.safe_isfile():
                 data = BinaryReader.load_file(info_rtf_path)
-                rtf_text = decode_bytes_with_fallbacks(data)
+                rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
                 self.set_stripped_rtf_text(rtf_text)
                 # self.load_rtf_file(info_rtf_path)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
