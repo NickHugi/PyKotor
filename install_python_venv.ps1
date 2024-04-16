@@ -874,6 +874,12 @@ function Find-Python {
                                 Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
+
+                                # HACK: to prevent ubuntu/debian reinstalls
+                                if ($global:pythonInstallPath.StartsWith("/usr/local/bin/python")) {
+                                    Write-Host "altinstall detected, not running custom install hook."
+                                    return
+                                }
                             }
                         }
                     }
