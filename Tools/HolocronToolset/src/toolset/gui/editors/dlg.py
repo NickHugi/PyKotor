@@ -52,8 +52,8 @@ if TYPE_CHECKING:
         DLGStunt,
     )
 
-_LINK_ROLE = QtCore.Qt.UserRole + 1
-_COPY_ROLE = QtCore.Qt.UserRole + 2
+_LINK_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_COPY_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
 
 
 class GFFFieldSpinBox(QSpinBox):
@@ -1266,14 +1266,14 @@ class DLGEditor(Editor):
     def onRemoveStuntClicked(self):
         if self.ui.stuntList.selectedItems():
             item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
-            stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
+            stunt: DLGStunt = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self._dlg.stunts.remove(stunt)
             self.refreshStuntList()
 
     def onEditStuntClicked(self):
         if self.ui.stuntList.selectedItems():
             item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
-            stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
+            stunt: DLGStunt = item.data(QtCore.Qt.ItemDataRole.UserRole)
             dialog = CutsceneModelDialog(self, stunt)
             if dialog.exec_():
                 stunt.stunt_model = dialog.stunt().stunt_model
@@ -1285,7 +1285,7 @@ class DLGEditor(Editor):
         for stunt in self._dlg.stunts:
             text = f"{stunt.stunt_model} ({stunt.participant})"
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, stunt)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, stunt)
             self.ui.stuntList.addItem(item)
 
     def onAddAnimClicked(self):
@@ -1306,14 +1306,14 @@ class DLGEditor(Editor):
             node: DLGNode = item.data(_LINK_ROLE).node
 
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
-            anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
+            anim: DLGAnimation = animItem.data(QtCore.Qt.ItemDataRole.UserRole)
             node.animations.remove(anim)
             self.refreshAnimList()
 
     def onEditAnimClicked(self):
         if self.ui.animsList.selectedItems():
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
-            anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
+            anim: DLGAnimation = animItem.data(QtCore.Qt.ItemDataRole.UserRole)
             dialog = EditAnimationDialog(self, self._installation, anim)
             if dialog.exec_():
                 anim.animation_id = dialog.animation().animation_id
@@ -1350,5 +1350,5 @@ class DLGEditor(Editor):
                     name = animations_2da.get_cell(anim.animation_id, "name")
                 text: str = f"{name} ({anim.participant})"
                 item = QListWidgetItem(text)
-                item.setData(QtCore.Qt.UserRole, anim)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, anim)
                 self.ui.animsList.addItem(item)

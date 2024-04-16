@@ -228,11 +228,11 @@ class FileResults(QDialog):
             filepath = result.filepath()
             parent_name = filepath.name if filename != filepath.name else f"{filepath.parent.name}"
             item = QListWidgetItem(f"{parent_name}/{filename}")
-            item.setData(QtCore.Qt.UserRole, result)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
 
-        self.ui.resultList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.resultList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
 
     def accept(self):
         """Accepts the current selection from the result list.
@@ -249,7 +249,7 @@ class FileResults(QDialog):
         """
         item = self.ui.resultList.currentItem()
         if item:
-            self.selection = item.data(QtCore.Qt.UserRole)
+            self.selection = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.selectionSignal.emit(self.selection)
         super().accept()
 
@@ -272,7 +272,7 @@ class FileResults(QDialog):
             print("Nothing to open, item is None")
             return
 
-        resource: FileResource = item.data(QtCore.Qt.UserRole)
+        resource: FileResource = item.data(QtCore.Qt.ItemDataRole.UserRole)
         openResourceEditor(
             filepath=resource.filepath(),
             resref=resource.resname(),

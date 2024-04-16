@@ -20,7 +20,7 @@ class Ui_MainWindow(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName("verticalLayout")
         self.textureImage = QtWidgets.QLabel(self.centralwidget)
-        self.textureImage.setFrameShape(QtWidgets.QFrame.Box)
+        self.textureImage.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.textureImage.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.textureImage.setText("")
         self.textureImage.setAlignment(QtCore.Qt.AlignCenter)

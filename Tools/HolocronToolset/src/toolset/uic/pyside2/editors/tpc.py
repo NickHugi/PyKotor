@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.textureImage = QLabel(self.centralwidget)
         self.textureImage.setObjectName(u"textureImage")
-        self.textureImage.setFrameShape(QFrame.Box)
+        self.textureImage.setFrameShape(QFrame.Shape.Box)
         self.textureImage.setFrameShadow(QFrame.Sunken)
         self.textureImage.setAlignment(Qt.AlignCenter)
 

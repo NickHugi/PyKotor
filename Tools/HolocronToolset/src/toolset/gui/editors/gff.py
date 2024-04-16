@@ -25,12 +25,12 @@ if TYPE_CHECKING:
 
     from toolset.data.installation import HTInstallation
 
-_VALUE_NODE_ROLE = QtCore.Qt.UserRole + 1
-_TYPE_NODE_ROLE = QtCore.Qt.UserRole + 2
-_LABEL_NODE_ROLE = QtCore.Qt.UserRole + 3
+_VALUE_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_TYPE_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
+_LABEL_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 3
 
-_ID_SUBSTRING_ROLE = QtCore.Qt.UserRole + 1
-_TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
+_ID_SUBSTRING_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_TEXT_SUBSTRING_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
 
 
 class GFFEditor(Editor):
@@ -58,9 +58,9 @@ class GFFEditor(Editor):
         self._setupMenus()
         self._setupSignals()
 
-        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
 
-        self.ui.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         self.ui.treeView.setSortingEnabled(True)
 
         # Make the right panel take as little space possible

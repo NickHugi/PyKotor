@@ -107,7 +107,7 @@ class TLKEditor(Editor):
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
-        self.ui.talkTable.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.talkTable.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.talkTable.customContextMenuRequested.connect(self.showContextMenu)
 
         self.populateLanguageMenu()
@@ -257,7 +257,7 @@ class TLKEditor(Editor):
     ):
         if not results_list:
             QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "No resources found",
                 f"There are no GFFs that reference this tlk entry (stringref {stringref})",
                 parent=self,
@@ -413,8 +413,8 @@ class LoaderDialog(QDialog):
         self.setWindowTitle("Loading...")
         self.setFixedSize(200, 40)
 
-        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)

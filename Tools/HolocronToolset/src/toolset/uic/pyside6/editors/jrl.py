@@ -53,7 +53,7 @@ class Ui_MainWindow(object):
         self.splitter.setOrientation(Qt.Vertical)
         self.journalTree = QTreeView(self.splitter)
         self.journalTree.setObjectName(u"journalTree")
-        self.journalTree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.journalTree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.journalTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.journalTree.setHeaderHidden(True)
         self.splitter.addWidget(self.journalTree)

@@ -108,7 +108,7 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
         )
         log.warning(msg.replace("<br>", "\n"), exc_info=True)
         QMessageBox(
-            QMessageBox.Warning,
+            QMessageBox.Icon.Warning,
             "Permission denied when attempting to update nwnnsscomp in registry",
             msg,
         ).exec_()
@@ -309,11 +309,11 @@ def handle_permission_error(
     )
     log.warning(msg.replace("<br>", "\n"))
     longMsgBoxErr = QMessageBox(
-        QMessageBox.Warning,
+        QMessageBox.Icon.Warning,
         "Permission denied when attempting to update nwnnsscomp in registry",
         msg,
     )
-    longMsgBoxErr.setIcon(QMessageBox.Warning)
+    longMsgBoxErr.setIcon(QMessageBox.Icon.Warning)
     longMsgBoxErr.exec_()
 
 
@@ -322,7 +322,7 @@ def _prompt_user_for_compiler_option() -> int:
     msgBox = QMessageBox()
 
     # Set the message box properties
-    msgBox.setIcon(QMessageBox.Question)
+    msgBox.setIcon(QMessageBox.Icon.Question)
     msgBox.setWindowTitle("Choose a NCS compiler")
     msgBox.setText("Would you like to use 'nwnnsscomp.exe' or Holocron Toolset's built-in compiler?")
     msgBox.setInformativeText("Choose one of the options below:")

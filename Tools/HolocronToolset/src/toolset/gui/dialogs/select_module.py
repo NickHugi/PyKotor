@@ -82,7 +82,7 @@ class SelectModuleDialog(QDialog):
             listedModules.add(root)
 
             item = QListWidgetItem(f"{moduleNames[module]}  [{root}]")
-            item.setData(QtCore.Qt.UserRole, root)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, root)
             self.ui.moduleList.addItem(item)
 
     def browse(self):
@@ -106,7 +106,7 @@ class SelectModuleDialog(QDialog):
         - Gets the currently selected module from the module list widget
         - Calls accept to close the dialog and apply changes.
         """
-        self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.UserRole)
+        self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)
         self.accept()
 
     def onRowChanged(self):

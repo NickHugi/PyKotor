@@ -35,7 +35,7 @@ $largeModules = @()
 foreach ($moduleName in $modulesArray) {
     $modulePath = Join-Path -Path $venvPath -ChildPath $moduleName
     if (Test-Path $modulePath) {
-        $dirSize = (Get-ChildItem -Path $modulePath -Recurse | Measure-Object -Property Length -Sum).Sum
+        $dirSize = (Get-ChildItem -LiteralPath $modulePath -Recurse | Measure-Object -Property Length -Sum).Sum
         if ($dirSize -ge $sizeThreshold) {
             #Write-Output "Found large module $modulePath with size $dirSize (exceeding threshold $sizeThreshold)"
             $largeModules += $moduleName
@@ -198,7 +198,7 @@ $pyInstallerArgs = @{
     'distpath' = ($rootPath + $pathSep + "dist")
     'name' = 'HoloPatcher'
     'upx-dir' = $upx_dir
-    'icon' = "..$pathSep" + "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$iconExtension"
+    'icon' = "resources$pathSep" + "icons$pathSep" + "patcher_icon_v2.$iconExtension"
 }
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
@@ -243,22 +243,17 @@ if ((Get-OS) -eq "Mac") {
     }
 }
 
-# Prepare the Python command as a single string
-$pythonCommand = @"
+if ((Get-OS) -eq "Mac") {
+    $pythonCommand = @"
 import tkinter
 root = tkinter.Tk()
 print(root.tk.exprstring('$tcl_library'))
 print(root.tk.exprstring('$tk_library'))
 "@
-if ((Get-OS) -eq "Mac") {
-    
-    # Execute the Python command and capture the output
     $output = & $pythonExePath -c $pythonCommand
     
     # The output will contain both paths, one per line. Split them.
     $lines = $output -split "`n"
-    
-    # Assuming the first line is the Tcl library path and the second line is the Tk library path
     $tcl_library = $lines[0]
     $tk_library = $lines[1]
     
@@ -290,7 +285,7 @@ foreach ($arg in $pyInstallerArgs) {
 }
 
 # Append the final script path
-$argumentsArray += "__main__.py"
+$argumentsArray += "holopatcher/__main__.py"
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"

@@ -188,7 +188,7 @@ jobs:
             if (-not (Test-Path -Path "upx-dir")) {
                 New-Item -ItemType Directory -Path "upx-dir"
             }
-            Get-ChildItem -Path "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
+            Get-ChildItem -LiteralPath "temp_folder_upx/$fileNameWithoutExtension" -Recurse | Move-Item -Destination "upx-dir"
             Remove-Item "temp_folder_upx" -Recurse -Force -ErrorAction SilentlyContinue
           } else {
             tar -xvf $archiveName --strip-components=1 -C "upx-dir"
@@ -318,13 +318,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -337,7 +337,7 @@ jobs:
         Get-PSDrive -PSProvider FileSystem | ForEach-Object {
           $drive = $_.Root
           Write-Host "Searching in $drive"
-          Get-ChildItem -Path $drive -Filter 'api-ms-win-crt-*.dll' -Recurse -ErrorAction SilentlyContinue -Force | ForEach-Object {
+          Get-ChildItem -LiteralPath $drive -Filter 'api-ms-win-crt-*.dll' -Recurse -ErrorAction SilentlyContinue -Force | ForEach-Object {
             Write-Host $_.FullName
           }
         }
@@ -467,13 +467,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -604,13 +604,13 @@ jobs:
         Write-Host "Virtual environment path: $venvPath"
         
         # Dynamically find the Python version directory inside the venv
-        $pythonLibPath = Get-ChildItem -Path "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+        $pythonLibPath = Get-ChildItem -LiteralPath "$venvPath/lib" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
         $sitePackagesPath = Join-Path -Path $pythonLibPath.FullName -ChildPath "site-packages"
         
         Write-Host "Site-packages path: $sitePackagesPath"
 
         # Use patchelf to adjust RPATH for all shared libraries in the virtual environment
-        Get-ChildItem -Path $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
+        Get-ChildItem -LiteralPath $sitePackagesPath -Filter *.so -Recurse | ForEach-Object {
           $libPath = $_.FullName
           Write-Host "Patching $libPath"
           sudo patchelf --set-rpath '$ORIGIN' $libPath
@@ -882,7 +882,7 @@ jobs:
             }
 
             # Iterate through each tool in the folder
-            Get-ChildItem -Path $matrixPackagePath | ForEach-Object {
+            Get-ChildItem -LiteralPath $matrixPackagePath | ForEach-Object {
               $toolExePath = $_.FullName
               $toolFileName = $_.Name
               $fileBaseName = [IO.Path]::GetFileNameWithoutExtension($_.Name)

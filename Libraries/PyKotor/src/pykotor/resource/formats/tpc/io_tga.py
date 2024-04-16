@@ -190,10 +190,15 @@ class TPCTGAReader(ResourceReader):
 
     def _load_with_pillow(
         self,
-    ) -> TPC | None:
+    ):
+        if self._tpc is None:
+            raise ValueError("Call load() instead of this directly.")
         # Use Pillow to handle the TGA file
         print("Loading with pillow")
-        with Image.open(self._reader._stream) as img:  # type: ignore[reportArgumentType]  their static type is incorrect, it supports any stream/byte/filepath-like object.
+
+        # Their static type is incorrect, it supports any stream/byte/filepath-like object.
+        with Image.open(self._reader._stream) as img:  # type: ignore[reportArgumentType]
+
             # Determine the appropriate texture format based on the image mode
             if img.mode == "L":
                 texture_format = TPCTextureFormat.Greyscale

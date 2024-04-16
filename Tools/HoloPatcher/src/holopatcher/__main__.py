@@ -56,7 +56,7 @@ if not is_frozen():
             update_sys_path(utility_path.parent)
 
 
-from config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
+from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -70,7 +70,7 @@ from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
-from utility.system.os_helper import win_get_system32_dir
+from utility.system.os_helper import kill_self_pid, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 from utility.tkinter.updater import TkProgressDialog
@@ -295,7 +295,11 @@ class App:
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
-        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
+        self.gamepaths["values"] = [
+            str(path)
+            for game in find_kotor_paths_from_default().values()
+            for path in game
+        ]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=self.open_kotor)
@@ -1264,6 +1268,7 @@ class App:
 
     def set_state(
         self,
+        *,
         state: bool,
     ):
         """Sets the active thread task state. Disables UI controls until this function is called again with run=False.
@@ -1325,7 +1330,15 @@ class App:
             8. If CLI, exit regardless of success or error.
         """
         confirm_msg: str = installer.config().confirm_message.strip()
-        if confirm_msg and not self.one_shot and confirm_msg != "N/A" and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
+        if (
+            confirm_msg
+            and not self.one_shot
+            and confirm_msg != "N/A"
+            and not messagebox.askokcancel(
+                "This mod requires confirmation",
+                confirm_msg,
+            )
+        ):
             return
         if progress_update_func is not None:
             self.progress_bar["maximum"] = len(
@@ -1556,9 +1569,9 @@ sys.excepthook = onAppCrash
 
 def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
-    #print("Fully shutting down Holo Patcher...")
-    #kill_self_pid()
-    #app.root.destroy()
+    print("Fully shutting down HoloPatcher...")
+    kill_self_pid()
+    app.root.destroy()
 
 
 def main():
