@@ -600,7 +600,7 @@ function Install-PythonUnixSource {
     Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
 
     # Conditionally apply --disable-new-dtags based on platform
-    $configureOptions = "--enable-optimizations --with-ensurepip=install  --disable-shared"
+    $configureOptions = "--enable-optimizations --with-ensurepip=install --enable-shared"
     if ((Get-OS) -eq "Linux") {
         $configureOptions += ' LDFLAGS="-Wl,--disable-new-dtags"'
     }
