@@ -1264,6 +1264,7 @@ class App:
 
     def set_state(
         self,
+        *,
         state: bool,
     ):
         """Sets the active thread task state. Disables UI controls until this function is called again with run=False.
@@ -1325,7 +1326,15 @@ class App:
             8. If CLI, exit regardless of success or error.
         """
         confirm_msg: str = installer.config().confirm_message.strip()
-        if confirm_msg and not self.one_shot and confirm_msg != "N/A" and not messagebox.askokcancel("This mod requires confirmation", confirm_msg):
+        if (
+            confirm_msg
+            and not self.one_shot
+            and confirm_msg != "N/A"
+            and not messagebox.askokcancel(
+                "This mod requires confirmation",
+                confirm_msg,
+            )
+        ):
             return
         if progress_update_func is not None:
             self.progress_bar["maximum"] = len(
