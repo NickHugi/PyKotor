@@ -4,8 +4,6 @@ import os
 import re
 import uuid
 
-from contextlib import suppress
-
 from qtpy.QtWidgets import QFileDialog, QMessageBox
 
 from pykotor.common.misc import Game
@@ -90,7 +88,10 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
 
     # Use polymorphism to allow easy conditional usage of the registry spoofer.
     reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer
-    if extCompiler.get_info() in {KnownExternalCompilers.KOTOR_SCRIPTING_TOOL, KnownExternalCompilers.KOTOR_TOOL}:
+    if extCompiler.get_info() in {
+        KnownExternalCompilers.KOTOR_SCRIPTING_TOOL,
+        KnownExternalCompilers.KOTOR_TOOL,
+    }:
         reg_spoofer = SpoofKotorRegistry(installation_path, gameEnum)
     else:
         reg_spoofer = NoOpRegistrySpoofer()
@@ -250,7 +251,10 @@ def _win_setup_nwnnsscomp_compiler(
 
     # Use polymorphism to allow easy conditional usage of the registry spoofer.
     reg_spoofer: SpoofKotorRegistry | NoOpRegistrySpoofer
-    if extCompiler.get_info() in {KnownExternalCompilers.KOTOR_SCRIPTING_TOOL, KnownExternalCompilers.KOTOR_TOOL}:
+    if extCompiler.get_info() in {
+        KnownExternalCompilers.KOTOR_SCRIPTING_TOOL,
+        KnownExternalCompilers.KOTOR_TOOL,
+    }:
         reg_spoofer = SpoofKotorRegistry(installation_path, gameEnum)
     else:
         reg_spoofer = NoOpRegistrySpoofer()
@@ -349,12 +353,16 @@ def _prompt_user_for_compiler_option() -> int:
     msgBox.setWindowTitle("Choose a NCS compiler")
     msgBox.setText("Would you like to use 'nwnnsscomp.exe' or Holocron Toolset's built-in compiler?")
     msgBox.setInformativeText("Choose one of the options below:")
-    msgBox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.Abort)
-    msgBox.setDefaultButton(QMessageBox.Abort)
+    msgBox.setStandardButtons(
+        QMessageBox.StandardButton.Yes
+        | QMessageBox.StandardButton.No
+        | QMessageBox.StandardButton.Abort
+    )
+    msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
 
     # Set the button text
     msgBox.button(QMessageBox.StandardButton.Yes).setText("Built-In Compiler")  # type: ignore[union-attr]
     msgBox.button(QMessageBox.StandardButton.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
-    msgBox.button(QMessageBox.Abort).setText("Cancel")  # type: ignore[union-attr]
+    msgBox.button(QMessageBox.StandardButton.Abort).setText("Cancel")  # type: ignore[union-attr]
 
     return msgBox.exec_()
