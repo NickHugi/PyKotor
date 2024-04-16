@@ -41,7 +41,12 @@ class NoOpRegistrySpoofer:
         log.debug(f"NoOpRegistrySpoofer.__exit__({exc_type}, {exc_val}, {exc_tb})")
 
 
-def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool) -> str:
+def decompileScript(
+    compiled_bytes: bytes,
+    installation_path: Path,
+    *,
+    tsl: bool,
+) -> str:
     """Returns the NSS bytes of a decompiled script. If no NCS Decompiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NCS to a temporary directory (configured in settings), decompiles it there,
@@ -67,7 +72,11 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
     extract_path = setupExtractPath()
 
     ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
-    if not ncs_decompiler_path.name or ncs_decompiler_path.suffix.lower() != ".exe" or not ncs_decompiler_path.safe_isfile():
+    if (
+        not ncs_decompiler_path.name
+        or ncs_decompiler_path.suffix.lower() != ".exe"  # TODO: require something with Xoreos-tools on unix and make this nt-specific.
+        or not ncs_decompiler_path.safe_isfile()
+    ):
         lookup_path, _filter = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(lookup_path)
         if not ncs_decompiler_path.safe_isfile():
@@ -99,20 +108,8 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
         with reg_spoofer:
             stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
     except PermissionError as e:
-        if isinstance(reg_spoofer, NoOpRegistrySpoofer):
-            raise
-
-        # Spoofing was required but failed. Show the relevant message.
-        msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-            extCompiler.get_info().value.name, reg_spoofer.registry_path,
-            installation_path, reg_spoofer.original_value, str(e)
-        )
-        log.warning(msg.replace("<br>", "\n"), exc_info=True)
-        QMessageBox(
-            QMessageBox.Icon.Warning,
-            "Permission denied when attempting to update nwnnsscomp in registry",
-            msg,
-        ).exec_()
+        handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
+        # Attempt to decompile anyway.
         stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
     except Exception:
         log.exception("Exception in extCompiler.decompile_script() call.")
@@ -134,7 +131,12 @@ def setupExtractPath() -> Path:
             raise NoConfigurationSetError(msg)
     return extract_path
 
-def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes | None:
+def compileScript(
+    source: str,
+    installation_path: Path,
+    *,
+    tsl: bool,
+) -> bytes | None:
     # sourcery skip: assign-if-exp, introduce-default-else
     """Returns the NCS bytes of compiled source script using either nwnnsscomp.exe (Windows only) or our built-in compiler. If no NSS Compiler is selected, prompts the user to find the executable.
 
@@ -169,7 +171,7 @@ def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes |
         return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[extract_path]))
     if returnValue == QMessageBox.StandardButton.No:
         log.debug("user chose No, compiling with nwnnsscomp")
-        return _win_setup_nwnnsscomp_compiler(global_settings, extract_path, source, installation_path, tsl=tsl)
+        return _execute_nwnnsscomp_compile(global_settings, extract_path, source, installation_path, tsl=tsl)
     if returnValue is not None:  # user cancelled
         log.debug("user exited")
         return None
@@ -222,7 +224,7 @@ def _prompt_additional_include_dirs(
 
     return stdout, stderr
 
-def _win_setup_nwnnsscomp_compiler(
+def _execute_nwnnsscomp_compile(
     global_settings: GlobalSettings,
     extract_path: Path,
     source: str,
@@ -284,11 +286,13 @@ def _win_setup_nwnnsscomp_compiler(
     else:
         reg_spoofer = NoOpRegistrySpoofer()
 
+    # Compile the script with nwnnsscomp.
     try:
         with reg_spoofer:
             _try_compile_script()
     except PermissionError as e:
         handle_permission_error(reg_spoofer, extCompiler, installation_path, e)
+        # Spoofing was required but failed, attempt to compile anyway...
         _try_compile_script()
 
     # TODO(NickHugi): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
@@ -313,8 +317,11 @@ def handle_permission_error(
 
     # Spoofing was required but failed. Show the relevant message.
     msg = NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG.format(
-        extCompiler.get_info().value.name, reg_spoofer.registry_path,
-        installation_path, reg_spoofer.original_value, str(e)
+        extCompiler.get_info().value.name,
+        reg_spoofer.registry_path,
+        installation_path,
+        reg_spoofer.original_value,
+        str(e),
     )
     log.warning(msg.replace("<br>", "\n"))
     longMsgBoxErr = QMessageBox(
