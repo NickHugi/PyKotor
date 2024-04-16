@@ -165,7 +165,7 @@ class IndoorMapBuilder(QMainWindow):
 
         if len(self._kits) == 0:
             noKitPrompt = QMessageBox(
-                QMessageBox.Warning,
+                QMessageBox.Icon.Warning,
                 "No Kits Available",
                 "No kits were detected, would you like to open the Kit downloader?",
             )
@@ -242,7 +242,7 @@ class IndoorMapBuilder(QMainWindow):
                 self._filepath = filepath
                 self._refreshWindowTitle()
             except OSError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec_()
 
     def openKitDownloader(self):
         KitDownloader(self).exec_()
@@ -258,7 +258,7 @@ class IndoorMapBuilder(QMainWindow):
         msg += f"Map files can be found in:\n{path}"
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
         if loader.exec_():
-            QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
+            QMessageBox(QMessageBox.Icon.Information, "Map built", msg).exec_()
 
     def deleteSelected(self):
         for room in self.ui.mapRenderer.selectedRooms():
@@ -267,7 +267,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def selectedComponent(self) -> KitComponent | None:
         currentItem: QListWidgetItem | None = self.ui.componentList.currentItem()
-        return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
+        return None if currentItem is None else currentItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
     def setWarpPoint(
         self,
@@ -300,13 +300,13 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.componentList.clear()
             for component in kit.components:
                 item = QListWidgetItem(component.name)
-                item.setData(QtCore.Qt.UserRole, component)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, component)
                 self.ui.componentList.addItem(item)
 
     def onComponentSelected(self, item: QListWidgetItem):
         if item is None:
             return
-        component: KitComponent = item.data(QtCore.Qt.UserRole)
+        component: KitComponent = item.data(QtCore.Qt.ItemDataRole.UserRole)
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
 
@@ -339,13 +339,13 @@ class IndoorMapBuilder(QMainWindow):
         self._refreshStatusBar()
         worldDelta: Vector2 = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             # LMB + CTRL
             self.ui.mapRenderer.panCamera(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons:
+        elif QtCore.Qt.MouseButton.LeftButton in buttons:
             # LMB
             rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
             if not rooms:
@@ -389,7 +389,7 @@ class IndoorMapBuilder(QMainWindow):
             - Clears selection if no room found
             - Toggles cursor flip if middle mouse button and no control pressed.
         """
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             if self.ui.mapRenderer._cursorComponent is not None:
                 component: KitComponent | None = self.selectedComponent()
                 if component is not None:
@@ -458,7 +458,7 @@ class IndoorMapBuilder(QMainWindow):
         keys: set[int],
     ):
         room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
-        if QtCore.Qt.LeftButton in buttons and room:
+        if QtCore.Qt.MouseButton.LeftButton in buttons and room:
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(room)
 
@@ -1096,12 +1096,12 @@ class KitDownloader(QDialog):
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             errMsgBox = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "An unexpected error occurred while setting up the kit downloader.",
                 error_msg,
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()

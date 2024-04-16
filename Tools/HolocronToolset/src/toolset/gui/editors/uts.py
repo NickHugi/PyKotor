@@ -174,7 +174,7 @@ class UTSEditor(Editor):
         self.ui.soundList.clear()
         for sound in uts.sounds:
             item = QListWidgetItem(str(sound))
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
             self.ui.soundList.addItem(item)
 
         # Positioning
@@ -316,17 +316,19 @@ class UTSEditor(Editor):
         data: bytes | None = self._installation.sound(resname)
 
         if data:
+            # PyQt5 and PySide2 code path
+            from qtpy.QtMultimedia import QMediaContent
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
             self.buffer.open(QIODevice.ReadOnly)
             self.player.setMedia(QMediaContent(), self.buffer)
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
-            QMessageBox(QMessageBox.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
+            QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 
     def addSound(self):
         item = QListWidgetItem("new sound")
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
         self.ui.soundList.addItem(item)
 
     def removeSound(self):
@@ -343,7 +345,7 @@ class UTSEditor(Editor):
         self.ui.soundList.insertItem(row - 1, resname)
         self.ui.soundList.setCurrentRow(row - 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row - 1)
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
     def moveSoundDown(self):
         if self.ui.soundList.currentRow() == -1:
@@ -354,7 +356,7 @@ class UTSEditor(Editor):
         self.ui.soundList.insertItem(row + 1, resname)
         self.ui.soundList.setCurrentRow(row + 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row + 1)
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
     def closeEvent(self, e: QCloseEvent):
         self.player.stop()

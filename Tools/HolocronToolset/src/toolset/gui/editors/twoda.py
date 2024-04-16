@@ -140,7 +140,7 @@ class TwoDAEditor(Editor):
             self._load_main(data)
         except ValueError as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
             self.proxyModel.setSourceModel(self.model)
             self.new()
 

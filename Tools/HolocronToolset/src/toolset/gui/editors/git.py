@@ -653,7 +653,7 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.blockSignals(True)
         for i in range(self._ui.listWidget.count()):
             item = self._ui.listWidget.item(i)
-            instance = item.data(QtCore.Qt.UserRole)
+            instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if instance in instances:
                 self._ui.listWidget.setCurrentItem(item)
         self._ui.listWidget.blockSignals(False)
@@ -775,7 +775,7 @@ class _InstanceMode(_Mode):
 
         Sets the item data and tooltip, determines the label text based on instance type and editor settings, sets the item text and font if label not found.
         """
-        item.setData(QtCore.Qt.UserRole, instance)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, instance)
         item.setToolTip(self.getInstanceTooltip(instance))
 
         name: str | None = None
@@ -848,7 +848,7 @@ class _InstanceMode(_Mode):
         if item is None:
             self.setSelection([])
         else:
-            self.setSelection([item.data(QtCore.Qt.UserRole)])
+            self.setSelection([item.data(QtCore.Qt.ItemDataRole.UserRole)])
 
     def updateStatusBar(self, world: Vector2):
         if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
@@ -862,7 +862,7 @@ class _InstanceMode(_Mode):
         if item is None:
             return
 
-        instance = item.data(QtCore.Qt.UserRole)
+        instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
         menu = QMenu(self._ui.listWidget)
 
         self.addInstanceActionsToMenu(instance, menu)

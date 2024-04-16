@@ -44,6 +44,7 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(utility_path.parent)
 
 
+from batchpatcher.translate.language_translator import TranslationOption, Translator
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -65,7 +66,6 @@ from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
-from translate.language_translator import TranslationOption, Translator
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:

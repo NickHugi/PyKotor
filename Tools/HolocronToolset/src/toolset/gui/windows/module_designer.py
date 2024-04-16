@@ -497,11 +497,11 @@ class ModuleDesigner(QMainWindow):
 
         for resource in self._module.resources.values():
             item = QTreeWidgetItem([f"{resource.resname()}.{resource.restype().extension}"])
-            item.setData(0, QtCore.Qt.UserRole, resource)
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, resource)
             category = categories.get(resource.restype(), categories[ResourceType.INVALID])
             category.addChild(item)
 
-        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
@@ -509,7 +509,7 @@ class ModuleDesigner(QMainWindow):
 
         if editor is None:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Failed to open editor",
                 f"Failed to open editor for file: {resource.resname()}.{resource.restype().extension}",
             ).exec_()
@@ -555,9 +555,9 @@ class ModuleDesigner(QMainWindow):
                 continue
             for j in range(parent.childCount()):
                 item = parent.child(j)
-                res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
+                res: ModuleResource = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
                 if not isinstance(res, ModuleResource):
-                    self.log.debug("item.data(0, QtCore.Qt.UserRole) returned non ModuleResource in ModuleDesigner.selectResourceItem(): %s", safe_repr(res))
+                    self.log.debug("item.data(0, QtCore.Qt.ItemDataRole.UserRole) returned non ModuleResource in ModuleDesigner.selectResourceItem(): %s", safe_repr(res))
                     continue
                 if res.identifier() != instance.identifier():
                     continue
@@ -631,7 +631,7 @@ class ModuleDesigner(QMainWindow):
             if isinstance(instance, GITCamera):
                 item.setText(f"Camera #{instance.camera_id}")
                 item.setToolTip(f"Struct Index: {struct_index}\nCamera ID: {instance.camera_id}\nFOV: {instance.fov}")
-                item.setData(QtCore.Qt.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
+                item.setData(QtCore.Qt.ItemDataRole.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
                 filename: str = instance.identifier().resname
                 name: str = filename
@@ -656,13 +656,13 @@ class ModuleDesigner(QMainWindow):
 
                 item.setText(name)
                 item.setToolTip(f"Struct Index: {struct_index}\nResRef: {filename}\nName: {name}\nTag: {tag}")
-                item.setData(QtCore.Qt.UserRole + 1, instance.identifier().restype.extension + name)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole + 1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
-            item.setData(QtCore.Qt.UserRole, instance)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, instance)
             items.append(item)
 
-        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.UserRole + 1)):
+        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.ItemDataRole.UserRole + 1)):
             self.ui.instanceList.addItem(item)
 
     def selectInstanceItemOnList(self, instance: GITInstance):
@@ -682,7 +682,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.instanceList.clearSelection()
         for i in range(self.ui.instanceList.count()):
             item: QListWidgetItem | None = self.ui.instanceList.item(i)
-            data: GITInstance = item.data(QtCore.Qt.UserRole)
+            data: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if data is instance:  # TODO(th3w1zard1): Don't trust data(role) lookups to match original python ids, should be checking __eq__ here.
                 item.setSelected(True)
                 self.ui.instanceList.scrollToItem(item)
@@ -962,7 +962,7 @@ class ModuleDesigner(QMainWindow):
     def onInstanceListDoubleClicked(self):
         if self.ui.instanceList.selectedItems():
             item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
-            instance: GITInstance = item.data(QtCore.Qt.UserRole)
+            instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.setSelection([instance])
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
@@ -998,7 +998,7 @@ class ModuleDesigner(QMainWindow):
     def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
 
-        data = self.ui.resourceTree.currentItem().data(0, QtCore.Qt.UserRole)
+        data = self.ui.resourceTree.currentItem().data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(data, ModuleResource):
             self._build_active_override_menu(data, menu)
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))

@@ -109,7 +109,7 @@ class InsertInstanceDialog(QDialog):
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
                 item.setToolTip(str(resource.filepath()))
-                item.setData(QtCore.Qt.UserRole, resource)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
                 self.ui.resourceList.addItem(item)
 
         for capsule in self._module.capsules():
@@ -118,7 +118,7 @@ class InsertInstanceDialog(QDialog):
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))
                     item.setForeground(QColor(30, 30, 30))
-                    item.setData(QtCore.Qt.UserRole, resource)
+                    item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
                     self.ui.resourceList.addItem(item)
 
         if self.ui.resourceList.count() > 0:
@@ -137,7 +137,7 @@ class InsertInstanceDialog(QDialog):
         super().accept()
 
         new = True
-        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.UserRole)
+        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
 
         if self.ui.reuseResourceRadio.isChecked():
             new = False
@@ -192,16 +192,16 @@ class InsertInstanceDialog(QDialog):
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
 
         if self.ui.reuseResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
+            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
 
         if self.ui.copyResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
         if self.ui.createResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
     def onResRefEdited(self, text: str):
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(text))
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(text))
 
     def onResourceFilterChanged(self):
         text = self.ui.resourceFilter.text()

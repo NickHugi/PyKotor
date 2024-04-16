@@ -199,12 +199,12 @@ class UTCEditor(Editor):
             text: str = installation.talktable().string(stringref) if stringref else feat.get_string("label")
             text = text or f"[Unused Feat ID: {feat.label()}]"
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, int(feat.label()))
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, int(feat.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
         self.ui.featList.setSortingEnabled(True)
-        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.featList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -213,12 +213,12 @@ class UTCEditor(Editor):
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
             text = text or f"[Unused Power ID: {power.label()}]"
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, int(power.label()))
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, int(power.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
         self.ui.powerList.setSortingEnabled(True)
-        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.powerList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
@@ -336,7 +336,7 @@ class UTCEditor(Editor):
             item = self.getFeatItem(feat)
             if item is None:
                 item = QListWidgetItem(f"[Modded Feat ID: {feat}]")
-                item.setData(QtCore.Qt.UserRole, feat)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, feat)
                 item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
                 self.ui.featList.addItem(item)
             item.setCheckState(QtCore.Qt.Checked)
@@ -351,7 +351,7 @@ class UTCEditor(Editor):
                 item = self.getPowerItem(power)
                 if item is None:
                     item = QListWidgetItem(f"[Modded Power ID: {power}]")
-                    item.setData(QtCore.Qt.UserRole, power)
+                    item.setData(QtCore.Qt.ItemDataRole.UserRole, power)
                     item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)
                 item.setCheckState(QtCore.Qt.Checked)
@@ -467,13 +467,13 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
             if item.checkState() == QtCore.Qt.Checked:
-                utc.feats.append(item.data(QtCore.Qt.UserRole))
+                utc.feats.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
 
         powers: list[int] = utc.classes[-1].powers
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             if item.checkState() == QtCore.Qt.Checked:
-                powers.append(item.data(QtCore.Qt.UserRole))
+                powers.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
 
         use_tsl: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
         data = bytearray()
@@ -585,14 +585,14 @@ class UTCEditor(Editor):
         data: bytes | None = None
 
         if not resname:
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
             if (
-                QMessageBox(QMessageBox.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
+                QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
                 == QMessageBox.Yes
             ):
                 data = bytearray()
@@ -645,7 +645,7 @@ class UTCEditor(Editor):
             if item is None:
                 print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
                 continue
-            if item.data(QtCore.Qt.UserRole) == featId:
+            if item.data(QtCore.Qt.ItemDataRole.UserRole) == featId:
                 return item
         return None
 
@@ -655,7 +655,7 @@ class UTCEditor(Editor):
             if item is None:
                 print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
                 continue
-            if item.data(QtCore.Qt.UserRole) == powerId:
+            if item.data(QtCore.Qt.ItemDataRole.UserRole) == powerId:
                 return item
         return None
 

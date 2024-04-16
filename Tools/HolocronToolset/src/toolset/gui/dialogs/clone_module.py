@@ -128,20 +128,20 @@ class CloneModuleDialog(QDialog):
 
         if copyTextures:
             QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "This may take a while",
                 "You have selected to create copies of the " "texture. This process may add a few extra minutes to the waiting time.",
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
 
         if not AsyncLoader(self, "Creating module", task, "Failed to create module").exec_():
             return
 
         QMessageBox(
-            QMessageBox.Information,
+            QMessageBox.Icon.Information,
             "Clone Successful",
             f"You can now warp to the cloned module '{identifier}'.",
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).exec_()
 
     def loadModules(self):

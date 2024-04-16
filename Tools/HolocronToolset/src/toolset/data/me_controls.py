@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 def getMouseCode(string: str):
     MOUSE_MAP = {
-        "LEFT": QtCore.Qt.LeftButton,
+        "LEFT": QtCore.Qt.MouseButton.LeftButton,
         "MIDDLE": QtCore.Qt.MiddleButton,
         "RIGHT": QtCore.Qt.RightButton,
     }

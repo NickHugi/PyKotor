@@ -52,13 +52,13 @@ class LoadFromModuleDialog(QDialog):
                 continue
             filename = resource.filename()
             item = QListWidgetItem(filename)
-            item.setData(Qt.UserRole, resource)
+            item.setData(Qt.ItemDataRole.UserRole, resource)
             self.ui.resourceList.addItem(item)
 
     def resname(self) -> str | None:
         currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
         if currentItem:
-            resource: FileResource = currentItem.data(Qt.UserRole)
+            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.resname()
         return None
@@ -66,7 +66,7 @@ class LoadFromModuleDialog(QDialog):
     def restype(self) -> ResourceType | None:
         currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
         if currentItem:
-            resource: FileResource = currentItem.data(Qt.UserRole)
+            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.restype()
         return None
@@ -74,7 +74,7 @@ class LoadFromModuleDialog(QDialog):
     def data(self) -> bytes | None:
         currentItem: QListWidgetItem | None = self.ui.resourceList.currentItem()
         if currentItem:
-            resource: FileResource = currentItem.data(Qt.UserRole)
+            resource: FileResource = currentItem.data(Qt.ItemDataRole.UserRole)
             if resource:
                 return resource.data()
         return None

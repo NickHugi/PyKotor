@@ -16,7 +16,7 @@ class ComboBox2DA(QComboBox):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
 
         self._sortAlphabetically: bool = False

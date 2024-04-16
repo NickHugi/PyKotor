@@ -107,7 +107,7 @@ class HelpWindow(QMainWindow):
         structure = data.get("structure", {})
         for title in structure:
             item = QTreeWidgetItem([title])
-            item.setData(0, QtCore.Qt.UserRole, structure[title]["filename"])
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, structure[title]["filename"])
             addItem(item)
             self._setupContentsRecJSON(item, structure[title])
 
@@ -120,7 +120,7 @@ class HelpWindow(QMainWindow):
 
         for child in element:
             item = QTreeWidgetItem([child.get("name", "")])
-            item.setData(0, QtCore.Qt.UserRole, child.get("file"))
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, child.get("file"))
             addItem(item)
             self._setupContentsRecXML(item, child)
 
@@ -143,22 +143,22 @@ class HelpWindow(QMainWindow):
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             errMsgBox = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "An unexpected error occurred while parsing the help booklet.",
                 error_msg,
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()
         else:
             newHelpMsgBox = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 title,
                 text,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             newHelpMsgBox.setWindowIcon(self.windowIcon())
             newHelpMsgBox.addButton(QMessageBox.Yes)
@@ -195,7 +195,7 @@ class HelpWindow(QMainWindow):
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Failed to open help file",
                 f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
             ).exec_()
@@ -204,7 +204,7 @@ class HelpWindow(QMainWindow):
         if not self.ui.contentsTree.selectedItems():
             return
         item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
-        filename = item.data(0, QtCore.Qt.UserRole)
+        filename = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if filename:
             help_path = Path("./help").resolve()
             file_path = Path(help_path, filename)

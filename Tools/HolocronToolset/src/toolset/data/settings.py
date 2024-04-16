@@ -10,7 +10,7 @@ from qtpy.QtCore import QSettings, Qt
 # Full mapping of Qt.MouseButton values to integers
 mouseButtonMap: dict[Qt.MouseButton, int] = {
     Qt.NoButton: 0,
-    Qt.LeftButton: 1,
+    Qt.MouseButton.LeftButton: 1,
     Qt.RightButton: 2,
     Qt.MiddleButton: 4,
     Qt.BackButton: 8,

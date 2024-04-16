@@ -44,7 +44,7 @@ class Ui_MainWindow(object):
         self.mapRenderer = IndoorMapRenderer(self.centralwidget)
         self.mapRenderer.setMouseTracking(True)
         self.mapRenderer.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.mapRenderer.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.mapRenderer.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.mapRenderer.setObjectName("mapRenderer")
         self.horizontalLayout.addWidget(self.mapRenderer)
         self.horizontalLayout.setStretch(0, 1)
