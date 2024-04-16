@@ -932,7 +932,11 @@ function Find-Python {
     # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
     # they'll also be missing things like pip. This step fixes that.
     if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
-        $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+        try {
+            $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+        } catch {
+            $versionTypeObj = New-Object -TypeName "System.Version" $fallbackVersion
+        }
         $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
         Install-Python-Linux -pythonVersion $shortVersion
     }
