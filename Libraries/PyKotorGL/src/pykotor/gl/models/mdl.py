@@ -221,8 +221,8 @@ class Mesh:
         node: Node,
         texture: str,
         lightmap: str,
-        vertex_data: memoryview,
-        element_data: memoryview,
+        vertex_data: bytearray,
+        element_data: bytearray,
         block_size: int,
         data_bitflags: int,
         vertex_offset: int,
@@ -238,8 +238,8 @@ class Mesh:
             node: Node - The node object
             texture: str - The texture path
             lightmap: str - The lightmap path
-            vertex_data: list - The vertex data
-            element_data: list - The element data
+            vertex_data: bytearray - The vertex data
+            element_data: bytearray - The element data
             block_size: int - The block size
             data_bitflags: int - The data bitflags
             vertex_offset: int - The vertex offset

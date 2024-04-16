@@ -5,14 +5,12 @@ from typing import Any
 
 import jsonpickle
 
-from PyQt5.QtCore import QSettings, Qt
-
-from utility.error_handling import format_exception_with_variables
+from qtpy.QtCore import QSettings, Qt
 
 # Full mapping of Qt.MouseButton values to integers
 mouseButtonMap: dict[Qt.MouseButton, int] = {
     Qt.NoButton: 0,
-    Qt.LeftButton: 1,
+    Qt.MouseButton.LeftButton: 1,
     Qt.RightButton: 2,
     Qt.MiddleButton: 4,
     Qt.BackButton: 8,
@@ -101,13 +99,12 @@ class Settings:
                 raw_value = this.settings.value(name, serialized_default, str)
                 value = jsonpickle.decode(raw_value)
                 return reconstruct_value(value)
-            except JSONDecodeError as e:
+            except (TypeError, JSONDecodeError) as e:
                 print(f"Exception in settings getter: {e}")
                 return this.settings.value(name, l_default, l_default.__class__)
 
         def setter(this: Settings, value: Any):
-            converted_value = convert_value(value)
-            serialized_value = jsonpickle.encode(converted_value, warn=True)
-            this.settings.setValue(name, serialized_value)
+            #serialized_value = jsonpickle.encode(value, warn=True)
+            this.settings.setValue(name, jsonpickle.encode(convert_value(value)))
 
         return property(getter, setter)

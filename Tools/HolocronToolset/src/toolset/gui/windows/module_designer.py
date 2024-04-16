@@ -6,11 +6,12 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import pyperclip
+import qtpy
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QColor, QIcon, QPixmap
-from PyQt5.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QUndoCommand, QUndoStack
+from qtpy import QtCore
+from qtpy.QtCore import QPoint, QTimer
+from qtpy.QtGui import QColor, QIcon, QPixmap
+from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QUndoCommand, QUndoStack
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -49,9 +50,9 @@ from utility.error_handling import assert_with_variable_trace, safe_repr
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QFont, QKeyEvent
-    from PyQt5.QtWidgets import QCheckBox, QWidget
     from glm import vec3
+    from qtpy.QtGui import QFont, QKeyEvent
+    from qtpy.QtWidgets import QCheckBox, QWidget
 
     from pykotor.gl.scene import Camera
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -200,7 +201,16 @@ class ModuleDesigner(QMainWindow):
         self.isDragMoving: bool = False
         self.isDragRotating: bool = False
 
-        from toolset.uic.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -266,20 +276,16 @@ class ModuleDesigner(QMainWindow):
         else:
             self.openModule(mod_filepath)  # for some reason 3d rendering never loads when this is used...
 
-    def showEvent(self, event):
-        super().showEvent(event)
-        self.activateWindow()
-
     def closeEvent(self, event):
         reply = QMessageBox.question(
             self,
             "Confirm Exit",
             "Really quit the module designer? You may lose unsaved changes.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             event.accept()  # Let the window close
         else:
             event.ignore()  # Ignore the close event
@@ -503,11 +509,11 @@ class ModuleDesigner(QMainWindow):
 
         for resource in self._module.resources.values():
             item = QTreeWidgetItem([f"{resource.resname()}.{resource.restype().extension}"])
-            item.setData(0, QtCore.Qt.UserRole, resource)
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, resource)
             category = categories.get(resource.restype(), categories[ResourceType.INVALID])
             category.addChild(item)
 
-        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
@@ -521,7 +527,7 @@ class ModuleDesigner(QMainWindow):
 
         if editor is None:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Failed to open editor",
                 f"Failed to open editor for file: {resource.resname()}.{resource.restype().extension}",
             ).exec_()
@@ -567,9 +573,9 @@ class ModuleDesigner(QMainWindow):
                 continue
             for j in range(parent.childCount()):
                 item = parent.child(j)
-                res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
+                res: ModuleResource = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
                 if not isinstance(res, ModuleResource):
-                    self.log.debug("item.data(0, QtCore.Qt.UserRole) returned non ModuleResource in ModuleDesigner.selectResourceItem(): %s", safe_repr(res))
+                    self.log.debug("item.data(0, QtCore.Qt.ItemDataRole.UserRole) returned non ModuleResource in ModuleDesigner.selectResourceItem(): %s", safe_repr(res))
                     continue
                 if res.identifier() != instance.identifier():
                     continue
@@ -643,7 +649,7 @@ class ModuleDesigner(QMainWindow):
             if isinstance(instance, GITCamera):
                 item.setText(f"Camera #{instance.camera_id}")
                 item.setToolTip(f"Struct Index: {struct_index}\nCamera ID: {instance.camera_id}\nFOV: {instance.fov}")
-                item.setData(QtCore.Qt.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
+                item.setData(QtCore.Qt.ItemDataRole.UserRole + 1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
                 filename: str = instance.identifier().resname
                 name: str = filename
@@ -668,13 +674,13 @@ class ModuleDesigner(QMainWindow):
 
                 item.setText(name)
                 item.setToolTip(f"Struct Index: {struct_index}\nResRef: {filename}\nName: {name}\nTag: {tag}")
-                item.setData(QtCore.Qt.UserRole + 1, instance.identifier().restype.extension + name)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole + 1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
-            item.setData(QtCore.Qt.UserRole, instance)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, instance)
             items.append(item)
 
-        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.UserRole + 1)):
+        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.ItemDataRole.UserRole + 1)):
             self.ui.instanceList.addItem(item)
 
     def selectInstanceItemOnList(self, instance: GITInstance):
@@ -694,7 +700,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.instanceList.clearSelection()
         for i in range(self.ui.instanceList.count()):
             item: QListWidgetItem | None = self.ui.instanceList.item(i)
-            data: GITInstance = item.data(QtCore.Qt.UserRole)
+            data: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if data is instance:  # TODO(th3w1zard1): Don't trust data(role) lookups to match original python ids, should be checking __eq__ here.
                 item.setSelected(True)
                 self.ui.instanceList.scrollToItem(item)
@@ -974,7 +980,7 @@ class ModuleDesigner(QMainWindow):
     def onInstanceListDoubleClicked(self):
         if self.ui.instanceList.selectedItems():
             item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
-            instance: GITInstance = item.data(QtCore.Qt.UserRole)
+            instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.setSelection([instance])
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
@@ -1010,7 +1016,7 @@ class ModuleDesigner(QMainWindow):
     def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
 
-        data = self.ui.resourceTree.currentItem().data(0, QtCore.Qt.UserRole)
+        data = self.ui.resourceTree.currentItem().data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(data, ModuleResource):
             self._build_active_override_menu(data, menu)
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
@@ -1298,7 +1304,7 @@ class ModuleDesignerControls3d:
             self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
 
         if self.moveCameraPlane.satisfied(buttons, keys):  # sourcery skip: extract-method
-            upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_z=False)
+            upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_xy=False)
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= (upward.z + sideward.z) * strength
@@ -1688,14 +1694,8 @@ class ModuleDesignerControls2d:
                     self.editor.initialRotations[instance] = old_rotation
 
                 rotation: float = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
-                yaw = instance.yaw()
-                if yaw is None:
-                    self.editor.log.error("yaw cannot be None, instance %s", safe_repr(instance))
-                    continue
-                if isinstance(instance, GITCamera):
-                    instance.rotate(yaw - rotation, 0, 0)
-                else:
-                    instance.rotate(-yaw + rotation, 0, 0)
+                new_yaw = old_yaw - rotation if isinstance(instance, GITCamera) else -old_yaw + rotation
+                instance.rotate(new_yaw, 0, 0)
             if not self.editor.isDragRotating:
                 print("2d rotate set isDragRotating")
                 self.editor.isDragRotating = True

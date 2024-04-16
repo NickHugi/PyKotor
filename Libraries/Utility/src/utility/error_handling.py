@@ -256,8 +256,8 @@ def format_exception_with_variables(
     tb: types.TracebackType | None = None,
     message: str = "",
 ) -> str:
-    etype = etype if etype is not None else value.__class__
-    tb = tb if tb is not None else value.__traceback__
+    etype = type(value) if etype is None else etype
+    tb = value.__traceback__ if tb is None else tb
 
     # Check if the arguments are of the correct type
     if not issubclass(etype, BaseException):
@@ -401,7 +401,7 @@ def with_variable_trace(
                 elif action == "print":
                     print(full_message)  # noqa: T201
                 if log:
-                    with Path("errorlog.txt", encoding="utf-8").open("a") as outfile:
+                    with Path("errorlog.txt", encoding="utf-8").open("a", encoding="utf-8") as outfile:
                         outfile.write(full_message)
                 if rethrow:
                     # Raise an exception with the detailed message

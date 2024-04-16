@@ -1,20 +1,31 @@
 from __future__ import annotations
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QWidget
 
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
 class MiscWidget(QWidget):
-    editedSignal = QtCore.pyqtSignal()
+    editedSignal = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
         self.settings = GlobalSettings()
 
-        from toolset.uic.widgets.settings import misc
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.settings import misc  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.settings import misc  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.settings import misc  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.settings import misc  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = misc.Ui_Form()
         self.ui.setupUi(self)

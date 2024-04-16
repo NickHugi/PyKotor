@@ -182,6 +182,7 @@ ignore = [
     "EM102",    # Exception must not use an f-string literal, assign to variable first
     "SIM108",   # Use ternary operator instead of 'if' 'else' block
     "SIM114",   # Combine `if` branches using logical `or` operator
+    "S101",     # Use of `assert` detected.
 
 # The following are currently violated by the codebase.
 #    "D205",     # 1 blank line required between summary line and description

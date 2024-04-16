@@ -9,9 +9,11 @@ from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRectF, QTimer, Qt
-from PyQt5.QtGui import (
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QPointF, QRectF, QTimer, Qt
+from qtpy.QtGui import (
     QColor,
     QKeySequence,
     QPainter,
@@ -20,7 +22,7 @@ from PyQt5.QtGui import (
     QPixmap,
     QTransform,
 )
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QDialog,
     QFileDialog,
     QListWidgetItem,
@@ -47,15 +49,16 @@ from utility.system.path import Path
 from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import (
+
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import (
         QImage,
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
         QWheelEvent,
     )
-    from PyQt5.QtWidgets import (
+    from qtpy.QtWidgets import (
         QFormLayout,
     )
 
@@ -94,7 +97,16 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        from toolset.uic.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows.indoor_builder import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -157,15 +169,15 @@ class IndoorMapBuilder(QMainWindow):
 
         if len(self._kits) == 0:
             noKitPrompt = QMessageBox(
-                QMessageBox.Warning,
+                QMessageBox.Icon.Warning,
                 "No Kits Available",
                 "No kits were detected, would you like to open the Kit downloader?",
             )
-            noKitPrompt.addButton(QMessageBox.Yes)
-            noKitPrompt.addButton(QMessageBox.No)
-            noKitPrompt.setDefaultButton(QMessageBox.No)
+            noKitPrompt.addButton(QMessageBox.StandardButton.Yes)
+            noKitPrompt.addButton(QMessageBox.StandardButton.No)
+            noKitPrompt.setDefaultButton(QMessageBox.StandardButton.No)
 
-            if noKitPrompt.exec_() == QMessageBox.Yes:
+            if noKitPrompt.exec_() == QMessageBox.StandardButton.Yes:
                 self.openKitDownloader()
 
         for kit in self._kits:
@@ -234,7 +246,7 @@ class IndoorMapBuilder(QMainWindow):
                 self._filepath = filepath
                 self._refreshWindowTitle()
             except OSError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec_()
+                QMessageBox(QMessageBox.Icon.Critical, "Failed to load file", str(universal_simplify_exception(e))).exec_()
 
     def openKitDownloader(self):
         KitDownloader(self).exec_()
@@ -250,7 +262,7 @@ class IndoorMapBuilder(QMainWindow):
         msg += f"Map files can be found in:\n{path}"
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
         if loader.exec_():
-            QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
+            QMessageBox(QMessageBox.Icon.Information, "Map built", msg).exec_()
 
     def deleteSelected(self):
         for room in self.ui.mapRenderer.selectedRooms():
@@ -259,7 +271,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def selectedComponent(self) -> KitComponent | None:
         currentItem: QListWidgetItem | None = self.ui.componentList.currentItem()
-        return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
+        return None if currentItem is None else currentItem.data(QtCore.Qt.ItemDataRole.UserRole)
 
     def setWarpPoint(
         self,
@@ -292,13 +304,13 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.componentList.clear()
             for component in kit.components:
                 item = QListWidgetItem(component.name)
-                item.setData(QtCore.Qt.UserRole, component)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, component)
                 self.ui.componentList.addItem(item)
 
     def onComponentSelected(self, item: QListWidgetItem):
         if item is None:
             return
-        component: KitComponent = item.data(QtCore.Qt.UserRole)
+        component: KitComponent = item.data(QtCore.Qt.ItemDataRole.UserRole)
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
 
@@ -331,13 +343,13 @@ class IndoorMapBuilder(QMainWindow):
         self._refreshStatusBar()
         worldDelta: Vector2 = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             # LMB + CTRL
             self.ui.mapRenderer.panCamera(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons:
+        elif QtCore.Qt.MouseButton.LeftButton in buttons:
             # LMB
             rooms: list[IndoorMapRoom] = self.ui.mapRenderer.selectedRooms()
             if not rooms:
@@ -381,7 +393,7 @@ class IndoorMapBuilder(QMainWindow):
             - Clears selection if no room found
             - Toggles cursor flip if middle mouse button and no control pressed.
         """
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             if self.ui.mapRenderer._cursorComponent is not None:
                 component: KitComponent | None = self.selectedComponent()
                 if component is not None:
@@ -450,7 +462,7 @@ class IndoorMapBuilder(QMainWindow):
         keys: set[int],
     ):
         room: IndoorMapRoom | None = self.ui.mapRenderer.roomUnderMouse()
-        if QtCore.Qt.LeftButton in buttons and room:
+        if QtCore.Qt.MouseButton.LeftButton in buttons and room:
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(room)
 
@@ -477,19 +489,19 @@ class IndoorMapBuilder(QMainWindow):
 
 
 class IndoorMapRenderer(QWidget):
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    mouseDoubleClicked = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseDoubleClicked = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is double clicked on the widget."""
 
     def __init__(self, parent: QWidget):
@@ -1021,7 +1033,16 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.indoor_downloader import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -1079,12 +1100,12 @@ class KitDownloader(QDialog):
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             errMsgBox = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "An unexpected error occurred while setting up the kit downloader.",
                 error_msg,
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()

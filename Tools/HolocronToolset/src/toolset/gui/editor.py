@@ -3,10 +3,10 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QShortcut
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QIcon, QPixmap
+from qtpy.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QShortcut
 
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -31,7 +31,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
@@ -45,9 +45,9 @@ class Editor(QMainWindow):
     Provides methods for saving and loading files that are stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
 
-    newFile = QtCore.pyqtSignal()
-    savedFile = QtCore.pyqtSignal(object, object, object, object)
-    loadedFile = QtCore.pyqtSignal(object, object, object, object)
+    newFile = QtCore.Signal()
+    savedFile = QtCore.Signal(object, object, object, object)
+    loadedFile = QtCore.Signal(object, object, object, object)
 
     def __init__(
         self,
@@ -90,10 +90,12 @@ class Editor(QMainWindow):
         additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
         for add_format in additional_formats:
             readSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
             )
             writeSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"] for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
             )
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
@@ -134,7 +136,10 @@ class Editor(QMainWindow):
             - Sets Revert action to disabled
             - Connects keyboard shortcuts for New, Open, Save, Save As, Revert and Exit.
         """
-        for action in self.menuBar().actions()[0].menu().actions():
+        menubar = self.menuBar().actions()[0].menu()
+        if not isinstance(menubar, QMenu):
+            raise TypeError(f"self.menuBar().actions()[0].menu() returned a {type(menubar).__name__} object, expected QMenu.")
+        for action in menubar.actions():
             if action.text() == "New":  # sourcery skip: extract-method
                 action.triggered.connect(self.new)
             if action.text() == "Open":
@@ -206,11 +211,11 @@ class Editor(QMainWindow):
             get_root_logger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Invalid filename/extension",
                 f"Check the filename and try again. Could not save!<br><br>{error_msg}",
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
             return
 
@@ -271,7 +276,7 @@ class Editor(QMainWindow):
                 file.writelines(lines)
                 file.write("\n----------------------\n")
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Critical, "Failed to write to file", error_msg).exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", error_msg).exec_()
 
     def _saveCurrentFile(self):
         """Implementation of saving the current file.

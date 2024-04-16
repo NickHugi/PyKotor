@@ -55,20 +55,25 @@
     "reportCallIssue": "warning",  // doesn't handle NamedTuple correctly.
     "reportAssignmentType": "warning",
     "reportArgumentType": "warning",
+    "reportPrivateImportUsage": "warning",
   },
-  "mypy-type-checker.args": [
-    "--check-untyped-defs" // Ignores issues with defs that can optionally be None.
-  ],
   "python.analysis.autoFormatStrings": true,
-  "mypy.targets": [
-    "Libraries",
-    "Tools"
-  ],
   "mypy.extraArguments": [
-    "--exclude='./.venv'",
-    "--exclude='tests/results'"
+    "--exclude=./.venv",
+    "--exclude=tests/results",
+    "--check-untyped-defs",
+    "-v",
+    "--explicit-package-bases"
   ],
   "github-actions.workflows.pinned.workflows": [
     ".github/workflows/publish_and_test_pykotor.yml"
   ],
+  "mypy-type-checker.args": [
+    "--check-untyped-defs",
+    "--explicit-package-bases"
+  ],
+  "mypy.runUsingActiveInterpreter": true,
+  "mypy-type-checker.preferDaemon": true,
+  "mypy-type-checker.reportingScope": "workspace",
+  "mypy-type-checker.importStrategy": "fromEnvironment",
 }

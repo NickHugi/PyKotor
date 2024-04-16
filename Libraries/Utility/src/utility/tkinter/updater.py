@@ -3,10 +3,13 @@ from __future__ import annotations
 import tkinter as tk
 
 from contextlib import suppress
-from multiprocessing import Process, Queue
+from multiprocessing import Process
 from queue import Empty
 from tkinter import simpledialog, ttk
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from multiprocessing import Queue
 
 
 def human_readable_size(byte_size: float) -> str:

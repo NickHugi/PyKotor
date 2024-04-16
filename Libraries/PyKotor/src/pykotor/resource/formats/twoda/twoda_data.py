@@ -429,7 +429,11 @@ class TwoDA:
 
         return max_found + 1
 
-    def compare(self, other: TwoDA, log_func: Callable = print) -> bool:
+    def compare(
+        self,
+        other: TwoDA,
+        log_func: Callable = print,
+    ) -> bool:
         """Compares two TwoDA objects.
 
         Args:
@@ -593,7 +597,7 @@ class TwoDARow:
             raise KeyError(msg)
 
         value: int | T = default
-        with suppress(ValueError, IndexError):
+        with suppress(ValueError):
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
         return value
@@ -622,7 +626,7 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        with suppress(ValueError, IndexError):
+        with suppress(ValueError):
             cell = self._data[header]
             return float(cell)
         return default
@@ -728,7 +732,7 @@ class TwoDARow:
         ------
             KeyError: If the specified header does not exist.
         """
-        self._set_value(header, value.value if value is not None else None)
+        self._set_value(header, None if value is None else value.value)
 
     def _set_value(self, header: str, value: Enum | float | str | None):
         if header not in self._data:

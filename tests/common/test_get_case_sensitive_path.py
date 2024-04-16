@@ -220,10 +220,10 @@ class TestCaseAwarePath(TestCase):
         file_path: pathlib.Path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{self.temp_path!s}/FILE.txt")
 
-        with file_path.open("w") as f:
+        with file_path.open("w", encoding="utf-8") as f:
             f.write("Hello, world!")
 
-        with case_aware_file_path.open("r") as f:
+        with case_aware_file_path.open("r", encoding="utf-8") as f:
             content = f.read()
 
         self.assertEqual(content, "Hello, world!")

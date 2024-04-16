@@ -29,7 +29,7 @@ from utility.string_util import ireplace
 if TYPE_CHECKING:
     import os
 
-    from pykotor.common.misc import ResRef
+    from pykotor.common.misc import Game, ResRef
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
     from pykotor.resource.formats.vis import VIS

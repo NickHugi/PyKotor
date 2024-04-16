@@ -3,6 +3,8 @@ from __future__ import annotations
 # Try to import defusedxml, fallback to ElementTree if not available
 from xml.etree import ElementTree as ElemTree
 
+import qtpy
+
 try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     from defusedxml.ElementTree import fromstring as _fromstring
     ElemTree.fromstring = _fromstring
@@ -15,9 +17,9 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import markdown
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
@@ -33,8 +35,8 @@ from utility.updater.github import download_github_file
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QShowEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QShowEvent
+    from qtpy.QtWidgets import QWidget
 
 
 class HelpWindow(QMainWindow):
@@ -45,7 +47,16 @@ class HelpWindow(QMainWindow):
 
         self.version: str | None = None
 
-        from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -95,7 +106,7 @@ class HelpWindow(QMainWindow):
         structure = data.get("structure", {})
         for title in structure:
             item = QTreeWidgetItem([title])
-            item.setData(0, QtCore.Qt.UserRole, structure[title]["filename"])
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, structure[title]["filename"])
             addItem(item)
             self._setupContentsRecJSON(item, structure[title])
 
@@ -108,7 +119,7 @@ class HelpWindow(QMainWindow):
 
         for child in element:
             item = QTreeWidgetItem([child.get("name", "")])
-            item.setData(0, QtCore.Qt.UserRole, child.get("file"))
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, child.get("file"))
             addItem(item)
             self._setupContentsRecXML(item, child)
 
@@ -131,28 +142,28 @@ class HelpWindow(QMainWindow):
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             errMsgBox = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "An unexpected error occurred while parsing the help booklet.",
                 error_msg,
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             errMsgBox.setWindowIcon(self.windowIcon())
             errMsgBox.exec_()
         else:
             newHelpMsgBox = QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 title,
                 text,
                 parent=None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             newHelpMsgBox.setWindowIcon(self.windowIcon())
-            newHelpMsgBox.addButton(QMessageBox.Yes)
-            newHelpMsgBox.addButton(QMessageBox.No)
+            newHelpMsgBox.addButton(QMessageBox.StandardButton.Yes)
+            newHelpMsgBox.addButton(QMessageBox.StandardButton.No)
             user_response = newHelpMsgBox.exec_()
-            if user_response == QMessageBox.Yes:
+            if user_response == QMessageBox.StandardButton.Yes:
 
                 def task():
                     return self._downloadUpdate()
@@ -183,7 +194,7 @@ class HelpWindow(QMainWindow):
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Failed to open help file",
                 f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
             ).exec_()
@@ -192,7 +203,7 @@ class HelpWindow(QMainWindow):
         if not self.ui.contentsTree.selectedItems():
             return
         item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
-        filename = item.data(0, QtCore.Qt.UserRole)
+        filename = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if filename:
             help_path = Path("./help").resolve()
             file_path = Path(help_path, filename)

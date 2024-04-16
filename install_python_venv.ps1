@@ -1,7 +1,7 @@
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
-  [string]$venv_name = ".venv_fedora",
+  [string]$venv_name = ".venv",
   [string]$force_python_version
 )
 $global:force_python_version = $force_python_version
@@ -419,7 +419,7 @@ function Install-Python-Linux {
                 }
             }
             Find-Python -installIfNotFound $false
-            if ( $global:pythonInstallPath -eq "" ) {
+            if ( -not $global:pythonInstallPath ) {
                 throw "Python not found/installed"
             }
         } catch {
@@ -588,6 +588,7 @@ function Install-PythonUnixSource {
         "3.10" { "3.10.13" }
         "3.11" { "3.11.8" }
         "3.12" { "3.12.2" }
+        "3.13" { "3.13.0a5" }
         default { throw "Unsupported Python version: $pythonVersion" }
     }
 
@@ -597,12 +598,11 @@ function Install-PythonUnixSource {
     Invoke-BashCommand -Command "tar -xvf Python-$pyVersion.tgz"
     $current_working_dir = (Get-Location).Path
     Set-Location -LiteralPath "Python-$pyVersion" -ErrorAction Stop
-    $env:LDFLAGS=""
 
     # Conditionally apply --disable-new-dtags based on platform
     $configureOptions = "--enable-optimizations --with-ensurepip=install --enable-shared"
     if ((Get-OS) -eq "Linux") {
-        $env:LDFLAGS="-Wl,--disable-new-dtags"
+        $configureOptions += ' LDFLAGS="-Wl,--disable-new-dtags"'
     }
 
     Invoke-BashCommand -Command "sudo ./configure $configureOptions"
@@ -615,6 +615,7 @@ function Install-PythonUnixSource {
     # Using `make install` may break system packages, so we use `make altinstall` here.
     Invoke-BashCommand -Command "sudo make altinstall"
     Set-Location -LiteralPath $current_working_dir
+    $global:pythonInstallPath = "/usr/local/bin/python$pythonVersion"
 }
 
 function RefreshEnvVar {
@@ -816,6 +817,17 @@ function Find-Python {
     Param (
         [bool]$installIfNotFound
     )
+    if ($global:pythonInstallPath) {
+        $testVersion = Get-Python-Version -pythonPath $global:pythonInstallPath
+        if ($testVersion -ne [Version]"0.0.0") {
+            $global:pythonVersion = Get-Python-Version $global:pythonInstallPath
+            if ($global:pythonVersion -ge $minVersion -and $global:pythonVersion -lt $maxVersion) {
+                Write-Host "Found python command with version $global:pythonVersion at path $global:pythonInstallPath"
+                return
+            }
+        }
+    }
+
     # Check for Python 3 command and version
     if ($global:force_python_version) {
         $fallbackVersion = $global:force_python_version
@@ -827,18 +839,7 @@ function Find-Python {
     }
     foreach ($pyCommandPathCheck in $pythonVersions) {
         if (Test-PythonCommand -CommandName $pyCommandPathCheck) {
-            if ($installIfNotFound) {
-                # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-                # Example: while a venv can be partially created, the 
-                # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-                # they'll also be missing things like pip. This step fixes that.
-                if ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu") {
-                    $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-                    $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-                    Install-Python-Linux -pythonVersion $shortVersion
-                }
-            }
-            return
+            break
         }
     }
 
@@ -859,9 +860,17 @@ function Find-Python {
                             Write-Host "Check 4: $resolvedPath has $thisVersion which matches our version range."
                             # Valid path or better recommended path found.
                             if (-not $global:pythonInstallPath -or $thisVersion -le $recommendedVersion) {
-                                Write-Host "Found python install path with version $thisVersion at path '$resolvedPath'"
+                                Write-Host "Found better python install path with version $thisVersion at path '$resolvedPath'"
                                 $global:pythonInstallPath = $resolvedPath
                                 $global:pythonVersion = $thisVersion
+                            }
+
+                            # HACK: to prevent ubuntu/debian reinstalls
+                            if ($resolvedPath.StartsWith("/usr/local/bin/python") -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
+                                Write-Host "altinstall detected with version $thisVersion at path '$resolvedPath', not running custom install hook."
+                                $global:pythonInstallPath = $resolvedPath
+                                $global:pythonVersion = $thisVersion
+                                return
                             }
                         }
                     }
@@ -870,6 +879,20 @@ function Find-Python {
                 }
             }
         }
+    }
+    
+    # Even if python is installed, debian-based distros need python3-venv packages and a few others.
+    # Example: while a venv can be partially created, the 
+    # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
+    # they'll also be missing things like pip. This step fixes that.
+    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
+        try {
+            $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
+        } catch {
+            $versionTypeObj = New-Object -TypeName "System.Version" $fallbackVersion
+        }
+        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
+        Install-Python-Linux -pythonVersion $shortVersion
     }
 
     if ( -not $global:pythonInstallPath ) {
@@ -907,16 +930,6 @@ function Find-Python {
             Write-Host "Find python again now that it's been installed."
             Find-Python -installIfNotFound $false
         }
-    }
-    
-    # Even if python is installed, debian-based distros need python3-venv packages and a few others.
-    # Example: while a venv can be partially created, the 
-    # partial won't create stuff like the activation scripts (so they need sudo apt-get install python3-venv)
-    # they'll also be missing things like pip. This step fixes that.
-    if ($installIfNotFound -and ((Get-Linux-Distro-Name) -eq "debian" -or (Get-Linux-Distro-Name) -eq "ubuntu")) {
-        $versionTypeObj = New-Object -TypeName "System.Version" $global:pythonVersion
-        $shortVersion = "{0}.{1}" -f $versionTypeObj.Major, $versionTypeObj.Minor
-        Install-Python-Linux -pythonVersion $shortVersion
     }
 }
 

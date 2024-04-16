@@ -1,0 +1,14 @@
+-r Tools/HoloPatcher/requirements.txt
+-r Tools/HoloPatcher/recommended.txt
+-r Libraries/PyKotor/requirements.txt
+-r Libraries/PyKotor/recommended.txt
+mypy
+ruff
+pylint
+snakeviz
+autoflake
+pytest
+pytest-xdist
+pytest-html
+aqtinstall
+pytest-json-report

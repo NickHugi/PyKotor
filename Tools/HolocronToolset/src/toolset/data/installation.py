@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING, ClassVar
 
-from PyQt5.QtGui import QImage, QPixmap, QTransform
+from qtpy.QtGui import QImage, QPixmap, QTransform
 
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.extract.file import ResourceIdentifier
@@ -14,8 +14,8 @@ from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QStandardItemModel
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QStandardItemModel
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.tpc import TPC

@@ -1,4 +1,5 @@
 idna  # Tested with 3.3
+qtpy
 PyQt5~=5.15
 PyQt5-Qt5~=5.15
 PyQt5-sip~=12.10

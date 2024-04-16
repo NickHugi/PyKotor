@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMessageBox, QWidget
 
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
@@ -14,8 +14,8 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QMainWindow
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QMainWindow
 
     from gui.editor import Editor
     from toolset.data.installation import HTInstallation
@@ -247,24 +247,24 @@ def openResourceEditor(
 
         except Exception as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "An unexpected error has occurred",
                 str(universal_simplify_exception(e)),
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parentWindowWidget,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).show()
             raise
         else:
             return filepath, editor
     else:
         QMessageBox(
-            QMessageBox.Critical,
+            QMessageBox.Icon.Critical,
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
-            QMessageBox.Ok,
+            QMessageBox.StandardButton.Ok,
             parentWindowWidget,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).show()
 
     return None, None
