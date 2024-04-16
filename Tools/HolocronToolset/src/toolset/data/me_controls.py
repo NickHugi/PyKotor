@@ -579,15 +579,15 @@ class DCEffect(ABC):
 
         elif value == "cpdx":
             sideward = dx * controls.renderer.scene.camera.sideward(ignore_z=False)
-            upward = dy * controls.renderer.scene.camera.upward(ignore_z=False)
+            upward = dy * controls.renderer.scene.camera.upward(ignore_xy=False)
             output = -(upward.x + sideward.x)
         elif value == "cpdy":
             sideward = dx * controls.renderer.scene.camera.sideward(ignore_z=False)
-            upward = dy * controls.renderer.scene.camera.upward(ignore_z=False)
+            upward = dy * controls.renderer.scene.camera.upward(ignore_xy=False)
             output = -(upward.y + sideward.y)
         elif value == "cpdz":
             sideward = dx * controls.renderer.scene.camera.sideward(ignore_z=False)
-            upward = dy * controls.renderer.scene.camera.upward(ignore_z=False)
+            upward = dy * controls.renderer.scene.camera.upward(ignore_xy=False)
             output = -(upward.z + sideward.z)
 
         elif value == "cpxFlat":

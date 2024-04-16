@@ -592,8 +592,8 @@ class UTCEditor(Editor):
 
         if search is None:
             if (
-                QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.Yes | QMessageBox.No).exec_()
-                == QMessageBox.Yes
+                QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+                == QMessageBox.StandardButton.Yes
             ):
                 data = bytearray()
                 filepath = self._installation.override_path() / f"{resname}.dlg"

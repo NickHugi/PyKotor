@@ -232,7 +232,7 @@ class UpdateDialog(QDialog):
                 QMessageBox.Icon.Question,
                 "No asset found for this release.",
                 "There are no binaries available for download. Would you like to compile this release from source instead?",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()

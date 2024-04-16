@@ -161,10 +161,10 @@ class HelpWindow(QMainWindow):
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
             newHelpMsgBox.setWindowIcon(self.windowIcon())
-            newHelpMsgBox.addButton(QMessageBox.Yes)
-            newHelpMsgBox.addButton(QMessageBox.No)
+            newHelpMsgBox.addButton(QMessageBox.StandardButton.Yes)
+            newHelpMsgBox.addButton(QMessageBox.StandardButton.No)
             user_response = newHelpMsgBox.exec_()
-            if user_response == QMessageBox.Yes:
+            if user_response == QMessageBox.StandardButton.Yes:
 
                 def task():
                     return self._downloadUpdate()

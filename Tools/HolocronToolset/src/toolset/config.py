@@ -102,10 +102,10 @@ def getRemoteToolsetUpdateInfo(
                 + "<br><br>"
                 + "Would you like to check against the local database instead?"
             ),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
         )
-        if result not in {QMessageBox.Yes, True}:
+        if result not in {QMessageBox.StandardButton.Yes, True}:
             return e
         remoteInfo = LOCAL_PROGRAM_INFO
     return remoteInfo

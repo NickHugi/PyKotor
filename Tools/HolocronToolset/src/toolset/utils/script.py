@@ -112,14 +112,14 @@ def decompileScript(compiled_bytes: bytes, installation_path: Path, *, tsl: bool
             "Permission denied when attempting to update nwnnsscomp in registry",
             msg,
         ).exec_()
+        stdout, stderr = extCompiler.decompile_script(tempCompiledPath, tempDecompiledPath, gameEnum)
     except Exception:
         log.exception("Exception in extCompiler.decompile_script() call.")
         raise
-    else:
-        log.debug("stdout: %s\nstderr: %s", stdout, stderr)
-        if stderr:
-            raise ValueError(stderr)  # noqa: TRY301
-        return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
+    log.debug("stdout: %s\nstderr: %s", stdout, stderr)
+    if stderr:
+        raise ValueError(stderr)  # noqa: TRY301
+    return BinaryReader.load_file(tempDecompiledPath).decode(encoding="windows-1252")
 
 def setupExtractPath() -> Path:
     global_settings = GlobalSettings()
@@ -163,10 +163,10 @@ def compileScript(source: str, installation_path: Path, *, tsl: bool) -> bytes |
     if os.name == "nt":
         returnValue = _prompt_user_for_compiler_option()
 
-    if os.name == "posix" or returnValue == QMessageBox.Yes:
+    if os.name == "posix" or returnValue == QMessageBox.StandardButton.Yes:
         log.debug("user chose Yes, compiling with builtin")
         return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1, library_lookup=[extract_path]))
-    if returnValue == QMessageBox.No:
+    if returnValue == QMessageBox.StandardButton.No:
         log.debug("user chose No, compiling with nwnnsscomp")
         return _win_setup_nwnnsscomp_compiler(global_settings, extract_path, source, installation_path, tsl=tsl)
     if returnValue is not None:  # user cancelled
@@ -326,12 +326,12 @@ def _prompt_user_for_compiler_option() -> int:
     msgBox.setWindowTitle("Choose a NCS compiler")
     msgBox.setText("Would you like to use 'nwnnsscomp.exe' or Holocron Toolset's built-in compiler?")
     msgBox.setInformativeText("Choose one of the options below:")
-    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Abort)
+    msgBox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.Abort)
     msgBox.setDefaultButton(QMessageBox.Abort)
 
     # Set the button text
-    msgBox.button(QMessageBox.Yes).setText("Built-In Compiler")  # type: ignore[union-attr]
-    msgBox.button(QMessageBox.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
+    msgBox.button(QMessageBox.StandardButton.Yes).setText("Built-In Compiler")  # type: ignore[union-attr]
+    msgBox.button(QMessageBox.StandardButton.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
     msgBox.button(QMessageBox.Abort).setText("Cancel")  # type: ignore[union-attr]
 
     return msgBox.exec_()

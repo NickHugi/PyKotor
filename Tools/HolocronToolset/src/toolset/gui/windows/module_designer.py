@@ -281,11 +281,11 @@ class ModuleDesigner(QMainWindow):
             self,
             "Confirm Exit",
             "Really quit the module designer? You may lose unsaved changes.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
 
-        if reply == QMessageBox.Yes:
+        if reply == QMessageBox.StandardButton.Yes:
             event.accept()  # Let the window close
         else:
             event.ignore()  # Ignore the close event
@@ -1279,7 +1279,7 @@ class ModuleDesignerControls3d:
             self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
 
         if self.moveCameraPlane.satisfied(buttons, keys):  # sourcery skip: extract-method
-            upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_z=False)
+            upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_xy=False)
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= (upward.z + sideward.z) * strength
