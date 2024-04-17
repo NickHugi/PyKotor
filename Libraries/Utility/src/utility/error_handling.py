@@ -272,7 +272,6 @@ def format_exception_with_variables(
         raise TypeError(msg)
     if not isinstance(tb, types.TracebackType):
         with suppress(Exception):
-            import inspect
             # Get the current stack frames
             current_stack = inspect.stack()
             if current_stack:
