@@ -11,7 +11,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QUrl
-from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
+from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QFileDialog, QMainWindow
 
 from pykotor.common.stream import BinaryReader

@@ -28,7 +28,6 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QObject
     from qtpy.QtWidgets import QMainWindow, QWidget
     from typing_extensions import Literal
 
