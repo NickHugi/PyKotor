@@ -69,16 +69,16 @@ def fix_sys_and_cwd_path():
 
 def set_qt_api():
     # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
-    available_apis = ["pyqt5", "pyqt6", "pyside2", "pyside6"]
+    available_apis = ["PyQt5", "PyQt6", "PySide2", "PySide6"]
     for api in available_apis:
         try:
-            if api == "pyqt5":
+            if api == "PyQt5":
                 __import__("PyQt5.QtCore")
-            elif api == "pyqt6":
+            elif api == "PyQt6":
                 __import__("PyQt6.QtCore")
-            elif api == "pyside2":
+            elif api == "PySide2":
                 __import__("PySide2.QtCore")
-            elif api == "pyside6":
+            elif api == "PySide6":
                 __import__("PySide6.QtCore")
             os.environ["QT_API"] = api
             print(f"QT_API set to '{api}'.")
@@ -110,8 +110,8 @@ if __name__ == "__main__":
         set_qt_api()
     else:
         fix_sys_and_cwd_path()
-        os.environ["QT_API"] = os.environ.get("QT_API", "")  # supports pyqt5, pyqt6, pyside2, pyside6
-        if not os.environ["QT_API"]:
+        os.environ["QT_API"] = os.environ.get("QT_API", "")  # supports PyQt5, PyQt6, PySide2, PySide6
+        if os.environ["QT_API"] not in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
             set_qt_api()
 
     try:

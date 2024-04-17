@@ -11,7 +11,14 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QIcon, QPixmap
-from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QUndoCommand, QUndoStack
+from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
+
+if qtpy.API_NAME in ("PyQt5", "PySide2"):
+    from qtpy.QtWidgets import QUndoCommand, QUndoStack
+elif qtpy.API_NAME in ("PyQt6", "PySide6"):
+    from qtpy.QtGui import QUndoCommand, QUndoStack
+else:
+    raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
