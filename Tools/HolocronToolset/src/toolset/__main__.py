@@ -8,13 +8,11 @@ import pathlib
 import sys
 import tempfile
 
-from typing import TYPE_CHECKING
+from contextlib import suppress
+from types import TracebackType
 
 from qtpy.QtCore import QThread
 from qtpy.QtWidgets import QApplication, QMessageBox
-
-if TYPE_CHECKING:
-    from types import TracebackType
 
 
 def is_frozen() -> bool:
@@ -27,15 +25,31 @@ def is_frozen() -> bool:
 
 def onAppCrash(
     etype: type[BaseException],
-    e: BaseException,
+    exc: BaseException,
     tback: TracebackType | None,
 ):
+
     from utility.logger_util import get_root_logger
     if issubclass(etype, KeyboardInterrupt):
-        sys.__excepthook__(etype, e, tback)
+        sys.__excepthook__(etype, exc, tback)
         return
+    if tback is None:
+        with suppress(Exception):
+            import inspect
+            # Get the current stack frames
+            current_stack = inspect.stack()
+            if current_stack:
+                # Reverse the stack to have the order from caller to callee
+                current_stack = current_stack[1:][::-1]
+                fake_traceback = None
+                for frame_info in current_stack:
+                    frame = frame_info.frame
+                    fake_traceback = TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
+                exc = exc.with_traceback(fake_traceback)
+                # Now exc has a traceback :)
+                tback = exc.__traceback__
     logger = get_root_logger()
-    logger.critical("Uncaught exception", exc_info=(etype, e, tback))
+    logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
 
 def fix_sys_and_cwd_path():

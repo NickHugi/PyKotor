@@ -899,7 +899,7 @@ class _InstanceMode(_Mode):
                 index = self._editor.git().index(instance)
 
                 instanceAction = menu.addAction(icon, f"[{index}] {reference}")
-                instanceAction.triggered.connect(lambda _, inst=instance: self.setSelection([inst]))
+                instanceAction.triggered.connect(lambda _=None, inst=instance: self.setSelection([inst]))
                 instanceAction.setEnabled(instance not in self._ui.renderArea.instanceSelection.all())
                 menu.addAction(instanceAction)
 

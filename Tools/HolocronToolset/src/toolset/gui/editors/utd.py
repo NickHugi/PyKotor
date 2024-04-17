@@ -36,7 +36,7 @@ class UTDEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QWidget | QObject | None = None,
+        mainWindow: QWidget | QObject | None = None,
     ):
         """Initialize the Door Editor.
 
@@ -60,7 +60,7 @@ class UTDEditor(Editor):
             7. Update 3D preview and call new() to initialize editor.
         """
         supported: list[ResourceType] = [ResourceType.UTD]
-        super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
+        super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")

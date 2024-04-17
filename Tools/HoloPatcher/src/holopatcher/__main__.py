@@ -1547,11 +1547,26 @@ class App:
 
 def onAppCrash(
     etype: type[BaseException],
-    e: BaseException,
+    exc: BaseException,
     tback: TracebackType | None,
 ):
-    title, short_msg = universal_simplify_exception(e)
-    detailed_msg = format_exception_with_variables(e, etype, tback)
+    title, short_msg = universal_simplify_exception(exc)
+    if tback is None:
+        with suppress(Exception):
+            import inspect
+            # Get the current stack frames
+            current_stack = inspect.stack()
+            if current_stack:
+                # Reverse the stack to have the order from caller to callee
+                current_stack = current_stack[1:][::-1]
+                fake_traceback = None
+                for frame_info in current_stack:
+                    frame = frame_info.frame
+                    fake_traceback = TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
+                exc = exc.with_traceback(fake_traceback)
+                # Now exc has a traceback :)
+                tback = exc.__traceback__
+    detailed_msg = format_exception_with_variables(exc, etype, tback)
     print(detailed_msg)
     with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
         f.write(f"\n{detailed_msg}")

@@ -12,21 +12,9 @@ from typing import TYPE_CHECKING, Any
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QFile, QMetaObject, QTextStream, Qt
+from qtpy.QtCore import QCoreApplication, QFile, QMetaObject, QTextStream, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
-from qtpy.QtWidgets import (
-    QAction,
-    QApplication,
-    QFileDialog,
-    QHBoxLayout,
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QStyle,
-    QVBoxLayout,
-    QWidget,
-)
+from qtpy.QtWidgets import QAction, QApplication, QDialog, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QStyle, QVBoxLayout, QWidget
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -397,23 +385,31 @@ class ToolWindow(QMainWindow):
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionNewTLK.triggered.connect(lambda: TLKEditor(self, self.active).show())
-        self.ui.actionNewDLG.triggered.connect(lambda: DLGEditor(self, self.active).show())
-        self.ui.actionNewNSS.triggered.connect(lambda: NSSEditor(self, self.active).show())
-        self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
-        self.ui.actionNewUTP.triggered.connect(lambda: UTPEditor(self, self.active).show())
-        self.ui.actionNewUTD.triggered.connect(lambda: UTDEditor(self, self.active).show())
-        self.ui.actionNewUTI.triggered.connect(lambda: UTIEditor(self, self.active).show())
-        self.ui.actionNewUTT.triggered.connect(lambda: UTTEditor(self, self.active).show())
-        self.ui.actionNewUTM.triggered.connect(lambda: UTMEditor(self, self.active).show())
-        self.ui.actionNewUTW.triggered.connect(lambda: UTWEditor(self, self.active).show())
-        self.ui.actionNewUTE.triggered.connect(lambda: UTEEditor(self, self.active).show())
-        self.ui.actionNewUTS.triggered.connect(lambda: UTSEditor(self, self.active).show())
-        self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
-        self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
-        self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
-        self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
-        self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
+        def _launchEditor(
+            editor: QWidget
+        ):
+            addWindow(editor)
+            if isinstance(editor, QDialog):
+                editor.exec_()
+            else:
+                editor.show()
+        self.ui.actionNewTLK.triggered.connect(lambda: _launchEditor(TLKEditor(self, self.active)))
+        self.ui.actionNewDLG.triggered.connect(lambda: _launchEditor(DLGEditor(self, self.active)))
+        self.ui.actionNewNSS.triggered.connect(lambda: _launchEditor(NSSEditor(self, self.active)))
+        self.ui.actionNewUTC.triggered.connect(lambda: _launchEditor(UTCEditor(self, self.active)))
+        self.ui.actionNewUTP.triggered.connect(lambda: _launchEditor(UTPEditor(self, self.active)))
+        self.ui.actionNewUTD.triggered.connect(lambda: _launchEditor(UTDEditor(self, self.active)))
+        self.ui.actionNewUTI.triggered.connect(lambda: _launchEditor(UTIEditor(self, self.active)))
+        self.ui.actionNewUTT.triggered.connect(lambda: _launchEditor(UTTEditor(self, self.active)))
+        self.ui.actionNewUTM.triggered.connect(lambda: _launchEditor(UTMEditor(self, self.active)))
+        self.ui.actionNewUTW.triggered.connect(lambda: _launchEditor(UTWEditor(self, self.active)))
+        self.ui.actionNewUTE.triggered.connect(lambda: _launchEditor(UTEEditor(self, self.active)))
+        self.ui.actionNewUTS.triggered.connect(lambda: _launchEditor(UTSEditor(self, self.active)))
+        self.ui.actionNewGFF.triggered.connect(lambda: _launchEditor(GFFEditor(self, self.active)))
+        self.ui.actionNewERF.triggered.connect(lambda: _launchEditor(ERFEditor(self, self.active)))
+        self.ui.actionNewTXT.triggered.connect(lambda: _launchEditor(TXTEditor(self, self.active)))
+        self.ui.actionNewSSF.triggered.connect(lambda: _launchEditor(SSFEditor(self, self.active)))
+        self.ui.actionCloneModule.triggered.connect(lambda: _launchEditor(CloneModuleDialog(self, self.active, self.installations)))
 
         self.ui.actionModuleDesigner.triggered.connect(self.openModuleDesigner)
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
@@ -717,6 +713,13 @@ class ToolWindow(QMainWindow):
     # region Events
     def closeEvent(self, e: QCloseEvent | None):
         self.ui.texturesWidget.doTerminations()
+        instance = QCoreApplication.instance()
+        if instance is None:
+            print("QCoreApplication.instance() returned None for some reason... calling sys.exit() directly.")
+            sys.exit()
+        else:
+            print("ToolWindow closed, shutting down the app.")
+            instance.quit()
 
     def dropEvent(self, e: QtGui.QDropEvent | None):
         if e is None:

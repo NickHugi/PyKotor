@@ -46,7 +46,7 @@ class UTCEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QMainWindow | None = None,
+        mainWindow: QMainWindow | None = None,
     ):
         """Initializes the Creature Editor window.
 
@@ -70,7 +70,7 @@ class UTCEditor(Editor):
             - Creates new empty creature.
         """
         supported: list[ResourceType] = [ResourceType.UTC]
-        super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
+        super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainWindow)
 
         self.settings: UTCSettings = UTCSettings()
         self.globalSettings: GlobalSettings = GlobalSettings()

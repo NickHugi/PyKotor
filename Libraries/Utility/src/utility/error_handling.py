@@ -6,6 +6,7 @@ import sys
 import traceback
 import types
 
+from contextlib import suppress
 from contextvars import ContextVar
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -254,46 +255,56 @@ def format_frame_info(
 
 
 def format_exception_with_variables(
-    value: BaseException,
+    exc: BaseException,
     etype: type[BaseException] | None = None,
     tb: types.TracebackType | None = None,
     message: str = "",
 ) -> str:
-    etype = type(value) if etype is None else etype
-    tb = value.__traceback__ if tb is None else tb
+    etype = type(exc) if etype is None else etype
+    tb = exc.__traceback__ if tb is None else tb
 
     # Check if the arguments are of the correct type
     if not issubclass(etype, BaseException):
         msg = f"{etype!r} is not an exception class"
         raise TypeError(msg)
-    if not isinstance(value, BaseException):
-        msg = f"{value!r} is not an exception instance"
+    if not isinstance(exc, BaseException):
+        msg = f"{exc!r} is not an exception instance"
         raise TypeError(msg)
     if not isinstance(tb, types.TracebackType):
-        try:
-            raise value  # noqa: TRY301
-        except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
-            tb = e.__traceback__  # Now we have the traceback object
-        if tb is None:
-            msg = f"Could not determine traceback from {value}"
-            raise RuntimeError(msg)
+        with suppress(Exception):
+            import inspect
+            # Get the current stack frames
+            current_stack = inspect.stack()
+            if current_stack:
+                # Reverse the stack to have the order from caller to callee
+                current_stack = current_stack[1:][::-1]
+                fake_traceback = None
+                for frame_info in current_stack:
+                    frame = frame_info.frame
+                    fake_traceback = types.TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
+                exc = exc.with_traceback(fake_traceback)
+                # Now exc has a traceback :)
+                tb = exc.__traceback__
 
     # Construct the stack trace using traceback
-    formatted_traceback: str = "".join(traceback.format_exception(etype, value, tb))
-
-    # Capture the current stack trace
-    frames: list[inspect.FrameInfo] = inspect.getinnerframes(tb, context=5)
+    formatted_traceback: str = "".join(traceback.format_exception(etype, exc, tb))
 
     # Construct a detailed message with variables from all stack frames
     detailed_message: list[str] = [
-        f"{message} Exception '{value}' of type '{etype}' occurred.",
+        f"{message} Exception '{exc}' of type '{etype}' occurred.",
         "Stack Trace Variables:",
     ]
+    if tb is None:
+        detailed_message.append("<No stack information available>")
+        return "\n".join(detailed_message)
+
+    # Capture the current stack trace
+    frames: list[inspect.FrameInfo] = inspect.getinnerframes(tb, context=5)
     for frame_info in frames:
         detailed_message.extend(format_frame_info(frame_info))
-    if value.__cause__ is not None:
+    if exc.__cause__ is not None:
         detailed_message.append("This is the original exception:")
-        detailed_message.extend(format_exception_with_variables(value.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
+        detailed_message.extend(format_exception_with_variables(exc.__cause__, message="Causing Exception's Stack Trace Variables:").split("\n"))
 
     detailed_message.append(formatted_traceback)
     return "\n".join(detailed_message)

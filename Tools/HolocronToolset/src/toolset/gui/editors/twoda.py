@@ -199,7 +199,7 @@ class TwoDAEditor(Editor):
 
         for header in headers[1:]:
             action = QAction(header, self)
-            action.triggered.connect(lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
+            action.triggered.connect(lambda _=None, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
             self.ui.menuSetRowHeader.addAction(action)
         # endregion
 

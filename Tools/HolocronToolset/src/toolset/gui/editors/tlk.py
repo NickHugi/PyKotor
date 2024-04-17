@@ -130,7 +130,7 @@ class TLKEditor(Editor):
         # Add languages from the enum
         for language in Language:
             action = QAction(language.name.replace("_", " "), self)
-            action.triggered.connect(lambda _checked, lang=language: self.onLanguageSelected(lang))
+            action.triggered.connect(lambda _checked=None, lang=language: self.onLanguageSelected(lang))
             self.ui.menuLanguage.addAction(action)
 
     def onLanguageSelected(

@@ -1087,9 +1087,7 @@ class KitDownloader(QDialog):
                             button.setEnabled(True)
                 else:
                     button = QPushButton("Download")
-                button.clicked.connect(
-                    lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict),
-                )
+                button.clicked.connect(lambda _=None, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict))
 
                 layout: QFormLayout = self.ui.groupBox.layout()
                 layout.addRow(kitName, button)

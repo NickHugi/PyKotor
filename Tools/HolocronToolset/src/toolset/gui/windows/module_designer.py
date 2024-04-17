@@ -57,6 +57,8 @@ from utility.error_handling import assert_with_variable_trace, safe_repr
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
+    import os
+
     from glm import vec3
     from qtpy.QtGui import QFont, QKeyEvent
     from qtpy.QtWidgets import QCheckBox, QWidget
@@ -513,7 +515,14 @@ class ModuleDesigner(QMainWindow):
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource):
-        editor: Editor | QMainWindow | None = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(), self._installation, self)[1]
+        editor: Editor | QMainWindow | None = openResourceEditor(
+            resource.active(),
+            resource.resname(),
+            resource.restype(),
+            resource.data(),
+            self._installation,
+            self,
+        )[1]
 
         if editor is None:
             QMessageBox(
@@ -531,11 +540,20 @@ class ModuleDesigner(QMainWindow):
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def activateResourceFile(self, resource: ModuleResource, location: str):
+    def activateResourceFile(
+        self,
+        resource: ModuleResource,
+        location: os.PathLike | str,
+    ):
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def selectResourceItem(self, instance: GITInstance, *, clearExisting: bool = True):
+    def selectResourceItem(
+        self,
+        instance: GITInstance,
+        *,
+        clearExisting: bool = True,
+    ):
         """Select a resource item in the tree.
 
         Args:
@@ -1028,15 +1046,15 @@ class ModuleDesigner(QMainWindow):
             - Connects all actions to trigger appropriate functions.
         """
         copyToOverrideAction = QAction("Copy To Override", self)
-        copyToOverrideAction.triggered.connect(lambda _, r=data: self.copyResourceToOverride(r))
+        copyToOverrideAction.triggered.connect(lambda _=None, r=data: self.copyResourceToOverride(r))
 
-        menu.addAction("Edit Active File").triggered.connect(lambda _, r=data: self.openModuleResource(r))
-        menu.addAction("Reload Active File").triggered.connect(lambda _: data.reload())
+        menu.addAction("Edit Active File").triggered.connect(lambda _=None, r=data: self.openModuleResource(r))
+        menu.addAction("Reload Active File").triggered.connect(lambda _=None: data.reload())
         menu.addAction(copyToOverrideAction)
         menu.addSeparator()
         for location in data.locations():
             locationAction = QAction(str(location), self)
-            locationAction.triggered.connect(lambda _, loc=location: self.activateResourceFile(data, loc))
+            locationAction.triggered.connect(lambda _=None, loc=location: self.activateResourceFile(data, loc))
             if location == data.active():
                 locationAction.setEnabled(False)
             lowercase_parts: list[str] = [part.lower() for part in location.parts]

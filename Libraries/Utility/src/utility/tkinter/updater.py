@@ -110,7 +110,7 @@ class UpdateDialog(simpledialog.Dialog):
             btn = tk.Button(box, text=option, width=10, command=lambda opt=option: self.ok(opt))
             btn.pack(side=tk.LEFT, padx=5, pady=5)
         tk.Button(box, text="Cancel", width=10, command=self.cancel).pack(side=tk.LEFT, padx=5, pady=5)
-        self.bind("<Return>", lambda _event, opt=self.options[0]: self.ok(opt))
+        self.bind("<Return>", lambda _event=None, opt=self.options[0]: self.ok(opt))
         self.bind("<Escape>", self.cancel)
         box.pack()
 
