@@ -52,11 +52,11 @@ def universal_simplify_exception(
 
     # Handle PermissionError, which may have a 'filename' attribute
     if isinstance(e, PermissionError):
-        return error_name, f"Permission Denied: {e.filename if hasattr(e, 'filename') else e.args[0]}"
+        return error_name, f"Permission Denied: {e.filename if hasattr(e, 'filename') else e.args[0] if e.args else ''}"
 
     # Handle TimeoutError
     if isinstance(e, TimeoutError):
-        return error_name, f"Operation timed out: {e.args[0]}"
+        return error_name, f"Operation timed out: {e.args[0] if e.args else ''}"
 
     # Handle InterruptedError, which may have an 'errno' attribute
     if isinstance(e, InterruptedError):
@@ -87,9 +87,9 @@ def universal_simplify_exception(
 
 
 # Get default module attributes to filter out built-ins
-default_attrs: set[str] = set(dir(sys.modules["builtins"]))
+DEFAULT_ATTRS: set[str] = set(dir(sys.modules["builtins"]))
 
-ignore_attrs: set[str] = {
+IGNORE_ATTRS: set[str] = {
     "__file__",
     "__cached__",
     "__builtins__",
@@ -107,7 +107,7 @@ def is_builtin_class_instance(obj: Any) -> bool:
     return obj.__class__.__module__ in ("builtins", "__builtin__")
 
 
-_currently_processing: ContextVar[list] = ContextVar("_currently_processing", default=[])
+_CURRENTLY_PROCESSING: ContextVar[list] = ContextVar("_currently_processing", default=[])
 
 
 def safe_repr(
@@ -131,7 +131,7 @@ def safe_repr(
     indent: str = "    "  # Define the indentation unit (4 spaces).
 
     # Retrieve the stack of objects currently being processed
-    current_stack = _currently_processing.get()
+    current_stack = _CURRENTLY_PROCESSING.get()
     obj_id = id(obj)
 
     # Check for recursion - if this object is already in the stack
@@ -158,7 +158,7 @@ def safe_repr(
         next_indent = indent * (indent_level + 1)
         representation: str = f"{obj.__class__.__name__}(\n{next_indent}"
         current_stack.append({"id": obj_id, "indent_level": indent_level, "representation": representation})
-        _currently_processing.set(current_stack)
+        _CURRENTLY_PROCESSING.set(current_stack)
 
         if hasattr(obj, "__class__") and obj.__class__.__repr__ is not object.__repr__:
             # Call the object's __repr__ with _is_safe_repr_call set to True
@@ -192,7 +192,7 @@ def safe_repr(
     finally:
         # Always remove the object from the stack to avoid leaks
         current_stack.pop()
-        _currently_processing.set(current_stack)
+        _CURRENTLY_PROCESSING.set(current_stack)
 
 
 def format_var_str(
@@ -201,7 +201,7 @@ def format_var_str(
     max_length: int = 512,
 ) -> str | None:
     """Format variable and its value into a string, handling exceptions and length."""
-    if var in default_attrs or var in ignore_attrs:
+    if var in DEFAULT_ATTRS or var in IGNORE_ATTRS:
         return None
 
     val_repr: str | object

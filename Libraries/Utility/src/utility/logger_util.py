@@ -19,26 +19,6 @@ if TYPE_CHECKING:
 
     from typing_extensions import Literal
 
-# region threading
-
-# Global lock for thread-safe operations
-logging_lock = threading.Lock()
-THREAD_LOCAL = threading.local()
-THREAD_LOCAL.is_logging = False
-
-@contextmanager
-def logging_context():
-    global logging_lock
-    with logging_lock:
-        prev_state = getattr(THREAD_LOCAL, "is_logging", False)
-        THREAD_LOCAL.is_logging = True
-
-    try:
-        yield
-    finally:
-        with logging_lock:
-            THREAD_LOCAL.is_logging = prev_state
-
 class UTF8StreamWrapper:
     def __init__(self, original_stream):
         self.original_stream = original_stream
@@ -61,7 +41,27 @@ class UTF8StreamWrapper:
         # Delegate any other method calls to the original stream
         return getattr(self.original_stream, attr)
 
+# region threading
 
+# Global lock for thread-safe operations
+LOGGING_LOCK = threading.Lock()
+THREAD_LOCAL = threading.local()
+THREAD_LOCAL.is_logging = False
+
+@contextmanager
+def logging_context():
+    global LOGGING_LOCK  # noqa: PLW0602
+    with LOGGING_LOCK:
+        prev_state = getattr(THREAD_LOCAL, "is_logging", False)
+        THREAD_LOCAL.is_logging = True
+
+    try:
+        yield
+    finally:
+        with LOGGING_LOCK:
+            THREAD_LOCAL.is_logging = prev_state
+
+# endregion
 
 class CustomPrintToLogger:
     def __init__(
@@ -96,7 +96,6 @@ class CustomPrintToLogger:
                     self.logger.info(message.strip())
 
     def flush(self): ...
-# endregion
 
 class SafeEncodingLogger(logging.Logger):
     """A custom logger that safely handles log messages containing characters
@@ -150,7 +149,7 @@ LOG_QUEUE = multiprocessing.Queue()
 
 def setup_main_listener():
     import atexit
-    global LISTENER_THREAD
+    global LISTENER_THREAD  # noqa: PLW0603
     LISTENER_THREAD = threading.Thread(target=listener_thread_function, args=(LOG_QUEUE,))
     LISTENER_THREAD.daemon = True
     LISTENER_THREAD.start()
