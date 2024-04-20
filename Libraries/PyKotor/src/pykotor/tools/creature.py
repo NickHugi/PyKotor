@@ -105,8 +105,8 @@ def get_body_model(
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
         else:
-            module_column = "modela"
-            body_model = utc_appearance_row.get_string(module_column, context=f"Fetching model 'modela'{context_base}")
+            model_column = "modela"
+            body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
             tex_column = "texaevil" if utc.alignment <= 25 else "texa"
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
