@@ -69,7 +69,8 @@ def get_body_model(
             raise ValueError("baseitems.2da missing from installation.")
         baseitems = read_2da(baseitems_lookup.data)
 
-    context_base = f" for UTC {utc.first_name} {utc.last_name}"
+    first_name = installation.string(utc.first_name)
+    context_base = f" for UTC {first_name}"
 
     print(f"Lookup appearance row {utc.appearance_id} for get_body_model call.")
     utc_appearance_row = appearance.get_row(utc.appearance_id, context=f"Fetching row based on appearance_id{context_base}")
@@ -98,15 +99,14 @@ def get_body_model(
             armor_variation = body_cell.lower()
             model_column = f"model{armor_variation}"
             evil_tex_column = f"tex{armor_variation}evil"
-            print(f"appearance.2da's model column: {model_column}")
             tex_column = evil_tex_column if utc.alignment <= 25 and evil_tex_column in appearance.get_headers() else f"tex{armor_variation}"
             tex_append = str(armor_uti.texture_variation).rjust(2, "0")  # Ensure one-digit numerics are proceeded by '0'. 5 -> 05, 100 -> 100.
 
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
         else:
-            print("appearance.2da's model column: 'modela'")
-            body_model = utc_appearance_row.get_string("modela", context=f"Fetching model 'modela'{context_base}")
+            module_column = "modela"
+            body_model = utc_appearance_row.get_string(module_column, context=f"Fetching model 'modela'{context_base}")
             tex_column = "texaevil" if utc.alignment <= 25 else "texa"
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
@@ -117,6 +117,7 @@ def get_body_model(
             fallback_override_texture = override_texture + tex_append
             if tex_append != "01" and installation.texture(fallback_override_texture) is None:  # e.g. g_lena.utc which uses the twi'lek stripper model (i.e. should be n_twilekfc01 not n_twilekfc05)
                 fallback_override_texture = f"{override_texture}01"
+                print(f"override texture '{fallback_override_texture}' not found, using ")
             override_texture = fallback_override_texture
         else:
             override_texture = None
