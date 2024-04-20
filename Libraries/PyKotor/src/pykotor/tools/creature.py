@@ -50,14 +50,14 @@ def get_body_model(
     if appearance.get_row(utc.appearance_id).get_string("modeltype") == "B":
         body_model = appearance.get_row(utc.appearance_id).get_string("modela")
 
-        if utc.alignment <= 25:
-            override_texture = appearance.get_row(utc.appearance_id).get_string("texaevil") + "01"
-        else:
-            override_texture = appearance.get_row(utc.appearance_id).get_string("texa") + "01"
-
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
-            armor_uti = read_uti(installation.resource(str(armor_resref), ResourceType.UTI).data)
+            armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
+            if not armor_res_lookup:
+                raise ValueError(f"{armor_resref}.uti missing from installation")
+
+            armor_resdata = armor_res_lookup.data
+            armor_uti = read_uti(armor_resdata)
             armor_variation = baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
 
             normal_tex_column = f"tex{armor_variation}"
@@ -69,10 +69,23 @@ def get_body_model(
 
             model_column = f"model{armor_variation}"
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
-            override_texture = appearance.get_row(utc.appearance_id).get_string(tex_column) + str(armor_uti.texture_variation).rjust(2, "0")
+            override_texture = appearance.get_row(utc.appearance_id).get_string(tex_column)
+            if override_texture and override_texture.strip():
+                override_texture += str(armor_uti.texture_variation).rjust(2, "0")
+            else:
+                override_texture = None
+        else:
+            string_query = "texaevil" if utc.alignment <= 25 else "texa"
+            override_texture = appearance.get_row(utc.appearance_id).get_string(string_query)
+            if override_texture and override_texture.strip():
+                override_texture += "01"
+            else:
+                override_texture = None
 
-    if body_model == "":
+    if not body_model or not body_model.strip():
         body_model = appearance.get_row(utc.appearance_id).get_string("race")
+    if not override_texture or not override_texture.strip():
+        override_texture = None
 
     return body_model, override_texture
 
