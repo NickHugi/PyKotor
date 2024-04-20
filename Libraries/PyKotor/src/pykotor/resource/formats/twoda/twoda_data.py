@@ -159,6 +159,7 @@ class TwoDA:
     def get_row(
         self,
         row_index: int,
+        context: str | None = None,
     ) -> TwoDARow:
         """Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
 
@@ -174,7 +175,12 @@ class TwoDA:
         -------
             A new TwoDARow instance.
         """
-        return TwoDARow(self.get_label(row_index), self._rows[row_index])
+        try:
+            label_row = self.get_label(row_index)
+        except IndexError as e:
+            e.args = (f"Row index {row_index} not found in the 2DA." + (f" Context: {context}" if context is not None else ""),)
+            raise
+        return TwoDARow(label_row, self._rows[row_index])
 
     def find_row(
         self,
@@ -552,6 +558,7 @@ class TwoDARow:
     def get_string(
         self,
         header: str,
+        context: str | None = None,
     ) -> str:
         """Returns the string value for the cell under the specified header.
 
@@ -569,6 +576,8 @@ class TwoDARow:
         """
         if header not in self._data:
             msg = f"The header '{header}' does not exist."
+            if context is not None:
+                msg += f"Context: {context}"
             raise KeyError(msg)
         return self._data[header]
 
