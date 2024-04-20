@@ -1410,9 +1410,9 @@ class KOTORPatchingToolUI:
         row += 1
 
         # Fix skippable dialog bug
-        ttk.Label(self.root, text="(experimental) Fix TSL engine dialog skipping bug:").grid(row=row, column=0)
-        ttk.Checkbutton(self.root, text="Yes", variable=self.fix_dialog_skipping).grid(row=row, column=1)
-        row += 1
+        #ttk.Label(self.root, text="(experimental) Fix TSL engine dialog skipping bug:").grid(row=row, column=0)
+        #ttk.Checkbutton(self.root, text="Yes", variable=self.fix_dialog_skipping).grid(row=row, column=1)
+        #row += 1
 
         # TGA -> TPC
         ttk.Label(self.root, text="Convert TGAs to TPCs:").grid(row=row, column=0)
