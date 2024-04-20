@@ -432,7 +432,6 @@ class Globals:
         self.install_running: bool = False
         self.install_thread: Thread
         self.max_threads: int = 2
-        self.output_log = "log_batch_patcher.log"
         self.patchlogger = PatchLogger()
         self.path: Path
         self.pytranslator: Translator = Translator(Language.ENGLISH)
@@ -532,8 +531,8 @@ def log_output(*args, **kwargs):
     msg: str = buffer.getvalue()
 
     # Write the captured output to the file
-    with Path("log_batch_patcher.log").open("a", encoding="utf-8", errors="ignore") as f:
-        f.write(msg)
+    #with Path("log_batch_patcher.log").open("a", encoding="utf-8", errors="ignore") as f:
+    #    f.write(msg)
 
     # Print the captured output to console
     # print(*args, **kwargs)
@@ -1266,7 +1265,7 @@ def do_main_patchloop() -> str:
         return messagebox.showwarning("No options chosen", "Select what you want to do.")
 
     log_output(f"Completed batch patcher of {SCRIPT_GLOBALS.path}")
-    return messagebox.showinfo("Patching complete!", "Check the log file log_batch_patcher.log for more information.")
+    return messagebox.showinfo("Patching complete!", "Check the log files for more information.")
 
 
 def main_translate_loop(lang: Language):
@@ -1399,9 +1398,12 @@ class KOTORPatchingToolUI:
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
 
         # Browse button
-        browse_button = ttk.Button(self.root, text="Browse", command=self.browse_path)
-        browse_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
-        browse_button.config(width=15)
+        browse_folder_button = ttk.Button(self.root, text="Browse Folder", command=self.browse_source_folder)
+        browse_folder_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
+        browse_folder_button.config(width=15)
+        browse_file_button = ttk.Button(self.root, text="Browse File", command=self.browse_source_file)
+        browse_file_button.grid(row=row, column=4, padx=2)  # Stick to both sides within its cell
+        browse_file_button.config(width=15)
         row += 1
 
         # Skippable
@@ -1667,8 +1669,13 @@ class KOTORPatchingToolUI:
         else:
             self.output_frame.grid_remove()  # Hide the frame
 
-    def browse_path(self):
+    def browse_source_folder(self):
         directory = filedialog.askdirectory()
+        if directory:
+            self.path.set(directory)
+
+    def browse_source_file(self):
+        directory = filedialog.askopenfile()
         if directory:
             self.path.set(directory)
 
