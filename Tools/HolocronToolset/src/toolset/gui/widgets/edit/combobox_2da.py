@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pyperclip
+
 from qtpy import QtCore
 from qtpy.QtWidgets import QComboBox, QMenu
 
@@ -96,6 +98,7 @@ class ComboBox2DA(QComboBox):
 
     def onContextMenu(self, point: QPoint):
         menu = QMenu(self)
+        menu.addAction(f"Copy 2DA Row Index ({self.currentIndex()}) to clipboard").triggered.connect(lambda: pyperclip.copy(str(self.currentIndex())))
         menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
         menu.addAction("Toggle Sorting").triggered.connect(self.toggleSort)
         menu.popup(self.mapToGlobal(point))
