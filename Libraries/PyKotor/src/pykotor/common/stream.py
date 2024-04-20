@@ -74,6 +74,16 @@ class BinaryReader:
 
         self._size: int = total_size - self._offset if size is None else size
 
+    @property
+    def _true_stream_position(self) -> int:
+        """Private property to access the current position of the stream for debugging purposes.
+
+        Returns:
+        -------
+            int: The current absolute position of the stream pointer.
+        """
+        return self._stream.tell()
+
     def __enter__(
         self,
     ):
