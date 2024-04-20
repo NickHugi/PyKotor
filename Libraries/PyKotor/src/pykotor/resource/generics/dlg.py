@@ -871,7 +871,6 @@ def dismantle_dlg(
             gff_struct.set_int32("NodeUnskippable", node.unskippable)
             gff_struct.set_int32("PostProcNode", node.post_proc_node)
             gff_struct.set_int32("RecordNoVOOverri", node.record_no_vo_override)
-            gff_struct.set_int32("RecordNoOverri", node.record_no_vo_override)
             gff_struct.set_int32("RecordVO", node.record_vo)
             gff_struct.set_int32("VOTextChanged", node.vo_text_changed)
 
