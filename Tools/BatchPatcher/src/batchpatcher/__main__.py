@@ -957,6 +957,8 @@ def check_module(
                 found_missing_texture = False
                 try:
                     for texture in texture_names:
+                        if texture == "dirt":
+                            continue
                         tex_resource = k_install.texture(texture, order)
                         if tex_resource is None:
                             log_output(f"{resource.resname()}: Missing texture: '{texture}'")
