@@ -739,7 +739,9 @@ class Scene:
                     mdx_data: bytes = mdx_search.data
 
             try:
-                model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
+                mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
+                mdx_reader = BinaryReader.from_bytes(mdx_data)
+                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
             except Exception as e:
                 print(format_exception_with_variables(e))
                 model = gl_load_stitched_model(
