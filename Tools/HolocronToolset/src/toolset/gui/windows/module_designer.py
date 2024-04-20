@@ -400,9 +400,9 @@ class ModuleDesigner(QMainWindow):
                     continue
                 bwm_res: BWM | None = bwm.resource()
                 if bwm_res is None:
-                    print(f"bwm '{bwm.localized_name()}' '{bwm.resname()}.{bwm.restype()}' returned None resource data, skipping...")
+                    print(f"bwm '{bwm.resname()}.{bwm.restype()}' returned None resource data, skipping...")
                     continue
-                print(f"Adding walkmesh '{bwm.localized_name()}' filename: '{bwm.resname()}.{bwm.restype()}'")
+                print(f"Adding walkmesh '{bwm.resname()}.{bwm.restype()}'")
                 walkmeshes.append(bwm_res)
             return (new_module, git, walkmeshes)
 
