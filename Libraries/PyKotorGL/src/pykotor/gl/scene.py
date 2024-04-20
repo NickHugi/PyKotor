@@ -669,7 +669,7 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def texture(self, name: str) -> Texture:
+    def texture(self, name: str, *, lightmap: bool = False) -> Texture:
         if name in self.textures:
             return self.textures[name]
         try:
@@ -692,7 +692,8 @@ class Scene:
             # If an error occurs during the loading process, just use a blank image.
             tpc = TPC()
 
-        self.textures[name] = Texture.from_color(0xFF, 0, 0xFF) if tpc is None else Texture.from_tpc(tpc)
+        blank_texture = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(0xFF, 0, 0xFF)
+        self.textures[name] = blank_texture if tpc is None else Texture.from_tpc(tpc)
         return self.textures[name]
 
     def model(self, name: str) -> Model:
