@@ -194,7 +194,7 @@ class TPCTGAReader(ResourceReader):
         if self._tpc is None:
             raise ValueError("Call load() instead of this directly.")
         # Use Pillow to handle the TGA file
-        print("Loading with pillow")
+        #print("Loading with pillow")
 
         # Their static type is incorrect, it supports any stream/byte/filepath-like object.
         with Image.open(self._reader._stream) as img:  # type: ignore[reportArgumentType]
