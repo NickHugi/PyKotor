@@ -1126,10 +1126,10 @@ class Installation:  # noqa: PLR0904
 
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
-            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
-                resource: FileResource | None = resource_dict.get(query)
-                if resource is not None:
+                for resource in resource_list:
+                    if resource.identifier() != query:
+                        continue
                     location = LocationResult(
                         resource.filepath(),
                         resource.offset(),
@@ -1140,7 +1140,7 @@ class Installation:  # noqa: PLR0904
         def check_capsules(values: list[Capsule]):
             for capsule in values:
                 for query in queries:
-                    resource: FileResource | None = capsule.info(*query)
+                    resource: FileResource | None = capsule.info(*query.unpack())
                     if resource is None:
                         continue
 

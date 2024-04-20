@@ -22,10 +22,6 @@ from tkinter import (
 )
 from typing import TYPE_CHECKING, Any
 
-from pykotor.common.misc import ResRef
-from pykotor.tools.model import list_lightmaps, list_textures
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-
 if getattr(sys, "frozen", False) is False:
 
     def add_sys_path(path: pathlib.Path):
@@ -47,6 +43,7 @@ if getattr(sys, "frozen", False) is False:
 
 from batchpatcher.translate.language_translator import TranslationOption, Translator
 from pykotor.common.language import Language, LocalizedString
+from pykotor.common.misc import Game, ResRef
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
@@ -62,11 +59,27 @@ from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
+from pykotor.resource.generics.are import read_are, write_are
+from pykotor.resource.generics.dlg import read_dlg, write_dlg
+from pykotor.resource.generics.git import read_git, write_git
+from pykotor.resource.generics.jrl import read_jrl, write_jrl
+from pykotor.resource.generics.pth import read_pth, write_pth
+from pykotor.resource.generics.utc import read_utc, write_utc
+from pykotor.resource.generics.utd import read_utd, write_utd
+from pykotor.resource.generics.ute import read_ute, write_ute
+from pykotor.resource.generics.uti import read_uti, write_uti
+from pykotor.resource.generics.utm import read_utm, write_utm
+from pykotor.resource.generics.utp import read_utp, write_utp
+from pykotor.resource.generics.uts import read_uts, write_uts
+from pykotor.resource.generics.utt import read_utt, write_utt
+from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
+from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
+from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -409,6 +422,8 @@ class Globals:
         self.create_fonts: bool = False
         self.check_textures: bool = False
         self.convert_tga: bool = False
+        self.k1_convert_gffs: bool = False
+        self.tsl_convert_gffs: bool = False
         self.custom_scaling: float = 1.0
         self.draw_bounds: bool = False
         self.fix_dialog_skipping: bool = False
@@ -440,6 +455,8 @@ class Globals:
             or self.set_unskippable
             or self.convert_tga
             or self.fix_dialog_skipping
+            or self.k1_convert_gffs
+            or self.tsl_convert_gffs
         )
 
 
@@ -629,6 +646,76 @@ def recurse_through_list(
 def fix_encoding(text: str, encoding: str) -> str:
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
+def convert_gff_game(
+    from_game: Game,
+    resource: FileResource,
+):
+    to_game = Game.K2 if from_game.is_k1() else Game.K1
+    converted_filepath: Path = resource.filepath().with_name(f"{resource.resname()}_{str(to_game.name)}.{str(resource.restype())}")
+    log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name} and saving as {converted_filepath.name}")
+    generic: Any
+
+    if resource.restype() == ResourceType.ARE:
+        generic = read_are(resource.data(), offset=0, size=resource.size())
+        write_are(generic, converted_filepath, to_game)
+
+    elif resource.restype() == ResourceType.DLG:
+        generic = read_dlg(resource.data(), offset=0, size=resource.size())
+        write_dlg(generic, converted_filepath, to_game)
+
+    elif resource.restype() == ResourceType.GIT:
+        generic = read_git(resource.data(), offset=0, size=resource.size())
+        write_git(generic, converted_filepath, to_game)
+
+    elif resource.restype() == ResourceType.JRL:
+        generic = read_jrl(resource.data(), offset=0, size=resource.size())
+        write_jrl(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.PTH:
+        generic = read_pth(resource.data(), offset=0, size=resource.size())
+        write_pth(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTC:
+        generic = read_utc(resource.data(), offset=0, size=resource.size())
+        write_utc(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTD:
+        generic = read_utd(resource.data(), offset=0, size=resource.size())
+        write_utd(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTE:
+        generic = read_ute(resource.data(), offset=0, size=resource.size())
+        write_ute(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTI:
+        generic = read_uti(resource.data(), offset=0, size=resource.size())
+        write_uti(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTM:
+        generic = read_utm(resource.data(), offset=0, size=resource.size())
+        write_utm(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTP:
+        generic = read_utp(resource.data(), offset=0, size=resource.size())
+        write_utp(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTS:
+        generic = read_uts(resource.data(), offset=0, size=resource.size())
+        write_uts(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTT:
+        generic = read_utt(resource.data(), offset=0, size=resource.size())
+        write_utt(generic, converted_filepath, game=to_game)
+
+    elif resource.restype() == ResourceType.UTW:
+        generic = read_utw(resource.data(), offset=0, size=resource.size())
+        write_utw(generic, converted_filepath, game=to_game)
+
+    else:
+        log_output(
+            f"Unsupported gff: {resource.identifier()}"
+        )
+
 
 def patch_resource(resource: FileResource) -> GFF | TPC | None:
     def translate_entry(tlkentry: TLKEntry, from_lang: Language) -> tuple[str, str]:
@@ -689,6 +776,10 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         return TPCTGAReader(resource.data()).load()
 
     if resource.restype().name.upper() in {x.name for x in GFFContent}:
+        if SCRIPT_GLOBALS.k1_convert_gffs:
+            convert_gff_game(Game.K2, resource)
+        if SCRIPT_GLOBALS.tsl_convert_gffs:
+            convert_gff_game(Game.K1, resource)
         gff: GFF | None = None
         try:
             # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
@@ -707,7 +798,13 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 resource._path_ident_obj,  # noqa: SLF001
             )
             made_change: bool = False
-            if alien_vo_count < 3 and alien_owner in {0, "0", None} and alien_vo_count != -1 and SCRIPT_GLOBALS.set_unskippable and gff.content == GFFContent.DLG:
+            if (
+                SCRIPT_GLOBALS.set_unskippable
+                and alien_owner in {0, "0", None}
+                and alien_vo_count != -1
+                and alien_vo_count < 3
+                and gff.content == GFFContent.DLG
+            ):
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
@@ -816,7 +913,7 @@ def patch_capsule_file(c_file: Path):
                 new_resources.append((resource.resname(), ResourceType.TPC, new_data))
                 omitted_resources.append(resource.identifier())
         elif SCRIPT_GLOBALS.check_textures:
-            check_module(resource, None)
+            check_model(resource, None)
 
     if SCRIPT_GLOBALS.is_patching():
         erf_or_rim: ERF | RIM = (
@@ -900,7 +997,7 @@ def patch_file(file: os.PathLike | str):
             SCRIPT_GLOBALS.check_textures
             and fileres.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
         ):
-            check_module(fileres, None)
+            check_model(fileres, None)
 
 
 def patch_folder(folder_path: os.PathLike | str):
@@ -909,26 +1006,21 @@ def patch_folder(folder_path: os.PathLike | str):
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
 
-def check_module(
+def check_model(
     resource: FileResource,
     k_install: Installation | None,
 ):
-    order = [
-        SearchLocation.OVERRIDE,
-        SearchLocation.TEXTURES_TPA,
-        SearchLocation.CHITIN,
-    ]
     if resource._path_ident_obj.parent.safe_isdir():
         #log_output(f"Will include override for model {resource._path_ident_obj}")
         order = [
             SearchLocation.OVERRIDE,
-            SearchLocation.TEXTURES_TPA,
+            SearchLocation.TEXTURES_TPC,
             SearchLocation.TEXTURES_GUI,
             SearchLocation.CHITIN,
         ]
     else:
         order = [
-            SearchLocation.TEXTURES_TPA,
+            SearchLocation.TEXTURES_TPC,
             SearchLocation.TEXTURES_GUI,
             SearchLocation.CHITIN,
         ]
@@ -939,28 +1031,36 @@ def check_module(
         return
     else:
         if texture_names:
-            log_output(f"Checking {len(texture_names)} textures found in model '{resource._path_ident_obj.parent.name}/{resource.identifier()}'...")
-
-            # Output all textures from the model.
-            mdl_tex_outpath = Path("out_model_textures", resource._path_ident_obj.parent.name, f"{resource.resname()}.txt")
-            if not mdl_tex_outpath.parent.safe_isdir():
-                if mdl_tex_outpath.parent.safe_isfile():
-                    mdl_tex_outpath.parent.unlink(missing_ok=True)
-                mdl_tex_outpath.parent.mkdir(parents=True)
-            with mdl_tex_outpath.open("a", encoding="utf-8") as f:
-                f.writelines(f"{name}\n" for name in texture_names)
-
+            mdl_tex_outpath = _write_all_found_in_mdl(
+                texture_names,
+                " textures found in model '",
+                resource,
+                "out_model_textures",
+            )
             # Find missing textures
             if k_install is not None:
-                mdl_missing_tex_outpath = mdl_tex_outpath.with_name(f"{mdl_tex_outpath.stem}_missing.txt")
+                mdl_missing_tex_outpath = mdl_tex_outpath.parent.joinpath("missing", mdl_tex_outpath.name)
+                mdl_missing_tex_outpath.parent.mkdir(exist_ok=True)
                 missing_writer = mdl_missing_tex_outpath.open("a", encoding="utf-8")
                 found_missing_texture = False
                 try:
                     for texture in texture_names:
                         if texture == "dirt":
                             continue
-                        tex_resource = k_install.texture(texture, order)
-                        if tex_resource is None:
+                        texture_tga = ResourceIdentifier(texture, ResourceType.TGA)
+                        texture_tpc = ResourceIdentifier(texture, ResourceType.TPC)
+                        resource_results = k_install.locations([texture_tga, texture_tpc], order)
+                        if resource_results.get(texture_tga):
+                            log_output(f"Found texture '{texture_tga}' in the following locations:")
+                            for location_list in resource_results.values():
+                                for location in location_list:
+                                    log_output(f"    {location.filepath}")
+                        if resource_results.get(texture_tpc):
+                            log_output(f"Found texture '{texture_tpc}' in the following locations:")
+                            for location_list in resource_results.values():
+                                for location in location_list:
+                                    log_output(f"    {location.filepath}")
+                        if not resource_results.get(texture_tga) and not resource_results.get(texture_tpc):
                             log_output(f"{resource.resname()}: Missing texture: '{texture}'")
                             missing_writer.write(texture + "\n")
                             found_missing_texture = True
@@ -976,24 +1076,34 @@ def check_module(
         return
     else:
         if lightmap_names:
-            log_output(f"Checking {len(lightmap_names)} lightmaps found in model '{resource._path_ident_obj.parent.name}/{resource.identifier()}'...")
-            mdl_lmp_outpath = Path("out_model_lightmaps", resource._path_ident_obj.parent.name, f"{resource.resname()}.txt")
-            if not mdl_lmp_outpath.parent.safe_isdir():
-                if mdl_lmp_outpath.parent.safe_isfile():
-                    mdl_lmp_outpath.parent.unlink(missing_ok=True)
-                mdl_lmp_outpath.parent.mkdir(parents=True)
-            with mdl_lmp_outpath.open("a", encoding="utf-8") as f:
-                f.writelines(f"{name}\n" for name in lightmap_names)
-
+            mdl_lmp_outpath = _write_all_found_in_mdl(
+                lightmap_names,
+                " lightmaps found in model '",
+                resource,
+                "out_model_lightmaps",
+            )
             # Find missing lightmaps
             if k_install is not None:
-                mdl_missing_lmp_outpath = mdl_lmp_outpath.with_name(f"{mdl_lmp_outpath.stem}_missing.txt")
+                mdl_missing_lmp_outpath = mdl_lmp_outpath.parent.joinpath("missing", mdl_lmp_outpath.name)
+                mdl_missing_lmp_outpath.parent.mkdir(exist_ok=True)
                 missing_writer = mdl_missing_lmp_outpath.open("a", encoding="utf-8")
                 found_missing_lightmap = False
                 try:
                     for lightmap in lightmap_names:
-                        lmp_resource = k_install.texture(texture, order)
-                        if lmp_resource is None:
+                        lightmap_tga = ResourceIdentifier(lightmap, ResourceType.TGA)
+                        lightmap_tpc = ResourceIdentifier(lightmap, ResourceType.TPC)
+                        resource_results = k_install.locations([lightmap_tga, lightmap_tpc], order)
+                        if lightmap_tga in resource_results:
+                            log_output(f"Found lightmap '{lightmap_tga}' in the following locations:")
+                            for location_list in resource_results.values():
+                                for location in location_list:
+                                    log_output(f"    {location.filepath}")
+                        if lightmap_tpc in resource_results:
+                            log_output(f"Found lightmap '{lightmap_tpc}' in the following locations:")
+                            for location_list in resource_results.values():
+                                for location in location_list:
+                                    log_output(f"    {location.filepath}")
+                        if lightmap_tga not in resource_results and lightmap_tpc not in resource_results:
                             log_output(f"{resource.resname()}: Missing lightmap: '{lightmap}'")
                             missing_writer.write(lightmap + "\n")
                             found_missing_lightmap = True
@@ -1001,6 +1111,26 @@ def check_module(
                     missing_writer.close()
                     if not found_missing_lightmap:
                         mdl_missing_lmp_outpath.unlink(missing_ok=True)
+
+
+def _write_all_found_in_mdl(
+    tex_or_lmp_names: list[str],
+    num_found_msg: str,
+    resource: FileResource,
+    out_filestem: str,
+):
+    log_output(f"Checking {len(tex_or_lmp_names)}{num_found_msg}{resource._path_ident_obj.parent.name}/{resource.identifier()}'...")
+
+    # Output all textures from the model.
+    result = Path(out_filestem, resource._path_ident_obj.parent.name, f"{resource.resname()}.txt")
+    if not result.parent.safe_isdir():
+        if result.parent.safe_isfile():
+            result.parent.unlink(missing_ok=True)
+        result.parent.mkdir(parents=True)
+    with result.open("a", encoding="utf-8") as f:
+        f.writelines(f"{name}\n" for name in tex_or_lmp_names)
+
+    return result
 
 def patch_install(install_path: os.PathLike | str):
     log_output()
@@ -1055,7 +1185,7 @@ def patch_install(install_path: os.PathLike | str):
                 SCRIPT_GLOBALS.check_textures
                 and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
             ):
-                check_module(resource, k_install)
+                check_model(resource, k_install)
 
     log_output_with_separator("Extract and patch BIF data, saving to Override")
     for resource in k_install.chitin_resources():
@@ -1069,7 +1199,7 @@ def patch_install(install_path: os.PathLike | str):
             SCRIPT_GLOBALS.check_textures
             and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
         ):
-            check_module(resource, k_install)
+            check_model(resource, k_install)
 
     patch_file(k_install.path().joinpath("dialog.tlk"))
 
@@ -1129,12 +1259,7 @@ def do_main_patchloop() -> str:
         has_action = True
         for lang in SCRIPT_GLOBALS.chosen_languages:
             main_translate_loop(lang)
-    if (
-        SCRIPT_GLOBALS.set_unskippable
-        or SCRIPT_GLOBALS.convert_tga
-        or SCRIPT_GLOBALS.fix_dialog_skipping
-        or SCRIPT_GLOBALS.check_textures
-    ):
+    if SCRIPT_GLOBALS.is_patching() or SCRIPT_GLOBALS.check_textures:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
         has_action = True
     if not has_action:
@@ -1184,7 +1309,7 @@ def assign_to_globals(instance: KOTORPatchingToolUI):
 class KOTORPatchingToolUI:
     def __init__(self, root: tk.Tk):
         self.root: tk.Tk = root
-        root.title("KOTOR Translate Tool")
+        root.title("KOTOR BatchPatcher")
 
         self.path = tk.StringVar()
         self.set_unskippable = tk.BooleanVar(value=SCRIPT_GLOBALS.set_unskippable)
@@ -1198,6 +1323,8 @@ class KOTORPatchingToolUI:
         self.draw_bounds = tk.BooleanVar(value=False)
         self.fix_dialog_skipping = tk.BooleanVar(value=False)
         self.convert_tga = tk.BooleanVar(value=False)
+        self.k1_convert_gffs = tk.BooleanVar(value=False)
+        self.tsl_convert_gffs = tk.BooleanVar(value=False)
 
         # Middle area for text and scrollbar
         self.output_frame = tk.Frame(self.root)
@@ -1332,6 +1459,16 @@ class KOTORPatchingToolUI:
         # Check textures
         ttk.Label(self.root, text="Check all model's lightmaps/textures").grid(row=row, column=0)
         ttk.Checkbutton(self.root, text="Yes", variable=self.check_textures).grid(row=row, column=1)
+        row += 1
+
+        # Convert GFFs to K1
+        ttk.Label(self.root, text="Convert GFFs to K1").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.k1_convert_gffs).grid(row=row, column=1)
+        row += 1
+
+        # Convert GFFs to TSL
+        ttk.Label(self.root, text="Convert GFFs to TSL").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.tsl_convert_gffs).grid(row=row, column=1)
         row += 1
 
         # Font Path
