@@ -946,7 +946,7 @@ def check_module(
                     mdl_tex_outpath.parent.unlink(missing_ok=True)
                 mdl_tex_outpath.parent.mkdir(parents=True)
             with mdl_tex_outpath.open("a", encoding="utf-8") as f:
-                f.writelines(texture_names)
+                f.writelines(f"{name}\n" for name in texture_names)
 
             # Find missing textures
             if k_install is not None:
@@ -979,7 +979,7 @@ def check_module(
                     mdl_lmp_outpath.parent.unlink(missing_ok=True)
                 mdl_lmp_outpath.parent.mkdir(parents=True)
             with mdl_lmp_outpath.open("a", encoding="utf-8") as f:
-                f.writelines(lightmap_names)
+                f.writelines(f"{name}\n" for name in lightmap_names)
 
             # Find missing lightmaps
             if k_install is not None:
