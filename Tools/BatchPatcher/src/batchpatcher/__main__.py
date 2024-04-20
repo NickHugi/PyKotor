@@ -954,7 +954,12 @@ def patch_erf_or_rim(
         elif isinstance(patched_data, TPC):
             log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
             txi_resource: FileResource | None = next(
-                (res for res in resources if res.resname() == resource.resname() and res.restype() == ResourceType.TXI),
+                (
+                    res
+                    for res in resources
+                    if res.resname() == resource.resname()
+                    and res.restype() == ResourceType.TXI
+                ),
                 None,
             )
             if txi_resource:
@@ -1243,7 +1248,10 @@ def do_main_patchloop() -> str:
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
-    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()):
+    if SCRIPT_GLOBALS.create_fonts and (
+        not Path(SCRIPT_GLOBALS.font_path).name
+        or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()
+    ):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
     if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
         return messagebox.showwarning("Bad translation args", "Cannot start translation, you have not applied your translation options. (api key, db path, server url etc)")
@@ -1578,13 +1586,15 @@ class KOTORPatchingToolUI:
 
         if value is not None and varname is not None:
             self.translation_applied = False
-            ttk.Button(self.translation_options_frame, text="Apply Options", command=lambda: self.apply_translation_option(varname=varname, value=value)).grid(
-                row=row, column=2
-            )
+            ttk.Button(
+                self.translation_options_frame,
+                text="Apply Options",
+                command=lambda: self.apply_translation_option(varname=varname, value=value),
+            ).grid(row=row, column=2)
         else:
             self.translation_applied = True
 
-    def apply_translation_option(self, varname, value):
+    def apply_translation_option(self, varname: str, value: Any):
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
         self.write_log(PatchLog(f"Applied Options for {self.translation_option.get()}: {varname} = {value}", LogType.NOTE))
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
@@ -1594,7 +1604,7 @@ class KOTORPatchingToolUI:
             return
         self.translation_applied = True
 
-    def create_language_checkbuttons(self, row):
+    def create_language_checkbuttons(self, row: int):
         # Show/Hide Languages
         self.show_hide_language = tk.BooleanVar(value=False)
         ttk.Checkbutton(self.root, text="Show/Hide Languages:", command=lambda: self.toggle_language_frame(self.show_hide_language)).grid(row=row, column=1)
@@ -1639,7 +1649,11 @@ class KOTORPatchingToolUI:
             if column == 0:
                 row += 1
 
-    def update_chosen_languages(self, lang: Language, lang_var: tk.BooleanVar):
+    def update_chosen_languages(
+        self,
+        lang: Language,
+        lang_var: tk.BooleanVar,
+    ):
         if lang_var.get():
             SCRIPT_GLOBALS.chosen_languages.append(lang)
         else:
@@ -1684,7 +1698,7 @@ class KOTORPatchingToolUI:
         if file:
             self.font_path.set(file)
 
-    def start_patching(self):
+    def start_patching(self) -> str | None:
         if SCRIPT_GLOBALS.install_running:
             return messagebox.showerror("Install already running", "Please wait for all operations to complete. Check the console/output for details.")
         self.install_button.config(state="normal")
@@ -1710,7 +1724,7 @@ class KOTORPatchingToolUI:
             self.install_button.config(state=tk.DISABLED)
         return None
 
-def is_running_from_temp():
+def is_running_from_temp() -> bool:
     app_path = Path(sys.executable)
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
