@@ -923,11 +923,13 @@ def check_module(
         order = [
             SearchLocation.OVERRIDE,
             SearchLocation.TEXTURES_TPA,
+            SearchLocation.TEXTURES_GUI,
             SearchLocation.CHITIN,
         ]
     else:
         order = [
             SearchLocation.TEXTURES_TPA,
+            SearchLocation.TEXTURES_GUI,
             SearchLocation.CHITIN,
         ]
     try:
