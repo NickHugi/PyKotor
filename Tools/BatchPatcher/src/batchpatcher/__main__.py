@@ -1473,7 +1473,22 @@ class KOTORPatchingToolUI:
 
         # Font Path
         ttk.Label(self.root, text="Font Path:").grid(row=row, column=0)
-        ttk.Combobox(self.root, textvariable=self.font_path, values=[str(path_str) for path_str in get_font_paths()]).grid(row=row, column=1)
+        font_paths = [str(path_str) for path_str in get_font_paths()]
+
+        # Calculate the pixel width of the longest string in the list
+        from tkinter.font import Font
+        font = Font(family="TkDefaultFont")  # Use the default font and size used by ttk.Combobox
+        max_width = max(font.measure(path) for path in font_paths)
+
+        # Configure the Combobox to be wide enough for the longest string
+        combobox = ttk.Combobox(self.root, textvariable=self.font_path, values=font_paths)
+        combobox.grid(row=row, column=1)
+
+        # Set the width of the Combobox in characters, not pixels
+        # Find the average character width in pixels and divide max_width by this number
+        avg_char_width = font.measure('0')  # '0' is typically used as an average character
+        combobox_width = max_width // avg_char_width
+        combobox.config(width=combobox_width)
         ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)
         row += 1
 
