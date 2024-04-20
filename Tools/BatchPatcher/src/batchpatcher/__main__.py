@@ -1093,17 +1093,17 @@ def check_model(
                         lightmap_tga = ResourceIdentifier(lightmap, ResourceType.TGA)
                         lightmap_tpc = ResourceIdentifier(lightmap, ResourceType.TPC)
                         resource_results = k_install.locations([lightmap_tga, lightmap_tpc], order)
-                        if lightmap_tga in resource_results:
+                        if resource_results.get(lightmap_tga):
                             log_output(f"Found lightmap '{lightmap_tga}' in the following locations:")
                             for location_list in resource_results.values():
                                 for location in location_list:
                                     log_output(f"    {location.filepath}")
-                        if lightmap_tpc in resource_results:
+                        if resource_results.get(lightmap_tpc):
                             log_output(f"Found lightmap '{lightmap_tpc}' in the following locations:")
                             for location_list in resource_results.values():
                                 for location in location_list:
                                     log_output(f"    {location.filepath}")
-                        if lightmap_tga not in resource_results and lightmap_tpc not in resource_results:
+                        if not resource_results.get(lightmap_tga) and not resource_results.get(lightmap_tpc):
                             log_output(f"{resource.resname()}: Missing lightmap: '{lightmap}'")
                             missing_writer.write(lightmap + "\n")
                             found_missing_lightmap = True
