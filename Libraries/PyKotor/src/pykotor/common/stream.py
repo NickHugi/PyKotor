@@ -729,7 +729,11 @@ class BinaryReader:
         ------
             OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
-        if self.position() + num > self.size():
+        attempted_seek = self.position() + num
+        if attempted_seek < 0:
+            msg = f"Cannot seek to a negative value {attempted_seek}, abstracted seek value: {num}"
+            raise OSError(msg)
+        if attempted_seek > self.size():
             msg = "This operation would exceed the streams boundaries."
             raise OSError(msg)
 
