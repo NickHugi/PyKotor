@@ -1877,7 +1877,7 @@ class Installation:  # noqa: PLR0904
                 # else:
                 #    print(f"Main: returning '{found_mod_id}' for '{module_filename}'")
                 if also_return_cached_capsules:
-                    return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+                    return found_mod_id, _cached_capsules  # type: ignore[return-value, reportReturnType]
                 return found_mod_id
             # Validate the ARE exists.
             for mod_id in mod_ids_to_try:
@@ -1886,15 +1886,15 @@ class Installation:  # noqa: PLR0904
                     if capsule.info(mod_id, ResourceType.ARE) is None:
                         continue
                     if also_return_cached_capsules:  # Found at this point.
-                        return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+                        return found_mod_id, _cached_capsules  # type: ignore[return-value, reportReturnType]
                     return found_mod_id
-                if mod_id and mod_id.startswith("m") or mod_id[1].isdigit():
+                if mod_id and (mod_id.startswith("m") or mod_id[1].isdigit()):
                     found_mod_id = mod_id
         except Exception:  # noqa: BLE001
             self._log.exception("Installation.module_id(%s) had an unexpected exception thrown.", module_filename)
         # print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
         if also_return_cached_capsules:
-            return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+            return found_mod_id, _cached_capsules  # type: ignore[return-value, reportReturnType]
         return found_mod_id
 
     def _process_mod_attribute(

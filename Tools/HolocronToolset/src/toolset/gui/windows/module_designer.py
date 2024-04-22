@@ -424,8 +424,6 @@ class ModuleDesigner(QMainWindow):
             print("set flatRenderer walkmeshes")
             self.ui.flatRenderer.setWalkmeshes(walkmeshes)
             self.ui.flatRenderer.centerCamera()
-        else:
-            self.log.info("ModuleDesigner.openModule Loader unexpected error?")
 
     def unloadModule(self):
         self._module = None
@@ -662,22 +660,24 @@ class ModuleDesigner(QMainWindow):
                 filename: str = instance.identifier().resname
                 name: str = filename
                 tag: str = ""
-                resource: ModuleResource[ARE] | None = self._module.resource(instance.identifier().resname, instance.identifier().restype)
+                are_module_resource: ModuleResource[ARE] | None = self._module.resource(
+                    instance.identifier().resname,
+                    instance.identifier().restype,
+                )
 
-                resourceExists: bool = resource is not None and resource.resource() is not None
-                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and resourceExists):
+                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and are_module_resource):
                     # Tag is stored in the GIT
-                    name = resource.localized_name() or filename
+                    name = are_module_resource.localized_name() or filename
                     tag = instance.tag
                 elif isinstance(instance, GITWaypoint):
                     # Name and tag are stored in the GIT
                     name = self._installation.string(instance.name)
                     tag = instance.tag
-                elif resourceExists:
-                    name = resource.localized_name() or filename
-                    tag = resource.resource().tag
+                elif are_module_resource:
+                    name = are_module_resource.localized_name() or filename
+                    tag = are_module_resource.resource().tag
 
-                if resource is None:
+                if are_module_resource is None:
                     font.setItalic(True)
 
                 item.setText(name)
@@ -867,7 +867,7 @@ class ModuleDesigner(QMainWindow):
             print("Enabling free cam")
             self._controls3d = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)
         else:
-            print("Disable free cam")
+            print("Disabling free cam")
             self._controls3d = ModuleDesignerControls3d(self, self.ui.mainRenderer)
 
     # region Selection Manipulations
@@ -892,7 +892,15 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.instanceSelection.clear()
         self.rebuildInstanceList()
 
-    def moveSelected(self, x: float, y: float, z: float | None = None, noUndoStack: bool = False, noZCoord: bool = False):
+    def moveSelected(
+        self,
+        x: float,
+        y: float,
+        z: float | None = None,
+        *,
+        noUndoStack: bool = False,
+        noZCoord: bool = False,
+    ):
         """Moves selected instances by the given offsets.
 
         Args:
@@ -1241,7 +1249,7 @@ class ModuleDesignerControls3d:
         self.toggleFreeCam: ControlItem = ControlItem(self.settings.toggleFreeCam3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject3dBind)
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject3dBind)
-        self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
+        self.openContextMenu: ControlItem = ControlItem((set(), {int(QtMouse.RightButton)}))
         self.rotateCameraLeft: ControlItem = ControlItem(self.settings.rotateCameraLeft3dBind)
         self.rotateCameraRight: ControlItem = ControlItem(self.settings.rotateCameraRight3dBind)
         self.rotateCameraUp: ControlItem = ControlItem(self.settings.rotateCameraUp3dBind)
@@ -1287,15 +1295,8 @@ class ModuleDesignerControls3d:
             world (Vector3): World position
             buttons (set[int]): Pressed mouse buttons
             keys (set[int]): Pressed keyboard keys
-
-        Processing Logic:
-        ----------------
-            - Moves camera if moveXYCamera or moveCameraPlane bindings are satisfied based on screenDelta
-            - Rotates camera if rotateCamera binding is satisfied based on screenDelta
-            - Zooms camera if zoomCameraMM binding is satisfied based on screenDelta
-            - Moves selected instances if moveXYSelected or moveZSelected bindings are satisfied based on screenDelta and position
-            - Rotates selected instances if rotateSelected binding is satisfied based on screenDelta
         """
+        # Handle movement of View
         if self.moveXYCamera.satisfied(buttons, keys):
             forward = -screenDelta.y * self.renderer.scene.camera.forward()
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
@@ -1320,6 +1321,7 @@ class ModuleDesignerControls3d:
             strength = self.settings.zoomCameraSensitivity3d / 5000
             self.renderer.scene.camera.distance -= screenDelta.y * strength
 
+        # Handle movement of selected instances.
         if self.moveXYSelected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
                 return
@@ -1338,6 +1340,9 @@ class ModuleDesignerControls3d:
                 instance.position = Vector3(x, y, z)
 
         if self.moveZSelected.satisfied(buttons, keys):
+            if not self.editor.isDragMoving:
+                self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
+                self.editor.isDragMoving = True
             for instance in self.editor.selectedInstances:
                 instance.position.z -= screenDelta.y / 40
 

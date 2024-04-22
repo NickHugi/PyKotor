@@ -381,7 +381,7 @@ class MDLNode:
 
     def child(
         self,
-        name,
+        name: str,
     ) -> MDLNode:
         """Find child node by name.
 

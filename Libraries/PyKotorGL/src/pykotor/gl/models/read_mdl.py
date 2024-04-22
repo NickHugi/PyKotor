@@ -251,7 +251,7 @@ def gl_load_stitched_model(scene: Scene, mdl: BinaryReader, mdx: BinaryReader) -
         if names[name_list_index].lower() in {"headhook", "rhand", "lhand", "gogglehook", "maskhook"}:
             node = Node(scene, root, names[name_list_index])
             root.children.append(node)
-            glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())  # noqa: SLF001  # type: ignore[reportCallIssue, reportArgumentType]
+            glm.decompose(transform, vec3(), node._rotation, node._position, vec3(), vec4())  # noqa: SLF001  # type: ignore[call-overload, reportCallIssue, reportArgumentType]
             node._recalc_transform()
 
     merged: dict[str, list[tuple[int, mat4x4]]] = {}

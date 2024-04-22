@@ -284,7 +284,7 @@ class ResourceType(Enum):
 
     def __eq__(
         self,
-        other: ResourceType | str | int,
+        other: ResourceType | str | int | object,
     ):
         """Two ResourceTypes are equal if they are the same.
 
