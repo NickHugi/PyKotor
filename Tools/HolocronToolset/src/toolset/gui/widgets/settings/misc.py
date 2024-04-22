@@ -34,6 +34,7 @@ class MiscWidget(QWidget):
     def setupValues(self):
         self.ui.alsoCheckReleaseVersion.setChecked(self.settings.alsoCheckReleaseVersion)
         self.ui.useBetaChannel.setChecked(self.settings.useBetaChannel)
+        self.ui.profileToolset.setChecked(self.settings.profileToolset)
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
         self.ui.mergeRimCheck.setChecked(self.settings.joinRIMsTogether)
         self.ui.moduleSortOptionComboBox.setCurrentIndex(self.settings.moduleSortOption)
@@ -49,6 +50,7 @@ class MiscWidget(QWidget):
     def save(self):
         self.settings.alsoCheckReleaseVersion = self.ui.alsoCheckReleaseVersion.isChecked()
         self.settings.useBetaChannel = self.ui.useBetaChannel.isChecked()
+        self.settings.profileToolset = self.ui.profileToolset.isChecked()
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
         self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
         self.settings.moduleSortOption = self.ui.moduleSortOptionComboBox.currentIndex()

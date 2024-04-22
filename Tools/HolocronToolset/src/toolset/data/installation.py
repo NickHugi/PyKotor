@@ -220,7 +220,12 @@ class HTInstallation(Installation):
                 return self._get_icon(texture)
         return pixmap
 
-    def getItemIcon(self, baseItem: int, modelVariation: int, textureVariation: int) -> QPixmap:
+    def getItemIcon(
+        self,
+        baseItem: int,
+        modelVariation: int,
+        textureVariation: int,
+    ) -> QPixmap:
         """Get item icon from base item and variations.
 
         Args:

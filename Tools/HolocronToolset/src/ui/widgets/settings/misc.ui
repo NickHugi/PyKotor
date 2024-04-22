@@ -118,6 +118,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="profileToolset">
+         <property name="text">
+          <string>Profile various subroutines of the toolset.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="Line" name="line">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>

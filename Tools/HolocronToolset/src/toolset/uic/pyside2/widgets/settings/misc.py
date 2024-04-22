@@ -84,6 +84,11 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.showPreviewUTDCheck)
 
+        self.profileToolset = QCheckBox(self.scrollAreaWidgetContents)
+        self.profileToolset.setObjectName(u"profileToolset")
+
+        self.verticalLayout.addWidget(self.profileToolset)
+
         self.line = QFrame(self.scrollAreaWidgetContents)
         self.line.setObjectName(u"line")
         self.line.setFrameShape(QFrame.HLine)
@@ -190,6 +195,7 @@ class Ui_Form(object):
         self.showPreviewUTCCheck.setText(QCoreApplication.translate("Form", u"Show 3D Preview in UTC Editor", None))
         self.showPreviewUTPCheck.setText(QCoreApplication.translate("Form", u"Show 3D Preview in UTP Editor", None))
         self.showPreviewUTDCheck.setText(QCoreApplication.translate("Form", u"Show 3D Preview in UTD Editor", None))
+        self.profileToolset.setText(QCoreApplication.translate("Form", u"Profile various subroutines of the toolset.", None))
         self.label.setText(QCoreApplication.translate("Form", u"Temp Directory:", None))
         self.label_5.setText(QCoreApplication.translate("Form", u"GFF Files:", None))
         self.gffEditorCombo.setItemText(0, QCoreApplication.translate("Form", u"GFF Editor", None))

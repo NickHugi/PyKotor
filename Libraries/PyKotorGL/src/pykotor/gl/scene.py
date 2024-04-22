@@ -968,6 +968,11 @@ class Camera:
         elif self.pitch < 0.001:
             self.pitch = 0.001
 
+        # Update camera's position based on new yaw and pitch, factoring in the distance
+        self.x = self.true_position().x
+        self.y = self.true_position().y
+        self.z = self.true_position().z
+
     def forward(self, *, ignore_z: bool = True) -> vec3:
         """Calculates the forward vector from the camera's rotation.
 

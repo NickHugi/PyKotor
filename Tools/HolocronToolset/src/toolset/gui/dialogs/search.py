@@ -92,6 +92,10 @@ class FileSearcher(QDialog):
             checkTypes.append(ResourceType.GIT)  # noqa: E701  # pylint: disable=multiple-statements
         if self.ui.typeIFOCheck.isChecked():
             checkTypes.append(ResourceType.IFO)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeVISCheck.isChecked():
+            checkTypes.append(ResourceType.VIS)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeLYTCheck.isChecked():
+            checkTypes.append(ResourceType.LYT)  # noqa: E701  # pylint: disable=multiple-statements
         if self.ui.typeDLGCheck.isChecked():
             checkTypes.append(ResourceType.DLG)  # noqa: E701  # pylint: disable=multiple-statements
         if self.ui.typeJRLCheck.isChecked():
@@ -156,9 +160,11 @@ class FileSearcher(QDialog):
 
         searchText = query.text.lower() if query.caseSensitive else query.text
 
-        def search(resource: FileResource):
-            resource_name: str = resource.resname()
+        def _search(resource: FileResource):
+            if resource.restype() not in query.checkTypes:
+                return
 
+            resource_name: str = resource.resname()
             name_check: bool = searchText in (resource_name if query.caseSensitive else resource_name.lower())
             if name_check:
                 results.append(resource)
@@ -171,7 +177,7 @@ class FileSearcher(QDialog):
                 results.append(resource)
 
         searchIn: Generator[FileResource, Any, None] = search_generator()
-        searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
+        searches: list[Callable[[FileResource], None]] = [lambda resource=resource: _search(resource) for resource in searchIn]
         AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
         self.fileResults.emit(results, query.installation)
 

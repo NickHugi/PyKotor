@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+try:
+    import cProfile
+except ImportError:
+    cProfile = None
 import platform
 import sys
 
@@ -299,7 +303,7 @@ class ToolWindow(QMainWindow):
             # Calculate how much the mouse has been moved
             currPos = self.mapToGlobal(self.pos())
             globalPos = event.globalPos()
-            if self._mouseMovePos is None:
+            if getattr(self, "_mouseMovePos", None) is None:
                 return
             diff = globalPos - self._mouseMovePos
             newPos = self.mapFromGlobal(currPos + diff)
@@ -829,7 +833,14 @@ class ToolWindow(QMainWindow):
         """Opens the Settings dialog and refresh installation combo list if changes."""
         dialog = SettingsDialog(self)
         if dialog.exec_() and dialog.installationEdited:
-            self.reloadSettings()
+            result = QMessageBox(
+                QMessageBox.Icon.Question,
+                "Reload the installations?",
+                "You appear to have made changes to your installations, would you like to reload?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            ).exec_()
+            if result == QMessageBox.StandardButton.Yes:
+                self.reloadSettings()
 
     def openActiveTalktable(self):
         """Opens the talktable for the active (currently selected) installation.
@@ -1033,7 +1044,11 @@ class ToolWindow(QMainWindow):
         progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
         progress_process.start()
         self.hide()
-        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+
+        def download_progress_hook(
+            data: dict[str, Any],
+            progress_queue: Queue = progress_queue,
+        ):
             progress_queue.put(data)
 
         # Prepare the list of progress hooks with the method from ProgressDialog
@@ -1051,7 +1066,7 @@ class ToolWindow(QMainWindow):
             CURRENT_VERSION,
             latestVersion,
             downloader=None,
-            progress_hooks=progress_hooks,
+            progress_hooks=progress_hooks,  # type: ignore[arg-type]
             exithook=exitapp
         )
         try:
@@ -1090,7 +1105,10 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             print("No installation is currently loaded, cannot refresh modules list")
             return []
-
+        profiler = None
+        if self.settings.profileToolset and cProfile is not None:
+            profiler = cProfile.Profile()
+            profiler.enable()
         # If specified the user can forcibly reload the resource list for every module
         if reload:
             self.active.load_modules()
@@ -1104,7 +1122,7 @@ class ToolWindow(QMainWindow):
             elif self.settings.moduleSortOption == 0:  # "Sort by filename":
                 sortStr = ""
             elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
-                sortStr = areaNames.get(moduleFileName).lower()
+                sortStr = areaNames.get(moduleFileName, "y").lower()
             else:  # alternate mod id that attempts to match to filename.
                 sortStr = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
             sortStr += f"_{lowerModuleFileName}".lower()
@@ -1131,6 +1149,9 @@ class ToolWindow(QMainWindow):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
+        if self.settings.profileToolset and profiler:
+            profiler.disable()
+            profiler.dump_stats(str(Path("main_getModulesList.pstat").absolute()))
         return modules
 
     def refreshModuleList(
@@ -1249,11 +1270,31 @@ class ToolWindow(QMainWindow):
 
     def reloadInstallations(self):
         """Refresh the list of installations available in the combobox."""
-        self.ui.gameCombo.clear()
-        self.ui.gameCombo.addItem("[None]")
+        self.ui.gameCombo.currentIndexChanged.disconnect(self.changeActiveInstallation)
+        self.ui.gameCombo.clear()  # without above disconnect, would call ToolWindow().changeActiveInstallation(-1)
+        self.ui.gameCombo.addItem("[None]")  # without above disconnect, would call ToolWindow().changeActiveInstallation(0)
 
         for installation in self.settings.installations().values():
             self.ui.gameCombo.addItem(installation.name)
+        self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)  # without above disconnect, would NOT call changeActiveInstallation
+
+    def unsetInstallation(self):
+
+        self.ui.gameCombo.setCurrentIndex(0)
+
+        self.ui.coreWidget.setResources([])
+        self.ui.modulesWidget.setSections([])
+        self.ui.modulesWidget.setResources([])
+        self.ui.overrideWidget.setSections([])
+        self.ui.overrideWidget.setResources([])
+
+        self.ui.resourceTabs.setEnabled(False)
+        self.ui.sidebar.setEnabled(False)
+        self.updateMenus()
+        self.active = None
+        if self.dogObserver is not None:
+            self.dogObserver.stop()
+            self.dogObserver = None
 
     def changeActiveInstallation(self, index: int):
         """Changes the active installation selected.
@@ -1266,38 +1307,23 @@ class ToolWindow(QMainWindow):
         ----
             index (int): Index of the installation in the installationCombo combobox.
         """
-        self.ui.gameCombo.setCurrentIndex(index)
-
-        self.ui.coreWidget.setResources([])
-        self.ui.modulesWidget.setSections([])
-        self.ui.modulesWidget.setResources([])
-        self.ui.overrideWidget.setSections([])
-        self.ui.overrideWidget.setResources([])
-
-        self.ui.resourceTabs.setEnabled(False)
-        self.ui.sidebar.setEnabled(False)
-        self.updateMenus()
-
-        if index <= 0:
-            if index < 0:
-                print(f"Index out of range - self.changeActiveInstallation({index})")
-                return  # Comment this line and uncomment below to invalidate the current selected installation.
-                #self.ui.gameCombo.setCurrentIndex(0)
-            self.active = None
-            if self.dogObserver is not None:
-                self.dogObserver.stop()
-                self.dogObserver = None
+        if index < 0:  # self.ui.gameCombo.clear() will call this function with -1
+            print(f"Index out of range - ToolWindow.changeActiveInstallation({index})")
             return
 
-        self.ui.resourceTabs.setEnabled(True)
-        self.ui.sidebar.setEnabled(True)
+        previousIndex: int = self.ui.gameCombo.currentIndex()
+        self.ui.gameCombo.setCurrentIndex(index)
+
+        if index == 0:
+            self.unsetInstallation()
+            return
 
         name: str = self.ui.gameCombo.itemText(index)
         path: str = self.settings.installations()[name].path.strip()
         tsl: bool = self.settings.installations()[name].tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if not path or not Path(path).safe_isdir():
+        if not path or not path.strip() or not Path(path).safe_isdir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec_()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}")
@@ -1305,67 +1331,89 @@ class ToolWindow(QMainWindow):
         # If the user still has not set a path, then return them to the [None] option.
         if not path:
             print("User did not choose a path for this installation.")
-            self.ui.gameCombo.setCurrentIndex(0)
-            self.active = None
-            if self.dogObserver is not None:
-                self.dogObserver.stop()
-                self.dogObserver = None
+            self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
-
-        def load_task(active: HTInstallation | None = None) -> HTInstallation:
-            return active or HTInstallation(path, name, tsl, self)
 
         active = self.installations.get(name)
-        loader = AsyncLoader(self, "Refreshing installation" if active else "Loading Installation", lambda: load_task(active), "Failed to load installation")
-        if not loader.exec_():
-            self.active = None
-            self.ui.gameCombo.setCurrentIndex(0)
-            if self.dogObserver is not None:
-                self.dogObserver.stop()
-                self.dogObserver = None
-            return
-        self.active = loader.value
+        if active:
+            self.active = active
+        else:
+            def load_task() -> HTInstallation:
+                profiler = None
+                if self.settings.profileToolset and cProfile is not None:
+                    profiler = cProfile.Profile()
+                    profiler.enable()
+                new_active = HTInstallation(path, name, tsl, self)
+                if self.settings.profileToolset and profiler:
+                    profiler.disable()
+                    profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
+                return new_active
+            loader = AsyncLoader(self, "Loading Installation", load_task, "Failed to load installation")
+            if not loader.exec_():
+                self.ui.gameCombo.setCurrentIndex(previousIndex)
+                return
+            self.active = loader.value
 
         # KEEP UI CODE IN MAIN THREAD!
+        self.ui.resourceTabs.setEnabled(True)
+        self.ui.sidebar.setEnabled(True)
         def prepare_task() -> tuple[list[QStandardItem] | None, ...]:
-            return (
+            profiler = None
+            if self.settings.profileToolset and cProfile is not None:
+                profiler = cProfile.Profile()
+                profiler.enable()
+            retTuple = (
                 self._getModulesList(reload=False),
                 self._getOverrideList(reload=False),
                 self._getTexturePackList(reload=False),
             )
+            if self.settings.profileToolset and profiler:
+                profiler.disable()
+                profiler.dump_stats(str(Path("prepare_task.pstat").absolute()))
+            return retTuple
 
         prepare_loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
         if not prepare_loader.exec_():
-            self.active = None
-            self.ui.gameCombo.setCurrentIndex(0)
-            if self.dogObserver is not None:
-                self.dogObserver.stop()
-                self.dogObserver = None
+            self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
-        self.log.info("Loading core installation resources into UI...")
-        self.ui.coreWidget.setResources(self.active.chitin_resources())
-        moduleItems, overrideItems, textureItems = prepare_loader.value
-        assert moduleItems is not None
-        assert overrideItems is not None
-        assert textureItems is not None
-        self.ui.modulesWidget.setSections(moduleItems)
-        self.ui.overrideWidget.setSections(overrideItems)
-        self.ui.texturesWidget.setSections(textureItems)
-        self.log.debug("Remove unused categories...")
-        self.ui.coreWidget.modulesModel.removeUnusedCategories()
-        self.ui.texturesWidget.setInstallation(self.active)
-        self.log.debug("Updating menus...")
-        self.updateMenus()
-        self.log.debug("Setting up watchdog observer...")
-        if self.dogObserver is not None:
-            self.log.debug("Stopping old watchdog service...")
-            self.dogObserver.stop()
-        self.dogObserver = Observer()
-        self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
-        self.dogObserver.start()
-        self.log.info("Loader task completed.")
-        self.settings.installations()[name].path = path
-        self.installations[name] = self.active
+
+        # Any issues past this point must call self.unsetInstallation()
+        try:
+            self.log.debug("Set sections of prepared lists")
+            moduleItems, overrideItems, textureItems = prepare_loader.value
+            assert moduleItems is not None
+            assert overrideItems is not None
+            assert textureItems is not None
+            self.ui.modulesWidget.setSections(moduleItems)
+            self.ui.overrideWidget.setSections(overrideItems)
+            self.ui.texturesWidget.setSections(textureItems)
+
+            self.log.debug("Loading core installation resources into UI...")
+            self.ui.coreWidget.setResources(self.active.chitin_resources())
+
+            self.log.debug("Remove unused categories...")
+            self.ui.coreWidget.modulesModel.removeUnusedCategories()
+            self.ui.texturesWidget.setInstallation(self.active)
+            self.log.debug("Updating menus...")
+            self.updateMenus()
+            self.log.debug("Setting up watchdog observer...")
+            if self.dogObserver is not None:
+                self.log.debug("Stopping old watchdog service...")
+                self.dogObserver.stop()
+            self.dogObserver = Observer()
+            self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+            self.dogObserver.start()
+            self.log.info("Loader task completed.")
+            self.settings.installations()[name].path = path
+            self.installations[name] = self.active
+        except Exception as e:
+            self.log.exception("Failed to initialize the installation")
+            QMessageBox(
+                QMessageBox.Icon.Critical,
+                "An unexpected error occurred initializing the installation.",
+                f"Failed to initialize the installation {name}<br><br>{e}",
+            ).exec_()
+            self.unsetInstallation()
 
     def _extractResource(
         self,

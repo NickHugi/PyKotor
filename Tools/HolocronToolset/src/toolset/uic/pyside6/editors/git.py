@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
         self.listWidget = QListWidget(self.layoutWidget)
         self.listWidget.setObjectName(u"listWidget")
         self.listWidget.setMaximumSize(QSize(16777215, 16777215))
-        self.listWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.listWidget.setContextMenuPolicy(Qt.CustomContextMenu)
 
         self.verticalLayout.addWidget(self.listWidget)
 
@@ -472,7 +472,7 @@ class Ui_MainWindow(object):
         self.renderArea.setSizePolicy(sizePolicy)
         self.renderArea.setMouseTracking(True)
         self.renderArea.setFocusPolicy(Qt.StrongFocus)
-        self.renderArea.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.renderArea.setContextMenuPolicy(Qt.CustomContextMenu)
         self.renderArea.setStyleSheet(u"background: black;")
 
         self.verticalLayout_2.addWidget(self.renderArea)

@@ -484,7 +484,7 @@ class Ui_MainWindow(object):
         self.resourceTree.setHeaderItem(__qtreewidgetitem)
         self.resourceTree.setObjectName(u"resourceTree")
         self.resourceTree.setMaximumSize(QSize(200, 16777215))
-        self.resourceTree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.resourceTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.resourceTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.resourceTree.setHeaderHidden(True)
 
@@ -512,7 +512,7 @@ class Ui_MainWindow(object):
         self.instanceList = QListWidget(self.centralwidget)
         self.instanceList.setObjectName(u"instanceList")
         self.instanceList.setMaximumSize(QSize(200, 16777215))
-        self.instanceList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.instanceList.setContextMenuPolicy(Qt.CustomContextMenu)
 
         self.horizontalLayout.addWidget(self.instanceList)
 

@@ -1641,7 +1641,10 @@ class KOTORPatchingToolUI:
                 self.language_frame,
                 text=lang.name,
                 variable=lang_var,
-                command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
+                command=lambda lang=lang,
+                lang_var=lang_var: self.update_chosen_languages(
+                    lang, lang_var
+                ),
             ).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns

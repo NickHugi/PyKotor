@@ -148,6 +148,18 @@ class Ui_Dialog(object):
 
         self.verticalLayout_4.addWidget(self.typeIFOCheck)
 
+        self.typeLYTCheck = QCheckBox(self.groupBox_5)
+        self.typeLYTCheck.setObjectName(u"typeLYTCheck")
+        self.typeLYTCheck.setChecked(True)
+
+        self.verticalLayout_4.addWidget(self.typeLYTCheck)
+
+        self.typeVISCheck = QCheckBox(self.groupBox_5)
+        self.typeVISCheck.setObjectName(u"typeVISCheck")
+        self.typeVISCheck.setChecked(True)
+
+        self.verticalLayout_4.addWidget(self.typeVISCheck)
+
         self.typeDLGCheck = QCheckBox(self.groupBox_5)
         self.typeDLGCheck.setObjectName(u"typeDLGCheck")
         self.typeDLGCheck.setChecked(True)
@@ -289,6 +301,8 @@ class Ui_Dialog(object):
         self.typeARECheck.setText(QCoreApplication.translate("Dialog", u"ARE", None))
         self.typeGITCheck.setText(QCoreApplication.translate("Dialog", u"GIT", None))
         self.typeIFOCheck.setText(QCoreApplication.translate("Dialog", u"IFO", None))
+        self.typeLYTCheck.setText(QCoreApplication.translate("Dialog", u"LYT", None))
+        self.typeVISCheck.setText(QCoreApplication.translate("Dialog", u"VIS", None))
         self.typeDLGCheck.setText(QCoreApplication.translate("Dialog", u"DLG", None))
         self.typeJRLCheck.setText(QCoreApplication.translate("Dialog", u"JRL", None))
         self.typeUTCCheck.setText(QCoreApplication.translate("Dialog", u"UTC", None))
