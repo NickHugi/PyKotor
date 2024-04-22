@@ -96,6 +96,38 @@ $pyInstallerArgs = @{
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
 }
+if (-not $env:QT_API) {
+    $env:QT_API = "PyQt5"  # Default to PyQt5 if QT_API is not set
+}
+switch ($env:QT_API) {
+    { $_ -in "PyQt5", "PyQt6", "PySide2", "PySide6", "pyqt5", "pyqt6", "pyside2", "pyside6", "default" } {
+        # Define a dictionary for mapping lowercase to correct case
+        $apiMapping = @{
+            "pyqt5" = "PyQt5";
+            "pyqt6" = "PyQt6";
+            "pyside2" = "PySide2";
+            "pyside6" = "PySide6"
+        }
+
+        # Normalize $env:QT_API based on the dictionary
+        if ($apiMapping.ContainsKey($env:QT_API.ToLower())) {
+            $env:QT_API = $apiMapping[$env:QT_API.ToLower()]
+            Write-Host "converted QT_API to '$env:QT_API'"
+        } else {
+            Write-Error "Invalid QT_API: '$env:QT_API', hopefully pyinstaller figures it out..."
+        }
+
+        # Default modules to exclude
+        $modulesToExclude = @("PyQt5", "PyQt6", "PySide2", "PySide6") | Where-Object { $_ -ne $env:QT_API }
+
+        # Add modules to the exclude list
+        $tempArray = $pyInstallerArgs['exclude-module'] + $modulesToExclude
+        $tempArrayString = $tempArray -join ", "
+        Write-Host "Excluding: $tempArrayString"
+        $pyInstallerArgs['exclude-module'] = $tempArray
+    }
+}
+Write-Host "QT_API: $env:QT_API"
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     $key = $_.Key

@@ -74,6 +74,16 @@ class BinaryReader:
 
         self._size: int = total_size - self._offset if size is None else size
 
+    @property
+    def _true_stream_position(self) -> int:
+        """Private property to access the current position of the stream for debugging purposes.
+
+        Returns:
+        -------
+            int: The current absolute position of the stream pointer.
+        """
+        return self._stream.tell()
+
     def __enter__(
         self,
     ):
@@ -719,7 +729,11 @@ class BinaryReader:
         ------
             OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
-        if self.position() + num > self.size():
+        attempted_seek = self.position() + num
+        if attempted_seek < 0:
+            msg = f"Cannot seek to a negative value {attempted_seek}, abstracted seek value: {num}"
+            raise OSError(msg)
+        if attempted_seek > self.size():
             msg = "This operation would exceed the streams boundaries."
             raise OSError(msg)
 

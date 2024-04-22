@@ -226,10 +226,10 @@ class NCS:
             - Return the added instruction.
         """
         instruction = NCSInstruction(instruction_type, args, jump)
-        self.instructions.insert(
-            index,
-            instruction,
-        ) if index is not None else self.instructions.append(instruction)
+        if index is None:
+            self.instructions.append(instruction)
+        else:
+            self.instructions.insert(index, instruction)
         return instruction
 
     def links_to(self, target: NCSInstruction) -> list[NCSInstruction]:
@@ -292,7 +292,7 @@ class NCSInstruction:
     ):
         self.ins_type: NCSInstructionType = ins_type
         self.jump: NCSInstruction | None = jump
-        self.args: list[Any] = args if args is not None else []
+        self.args: list[Any] = [] if args is None else args
 
     def __str__(self):
         if self.jump is None:

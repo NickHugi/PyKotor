@@ -221,7 +221,13 @@ class GFFCompareResult:
         -------
             tuple[Difference]: A collection of differences with changed values.
         """
-        return tuple(diff for diff in self.differences if diff.old_value is not None and diff.new_value is not None and diff.old_value != diff.new_value)
+        return tuple(
+            diff
+            for diff in self.differences
+            if diff.old_value is not None
+            and diff.new_value is not None
+            and diff.old_value != diff.new_value
+        )
 
     def get_new_values(self) -> tuple[Difference, ...]:
         """Returns a tuple of differences where a new value is present in the compared GFFStruct.
@@ -285,7 +291,13 @@ class GFF:
                     )
                     self.print_tree(gff_struct, indent + 2)
 
-    def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None, ignore_default_changes: bool = False) -> bool:
+    def compare(
+        self,
+        other_gff: GFF,
+        log_func: Callable = print,
+        path: PureWindowsPath | None = None,
+        ignore_default_changes: bool = False,
+    ) -> bool:
         """Compare two GFF objects.
 
         Args:

@@ -3,10 +3,12 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice
+from qtpy.QtMultimedia import QMediaPlayer
+from qtpy.QtWidgets import QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -18,9 +20,9 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QObject
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -57,7 +59,16 @@ class UTSEditor(Editor):
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
 
-        from toolset.uic.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.uts import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -163,7 +174,7 @@ class UTSEditor(Editor):
         self.ui.soundList.clear()
         for sound in uts.sounds:
             item = QListWidgetItem(str(sound))
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
             self.ui.soundList.addItem(item)
 
         # Positioning
@@ -305,17 +316,19 @@ class UTSEditor(Editor):
         data: bytes | None = self._installation.sound(resname)
 
         if data:
+            # PyQt5 and PySide2 code path
+            from qtpy.QtMultimedia import QMediaContent
             self.buffer = QBuffer(self)
             self.buffer.setData(data)
             self.buffer.open(QIODevice.ReadOnly)
             self.player.setMedia(QMediaContent(), self.buffer)
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
-            QMessageBox(QMessageBox.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
+            QMessageBox(QMessageBox.Icon.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 
     def addSound(self):
         item = QListWidgetItem("new sound")
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
         self.ui.soundList.addItem(item)
 
     def removeSound(self):
@@ -332,7 +345,7 @@ class UTSEditor(Editor):
         self.ui.soundList.insertItem(row - 1, resname)
         self.ui.soundList.setCurrentRow(row - 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row - 1)
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
     def moveSoundDown(self):
         if self.ui.soundList.currentRow() == -1:
@@ -343,7 +356,7 @@ class UTSEditor(Editor):
         self.ui.soundList.insertItem(row + 1, resname)
         self.ui.soundList.setCurrentRow(row + 1)
         item: QListWidgetItem | None = self.ui.soundList.item(row + 1)
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsEditable)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsEditable)
 
     def closeEvent(self, e: QCloseEvent):
         self.player.stop()

@@ -4,9 +4,11 @@ import struct
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QShortcut
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
+from qtpy.QtWidgets import QListWidgetItem, QShortcut
 
 from pykotor.common.geometry import SurfaceMaterial
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
@@ -17,14 +19,14 @@ from utility.error_handling import assert_with_variable_trace
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.geometry import Vector2, Vector3
     from pykotor.resource.formats.bwm import BWM, BWMFace
     from toolset.data.installation import HTInstallation
 
-_TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1  # type: ignore[attr-defined]
-_TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2  # type: ignore[attr-defined]
+_TRANS_FACE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1  # type: ignore[attr-defined]
+_TRANS_EDGE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2  # type: ignore[attr-defined]
 
 
 class BWMEditor(Editor):
@@ -49,7 +51,16 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        from toolset.uic.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.bwm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -111,7 +122,7 @@ class BWMEditor(Editor):
             icon = QIcon(QPixmap(image))
             text = material.name.replace("_", " ").title()
             item = QListWidgetItem(icon, text)
-            item.setData(QtCore.Qt.UserRole, material)  # type: ignore[attr-defined]
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, material)  # type: ignore[attr-defined]
             self.ui.materialList.addItem(item)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
@@ -176,11 +187,11 @@ class BWMEditor(Editor):
         worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+        if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
+        elif QtCore.Qt.MouseButton.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
@@ -213,7 +224,7 @@ class BWMEditor(Editor):
             - Check if the current face material is different than the selected material
             - Assign the selected material to the provided face.
         """
-        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)  # type: ignore[attr-defined]
+        newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)  # type: ignore[attr-defined]
         if face and face.material != newMaterial:
             face.material = newMaterial
 

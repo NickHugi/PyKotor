@@ -523,7 +523,7 @@ class TestCompileInstallation(unittest.TestCase):
 
             temp_nss_path: Path = cls.all_nss_paths[game].joinpath(str(resource.identifier()))
             temp_ncs_path: Path = temp_nss_path.with_suffix(".ncs")
-            with temp_nss_path.open("w") as f:
+            with temp_nss_path.open("w", encoding="utf-8") as f:
                 str_script: str = decode_bytes_with_fallbacks(resource.data())
                 f.write(str_script)
 

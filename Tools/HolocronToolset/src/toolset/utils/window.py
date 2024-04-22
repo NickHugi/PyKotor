@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
@@ -14,30 +14,33 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QMainWindow
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QDialog, QMainWindow
 
     from gui.editor import Editor
     from toolset.data.installation import HTInstallation
 
 WINDOWS: list[QWidget] = []
 
-
-def addWindow(window: QWidget):
+unique_sentinel = object()
+def addWindow(window: QWidget | QDialog | QMainWindow):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
     # Save the original closeEvent method
     original_closeEvent = window.closeEvent
 
     # Define a new closeEvent method that also calls the original
     def newCloseEvent(
-        event: QCloseEvent | None = None,  # Make event arg optional just in case the class has the wrong definition.
+        event: QCloseEvent | None = unique_sentinel,  # type: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
         if window in WINDOWS:
             WINDOWS.remove(window)
         # Call the original closeEvent
-        original_closeEvent(event, *args, **kwargs)  # type: ignore[reportArgumentType]
+        if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
+            original_closeEvent(*args, **kwargs)
+        else:
+            original_closeEvent(event, *args, **kwargs)  # type: ignore[reportArgumentType]
 
     # Override the widget's closeEvent with the new one
     window.closeEvent = newCloseEvent  # type: ignore[reportAttributeAccessIssue]
@@ -129,11 +132,17 @@ def openResourceEditor(
         if installation:
             editor = NSSEditor(None, installation)
         elif restype == ResourceType.NSS:
-            QMessageBox.warning(parentWindowWidget, "No installation loaded", "The toolset cannot use its full nss editor features until you select an installation.")
+            QMessageBox.warning(
+                parentWindowWidget,
+                "No installation loaded",
+                "The toolset cannot use its full nss editor features until you select an installation.",
+            )
             editor = TXTEditor(None, installation)
         else:
             QMessageBox.warning(
-                parentWindowWidget, "Cannot decompile NCS without an installation active", "Please select an installation from the dropdown before loading an NCS."
+                parentWindowWidget,
+                "Cannot decompile NCS without an installation active",
+                "Please select an installation from the dropdown before loading an NCS.",
             )
             return None, None
 
@@ -147,7 +156,7 @@ def openResourceEditor(
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTCEditor(None, installation, mainwindow=parentWindow)
+            editor = UTCEditor(None, installation, mainWindow=parentWindow)
 
     if restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
         if installation is None or not gff_specialized:
@@ -159,7 +168,7 @@ def openResourceEditor(
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTDEditor(None, installation, mainwindow=parentWindow)
+            editor = UTDEditor(None, installation, mainWindow=parentWindow)
 
     if restype.target_type() is ResourceType.UTS:
         if installation is None or not gff_specialized:  # noqa: SIM108
@@ -248,24 +257,24 @@ def openResourceEditor(
 
         except Exception as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "An unexpected error has occurred",
                 str(universal_simplify_exception(e)),
-                QMessageBox.Ok,
+                QMessageBox.StandardButton.Ok,
                 parentWindowWidget,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).show()
             raise
         else:
             return filepath, editor
     else:
         QMessageBox(
-            QMessageBox.Critical,
+            QMessageBox.Icon.Critical,
             "Failed to open file",
             f"The selected file format '{restype}' is not yet supported.",
-            QMessageBox.Ok,
+            QMessageBox.StandardButton.Ok,
             parentWindowWidget,
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).show()
 
     return None, None

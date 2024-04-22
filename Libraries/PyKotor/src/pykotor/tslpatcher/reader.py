@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+
 from configparser import ConfigParser, ParsingError
 from typing import TYPE_CHECKING
 
@@ -139,7 +140,11 @@ class ConfigReader:
         self.log: PatchLogger = logger or PatchLogger()
 
     @classmethod
-    def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None):
+    def from_filepath(
+        cls,
+        file_path: os.PathLike | str,
+        logger: PatchLogger | None = None,
+    ):
         """Load PatcherConfig from an INI file path.
 
         Args:
@@ -658,7 +663,6 @@ class ConfigReader:
         for identifier, file in compilelist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
-            modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
             modifications.destination = default_destination
             modifications.sourcefolder = default_source_folder
 
@@ -667,6 +671,7 @@ class ConfigReader:
                 file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
+            modifications.nwnnsscomp_path = self.mod_path / modifications.sourcefolder / "nwnnsscomp.exe"
             self.config.patches_nss.append(modifications)
 
     def load_hack_list(self):
@@ -715,7 +720,12 @@ class ConfigReader:
     #################
 
     @classmethod
-    def modify_field_gff(cls, identifier: str, key: str, str_value: str) -> ModifyFieldGFF:
+    def modify_field_gff(
+        cls,
+        identifier: str,
+        key: str,
+        str_value: str,
+    ) -> ModifyFieldGFF:
         """Modifies a field in a GFF based on the key(path) and string value.
 
         Args:
@@ -1166,7 +1176,11 @@ class ConfigReader:
 
         return modification
 
-    def _read_add_column(self, modifiers: CaseInsensitiveDict[str], identifier: str) -> AddColumn2DA:
+    def _read_add_column(
+        self,
+        modifiers: CaseInsensitiveDict[str],
+        identifier: str,
+    ) -> AddColumn2DA:
         """Loads the add new column to be added to the 2D array.
 
         Args:
@@ -1330,7 +1344,11 @@ class ConfigReader:
 
         return cells, store_2da, store_tlk
 
-    def row_label_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> str | None:
+    def row_label_2da(
+        self,
+        identifier: str,
+        modifiers: CaseInsensitiveDict[str],
+    ) -> str | None:
         """Returns the row label for a 2D array based on modifiers.
 
         Args:
@@ -1517,7 +1535,7 @@ class ConfigReader:
         """
         fieldname_to_fieldtype = CaseInsensitiveDict(
             {
-                "Binary": GFFFieldType.Binary,
+                "Binary": GFFFieldType.Binary,  # HoloPatcher only.
                 "Byte": GFFFieldType.UInt8,
                 "Char": GFFFieldType.Int8,
                 "Word": GFFFieldType.UInt16,

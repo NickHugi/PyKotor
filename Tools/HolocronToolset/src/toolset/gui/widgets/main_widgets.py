@@ -6,18 +6,20 @@ from abc import abstractmethod
 from time import sleep
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
-from PyQt5.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
-from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
+from qtpy.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
+from qtpy.QtWidgets import QHeaderView, QMenu, QWidget
 
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
-    from PyQt5.QtCore import QModelIndex
-    from PyQt5.QtGui import QResizeEvent
+    from qtpy.QtCore import QModelIndex
+    from qtpy.QtGui import QResizeEvent
 
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
@@ -26,20 +28,17 @@ if TYPE_CHECKING:
 
 
 class MainWindowList(QWidget):
-    requestOpenResource = QtCore.pyqtSignal(object, object)
-
-    requestExtractResource = QtCore.pyqtSignal(object)
-
-    sectionChanged = QtCore.pyqtSignal(object)
+    requestOpenResource = QtCore.Signal(object, object)
+    requestExtractResource = QtCore.Signal(object)
+    sectionChanged = QtCore.Signal(object)
 
     @abstractmethod
     def selectedResources(self) -> list[FileResource]: ...
 
 
 class ResourceList(MainWindowList):
-    requestReload = QtCore.pyqtSignal(object)
-
-    requestRefresh = QtCore.pyqtSignal()
+    requestReload = QtCore.Signal(object)
+    requestRefresh = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         """Initializes the ResourceList widget.
@@ -57,8 +56,16 @@ class ResourceList(MainWindowList):
             - Sets the section model as the model for the combo box.
         """
         super().__init__(parent)
-
-        from toolset.uic.widgets.resource_list import Ui_Form  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.resource_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -67,7 +74,7 @@ class ResourceList(MainWindowList):
         self.modulesModel = ResourceModel()
         self.modulesModel.proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.ui.resourceTree.setModel(self.modulesModel.proxyModel())
-        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
         self.sectionModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)
@@ -190,10 +197,10 @@ class ResourceList(MainWindowList):
         self.modulesModel.proxyModel().setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
-        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onReloadClicked(self):
-        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onRefreshClicked(self):
         self.requestRefresh.emit()
@@ -279,20 +286,32 @@ class ResourceModel(QStandardItemModel):
             self.appendRow([categoryItem, unusedItem])
         return self._categoryItems[chosen_category]
 
-    def addResource(self, resource: FileResource, customCategory: str | None = None):
+    def addResource(
+        self,
+        resource: FileResource,
+        customCategory: str | None = None,
+    ):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
         item2 = QStandardItem(resource.restype().extension.upper())
         self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 
-    def resourceFromIndexes(self, indexes: list[QModelIndex], *, proxy: bool = True) -> list[FileResource]:
+    def resourceFromIndexes(
+        self,
+        indexes: list[QModelIndex],
+        *,
+        proxy: bool = True,
+    ) -> list[FileResource]:
         items = []
         for index in indexes:
             sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
             items.append(self.itemFromIndex(sourceIndex))
         return self.resourceFromItems(items)
 
-    def resourceFromItems(self, items: list[QStandardItem]) -> list[FileResource]:
+    def resourceFromItems(
+        self,
+        items: list[QStandardItem],
+    ) -> list[FileResource]:
         return [item.resource for item in items if hasattr(item, "resource")]  # type: ignore[reportAttributeAccessIssue]
 
     def allResourcesItems(self) -> list[QStandardItem]:
@@ -313,15 +332,24 @@ class ResourceModel(QStandardItemModel):
 
 
 class TextureList(MainWindowList):
-    requestReload = QtCore.pyqtSignal(object)  # TODO:
+    requestReload = QtCore.Signal(object)  # TODO:
 
-    requestRefresh = QtCore.pyqtSignal()  # TODO:
-    iconUpdate = QtCore.pyqtSignal(object, object)
+    requestRefresh = QtCore.Signal()  # TODO:
+    iconUpdate = QtCore.Signal(object, object)
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from toolset.uic.widgets.texture_list import Ui_Form  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.texture_list import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -366,7 +394,10 @@ class TextureList(MainWindowList):
     def setInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-    def setResources(self, resources: list[FileResource]):
+    def setResources(
+        self,
+        resources: list[FileResource],
+    ):
         blankImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
         blankIcon = QIcon(QPixmap.fromImage(blankImage))
 
@@ -374,14 +405,17 @@ class TextureList(MainWindowList):
         for resource in resources:
             item = QStandardItem(blankIcon, resource.resname())
             item.setToolTip(resource.resname())
-            item.setData(False, QtCore.Qt.UserRole)
-            item.setData(resource, QtCore.Qt.UserRole + 1)
+            item.setData(False, QtCore.Qt.ItemDataRole.UserRole)
+            item.setData(resource, QtCore.Qt.ItemDataRole.UserRole + 1)
             self.texturesModel.appendRow(item)
 
         if self._installation is not None:
             self.onTextureListScrolled()
 
-    def setSections(self, sections: list[QStandardItem]):
+    def setSections(
+        self,
+        sections: list[QStandardItem],
+    ):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
@@ -391,7 +425,7 @@ class TextureList(MainWindowList):
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
             item = self.texturesModel.item(sourceIndex.row())
-            resources.append(item.data(QtCore.Qt.UserRole + 1))
+            resources.append(item.data(QtCore.Qt.ItemDataRole.UserRole + 1))
         return resources
 
     def visibleItems(self) -> list[QStandardItem]:
@@ -449,10 +483,10 @@ class TextureList(MainWindowList):
         self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
-        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onReloadClicked(self):
-        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
+        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
 
     def onRefreshClicked(self):
         self.requestRefresh.emit()
@@ -475,11 +509,11 @@ class TextureList(MainWindowList):
             self._scannedTextures.add(item_text.casefold())
 
             cache_tpc: TPC | None = textures.get(item_text)
-            tpc: TPC = cache_tpc if cache_tpc is not None else TPC()
+            tpc: TPC = TPC() if cache_tpc is None else cache_tpc
 
             task = TextureListTask(item.row(), tpc, item_text)
             self._taskQueue.put(task)
-            item.setData(True, QtCore.Qt.UserRole)
+            item.setData(True, QtCore.Qt.ItemDataRole.UserRole)
 
     def onIconUpdate(
         self,

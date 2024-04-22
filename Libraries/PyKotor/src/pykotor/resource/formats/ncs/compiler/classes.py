@@ -651,9 +651,13 @@ class FunctionDefinitionParam:
 
 
 class IncludeScript(TopLevelObject):
-    def __init__(self, file: StringExpression, library: dict[str, bytes] | None = None):
+    def __init__(
+        self,
+        file: StringExpression,
+        library: dict[str, bytes] | None = None,
+    ):
         self.file: StringExpression = file
-        self.library: dict[str, bytes] = library if library is not None else {}
+        self.library: dict[str, bytes] = {} if library is None else library
 
     def compile(self, ncs: NCS, root: CodeRoot):  # noqa: A003
         from pykotor.resource.formats.ncs.compiler.parser import NssParser

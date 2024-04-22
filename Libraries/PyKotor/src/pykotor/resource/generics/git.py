@@ -200,6 +200,7 @@ class GITInstance(ABC):
             z (float): The z-coordinate of the position.
         """
         self.position: Vector3 = Vector3(x, y, z)
+        self.resref: ResRef = ResRef.from_blank()
 
     @abstractmethod
     def identifier(self) -> ResourceIdentifier:
@@ -244,7 +245,6 @@ class GITInstance(ABC):
         self,
     ) -> float | None:
         """Returns the yaw rotation (in radians) of the instance if the instance supports it, otherwise returns None."""
-        ...
 
 
 class GITCamera(GITInstance):
@@ -309,10 +309,18 @@ class GITCamera(GITInstance):
     ) -> str:
         return "Camera"
 
-    def yaw(
+    def yaw(  # TODO: Why is this not y...?
         self,
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
+
+    def pitch(self) -> float:
+        # Following the convention used in rotate method, where pitch affects rotation.z
+        return math.pi - self.orientation.to_euler().z
+
+    def roll(self) -> float:
+        # Following the convention used in rotate method, where roll affects rotation.y
+        return math.pi - self.orientation.to_euler().y
 
 
 class GITCreature(GITInstance):
@@ -654,7 +662,7 @@ class GITSound(GITInstance):
 
     def yaw(
         self,
-    ) -> float:
+    ) -> None:
         return None
 
 
@@ -1094,7 +1102,7 @@ def dismantle_git(
         door_struct.set_single("Y", door.position.y)
         door_struct.set_single("Z", door.position.z)
         if game.is_k2():
-            tweak_color = door.tweak_color.bgr_integer() if door.tweak_color is not None else 0
+            tweak_color = 0 if door.tweak_color is None else door.tweak_color.bgr_integer()
             door_struct.set_uint32("TweakColor", tweak_color)
             door_struct.set_uint8("UseTweakColor", 0 if door.tweak_color is None else 1)
 
@@ -1130,7 +1138,7 @@ def dismantle_git(
         placeable_struct.set_single("Y", placeable.position.y)
         placeable_struct.set_single("Z", placeable.position.z)
         if game.is_k2():
-            tweak_color = placeable.tweak_color.bgr_integer() if placeable.tweak_color is not None else 0
+            tweak_color = 0 if placeable.tweak_color is None else placeable.tweak_color.bgr_integer()
             placeable_struct.set_uint32("TweakColor", tweak_color)
             placeable_struct.set_uint8(
                 "UseTweakColor",

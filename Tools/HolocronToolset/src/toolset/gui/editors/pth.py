@@ -6,10 +6,11 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
 import pyperclip
+import qtpy
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -28,8 +29,8 @@ if TYPE_CHECKING:
 
     from collections.abc import Callable
 
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
 
     from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -118,7 +119,16 @@ class PTHEditor(Editor):
         self.setupStatusBar()
         self.stdout = CustomStdout(self)
 
-        from toolset.uic.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -208,7 +218,6 @@ class PTHEditor(Editor):
             self.setupStatusBar()
             self._core_update_status_bar(left_status, center_status, right_status)
 
-    # TODO Rename this here and in `updateStatusBar`
     def _core_update_status_bar(self, left_status, center_status, right_status):
         if left_status and left_status.strip():
             self.leftLabel.setText(left_status)
@@ -476,15 +485,15 @@ class PTHControlScheme:
         )
 
         menu = QMenu(self.editor)
-        menu.addAction("Add Node").triggered.connect(lambda _: self.editor.addNode(world.x, world.y))
+        menu.addAction("Add Node").triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
         menu.addAction("Copy XY coords").triggered.connect(lambda: pyperclip.copy(str(self.editor.stdout.mouse_pos)))
         if underMouseIndex is not None:
-            menu.addAction("Remove Node").triggered.connect(lambda _: self.editor.removeNode(underMouseIndex))
+            menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.removeNode(underMouseIndex))
 
         menu.addSeparator()
 
         if underMouseIndex is not None and selectedIndex is not None:
-            menu.addAction("Add Edge").triggered.connect(lambda _: self.editor.addEdge(selectedIndex, underMouseIndex))
-            menu.addAction("Remove Edge").triggered.connect(lambda _: self.editor.removeEdge(selectedIndex, underMouseIndex))
+            menu.addAction("Add Edge").triggered.connect(lambda _=None: self.editor.addEdge(selectedIndex, underMouseIndex))
+            menu.addAction("Remove Edge").triggered.connect(lambda _=None: self.editor.removeEdge(selectedIndex, underMouseIndex))
 
         menu.popup(screen)

@@ -176,12 +176,14 @@ ignore = [
     "N815",     # Variable `var` in class scope should not be mixedCase
     "PLR0904",  # Too many public methods
     "RUF100",   # Unused `noqa` directive (non-enabled: `PLC0415`)
+    "T201",     # 'print' detected
     "TD001",    # Invalid TODO tag: `FIXME`
     "TRY003",   # Avoid specifying long messages outside the exception class
     "EM101",    # Exception must not use a string literal, assign to variable first
     "EM102",    # Exception must not use an f-string literal, assign to variable first
     "SIM108",   # Use ternary operator instead of 'if' 'else' block
     "SIM114",   # Combine `if` branches using logical `or` operator
+    "S101",     # Use of `assert` detected.
 
 # The following are currently violated by the codebase.
 #    "D205",     # 1 blank line required between summary line and description

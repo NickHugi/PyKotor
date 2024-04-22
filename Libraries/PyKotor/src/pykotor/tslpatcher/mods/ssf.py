@@ -35,7 +35,7 @@ class ModificationsSSF(PatcherModifications):
         super().__init__(filename)
         self.replace_file: bool = replace_file
         self.no_replacefile_check = True
-        self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []
+        self.modifiers: list[ModifySSF] = [] if modifiers is None else modifiers
 
     def patch_resource(
         self,

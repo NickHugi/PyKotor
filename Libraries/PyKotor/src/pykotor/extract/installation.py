@@ -574,7 +574,7 @@ class Installation:  # noqa: PLR0904
             self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
         resource = FileResource(
-            *identifier,
+            *identifier.unpack(),
             filepath.stat().st_size,
             0,
             filepath,
@@ -1126,10 +1126,10 @@ class Installation:  # noqa: PLR0904
 
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
-            resource_dict: dict[ResourceIdentifier, FileResource] = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
-                resource: FileResource | None = resource_dict.get(query)
-                if resource is not None:
+                for resource in resource_list:
+                    if resource.identifier() != query:
+                        continue
                     location = LocationResult(
                         resource.filepath(),
                         resource.offset(),
@@ -1140,7 +1140,7 @@ class Installation:  # noqa: PLR0904
         def check_capsules(values: list[Capsule]):
             for capsule in values:
                 for query in queries:
-                    resource: FileResource | None = capsule.info(*query)
+                    resource: FileResource | None = capsule.info(*query.unpack())
                     if resource is None:
                         continue
 
@@ -1280,7 +1280,7 @@ class Installation:  # noqa: PLR0904
                 ),
                 None,
             )
-            return decode_txi(txi_resource.data()) if txi_resource is not None else ""
+            return "" if txi_resource is None else decode_txi(txi_resource.data())
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
@@ -1571,9 +1571,10 @@ class Installation:  # noqa: PLR0904
             for resource in values:
                 case_resname: str = resource.resname().casefold()
                 if case_resname in case_resnames and resource.restype() in sound_formats:
+                    print(f"Found sound at '{resource.filepath()}'")
                     case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
-                    sounds[resource.resname()] = deobfuscate_audio(sound_data) if sound_data else b""
+                    sounds[resource.resname()] = deobfuscate_audio(sound_data)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1585,8 +1586,9 @@ class Installation:  # noqa: PLR0904
                             break
                     if sound_data is None:  # No sound data found in this list.
                         continue
+                    print(f"Found sound at '{capsule.path()}'")
                     case_resnames.remove(case_resname)
-                    sounds[case_resname] = deobfuscate_audio(sound_data) if sound_data else b""
+                    sounds[case_resname] = deobfuscate_audio(sound_data)
 
         def check_folders(values: list[Path]):
             queried_sound_files: set[Path] = set()
@@ -1601,9 +1603,10 @@ class Installation:  # noqa: PLR0904
                     )
                 )
             for sound_file in queried_sound_files:
+                print(f"Found sound at '{sound_file}'")
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
-                sounds[sound_file.stem] = deobfuscate_audio(sound_data) if sound_data else b""
+                sounds[sound_file.stem] = deobfuscate_audio(sound_data)
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1874,7 +1877,7 @@ class Installation:  # noqa: PLR0904
                 # else:
                 #    print(f"Main: returning '{found_mod_id}' for '{module_filename}'")
                 if also_return_cached_capsules:
-                    return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+                    return found_mod_id, _cached_capsules  # type: ignore[return-value, reportReturnType]
                 return found_mod_id
             # Validate the ARE exists.
             for mod_id in mod_ids_to_try:
@@ -1883,15 +1886,15 @@ class Installation:  # noqa: PLR0904
                     if capsule.info(mod_id, ResourceType.ARE) is None:
                         continue
                     if also_return_cached_capsules:  # Found at this point.
-                        return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+                        return found_mod_id, _cached_capsules  # type: ignore[return-value, reportReturnType]
                     return found_mod_id
-                if mod_id and mod_id.startswith("m") or mod_id[1].isdigit():
+                if mod_id and (mod_id.startswith("m") or mod_id[1].isdigit()):
                     found_mod_id = mod_id
         except Exception:  # noqa: BLE001
             self._log.exception("Installation.module_id(%s) had an unexpected exception thrown.", module_filename)
         # print(f"NOT FOUND: Module ID for '{module_filename}', using backup of '{found_mod_id}'")
         if also_return_cached_capsules:
-            return found_mod_id, _cached_capsules  # type: ignore[reportReturnType]
+            return found_mod_id, _cached_capsules  # type: ignore[return-value, reportReturnType]
         return found_mod_id
 
     def _process_mod_attribute(

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -24,7 +26,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.system.path import Path
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
     from pykotor.extract.file import FileResource
@@ -58,7 +60,16 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b""
         self.filepath: Path | None = None
 
-        from toolset.uic.dialogs.insert_instance import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.insert_instance import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -98,7 +109,7 @@ class InsertInstanceDialog(QDialog):
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
                 item.setToolTip(str(resource.filepath()))
-                item.setData(QtCore.Qt.UserRole, resource)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
                 self.ui.resourceList.addItem(item)
 
         for capsule in self._module.capsules():
@@ -107,7 +118,7 @@ class InsertInstanceDialog(QDialog):
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))
                     item.setForeground(QColor(30, 30, 30))
-                    item.setData(QtCore.Qt.UserRole, resource)
+                    item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
                     self.ui.resourceList.addItem(item)
 
         if self.ui.resourceList.count() > 0:
@@ -126,7 +137,7 @@ class InsertInstanceDialog(QDialog):
         super().accept()
 
         new = True
-        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.UserRole)
+        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
 
         if self.ui.reuseResourceRadio.isChecked():
             new = False
@@ -181,16 +192,16 @@ class InsertInstanceDialog(QDialog):
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
 
         if self.ui.reuseResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
+            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
 
         if self.ui.copyResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
         if self.ui.createResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
     def onResRefEdited(self, text: str):
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(text))
+        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(text))
 
     def onResourceFilterChanged(self):
         text = self.ui.resourceFilter.text()

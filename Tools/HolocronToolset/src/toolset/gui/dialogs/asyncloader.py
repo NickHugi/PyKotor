@@ -5,9 +5,9 @@ import uuid
 
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QThread, QTimer, Qt
-from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
+from qtpy import QtCore
+from qtpy.QtCore import QThread, QTimer, Qt
+from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path
@@ -15,8 +15,8 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
 
-    from PyQt5.QtGui import QCloseEvent
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QWidget
 
 T = TypeVar("T")
 
@@ -85,8 +85,8 @@ class ProgressDialog(QDialog):
 
 
 class AsyncLoader(QDialog, Generic[T]):
-    optionalFinishHook = QtCore.pyqtSignal(object)
-    optionalErrorHook = QtCore.pyqtSignal(object)
+    optionalFinishHook = QtCore.Signal(object)
+    optionalErrorHook = QtCore.Signal(object)
 
     def __init__(
         self,
@@ -133,7 +133,7 @@ class AsyncLoader(QDialog, Generic[T]):
         self.setWindowTitle(title)
         self.setFixedSize(260, 40)
 
-        self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 
         self.value: T = None  # type: ignore[assignment]
         self.error: Exception | None = None
@@ -177,12 +177,12 @@ class AsyncLoader(QDialog, Generic[T]):
 
         if self.errorTitle:
             error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Critical, self.errorTitle, error_msg).exec_()
+            QMessageBox(QMessageBox.Icon.Critical, self.errorTitle, error_msg).exec_()
 
 
 class AsyncWorker(QThread):
-    successful = QtCore.pyqtSignal(object)
-    failed = QtCore.pyqtSignal(object)
+    successful = QtCore.Signal(object)
+    failed = QtCore.Signal(object)
 
     def __init__(
         self,
@@ -249,7 +249,7 @@ class AsyncBatchLoader(QDialog):
         self.setWindowTitle(title)
         self.setFixedSize(260, 40)
 
-        self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 
         self.value: list[Any] = []
         self.errors: list[Exception] = []
@@ -307,17 +307,17 @@ class AsyncBatchLoader(QDialog):
         if self.failCount:
             errorTitle = f"{self.errorTitle} ({self.failCount} errors)"
         QMessageBox(
-            QMessageBox.Critical,
+            QMessageBox.Icon.Critical,
             errorTitle,
             "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
-            flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         ).exec_()
 
 
 class AsyncBatchWorker(QThread):
-    successful = QtCore.pyqtSignal(object)
-    failed = QtCore.pyqtSignal(object)
-    completed = QtCore.pyqtSignal()
+    successful = QtCore.Signal(object)
+    failed = QtCore.Signal(object)
+    completed = QtCore.Signal()
 
     def __init__(
         self,

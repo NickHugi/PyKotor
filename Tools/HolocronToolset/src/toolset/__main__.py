@@ -8,51 +8,55 @@ import pathlib
 import sys
 import tempfile
 
-from typing import TYPE_CHECKING
+from contextlib import suppress
+from types import TracebackType
 
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication, QMessageBox
-
-if TYPE_CHECKING:
-    from types import TracebackType
+from qtpy.QtCore import QThread
+from qtpy.QtWidgets import QApplication, QMessageBox
 
 
 def is_frozen() -> bool:
     return (
         getattr(sys, "frozen", False)
         or getattr(sys, "_MEIPASS", False)
-        or tempfile.gettempdir() in sys.executable
+        # or tempfile.gettempdir() in sys.executable
     )
 
 
 def onAppCrash(
     etype: type[BaseException],
-    e: BaseException,
+    exc: BaseException,
     tback: TracebackType | None,
 ):
+
     from utility.logger_util import get_root_logger
     if issubclass(etype, KeyboardInterrupt):
-        sys.__excepthook__(etype, e, tback)
+        sys.__excepthook__(etype, exc, tback)
         return
+    if tback is None:
+        with suppress(Exception):
+            import inspect
+            # Get the current stack frames
+            current_stack = inspect.stack()
+            if current_stack:
+                # Reverse the stack to have the order from caller to callee
+                current_stack = current_stack[1:][::-1]
+                fake_traceback = None
+                for frame_info in current_stack:
+                    frame = frame_info.frame
+                    fake_traceback = TracebackType(fake_traceback, frame, frame.f_lasti, frame.f_lineno)
+                exc = exc.with_traceback(fake_traceback)
+                # Now exc has a traceback :)
+                tback = exc.__traceback__
     logger = get_root_logger()
-    logger.critical("Uncaught exception", exc_info=(etype, e, tback))
+    logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
 
-    This function will determine whether they have the source files downloaded for pykotor in the expected directory. If they do, we
-    insert the source path to pykotor to the beginning of sys.path so it'll have priority over pip's pykotor package if that is installed.
-    If the toolset dir exists, change directory to that of the toolset. Allows users to do things like `python -m toolset`
     This function should never be used in frozen code.
     This function also ensures a user can run toolset/__main__.py directly.
-
-    Processing Logic:
-    ----------------
-        - Checks if PyKotor package exists in parent directory of calling file.
-        - If exists, removes parent directory from sys.path and adds to front.
-        - Also checks for toolset package and changes cwd to that directory if exists.
-        - This ensures packages and scripts can be located correctly on import.
     """
 
     def update_sys_path(path: pathlib.Path):
@@ -76,10 +80,32 @@ def fix_sys_and_cwd_path():
         update_sys_path(toolset_path.parent)
         os.chdir(toolset_path)
 
+
+def set_qt_api():
+    # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
+    available_apis = ["PyQt5", "PyQt6", "PySide2", "PySide6"]
+    for api in available_apis:
+        try:
+            if api == "PyQt5":
+                __import__("PyQt5.QtCore")
+            elif api == "PyQt6":
+                __import__("PyQt6.QtCore")
+            elif api == "PySide2":
+                __import__("PySide2.QtCore")
+            elif api == "PySide6":
+                __import__("PySide6.QtCore")
+            os.environ["QT_API"] = api
+            print(f"QT_API set to '{api}'.")
+            break
+        except (ImportError, ModuleNotFoundError):  # noqa: S112
+            continue
+
+
 def is_running_from_temp():
     app_path = Path(sys.executable)
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
+
 
 if __name__ == "__main__":
     if os.name == "nt":
@@ -90,17 +116,47 @@ if __name__ == "__main__":
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
+    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
     if is_frozen():
         from utility.logger_util import get_root_logger
         get_root_logger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
+        set_qt_api()
     else:
         fix_sys_and_cwd_path()
-    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
+        os.environ["QT_API"] = os.environ.get("QT_API", "")  # supports PyQt5, PyQt6, PySide2, PySide6
+        if os.environ["QT_API"] not in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+            set_qt_api()
+
+    try:
+        import qtpy
+        print(f"Using Qt bindings: {qtpy.API_NAME}")
+    except ImportError as e:
+        print(e)
+        sys.exit("QtPy is not available. Ensure QtPy is installed and accessible.")
+
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
+    os.environ["QT_DEBUG_PLUGINS"] = "1"
+
+    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
+    # os.environ["QT_SCALE_FACTOR"] = "1"
+
+    from qtpy.QtCore import QThread
+    from qtpy.QtWidgets import QApplication
 
     from utility.system.path import Path
 
     app = QApplication(sys.argv)
+
+    from ui import stylesheet_resources  # noqa: F401
+
+    # set stylesheet
+    #file = QFile(":/dark/stylesheet.qss")
+    #file.open(QFile.ReadOnly | QFile.Text)
+    #stream = QTextStream(file)
+    #app.setStyleSheet(stream.readAll())
 
     # font = app.font()
     # font.setPixelSize(15)
@@ -108,13 +164,13 @@ if __name__ == "__main__":
     # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     # app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-    app.thread().setPriority(QThread.HighestPriority)
+    app.thread().setPriority(QThread.Priority.HighestPriority)
 
     sys.excepthook = onAppCrash
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox
         msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Critical)
+        msgBox.setIcon(QMessageBox.Icon.Critical)
         msgBox.setWindowTitle("Error")
         msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         msgBox.exec_()

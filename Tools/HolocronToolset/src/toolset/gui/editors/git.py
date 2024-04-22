@@ -6,9 +6,11 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QMenu
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QKeySequence
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -52,9 +54,9 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import QKeyEvent
-    from PyQt5.QtWidgets import QCheckBox, QWidget
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QKeyEvent
+    from qtpy.QtWidgets import QCheckBox, QWidget
 
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -92,7 +94,7 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
 
 
 class GITEditor(Editor):
-    settingsUpdated = QtCore.pyqtSignal(object)
+    settingsUpdated = QtCore.Signal(object)
 
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         """Initializes the GIT editor.
@@ -107,7 +109,16 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
-        from toolset.uic.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -642,7 +653,7 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.blockSignals(True)
         for i in range(self._ui.listWidget.count()):
             item = self._ui.listWidget.item(i)
-            instance = item.data(QtCore.Qt.UserRole)
+            instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if instance in instances:
                 self._ui.listWidget.setCurrentItem(item)
         self._ui.listWidget.blockSignals(False)
@@ -764,7 +775,7 @@ class _InstanceMode(_Mode):
 
         Sets the item data and tooltip, determines the label text based on instance type and editor settings, sets the item text and font if label not found.
         """
-        item.setData(QtCore.Qt.UserRole, instance)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, instance)
         item.setToolTip(self.getInstanceTooltip(instance))
 
         name: str | None = None
@@ -837,7 +848,7 @@ class _InstanceMode(_Mode):
         if item is None:
             self.setSelection([])
         else:
-            self.setSelection([item.data(QtCore.Qt.UserRole)])
+            self.setSelection([item.data(QtCore.Qt.ItemDataRole.UserRole)])
 
     def updateStatusBar(self, world: Vector2):
         if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
@@ -851,7 +862,7 @@ class _InstanceMode(_Mode):
         if item is None:
             return
 
-        instance = item.data(QtCore.Qt.UserRole)
+        instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
         menu = QMenu(self._ui.listWidget)
 
         self.addInstanceActionsToMenu(instance, menu)
@@ -888,7 +899,7 @@ class _InstanceMode(_Mode):
                 index = self._editor.git().index(instance)
 
                 instanceAction = menu.addAction(icon, f"[{index}] {reference}")
-                instanceAction.triggered.connect(lambda _, inst=instance: self.setSelection([inst]))
+                instanceAction.triggered.connect(lambda _=None, inst=instance: self.setSelection([inst]))
                 instanceAction.setEnabled(instance not in self._ui.renderArea.instanceSelection.all())
                 menu.addAction(instanceAction)
 

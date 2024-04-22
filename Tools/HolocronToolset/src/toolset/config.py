@@ -9,13 +9,13 @@ from typing import Any
 
 import requests
 
-from PyQt5.QtWidgets import QMessageBox
+from qtpy.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "2.2.1b22",
+    "currentVersion": "3.0.0a1",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "2.2.1b22",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
@@ -62,7 +62,11 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
 
-def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = False) -> Exception | dict[str, Any]:
+def getRemoteToolsetUpdateInfo(
+    *,
+    useBetaChannel: bool = False,
+    silent: bool = False,
+) -> Exception | dict[str, Any]:
     if useBetaChannel:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateBetaInfoLink"]
     else:
@@ -98,10 +102,10 @@ def getRemoteToolsetUpdateInfo(*, useBetaChannel: bool = False, silent: bool = F
                 + "<br><br>"
                 + "Would you like to check against the local database instead?"
             ),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
         )
-        if result not in {QMessageBox.Yes, True}:
+        if result not in {QMessageBox.StandardButton.Yes, True}:
             return e
         remoteInfo = LOCAL_PROGRAM_INFO
     return remoteInfo

@@ -173,6 +173,26 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="typeLYTCheck">
+          <property name="text">
+           <string>LYT</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="typeVISCheck">
+          <property name="text">
+           <string>VIS</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCheckBox" name="typeDLGCheck">
           <property name="text">
            <string>DLG</string>

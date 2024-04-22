@@ -3,8 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDialog, QListWidgetItem
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QDialog, QListWidgetItem
 
 from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
@@ -13,7 +15,7 @@ from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
 
 @dataclass
@@ -31,16 +33,25 @@ class FileSearchQuery:
 
 
 class FileSearcher(QDialog):
-    fileResults = QtCore.pyqtSignal(list, HTInstallation)
+    fileResults = QtCore.Signal(list, HTInstallation)
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import search  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = search.Ui_Dialog()
         self.ui.setupUi(self)
-        assert len(installations) > 0, "No installations passed to FileSearcher"
+        assert installations, "No installations passed to FileSearcher"
 
         self._installations: dict[str, HTInstallation] = installations
         for name, installation in installations.items():
@@ -81,6 +92,10 @@ class FileSearcher(QDialog):
             checkTypes.append(ResourceType.GIT)  # noqa: E701  # pylint: disable=multiple-statements
         if self.ui.typeIFOCheck.isChecked():
             checkTypes.append(ResourceType.IFO)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeVISCheck.isChecked():
+            checkTypes.append(ResourceType.VIS)  # noqa: E701  # pylint: disable=multiple-statements
+        if self.ui.typeLYTCheck.isChecked():
+            checkTypes.append(ResourceType.LYT)  # noqa: E701  # pylint: disable=multiple-statements
         if self.ui.typeDLGCheck.isChecked():
             checkTypes.append(ResourceType.DLG)  # noqa: E701  # pylint: disable=multiple-statements
         if self.ui.typeJRLCheck.isChecked():
@@ -145,9 +160,11 @@ class FileSearcher(QDialog):
 
         searchText = query.text.lower() if query.caseSensitive else query.text
 
-        def search(resource: FileResource):
-            resource_name: str = resource.resname()
+        def _search(resource: FileResource):
+            if resource.restype() not in query.checkTypes:
+                return
 
+            resource_name: str = resource.resname()
             name_check: bool = searchText in (resource_name if query.caseSensitive else resource_name.lower())
             if name_check:
                 results.append(resource)
@@ -160,13 +177,13 @@ class FileSearcher(QDialog):
                 results.append(resource)
 
         searchIn: Generator[FileResource, Any, None] = search_generator()
-        searches: list[Callable[[FileResource], None]] = [lambda resource=resource: search(resource) for resource in searchIn]
+        searches: list[Callable[[FileResource], None]] = [lambda resource=resource: _search(resource) for resource in searchIn]
         AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
         self.fileResults.emit(results, query.installation)
 
 
 class FileResults(QDialog):
-    selectionSignal = QtCore.pyqtSignal(FileResource)
+    selectionSignal = QtCore.Signal(FileResource)
 
     def __init__(
         self,
@@ -191,7 +208,16 @@ class FileResults(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.search_result import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.search_result import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -208,11 +234,11 @@ class FileResults(QDialog):
             filepath = result.filepath()
             parent_name = filepath.name if filename != filepath.name else f"{filepath.parent.name}"
             item = QListWidgetItem(f"{parent_name}/{filename}")
-            item.setData(QtCore.Qt.UserRole, result)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, result)
             item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
 
-        self.ui.resultList.sortItems(QtCore.Qt.AscendingOrder)
+        self.ui.resultList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
 
     def accept(self):
         """Accepts the current selection from the result list.
@@ -229,7 +255,7 @@ class FileResults(QDialog):
         """
         item = self.ui.resultList.currentItem()
         if item:
-            self.selection = item.data(QtCore.Qt.UserRole)
+            self.selection = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self.selectionSignal.emit(self.selection)
         super().accept()
 
@@ -252,7 +278,7 @@ class FileResults(QDialog):
             print("Nothing to open, item is None")
             return
 
-        resource: FileResource = item.data(QtCore.Qt.UserRole)
+        resource: FileResource = item.data(QtCore.Qt.ItemDataRole.UserRole)
         openResourceEditor(
             filepath=resource.filepath(),
             resref=resource.resname(),

@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Any
 import markdown
 import requests
 
-from PyQt5.QtCore import QThread, Qt
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
+from qtpy.QtCore import QThread, Qt
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
 
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
@@ -171,7 +171,7 @@ class UpdateDialog(QDialog):
             self.forkComboBox.addItem(fork)
 
     def on_pre_release_changed(self, state: bool):
-        self.include_prerelease = state == Qt.Checked
+        self.include_prerelease = state == Qt.CheckState.Checked
         self.filter_releases_based_on_prerelease()
 
     def filter_releases_based_on_prerelease(self):
@@ -215,7 +215,7 @@ class UpdateDialog(QDialog):
     def on_install_selected(self):
         release = self.releaseComboBox.currentData()
         if not release:
-            QMessageBox(QMessageBox.Information, "Select a release", "No release selected, select one first.").exec_()
+            QMessageBox(QMessageBox.Icon.Information, "Select a release", "No release selected, select one first.").exec_()
             return
         self.start_update(release)
 
@@ -229,12 +229,12 @@ class UpdateDialog(QDialog):
             links = [download_url]
         else:
             result = QMessageBox(  # TODO(th3w1zard1): compile from src
-                QMessageBox.Question,
+                QMessageBox.Icon.Question,
                 "No asset found for this release.",
                 "There are no binaries available for download. Would you like to compile this release from source instead?",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 None,
-                flags=Qt.Window | Qt.Dialog | Qt.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
             return
 

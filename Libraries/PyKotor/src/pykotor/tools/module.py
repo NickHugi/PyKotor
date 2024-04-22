@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
@@ -29,7 +28,7 @@ from utility.string_util import ireplace
 if TYPE_CHECKING:
     import os
 
-    from pykotor.common.misc import ResRef
+    from pykotor.common.misc import Game, ResRef
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPCConvertResult
     from pykotor.resource.formats.vis import VIS

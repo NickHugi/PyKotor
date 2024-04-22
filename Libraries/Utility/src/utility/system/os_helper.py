@@ -38,14 +38,13 @@ def kill_child_processes(
                 log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
                 # Forcefully terminate the child process if it didn't terminate in time
                 if sys.platform == "win32":
-                    from utility.updater.restarter import Restarter
-                    sys32path = Restarter.win_get_system32_dir()
+                    sys32path = win_get_system32_dir()
                     subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], check=True)  # noqa: S603
                 else:
                     import signal
                     os.kill(child.pid, signal.SIGKILL)  # Use SIGKILL as a last resort
             except Exception:
-                log.critical("Failed to kill process", msgbox=False)
+                log.critical("Failed to kill process", exc_info=True)
 
 def kill_self_pid(timeout=3):
     """Waits for a specified timeout for threads to complete.
@@ -118,7 +117,7 @@ def requires_admin(path: os.PathLike | str) -> bool:  # pragma: no cover
 def file_requires_admin(file_path: os.PathLike | str) -> bool:  # pragma: no cover
     """Check if a file requires admin permissions change."""
     try:
-        with Path.pathify(file_path).open("a"):
+        with Path.pathify(file_path).open("a", encoding="utf-8"):
             ...
     except PermissionError:
         return True
@@ -133,7 +132,7 @@ def dir_requires_admin(_dir: os.PathLike | str) -> bool:  # pragma: no cover
     _dirpath = Path.pathify(_dir)
     dummy_filepath = _dirpath / str(uuid.uuid4())
     try:
-        with dummy_filepath.open("w"):
+        with dummy_filepath.open("w", encoding="utf-8"):
             ...
         remove_any(dummy_filepath)
     except OSError:
@@ -152,7 +151,7 @@ def remove_any(path):
         if x.safe_isdir():
             shutil.rmtree(str(x), ignore_errors=True)
         else:
-            path_obj.unlink(missing_ok=True)
+            x.unlink(missing_ok=True)
 
     if sys.platform != "win32":
         _remove_any(path_obj)
@@ -167,7 +166,7 @@ def remove_any(path):
                 break
         else:
             try:
-                _remove_any(path)
+                _remove_any(path_obj)
             except Exception as err:
                 log.debug(err, exc_info=True)
 
@@ -184,6 +183,22 @@ def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
        (Path): Folder containing the mac .app
     """
     return Path.pathify(directory).parents[2]
+
+
+def win_get_system32_dir() -> Path:
+    import ctypes
+    try:  # PyInstaller sometimes fails to import wintypes.
+        ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
+        ctypes.windll.kernel32.GetSystemDirectoryW.restype = ctypes.c_uint
+        # Buffer size (MAX_PATH is generally 260 as defined by Windows)
+        buffer = ctypes.create_unicode_buffer(260)
+        ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
+        return Path(buffer.value)
+    except Exception:  # noqa: BLE001
+        get_root_logger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+        buffer = ctypes.create_unicode_buffer(260)
+        ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
+        return Path(buffer.value).joinpath("system32")
 
 
 class ChDir:

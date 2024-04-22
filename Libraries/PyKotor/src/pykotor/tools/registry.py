@@ -274,7 +274,7 @@ class SpoofKotorRegistry:
         exc_tb: types.TracebackType | None,
     ):
         # Revert the registry key to its original value if it was altered
-        if self.original_value is not None:
+        if self.original_value is not None and self.spoofed_path != self.original_value:
             set_registry_key_value(self.registry_path, self.key, self.original_value)
         # TODO(th3w1zard1): Determine what to do if the regpath never existed, as deleting it isn't easy. Set it to ""?
 
