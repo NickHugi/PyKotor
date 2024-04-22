@@ -293,7 +293,7 @@ class ResourceModel(QStandardItemModel):
     ):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
-        item2 = QStandardItem(resource.restype().extension.upper())
+        item2 = QStandardItem(resource.restype().extension)
         self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 
     def resourceFromIndexes(
@@ -316,7 +316,11 @@ class ResourceModel(QStandardItemModel):
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
-        resources = (category.child(i, 0) for category in self._categoryItems.values() for i in range(category.rowCount()))
+        resources = (
+            category.child(i, 0)
+            for category in self._categoryItems.values()
+            for i in range(category.rowCount())
+        )
         return [item for item in resources if item is not None]
 
     def removeUnusedCategories(self):

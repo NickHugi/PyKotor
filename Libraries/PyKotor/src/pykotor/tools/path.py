@@ -5,6 +5,7 @@ import pathlib
 import platform
 import tempfile
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from pykotor.tools.registry import find_software_key, winreg_key
@@ -316,6 +317,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         return closest_match or target
 
     @staticmethod
+    @lru_cache(maxsize=10000)
     def get_matching_characters_count(str1: str, str2: str) -> int:
         """Returns the number of case sensitive characters that match in each position of the two strings.
 

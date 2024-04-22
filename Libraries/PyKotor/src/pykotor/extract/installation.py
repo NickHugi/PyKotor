@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -1689,6 +1690,7 @@ class Installation:  # noqa: PLR0904
         return results
 
     @staticmethod
+    @lru_cache(maxsize=1000)
     def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
         module_filename: str = PurePath(module_filepath).name
         result = re.sub(r"\.rim$", "", module_filename, flags=re.IGNORECASE)

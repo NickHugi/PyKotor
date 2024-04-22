@@ -8,6 +8,7 @@ import os
 import uuid
 
 from enum import Enum
+from functools import lru_cache
 from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
@@ -306,6 +307,7 @@ class ResourceType(Enum):
         return hash(self.extension)
 
     @classmethod
+    @lru_cache(maxsize=0xFFFF)
     def from_id(
         cls,
         type_id: int | str,

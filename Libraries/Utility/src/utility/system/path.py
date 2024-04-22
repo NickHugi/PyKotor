@@ -50,6 +50,7 @@ class PurePathType(type):
 
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     # pylint: disable-all
+    @lru_cache(maxsize=10000)
     def __new__(cls, *args, **kwargs) -> Self:
         if cls is PurePath:
             cls = PureWindowsPath if os.name == "nt" else PurePosixPath

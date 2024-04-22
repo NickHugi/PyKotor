@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pykotor.common.misc import CaseInsensitiveDict
@@ -115,6 +116,7 @@ class Module:  # noqa: PLR0904
         return self._root
 
     @staticmethod
+    @lru_cache(maxsize=1000)
     def get_root(
         filepath: os.PathLike | str,
     ) -> str:  # sourcery skip: inline-immediately-returned-variable
