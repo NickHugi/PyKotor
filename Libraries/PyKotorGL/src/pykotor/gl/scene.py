@@ -133,7 +133,7 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        module_id_part = "" if module is None else f" from module '{module._id}'"
+        module_id_part = "" if module is None else f" from module '{module._area_name}'"
         get_root_logger().info("Start initialize Scene%s", module_id_part)
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
@@ -184,7 +184,7 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
-        module_id_part = "" if module is None else f" from module '{module._id}'"
+        module_id_part = "" if module is None else f" from module '{module._area_name}'"
         get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):

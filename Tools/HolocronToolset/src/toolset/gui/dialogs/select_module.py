@@ -75,7 +75,7 @@ class SelectModuleDialog(QDialog):
         listedModules = set()
 
         for module in self._installation.modules_list():
-            root = Module.get_root(module)
+            root = Module.find_root(module)
 
             if root in listedModules:
                 continue
@@ -94,7 +94,7 @@ class SelectModuleDialog(QDialog):
         )
 
         if filepath:
-            self.module = Module.get_root(filepath)
+            self.module = Module.find_root(filepath)
             self.accept()
 
     def confirm(self):

@@ -335,7 +335,7 @@ class Editor(QMainWindow):
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
                 folderpath: Path = self._filepath.parent
-                filename: str = f"{Module.get_root(self._filepath)}.mod"
+                filename: str = f"{Module.find_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()

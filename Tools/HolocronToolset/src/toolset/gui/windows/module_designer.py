@@ -369,7 +369,7 @@ class ModuleDesigner(QMainWindow):
         if self._module is None:
             title = f"No Module - {self._installation.name} - Module Designer"
         else:
-            title = f"{self._module.get_id()} - {self._installation.name} - Module Designer"
+            title = f"{self._module.root_name()} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
     def openModuleWithDialog(self):
@@ -393,7 +393,7 @@ class ModuleDesigner(QMainWindow):
 
             new_module = Module(mod_root, self._installation)
             git: GIT | None = new_module.git().resource()
-            assert git is not None, assert_with_variable_trace(git is not None, f"GIT file cannot be found in {new_module.get_id()}")
+            assert git is not None, assert_with_variable_trace(git is not None, f"GIT file cannot be found in {new_module.root_name()}")
             walkmeshes: list[BWM] = []
             for bwm in new_module.resources.values():
                 if bwm.restype() != ResourceType.WOK:

@@ -1496,7 +1496,7 @@ class KOTORPatchingToolUI:
 
         # Set the width of the Combobox in characters, not pixels
         # Find the average character width in pixels and divide max_width by this number
-        avg_char_width = font.measure('0')  # '0' is typically used as an average character
+        avg_char_width = font.measure("0")  # '0' is typically used as an average character
         combobox_width = max_width // avg_char_width
         combobox.config(width=combobox_width)
         ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)

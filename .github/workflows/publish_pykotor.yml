@@ -343,6 +343,24 @@ jobs:
         }
       shell: pwsh
 
+    - name: Search for DLL files
+      if: ${{ matrix.python-version == '3.12' && runner.os == 'Windows' }}
+      run: |
+        $nullDir = New-Item -Path "NullDir" -ItemType Directory -Force
+        Get-PSDrive -PSProvider FileSystem | ForEach-Object {
+          $drive = $_.Root
+          Write-Host "Searching in $drive"
+          robocopy $drive $nullDir 'api-ms-win-core-path-l1-1-0.dll' /s /ndl /njh /njs /nc /ns /np | Where-Object { $_ -notlike '*Bytes*' } | ForEach-Object {
+            $path = Join-Path -Path $drive -ChildPath $_.Trim()
+            if(Test-Path $path) {
+              Write-Host $path
+            }
+          }
+        }
+        Remove-Item -Path "NullDir" -Force
+      shell: pwsh
+    
+
     - name: Compile Holocron Toolset
       if: ${{ (success() || failure()) && steps.toolset_deps.outputs.success == 'true' }}
       run: |

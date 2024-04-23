@@ -707,7 +707,7 @@ class _InstanceMode(_Mode):
             if "override" in lowercase_path_parts:
                 filepath = result.filepath
             else:
-                module_root: str = Module.get_root(self._editor.filepath())
+                module_root: str = Module.find_root(self._editor.filepath())
 
                 # TODO: document what the purpose of this is. Why check parents.
                 lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]

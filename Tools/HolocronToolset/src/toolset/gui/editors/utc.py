@@ -623,7 +623,7 @@ class UTCEditor(Editor):
         inventoryEditor = InventoryEditor(
             self,
             self._installation,
-            Module.get_capsules(self._installation, Module.get_root(self._filepath.name)),
+            Module.get_capsules(self._installation, Module.find_root(self._filepath.name)),
             [],
             self._utc.inventory,
             self._utc.equipment,

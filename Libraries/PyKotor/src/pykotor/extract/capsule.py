@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-class Capsule:
+class Capsule(FileResource):
     """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod/.sav files used by the game.
 
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
