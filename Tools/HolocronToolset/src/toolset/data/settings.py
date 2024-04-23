@@ -55,7 +55,7 @@ class QtTypeWrapper:
 
 class Settings:
     def __init__(self, scope: str):
-        self.settings = QSettings("HolocronToolsetBeta", scope)
+        self.settings = QSettings("HolocronToolset", scope)
 
     @staticmethod
     def addSetting(name: str, default: Any) -> property:  # noqa: C901
