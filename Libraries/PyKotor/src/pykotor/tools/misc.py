@@ -10,10 +10,22 @@ if TYPE_CHECKING:
 
 def normalize_ext(str_repr: os.PathLike | str) -> os.PathLike | str:
     if isinstance(str_repr, str):
+        if not str_repr:
+            return ""
         if str_repr[0] == ".":
-            str_repr = f"stem{str_repr}"
+            return f"stem{str_repr}"
         if "." not in str_repr:
-            str_repr = f"stem.{str_repr}"
+            return f"stem.{str_repr}"
+    return str_repr
+
+def normalize_stem(str_repr: os.PathLike | str) -> os.PathLike | str:
+    if isinstance(str_repr, str):
+        if not str_repr:
+            return ""
+        if str_repr[-1:] == ".":
+            return f"{str_repr}ext"
+        if "." not in str_repr:
+            return f"{str_repr}.ext"
     return str_repr
 
 

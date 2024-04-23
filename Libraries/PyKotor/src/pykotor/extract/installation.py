@@ -390,11 +390,7 @@ class Installation:  # noqa: PLR0904
             return {}
 
         self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
-        files_iter = (
-            path.safe_rglob("*")
-            if recurse
-            else path.safe_iterdir()
-        )
+        files_iter = path.safe_rglob("*") if recurse else path.safe_iterdir()
 
         resources_dict: dict[str, list[FileResource]] = {}
 
@@ -402,7 +398,10 @@ class Installation:  # noqa: PLR0904
             num_cores = os.cpu_count() or 1
             max_workers = num_cores * 4
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for future in as_completed(executor.submit(self._build_resource_list, file, capsule_check) for file in files_iter):
+                for future in as_completed(
+                    executor.submit(self._build_resource_list, file, capsule_check)
+                    for file in files_iter
+                ):
                     filepath, resource = future.result()
                     if not resource:
                         continue
@@ -574,12 +573,7 @@ class Installation:  # noqa: PLR0904
         if identifier.restype == ResourceType.INVALID:
             self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
-        resource = FileResource(
-            *identifier.unpack(),
-            filepath.stat().st_size,
-            0,
-            filepath,
-        )
+        resource = FileResource(*identifier.unpack(), filepath.stat().st_size, 0, filepath)
 
         override_list: list[FileResource] = self._override[rel_folderpath]
         if resource not in override_list:
@@ -725,7 +719,11 @@ class Installation:  # noqa: PLR0904
         return (
             self._override[directory]
             if directory
-            else [override_resource for ov_subfolder_name in self._override for override_resource in self._override[ov_subfolder_name]]
+            else [
+                override_resource
+                for ov_subfolder_name in self._override
+                for override_resource in self._override[ov_subfolder_name]
+            ]
         )
 
     # endregion
@@ -1720,7 +1718,14 @@ class Installation:  # noqa: PLR0904
         -------
             A dictionary mapping module filename to in-game module id.
         """
-        return {module: self.module_id(module, use_hardcoded=use_hardcoded, use_alternate=use_alternate) for module in self.modules_list()}
+        return {
+            module: self.module_id(
+                module,
+                use_hardcoded=use_hardcoded,
+                use_alternate=use_alternate,
+            )
+            for module in self.modules_list()
+        }
 
     def module_name(
         self,
