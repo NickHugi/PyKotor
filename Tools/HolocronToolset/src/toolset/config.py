@@ -17,7 +17,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
     "currentVersion": "3.0.0b1",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "2.2.1b22",
+    "toolsetLatestBetaVersion": "3.0.0b1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
