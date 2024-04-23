@@ -68,7 +68,11 @@ if TYPE_CHECKING:
     from utility.system.path import Path
 
 
-def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTInstallation):
+def openInstanceDialog(
+    parent: QWidget,
+    instance: GITInstance,
+    installation: HTInstallation,
+) -> int:
     dialog = QDialog()
 
     if isinstance(instance, GITCreature):
@@ -96,7 +100,11 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
 class GITEditor(Editor):
     settingsUpdated = QtCore.Signal(object)
 
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the GIT editor.
 
         Args:

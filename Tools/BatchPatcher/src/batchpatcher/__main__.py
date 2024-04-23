@@ -650,7 +650,7 @@ def convert_gff_game(
     resource: FileResource,
 ):
     to_game = Game.K2 if from_game.is_k1() else Game.K1
-    converted_filepath: Path = resource.filepath().with_name(f"{resource.resname()}_{str(to_game.name)}.{str(resource.restype())}")
+    converted_filepath: Path = resource.filepath().with_name(f"{resource.resname()}_{to_game.name!s}.{resource.restype()!s}")
     log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name} and saving as {converted_filepath.name}")
     generic: Any
 
@@ -808,15 +808,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
                     if conversationtype not in {"1", 1}:
-                        log_output(
-                            "Skippable",
-                            skippable,
-                            "alien_vo_count",
-                            alien_vo_count,
-                            "ConversationType",
-                            conversationtype,
-                            f"Setting dialog as unskippable in {resource._path_ident_obj}",
-                        )
+                        log_output("Skippable", skippable, "alien_vo_count", alien_vo_count, "ConversationType", conversationtype, f"Setting dialog as unskippable in {resource._path_ident_obj}")
                         made_change = True
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
@@ -957,8 +949,7 @@ def patch_erf_or_rim(
                 (
                     res
                     for res in resources
-                    if res.resname() == resource.resname()
-                    and res.restype() == ResourceType.TXI
+                    if res.resname() == resource.resname() and res.restype() == ResourceType.TXI
                 ),
                 None,
             )
@@ -1254,7 +1245,10 @@ def do_main_patchloop() -> str:
     ):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
     if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
-        return messagebox.showwarning("Bad translation args", "Cannot start translation, you have not applied your translation options. (api key, db path, server url etc)")
+        return messagebox.showwarning(
+            "Bad translation args",
+            "Cannot start translation, you have not applied your translation options. (api key, db path, server url etc)",
+        )
 
     # Patching logic
     has_action = False
@@ -1402,7 +1396,11 @@ class KOTORPatchingToolUI:
         # Gamepaths Combobox
         self.gamepaths = ttk.Combobox(self.root, textvariable=self.path)
         self.gamepaths.grid(row=row, column=1, columnspan=2, sticky="ew")
-        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
+        self.gamepaths["values"] = [
+            str(path)
+            for game in find_kotor_paths_from_default().values()
+            for path in game
+        ]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
 
         # Browse button
@@ -1496,7 +1494,7 @@ class KOTORPatchingToolUI:
 
         # Set the width of the Combobox in characters, not pixels
         # Find the average character width in pixels and divide max_width by this number
-        avg_char_width = font.measure('0')  # '0' is typically used as an average character
+        avg_char_width = font.measure("0")  # '0' is typically used as an average character
         combobox_width = max_width // avg_char_width
         combobox.config(width=combobox_width)
         ttk.Button(self.root, text="Browse", command=self.browse_font_path).grid(row=row, column=2)
@@ -1594,7 +1592,11 @@ class KOTORPatchingToolUI:
         else:
             self.translation_applied = True
 
-    def apply_translation_option(self, varname: str, value: Any):
+    def apply_translation_option(
+        self,
+        varname: str,
+        value: Any,
+    ):
         setattr(SCRIPT_GLOBALS.pytranslator, varname, value)  # TODO: add all the variable names to __init__ of Translator class
         self.write_log(PatchLog(f"Applied Options for {self.translation_option.get()}: {varname} = {value}", LogType.NOTE))
         cur_toption: TranslationOption = TranslationOption.__members__[self.translation_option.get()]
@@ -1642,9 +1644,7 @@ class KOTORPatchingToolUI:
                 text=lang.name,
                 variable=lang_var,
                 command=lambda lang=lang,
-                lang_var=lang_var: self.update_chosen_languages(
-                    lang, lang_var
-                ),
+                lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
             ).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns
@@ -1692,7 +1692,7 @@ class KOTORPatchingToolUI:
             self.path.set(directory)
 
     def browse_source_file(self):
-        directory = filedialog.askopenfile()
+        directory = filedialog.askopenfilename()
         if directory:
             self.path.set(directory)
 

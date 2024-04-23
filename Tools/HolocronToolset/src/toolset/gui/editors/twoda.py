@@ -18,6 +18,7 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 if TYPE_CHECKING:
     import os
 
+    from qtpy.QtCore import QModelIndex, QPersistentModelIndex
     from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
@@ -462,8 +463,8 @@ class SortFilterProxyModel(QSortFilterProxyModel):
 
     def filterAcceptsRow(
         self,
-        sourceRow,
-        sourceParent,
+        sourceRow: int,
+        sourceParent: QModelIndex | QPersistentModelIndex,
     ) -> bool:
         """Filters rows based on regular expression pattern match.
 

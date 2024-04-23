@@ -140,7 +140,7 @@ class PTHEditor(Editor):
 
         self.settings = GITSettings()
 
-        def intColorToQColor(num_color) -> QColor:
+        def intColorToQColor(num_color: int) -> QColor:
             color = Color.from_rgba_integer(num_color)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 

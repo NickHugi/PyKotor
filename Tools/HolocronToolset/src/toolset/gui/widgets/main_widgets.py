@@ -293,7 +293,7 @@ class ResourceModel(QStandardItemModel):
     ):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
-        item2 = QStandardItem(resource.restype().extension)
+        item2 = QStandardItem(resource.restype().extension.upper())
         self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 
     def resourceFromIndexes(
@@ -522,7 +522,7 @@ class TextureList(MainWindowList):
     def onIconUpdate(
         self,
         item: QStandardItem,
-        icon,
+        icon: QIcon | QPixmap,
     ):
         try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)

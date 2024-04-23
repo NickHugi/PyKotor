@@ -1,4 +1,6 @@
 from __future__ import annotations
+import tempfile
+import uuid
 
 try:
     import cProfile
@@ -284,8 +286,7 @@ class ToolWindow(QMainWindow):
             self.settings.selectedTheme = "Default (Light)"
 
             # Create a directory used for dumping temp files
-            with suppress(Exception):
-                self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
+            self.settings.extractPath = str(Path(tempfile.gettempdir(), f"toolset_{uuid.uuid4()}_extract"))
 
         title = f"Holocron Toolset ({qtpy.API_NAME})"
         self.setWindowTitle(title)

@@ -23,26 +23,24 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
-def getMouseCode(string: str):
+def getMouseCode(string: str) -> QtCore.Qt.MouseButton:
     MOUSE_MAP = {
         "LEFT": QtCore.Qt.MouseButton.LeftButton,
-        "MIDDLE": QtCore.Qt.MiddleButton,
-        "RIGHT": QtCore.Qt.RightButton,
+        "MIDDLE": QtCore.Qt.MouseButton.MiddleButton,
+        "RIGHT": QtCore.Qt.MouseButton.RightButton,
     }
 
     return MOUSE_MAP[string]
 
 
-def getKeyCode(string: str):
+def getKeyCode(string: str) -> QtCore.Qt.Key | QKeySequence:
     KEY_MAP = {
-        "CTRL": QtCore.Qt.Key_Control,
-        "ALT": QtCore.Qt.Key_Alt,
-        "SHIFT": QtCore.Qt.Key_Shift,
+        "CTRL": QtCore.Qt.Key.Key_Control,
+        "ALT": QtCore.Qt.Key.Key_Alt,
+        "SHIFT": QtCore.Qt.Key.Key_Shift,
     }
 
-    if string in KEY_MAP:
-        return KEY_MAP[string]
-    return QKeySequence(string)[0]
+    return KEY_MAP[string] if string in KEY_MAP else QKeySequence(string)[0]
 
 
 class ModuleEditorControls(ABC):
@@ -116,6 +114,7 @@ class ModuleEditorControls(ABC):
             - Checks if snap is enabled, and if so, snaps new position to walkmesh
             - Sets new position on object instance.
         """
+        assert self.renderer.scene is not None
         for obj in self.renderer.scene.selection:
             x = obj.data.position.x + dx
             y = obj.data.position.y + dy
@@ -130,6 +129,7 @@ class ModuleEditorControls(ABC):
             instance.position = point
 
     def rotateSelectedObjects(self, yaw: float, pitch: float):
+        assert self.renderer.scene is not None
         for obj in self.renderer.scene.selection:
             instance: GITInstance = obj.data
             instance.rotate(yaw / 80, 0, 0)
@@ -140,6 +140,7 @@ class ModuleEditorControls(ABC):
         dy: float,
         dz: float,
     ):
+        assert self.renderer.scene is not None
         self.renderer.scene.camera.x += dx
         self.renderer.scene.camera.y += dy
         self.renderer.scene.camera.z += dz
@@ -166,10 +167,12 @@ class ModuleEditorControls(ABC):
             self.renderer.scene.camera.z = z
 
     def alterCameraRotation(self, yaw: float, pitch: float):
+        assert self.renderer.scene is not None
         self.renderer.scene.camera.yaw += yaw
         self.renderer.scene.camera.pitch = min(math.pi - 0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
 
     def setCameraRotation(self, yaw: float, pitch: float):
+        assert self.renderer.scene is not None
         self.renderer.scene.camera.yaw = yaw
         self.renderer.scene.camera.pitch = pitch
 
@@ -181,6 +184,7 @@ class ModuleEditorControls(ABC):
         self.renderer.customContextMenuRequested.emit(self.renderer.mapFromGlobal(QPoint(x, y)))
 
     def alterCameraZoom(self, amount: float):
+        assert self.renderer.scene is not None
         if isinstance(self.renderer.scene.camera, Camera):
             self.renderer.scene.camera.distance = max(0, self.renderer.scene.camera.distance + amount)
 
@@ -314,7 +318,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         keys: set[int],
     ):
         for event in self.mouseMoveEvents:
-            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
+            if (
+                (event.mouse == buttons or event.mouse is None)
+                and (event.keys == keys or event.keys is None)
+            ):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
@@ -325,7 +332,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         keys: set[int],
     ):
         for event in self.mouseScrollEvents:
-            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
+            if (
+                (event.mouse == buttons or event.mouse is None)
+                and (event.keys == keys or event.keys is None)
+            ):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
@@ -336,7 +346,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         keys: set[int],
     ):
         for event in self.mousePressEvents:
-            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
+            if (
+                (event.mouse == buttons or event.mouse is None)
+                and (event.keys == keys or event.keys is None)
+            ):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
@@ -347,7 +360,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         keys: set[int],
     ):
         for event in self.mouseReleaseEvents:
-            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
+            if (
+                (event.mouse == buttons or event.mouse is None)
+                and (event.keys == keys or event.keys is None)
+            ):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
@@ -357,7 +373,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         keys: set[int],
     ):
         for event in self.keyPressEvents:
-            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
+            if (
+                (event.mouse == buttons or event.mouse is None)
+                and (event.keys == keys or event.keys is None)
+            ):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
@@ -367,7 +386,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         keys: set[int],
     ):
         for event in self.keyReleaseEvents:
-            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
+            if (
+                (event.mouse == buttons or event.mouse is None)
+                and (event.keys == keys or event.keys is None)
+            ):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
@@ -410,7 +432,11 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         ]
         self.mouseReleaseEvents: list[DCItem] = []
         self.mouseScrollEvents: list[DCItem] = [
-            DCItem({getKeyCode("CTRL")}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")]),
+            DCItem(
+                {getKeyCode("CTRL")},
+                set(),
+                [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")],
+            ),
         ]
         self.keyPressEvents: list[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
@@ -555,6 +581,7 @@ class DCEffect(ABC):
             - Performs camera transformations on aliases like "cpdx"
             - Returns float value or 0 if not matched.
         """
+        assert controls.renderer.scene is not None
         if not isinstance(value, str):
             return value if isinstance(value, (float, int)) else 0
         output = 0.0
