@@ -4,7 +4,7 @@ import math
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import qtpy
 
@@ -418,7 +418,9 @@ class GITEditor(Editor):
         resid: ResourceIdentifier | None = instance.identifier()
         if resid not in self.nameBuffer:
             res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
-            self.nameBuffer[resid] = None if res is None else self._installation.string(extract_name(res.data))
+            if res is None:
+                return None
+            self.nameBuffer[resid] = self._installation.string(extract_name(res.data))
         return self.nameBuffer[resid]
 
     def getInstanceExternalTag(self, instance: GITInstance) -> str | None:
@@ -443,7 +445,9 @@ class GITEditor(Editor):
         assert resid is not None, f"resid cannot be None in getInstanceExternalTag({instance!r})"
         if resid not in self.tagBuffer:
             res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
-            self.tagBuffer[resid] = None if res is None else extract_tag(res.data)
+            if res is None:
+                return None
+            self.tagBuffer[resid] = extract_tag(res.data)
         return self.tagBuffer[resid]
 
     def enterInstanceMode(self):
@@ -556,7 +560,7 @@ class GITEditor(Editor):
         worldDelta: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
-        mode: _InstanceMode = self._mode
+        mode: _InstanceMode = cast(_InstanceMode, self._mode)
         mode.updateStatusBar(Vector2.from_vector3(world))
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
@@ -661,6 +665,8 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.blockSignals(True)
         for i in range(self._ui.listWidget.count()):
             item = self._ui.listWidget.item(i)
+            if item is None:
+                continue
             instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if instance in instances:
                 self._ui.listWidget.setCurrentItem(item)
@@ -688,7 +694,7 @@ class _InstanceMode(_Mode):
             openInstanceDialog(self._editor, instance, self._installation)
             self.buildList()
 
-    def editSelectedInstanceResource(self):  # TODO: create a static method out of this in pykotor.tools or add to the module class. This is a very useful function.
+    def editSelectedInstanceResource(self):
         """Edits the selected instance resource.
 
         Processing Logic:
