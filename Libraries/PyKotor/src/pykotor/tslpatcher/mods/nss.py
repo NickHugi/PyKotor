@@ -97,7 +97,7 @@ class ModificationsNSS(PatcherModifications):
                 detected_nwnnsscomp: str = nwnnsscompiler.get_info().name
             except ValueError:
                 detected_nwnnsscomp: str = "<UNKNOWN>"
-            if detected_nwnnsscomp != "TSLPatcher":
+            if detected_nwnnsscomp != "TSLPATCHER":
                 logger.add_warning(
                     "The nwnnsscomp.exe in the tslpatchdata folder is not the expected TSLPatcher version.\n"
                     f"PyKotor has detected that the provided nwnnsscomp.exe is the '{detected_nwnnsscomp}' version.\n"
