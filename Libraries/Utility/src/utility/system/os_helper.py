@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import shutil
 import subprocess
@@ -15,6 +16,42 @@ from utility.system.path import Path
 
 if TYPE_CHECKING:
     from logging import Logger
+
+
+def windows_get_size_on_disk(file_path: os.PathLike | str) -> int:
+    # Define GetCompressedFileSizeW from the Windows API
+    GetCompressedFileSizeW = ctypes.windll.kernel32.GetCompressedFileSizeW
+    GetCompressedFileSizeW.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_ulong)]
+    GetCompressedFileSizeW.restype = ctypes.c_ulong
+
+    # Prepare the high-order DWORD
+    filesizehigh = ctypes.c_ulong()
+
+    # Call GetCompressedFileSizeW
+    low = GetCompressedFileSizeW(str(file_path), ctypes.byref(filesizehigh))
+
+    if low == 0xFFFFFFFF:  # Check for an error condition.
+        error = ctypes.GetLastError()
+        if error:
+            raise ctypes.WinError(error)
+
+    # Combine the low and high parts
+    return (filesizehigh.value << 32) + low
+
+
+def get_size_on_disk(
+    file_path: Path,
+    stat_result: os.stat_result | None = None,
+) -> int:
+    """Returns the size on disk of the file at file_path in bytes."""
+    if os.name == "posix":
+        if stat_result is None:
+            stat_result = file_path.stat()
+        # st_blocks are 512-byte blocks
+        return stat_result.st_blocks * 512  # type: ignore[attr-defined]
+
+    return windows_get_size_on_disk(file_path)
+
 
 def kill_child_processes(
     timeout: int = 3,
@@ -45,6 +82,7 @@ def kill_child_processes(
                     os.kill(child.pid, signal.SIGKILL)  # Use SIGKILL as a last resort
             except Exception:
                 log.critical("Failed to kill process", exc_info=True)
+
 
 def kill_self_pid(timeout=3):
     """Waits for a specified timeout for threads to complete.
@@ -82,6 +120,7 @@ def kill_self_pid(timeout=3):
         get_root_logger().exception("Exception occurred while stopping main process")
     finally:
         os._exit(0)
+
 
 def get_app_dir() -> Path:
     if is_frozen():
