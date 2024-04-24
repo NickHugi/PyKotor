@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from json import JSONDecodeError
 from typing import Any
 
@@ -97,10 +99,14 @@ class Settings:
             serialized_default = jsonpickle.encode(l_default)
             try:
                 raw_value = this.settings.value(name, serialized_default, str)
-                value = jsonpickle.decode(raw_value)
+                value = jsonpickle.decode(raw_value)  # noqa: S301
                 return reconstruct_value(value)
             except (TypeError, JSONDecodeError) as e:
-                print(f"Exception in settings getter: {e}")
+                print(f"Exception in settings getter while acquiring setting '{name}' with default of {default} ({l_default}): {e}", file=sys.stderr)
+                try:
+                    this.settings.setValue(name, serialized_default)
+                except (TypeError, JSONDecodeError) as e:
+                    print(f"Fallback failed!!! {e}", file=sys.stderr)
                 return this.settings.value(name, l_default, l_default.__class__)
 
         def setter(this: Settings, value: Any):
