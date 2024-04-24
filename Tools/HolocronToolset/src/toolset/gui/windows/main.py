@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import tempfile
 import uuid
 
@@ -12,7 +13,6 @@ import sys
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
 import qtpy
@@ -1344,7 +1344,7 @@ class ToolWindow(QMainWindow):
                 if self.settings.profileToolset and cProfile is not None:
                     profiler = cProfile.Profile()
                     profiler.enable()
-                new_active = HTInstallation(path, name, tsl, self)
+                new_active = HTInstallation(path, name, self, tsl=tsl)
                 if self.settings.profileToolset and profiler:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))

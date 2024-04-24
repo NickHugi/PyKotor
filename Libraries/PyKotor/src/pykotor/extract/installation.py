@@ -138,7 +138,12 @@ class Installation:  # noqa: PLR0904
         ResourceType.DDS,
     ]
 
-    def __init__(self, path: os.PathLike | str, *, multithread: bool = False):
+    def __init__(
+        self,
+        path: os.PathLike | str,
+        *,
+        multithread: bool = False,
+    ):
         self.use_multithreading: bool = multithread
 
         self._log: Logger = get_root_logger()

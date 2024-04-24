@@ -65,7 +65,14 @@ class HTInstallation(Installation):
     TwoDA_PLOT = "plot"
     TwoDA_CAMERAS = "camerastyle"
 
-    def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
+    def __init__(
+        self,
+        path: str,
+        name: str,
+        mainWindow: QWidget,
+        *,
+        tsl: bool | None = None,
+    ):
         super().__init__(path)
 
         self.name: str = name
