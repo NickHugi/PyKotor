@@ -1002,10 +1002,10 @@ def patch_folder(folder_path: os.PathLike | str):
         patch_file(file_path)
 
 def check_model(
-    resource: FileResource,
+    model_resource: FileResource,
     k_install: Installation | None,
 ):
-    if resource._path_ident_obj.parent.safe_isdir():
+    if model_resource._path_ident_obj.parent.safe_isdir():
         #log_output(f"Will include override for model {resource._path_ident_obj}")
         order = [
             SearchLocation.OVERRIDE,
@@ -1020,16 +1020,16 @@ def check_model(
             SearchLocation.CHITIN,
         ]
     try:
-        texture_names = list_textures(resource.data())
+        texture_names = list_textures(model_resource.data())
     except Exception as e:
-        log_output(f"Error listing textures in '{resource._path_ident_obj}': {e}")
+        log_output(f"Error listing textures in '{model_resource._path_ident_obj}': {e}")
         return
     else:
         if texture_names:
             mdl_tex_outpath = _write_all_found_in_mdl(
                 texture_names,
                 " textures found in model '",
-                resource,
+                model_resource,
                 "out_model_textures",
             )
             # Find missing textures
@@ -1045,36 +1045,58 @@ def check_model(
                         texture_tga = ResourceIdentifier(texture, ResourceType.TGA)
                         texture_tpc = ResourceIdentifier(texture, ResourceType.TPC)
                         resource_results = k_install.locations([texture_tga, texture_tpc], order)
-                        if resource_results.get(texture_tga):
-                            log_output(f"Found texture '{texture_tga}' in the following locations:")
-                            for location_list in resource_results.values():
-                                for location in location_list:
-                                    log_output(f"    {location.filepath}")
-                        if resource_results.get(texture_tpc):
-                            log_output(f"Found texture '{texture_tpc}' in the following locations:")
-                            for location_list in resource_results.values():
-                                for location in location_list:
-                                    log_output(f"    {location.filepath}")
+                        #if resource_results.get(texture_tga):
+                            #log_output(f"Found texture '{texture_tga}' in the following locations:")
+                            #for location_list in resource_results.values():
+                            #    for location in location_list:
+                            #        log_output(f"    {location.filepath}")
+                        #if resource_results.get(texture_tpc):
+                            #log_output(f"Found texture '{texture_tpc}' in the following locations:")
+                            #for location_list in resource_results.values():
+                            #    for location in location_list:
+                            #        log_output(f"    {location.filepath}")
                         if not resource_results.get(texture_tga) and not resource_results.get(texture_tpc):
-                            log_output(f"{resource.resname()}: Missing texture: '{texture}'")
-                            missing_writer.write(texture + "\n")
-                            found_missing_texture = True
+                            for layout_resource in k_install.chitin_resources():
+                                if layout_resource.restype() is not ResourceType.LYT:
+                                    continue
+                                lyt_content = layout_resource.data().decode(encoding="ascii", errors="ignore")
+                                if model_resource.resname().lower() in lyt_content.lower():
+                                    log_output(f"{model_resource.resname()}: Missing texture for model {model_resource.filename()}: '{texture}' (found in {layout_resource.filepath()}/{layout_resource.filename()})")
+                                    needed_module = f"{layout_resource.resname()}.rim"
+                                    log_output_with_separator(f"Missing texture is needed by Modules/{needed_module}")
+                                    missing_writer.write(f"Module={layout_resource.resname()}, Texture={texture}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}")
+                                    found_missing_texture = True
+                                    break
+                            #if not found_missing_texture:
+                            #    for capsule_name, resources in k_install._modules.items():
+                            #        if not capsule_name.lower().endswith(".mod"):
+                            #            continue
+                            #        for capsule_resource in resources:
+                            #            if capsule_resource.restype() is not ResourceType.LYT:
+                            #                continue
+                            #            lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
+                            #            if model_resource.resname().lower() in lyt_content.lower():
+                            #                log_output(f"{model_resource.resname()}: Missing texture: '{texture}'")
+                            #                log_output_with_separator(f"missing texture is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
+                            #                missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Texture={texture}\n")
+                            #                found_missing_texture = True
+                            #                break
                 finally:
                     missing_writer.close()
                     if not found_missing_texture:
                         mdl_missing_tex_outpath.unlink(missing_ok=True)
 
     try:
-        lightmap_names = list_lightmaps(resource.data())
+        lightmap_names = list_lightmaps(model_resource.data())
     except Exception as e:
-        log_output(f"Error listing lightmaps in '{resource._path_ident_obj}': {e}")
+        log_output(f"Error listing lightmaps in '{model_resource._path_ident_obj}': {e}")
         return
     else:
         if lightmap_names:
             mdl_lmp_outpath = _write_all_found_in_mdl(
                 lightmap_names,
                 " lightmaps found in model '",
-                resource,
+                model_resource,
                 "out_model_lightmaps",
             )
             # Find missing lightmaps
@@ -1088,20 +1110,42 @@ def check_model(
                         lightmap_tga = ResourceIdentifier(lightmap, ResourceType.TGA)
                         lightmap_tpc = ResourceIdentifier(lightmap, ResourceType.TPC)
                         resource_results = k_install.locations([lightmap_tga, lightmap_tpc], order)
-                        if resource_results.get(lightmap_tga):
-                            log_output(f"Found lightmap '{lightmap_tga}' in the following locations:")
-                            for location_list in resource_results.values():
-                                for location in location_list:
-                                    log_output(f"    {location.filepath}")
-                        if resource_results.get(lightmap_tpc):
-                            log_output(f"Found lightmap '{lightmap_tpc}' in the following locations:")
-                            for location_list in resource_results.values():
-                                for location in location_list:
-                                    log_output(f"    {location.filepath}")
+                        #if resource_results.get(lightmap_tga):
+                            #log_output(f"Found lightmap '{lightmap_tga}' in the following locations:")
+                            #for location_list in resource_results.values():
+                                #for location in location_list:
+                                    #log_output(f"    {location.filepath}")
+                        #if resource_results.get(lightmap_tpc):
+                            #log_output(f"Found lightmap '{lightmap_tpc}' in the following locations:")
+                            #for location_list in resource_results.values():
+                                #for location in location_list:
+                                    #log_output(f"    {location.filepath}")
                         if not resource_results.get(lightmap_tga) and not resource_results.get(lightmap_tpc):
-                            log_output(f"{resource.resname()}: Missing lightmap: '{lightmap}'")
-                            missing_writer.write(lightmap + "\n")
-                            found_missing_lightmap = True
+                            for layout_resource in k_install.chitin_resources():
+                                if layout_resource.restype() is not ResourceType.LYT:
+                                    continue
+                                lyt_content = layout_resource.data().decode(encoding="ascii", errors="ignore")
+                                if model_resource.resname().lower() in lyt_content.lower():
+                                    log_output(f"{model_resource.resname()}: Missing lightmap for model {model_resource.filename()}: '{lightmap}' (found in {layout_resource.filepath()}/{layout_resource.filename()})")
+                                    needed_module = f"{layout_resource.resname()}.rim"
+                                    log_output_with_separator(f"Missing lightmap is needed by Modules/{needed_module}")
+                                    missing_writer.write(f"Module={layout_resource.resname()}, Lightmap={lightmap}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}")
+                                    found_missing_lightmap = True
+                                    break
+                            #if not found_missing_lightmap:
+                            #    for capsule_name, resources in k_install._modules.items():
+                            #        if not capsule_name.lower().endswith(".mod"):
+                            #            continue
+                            #        for capsule_resource in resources:
+                            #            if capsule_resource.restype() is not ResourceType.LYT:
+                            #                continue
+                            #            lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
+                            #            if model_resource.resname().lower() in lyt_content.lower():
+                            #                log_output(f"{model_resource.resname()}: Missing lightmap: '{lightmap}'")
+                            #                log_output_with_separator(f"Missing lightmap is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
+                            #                missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Lightmap={lightmap}\n")
+                            #                found_missing_lightmap = True
+                            #                break
                 finally:
                     missing_writer.close()
                     if not found_missing_lightmap:
@@ -1176,11 +1220,11 @@ def patch_install(install_path: os.PathLike | str):
         for resource in k_install.override_resources(folder):
             if SCRIPT_GLOBALS.is_patching():
                 patch_and_save_noncapsule(resource)
-            if (
-                SCRIPT_GLOBALS.check_textures
-                and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
-            ):
-                check_model(resource, k_install)
+            #if (
+            #    SCRIPT_GLOBALS.check_textures
+            #    and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
+            #):
+            #    check_model(resource, k_install)
 
     log_output_with_separator("Extract and patch BIF data, saving to Override")
     for resource in k_install.chitin_resources():
