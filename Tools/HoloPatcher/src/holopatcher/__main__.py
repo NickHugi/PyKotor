@@ -7,11 +7,8 @@ import io
 import json
 import os
 import pathlib
-<<<<<<< HEAD:Tools/HoloPatcher/src/__main__.py
-import shutil
-=======
 import platform
->>>>>>> NickHugi/master:Tools/HoloPatcher/src/holopatcher/__main__.py
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -287,36 +284,17 @@ class App:
         self.namespaces_combobox_state: int = 0
         # Browse for a tslpatcher mod
         self.browse_button: ttk.Button = ttk.Button(top_frame, text="Browse", command=self.open_mod)
-<<<<<<< HEAD:Tools/HoloPatcher/src/__main__.py
         #self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
-=======
-        self.browse_button.grid(row=0, column=1, padx=5, pady=2, sticky="e")
-        self.expand_namespace_description_button: ttk.Button = ttk.Button(
-            top_frame,
-            width=1,
-            text="?",
-            command=lambda *args: messagebox.showinfo(
-                self.namespaces_combobox.get(),
-                self.get_namespace_description(*args),
-            ),
-        )
-        self.expand_namespace_description_button.grid(row=0, column=2, padx=2, pady=2, stick="e")
->>>>>>> NickHugi/master:Tools/HoloPatcher/src/holopatcher/__main__.py
 
         # Store all discovered KOTOR install paths
         self.gamepaths = ttk.Combobox(top_frame, style="TCombobox")
         self.gamepaths.set("Select your KOTOR directory path")
-<<<<<<< HEAD:Tools/HoloPatcher/src/__main__.py
         self.gamepaths.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
-        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
-=======
-        self.gamepaths.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
         self.gamepaths["values"] = [
             str(path)
             for game in find_kotor_paths_from_default().values()
             for path in game
         ]
->>>>>>> NickHugi/master:Tools/HoloPatcher/src/holopatcher/__main__.py
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         # Browse for a KOTOR path
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=lambda: self.open_kotor(box=self.gamepaths))
@@ -1257,7 +1235,6 @@ class App:
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-<<<<<<< HEAD:Tools/HoloPatcher/src/__main__.py
     def begin_edge_preinstall_logic(self):
         case_k1_path = CaseAwarePath(self.gamepaths.get())
         case_k2_path = CaseAwarePath(self.gamepaths2.get())
@@ -1362,13 +1339,6 @@ class App:
         shutil.copy2(str(case_k2_path / "dialog.tlk"), str(case_k2_path / "dialog.tlk.main"))
 
     def begin_install_thread(self, should_cancel_thread: Event):
-=======
-    def begin_install_thread(
-        self,
-        should_cancel_thread: Event,
-        update_progress_func: Callable | None = None,
-    ):
->>>>>>> NickHugi/master:Tools/HoloPatcher/src/holopatcher/__main__.py
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -1397,15 +1367,9 @@ class App:
         self.main_text.see(tk.END)
         self.main_text.config(state=tk.DISABLED)
         try:
-<<<<<<< HEAD:Tools/HoloPatcher/src/__main__.py
             installer = ModInstaller(namespace_mod_path, self.gamepaths2.get(), ini_file_path, self.logger)
             self._execute_mod_install(installer, should_cancel_thread)
         except Exception as e:  # noqa: BLE001
-=======
-            installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
-            self._execute_mod_install(installer, should_cancel_thread, update_progress_func)
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
->>>>>>> NickHugi/master:Tools/HoloPatcher/src/holopatcher/__main__.py
             self._handle_exception_during_install(e)
         finally:
             self.set_state(state=False)
@@ -1506,13 +1470,6 @@ class App:
             )
         ):
             return
-<<<<<<< HEAD:Tools/HoloPatcher/src/__main__.py
-        #profiler = cProfile.Profile()
-        #profiler.enable()
-        install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-        self.begin_edge_preinstall_logic()
-        installer.install(should_cancel_thread)
-=======
         if progress_update_func is not None:
             self.progress_bar["maximum"] = len(
             [
@@ -1528,8 +1485,8 @@ class App:
         # profiler = cProfile.Profile()
         # profiler.enable()
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
+        self.begin_edge_preinstall_logic()
         installer.install(should_cancel_thread, progress_update_func)
->>>>>>> NickHugi/master:Tools/HoloPatcher/src/holopatcher/__main__.py
         total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
         if progress_update_func is not None:
             self.progress_value.set(99)
