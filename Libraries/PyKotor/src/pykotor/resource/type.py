@@ -113,7 +113,6 @@ class ResourceType(Enum):
     BTC = ResourceTuple(2026, "btc", "Creatures", "gff")  # ???
     UTC = ResourceTuple(2027, "utc", "Creatures", "gff")
     DLG = ResourceTuple(2029, "dlg", "Dialogs", "gff")
-    ITP = ResourceTuple(2030, "itp", "Palettes", "binary")
     BTT = ResourceTuple(2031, "btt", "Triggers", "gff")
     UTT = ResourceTuple(2032, "utt", "Triggers", "gff")
     DDS = ResourceTuple(2033, "dds", "Textures", "binary")
