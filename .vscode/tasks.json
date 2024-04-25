@@ -486,7 +486,6 @@
         "--exclude-module=PyQt5",
         "--exclude-module=PIL",
         "--exclude-module=matplotlib",
-        "--exclude-module=multiprocessing",
         "--exclude-module=PyOpenGL",
         "--exclude-module=PyGLM",
         "--exclude-module=dl_translate",
@@ -495,8 +494,8 @@
         "--upx-dir=${env:USERPROFILE}${pathSeparator}Documents${pathSeparator}GitHub${pathSeparator}upx-win32",
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
-        "--icon=..${pathSeparator}resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
-        "__main__.py"
+        "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
+        "holopatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": [],
       "options": {
@@ -535,7 +534,7 @@
         "--remove-output",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "--enable-plugin=tk-inter",
-        "__main__.py"
+        "holopatcher${pathSeparator}__main__.py"
       ],
       "presentation": {
         "echo": true,
@@ -773,7 +772,7 @@
         "--distpath=${workspaceFolder}${pathSeparator}dist",
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
         "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
-        "__main__.py"
+        "gui_duplicator${pathSeparator}__main__.py"
       ],
       "presentation": {
         "echo": true,
