@@ -7,7 +7,6 @@ import io
 import json
 import os
 import pathlib
-import platform
 import shutil
 import subprocess
 import sys
@@ -21,7 +20,6 @@ from argparse import ArgumentParser
 from contextlib import suppress
 from datetime import datetime, timezone
 from enum import IntEnum
-from multiprocessing import Queue
 from threading import Event, Thread
 from tkinter import (
     filedialog,
@@ -69,18 +67,15 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
 from utility.system.os_helper import kill_self_pid, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
-from utility.tkinter.updater import TkProgressDialog
 
 if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Callable
     from datetime import timedelta
-    from multiprocessing import Process
     from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
@@ -253,7 +248,6 @@ class App:
 
         # About menu
         about_menu = tk.Menu(self.menu_bar, tearoff=0)
-        about_menu.add_command(label="Check for Updates", command=self.check_for_updates)
         about_menu.add_command(label="HoloPatcher Home", command=lambda: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"))
         about_menu.add_command(label="GitHub Source", command=lambda: webbrowser.open_new("https://github.com/NickHugi/PyKotor"))
         self.menu_bar.add_cascade(label="About", menu=about_menu)
@@ -403,109 +397,6 @@ class App:
     ):
         if self.namespaces_combobox_state == 1:
             self.namespaces_combobox_state = 2  # no selection
-
-    def check_for_updates(self):
-        try:
-            from utility.tkinter.updater import UpdateDialog
-            updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
-            if isinstance(updateInfoData, Exception):
-                self._handle_general_exception(updateInfoData)
-                return
-            latest_version = updateInfoData["holopatcherLatestVersion"]
-            if remoteVersionNewer(CURRENT_VERSION, latest_version):
-                dialog = UpdateDialog(
-                    self.root,
-                    "Update Available",
-                    "A newer version of HoloPatcher is available, would you like to download it now?",
-                    ["Update", "Manual"],
-                )
-                if dialog.result == "Update":
-                    self._run_autoupdate(latest_version, updateInfoData)
-                elif dialog.result == "Manual":
-                    webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
-            else:
-                dialog = UpdateDialog(
-                    self.root,
-                    "No updates available.",
-                    f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
-                    ["Reinstall"],
-                )
-                if dialog.result == "Reinstall":
-                    self._run_autoupdate(latest_version, updateInfoData)
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            self._handle_general_exception(e, title="Unable to fetch latest version")
-
-    def _run_autoupdate(
-        self,
-        latest_version: str,
-        remote_info: dict[str, Any],
-        *,
-        is_release: bool = True,
-    ):
-        from utility.tkinter.updater import run_tk_progress_dialog
-        from utility.updater.restarter import RestartStrategy
-        from utility.updater.update import AppUpdate
-        proc_arch = ProcessorArchitecture.from_os()
-        assert proc_arch == ProcessorArchitecture.from_python()
-        os_name = platform.system()
-        links: list[str] = []
-
-        is_release = True  # TODO(th3w1zard1): remove this line when the beta version direct links are ready.
-        if is_release:
-            links = remote_info["holopatcherDirectLinks"][os_name][proc_arch.value]
-        else:
-            links = remote_info["holopatcherBetaDirectLinks"][os_name][proc_arch.value]
-
-        progress_queue: Queue = Queue()
-        progress_dialog: Process = run_tk_progress_dialog(progress_queue, "HoloPatcher is updating and will restart shortly...")
-        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
-            progress_queue.put(data)
-
-        # Prepare the list of progress hooks with the method from ProgressDialog
-        progress_hooks = [download_progress_hook]
-        def exitapp(kill_self_here: bool):  # noqa: FBT001
-            packaged_data = {"action": "shutdown", "data": {}}
-            progress_queue.put(packaged_data)
-            progress_queue.put({"action": "shutdown"})
-            TkProgressDialog.monitor_and_terminate(progress_dialog)
-            if kill_self_here:
-                time.sleep(3)
-                self.root.destroy()
-                sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
-
-        def remove_second_dot(s: str) -> str:
-            if s.count(".") == 2:
-                # Find the index of the second dot
-                second_dot_index = s.find(".", s.find(".") + 1)
-                # Remove the second dot by slicing and concatenating
-                s = s[:second_dot_index] + s[second_dot_index + 1:]
-            return f"v{s}-patcher"
-
-        updater = AppUpdate(
-            links,
-            "HoloPatcher",
-            CURRENT_VERSION,
-            latest_version,
-            downloader=None,
-            progress_hooks=progress_hooks,
-            exithook=exitapp,
-            r_strategy=RestartStrategy.DEFAULT,
-            version_to_tag_parser=remove_second_dot
-        )
-        try:
-            progress_queue.put({"action": "update_status", "text": "Downloading update..."})
-            updater.download(background=False)
-            progress_queue.put({"action": "update_status", "text": "Restarting and Applying update..."})
-            updater.extract_restart()
-            progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
-            updater.cleanup()
-        except Exception as e:  # noqa: BLE001
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-        #finally:
-        #    exitapp(True)
 
     def execute_commandline(
         self,
@@ -954,8 +845,7 @@ class App:
                 self.load_namespace(namespaces, config_reader)
             else:
                 self.mod_path = ""
-                if not default_directory_path_str:  # don't show the error if the cwd was attempted
-                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
+                messagebox.showerror("Error", "Please run this inside of EG Port folder.")
                 return
             self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
