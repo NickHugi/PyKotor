@@ -1067,20 +1067,20 @@ def check_model(
                                     missing_writer.write(f"Module={layout_resource.resname()}, Texture={texture}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}")
                                     found_missing_texture = True
                                     break
-                            #if not found_missing_texture:
-                            #    for capsule_name, resources in k_install._modules.items():
-                            #        if not capsule_name.lower().endswith(".mod"):
-                            #            continue
-                            #        for capsule_resource in resources:
-                            #            if capsule_resource.restype() is not ResourceType.LYT:
-                            #                continue
-                            #            lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
-                            #            if model_resource.resname().lower() in lyt_content.lower():
-                            #                log_output(f"{model_resource.resname()}: Missing texture: '{texture}'")
-                            #                log_output_with_separator(f"missing texture is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
-                            #                missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Texture={texture}\n")
-                            #                found_missing_texture = True
-                            #                break
+                            if not found_missing_texture:
+                                for capsule_name, resources in k_install._modules.items():
+                                    if not capsule_name.lower().endswith(".mod"):
+                                        continue
+                                    for capsule_resource in resources:
+                                        if capsule_resource.restype() is not ResourceType.LYT:
+                                            continue
+                                        lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
+                                        if model_resource.resname().lower() in lyt_content.lower():
+                                            log_output(f"{model_resource.resname()}: Missing texture: '{texture}'")
+                                            log_output_with_separator(f"missing texture is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
+                                            missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Texture={texture}\n")
+                                            found_missing_texture = True
+                                            break
                 finally:
                     missing_writer.close()
                     if not found_missing_texture:
@@ -1132,20 +1132,20 @@ def check_model(
                                     missing_writer.write(f"Module={layout_resource.resname()}, Lightmap={lightmap}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}")
                                     found_missing_lightmap = True
                                     break
-                            #if not found_missing_lightmap:
-                            #    for capsule_name, resources in k_install._modules.items():
-                            #        if not capsule_name.lower().endswith(".mod"):
-                            #            continue
-                            #        for capsule_resource in resources:
-                            #            if capsule_resource.restype() is not ResourceType.LYT:
-                            #                continue
-                            #            lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
-                            #            if model_resource.resname().lower() in lyt_content.lower():
-                            #                log_output(f"{model_resource.resname()}: Missing lightmap: '{lightmap}'")
-                            #                log_output_with_separator(f"Missing lightmap is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
-                            #                missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Lightmap={lightmap}\n")
-                            #                found_missing_lightmap = True
-                            #                break
+                            if not found_missing_lightmap:
+                                for capsule_name, resources in k_install._modules.items():
+                                    if not capsule_name.lower().endswith(".mod"):
+                                        continue
+                                    for capsule_resource in resources:
+                                        if capsule_resource.restype() is not ResourceType.LYT:
+                                            continue
+                                        lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
+                                        if model_resource.resname().lower() in lyt_content.lower():
+                                            log_output(f"{model_resource.resname()}: Missing lightmap: '{lightmap}'")
+                                            log_output_with_separator(f"Missing lightmap is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
+                                            missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Lightmap={lightmap}\n")
+                                            found_missing_lightmap = True
+                                            break
                 finally:
                     missing_writer.close()
                     if not found_missing_lightmap:
@@ -1220,11 +1220,11 @@ def patch_install(install_path: os.PathLike | str):
         for resource in k_install.override_resources(folder):
             if SCRIPT_GLOBALS.is_patching():
                 patch_and_save_noncapsule(resource)
-            #if (
-            #    SCRIPT_GLOBALS.check_textures
-            #    and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
-            #):
-            #    check_model(resource, k_install)
+            if (
+                SCRIPT_GLOBALS.check_textures
+                and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
+            ):
+                check_model(resource, k_install)
 
     log_output_with_separator("Extract and patch BIF data, saving to Override")
     for resource in k_install.chitin_resources():
