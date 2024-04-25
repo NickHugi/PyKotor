@@ -22,6 +22,7 @@ from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:
@@ -99,10 +100,12 @@ class ModInstaller:
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
 
-        if self._config.required_file:
-            requiredfile_path: CaseAwarePath = self.game_path / "Override" / self._config.required_file
-            if not requiredfile_path.safe_isfile():
-                raise ImportError(self._config.required_message.strip() or "cannot install - missing a required mod")
+        if self._config.required_files:
+            for i, files in enumerate(self._config.required_files):
+                for file in files:
+                    requiredfile_path: CaseAwarePath = self.game_path / "Override" / file
+                    if not requiredfile_path.safe_isfile():
+                        raise ImportError(self._config.required_messages[i].strip() or "cannot install - missing a required mod")
         return self._config
 
     def backup(self) -> tuple[CaseAwarePath, set]:
@@ -425,10 +428,9 @@ class ModInstaller:
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 exc_type, exc_msg = universal_simplify_exception(e)
                 fmt_exc_str = f"{exc_type}: {exc_msg}"
-                self.log.add_error(f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n")
-                detailed_error = format_exception_with_variables(e)
-                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-                    f.write(f"\n{detailed_error}")
+                msg = f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n"
+                self.log.add_error(msg)
+                get_root_logger().exception(msg)
             if progress_update_func is not None:
                 progress_update_func()
 

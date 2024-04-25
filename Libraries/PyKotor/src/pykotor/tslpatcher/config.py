@@ -50,8 +50,8 @@ class PatcherConfig:
         self.confirm_message: str = ""
         self.game_number: int | None = None
 
-        self.required_file: str | None = None
-        self.required_message: str = ""
+        self.required_files: list[tuple[str, ...]] = []
+        self.required_messages: list[str] = []
         self.save_processed_scripts: int = 0
         self.log_level: LogLevel = LogLevel.WARNINGS
 
