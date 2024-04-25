@@ -1309,8 +1309,16 @@ class ConfigReader:
             lower_modifier: str = modifier.lower().strip()
             lower_value: str = value.lower()
 
-            is_store_2da: bool = lower_modifier.startswith("2damemory")
-            is_store_tlk: bool = lower_modifier.startswith("strref") and len(lower_modifier) > len("strref")
+            is_store_2da: bool = (
+                lower_modifier.startswith("2damemory")
+                and len(lower_modifier) > len("2damemory")
+                and modifier[9:].isdigit()
+            )
+            is_store_tlk: bool = (
+                modifier.startswith("strref")
+                and len(lower_modifier) > len("strref")
+                and modifier[6:].isdigit()
+            )
             is_row_label: bool = lower_modifier in {"rowlabel", "newrowlabel"}
 
             row_value: RowValue | None = None
