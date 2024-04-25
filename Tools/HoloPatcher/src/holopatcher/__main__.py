@@ -28,7 +28,8 @@ from tkinter import (
     messagebox,
     ttk,
 )
-from typing import TYPE_CHECKING, Any, NoReturn
+from types import TracebackType
+from typing import TYPE_CHECKING, NoReturn
 
 
 def is_frozen() -> bool:
@@ -55,7 +56,6 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
-
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
@@ -69,6 +69,7 @@ from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.misc import ProcessorArchitecture
+from utility.logger_util import get_root_logger
 from utility.string_util import striprtf
 from utility.system.os_helper import kill_self_pid, win_get_system32_dir
 from utility.system.path import Path
@@ -175,6 +176,7 @@ class App:
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
+        self.pykotor_logger = get_root_logger()
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -184,6 +186,7 @@ class App:
         cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.execute_commandline(cmdline_args)
+        self.pykotor_logger.debug("Init complete")
 
     def set_window(
         self,
@@ -1195,9 +1198,11 @@ class App:
             - Exits program if exception occurs during installation thread start.
 
         """
+        self.pykotor_logger.debug("Call begin_install")
         try:
             if not self.preinstall_validate_chosen():
                 return
+            self.pykotor_logger.debug("Prevalidate finished, starting install thread")
             self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
             self.task_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -1225,10 +1230,12 @@ class App:
             - Handle any exceptions during installation
             - Finally set the install status to not running.
         """
+        self.pykotor_logger.debug("begin_install_thread reached")
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
+        self.pykotor_logger.debug("set ui state")
         self.set_state(state=True)
         self.install_running = True
         self.clear_main_text()
@@ -1566,10 +1573,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    detailed_msg = format_exception_with_variables(exc, etype, tback)
-    print(detailed_msg)
-    with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-        f.write(f"\n{detailed_msg}")
+    get_root_logger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     with suppress(Exception):
         root = tk.Tk()
