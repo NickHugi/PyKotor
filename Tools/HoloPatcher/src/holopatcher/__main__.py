@@ -1048,12 +1048,12 @@ class App:
                 "Wait for the previous task to finish.",
             )
             return False
-        #if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-        #    messagebox.showinfo(
-        #        "No mod chosen",
-        #        "Select your mod directory first.",
-        #    )
-        #    return False
+        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
+            messagebox.showinfo(
+                "No mod chosen",
+                "Select your mod directory first.",
+            )
+            return False
         game_path: str = self.gamepaths.get()
         if not game_path:
             messagebox.showinfo(
@@ -1468,8 +1468,7 @@ class App:
             - Sets the install flag to False
             - Reraises the exception.
         """
-        with self.log_file_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"{traceback.format_exc()}\n")
+        self.pykotor_logger.exception("Unhandled exception in HoloPatcher", exc_info=e)
         error_name, msg = universal_simplify_exception(e)
         self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
         messagebox.showerror(
