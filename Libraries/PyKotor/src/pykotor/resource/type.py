@@ -82,7 +82,6 @@ class ResourceType(Enum):
     MVE = ResourceTuple(2, "mve", "Video", "video")  # Video, Infinity Engine
     TGA = ResourceTuple(3, "tga", "Textures", "binary")
     WAV = ResourceTuple(4, "wav", "Audio", "binary")
-    PLT = ResourceTuple(6, "plt", "Other", "binary")
     INI = ResourceTuple(7, "ini", "Text Files", "plaintext")  # swkotor.ini
     BMU = ResourceTuple(8, "bmu", "Audio", "binary")  # mp3 with obfuscated extra header
     MPG = ResourceTuple(9, "mpg", "Video", "binary")
