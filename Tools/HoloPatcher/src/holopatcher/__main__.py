@@ -768,10 +768,7 @@ class App:
         *,
         msgbox: bool = True,
     ):
-        detailed_msg = format_exception_with_variables(exc, message=custom_msg)
-        print(detailed_msg)
-        with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-            f.write(detailed_msg)
+        self.pykotor_logger.exception(custom_msg, exc_info=exc)
         error_name, msg = universal_simplify_exception(exc)
         if msgbox:
             messagebox.showerror(
