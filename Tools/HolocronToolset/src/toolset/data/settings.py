@@ -103,11 +103,8 @@ class Settings:
                 return reconstruct_value(value)
             except (TypeError, JSONDecodeError) as e:
                 print(f"Exception in settings getter while acquiring setting '{name}' with default of {default} ({l_default}): {e}", file=sys.stderr)
-                try:
-                    this.settings.setValue(name, serialized_default)
-                except (TypeError, JSONDecodeError) as e:
-                    print(f"Fallback failed!!! {e}", file=sys.stderr)
-                return this.settings.value(name, l_default, l_default.__class__)
+                this.settings.setValue(name, serialized_default)
+                return this.settings.value(name, serialized_default, serialized_default.__class__)
 
         def setter(this: Settings, value: Any):
             #serialized_value = jsonpickle.encode(value, warn=True)
