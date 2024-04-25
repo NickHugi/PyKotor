@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -58,15 +58,17 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class GITEditorTest(TestCase):
     @classmethod
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.git import GITEditor
+
         cls.GITEditor = GITEditor
         from toolset.data.installation import HTInstallation
+
         # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
@@ -126,8 +128,7 @@ class GITEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

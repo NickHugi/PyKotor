@@ -1,4 +1,5 @@
 """This module handles classes relating to editing LIP files."""
+
 from __future__ import annotations
 
 from enum import IntEnum
@@ -120,7 +121,8 @@ class LIP:
 
         return ret
 
-# mapping in LipSyncEditor is not very accurate. for example, shape 0 is neutral, not EE, 
+
+# mapping in LipSyncEditor is not very accurate. for example, shape 0 is neutral, not EE,
 # meaning pauses are not properly represented when using LipSyncEditor. shape 15 is too open to be KG and etc.
 # https://imgur.com/a/LIRZ8B1
 class LIPShape(IntEnum):

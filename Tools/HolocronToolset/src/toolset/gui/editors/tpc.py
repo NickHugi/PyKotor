@@ -4,24 +4,32 @@ import io
 
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from PIL import Image, ImageOps
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QPixmap
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QImage, QPixmap
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
+from pykotor.resource.formats.tpc.io_tga import _DataTypes
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.installation import Installation
 
 
 class TPCEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: Installation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: Installation | None = None,
+    ):
         """Initializes the texture viewer window.
 
         Args:
@@ -41,7 +49,16 @@ class TPCEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tpc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.tpc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.tpc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.tpc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.tpc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -49,19 +66,19 @@ class TPCEditor(Editor):
         self._setupSignals()
 
         self._tpc: TPC = TPC()
-        self._tpc.set_single(
-            256,
-            256,
-            bytes(0 for _ in range(256 * 256 * 4)),
-            TPCTextureFormat.RGBA
-        )
+        self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
 
         self.new()
 
-    def _setupSignals(self):
-        ...
+    def _setupSignals(self): ...
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Load a resource into the editor.
 
         Args:
@@ -84,19 +101,23 @@ class TPCEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
+        # Read image, convert to RGB, and y_flip.
+        orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
-            print("read_tpc")
-            self._tpc = read_tpc(data)
-            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
-            self._tpc.set_data(width, height, [rgb], TPCTextureFormat.RGB)
+            txi_filepath: CaseAwarePath | None = CaseAwarePath.pathify(filepath).with_suffix(".txi")
+            if not txi_filepath.safe_isfile():
+                txi_filepath = None
+            self._tpc = read_tpc(data, txi_source=txi_filepath)
+            orig_format = self._tpc.format()
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
         else:
-            print("pillow image")
             pillow: Image.Image = Image.open(io.BytesIO(data))
             pillow = pillow.convert("RGBA")
             pillow = ImageOps.flip(pillow)
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
-            width, height, rgb = self._tpc.convert(TPCTextureFormat.RGB, 0)
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480
@@ -109,7 +130,7 @@ class TPCEditor(Editor):
             new_width = int(new_height * aspect_ratio)
 
         # Create QImage and scale it
-        image = QImage(rgb, width, height, QImage.Format_RGB888)
+        image = QImage(img_bytes, width, height, QImage.Format_RGB888)
         scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         # Create QPixmap from the scaled QImage
@@ -118,6 +139,10 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
+        if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA:
+            self.setToolTip(f"{self._tpc.original_datatype_code.name} - {orig_format.name}")
+        elif orig_format is not None:
+            self.setToolTip(orig_format.name)
 
     def new(self):
         """Set texture image from TPC texture.
@@ -154,6 +179,8 @@ class TPCEditor(Editor):
         data: bytes | bytearray = bytearray()
 
         if self._restype in {ResourceType.TPC, ResourceType.TGA}:
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
             write_tpc(self._tpc, data, self._restype)
             return bytes(data), b""
 
@@ -164,24 +191,6 @@ class TPCEditor(Editor):
         return data, b""
 
     def extract_tpc_jpeg_bytes(self) -> bytes:
-        """Extracts image from TPC texture and returns JPEG bytes.
-
-        Args:
-        ----
-            self: The class instance
-
-        Returns:
-        -------
-            bytes: JPEG image bytes
-
-        Processing Logic:
-        ----------------
-            - Converts TPC texture to RGB pixel data
-            - Creates PIL Image from pixel data
-            - Flips the image vertically
-            - Saves image to BytesIO as JPEG with 80% quality
-            - Returns JPEG bytes from BytesIO
-        """
         width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGB, 0)
         image = Image.frombuffer("RGB", (width, height), bytes(pixeldata))
         image = ImageOps.flip(image)
@@ -191,24 +200,6 @@ class TPCEditor(Editor):
         return dataIO.getvalue()
 
     def extract_png_bmp_bytes(self) -> bytes:
-        """Extracts texture data from a TPC texture.
-
-        Args:
-        ----
-            self: The TPC texture object
-
-        Returns:
-        -------
-            bytes: Texture image data as bytes
-
-        Processing Logic:
-        ----------------
-            - Converts TPC texture to RGBA format
-            - Creates PIL Image from texture pixel data
-            - Flips the image vertically
-            - Saves image to BytesIO stream as PNG or BMP
-            - Returns bytes of image data.
-        """
         width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGBA, 0)
         image = Image.frombuffer("RGBA", (width, height), pixeldata)
         image = ImageOps.flip(image)

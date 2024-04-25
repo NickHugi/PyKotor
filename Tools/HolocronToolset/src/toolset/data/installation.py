@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from PyQt5.QtGui import QImage, QPixmap, QTransform
+from qtpy.QtGui import QImage, QPixmap, QTransform
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
@@ -12,8 +12,9 @@ from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QStandardItemModel
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QStandardItemModel
+    from qtpy.QtWidgets import QWidget
+    from typing_extensions import Self
 
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
@@ -65,20 +66,47 @@ class HTInstallation(Installation):
     TwoDA_PLOT = "plot"
     TwoDA_CAMERAS = "camerastyle"
 
-    def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
+    def __init__(
+        self,
+        path: str,
+        name: str,
+        mainWindow: QWidget,
+        *,
+        tsl: bool | None = None,
+    ):
         super().__init__(path)
 
-        self.name = name
-        self.tsl = tsl
+        self.name: str = name
 
         self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: QStandardItemModel | None = None
 
+        self._tsl: bool | None = tsl
         self._cache2da: dict[str, TwoDA] = {}
         self._cacheTpc: dict[str, TPC] = {}
 
+    @property
+    def tsl(self) -> bool:
+        if self._tsl is None:
+            self._tsl = self.game().is_k2()
+        return self._tsl
+
+    @classmethod
+    def as_ht(cls, installation: Installation, mainWindow: QWidget) -> Self:
+        ht_installation = cast(cls, installation)
+
+        ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
+        ht_installation._tsl = installation.game().is_k2()
+        ht_installation.mainWindow = mainWindow
+        ht_installation.cacheCoreItems = None
+        ht_installation._cache2da = {}  # noqa: SLF001
+        ht_installation._cacheTpc = {}  # noqa: SLF001
+
+        ht_installation.__class__ = cls
+        return ht_installation
+
     # region Cache 2DA
-    def htGetCache2DA(self, resname: str):
+    def htGetCache2DA(self, resname: str) -> TwoDA:
         """Gets a 2DA resource from the cache or loads it if not present.
 
         Args:
@@ -102,7 +130,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def htBatchCache2DA(self, resnames: list[str], reload: bool = False):
+    def htBatchCache2DA(self, resnames: list[str], *, reload: bool = False):
         """Cache 2D array resources in batch.
 
         Args:
@@ -126,11 +154,13 @@ class HTInstallation(Installation):
 
         resources = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         for iden, resource in resources.items():
-            if resource:
-                self._cache2da[iden.resname] = read_2da(resource.data)
+            if not resource:
+                continue
+            self._cache2da[iden.resname] = read_2da(resource.data)
 
     def htClearCache2DA(self):
         self._cache2da = {}
+
     # endregion
 
     # region Cache TPC
@@ -158,7 +188,7 @@ class HTInstallation(Installation):
                 self._cacheTpc[resname] = tex
         return self._cacheTpc.get(resname, None)
 
-    def htBatchCacheTPC(self, names: list[str], reload: bool = False):
+    def htBatchCacheTPC(self, names: list[str], *, reload: bool = False):
         """Cache textures for batch queries.
 
         Args:
@@ -172,7 +202,7 @@ class HTInstallation(Installation):
             - Filter names not already in cache
             - Loop through remaining names and cache textures from sources.
         """
-        queries = list(names) if reload else [name for name in names if name not in self._cache2da]
+        queries = list(names) if reload else [name for name in names if name not in self._cacheTpc]
 
         if not queries:
             return
@@ -184,6 +214,7 @@ class HTInstallation(Installation):
 
     def htClearCacheTPC(self):
         self._cacheTpc = {}
+
     # endregion
 
     def getItemIconFromUTI(self, uti: UTI) -> QPixmap:
@@ -217,7 +248,12 @@ class HTInstallation(Installation):
                 return self._get_icon(texture)
         return pixmap
 
-    def getItemIcon(self, baseItem: int, modelVariation: int, textureVariation: int) -> QPixmap:
+    def getItemIcon(
+        self,
+        baseItem: int,
+        modelVariation: int,
+        textureVariation: int,
+    ) -> QPixmap:
         """Get item icon from base item and variations.
 
         Args:
@@ -250,7 +286,7 @@ class HTInstallation(Installation):
                 return self._get_icon(texture)
         return pixmap
 
-    def _get_icon(self, texture):
+    def _get_icon(self, texture: TPC) -> QPixmap:
         width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))

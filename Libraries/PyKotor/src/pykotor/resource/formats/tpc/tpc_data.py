@@ -15,7 +15,7 @@ class TPCGetResult(NamedTuple):
     width: int
     height: int
     texture_format: TPCTextureFormat
-    data: bytes | None
+    data: bytes
 
 
 class TPCConvertResult(NamedTuple):
@@ -42,6 +42,9 @@ class TPC:
         self._width: int = 4
         self._height: int = 4
         self.txi: str = ""
+        from pykotor.resource.formats.tpc.io_tga import _DataTypes
+
+        self.original_datatype_code: _DataTypes = _DataTypes.NO_IMAGE_DATA
 
         # TODO: cube maps
 
@@ -112,14 +115,21 @@ class TPC:
         -------
             A tuple equal to (width, height, data)
         """
-        if convert_format in {TPCTextureFormat.DXT1, TPCTextureFormat.DXT5}:
-            msg = f"Conversion from {self._texture_format} to {convert_format} not implemented."
-            raise NotImplementedError(msg)
-
         width, height = self._mipmap_size(mipmap)
         raw_data: bytes = self._mipmaps[mipmap]
-        if self._texture_format == convert_format:  # Is conversion needed?
+        if self._texture_format == convert_format and not y_flip:  # Is conversion needed?
             return TPCConvertResult(width, height, bytearray(raw_data))
+
+        if y_flip:
+            bytes_per_pixel = 0
+            if self._texture_format == TPCTextureFormat.Greyscale:
+                bytes_per_pixel = 1
+            elif self._texture_format in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
+                bytes_per_pixel = 4 if self._texture_format == TPCTextureFormat.RGBA else 3
+            # If the image needs to be flipped and it's an uncompressed format
+            if bytes_per_pixel > 0:
+                raw_data = bytearray(self.flip_image_data(raw_data, width, height, bytes_per_pixel))
+                y_flip = False
 
         data: bytearray = bytearray(raw_data)
         if convert_format == TPCTextureFormat.Greyscale:
@@ -156,17 +166,6 @@ class TPC:
                 rgba_data = TPC._grey_to_rgba(raw_data, width, height)
                 data = TPC._rgba_to_rgb(rgba_data, width, height)
 
-        if y_flip:
-            bytes_per_pixel = 0
-            if convert_format == TPCTextureFormat.Greyscale:
-                bytes_per_pixel = 1
-            elif convert_format in {TPCTextureFormat.RGB, TPCTextureFormat.RGBA}:
-                bytes_per_pixel = 4 if convert_format == TPCTextureFormat.RGBA else 3
-
-            # If the image needs to be flipped and it's an uncompressed format
-            if bytes_per_pixel > 0:
-                data = bytearray(self.flip_image_data(data, width, height, bytes_per_pixel))
-
         return TPCConvertResult(width, height, data)
 
     def get_bytes_per_pixel(self):
@@ -187,7 +186,7 @@ class TPC:
             source_start = row * row_length
             source_end = source_start + row_length
             dest_start = (height - 1 - row) * row_length
-            flipped_data[dest_start:dest_start + row_length] = data[source_start:source_end]
+            flipped_data[dest_start : dest_start + row_length] = data[source_start:source_end]
 
         return bytes(flipped_data)
 
@@ -233,17 +232,17 @@ class TPC:
         # max_dimension = max(width, height)
         # expected_mipmap_count = 1 + math.floor(math.log2(max_dimension))
         # if len(mipmaps) != expected_mipmap_count:
-            # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
+        # raise ValueError(f"Expected {expected_mipmap_count} mipmaps, got {len(mipmaps)}.")
         # Iterate over mipmaps and check if their data sizes match the expected sizes.
         # current_width, current_height = width, height
         # for i, mipmap in enumerate(mipmaps):
-            # expected_size = (current_width * current_height * bits_per_pixel) // 8
-            # if len(mipmap) != expected_size:
-                # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
+        # expected_size = (current_width * current_height * bits_per_pixel) // 8
+        # if len(mipmap) != expected_size:
+        # raise ValueError(f"Mipmap level {i} has incorrect size. Expected {expected_size} bytes, got {len(mipmap)} bytes.")
 
-            # Update dimensions for the next mipmap level.
-            # current_width = max(1, current_width // 2)
-            # current_height = max(1, current_height // 2)
+        # Update dimensions for the next mipmap level.
+        # current_width = max(1, current_width // 2)
+        # current_height = max(1, current_height // 2)
 
         self._texture_format = texture_format
         self._mipmaps = mipmaps
@@ -303,9 +302,7 @@ class TPC:
         return indices
 
     @staticmethod
-    def _select_representative_colors(
-        rgba_block: list[tuple[int, int, int, int]]
-    ) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    def _select_representative_colors(rgba_block: list[tuple[int, int, int, int]]) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
         """Select representative colors for DXT1 compression."""
         colors = sorted(rgba_block, key=lambda x: (x[0] << 16) + (x[1] << 8) + x[2])
         return colors[0][:3], colors[-1][:3]
@@ -320,8 +317,9 @@ class TPC:
         compressed_data = bytearray()
         for y, x in tpc_itertools.product(range(0, height, 4), range(0, width, 4)):
             rgba_block: list[tuple[int, int, int, int]] = [
-                cast(Tuple[int, int, int, int], tuple(rgba_data[i:i + 4]))
-                for dy in range(4) for dx in range(4)
+                cast(Tuple[int, int, int, int], tuple(rgba_data[i : i + 4]))
+                for dy in range(4)
+                for dx in range(4)
                 for i in range((y * width + x + dy * width + dx) * 4, (y * width + x + dy * width + dx) * 4 + 4, 4)
             ]
             c0, c1 = TPC._select_representative_colors(rgba_block)
@@ -400,7 +398,7 @@ class TPC:
                         int((4.0 * alpha0 + 3.0 * alpha1 + 3) / 7),
                         int((3.0 * alpha0 + 4.0 * alpha1 + 3) / 7),
                         int((2.0 * alpha0 + 5.0 * alpha1 + 3) / 7),
-                        int((1.0 * alpha0 + 6.0 * alpha1 + 3) / 7)
+                        int((1.0 * alpha0 + 6.0 * alpha1 + 3) / 7),
                     )
                 )
             else:
@@ -411,7 +409,7 @@ class TPC:
                         int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5),
                         int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5),
                         0,
-                        255
+                        255,
                     )
                 )
             for y in (3, 2, 1, 0):

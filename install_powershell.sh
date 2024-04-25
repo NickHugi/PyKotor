@@ -1,4 +1,12 @@
 #!/bin/bash
+if command -v pwsh > /dev/null 2>&1; then
+    echo "PowerShell already installed, nothing to do."
+    pwsh --version
+    exit 0
+else
+    echo "PowerShell is not installed."
+    # Proceed with installation steps...
+fi
 
 # Default values
 noprompt=false
@@ -73,11 +81,11 @@ fallback_install_pwsh() {
             install_powershell_brew
         fi
     fi
-    #if ! command -v pwsh > /dev/null; then
-        #if command -v pacman > /dev/null; then
-            #...
-        #fi
-    #fi
+    if ! command -v pwsh > /dev/null; then
+        if command -v pacman > /dev/null; then
+            install_powershell_archlinux
+        fi
+    fi
     if ! command -v pwsh > /dev/null; then
         if command -v flatpak > /dev/null; then
             echo "Installing PowerShell via Flatpak..."
@@ -94,6 +102,9 @@ fallback_install_pwsh() {
 }
 
 install_powershell_archlinux() {
+    sudo pacman-key --init
+    sudo pacman-key --populate archlinux
+    sudo pacman -Syu archlinux-keyring --noconfirm
     sudo pacman -Syy --noconfirm
     # Find the exact name of the package (if available in official repos)
     # It's more efficient to install from official repos if available
@@ -135,7 +146,7 @@ install_powershell_archlinux() {
             # Change ownership to tempuser for the build directory
             sudo chown -R "$TEMP_USER:$TEMP_USER" "../powershell-bin"
             
-            echo If you are prompted to enter a password at this point, enter 'temppassword' without the ''
+            echo If you are prompted to enter a password at this point, enter temppassword
             # Attempt to build the package as tempuser
             if ! echo "$TEMP_PASSWORD" | sudo -S -u "$TEMP_USER" makepkg -si --noconfirm; then
                 # If makepkg fails, reset the ownership to root before exiting
@@ -191,6 +202,7 @@ install_powershell_mac_fallback() {
     else
         echo "Unsupported architecture: $ARCH"
         exit 1
+    fi
 
     echo "Downloading $PKG_FILENAME from $PS_PKG_PREFIX... please wait..."
     curl -L -o "$PKG_FILENAME" "$PS_PKG_PREFIX/$PKG_FILENAME"
@@ -233,13 +245,13 @@ install_powershell_mac() {
         # Install Homebrew
         echo "Installing Powershell through Homebrew is recommended (by microsoft themselves)"
         echo "Install HomeBrew now? (y) otherwise attempt to fallback to direct pkg download (n)"
-        if [ $noprompt == false ]
+        if [ $noprompt == false ]; then
             read -p "Enter your choice (y/N): " user_choice
         else
             user_choice = "y"
         fi
 
-        if [ $user_choice == "y" ] | [ $user_choice == "Y"]; then
+        if [ $user_choice == "y" ] || [ $user_choice == "Y"]; then
             echo "Installing HomeBrew... please wait..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> ~/.zprofile
@@ -390,7 +402,7 @@ case "$OS" in
                     echo "In order to install powershell, we must convert you to alma linux through their supported process (recommended)."
                     echo "WARNING: Converting CentOS to AlmaLinux is a significant change and not reversible. This process will change your CentOS distribution to AlmaLinux to continue with the PowerShell installation."
                     echo "Do you want to continue with the conversion?"
-                    if [ $noprompt == false ]
+                    if [ $noprompt == false ]; then
                         read -p "Enter your choice (y/N): " user_choice
                     else
                         user_choice = "y"

@@ -4,7 +4,7 @@ import json
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5.QtGui import QImage
+from qtpy.QtGui import QImage
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict

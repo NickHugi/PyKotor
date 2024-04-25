@@ -3,7 +3,7 @@
   "python.analysis.inlayHints.callArgumentNames": "off",
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.variableTypes": false,
-  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.typeCheckingMode": "off",
   "launch": {
   //  "configurations": [],
     "compounds": [],
@@ -25,6 +25,10 @@
     "./Libraries/PyKotorFont/src",
     "./Libraries/Utility/src",
   ],
+  "remote.WSL.fileWatcher.polling": true,
+  "files.watcherExclude": {
+      "**/.git/**": true
+  },
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.promptToConfigure": true,
   "python.testing.pytestEnabled": false,
@@ -48,20 +52,28 @@
   "python.analysis.diagnosticSeverityOverrides": {
     "reportGeneralTypeIssues": "warning",
     "reportOptionalMemberAccess": "warning", // Ignores issues with defs that can optionally be None.
-    "reportCallIssue": "none",
+    "reportCallIssue": "warning",  // doesn't handle NamedTuple correctly.
     "reportAssignmentType": "warning",
     "reportArgumentType": "warning",
+    "reportPrivateImportUsage": "warning",
   },
-  "mypy-type-checker.args": [
-    "--check-untyped-defs" // Ignores issues with defs that can optionally be None.
-  ],
   "python.analysis.autoFormatStrings": true,
-  "mypy.targets": [
-    "Libraries",
-    "Tools"
-  ],
   "mypy.extraArguments": [
-    "--exclude='./.venv'",
-    "--exclude='tests/results'"
+    "--exclude=./.venv",
+    "--exclude=tests/results",
+    "--check-untyped-defs",
+    "-v",
+    "--explicit-package-bases"
   ],
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/publish_and_test_pykotor.yml"
+  ],
+  "mypy-type-checker.args": [
+    "--check-untyped-defs",
+    "--explicit-package-bases"
+  ],
+  "mypy.runUsingActiveInterpreter": true,
+  "mypy-type-checker.preferDaemon": true,
+  "mypy-type-checker.reportingScope": "workspace",
+  "mypy-type-checker.importStrategy": "fromEnvironment",
 }

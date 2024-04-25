@@ -2,21 +2,23 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QComboBox, QMenu
+import pyperclip
+
+from qtpy import QtCore
+from qtpy.QtWidgets import QComboBox, QMenu
 
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 if TYPE_CHECKING:
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QPoint
+    from qtpy.QtWidgets import QWidget
 
 
 class ComboBox2DA(QComboBox):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
 
         self._sortAlphabetically: bool = False
@@ -33,8 +35,7 @@ class ComboBox2DA(QComboBox):
             row = self.count()
         super().addItem(text, row)
 
-    def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
-                 ignoreBlanks: bool = False):
+    def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True, ignoreBlanks: bool = False):
         self._sortAlphabetically = sortAlphabetically
         self.clear()
 
@@ -60,10 +61,7 @@ class ComboBox2DA(QComboBox):
         self._sortAlphabetically = False
         selected = self.currentData()
 
-        items: list[tuple[Any, str]] = [
-            (self.itemData(index), self.itemText(index))
-            for index in range(self.count())
-        ]
+        items: list[tuple[Any, str]] = [(self.itemData(index), self.itemText(index)) for index in range(self.count())]
         self.clear()
 
         for index, text in sorted(items, key=lambda x: x[0]):
@@ -100,6 +98,7 @@ class ComboBox2DA(QComboBox):
 
     def onContextMenu(self, point: QPoint):
         menu = QMenu(self)
+        menu.addAction(f"Copy 2DA Row Index ({self.currentIndex()}) to clipboard").triggered.connect(lambda: pyperclip.copy(str(self.currentIndex())))
         menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
         menu.addAction("Toggle Sorting").triggered.connect(self.toggleSort)
         menu.popup(self.mapToGlobal(point))

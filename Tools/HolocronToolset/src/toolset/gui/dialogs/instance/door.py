@@ -4,14 +4,16 @@ import math
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QDialog
+import qtpy
+
+from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
+from qtpy.QtWidgets import QColorDialog, QDialog
 
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.git import GITModuleLink
 
 if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QLabel, QWidget
+    from qtpy.QtWidgets import QLabel, QWidget
 
     from pykotor.resource.generics.git import GITDoor
     from toolset.data.installation import HTInstallation
@@ -22,7 +24,16 @@ class DoorDialog(QDialog):
     def __init__(self, parent: QWidget, door: GITDoor, installation: HTInstallation):
         super().__init__(parent)
 
-        from toolset.uic.dialogs.instance.door import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.instance.door import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)

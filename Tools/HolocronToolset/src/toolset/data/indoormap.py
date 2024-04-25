@@ -7,8 +7,8 @@ import math
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -193,7 +193,6 @@ class IndoorMap:
             - Attaches the generated lightmap texture to the corresponding face.
         """
         for i, room in enumerate(self.rooms):
-
             # Set model name
             modelname = f"{self.moduleId}_room{i}"
             self.roomNames[room] = modelname
@@ -349,7 +348,7 @@ class IndoorMap:
         bwm.translate(room.position.x, room.position.y, room.position.z)
         for hookIndex, connection in enumerate(room.hooks):
             dummyIndex: int = room.component.hooks[hookIndex].edge
-            actualIndex: int | None = self.rooms.index(connection) if connection is not None else None
+            actualIndex: int | None = None if connection is None else self.rooms.index(connection)
             self.remap_transitions(bwm, dummyIndex, actualIndex)
         return bwm
 
@@ -431,11 +430,7 @@ class IndoorMap:
                     kit = cRoom.component.kit
                     doorIndex = kit.doors.index(cHook.door)
                     height = altHook.door.height * 100
-                    paddingKey = (
-                        min((i for i in kit.top_padding[doorIndex] if i > height), default=None)
-                        if doorIndex in kit.top_padding
-                        else None
-                    )
+                    paddingKey = min((i for i in kit.top_padding[doorIndex] if i > height), default=None) if doorIndex in kit.top_padding else None
                     if paddingKey is not None:
                         paddingName = f"{self.moduleId}_tpad{paddingCount}"
                         paddingCount += 1
@@ -466,11 +461,7 @@ class IndoorMap:
                     kit: Kit = cRoom.component.kit
                     doorIndex: int = kit.doors.index(cHook.door)
                     width: float = altHook.door.width * 100
-                    paddingKey: int | None = (
-                        min((i for i in kit.side_padding[doorIndex] if i > width), default=None)
-                        if doorIndex in kit.side_padding
-                        else None
-                    )
+                    paddingKey: int | None = min((i for i in kit.side_padding[doorIndex] if i > width), default=None) if doorIndex in kit.side_padding else None
                     if paddingKey is not None:
                         paddingName = f"{self.moduleId}_tpad{paddingCount}"
                         paddingCount += 1
@@ -947,6 +938,7 @@ class IndoorMapRoom:
     def hookPosition(
         self,
         hook: KitComponentHook,
+        *,
         worldOffset: bool = True,
     ) -> Vector3:
         """Calculates the position of a hook relative to the component.

@@ -5,9 +5,9 @@ import math
 from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRect, QRectF, QTimer
-from PyQt5.QtGui import (
+from qtpy import QtCore
+from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
+from qtpy.QtGui import (
     QColor,
     QImage,
     QPainter,
@@ -16,7 +16,7 @@ from PyQt5.QtGui import (
     QPixmap,
     QTransform,
 )
-from PyQt5.QtWidgets import QWidget
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -36,7 +36,7 @@ from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import (
+    from qtpy.QtGui import (
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
@@ -123,32 +123,29 @@ class WalkmeshSelection(Generic[T]):
     def clear(self):
         self._selection.clear()
 
-    def select(self, elements: list[T], clearExisting: bool = True):
+    def select(self, elements: list[T], *, clearExisting: bool = True):
         if clearExisting:
             self._selection.clear()
         self._selection.extend(elements)
 
 
 class WalkmeshRenderer(QWidget):
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyPressed = QtCore.pyqtSignal(object, object)  # mouse keys
-
-    keyReleased = QtCore.pyqtSignal(object, object)  # mouse keys
-
-    instanceHovered = QtCore.pyqtSignal(object)  # instance
-
-    instancePressed = QtCore.pyqtSignal(object)  # instance
+    keyPressed = QtCore.Signal(object, object)  # mouse keys
+    keyReleased = QtCore.Signal(object, object)  # mouse keys
+    instanceHovered = QtCore.Signal(object)  # instance
+    instancePressed = QtCore.Signal(object)  # instance
 
     def __init__(self, parent: QWidget):
         """Initializes the WalkmeshViewer widget.
@@ -378,12 +375,7 @@ class WalkmeshRenderer(QWidget):
         face: BWMFace | None = None
         for walkmesh in self._walkmeshes:
             over: BWMFace | None = walkmesh.faceAt(x, y)
-            if over and (
-                face is None or (
-                    not face.material.walkable()
-                    and over.material.walkable()
-                )
-            ):
+            if over and (face is None or (not face.material.walkable() and over.material.walkable())):
                 face = over
         return 0.0 if face is None else face.determine_z(x, y)
 
@@ -402,7 +394,7 @@ class WalkmeshRenderer(QWidget):
         -------
             The color that represents a particular material.
         """
-        return self.materialColors[material] if material in self.materialColors else self.defaultMaterialColor  # TODO: fix the typing - an int is not the same as a QColor object
+        return self.materialColors.get(material, self.defaultMaterialColor)
 
     def instancesUnderMouse(self) -> list[GITInstance]:
         """Returns a list of GITInstances under the mouse.
@@ -446,46 +438,48 @@ class WalkmeshRenderer(QWidget):
             - Return True if type is not hidden in settings
             - Return None if type is invalid
         """
+        retBool: bool | None = None
         if isinstance(instance, GITCreature):
-            return not self.hideCreatures
-        if isinstance(instance, GITDoor):
-            return not self.hideDoors
-        if isinstance(instance, GITPlaceable):
-            return not self.hidePlaceables
-        if isinstance(instance, GITTrigger):
-            return not self.hideTriggers
-        if isinstance(instance, GITCamera):
-            return not self.hideCameras
-        if isinstance(instance, GITEncounter):
-            return not self.hideEncounters
-        if isinstance(instance, GITSound):
-            return not self.hideSounds
-        if isinstance(instance, GITWaypoint):
-            return not self.hideWaypoints
-        if isinstance(instance, GITStore):
-            return not self.hideStores
-        return None
+            retBool = not self.hideCreatures
+        elif isinstance(instance, GITDoor):
+            retBool = not self.hideDoors
+        elif isinstance(instance, GITPlaceable):
+            retBool = not self.hidePlaceables
+        elif isinstance(instance, GITTrigger):
+            retBool = not self.hideTriggers
+        elif isinstance(instance, GITCamera):
+            retBool = not self.hideCameras
+        elif isinstance(instance, GITEncounter):
+            retBool = not self.hideEncounters
+        elif isinstance(instance, GITSound):
+            retBool = not self.hideSounds
+        elif isinstance(instance, GITWaypoint):
+            retBool = not self.hideWaypoints
+        elif isinstance(instance, GITStore):
+            retBool = not self.hideStores
+        return retBool
 
     def instancePixmap(self, instance: GITInstance) -> QPixmap | None:
+        retPixmap: QPixmap | None = None
         if isinstance(instance, GITCreature):
-            return self._pixmapCreature
+            retPixmap = self._pixmapCreature
         if isinstance(instance, GITDoor):
-            return self._pixmapDoor
+            retPixmap = self._pixmapDoor
         if isinstance(instance, GITPlaceable):
-            return self._pixmapPlaceable
+            retPixmap = self._pixmapPlaceable
         if isinstance(instance, GITTrigger):
-            return self._pixmapTrigger
+            retPixmap = self._pixmapTrigger
         if isinstance(instance, GITCamera):
-            return self._pixmapCamera
+            retPixmap = self._pixmapCamera
         if isinstance(instance, GITEncounter):
-            return self._pixmapEncounter
+            retPixmap = self._pixmapEncounter
         if isinstance(instance, GITSound):
-            return self._pixmapSound
+            retPixmap = self._pixmapSound
         if isinstance(instance, GITWaypoint):
-            return self._pixmapWaypoint
+            retPixmap = self._pixmapWaypoint
         if isinstance(instance, GITStore):
-            return self._pixmapMerchant
-        return None
+            retPixmap = self._pixmapMerchant
+        return retPixmap
 
     def centerCamera(self):
         """Centers the camera on the bounding box of the world.
@@ -507,7 +501,7 @@ class WalkmeshRenderer(QWidget):
 
         # If the GIT is being loaded directly after the window opens the widget won't have appropriately resized itself,
         # so we check for this and set the sizes to what it should be by default.
-        if self.width() == 100:
+        if self.width() == 100:  # noqa: PLR2004
             screen_w = 520
             screen_h = 507
         else:
@@ -644,14 +638,10 @@ class WalkmeshRenderer(QWidget):
             rotation = axis_to_rotation[self._are.north_axis]
             rads = math.radians(-rotation)
 
-            map_point_1_x = ((self._are.map_point_1.x - 0.5) * math.cos(rads)) - (
-                        (self._are.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
-            map_point_1_y = ((self._are.map_point_1.x - 0.5) * math.sin(rads)) + (
-                        (self._are.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
-            map_point_2_x = ((self._are.map_point_2.x - 0.5) * math.cos(rads)) - (
-                        (self._are.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
-            map_point_2_y = ((self._are.map_point_2.x - 0.5) * math.sin(rads)) + (
-                        (self._are.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_1_x = ((self._are.map_point_1.x - 0.5) * math.cos(rads)) - ((self._are.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_1_y = ((self._are.map_point_1.x - 0.5) * math.sin(rads)) + ((self._are.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_2_x = ((self._are.map_point_2.x - 0.5) * math.cos(rads)) - ((self._are.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_2_y = ((self._are.map_point_2.x - 0.5) * math.sin(rads)) + ((self._are.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
 
             world_point_1_x = self._are.world_point_1.x
             world_point_1_y = self._are.world_point_1.y
@@ -681,15 +671,7 @@ class WalkmeshRenderer(QWidget):
             targetRect = QRectF(QPointF(imageX, imageY), QPointF(imageX + fullWidthWU, imageY + fullHeightWU))
             painter.drawImage(targetRect, rotated)
 
-        pen: QPen = (
-            QPen(QtCore.Qt.NoPen)
-            if self.hideWalkmeshEdges
-            else QPen(
-                QColor(10, 10, 10, 120),
-                1 / self.camera.zoom(),
-                QtCore.Qt.SolidLine
-            )
-        )
+        pen: QPen = QPen(QtCore.Qt.NoPen) if self.hideWalkmeshEdges else QPen(QColor(10, 10, 10, 120), 1 / self.camera.zoom(), QtCore.Qt.SolidLine)
         painter.setPen(pen)
         for face, path in self._walkmeshFaceCache.items():
             painter.setBrush(self.materialColor(face.material))
@@ -908,4 +890,5 @@ class WalkmeshRenderer(QWidget):
         self._keysDown.discard(e.key())
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
+
     # endregion

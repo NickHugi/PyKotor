@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -17,21 +17,23 @@ absolute_file_path = pathlib.Path(__file__).resolve()
 TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
-    pykotor_path = absolute_file_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+
+    pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
-    gl_path = absolute_file_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    gl_path = absolute_file_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
     if gl_path.exists():
         add_sys_path(gl_path.parent)
-    utility_path = absolute_file_path.parents[6] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[4] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
         add_sys_path(utility_path.parent)
-    toolset_path = absolute_file_path.parents[3] / "toolset"
+    toolset_path = absolute_file_path.parents[4] / "Tools" / "HolocronToolset" / "src" / "toolset"
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
@@ -50,15 +52,17 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class JRLEditorTest(TestCase):
     @classmethod
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.jrl import JRLEditor
+
         cls.JRLEditor = JRLEditor
         from toolset.data.installation import HTInstallation
+
         # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
         cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
@@ -74,7 +78,7 @@ class JRLEditorTest(TestCase):
         self.log_messages.append("\t".join(args))
 
     def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "global.jrl"
+        filepath = TESTS_FILES_PATH / "../toolset_tests/files/global.jrl"
 
         data = BinaryReader.load_file(filepath)
         old = read_gff(data)

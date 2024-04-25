@@ -50,7 +50,14 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
-              <widget class="QSpinBox" name="jumpSpinbox"/>
+              <widget class="QSpinBox" name="jumpSpinbox">
+               <property name="minimum">
+                <number>-2147483648</number>
+               </property>
+               <property name="maximum">
+                <number>2147483647</number>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="jumpButton">
@@ -88,7 +95,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QWidget" name="layoutWidget1">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QPlainTextEdit" name="textEdit">

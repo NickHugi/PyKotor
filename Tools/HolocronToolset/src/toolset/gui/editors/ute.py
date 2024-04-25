@@ -3,7 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
+import qtpy
+
+from qtpy.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -16,14 +18,18 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTEEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize the trigger editor window.
 
         Args:
@@ -42,7 +48,17 @@ class UTEEditor(Editor):
         supported: list[ResourceType] = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.ute import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -73,7 +89,10 @@ class UTEEditor(Editor):
         self.ui.addCreatureButton.clicked.connect(self.addCreature)
         self.ui.removeCreatureButton.clicked.connect(self.removeSelectedCreature)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setupInstallation(
+        self,
+        installation: HTInstallation,
+    ):
         """Sets up the installation details in the UI.
 
         Args:
@@ -99,7 +118,13 @@ class UTEEditor(Editor):
         self.ui.factionSelect.clear()
         self.ui.difficultySelect.setItems(factions.get_column("label"))
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         ute = read_ute(data)
@@ -247,7 +272,12 @@ class UTEEditor(Editor):
         else:
             self._setInfiniteRespawnMain(val=0, enabled=True)
 
-    def _setInfiniteRespawnMain(self, val: int, enabled: bool):
+    def _setInfiniteRespawnMain(
+        self,
+        val: int,
+        *,
+        enabled: bool,
+    ):
         self.ui.respawnCountSpin.setMinimum(val)
         self.ui.respawnCountSpin.setValue(val)
         self.ui.respawnCountSpin.setEnabled(enabled)

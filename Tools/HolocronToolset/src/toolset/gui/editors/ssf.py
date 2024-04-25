@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QFileDialog
+import qtpy
+
+from qtpy.QtWidgets import QFileDialog
 
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
@@ -12,7 +14,7 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QLineEdit, QWidget
+    from qtpy.QtWidgets import QLineEdit, QWidget
 
     from pykotor.extract.installation import Installation
     from pykotor.extract.talktable import StringResult
@@ -40,7 +42,16 @@ class SSFEditor(Editor):
 
         self._talktable: TalkTable | None = installation.talktable() if installation else None
 
-        from toolset.uic.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.ssf import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

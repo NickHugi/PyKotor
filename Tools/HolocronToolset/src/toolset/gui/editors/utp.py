@@ -4,7 +4,9 @@ from contextlib import suppress
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox
+import qtpy
+
+from qtpy.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -25,8 +27,7 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtWidgets import QMainWindow, QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -38,7 +39,7 @@ class UTPEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QWidget | QObject | None = None,
+        mainWindow: QWidget | QMainWindow | None = None,
     ):
         """Initialize Placeable Editor.
 
@@ -59,13 +60,23 @@ class UTPEditor(Editor):
             7. Update 3D preview and call new() to initialize editor.
         """
         supported = [ResourceType.UTP]
-        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
+        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._placeables2DA = installation.htGetCache2DA("placeables")
         self._utp = UTP()
 
-        from toolset.uic.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utp import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -131,7 +142,13 @@ class UTPEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         utp = read_utp(data)
@@ -219,7 +236,7 @@ class UTPEditor(Editor):
         Returns:
         -------
             data: The built UTP data
-            b"": Empty byte string
+            mdx b"": Empty byte string
 
         Builds a UTP by:
             - Setting UTP properties like name, tag, scripts from UI elements
@@ -323,17 +340,14 @@ class UTPEditor(Editor):
         data, filepath = None, None
 
         if resname == "":
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor",
-                        "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox: int = QMessageBox(QMessageBox.Information, "DLG file not found",
-                                 "Do you wish to create a file in the override?",
-                                 QMessageBox.Yes | QMessageBox.No).exec_()
-            if QMessageBox.Yes == msgbox:
+            msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+            if QMessageBox.StandardButton.Yes == msgbox:
                 data = bytearray()
 
                 write_gff(dismantle_dlg(DLG()), data)
@@ -361,14 +375,20 @@ class UTPEditor(Editor):
 
         with suppress(Exception):
             root = Module.get_root(self._filepath)
-            moduleNames: list[str] = [
-                path for path in self._installation.module_names()
-                if root in path and path != self._filepath
-            ]
+            moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
             capsules.extend(newCapsules)
 
-        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utp.inventory, {}, False, True)
+        inventoryEditor = InventoryEditor(
+            self,
+            self._installation,
+            capsules,
+            [],
+            self._utp.inventory,
+            {},
+            droid=False,
+            hide_equipment=True,
+        )
         if inventoryEditor.exec_():
             self._utp.inventory = inventoryEditor.inventory
             self.updateItemCount()

@@ -11,6 +11,8 @@ from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
@@ -168,7 +170,7 @@ class DLG:
         for link in links:
             entry: DLGNode = link.node
             if entry not in seen_entries:  # sourcery skip: class-extract-method
-                assert isinstance(entry, DLGEntry)  # noqa: S101
+                assert isinstance(entry, DLGEntry), f"{type(entry).__name__}: {entry}"  # noqa: S101
                 entries.append(entry)
                 seen_entries.append(entry)
                 for reply_link in entry.links:
@@ -220,7 +222,7 @@ class DLG:
         for link in links:
             reply = link.node
             if reply not in seen_replies:  # sourcery skip: class-extract-method
-                assert isinstance(reply, DLGReply)  # noqa: S101
+                assert isinstance(reply, DLGReply), f"{type(reply).__name__}: {reply}"  # noqa: S101
                 replies.append(reply)
                 seen_replies.append(reply)
                 for entry_link in reply.links:
@@ -466,7 +468,7 @@ class DLGStunt:
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.
-    """  # noqa: D212
+    """  # noqa: D212, D415
 
     def __init__(
         self,
@@ -495,6 +497,7 @@ def construct_dlg(
         - Populates DLG object with nodes, links, and metadata
         - Loops through GFF lists to populate all nodes and links.
     """
+
     def construct_node(
         gff_struct: GFFStruct,
         node: DLGNode,
@@ -733,6 +736,7 @@ def dismantle_dlg(
         - dismantle_node handles populating node fields
         - dismantle_link handles populating link fields.
     """
+
     def dismantle_link(
         gff_struct: GFFStruct,
         link: DLGLink,
@@ -759,7 +763,7 @@ def dismantle_dlg(
             - If game is K2, sets additional link properties on the GFFStruct.
         """
         # Indexes the prior dialog
-        gff_struct.set_uint32("Index", link.link_index if link.link_index != -1 else nodes.index(link.node))
+        gff_struct.set_uint32("Index", nodes.index(link.node) if link.link_index == -1 else link.link_index)
 
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
@@ -786,7 +790,7 @@ def dismantle_dlg(
         gff_struct: GFFStruct,
         node: DLGNode,
         nodes: list,
-        list_name: str,
+        list_name: Literal["EntriesList", "RepliesList"],
     ):
         """Disassembles a DLGNode into a GFFStruct.
 
@@ -807,7 +811,7 @@ def dismantle_dlg(
         gff_struct.set_string("Listener", node.listener)
         gff_struct.set_resref("VO_ResRef", node.vo_resref)
         gff_struct.set_resref("Script", node.script1)
-        gff_struct.set_uint32("Delay", 4294967295 if node.delay == -1 else node.delay)
+        gff_struct.set_uint32("Delay", 0xFFFFFFFF if node.delay == -1 else node.delay)
         gff_struct.set_string("Comment", node.comment)
         gff_struct.set_resref("Sound", node.sound)
         gff_struct.set_string("Quest", node.quest)
@@ -827,7 +831,7 @@ def dismantle_dlg(
             anim_struct.set_uint16("Animation", anim.animation_id)
             anim_struct.set_string("Participant", anim.participant)
 
-        if node.quest_entry:
+        if node.quest.strip() and node.quest_entry:
             gff_struct.set_uint32("QuestEntry", node.quest_entry)
         if node.fade_delay is not None:
             gff_struct.set_single("FadeDelay", node.fade_delay)
@@ -869,7 +873,6 @@ def dismantle_dlg(
             gff_struct.set_int32("NodeUnskippable", node.unskippable)
             gff_struct.set_int32("PostProcNode", node.post_proc_node)
             gff_struct.set_int32("RecordNoVOOverri", node.record_no_vo_override)
-            gff_struct.set_int32("RecordNoOverri", node.record_no_vo_override)
             gff_struct.set_int32("RecordVO", node.record_vo)
             gff_struct.set_int32("VOTextChanged", node.vo_text_changed)
 
@@ -941,6 +944,7 @@ def dismantle_dlg(
         entry: DLGEntry = all_entries[struct.struct_id]
         struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index
         return struct.struct_id
+
     def sort_reply(struct: GFFStruct) -> int:
         reply: DLGReply = all_replies[struct.struct_id]
         struct.struct_id = struct.struct_id if reply.list_index == -1 else reply.list_index

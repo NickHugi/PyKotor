@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView
+import qtpy
+
+from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QMenu, QShortcut, QTreeView
 
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
@@ -15,9 +17,14 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
+<<<<<<< HEAD
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtCore import QItemSelection, QPoint
     from PyQt5.QtWidgets import QWidget
+=======
+    from qtpy.QtCore import QItemSelection, QPoint
+    from qtpy.QtWidgets import QWidget
+>>>>>>> NickHugi/master
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
@@ -55,7 +62,16 @@ class JRLEditor(Editor):
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.jrl import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)

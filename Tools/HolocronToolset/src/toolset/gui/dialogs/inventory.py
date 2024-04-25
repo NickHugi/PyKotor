@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSize, QSortFilterProxyModel, QThread
-from PyQt5.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import (
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QSize, QSortFilterProxyModel, QThread
+from qtpy.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import (
     QAction,
     QDialog,
     QFrame,
@@ -20,7 +22,6 @@ from PyQt5.QtWidgets import (
 from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tlk import read_tlk
 from pykotor.resource.generics.uti import read_uti
@@ -33,21 +34,18 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QModelIndex, QPoint
-    from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-    from PyQt5.QtWidgets import (
-        QLabel,
-        QWidget,
-    )
+    from qtpy.QtCore import QModelIndex, QPoint
+    from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+    from qtpy.QtWidgets import QLabel, QWidget
 
-    from pykotor.extract.file import ResourceResult
+    from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.uti import UTI
 
-_RESNAME_ROLE = QtCore.Qt.UserRole + 1
-_FILEPATH_ROLE = QtCore.Qt.UserRole + 2
-_SLOTS_ROLE = QtCore.Qt.UserRole + 3
+_RESNAME_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_FILEPATH_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
+_SLOTS_ROLE = QtCore.Qt.ItemDataRole.UserRole + 3
 
 
 class SlotMapping(NamedTuple):
@@ -57,9 +55,19 @@ class SlotMapping(NamedTuple):
 
 
 class InventoryEditor(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule], folders: list[str],
-                 inventory: list[InventoryItem], equipment: dict[EquipmentSlot, InventoryItem], droid: bool = False,
-                 hide_equipment: bool = False, is_store: bool = False):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        capsules: list[Capsule],
+        folders: list[str],
+        inventory: list[InventoryItem],
+        equipment: dict[EquipmentSlot, InventoryItem],
+        *,
+        droid: bool = False,
+        hide_equipment: bool = False,
+        is_store: bool = False,
+    ):
         """Initializes the inventory dialog.
 
         Args:
@@ -85,18 +93,28 @@ class InventoryEditor(QDialog):
         """
         super().__init__(parent)
 
-        from toolset.uic.dialogs.inventory import Ui_Dialog  # pylint: disable=C0415  # noqa: PLC0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.contentsTable.is_store = is_store
 
         self.ui.coreTree.setSortingEnabled(True)
-        self.ui.coreTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
+        self.ui.coreTree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
         self.ui.modulesTree.setSortingEnabled(True)
-        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
+        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
         self.ui.overrideTree.setSortingEnabled(True)
-        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
+        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.SortOrder.DescendingOrder)
         self.ui.coreSearchEdit.textEdited.connect(self.doSearch)
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
@@ -188,7 +206,7 @@ class InventoryEditor(QDialog):
         super().accept()
         self.inventory = []
         for i in range(self.ui.contentsTable.rowCount()):
-            tableItem: ItemContainer = self.ui.contentsTable.item(i, 1)  # FIXME: QTableWidgetItem | None cannot be assigned to ItemContainer, needs a .data(role) call.
+            tableItem: ItemContainer = self.ui.contentsTable.item(i, 1)  # FIXME(th3w1zard1): QTableWidgetItem | None cannot be assigned to ItemContainer, needs a .data(role) call.
             self.inventory.append(InventoryItem(ResRef(tableItem.resname), tableItem.droppable, tableItem.infinite))
 
         self.equipment = {}
@@ -224,17 +242,21 @@ class InventoryEditor(QDialog):
                 self._installation.cacheCoreItems = coreModel
             else:
                 coreModel = self._installation.cacheCoreItems
-            self.ui.coreTree.setModel(coreModel.proxyModel())  # FIXME: coreModel.proxyModel() needs a .data(role) call.
+            self.ui.coreTree.setModel(coreModel.proxyModel())  # FIXME(th3w1zard1): coreModel.proxyModel() needs a .data(role) call.
 
             self.ui.modulesTree.setModel(itemBuilderDialog.modulesModel.proxyModel())
             self.ui.overrideTree.setModel(itemBuilderDialog.overrideModel.proxyModel())
         else:
             self.reject()
 
-    def getItemImage(self, uti: UTI | None) -> QPixmap:
+    def getItemImage(self, uti: UTI) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[str, str, UTI]:
+    def getItem(
+        self,
+        resname: str,
+        filepath: os.PathLike | str,
+    ) -> tuple[str, str, UTI]:
         """Gets item resource data from filepath or installation.
 
         Args:
@@ -275,7 +297,13 @@ class InventoryEditor(QDialog):
             uti = read_uti(BinaryReader.load_file(filepath))
         return str(filepath), name, uti
 
-    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = ""):
+    def setEquipment(
+        self,
+        slot: EquipmentSlot,
+        resname: str,
+        filepath: str = "",
+        name: str = "",
+    ):
         """Sets equipment in a given slot.
 
         Args:
@@ -316,7 +344,11 @@ class InventoryEditor(QDialog):
         self.ui.modulesTree.model().setFilterFixedString(text)
         self.ui.overrideTree.model().setFilterFixedString(text)
 
-    def openItemContextMenu(self, widget: DropFrame | ItemContainer, point: QPoint):
+    def openItemContextMenu(
+        self,
+        widget: DropFrame | ItemContainer,
+        point: QPoint,
+    ):
         """Opens an item context menu at a given point.
 
         Args:
@@ -360,9 +392,10 @@ class InventoryEditor(QDialog):
             menu.addAction(noItemAction)
 
         menu.addSeparator()
-        setItemAction = QAction("Set Item ResRef")
-        setItemAction.triggered.connect(lambda: self.promptSetItemResRefDialog(widget))
-        menu.addAction(setItemAction)
+        # TODO:
+        #setItemAction = QAction("Set Item ResRef")
+        #setItemAction.triggered.connect(lambda: self.promptSetItemResRefDialog(widget))
+        #menu.addAction(setItemAction)
 
         menu.exec_(widget.mapToGlobal(point))
 
@@ -417,12 +450,12 @@ class ItemContainer:
 
 
 class DropFrame(ItemContainer, QFrame):
-    itemDropped = QtCore.pyqtSignal(object, object, object)
+    itemDropped = QtCore.Signal(object, object, object)
 
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget | None):
         QFrame.__init__(self)
         ItemContainer.__init__(self)
-        self.setFrameShape(QFrame.Box)
+        self.setFrameShape(QFrame.Shape.Box)
         self.setAcceptDrops(True)
         self.slot: EquipmentSlot = EquipmentSlot.HIDE
 
@@ -441,14 +474,16 @@ class DropFrame(ItemContainer, QFrame):
             - Get item from source model index
             - Accept drag if item slots match receiver slot.
         """
-        if isinstance(event.source(), QTreeView):
-            tree: QTreeView | None = event.source()
-            proxyModel: QSortFilterProxyModel = tree.model()
-            index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            model: ItemModel = proxyModel.sourceModel()
-            item: QStandardItem | None = model.itemFromIndex(index)
-            if item.data(_SLOTS_ROLE) & self.slot.value:
-                event.accept()
+        if not isinstance(event.source(), QTreeView):
+            return
+        tree: QTreeView | None = event.source()
+        proxyModel: QSortFilterProxyModel = tree.model()
+        index = proxyModel.mapToSource(tree.selectedIndexes()[0])
+        model: ItemModel = proxyModel.sourceModel()
+        item: QStandardItem | None = model.itemFromIndex(index)
+        if not item.data(_SLOTS_ROLE) & self.slot.value:
+            return
+        event.accept()
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         """Moves an item between slots if the drag and drop events match.
@@ -466,14 +501,16 @@ class DropFrame(ItemContainer, QFrame):
             - Check if item's slots match the target slot
             - Accept the drag move event if slots match.
         """
-        if isinstance(event.source(), QTreeView):
-            tree: QTreeView = event.source()
-            proxyModel: QSortFilterProxyModel = tree.model()
-            model: ItemModel = proxyModel.sourceModel()
-            index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            item: QStandardItem | None = model.itemFromIndex(index)
-            if item.data(_SLOTS_ROLE) & self.slot.value:
-                event.accept()
+        if not isinstance(event.source(), QTreeView):
+            return
+        tree: QTreeView = event.source()
+        proxyModel: QSortFilterProxyModel = tree.model()
+        model: ItemModel = proxyModel.sourceModel()
+        index = proxyModel.mapToSource(tree.selectedIndexes()[0])
+        item: QStandardItem | None = model.itemFromIndex(index)
+        if not item.data(_SLOTS_ROLE) & self.slot.value:
+            return
+        event.accept()
 
     def dropEvent(self, event: QDropEvent):
         """Handles dropped items from a tree view onto the widget.
@@ -494,12 +531,12 @@ class DropFrame(ItemContainer, QFrame):
             - Emits a signal with the new item details.
         """
         if isinstance(event.source(), QTreeView):
-            event.setDropAction(QtCore.Qt.CopyAction)
+            event.setDropAction(QtCore.Qt.DropAction.CopyAction)
 
             tree: QTreeView | None = event.source()  # type: ignore[]
             proxyModel: QSortFilterProxyModel = tree.model()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            model: ItemModel | None = proxyModel.sourceModel()  # FIXME: needs a .data(role) call
+            model: ItemModel | None = proxyModel.sourceModel()  # FIXME(th3w1zard1): needs a .data(role) call
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 event.accept()
@@ -521,7 +558,12 @@ class InventoryTable(QTableWidget):
         self.customContextMenuRequested.connect(self.openContextMenu)
         self.is_store: bool = False
 
-    def addItem(self, resname: str, droppable: bool, infinite: bool):
+    def addItem(
+        self,
+        resname: str,
+        droppable: bool,
+        infinite: bool,
+    ):
         """Adds an item to the inventory table.
 
         Args:
@@ -543,7 +585,7 @@ class InventoryTable(QTableWidget):
         filepath, name, uti = self.window().getItem(resname, "")
         iconItem: QTableWidgetItem = self._set_uti(uti)
         nameItem = QTableWidgetItem(name)
-        nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
+        nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         resnameItem = InventoryTableResnameItem(resname, filepath, name, droppable, infinite)
         self._set_row(rowID, iconItem, resnameItem, nameItem)
 
@@ -563,7 +605,7 @@ class InventoryTable(QTableWidget):
             - Populate row with icon, resname and name from dropped item.
         """
         if isinstance(event.source(), QTreeView):
-            event.setDropAction(QtCore.Qt.CopyAction)
+            event.setDropAction(QtCore.Qt.DropAction.CopyAction)
 
             tree: QTreeView = event.source()
             proxyModel: QSortFilterProxyModel = tree.model()
@@ -576,11 +618,17 @@ class InventoryTable(QTableWidget):
             filepath, name, uti = self.window().getItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE))
             iconItem: QTableWidgetItem = self._set_uti(uti)
             nameItem = QTableWidgetItem(item.text())
-            nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
+            nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
             self._set_row(rowID, iconItem, resnameItem, nameItem)
 
-    def _set_row(self, rowID, iconItem, resnameItem, nameItem):
+    def _set_row(
+        self,
+        rowID: int,
+        iconItem: QTableWidgetItem,
+        resnameItem: InventoryTableResnameItem,
+        nameItem: QTableWidgetItem,
+    ):
         self.setItem(rowID, 0, iconItem)
         self.setItem(rowID, 1, resnameItem)
         self.setItem(rowID, 2, nameItem)
@@ -589,7 +637,7 @@ class InventoryTable(QTableWidget):
         pixmap = self.window().getItemImage(uti)
         result = QTableWidgetItem(QIcon(pixmap), "")
         result.setSizeHint(QSize(48, 48))
-        result.setFlags(result.flags() ^ QtCore.Qt.ItemIsEditable)
+        result.setFlags(result.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
         return result
 
     def resnameChanged(self, tableItem: QTableWidgetItem):
@@ -614,7 +662,7 @@ class InventoryTable(QTableWidget):
             tableItem.setItem(tableItem.text(), filepath, name, tableItem.droppable, tableItem.infinite)
             self.item(tableItem.row(), 0).setIcon(icon)
             nameItem = QTableWidgetItem(name)
-            nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
+            nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             self.setItem(tableItem.row(), 2, nameItem)
 
     def openContextMenu(self, point: QPoint):
@@ -660,7 +708,14 @@ class InventoryTable(QTableWidget):
 
 
 class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
-    def __init__(self, resname: str, filepath: str, name: str, droppable: bool, infinite: bool):
+    def __init__(
+        self,
+        resname: str,
+        filepath: str,
+        name: str,
+        droppable: bool,
+        infinite: bool,
+    ):
         ItemContainer.__init__(self, droppable, infinite)
         QTableWidgetItem.__init__(self, resname)
         self.setItem(resname, filepath, name, droppable, infinite)
@@ -669,10 +724,15 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
         self.tableWidget().removeRow(self.row())
 
 
-class ItemBuilderDialog(QDialog):
+class ItemBuilderDialog(QDialog):  # FIXME(th3w1zard1): There is UI code used in this builder!!! Should only manage UI code in main thread.
     """Popup dialog responsible for extracting a list of resources from the game files."""
 
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule]):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        capsules: list[Capsule],
+    ):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -687,8 +747,8 @@ class ItemBuilderDialog(QDialog):
         self.setWindowTitle("Building Item Lists...")
 
         self.coreModel = ItemModel(installation.mainWindow)
-        self.modulesModel = ItemModel(self.parent())
-        self.overrideModel = ItemModel(self.parent())
+        self.modulesModel = ItemModel(parent)
+        self.overrideModel = ItemModel(parent)
         self._tlk: TLK = read_tlk(CaseAwarePath(installation.path(), "dialog.tlk"))
         self._installation: HTInstallation = installation
         self._capsules: list[Capsule] = capsules
@@ -700,15 +760,15 @@ class ItemBuilderDialog(QDialog):
 
     def utiLoaded(self, uti: UTI, result: ResourceResult):
         baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        name = self._installation.string(uti.name, result.resname) if uti is not None else result.resname
+        name = result.resname if uti is None else self._installation.string(uti.name, result.resname)
 
         # Split category by base item:
-        # TODO: What is this?
+        # TODO(th3w1zard1): What is this for and why is it commented out?
         #  categoryNameID = baseitems.get_row(uti.base_item).get_integer("name")
         #  categoryLabel = baseitems.get_cell(uti.base_item, "label")
         #  category = self._tlk.get(categoryNameID).text if self._tlk.get(categoryNameID) is not None else categoryLabel
 
-        slots: int = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else 0
+        slots: int = 0 if uti is None else baseitems.get_row(uti.base_item).get_integer("equipableslots", 0)
         category: str = self.getCategory(uti)
 
         if result.filepath.suffix.lower() in {".bif", ".key"}:
@@ -738,20 +798,22 @@ class ItemBuilderDialog(QDialog):
             - Return category based on first matching slot
             - Return default categories if no slots match.
         """
-        baseitems: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        slots: int = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else -1
-        droid: bool = baseitems.get_row(uti.base_item).get_integer("droidorhuman", 0) == 2 if uti is not None else False
+        if uti is None:
+            slots: int = -1
+            droid: bool = False
+        else:
+            baseitems: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+            slots = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0)
+            droid = baseitems.get_row(uti.base_item).get_integer("droidorhuman", 0) == 2
 
         if slots & (EquipmentSlot.CLAW1.value | EquipmentSlot.CLAW2.value | EquipmentSlot.CLAW3.value):
             return "Creature Claw"
         if slots & EquipmentSlot.HEAD.value:
             return "Droid Sensors" if droid else "Headgear"
-        if slots & EquipmentSlot.IMPLANT.value and not droid:
-            return "Implants"
+        if slots & EquipmentSlot.IMPLANT.value:
+            return "Droid Utilities" if droid else "Implants"
         if slots & EquipmentSlot.GAUNTLET.value and not droid:
             return "Gauntlets"
-        if slots & EquipmentSlot.IMPLANT.value and droid:  # is the check for 'droid' unnecessary here?
-            return "Droid Utilities"
         if slots & EquipmentSlot.LEFT_ARM.value:
             return "Droid Special Weapons" if droid else "Shields"
         if slots & EquipmentSlot.ARMOR.value:
@@ -770,8 +832,8 @@ class ItemBuilderDialog(QDialog):
 
 
 class ItemBuilderWorker(QThread):
-    utiLoaded = QtCore.pyqtSignal(object, object)
-    finished = QtCore.pyqtSignal()
+    utiLoaded = QtCore.Signal(object, object)
+    finished = QtCore.Signal()
 
     def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__()
@@ -796,32 +858,27 @@ class ItemBuilderWorker(QThread):
         """
         queries: list[ResourceIdentifier] = []
         if self._installation.cacheCoreItems is None:
-            queries.extend([ResourceIdentifier(resource.resname(), resource.restype())
-                            for resource in self._installation.chitin_resources()
-                            if resource.restype() == ResourceType.UTI])
+            queries.extend(
+                resource.identifier()
+                for resource in self._installation.chitin_resources() if resource.restype() == ResourceType.UTI
+            )
         queries.extend(
-            ResourceIdentifier(resource.resname(), resource.restype())
-            for resource in self._installation.override_resources()
-            if resource.restype() == ResourceType.UTI
+            resource.identifier()
+            for resource in self._installation.override_resources() if resource.restype() == ResourceType.UTI
         )
         for capsule in self._capsules:
             queries.extend(
-                ResourceIdentifier(resource.resname(), resource.restype())
-                for resource in capsule
-                if resource.restype() == ResourceType.UTI
+                resource.identifier()
+                for resource in capsule if resource.restype() == ResourceType.UTI
             )
         results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(
             queries,
-            [
-                SearchLocation.OVERRIDE,
-                SearchLocation.CHITIN,
-                SearchLocation.CUSTOM_MODULES
-            ],
+            [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
             capsules=self._capsules,
         )
         for result in results.values():
             uti: UTI | None = None
-            try:  # FIXME
+            try:  # FIXME(th3w1zard1): this section seems to crash often.
                 uti = read_uti(result.data)
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 print(format_exception_with_variables(e, message="This exception has been suppressed but needs to be fixed."))
@@ -853,7 +910,14 @@ class ItemModel(QStandardItemModel):
             self.appendRow(categoryItem)
         return self._categoryItems[category]
 
-    def addItem(self, resname: str, category: str, filepath: os.PathLike | str, name: str, slots: int):
+    def addItem(
+        self,
+        resname: str,
+        category: str,
+        filepath: os.PathLike | str,
+        name: str,
+        slots: int,
+    ):
         """Adds an item to the resource list.
 
         Args:
@@ -887,6 +951,7 @@ class SetItemResRefDialog(QDialog):
         super().__init__(parent)
 
         from editors import ui_setitemresref  # TODO: ??
+
         self.ui = ui_setitemresref.Ui_Dialog()
         self.ui.setupUi(self)
 

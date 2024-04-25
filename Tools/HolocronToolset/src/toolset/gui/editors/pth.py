@@ -6,10 +6,11 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
 import pyperclip
+import qtpy
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -28,8 +29,8 @@ if TYPE_CHECKING:
 
     from collections.abc import Callable
 
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
 
     from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -86,9 +87,7 @@ def status_bar_decorator(func):
         editor = self if isinstance(self, PTHEditor) else self.editor
         try:
             editor.stdout.updateStatusBar(func_call_repr)
-            result = func(self, *args, **kwargs)
-            # Update the status bar to show the function call
-            return result
+            return func(self, *args, **kwargs)
         except Exception as e:
             traceback.print_exc()
             error_message = str(universal_simplify_exception(e))
@@ -100,6 +99,7 @@ def status_bar_decorator(func):
 
 def auto_decorate_methods(decorator: Callable[..., Any]) -> Callable[..., Any]:
     """Class decorator to automatically apply a decorator to all methods."""
+
     def class_decorator(cls):
         # Iterate over all attributes of cls
         for attr_name, attr_value in cls.__dict__.items():
@@ -108,6 +108,7 @@ def auto_decorate_methods(decorator: Callable[..., Any]) -> Callable[..., Any]:
                 # Wrap the method with the decorator
                 setattr(cls, attr_name, decorator(attr_value))
         return cls
+
     return class_decorator
 
 
@@ -118,7 +119,17 @@ class PTHEditor(Editor):
         self.setupStatusBar()
         self.stdout = CustomStdout(self)
 
-        from toolset.uic.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.pth import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -129,7 +140,7 @@ class PTHEditor(Editor):
 
         self.settings = GITSettings()
 
-        def intColorToQColor(num_color) -> QColor:
+        def intColorToQColor(num_color: int) -> QColor:
             color = Color.from_rgba_integer(num_color)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
@@ -202,16 +213,11 @@ class PTHEditor(Editor):
     ):
         # Update the text of each label
         try:
-            self._core_update_status_bar(
-                left_status, center_status, right_status
-            )
+            self._core_update_status_bar(left_status, center_status, right_status)
         except RuntimeError:  # wrapped C/C++ object of type QLabel has been deleted
             self.setupStatusBar()
-            self._core_update_status_bar(
-                left_status, center_status, right_status
-            )
+            self._core_update_status_bar(left_status, center_status, right_status)
 
-    # TODO Rename this here and in `updateStatusBar`
     def _core_update_status_bar(self, left_status, center_status, right_status):
         if left_status and left_status.strip():
             self.leftLabel.setText(left_status)
@@ -369,18 +375,19 @@ class PTHEditor(Editor):
         self._controls.onKeyboardPressed(buttons, keys)
 
     @status_bar_decorator
-    def keyPressEvent(self, e: QKeyEvent | None):
+    def keyPressEvent(self, e: QKeyEvent):
         print(f"keyPressEvent(e={e!r})", file=self.stdout)
         if e is None:
             return
         self.ui.renderArea.keyPressEvent(e)
 
     @status_bar_decorator
-    def keyReleaseEvent(self, e: QKeyEvent | None):
+    def keyReleaseEvent(self, e: QKeyEvent):
         print(f"keyReleaseEvent(e={e!r})", file=self.stdout)
         if e is None:
             return
         self.ui.renderArea.keyReleaseEvent(e)
+
     # endregion
 
 
@@ -433,8 +440,7 @@ class PTHControlScheme:
             self.editor.selectNodeUnderMouse()
 
     @status_bar_decorator
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
@@ -450,8 +456,7 @@ class PTHControlScheme:
             self.editor.removeNode(node)
 
     @status_bar_decorator
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
     @status_bar_decorator
     def onRenderContextMenu(self, world: Vector2, screen: QPoint):
@@ -480,15 +485,15 @@ class PTHControlScheme:
         )
 
         menu = QMenu(self.editor)
-        menu.addAction("Add Node").triggered.connect(lambda _: self.editor.addNode(world.x, world.y))
+        menu.addAction("Add Node").triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
         menu.addAction("Copy XY coords").triggered.connect(lambda: pyperclip.copy(str(self.editor.stdout.mouse_pos)))
         if underMouseIndex is not None:
-            menu.addAction("Remove Node").triggered.connect(lambda _: self.editor.removeNode(underMouseIndex))
+            menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.removeNode(underMouseIndex))
 
         menu.addSeparator()
 
         if underMouseIndex is not None and selectedIndex is not None:
-            menu.addAction("Add Edge").triggered.connect(lambda _: self.editor.addEdge(selectedIndex, underMouseIndex))
-            menu.addAction("Remove Edge").triggered.connect(lambda _: self.editor.removeEdge(selectedIndex, underMouseIndex))
+            menu.addAction("Add Edge").triggered.connect(lambda _=None: self.editor.addEdge(selectedIndex, underMouseIndex))
+            menu.addAction("Remove Edge").triggered.connect(lambda _=None: self.editor.removeEdge(selectedIndex, underMouseIndex))
 
         menu.popup(screen)

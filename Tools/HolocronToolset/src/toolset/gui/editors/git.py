@@ -4,11 +4,13 @@ import math
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QColor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QDialog, QListWidgetItem, QMenu
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtGui import QColor, QIcon, QKeySequence
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -52,9 +54,9 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QPoint
-    from PyQt5.QtGui import QKeyEvent
-    from PyQt5.QtWidgets import QCheckBox, QWidget
+    from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QKeyEvent
+    from qtpy.QtWidgets import QCheckBox, QWidget
 
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -66,7 +68,11 @@ if TYPE_CHECKING:
     from utility.system.path import Path
 
 
-def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTInstallation):
+def openInstanceDialog(
+    parent: QWidget,
+    instance: GITInstance,
+    installation: HTInstallation,
+) -> int:
     dialog = QDialog()
 
     if isinstance(instance, GITCreature):
@@ -92,9 +98,13 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
 
 
 class GITEditor(Editor):
-    settingsUpdated = QtCore.pyqtSignal(object)
+    settingsUpdated = QtCore.Signal(object)
 
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the GIT editor.
 
         Args:
@@ -107,7 +117,16 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
-        from toolset.uic.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.git import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -158,7 +177,7 @@ class GITEditor(Editor):
 
         self.new()
 
-    def _setupHotkeys(self):
+    def _setupHotkeys(self):  # TODO: use GlobalSettings() defined hotkeys
         self.ui.actionDeleteSelected.setShortcut(QKeySequence("Del"))
         self.ui.actionZoomIn.setShortcut(QKeySequence("+"))
         self.ui.actionZoomOut.setShortcut(QKeySequence("-"))
@@ -399,7 +418,9 @@ class GITEditor(Editor):
         resid: ResourceIdentifier | None = instance.identifier()
         if resid not in self.nameBuffer:
             res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
-            self.nameBuffer[resid] = None if res is None else self._installation.string(extract_name(res.data))
+            if res is None:
+                return None
+            self.nameBuffer[resid] = self._installation.string(extract_name(res.data))
         return self.nameBuffer[resid]
 
     def getInstanceExternalTag(self, instance: GITInstance) -> str | None:
@@ -424,7 +445,9 @@ class GITEditor(Editor):
         assert resid is not None, f"resid cannot be None in getInstanceExternalTag({instance!r})"
         if resid not in self.tagBuffer:
             res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
-            self.tagBuffer[resid] = None if res is None else extract_tag(res.data)
+            if res is None:
+                return None
+            self.tagBuffer[resid] = extract_tag(res.data)
         return self.tagBuffer[resid]
 
     def enterInstanceMode(self):
@@ -443,8 +466,7 @@ class GITEditor(Editor):
             self.ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
 
     # region Mode Calls
-    def openListContextMenu(self, item: QListWidgetItem, point: QPoint):
-        ...
+    def openListContextMenu(self, item: QListWidgetItem, point: QPoint): ...
 
     def updateVisibility(self):
         self._mode.updateVisibility()
@@ -538,7 +560,7 @@ class GITEditor(Editor):
         worldDelta: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
-        mode: _InstanceMode = self._mode
+        mode: _InstanceMode = cast(_InstanceMode, self._mode)
         mode.updateStatusBar(Vector2.from_vector3(world))
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
@@ -571,60 +593,46 @@ class _Mode(ABC):
         self._ui = editor.ui
 
     @abstractmethod
-    def onItemSelectionChanged(self, item: QListWidgetItem):
-        ...
+    def onItemSelectionChanged(self, item: QListWidgetItem): ...
 
     @abstractmethod
-    def onFilterEdited(self, text: str):
-        ...
+    def onFilterEdited(self, text: str): ...
 
     @abstractmethod
-    def onRenderContextMenu(self, world: Vector2, screen: QPoint):
-        ...
+    def onRenderContextMenu(self, world: Vector2, screen: QPoint): ...
 
     @abstractmethod
-    def openListContextMenu(self, item: QListWidgetItem, screen: QPoint):
-        ...
+    def openListContextMenu(self, item: QListWidgetItem, screen: QPoint): ...
 
     @abstractmethod
-    def updateVisibility(self):
-        ...
+    def updateVisibility(self): ...
 
     @abstractmethod
-    def selectUnderneath(self):
-        ...
+    def selectUnderneath(self): ...
 
     @abstractmethod
-    def deleteSelected(self):
-        ...
+    def deleteSelected(self): ...
 
     @abstractmethod
-    def duplicateSelected(self, position: Vector3):
-        ...
+    def duplicateSelected(self, position: Vector3): ...
 
     @abstractmethod
-    def moveSelected(self, x: float, y: float):
-        ...
+    def moveSelected(self, x: float, y: float): ...
 
     @abstractmethod
-    def rotateSelected(self, angle: float):
-        ...
+    def rotateSelected(self, angle: float): ...
 
     @abstractmethod
-    def rotateSelectedToPoint(self, x: float, y: float):
-        ...
+    def rotateSelectedToPoint(self, x: float, y: float): ...
 
     @abstractmethod
-    def moveCamera(self, x: float, y: float):
-        ...
+    def moveCamera(self, x: float, y: float): ...
 
     @abstractmethod
-    def zoomCamera(self, amount: float):
-        ...
+    def zoomCamera(self, amount: float): ...
 
     @abstractmethod
-    def rotateCamera(self, angle: float):
-        ...
+    def rotateCamera(self, angle: float): ...
 
     # endregion
 
@@ -657,7 +665,9 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.blockSignals(True)
         for i in range(self._ui.listWidget.count()):
             item = self._ui.listWidget.item(i)
-            instance = item.data(QtCore.Qt.UserRole)
+            if item is None:
+                continue
+            instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if instance in instances:
                 self._ui.listWidget.setCurrentItem(item)
         self._ui.listWidget.blockSignals(False)
@@ -697,32 +707,33 @@ class _InstanceMode(_Mode):
         """
         selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
 
-        if selection:
-            instance: GITInstance = selection[-1]
-            resname, restype = instance.identifier()
-            filepath: Path | None = None
+        if not selection:
+            return
+        instance: GITInstance = selection[-1]
+        resname, restype = instance.identifier().unpack()
+        filepath: Path | None = None
 
-            order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
-            search: list[LocationResult] = self._installation.location(resname, restype, order)
+        order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
+        search: list[LocationResult] = self._installation.location(resname, restype, order)
 
-            for result in search:
-                lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
-                if "override" in lowercase_path_parts:
-                    filepath = result.filepath
-                else:
-                    module_root: str = Module.get_root(self._editor.filepath())
-
-                    # Check if module root is in path parents or is a .rim
-                    lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
-                    if module_root.lower() in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
-                        filepath = result.filepath
-
-            if filepath:
-                data: bytes = getResourceFromFile(filepath, resname, restype)
-                openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
+        for result in search:
+            lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
+            if "override" in lowercase_path_parts:
+                filepath = result.filepath
             else:
-                # TODO Make prompt for override/MOD
-                ...
+                module_root: str = Module.get_root(self._editor.filepath())
+
+                # TODO: document what the purpose of this is. Why check parents.
+                lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
+                if module_root.lower() in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
+                    filepath = result.filepath
+
+        if filepath:
+            data: bytes = getResourceFromFile(filepath, resname, restype)
+            openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
+        else:
+            # TODO Make prompt for override/MOD
+            ...
 
     def editSelectedInstanceGeometry(self):
         if self._ui.renderArea.instanceSelection.last():
@@ -746,10 +757,6 @@ class _InstanceMode(_Mode):
         ----
             instance: {The selected GIT instance object}
             menu: {The QMenu to add actions to}.
-
-        Returns:
-        -------
-            None: {Does not return anything, just adds actions to the provided menu}
 
         Processing Logic:
         ----------------
@@ -782,7 +789,7 @@ class _InstanceMode(_Mode):
 
         Sets the item data and tooltip, determines the label text based on instance type and editor settings, sets the item text and font if label not found.
         """
-        item.setData(QtCore.Qt.UserRole, instance)
+        item.setData(QtCore.Qt.ItemDataRole.UserRole, instance)
         item.setToolTip(self.getInstanceTooltip(instance))
 
         name: str | None = None
@@ -795,60 +802,46 @@ class _InstanceMode(_Mode):
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.creatureLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITPlaceable):
             if self._editor.settings.placeableLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.placeableLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITDoor):
             if self._editor.settings.doorLabel == "tag":
                 name = instance.tag
             elif self._editor.settings.doorLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITStore):
             if self._editor.settings.storeLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.storeLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITSound):
             if self._editor.settings.soundLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.soundLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITWaypoint):
             if self._editor.settings.waypointLabel == "tag":
                 name = instance.tag
             elif self._editor.settings.waypointLabel == "name":
-                name = self._installation.string(instance.name, None)
-            else:
-                name = instance.identifier().resname
+                name = self._installation.string(instance.name, "")
         elif isinstance(instance, GITEncounter):
             if self._editor.settings.encounterLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.encounterLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
         elif isinstance(instance, GITTrigger):
             if self._editor.settings.triggerLabel == "tag":
                 name = instance.tag
             elif self._editor.settings.triggerLabel == "name":
                 name = self._editor.getInstanceExternalName(instance)
-            else:
-                name = instance.identifier().resname
 
-        text: str = instance.identifier().resname if name is None else name
-        if name is None:
+        ident = instance.identifier()
+        text: str = name or ""
+        if not name:
+            text = ident and ident.resname or ""
             font = item.font()
             font.setItalic(True)
             item.setFont(font)
@@ -869,7 +862,7 @@ class _InstanceMode(_Mode):
         if item is None:
             self.setSelection([])
         else:
-            self.setSelection([item.data(QtCore.Qt.UserRole)])
+            self.setSelection([item.data(QtCore.Qt.ItemDataRole.UserRole)])
 
     def updateStatusBar(self, world: Vector2):
         if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
@@ -883,7 +876,7 @@ class _InstanceMode(_Mode):
         if item is None:
             return
 
-        instance = item.data(QtCore.Qt.UserRole)
+        instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
         menu = QMenu(self._ui.listWidget)
 
         self.addInstanceActionsToMenu(instance, menu)
@@ -920,7 +913,7 @@ class _InstanceMode(_Mode):
                 index = self._editor.git().index(instance)
 
                 instanceAction = menu.addAction(icon, f"[{index}] {reference}")
-                instanceAction.triggered.connect(lambda _, inst=instance: self.setSelection([inst]))
+                instanceAction.triggered.connect(lambda _=None, inst=instance: self.setSelection([inst]))
                 instanceAction.setEnabled(instance not in self._ui.renderArea.instanceSelection.all())
                 menu.addAction(instanceAction)
 
@@ -945,7 +938,7 @@ class _InstanceMode(_Mode):
     def buildList(self):
         self._ui.listWidget.clear()
 
-        def instanceSort(inst: GITInstance):
+        def instanceSort(inst: GITInstance) -> str:
             textToSort: str = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname
             return textToSort.rjust(9, "0") if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
 
@@ -953,7 +946,7 @@ class _InstanceMode(_Mode):
         for instance in instances:
             filterSource: str = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
             isVisible: bool | None = self._ui.renderArea.isInstanceVisible(instance)
-            isFiltered: bool = self._ui.filterEdit.text() in filterSource
+            isFiltered: bool = self._ui.filterEdit.text().lower() in filterSource.lower()
 
             if isVisible and isFiltered:
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
@@ -1009,15 +1002,16 @@ class _InstanceMode(_Mode):
 
     def rotateSelected(self, angle: float):
         for instance in self._ui.renderArea.instanceSelection.all():
-            instance.rotate(angle)
+            instance.rotate(angle, 0, 0)
 
     def rotateSelectedToPoint(self, x: float, y: float):
         for instance in self._ui.renderArea.instanceSelection.all():
             rotation: float = -math.atan2(x - instance.position.x, y - instance.position.y)
+            yaw = instance.yaw() or 0.01
             if isinstance(instance, GITCamera):
-                instance.rotate(instance.yaw() - rotation, 0, 0)
+                instance.rotate(yaw - rotation, 0, 0)
             else:
-                instance.rotate(-instance.yaw() + rotation, 0, 0)
+                instance.rotate(-yaw + rotation, 0, 0)
 
     def moveCamera(self, x: float, y: float):
         self._ui.renderArea.camera.nudgePosition(x, y)
@@ -1094,12 +1088,9 @@ class _GeometryMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
+            print(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
-
-        if underMouse:
-            self._ui.renderArea.geometrySelection.select(underMouse)
-        else:
-            self._ui.renderArea.geometrySelection.select([])
+        self._ui.renderArea.geometrySelection.select(underMouse or [])
 
     def deleteSelected(self):
         vertex: GeomPoint | None = self._ui.renderArea.geometrySelection.last()
@@ -1149,7 +1140,11 @@ class GITControlScheme:
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
-            self.editor.zoomCamera(delta.y / 50)
+            # A smaller zoom_step will provide finer control over the zoom level.
+            if not delta.y:
+                return  # sometimes it'll be zero when holding middlemouse-down.
+            zoom_factor = 1.1 if delta.y > 0 else 0.9
+            self.editor.zoomCamera(zoom_factor)
 
     def onMouseMoved(
         self,
@@ -1194,8 +1189,7 @@ class GITControlScheme:
             position = self.editor.ui.renderArea.toWorldCoords(screen.x, screen.y)
             self.editor.duplicateSelected(position)
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        ...
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         if self.deleteSelected.satisfied(buttons, keys):
@@ -1204,5 +1198,4 @@ class GITControlScheme:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        ...
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...

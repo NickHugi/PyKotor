@@ -1,30 +1,43 @@
 from __future__ import annotations
 
-import base64
-import json
-import xml.etree.ElementTree as ElemTree
+# Try to import defusedxml, fallback to ElementTree if not available
+from xml.etree import ElementTree as ElemTree
+
+import qtpy
+
+try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
+    from defusedxml.ElementTree import fromstring as _fromstring
+
+    ElemTree.fromstring = _fromstring
+except (ImportError, ModuleNotFoundError):
+    print("warning: defusedxml is not available but recommended due to security concerns.")
+
 import zipfile
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import markdown
-import requests
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
+from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
 
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from toolset.__main__ import is_frozen
-from toolset.config import UPDATE_INFO_LINK
+from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path, PurePath
+from utility.logger_util import get_root_logger
+from utility.system.os_helper import is_frozen
+from utility.system.path import Path
+from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtGui import QShowEvent
+    from qtpy.QtWidgets import QWidget
 
 
 class HelpWindow(QMainWindow):
@@ -33,21 +46,35 @@ class HelpWindow(QMainWindow):
     def __init__(self, parent: QWidget | None, startingPage: str | None = None):
         super().__init__(parent)
 
-        self.version: tuple[int, ...] | None = None
+        self.version: str | None = None
 
-        from toolset.uic.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.windows import help as toolset_help  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = toolset_help.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupContents()
+        self.startingPage: str | None = startingPage
 
+    def showEvent(self, a0: QShowEvent):
+        super().showEvent(a0)
         self.ui.textDisplay.setSearchPaths(["./help"])
 
         if self.ENABLE_UPDATES:
             self.checkForUpdates()
 
-        if startingPage:
-            self.displayFile(startingPage)
+        if self.startingPage is None:
+            return
+        self.displayFile(self.startingPage)
 
     def _setupSignals(self):
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
@@ -56,10 +83,10 @@ class HelpWindow(QMainWindow):
         self.ui.contentsTree.clear()
 
         try:
-            tree = ElemTree.parse("./help/contents.xml")
+            tree = ElemTree.parse("./help/contents.xml")  # noqa: S314 incorrect warning.
             root = tree.getroot()
 
-            self.version = tuple(map(int, str(root.get("version", "0.0")).split(".")))
+            self.version = str(root.get("version", "0.0"))
             self._setupContentsRecXML(None, root)
 
             # Old JSON code:
@@ -67,130 +94,94 @@ class HelpWindow(QMainWindow):
             # data = json.loads(text)
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
-        except Exception as e:
-            print(f"Suppressed error: {universal_simplify_exception(e)}")
+        except Exception:
+            get_root_logger().debug("Suppressed error in HelpWindow._setupContents", exc_info=True)
 
-    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict):
-        add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
+    def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict[str, Any]):
+        addItem: Callable[[QTreeWidgetItem], None] = (
+            self.ui.contentsTree.addTopLevelItem
+            if parent is None
+            else parent.addChild
+        )
 
-        if "structure" in data:
-            for title in data["structure"]:
-                item = QTreeWidgetItem([title])
-                item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])  # type: ignore[attr-defined]
-                add(item)
-                self._setupContentsRecJSON(item, data["structure"][title])
+        structure = data.get("structure", {})
+        for title in structure:
+            item = QTreeWidgetItem([title])
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, structure[title]["filename"])
+            addItem(item)
+            self._setupContentsRecJSON(item, structure[title])
 
     def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
-        add: Callable[..., None] = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
+        addItem: Callable[[QTreeWidgetItem], None] = (
+            self.ui.contentsTree.addTopLevelItem
+            if parent is None
+            else parent.addChild
+        )
 
         for child in element:
-            item = QTreeWidgetItem([child.get("name")])  # FIXME: typing
-            item.setData(0, QtCore.Qt.UserRole, child.get("file"))
-            add(item)
+            item = QTreeWidgetItem([child.get("name", "")])
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, child.get("file"))
+            addItem(item)
             self._setupContentsRecXML(item, child)
 
-    def download_file(
-        self,
-        url_or_repo: str,
-        local_path: os.PathLike | str,
-        repo_path: os.PathLike | str | None = None,
-    ):
-        local_path = Path(local_path)
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-
-        if repo_path is not None:
-            # Construct the API URL for the file in the repository
-            owner, repo = PurePath(url_or_repo).parts[-2:]
-            api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{PurePath(repo_path).as_posix()}"
-
-            file_info = self._request_api_data(api_url)
-            # Check if it's a file and get the download URL
-            if file_info["type"] == "file":
-                download_url = file_info["download_url"]
-            else:
-                msg = "The provided repo_path does not point to a file."
-                raise ValueError(msg)
-        else:
-            # Direct URL
-            download_url = url_or_repo
-
-        # Download the file
-        with requests.get(download_url, stream=True, timeout=15) as r:
-            r.raise_for_status()
-            with local_path.open("wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
-    def download_directory(
-        self,
-        repo: os.PathLike | str,
-        local_dir: os.PathLike | str,
-        repo_path: os.PathLike | str,
-    ):
-        repo = PurePath(repo)
-        repo_path = PurePath(repo_path)
-        api_url = f"https://api.github.com/repos/{repo.as_posix()}/contents/{repo_path.as_posix()}"
-        data = self._request_api_data(api_url)
-        for item in data:
-            item_path = Path(item["path"])
-            local_path = item_path.relative_to("toolset")
-
-            if item["type"] == "file":
-                self.download_file(item["download_url"], Path(local_dir, local_path))
-            elif item["type"] == "dir":
-                self.download_directory(repo, item_path, local_path)
-
-    def _request_api_data(self, api_url: str):
-        response = requests.get(api_url, timeout=15)
-        response.raise_for_status()
-        return response.json()
-
     def checkForUpdates(self):
+        remoteInfo = getRemoteToolsetUpdateInfo(useBetaChannel=GlobalSettings().useBetaChannel)
         try:
-            req = requests.get(UPDATE_INFO_LINK, timeout=15)
-            req.raise_for_status()
-            file_data = req.json()
-            base64_content = file_data["content"]
-            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
-            updateInfoData = json.loads(decoded_content.decode("utf-8"))
+            if not isinstance(remoteInfo, dict):
+                raise remoteInfo  # noqa: TRY301
 
-            new_version = tuple(map(int, str(updateInfoData["help"]["version"]).split(".")))
-            if self.version is None or new_version > self.version:
-                msgbox = QMessageBox(
-                    QMessageBox.Information,
-                    "Update available",
-                    "A newer version of the help book is available for download, would you like to download it?",
-                )
-                msgbox.addButton(QMessageBox.Yes)
-                msgbox.addButton(QMessageBox.No)
-                user_response = msgbox.exec_()
-                if user_response == QMessageBox.Yes:
-                    def task():
-                        return self._downloadUpdate()
-                    loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
-                    if loader.exec_():
-                        self._setupContents()
-        except Exception as e:
-            QMessageBox(
-                QMessageBox.Information,
-                "Unable to fetch latest version of the help booklet.",
-                (
-                    f"{universal_simplify_exception(e)}\n"
-                    "Check if you are connected to the internet."
-                ),
-                QMessageBox.Ok,
-                self,
-            ).exec_()
+            new_version = str(remoteInfo["help"]["version"])
+            if self.version is None:
+                title = "Help book missing"
+                text = "You do not seem to have a valid help booklet downloaded, would you like to download it?"
+            elif remoteVersionNewer(self.version, new_version):
+                title = "Update available"
+                text = "A newer version of the help book is available for download, would you like to download it?"
+            else:
+                get_root_logger().debug("No help booklet updates available, using version %s (latest version: %s)", self.version, new_version)
+                return
+        except Exception as e:  # noqa: BLE001
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            errMsgBox = QMessageBox(
+                QMessageBox.Icon.Information,
+                "An unexpected error occurred while parsing the help booklet.",
+                error_msg,
+                QMessageBox.StandardButton.Ok,
+                parent=None,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
+            )
+            errMsgBox.setWindowIcon(self.windowIcon())
+            errMsgBox.exec_()
+        else:
+            newHelpMsgBox = QMessageBox(
+                QMessageBox.Icon.Information,
+                title,
+                text,
+                parent=None,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
+            )
+            newHelpMsgBox.setWindowIcon(self.windowIcon())
+            newHelpMsgBox.addButton(QMessageBox.StandardButton.Yes)
+            newHelpMsgBox.addButton(QMessageBox.StandardButton.No)
+            user_response = newHelpMsgBox.exec_()
+            if user_response == QMessageBox.StandardButton.Yes:
+
+                def task():
+                    return self._downloadUpdate()
+
+                loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
+                if loader.exec_():
+                    self._setupContents()
 
     def _downloadUpdate(self):
-        help_path = Path("help").resolve()
+        help_path = Path("./help").resolve()
         help_path.mkdir(parents=True, exist_ok=True)
         help_zip_path = Path("./help.zip").resolve()
-        self.download_file("NickHugi/PyKotor", help_zip_path, "/Tools/HolocronToolset/downloads/help.zip")
+        download_github_file("NickHugi/PyKotor", help_zip_path, "/Tools/HolocronToolset/downloads/help.zip")
 
         # Extract the ZIP file
         with zipfile.ZipFile(help_zip_path) as zip_file:
-            print(f"Extracting downloaded content to {help_path}")
+            get_root_logger().info("Extracting downloaded content to %s", help_path)
             zip_file.extractall(help_path)
 
         if is_frozen():
@@ -204,17 +195,18 @@ class HelpWindow(QMainWindow):
             self.ui.textDisplay.setHtml(html)
         except OSError as e:
             QMessageBox(
-                QMessageBox.Critical,
+                QMessageBox.Icon.Critical,
                 "Failed to open help file",
                 f"Could not access '{filepath}'.\n{universal_simplify_exception(e)}",
             ).exec_()
 
     def onContentsClicked(self):
-        if self.ui.contentsTree.selectedItems():
-            item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
-            filename = item.data(0, QtCore.Qt.UserRole)
-            if filename:
-                help_path = Path("./help").resolve()
-                file_path = Path(help_path, filename)
-                self.ui.textDisplay.setSearchPaths([str(help_path), str(file_path.parent)])
-                self.displayFile(file_path)
+        if not self.ui.contentsTree.selectedItems():
+            return
+        item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
+        filename = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if filename:
+            help_path = Path("./help").resolve()
+            file_path = Path(help_path, filename)
+            self.ui.textDisplay.setSearchPaths([str(help_path), str(file_path.parent)])
+            self.displayFile(file_path)

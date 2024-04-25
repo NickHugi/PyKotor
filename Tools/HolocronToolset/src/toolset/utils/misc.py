@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QDesktopServices, QKeySequence
+from qtpy import QtCore
+from qtpy.QtCore import QUrl
+from qtpy.QtGui import QDesktopServices, QKeySequence
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
@@ -24,7 +24,9 @@ QtMouse = QtCore.Qt.MouseButton
 
 
 def get_nums(string_input: str) -> list[int]:
-    """Returns the numbers stored within a string. Numbers in a string are seperated by any non-numeric character.
+    """Returns the numbers stored within a string.
+
+    Numbers in a string are seperated by any non-numeric character.
 
     Args:
     ----
@@ -34,12 +36,12 @@ def get_nums(string_input: str) -> list[int]:
     -------
         List of numbers.
     """
-    string = ""
-    nums = []
+    string: str = ""
+    nums: list[int] = []
     for char in f"{string_input} ":
         if char.isdigit():
             string += char
-        elif string != "":
+        elif string.strip():
             nums.append(int(string))
             string = ""
     return nums
@@ -76,7 +78,11 @@ def getStringFromKey(key: int) -> str:
     return QKeySequence(key).toString()
 
 
-def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> bytes:
+def getResourceFromFile(
+    filepath: os.PathLike | str,
+    resname: str,
+    restype: ResourceType,
+) -> bytes:
     """Gets a resource from a file by name and type.
 
     Args:

@@ -1,4 +1,5 @@
 """Represents patches specific to [CompileList] logic."""
+
 from __future__ import annotations
 
 import os
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 class MutableString:
     def __init__(self, value: str):
         self.value: str = value
+
     def __str__(self):
         return self.value
 
@@ -95,7 +97,7 @@ class ModificationsNSS(PatcherModifications):
                 detected_nwnnsscomp: str = nwnnsscompiler.get_info().name
             except ValueError:
                 detected_nwnnsscomp: str = "<UNKNOWN>"
-            if detected_nwnnsscomp != "TSLPatcher":
+            if detected_nwnnsscomp != "TSLPATCHER":
                 logger.add_warning(
                     "The nwnnsscomp.exe in the tslpatchdata folder is not the expected TSLPatcher version.\n"
                     f"PyKotor has detected that the provided nwnnsscomp.exe is the '{detected_nwnnsscomp}' version.\n"
@@ -199,6 +201,6 @@ class ModificationsNSS(PatcherModifications):
         if stderr.strip():
             for line in stderr.split("\n"):
                 if line.strip():
-                    logger.add_error(line)
+                    logger.add_error(f"nwnnsscomp error: {line}")
 
         return result

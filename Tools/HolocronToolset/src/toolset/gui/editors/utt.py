@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+import qtpy
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utt import UTT, dismantle_utt, read_utt
@@ -14,14 +16,23 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
+<<<<<<< HEAD
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from PyQt5.QtWidgets import QWidget
+=======
+    from qtpy.QtWidgets import QWidget
+>>>>>>> NickHugi/master
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 class UTTEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation
+        | None = None,
+    ):
         """Initialize the trigger editor window.
 
         Args:
@@ -40,7 +51,17 @@ class UTTEditor(Editor):
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from toolset.uic.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utt import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -56,7 +77,10 @@ class UTTEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
-    def _setupInstallation(self, installation: HTInstallation):
+    def _setupInstallation(
+        self,
+        installation: HTInstallation,
+    ):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
@@ -80,7 +104,10 @@ class UTTEditor(Editor):
         utt: UTT = read_utt(data)
         self._loadUTT(utt)
 
-    def _loadUTT(self, utt: UTT):
+    def _loadUTT(
+        self,
+        utt: UTT,
+    ):
         """Loads UTT data into UI elements.
 
         Args:

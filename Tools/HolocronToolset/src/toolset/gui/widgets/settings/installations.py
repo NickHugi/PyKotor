@@ -2,18 +2,23 @@ from __future__ import annotations
 
 import os
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget
+from typing import Any
+
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QSettings
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
+from utility.logger_util import get_root_logger
 
 
 class InstallationsWidget(QWidget):
-    edited = QtCore.pyqtSignal()
+    edited = QtCore.Signal()
 
     def __init__(self, parent: QWidget):
         """Initialize the Installations widget.
@@ -35,7 +40,17 @@ class InstallationsWidget(QWidget):
         self.installationsModel: QStandardItemModel = QStandardItemModel()
         self.settings = GlobalSettings()
 
-        from toolset.uic.widgets.settings import installations
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.widgets.settings import installations  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = installations.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()
@@ -149,7 +164,7 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str):
-        installations = self._settings.value("installations", {}, dict)
+        installations: dict[str, dict[str, Any]] = self._settings.value("installations", {}, dict)
         installation = installations[self._name]
 
         del installations[self._name]
@@ -161,23 +176,34 @@ class InstallationConfig:
 
     @property
     def path(self) -> str:
-        installation = self._settings.value("installations", {})[self._name]
-        return installation["path"]
+        try:
+            installation = self._settings.value("installations", {})[self._name]
+        except Exception:
+            return ""
+        else:
+            return installation.get("path", "")
 
     @path.setter
     def path(self, value: str):
-        installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
-        installations[self._name]["path"] = value
-        self._settings.setValue("installations", installations)
+        try:
+            installations: dict[str, dict[str, str]] = self._settings.value("installations", {})
+            installations[self._name] = installations.get(self._name, {})
+            installations[self._name]["path"] = value
+            self._settings.setValue("installations", installations)
+        except Exception:
+            log = get_root_logger()
+            log.exception("InstallationConfig.path property raised an exception.")
 
     @property
     def tsl(self) -> bool:
-        installation = self._settings.value("installations", {})[self._name]
-        return installation["tsl"]
+        all_installs: dict[str, dict[str, Any]] = self._settings.value("installations", {})
+        installation = all_installs.get(self._name, {})
+        return installation.get("tsl", False)
 
     @tsl.setter
     def tsl(self, value: bool):
-        installations = self._settings.value("installations", {})
+        installations: dict[str, dict[str, Any]] = self._settings.value("installations", {})
+        installations[self._name] = installations.get(self._name, {})
         installations[self._name]["tsl"] = value
         self._settings.setValue("installations", installations)
 
@@ -202,93 +228,113 @@ class GlobalSettings(Settings):
         Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
         The installations dictionary is then saved back to the user settings.
         """
-        installations = self.settings.value("installations")
+        installations: dict[str, dict[str, Any]] = self.settings.value("installations")
         if installations is None:
             installations = {}
 
-        counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
-        # Create a set of existing paths
-        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
+        if self.firstTime:
+            counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
+            # Create a set of existing paths
+            existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
 
-        for game, paths in find_kotor_paths_from_default().items():
-            for path in filter(CaseAwarePath.safe_isdir, paths):
-                if path in existing_paths:  # If the path is already recorded, skip to the next one
-                    continue
+            for game, paths in find_kotor_paths_from_default().items():
+                for path in filter(CaseAwarePath.safe_isdir, paths):
+                    if path in existing_paths:  # If the path is already recorded, skip to the next one
+                        continue
 
-                game_name = "KotOR" if game.is_k1() else "TSL"
-                base_game_name = game_name  # Save the base name for potential duplicates
+                    game_name = "KotOR" if game.is_k1() else "TSL"
+                    base_game_name = game_name  # Save the base name for potential duplicates
 
-                # Increment the counter if the game name already exists, indicating a duplicate
-                while game_name in installations:
-                    counters[game] += 1
-                    game_name = f"{base_game_name} ({counters[game]})"
+                    # Increment the counter if the game name already exists, indicating a duplicate
+                    while game_name in installations:
+                        counters[game] += 1
+                        game_name = f"{base_game_name} ({counters[game]})"
 
-                # Add the new installation under the unique game_name
-                installations[game_name] = {
-                    "name": game_name,
-                    "path": str(path),
-                    "tsl": game.is_k2(),
-                }
-                existing_paths.add(path)  # Add the new path to the set of existing paths
+                    # Add the new installation under the unique game_name
+                    installations[game_name] = {
+                        "name": game_name,
+                        "path": str(path),
+                        "tsl": game.is_k2(),
+                    }
+                    existing_paths.add(path)  # Add the new path to the set of existing paths
 
         self.settings.setValue("installations", installations)
 
         return {name: InstallationConfig(name) for name in installations}
 
     # region Strings
-    extractPath = Settings._addSetting(
+    extractPath = Settings.addSetting(
         "extractPath",
         "",
     )
-    nssCompilerPath = Settings._addSetting(
+    nssCompilerPath = Settings.addSetting(
         "nssCompilerPath",
         "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp",
     )
-    ncsDecompilerPath = Settings._addSetting(
+    ncsDecompilerPath = Settings.addSetting(
         "ncsDecompilerPath",
         "",
+    )
+    selectedTheme = Settings.addSetting(
+        "selectedTheme",
+        "Fusion (Dark)",  # Default theme
+    )
+    moduleSortOption = Settings.addSetting(
+        "moduleSortOption",
+        1,
     )
     # endregion
 
     # region Bools
-    disableRIMSaving = Settings._addSetting(
+    profileToolset = Settings.addSetting(
+        "profileToolset",
+        False,
+    )
+    disableRIMSaving = Settings.addSetting(
         "disableRIMSaving",
         True,
     )
-    firstTime = Settings._addSetting(
+    useBetaChannel = Settings.addSetting(
+        "useBetaChannel",
+        True,
+    )
+    alsoCheckReleaseVersion = Settings.addSetting(
+        "alsoCheckReleaseVersion",
+        True,
+    )
+    firstTime = Settings.addSetting(
         "firstTime",
         True,
     )
-    gff_specializedEditors = Settings._addSetting(
+    gff_specializedEditors = Settings.addSetting(
         "gff_specializedEditors",
         True,
     )
-    joinRIMsTogether = Settings._addSetting(
+    joinRIMsTogether = Settings.addSetting(
         "joinRIMsTogether",
         False,
     )
-    useModuleFilenames = Settings._addSetting(
+    useModuleFilenames = Settings.addSetting(
         "useModuleFilenames",
         False,
     )
-    greyRIMText = Settings._addSetting(
+    greyRIMText = Settings.addSetting(
         "greyRIMText",
         True,
     )
-    showPreviewUTC = Settings._addSetting(
+    showPreviewUTC = Settings.addSetting(
         "showPreviewUTC",
         True,
     )
-    showPreviewUTP = Settings._addSetting(
+    showPreviewUTP = Settings.addSetting(
         "showPreviewUTP",
         True,
     )
-    showPreviewUTD = Settings._addSetting(
+    showPreviewUTD = Settings.addSetting(
         "showPreviewUTD",
         True,
     )
     # endregion
 
 
-class NoConfigurationSetError(Exception):
-    ...
+class NoConfigurationSetError(Exception): ...

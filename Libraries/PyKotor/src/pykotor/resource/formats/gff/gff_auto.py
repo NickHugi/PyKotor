@@ -38,7 +38,8 @@ def detect_gff(
     -------
         The format of the GFF data.
     """
-    def check(first4) -> ResourceType:
+
+    def check(first4: str) -> ResourceType:
         if any(x.value == first4 for x in GFFContent):
             return ResourceType.GFF
         if "<" in first4:  # sourcery skip: assign-if-exp, reintroduce-else

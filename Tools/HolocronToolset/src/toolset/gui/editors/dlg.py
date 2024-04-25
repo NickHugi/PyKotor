@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import pyperclip
+import qtpy
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelectionModel
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QMessageBox, QShortcut
+from qtpy import QtCore
+from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
+from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtMultimedia import QMediaPlayer
+from qtpy.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
+from pykotor.common.stream import BinaryWriter
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
@@ -31,13 +34,15 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
+from utility.system.path import Path
 
 if TYPE_CHECKING:
+
     import os
 
-    from PyQt5.QtCore import QItemSelection, QModelIndex, QPoint
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent
-    from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+    from qtpy.QtCore import QItemSelection, QModelIndex, QPoint
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QPlainTextEdit, QWidget
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -47,12 +52,102 @@ if TYPE_CHECKING:
         DLGStunt,
     )
 
-_LINK_ROLE = QtCore.Qt.UserRole + 1
-_COPY_ROLE = QtCore.Qt.UserRole + 2
+_LINK_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_COPY_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
 
+
+class GFFFieldSpinBox(QSpinBox):
+    def __init__(
+        self,
+        *args,
+        min_value: int = 1200,
+        max_value: int = 65534,
+        **kwargs,
+    ):
+        self._no_validate: bool = False
+        super().__init__(*args, **kwargs)
+        self.specialValueTextMapping: dict[int, str] = {0: "0", -1: "-1"}
+        self.min_value: int = min_value
+        self.max_value: int = max_value
+        self.setSpecialValueText(self.specialValueTextMapping[-1])
+
+    def fixup(self, text: str):
+        # Override fixup to correct any intermediate text
+        if text.isdigit() or (text and text[0] == "-" and text[1:].isdigit()):
+            value = int(text)
+            if value < self.min_value:
+                self.setValue(self.min_value)
+            elif value > self.max_value:
+                self.setValue(self.max_value)
+        else:
+            # In case it's not a digit, revert to the last valid value
+            self.setValue(self.value())
+
+    def stepBy(self, steps: int):
+        current_value = self.value()
+        if current_value in self.specialValueTextMapping and steps > 0:
+            self.setValue(self.min_value)
+        elif current_value == self.min_value and steps < 0:
+            self.setValue(max(self.specialValueTextMapping.keys()))
+        else:
+            next_value = current_value + steps
+            if self.min_value <= next_value <= self.max_value:
+                super().stepBy(steps)
+            elif next_value < self.min_value:
+                self.setValue(-1)
+            else:
+                self.setValue(self.max_value)
+
+    @classmethod
+    def from_spinbox(
+        cls,
+        originalSpin: QSpinBox,
+        min_value: int = 0,
+        max_value: int = 100,
+    ) -> GFFFieldSpinBox:
+        if not isinstance(originalSpin, QSpinBox):
+            raise TypeError("The provided widget is not a QSpinBox.")
+
+        # Store the layout position details
+        layout = originalSpin.parentWidget().layout()
+        row, role = None, None
+
+        # Locate the position of the original spin box in the QFormLayout
+        if isinstance(layout, QFormLayout):
+            for r in range(layout.rowCount()):
+                if layout.itemAt(r, QFormLayout.FieldRole) and layout.itemAt(r, QFormLayout.FieldRole).widget() == originalSpin:
+                    row, role = r, QFormLayout.FieldRole
+                    break
+                if layout.itemAt(r, QFormLayout.LabelRole) and layout.itemAt(r, QFormLayout.LabelRole).widget() == originalSpin:
+                    row, role = r, QFormLayout.LabelRole
+                    break
+
+        # Create a new instance of CustomSpinBox
+        parent = originalSpin.parent()
+        customSpin = cls(parent, min_value=min_value, max_value=max_value)
+
+        # Dynamically transfer properties
+        for i in range(originalSpin.metaObject().propertyCount()):
+            prop = originalSpin.metaObject().property(i)
+            if prop.isReadable() and prop.isWritable():
+                value = originalSpin.property(prop.name())
+                customSpin.setProperty(prop.name(), value)
+
+        # Replace the original spin box with the custom spin box
+        if row is not None and role is not None:
+            layout.setWidget(row, role, customSpin)
+
+        # Remove the original spinbox from its parent widget
+        originalSpin.deleteLater()
+
+        return customSpin
 
 class DLGEditor(Editor):
-    def __init__(self, parent: QWidget | None = None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the Dialog Editor window.
 
         Args:
@@ -73,7 +168,17 @@ class DLGEditor(Editor):
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from toolset.uic.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -185,7 +290,13 @@ class DLGEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads a dialogue file.
 
         Args:
@@ -464,7 +575,11 @@ class DLGEditor(Editor):
                 item.setText(self._installation.string(node.text, "(continue)"))
                 self._loadLocstring(self.ui.textEdit, node.text)
 
-    def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString):
+    def _loadLocstring(
+        self,
+        textbox: QPlainTextEdit,
+        locstring: LocalizedString,
+    ):
         """Load a localized string into a text box.
 
         Args:
@@ -482,7 +597,11 @@ class DLGEditor(Editor):
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
-    def addNode(self, item: QStandardItem | None, node: DLGNode):
+    def addNode(
+        self,
+        item: QStandardItem | None,
+        node: DLGNode,
+    ):
         """Adds a node to the dialog tree.
 
         Args:
@@ -527,7 +646,7 @@ class DLGEditor(Editor):
         source: DLGNode,
         target_links: list[DLGLink],
         _copy_role_data: bool,
-        item: QStandardItem | QStandardItemModel | None
+        item: QStandardItem | QStandardItemModel | None,
     ):
         newLink = DLGLink(source)
         target_links.append(newLink)
@@ -537,7 +656,12 @@ class DLGEditor(Editor):
         self.refreshItem(newItem)
         item.appendRow(newItem)
 
-    def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode):
+    def addCopy(
+        self,
+        item: QStandardItem,
+        target: DLGNode,
+        source: DLGNode,
+    ):
         """Adds a copy of a node to a target node.
 
         Args:
@@ -703,6 +827,10 @@ class DLGEditor(Editor):
         if color is not None:
             item.setForeground(QBrush(color))
 
+    def blinkWindow(self):
+        self.setWindowOpacity(0.7)
+        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
+
     def playSound(self, resname: str):
         """Plays a sound resource.
 
@@ -718,36 +846,43 @@ class DLGEditor(Editor):
             - Starts playback of the sound using a single shot timer to avoid blocking.
             - Displays an error message if the sound resource is not found.
         """
+        if qtpy.API_NAME in ["PyQt5", "PySide2"]:
+            # PyQt5 and PySide2 code path
+            from qtpy.QtMultimedia import QMediaContent
+
+            def set_media(data: bytes | None):
+                if data:
+                    self.buffer = QBuffer(self)
+                    self.buffer.setData(data)
+                    self.buffer.open(QIODevice.ReadOnly)
+                    self.player.setMedia(QMediaContent(), self.buffer)
+                    QtCore.QTimer.singleShot(0, self.player.play)
+                else:
+                    self.blinkWindow()
+
+        elif qtpy.API_NAME in ["PyQt6", "PySide6"]:
+            # PyQt6 and PySide6 code path
+            def set_media(data: bytes | None):
+                if data:
+                    with TemporaryDirectory() as tmpdir:
+                        tmpdir_path = Path(tmpdir)
+                        tmpmediafile = (tmpdir_path / tmpdir_path.stem).with_suffix(".wav")
+                        BinaryWriter.dump(tmpmediafile, data)
+                        self.player.setSource(str(tmpmediafile))
+                        QTimer.singleShot(0, self.player.play)
+                else:
+                    self.blinkWindow()
+        else:
+            raise ValueError(f"Unsupported QT_API value: {qtpy.API_NAME}")
+
         self.player.stop()
 
         data: bytes | None = self._installation.sound(
             resname,
-            [
-                SearchLocation.VOICE,
-                SearchLocation.SOUND,
-                SearchLocation.OVERRIDE,
-                SearchLocation.CHITIN
-            ],
+            [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
 
-        if data:
-            self.buffer = QBuffer(self)
-            self.buffer.setData(data)
-            self.buffer.open(QIODevice.ReadOnly)
-            self.player.setMedia(QMediaContent(), self.buffer)
-            QtCore.QTimer.singleShot(0, self.player.play)
-        elif data is None:
-            QMessageBox(
-                QMessageBox.Critical,
-                "Could not find audio file",
-                f"Could not find audio resource '{resname}'.",
-            )
-        else:
-            QMessageBox(
-                QMessageBox.Critical,
-                "Corrupted/blank audio file",
-                f"Could not load audio resource '{resname}'.",
-            )
+        set_media(data)
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.
@@ -777,7 +912,11 @@ class DLGEditor(Editor):
         self.model.appendRow(item)
         return item
 
-    def shiftItem(self, item: QStandardItem, amount: int):
+    def shiftItem(
+        self,
+        item: QStandardItem,
+        amount: int,
+    ):
         """Shifts an item in the tree by a given amount.
 
         Args:
@@ -804,11 +943,7 @@ class DLGEditor(Editor):
         self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
 
         # Sync DLG to tree changes
-        links: list[DLGLink] = (
-            self._dlg.starters
-            if item.parent() is None
-            else item.parent().data(_LINK_ROLE).node.links
-        )
+        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
         link: DLGLink = links.pop(oldRow)
         links.insert(newRow, link)
 
@@ -838,7 +973,11 @@ class DLGEditor(Editor):
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def _set_context_menu_actions(self, item: QStandardItem, point: QPoint):
+    def _set_context_menu_actions(
+        self,
+        item: QStandardItem,
+        point: QPoint,
+    ):
         """Sets context menu actions for a dialog tree item.
 
         Args:
@@ -865,8 +1004,8 @@ class DLGEditor(Editor):
         menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
         menu.addSeparator()
         # REMOVEME: moving nodes is a horrible idea. It's currently broken anyway.
-        #menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
-        #menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+        # menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+        # menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
         menu.addSeparator()
 
         if isCopy:
@@ -894,25 +1033,28 @@ class DLGEditor(Editor):
 
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def keyPressEvent(self, event: QKeyEvent | None):
-        if not event:
+    def keyPressEvent(self, event: QKeyEvent):
+        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
+        if not selectedItem.isValid():
             return
         if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
-            selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
-            if selectedItem.isValid():
-                item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
-                link = item.data(_LINK_ROLE)
-                if link:
-                    self.focusOnNode(link)
-        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
-
-    def mouseDoubleClickEvent(self, event: QMouseEvent | None):
-        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
-        if selectedItem.isValid():
             item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
             link = item.data(_LINK_ROLE)
             if link:
                 self.focusOnNode(link)
+        if event.key() in {QtKey.Key_P}:
+            self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()))
+            self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()))
+        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
+        if not selectedItem.isValid():
+            return
+        item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
+        link = item.data(_LINK_ROLE)
+        if link:
+            self.focusOnNode(link)
         super().mouseDoubleClickEvent(event)
 
     def onSelectionChanged(self, selection: QItemSelection):
@@ -996,10 +1138,17 @@ class DLGEditor(Editor):
             self.ui.questEdit.setText(node.quest)
             self.ui.questEntrySpin.setValue(node.quest_entry or 0)
 
-            self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
-            self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
-            self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
+            self.ui.cameraIdSpin.setValue(-1 if node.camera_id is None else node.camera_id)
+            self.ui.cameraAnimSpin.__class__ = GFFFieldSpinBox
+            self.ui.cameraAnimSpin.min_value=1200
+            self.ui.cameraAnimSpin.max_value=65534
+            self.ui.cameraAnimSpin.specialValueTextMapping = {0: "0", -1: "-1"}
+            self.ui.cameraAnimSpin.setMinimum(-1)
+            self.ui.cameraAnimSpin.setMaximum(65534)
+
+            self.ui.cameraAnimSpin.setValue(-1 if node.camera_anim is None else node.camera_anim)
+            self.ui.cameraAngleSelect.setCurrentIndex(0 if node.camera_angle is None else node.camera_angle)
+            self.ui.cameraEffectSelect.setCurrentIndex(0 if node.camera_effect is None else node.camera_effect + 1)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)
@@ -1033,6 +1182,7 @@ class DLGEditor(Editor):
 
         link: DLGLink = item.data(_LINK_ROLE)
         node: DLGNode | None = link.node
+        assert node is not None
 
         node.listener = self.ui.listenerEdit.text()
         if isinstance(node, DLGEntry):
@@ -1091,7 +1241,7 @@ class DLGEditor(Editor):
         node.camera_effect = self.ui.cameraEffectSelect.currentData()
         if node.camera_id >= 0 and self.ui.cameraAngleSelect.currentIndex() == 0:
             self.ui.cameraAngleSelect.setCurrentIndex(6)
-        elif node.camera_id == -1 and self.ui.cameraAngleSelect.currentIndex() == 6:
+        elif node.camera_id == -1 and self.ui.cameraAngleSelect.currentIndex() == 7:
             self.ui.cameraAngleSelect.setCurrentIndex(0)
 
         # Other
@@ -1100,7 +1250,7 @@ class DLGEditor(Editor):
         node.alien_race_node = self.ui.alienRaceNodeSpin.value()
         node.post_proc_node = self.ui.postProcSpin.value()
         node.delay = self.ui.delaySpin.value()
-        link.logic = self.ui.logicSpin.value()
+        link.logic = bool(self.ui.logicSpin.value())
         node.wait_flags = self.ui.waitFlagSpin.value()
         node.fade_type = self.ui.fadeTypeSpin.value()
 
@@ -1116,14 +1266,14 @@ class DLGEditor(Editor):
     def onRemoveStuntClicked(self):
         if self.ui.stuntList.selectedItems():
             item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
-            stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
+            stunt: DLGStunt = item.data(QtCore.Qt.ItemDataRole.UserRole)
             self._dlg.stunts.remove(stunt)
             self.refreshStuntList()
 
     def onEditStuntClicked(self):
         if self.ui.stuntList.selectedItems():
             item: QListWidgetItem = self.ui.stuntList.selectedItems()[0]
-            stunt: DLGStunt = item.data(QtCore.Qt.UserRole)
+            stunt: DLGStunt = item.data(QtCore.Qt.ItemDataRole.UserRole)
             dialog = CutsceneModelDialog(self, stunt)
             if dialog.exec_():
                 stunt.stunt_model = dialog.stunt().stunt_model
@@ -1135,7 +1285,7 @@ class DLGEditor(Editor):
         for stunt in self._dlg.stunts:
             text = f"{stunt.stunt_model} ({stunt.participant})"
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, stunt)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, stunt)
             self.ui.stuntList.addItem(item)
 
     def onAddAnimClicked(self):
@@ -1156,14 +1306,14 @@ class DLGEditor(Editor):
             node: DLGNode = item.data(_LINK_ROLE).node
 
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
-            anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
+            anim: DLGAnimation = animItem.data(QtCore.Qt.ItemDataRole.UserRole)
             node.animations.remove(anim)
             self.refreshAnimList()
 
     def onEditAnimClicked(self):
         if self.ui.animsList.selectedItems():
             animItem: QListWidgetItem = self.ui.animsList.selectedItems()[0]
-            anim: DLGAnimation = animItem.data(QtCore.Qt.UserRole)
+            anim: DLGAnimation = animItem.data(QtCore.Qt.ItemDataRole.UserRole)
             dialog = EditAnimationDialog(self, self._installation, anim)
             if dialog.exec_():
                 anim.animation_id = dialog.animation().animation_id
@@ -1200,7 +1350,5 @@ class DLGEditor(Editor):
                     name = animations_2da.get_cell(anim.animation_id, "name")
                 text: str = f"{name} ({anim.participant})"
                 item = QListWidgetItem(text)
-                item.setData(QtCore.Qt.UserRole, anim)
+                item.setData(QtCore.Qt.ItemDataRole.UserRole, anim)
                 self.ui.animsList.addItem(item)
-
-

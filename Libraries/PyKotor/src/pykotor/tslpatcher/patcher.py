@@ -6,14 +6,15 @@ import sys
 
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.tools.misc import is_capsule_file
+from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
+from pykotor.tools.module import rim_to_mod
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.logger import PatchLogger
@@ -172,9 +173,27 @@ class ModInstaller:
         capsule: Capsule | None = None
         exists: bool
         if is_capsule_file(patch.destination):
+            module_root = Installation.replace_module_extensions(output_container_path)
+            tslrcm_omitted_rims = ("702KOR", "421DXN")
             if not output_container_path.safe_isfile():
-                msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
-                raise FileNotFoundError(msg)
+                if is_mod_file(output_container_path):
+                    self.log.add_note(
+                        f"IMPORTANT! The module at path '{output_container_path}' did not exist, building one in the 'Modules' folder immediately from the following files:"  # noqa: ISC003
+                        +  f"\n    Modules/{module_root}.rim"
+                        +  f"\n    Modules/{module_root}_s.rim"
+                        + (f"\n    Modules/{module_root}_dlg.erf" if self.game is not None and self.game.is_k2() else "")
+                    )
+                    try:
+                        rim_to_mod(output_container_path, self.game_path / "Modules", module_root, self.game)
+                    except Exception as e:  # noqa: BLE001
+                        msg = f"Failed to build module '{output_container_path.name}': {e}"
+                        self.log.add_error(msg)
+                        raise
+                else:
+                    msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
+                    raise FileNotFoundError(msg)
+            elif module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
+                self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
             exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas).unpack())
@@ -230,13 +249,13 @@ class ModInstaller:
     def handle_modrim_shadow(self, patch: PatcherModifications):
         """Check if a patch is being installed into a rim and overshadowed by a .mod."""
         # uncomment and define the attrs if we decide this should be configurable.
-        #modrim_type: str = patch.modrim_type.lower().strip()
-        #if not modrim_type or modrim_type == ignore
+        # modrim_type: str = patch.modrim_type.lower().strip()
+        # if not modrim_type or modrim_type == ignore
         #    return
         modrim_path = self.game_path / patch.destination / patch.saveas
-        mod_path = modrim_path.with_name(Installation.replace_module_extensions(modrim_path.name) + ".mod")
+        mod_path = modrim_path.with_name(f"{Installation.replace_module_extensions(modrim_path.name)}.mod")
         if modrim_path != mod_path and mod_path.safe_isfile():
-            self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}'. Since {mod_path.name} exists, this instruction makes zero sense as this resource rim is overshadowed by the .mod anyway.")
+            self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 
     def handle_override_type(self, patch: PatcherModifications):
         """Handles the desired behavior set by the !OverrideType tslpatcher var for the specified patch.
@@ -335,7 +354,11 @@ class ModInstaller:
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
-    def install(self, should_cancel: Event | None = None):
+    def install(
+        self,
+        should_cancel: Event | None = None,
+        progress_update_func: Callable | None = None,
+    ):  # noqa: C901
         """Install patches from the config file.
 
         Processing Logic:
@@ -360,7 +383,7 @@ class ModInstaller:
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
-            *config.patches_ncs,   # Note: TSLPatcher executes [CompileList] after [HACKList]
+            *config.patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
             *config.patches_ssf,
         ]
 
@@ -400,10 +423,14 @@ class ModInstaller:
                     BinaryWriter.dump(output_container_path / patch.saveas, patched_data)
                 self.log.complete_patch()
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                self.log.add_error(str(e))
+                exc_type, exc_msg = universal_simplify_exception(e)
+                fmt_exc_str = f"{exc_type}: {exc_msg}"
+                self.log.add_error(f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n")
                 detailed_error = format_exception_with_variables(e)
-                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a") as f:
+                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
                     f.write(f"\n{detailed_error}")
+            if progress_update_func is not None:
+                progress_update_func()
 
         if config.save_processed_scripts == 0 and temp_script_folder is not None and temp_script_folder.safe_isdir():
             self.log.add_note(f"Cleaning temporary script folder at '{temp_script_folder}' (hint: use 'SaveProcessedScripts=1' in [Settings] to keep these scripts)")  # noqa: E501
@@ -456,14 +483,8 @@ class ModInstaller:
 
         if female_dialog_file.is_file():
             female_tlk_patches: ModificationsTLK = deepcopy(patches_tlk)
-            female_tlk_patches.sourcefile = (
-                female_tlk_patches.sourcefile_f
-                if (self.mod_path / female_tlk_patches.sourcefile_f).is_file()
-                else patches_tlk.sourcefile
-            )
+            female_tlk_patches.sourcefile = female_tlk_patches.sourcefile_f if (self.mod_path / female_tlk_patches.sourcefile_f).is_file() else patches_tlk.sourcefile
             female_tlk_patches.saveas = female_dialog_filename
             tlk_patches.append(female_tlk_patches)
 
         return tlk_patches
-
-

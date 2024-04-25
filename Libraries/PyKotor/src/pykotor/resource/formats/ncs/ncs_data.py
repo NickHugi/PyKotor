@@ -226,19 +226,15 @@ class NCS:
             - Return the added instruction.
         """
         instruction = NCSInstruction(instruction_type, args, jump)
-        self.instructions.insert(
-            index,
-            instruction,
-        ) if index is not None else self.instructions.append(instruction)
+        if index is None:
+            self.instructions.append(instruction)
+        else:
+            self.instructions.insert(index, instruction)
         return instruction
 
     def links_to(self, target: NCSInstruction) -> list[NCSInstruction]:
         """Get a list of all instructions which may jump to the target instructions."""
-        return [
-            inst
-            for inst in self.instructions
-            if inst.jump is target
-        ]
+        return [inst for inst in self.instructions if inst.jump is target]
 
     def optimize(self, optimizers: list[NCSOptimizer]):
         """Optimize the model using the provided optimizers.
@@ -296,7 +292,7 @@ class NCSInstruction:
     ):
         self.ins_type: NCSInstructionType = ins_type
         self.jump: NCSInstruction | None = jump
-        self.args: list[Any] = args if args is not None else []
+        self.args: list[Any] = [] if args is None else args
 
     def __str__(self):
         if self.jump is None:
@@ -312,8 +308,7 @@ class NCSOptimizer(ABC):
         self.instructions_cleared: int = 0
 
     @abstractmethod
-    def optimize(self, ncs: NCS):
-        ...
+    def optimize(self, ncs: NCS): ...
 
     def reset(self):
         """Reset stats counter."""
@@ -322,5 +317,4 @@ class NCSOptimizer(ABC):
 
 class NCSCompiler(ABC):
     @abstractmethod
-    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool):
-        ...
+    def compile_script(self, source_filepath: os.PathLike | str, output_filepath: os.PathLike | str, game: Game, *, debug: bool): ...

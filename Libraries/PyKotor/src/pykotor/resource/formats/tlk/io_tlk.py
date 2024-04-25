@@ -65,7 +65,7 @@ class TLKBinaryReader(ResourceReader):
             msg = "Invalid file version."
             raise ValueError(msg)
 
-        self._tlk.language = self._language if self._language is not None else Language(language_id)
+        self._tlk.language = Language(language_id) if self._language is None else self._language
         self._tlk.resize(string_count)
 
         self._texts_offset = entries_offset
@@ -83,8 +83,8 @@ class TLKBinaryReader(ResourceReader):
         text_offset = self._reader.read_uint32()
         text_length = self._reader.read_uint32()
         entry.sound_length = self._reader.read_single()  # unused
-        entry.text_present = (entry_flags & 0x0001) != 0         # Check if the TEXT_PRESENT flag is set
-        entry.sound_present = (entry_flags & 0x0002) != 0        # Check if the SND_PRESENT flag is set
+        entry.text_present = (entry_flags & 0x0001) != 0  # Check if the TEXT_PRESENT flag is set
+        entry.sound_present = (entry_flags & 0x0002) != 0  # Check if the SND_PRESENT flag is set
         entry.soundlength_present = (entry_flags & 0x0004) != 0  # Check if the SND_LENGTH flag is set
         entry.voiceover = ResRef(sound_resref)
         self._text_headers.append(ArrayHead(text_offset, text_length))

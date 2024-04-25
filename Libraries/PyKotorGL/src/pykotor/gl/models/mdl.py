@@ -36,7 +36,13 @@ class Model:
         self._scene: Scene = scene
         self.root: Node = root
 
-    def draw(self, shader: Shader, transform: mat4, *, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        *,
+        override_texture: str | None = None,
+    ):
         self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Node | None:
@@ -88,7 +94,13 @@ class Model:
 
         return min_point, max_point
 
-    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3):
+    def _box_rec(
+        self,
+        node: Node,
+        transform: mat4,
+        min_point: vec3,
+        max_point: vec3,
+    ):
         """Calculates bounding box of node and its children recursively.
 
         Call the 'box' function to get started here, don't call this directly.
@@ -114,7 +126,7 @@ class Model:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
             for i in range(vertex_count):
                 index = i * node.mesh.mdx_size + node.mesh.mdx_vertex
-                data = node.mesh.vertex_data[index:index + 12]
+                data = node.mesh.vertex_data[index : index + 12]
                 x, y, z = struct.unpack("fff", data)
                 position = transform * vec3(x, y, z)
                 min_point.x = min(min_point.x, position.x)
@@ -129,7 +141,12 @@ class Model:
 
 
 class Node:
-    def __init__(self, scene: Scene, parent: Node | None, name: str):
+    def __init__(
+        self,
+        scene: Scene,
+        parent: Node | None,
+        name: str,
+    ):
         self._scene: Scene = scene
         self._parent: Node | None = parent
         self.name: str = name
@@ -142,7 +159,7 @@ class Node:
 
         self._recalc_transform()
 
-    def root(self) -> Node:
+    def root(self) -> Node | None:
         ancestor: Node | None = self._parent
         while ancestor:
             ancestor = ancestor._parent
@@ -200,24 +217,46 @@ class Node:
     def rotation(self) -> quat:
         return copy(self._rotation)
 
-    def set_rotation(self, pitch: float, yaw: float, roll: float):
+    def set_rotation(
+        self,
+        pitch: float,
+        yaw: float,
+        roll: float,
+    ):
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
-        # TODO: use multi-threading to accumulate texture data, then draw all at once.
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        override_texture: str | None = None,
+    ):
         transform = transform * self._transform
 
         if self.mesh and self.render:
             self.mesh.draw(shader, transform, override_texture)
 
-        for child in self.children:  
+        for child in self.children:
             child.draw(shader, transform, override_texture=override_texture)
 
 
 class Mesh:
-    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags,
-                 vertex_offset, normal_offset, texture_offset, lightmap_offset):
+    def __init__(
+        self,
+        scene: Scene,
+        node: Node,
+        texture: str,
+        lightmap: str,
+        vertex_data: bytearray,
+        element_data: bytearray,
+        block_size: int,
+        data_bitflags: int,
+        vertex_offset: int,
+        normal_offset: int,
+        texture_offset: int,
+        lightmap_offset: int,
+    ):
         """Initializes a Mesh object.
 
         Args:
@@ -226,8 +265,8 @@ class Mesh:
             node: Node - The node object
             texture: str - The texture path
             lightmap: str - The lightmap path
-            vertex_data: list - The vertex data
-            element_data: list - The element data
+            vertex_data: bytearray - The vertex data
+            element_data: bytearray - The element data
             block_size: int - The block size
             data_bitflags: int - The data bitflags
             vertex_offset: int - The vertex offset
@@ -299,14 +338,19 @@ class Mesh:
         self._scene.texture(override_texture or self.texture).use()
 
         glActiveTexture(GL_TEXTURE1)
-        self._scene.texture(self.lightmap).use()
+        self._scene.texture(self.lightmap, lightmap=True).use()
 
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
 
 class Cube:
-    def __init__(self, scene: Scene, min_point: vec3 | None = None, max_point: vec3 | None = None):
+    def __init__(
+        self,
+        scene: Scene,
+        min_point: vec3 | None = None,
+        max_point: vec3 | None = None,
+    ):
         """Initializes a cube mesh.
 
         Args:
@@ -327,31 +371,24 @@ class Cube:
         min_point = vec3(-1.0, -1.0, -1.0) if min_point is None else min_point
         max_point = vec3(1.0, 1.0, 1.0) if max_point is None else max_point
 
-        vertices = np.array([
-            min_point.x, min_point.y, max_point.z,
-            max_point.x, min_point.y, max_point.z,
-            max_point.x, max_point.y, max_point.z,
-            min_point.x, max_point.y, max_point.z,
-            min_point.x, min_point.y, min_point.z,
-            max_point.x, min_point.y, min_point.z,
-            max_point.x, max_point.y, min_point.z,
-            min_point.x, max_point.y, min_point.z,
-        ], dtype="float32")
+        vertices = np.array(
+            [
+                min_point.x, min_point.y, max_point.z,
+                max_point.x, min_point.y, max_point.z,
+                max_point.x, max_point.y, max_point.z,
+                min_point.x, max_point.y, max_point.z,
+                min_point.x, min_point.y, min_point.z,
+                max_point.x, min_point.y, min_point.z,
+                max_point.x, max_point.y, min_point.z,
+                min_point.x, max_point.y, min_point.z
+            ],
+            dtype="float32",
+        )
 
-        elements = np.array([
-            0, 1, 2,
-            2, 3, 0,
-            1, 5, 6,
-            6, 2, 1,
-            7, 6, 5,
-            5, 4, 7,
-            4, 0, 3,
-            3, 7, 4,
-            4, 5, 1,
-            1, 0, 4,
-            3, 2, 6,
-            6, 7, 3,
-        ], dtype="int16")
+        elements = np.array(
+            [0, 1, 2, 2, 3, 0, 1, 5, 6, 6, 2, 1, 7, 6, 5, 5, 4, 7, 4, 0, 3, 3, 7, 4, 4, 5, 1, 1, 0, 4, 3, 2, 6, 6, 7, 3],
+            dtype="int16",
+        )
 
         self.min_point: vec3 = min_point
         self.max_point: vec3 = max_point
@@ -381,7 +418,11 @@ class Cube:
 
 
 class Boundary:
-    def __init__(self, scene: Scene, vertices: list[Vector3]):
+    def __init__(
+        self,
+        scene: Scene,
+        vertices: list[Vector3],
+    ):
         """Initializes a mesh from vertices.
 
         Args:
@@ -420,7 +461,12 @@ class Boundary:
         glBindVertexArray(0)
 
     @classmethod
-    def from_circle(cls, scene: Scene, radius: float, smoothness: int = 10) -> Boundary:
+    def from_circle(
+        cls,
+        scene: Scene,
+        radius: float,
+        smoothness: int = 10,
+    ) -> Boundary:
         """Generates a circular boundary from a circle.
 
         Args:
@@ -483,5 +529,4 @@ class Empty:
     def __init__(self, scene: Scene):
         self._scene: Scene = scene
 
-    def draw(self, shader: Shader, transform: mat4):
-        ...
+    def draw(self, shader: Shader, transform: mat4): ...

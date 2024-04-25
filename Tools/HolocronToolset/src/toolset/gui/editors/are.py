@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog
+import qtpy
+
+from qtpy.QtGui import QColor, QImage, QPixmap
+from qtpy.QtWidgets import QColorDialog
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color, ResRef
@@ -21,12 +23,14 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QLabel, QWidget
+    from qtpy.QtWidgets import QLabel, QWidget
 
+    from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.resource.generics.are import ARERoom
     from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -57,8 +61,18 @@ class AREEditor(Editor):
 
         self._are: ARE = ARE()
         self._minimap = None
+        self._rooms: list[ARERoom] = []  # TODO(th3w1zard1): define somewhere in ui.
 
-        from toolset.uic.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.are import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -147,29 +161,18 @@ class AREEditor(Editor):
             - Sets script properties like onEnter, onExit
             - Sets comment text.
         """
-        self._are = are
-
+        self._rooms = are.rooms
         if self._resname:
             res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)
             if res_result_lyt:
                 lyt: LYT = read_lyt(res_result_lyt.data)
-                queries: list[ResourceIdentifier] = [
-                    ResourceIdentifier(room.model, ResourceType.WOK)
-                    for room in lyt.rooms
-                ]
+                queries: list[ResourceIdentifier] = [ResourceIdentifier(room.model, ResourceType.WOK) for room in lyt.rooms]
 
                 wok_results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(queries)
-                walkmeshes: list[BWM] = [
-                    read_bwm(result.data)
-                    for result in wok_results.values() if result
-                ]
+                walkmeshes: list[BWM] = [read_bwm(result.data) for result in wok_results.values() if result]
                 self.ui.minimapRenderer.setWalkmeshes(walkmeshes)
 
-            order: list[SearchLocation] = [
-                SearchLocation.OVERRIDE,
-                SearchLocation.TEXTURES_GUI,
-                SearchLocation.MODULES
-            ]
+            order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_GUI, SearchLocation.MODULES]
             self._minimap: TPC | None = self._installation.texture(f"lbl_map{self._resname}", order)
             if self._minimap is None:
                 print(f"Could not find texture 'lbl_map{self._resname}' required for minimap")
@@ -343,6 +346,9 @@ class AREEditor(Editor):
 
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()
+
+        # Remaining.
+        are.rooms = self._rooms
 
         return are
 

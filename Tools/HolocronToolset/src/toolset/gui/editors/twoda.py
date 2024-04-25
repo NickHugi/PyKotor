@@ -4,26 +4,32 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 import pyperclip
+import qtpy
 
-from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QMessageBox
+from qtpy.QtCore import QSortFilterProxyModel
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
-from utility.error_handling import assert_with_variable_trace
+from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QModelIndex, QPersistentModelIndex
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initializes the 2DA editor.
 
         Args:
@@ -42,7 +48,17 @@ class TwoDAEditor(Editor):
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.twoda import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -93,7 +109,13 @@ class TwoDAEditor(Editor):
         self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads data from a file into the model.
 
         Args:
@@ -117,8 +139,9 @@ class TwoDAEditor(Editor):
 
         try:
             self._load_main(data)
-        except ValueError:
-            QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
+        except ValueError as e:
+            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
@@ -177,7 +200,7 @@ class TwoDAEditor(Editor):
 
         for header in headers[1:]:
             action = QAction(header, self)
-            action.triggered.connect(lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
+            action.triggered.connect(lambda _=None, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
             self.ui.menuSetRowHeader.addAction(action)
         # endregion
 
@@ -228,7 +251,10 @@ class TwoDAEditor(Editor):
         self.model.clear()
         self.model.setRowCount(0)
 
-    def doFilter(self, text: str):
+    def doFilter(
+        self,
+        text: str,
+    ):
         self.proxyModel.setFilterFixedString(text)
 
     def toggleFilter(self):
@@ -381,7 +407,11 @@ class TwoDAEditor(Editor):
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
-    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: str | None = None):
+    def setVerticalHeaderOption(
+        self,
+        option: VerticalHeaderOption,
+        column: str | None = None,
+    ):
         self.verticalHeaderOption = option
         assert_with_variable_trace(column is not None, "column cannot be None")
         self.verticalHeaderColumn = column or ""
@@ -419,8 +449,7 @@ class TwoDAEditor(Editor):
                     columnIndex = i
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
-            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
-                                                              "QHeaderView::section:checked { color: #000000; }")
+            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
             headers = ["⯈" for _ in range(self.model.rowCount())]
 
         for i in range(self.model.rowCount()):
@@ -432,7 +461,11 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         super().__init__(parent)
         self._filterString: str = ""
 
-    def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
+    def filterAcceptsRow(
+        self,
+        sourceRow: int,
+        sourceParent: QModelIndex | QPersistentModelIndex,
+    ) -> bool:
         """Filters rows based on regular expression pattern match.
 
         Args:

@@ -8,8 +8,8 @@ import unittest
 from unittest import TestCase
 
 try:
-    from PyQt5.QtTest import QTest
-    from PyQt5.QtWidgets import QApplication
+    from qtpy.QtTest import QTest
+    from qtpy.QtWidgets import QApplication
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None  # type: ignore[misc, assignment]
 
@@ -17,6 +17,7 @@ except (ImportError, ModuleNotFoundError):
 TESTS_FILES_PATH = next(f for f in pathlib.Path(__file__).resolve().parents if f.name == "tests") / "files"
 
 if getattr(sys, "frozen", False) is False:
+
     def add_sys_path(p):
         working_dir = str(p)
         if working_dir in sys.path:
@@ -24,16 +25,16 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(working_dir)
 
     absolute_file_path = pathlib.Path(__file__).resolve()
-    pykotor_path = absolute_file_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         add_sys_path(pykotor_path.parent)
-    gl_path = absolute_file_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+    gl_path = absolute_file_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
     if gl_path.exists():
         add_sys_path(gl_path.parent)
-    utility_path = absolute_file_path.parents[6] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = absolute_file_path.parents[4] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
         add_sys_path(utility_path.parent)
-    toolset_path = absolute_file_path.parents[3] / "toolset"
+    toolset_path = absolute_file_path.parents[4] / "Tools" / "HolocronToolset" / "src" / "toolset"
     if toolset_path.exists():
         add_sys_path(toolset_path.parent)
 
@@ -53,15 +54,17 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class AREEditorTest(TestCase):
     @classmethod
     def setUpClass(cls):
         # Make sure to configure this environment path before testing!
         from toolset.gui.editors.are import AREEditor
+
         cls.AREEditor = AREEditor
         from toolset.data.installation import HTInstallation
+
         cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
 
     def setUp(self):
@@ -95,6 +98,7 @@ class AREEditorTest(TestCase):
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
         for are_resource in (resource for resource in self.installation if resource.restype() == ResourceType.ARE):
+            print("Load ", are_resource.resname())
             old = read_gff(are_resource.data())
             self.editor.load(are_resource.filepath(), are_resource.resname(), are_resource.restype(), are_resource.data())
 
@@ -102,7 +106,10 @@ class AREEditorTest(TestCase):
             new = read_gff(data)
 
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+            self.assertTrue(
+                diff,
+                f"{are_resource.identifier()} failed to diff.{os.linesep.join(self.log_messages)}",
+            )
 
     @unittest.skipIf(
         not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
@@ -120,8 +127,7 @@ class AREEditorTest(TestCase):
             diff = old.compare(new, self.log_func, ignore_default_changes=True)
             self.assertTrue(diff, os.linesep.join(self.log_messages))
 
-    def test_placeholder(self):
-        ...
+    def test_placeholder(self): ...
 
 
 if __name__ == "__main__":

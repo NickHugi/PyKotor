@@ -6,9 +6,9 @@ from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QOpenGLWidget
+from qtpy import QtCore
+from qtpy.QtCore import QTimer
+from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
@@ -18,9 +18,9 @@ from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
-    from PyQt5.QtWidgets import QWidget
     from glm import vec3
+    from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
@@ -28,26 +28,26 @@ if TYPE_CHECKING:
 
 
 class ModuleRenderer(QOpenGLWidget):
-    sceneInitalized = QtCore.pyqtSignal()
+    sceneInitalized = QtCore.Signal()
     """Signal emitted when scene has been initialized."""
 
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyboardPressed = QtCore.pyqtSignal(object, object)  # mouse, keys
+    keyboardPressed = QtCore.Signal(object, object)  # mouse, keys
 
-    keyboardReleased = QtCore.pyqtSignal(object, object)  # mouse, keys
+    keyboardReleased = QtCore.Signal(object, object)  # mouse, keys
 
-    objectSelected = QtCore.pyqtSignal(object)
+    objectSelected = QtCore.Signal(object)
     """Signal emitted when an object has been selected through the renderer."""
 
     def __init__(self, parent: QWidget):
@@ -110,7 +110,12 @@ class ModuleRenderer(QOpenGLWidget):
         delay = max(0, 33 - self._renderTime)
         QTimer.singleShot(delay, self.loop)
 
-    def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
+    def walkmeshPoint(
+        self,
+        x: float,
+        y: float,
+        default_z: float = 0.0,
+    ) -> Vector3:
         """Finds the face and z-height at a point on the walkmesh.
 
         Args:
@@ -206,6 +211,7 @@ class ModuleRenderer(QOpenGLWidget):
 
     def mouseDown(self) -> set[int]:
         return copy(self._mouseDown)
+
     # endregion
 
     # region Camera Transformations
@@ -229,14 +235,14 @@ class ModuleRenderer(QOpenGLWidget):
         forward_vec: vec3 = forward * self.scene.camera.forward()
         sideward = right * self.scene.camera.sideward()
 
-        self.scene.camera.x += (forward_vec.x + sideward.x)
-        self.scene.camera.y += (forward_vec.y + sideward.y)
+        self.scene.camera.x += forward_vec.x + sideward.x
+        self.scene.camera.y += forward_vec.y + sideward.y
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float):
-        forward_vec: vec3 = forward * self.scene.camera.forward(False)
-        sideward = right * self.scene.camera.sideward(False)
-        upward = -up * self.scene.camera.upward(False)
+        forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
+        sideward = right * self.scene.camera.sideward(ignore_z=False)
+        upward = -up * self.scene.camera.upward(ignore_xy=False)
 
         self.scene.camera.x += upward.x + sideward.x + forward_vec.x
         self.scene.camera.y += upward.y + sideward.y + forward_vec.y
@@ -260,6 +266,7 @@ class ModuleRenderer(QOpenGLWidget):
     def zoomCamera(self, distance: float):
         self.scene.camera.distance -= distance
         self.scene.camera.distance = max(self.scene.camera.distance, 0)
+
     # endregion
 
     # region Events
@@ -322,4 +329,5 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown.discard(e.key())
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
+
     # endregion

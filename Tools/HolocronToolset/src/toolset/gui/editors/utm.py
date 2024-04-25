@@ -3,7 +3,13 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+<<<<<<< HEAD
 from pykotor.common.misc import CaseInsensitiveDict, ResRef
+=======
+import qtpy
+
+from pykotor.common.misc import ResRef
+>>>>>>> NickHugi/master
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
@@ -17,8 +23,12 @@ from utility.error_handling import format_exception_with_variables
 if TYPE_CHECKING:
     import os
 
+<<<<<<< HEAD
     from pykotor.resource.formats.gff.gff_data import GFF
     from PyQt5.QtWidgets import QWidget
+=======
+    from qtpy.QtWidgets import QWidget
+>>>>>>> NickHugi/master
 
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.resource.formats.gff.gff_data import GFF
@@ -26,7 +36,12 @@ if TYPE_CHECKING:
 
 
 class UTMEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation
+        | None = None,
+    ):
         """Initialize the Merchant Editor window.
 
         Args:
@@ -46,7 +61,17 @@ class UTMEditor(Editor):
 
         self._utm: UTM = UTM()
 
-        from toolset.uic.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utm import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -78,7 +103,13 @@ class UTMEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         utm: UTM = read_utm(data)
@@ -182,6 +213,16 @@ class UTMEditor(Editor):
         except Exception as e:
             print(format_exception_with_variables(e, message="This exception has been suppressed."))
 
-        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
+        inventoryEditor = InventoryEditor(
+            self,
+            self._installation,
+            capsules,
+            [],
+            self._utm.inventory,
+            {},
+            droid=False,
+            hide_equipment=True,
+            is_store=True,
+        )
         if inventoryEditor.exec_():
             self._utm.inventory = inventoryEditor.inventory

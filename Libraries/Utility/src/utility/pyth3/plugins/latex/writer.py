@@ -3,6 +3,7 @@
 For the moment we generate the latex document from the
 reStructuredText writer output.
 """
+
 from __future__ import annotations
 
 from io import StringIO
@@ -14,9 +15,8 @@ from utility.pyth3.plugins.rst.writer import RSTWriter
 
 
 class LatexWriter(PythWriter):
-
     @classmethod
-    def write(klass, document, target=None, stylesheet=""):
+    def write(cls, document, target=None, stylesheet=""):
         """Convert a pyth document to a latex document.
 
         we can specify a stylesheet as a latex document fragment that
@@ -35,7 +35,7 @@ class LatexWriter(PythWriter):
         """
         self.document = doc
         self.stylesheet = stylesheet
-        self.target = target if target is not None else StringIO()
+        self.target = StringIO() if target is None else target
 
     @property
     def full_stylesheet(self):
@@ -52,21 +52,14 @@ class LatexWriter(PythWriter):
            pdfauthor={{{}}},
            pdfsubject={{{}}}
         }}
-        """.format(self.document.properties.get("title"),
-               self.document.properties.get("author"),
-               self.document.properties.get("subject"))
+        """.format(self.document.properties.get("title"), self.document.properties.get("author"), self.document.properties.get("subject"))
         return latex_fragment + self.stylesheet
 
     def go(self):
         rst = RSTWriter.write(self.document).getvalue()
-        settings = {"input_encoding": "UTF-8",
-                        "output_encoding": "UTF-8",
-                        "stylesheet": "stylesheet.tex"}
-        latex = docutils.core.publish_string(rst,
-                                             writer_name="latex",
-                                             settings_overrides=settings)
+        settings = {"input_encoding": "UTF-8", "output_encoding": "UTF-8", "stylesheet": "stylesheet.tex"}
+        latex = docutils.core.publish_string(rst, writer_name="latex", settings_overrides=settings)
         # We don't want to keep an \input command in the latex file
-        latex = latex.replace(r"\input{stylesheet.tex}",
-                              self.full_stylesheet)
+        latex = latex.replace(r"\input{stylesheet.tex}", self.full_stylesheet)
         self.target.write(latex)
         return self.target

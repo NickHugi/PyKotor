@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QSortFilterProxyModel
+from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QFileDialog, QLabel, QListWidgetItem, QMenu, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -18,17 +20,17 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QItemSelectionRange, QModelIndex
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QItemSelectionRange, QModelIndex
+    from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
 
-_VALUE_NODE_ROLE = QtCore.Qt.UserRole + 1
-_TYPE_NODE_ROLE = QtCore.Qt.UserRole + 2
-_LABEL_NODE_ROLE = QtCore.Qt.UserRole + 3
+_VALUE_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_TYPE_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
+_LABEL_NODE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 3
 
-_ID_SUBSTRING_ROLE = QtCore.Qt.UserRole + 1
-_TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
+_ID_SUBSTRING_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1
+_TEXT_SUBSTRING_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2
 
 
 class GFFEditor(Editor):
@@ -40,16 +42,25 @@ class GFFEditor(Editor):
         self._talktable: TalkTable | None = installation.talktable() if installation else None
         self._gff_content: GFFContent | None = None
 
-        from toolset.uic.editors.gff import Ui_MainWindow  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.gff import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
 
-        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
 
-        self.ui.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         self.ui.treeView.setSortingEnabled(True)
 
         # Make the right panel take as little space possible
@@ -220,7 +231,7 @@ class GFFEditor(Editor):
             gff_type = ResourceType.GFF_XML
             test_content = exts[-2].upper()
         if test_content in GFFContent.__members__:
-            #gff_content = GFFContent.__members__[test_content]
+            # gff_content = GFFContent.__members__[test_content]
             gff_content = GFFContent.GFF
         if not gff_content:
             gff_content = GFFContent.GFF
@@ -369,6 +380,11 @@ class GFFEditor(Editor):
             self.ui.fieldBox.setEnabled(False)
             set_spinbox(-1, 0xFFFFFFFF, item)
             return
+        if self.ui.blankPage.layout() is not None:
+            while self.ui.blankPage.layout().count():
+                child = self.ui.blankPage.layout().takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
 
         self.ui.fieldBox.setEnabled(True)
         self.ui.typeCombo.setCurrentText(item.data(_TYPE_NODE_ROLE).name)
@@ -405,19 +421,38 @@ class GFFEditor(Editor):
             self.ui.pages.setCurrentWidget(self.ui.blankPage)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
             self.ui.pages.setCurrentWidget(self.ui.vector3Page)
-            vec3 = item.data(_VALUE_NODE_ROLE)
+            vec3: Vector3 = item.data(_VALUE_NODE_ROLE)
             self.ui.xVec3Spin.setValue(vec3.x)
             self.ui.yVec3Spin.setValue(vec3.y)
             self.ui.zVec3Spin.setValue(vec3.z)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector4:
             self.ui.pages.setCurrentWidget(self.ui.vector4Page)
-            vec4 = item.data(_VALUE_NODE_ROLE)
+            vec4: Vector4 = item.data(_VALUE_NODE_ROLE)
             self.ui.xVec4Spin.setValue(vec4.x)
             self.ui.yVec4Spin.setValue(vec4.y)
             self.ui.zVec4Spin.setValue(vec4.z)
             self.ui.wVec4Spin.setValue(vec4.w)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Binary:
+            binaryData: bytes = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.blankPage)
+            if self.ui.blankPage.layout() is None:
+                layout = QVBoxLayout(self.ui.blankPage)
+                self.ui.blankPage.setLayout(layout)
+            else:
+                while self.ui.blankPage.layout().count():
+                    child = self.ui.blankPage.layout().takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+            hexDataStr = " ".join(f"{b:02X}" for b in binaryData)
+            binaryDataLabel = QLabel(f"{hexDataStr}")
+            binaryDataLabel.setWordWrap(True)
+            binaryDataLabel.setFont(QFont("Courier New", 7))
+            binaryDataLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+            binaryDataLabel.setMaximumWidth(self.ui.blankPage.width() - 20)  # -20 otherwise the pane grows for some reason.
+            self.ui.blankPage.layout().addWidget(binaryDataLabel)
+            copyButton = QPushButton("Copy Binary Data")
+            self.ui.blankPage.layout().addWidget(copyButton)
+            copyButton.clicked.connect(lambda: pyperclip.copy(hexDataStr))
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.substringPage)
@@ -588,7 +623,10 @@ class GFFEditor(Editor):
         label: str
         ftype: GFFFieldType
         value: Any
-        label, ftype, value = item.data(_LABEL_NODE_ROLE), item.data(_TYPE_NODE_ROLE), item.data(_VALUE_NODE_ROLE)
+        try:
+            label, ftype, value = item.data(_LABEL_NODE_ROLE), item.data(_TYPE_NODE_ROLE), item.data(_VALUE_NODE_ROLE)
+        except RuntimeError:  # wrapped C/C++ object of type QStandardItem has been deleted?
+            return
 
         if ftype is None and item.parent() is None:
             text = "[ROOT]"
@@ -668,7 +706,7 @@ class GFFEditor(Editor):
         self.loadItem(item)  # type: ignore[]
         self.refreshItemText(item)
 
-    def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any):
+    def insertNode(self, parent: QStandardItem, label: str, ftype: GFFFieldType, value: Any) -> QStandardItem:
         """Inserts a new child node under the given parent node.
 
         Args:
@@ -691,6 +729,7 @@ class GFFEditor(Editor):
         item.setData(value, _VALUE_NODE_ROLE)
         parent.appendRow(item)
         self.refreshItemText(item)
+        return item
 
     def addNode(self, item: QStandardItem):
         """Add a node from the tree model.
@@ -699,7 +738,21 @@ class GFFEditor(Editor):
         ----
             item: The item to add
         """
-        self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct())
+
+        def set_spinbox(minv: int, maxv: int, item: QListWidgetItem):
+            self.ui.pages.setCurrentWidget(self.ui.intPage)
+            self.ui.intSpin.setRange(minv, maxv)
+            self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+
+        parentType = item.data(_TYPE_NODE_ROLE)
+        newValue = GFFStruct()
+        newLabel = "[New Struct]"
+        if parentType == GFFFieldType.List:
+            self.ui.fieldBox.setEnabled(False)
+            newValue = newValue.struct_id
+            newLabel = str(item.rowCount())
+        newItem = self.insertNode(item, newLabel, GFFFieldType.Struct, newValue)
+        set_spinbox(-1, 0xFFFFFFFF, newItem)
 
     def removeNode(self, item: QStandardItem):
         """Remove a node from the tree model.
@@ -809,12 +862,6 @@ class GFFEditor(Editor):
         Args:
         ----
             self: The class instance
-
-        Processing Logic:
-        ----------------
-            - Open a file dialog to select a TLK file
-            - Get the selected file path and filter from the dialog
-            - If a file is selected, load it as a TalkTable and assign to self._talktable.
         """
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
         if not filepath:

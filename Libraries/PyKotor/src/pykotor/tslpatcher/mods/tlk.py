@@ -25,6 +25,7 @@ class ModificationsTLK(PatcherModifications):
     DEFAULT_SOURCEFILE_F = "appendf.tlk"
     DEFAULT_SAVEAS_FILE = "dialog.tlk"
     DEFAULT_SAVEAS_FILE_F = "dialogf.tlk"
+
     def __init__(
         self,
         filename: str = DEFAULT_SOURCEFILE,
@@ -33,7 +34,7 @@ class ModificationsTLK(PatcherModifications):
     ):
         super().__init__(filename)
         self.destination = self.DEFAULT_DESTINATION
-        self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
+        self.modifiers: list[ModifyTLK] = [] if modifiers is None else modifiers
         self.sourcefile_f: str = self.DEFAULT_SOURCEFILE_F  # Polish version of k1
         self.saveas = self.DEFAULT_SAVEAS_FILE
 

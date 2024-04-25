@@ -43,15 +43,91 @@ $pyInstallerArgs = @{
         'dl_translate',
         'torch'
     )
+    'upx-exclude' = @(
+        '_uuid.pyd',
+        'api-ms-win-crt-environment-l1-1-0.dll',
+        'api-ms-win-crt-string-l1-1-0.dll',
+        'api-ms-win-crt-convert-l1-1-0.dll',
+        'api-ms-win-crt-heap-l1-1-0.dll',
+        'api-ms-win-crt-conio-l1-1-0.dll',
+        'api-ms-win-crt-filesystem-l1-1-0.dll',
+        'api-ms-win-crt-stdio-l1-1-0.dll',
+        'api-ms-win-crt-process-l1-1-0.dll',
+        'api-ms-win-crt-locale-l1-1-0.dll',
+        'api-ms-win-crt-time-l1-1-0.dll',
+        'api-ms-win-crt-math-l1-1-0.dll',
+        'api-ms-win-crt-runtime-l1-1-0.dll',
+        'api-ms-win-crt-utility-l1-1-0.dll',
+        'python3.dll',
+        'api-ms-win-crt-private-l1-1-0.dll',
+        'api-ms-win-core-timezone-l1-1-0.dll',
+        'api-ms-win-core-file-l1-1-0.dll',
+        'api-ms-win-core-processthreads-l1-1-1.dll',
+        'api-ms-win-core-processenvironment-l1-1-0.dll',
+        'api-ms-win-core-debug-l1-1-0.dll',
+        'api-ms-win-core-localization-l1-2-0.dll',
+        'api-ms-win-core-processthreads-l1-1-0.dll',
+        'api-ms-win-core-errorhandling-l1-1-0.dll',
+        'api-ms-win-core-handle-l1-1-0.dll',
+        'api-ms-win-core-util-l1-1-0.dll',
+        'api-ms-win-core-profile-l1-1-0.dll',
+        'api-ms-win-core-rtlsupport-l1-1-0.dll',
+        'api-ms-win-core-namedpipe-l1-1-0.dll',
+        'api-ms-win-core-libraryloader-l1-1-0.dll',
+        'api-ms-win-core-file-l1-2-0.dll',
+        'api-ms-win-core-synch-l1-2-0.dll',
+        'api-ms-win-core-sysinfo-l1-1-0.dll',
+        'api-ms-win-core-console-l1-1-0.dll',
+        'api-ms-win-core-string-l1-1-0.dll',
+        'api-ms-win-core-memory-l1-1-0.dll',
+        'api-ms-win-core-synch-l1-1-0.dll',
+        'api-ms-win-core-interlocked-l1-1-0.dll',
+        'api-ms-win-core-datetime-l1-1-0.dll',
+        'api-ms-win-core-file-l2-1-0.dll',
+        'api-ms-win-core-heap-l1-1-0.dll'
+    )
     'clean' = $true
     'noconsole' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
+    #'debug' = 'all'
     'name' = "HolocronToolset"
     'distpath'=($rootPath + $pathSep + "dist")
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
 }
+if (-not $env:QT_API) {
+    $env:QT_API = "PyQt5"  # Default to PyQt5 if QT_API is not set
+}
+switch ($env:QT_API) {
+    { $_ -in "PyQt5", "PyQt6", "PySide2", "PySide6", "pyqt5", "pyqt6", "pyside2", "pyside6", "default" } {
+        # Define a dictionary for mapping lowercase to correct case
+        $apiMapping = @{
+            "pyqt5" = "PyQt5";
+            "pyqt6" = "PyQt6";
+            "pyside2" = "PySide2";
+            "pyside6" = "PySide6"
+        }
+
+        # Normalize $env:QT_API based on the dictionary
+        if ($apiMapping.ContainsKey($env:QT_API.ToLower())) {
+            $env:QT_API = $apiMapping[$env:QT_API.ToLower()]
+            Write-Host "converted QT_API to '$env:QT_API'"
+        } else {
+            Write-Error "Invalid QT_API: '$env:QT_API', hopefully pyinstaller figures it out..."
+        }
+
+        # Default modules to exclude
+        $modulesToExclude = @("PyQt5", "PyQt6", "PySide2", "PySide6") | Where-Object { $_ -ne $env:QT_API }
+
+        # Add modules to the exclude list
+        $tempArray = $pyInstallerArgs['exclude-module'] + $modulesToExclude
+        $tempArrayString = $tempArray -join ", "
+        Write-Host "Excluding: $tempArrayString"
+        $pyInstallerArgs['exclude-module'] = $tempArray
+    }
+}
+Write-Host "QT_API: $env:QT_API"
 
 $pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
     $key = $_.Key
@@ -89,6 +165,9 @@ $argumentsArray = @(
 # Unpack $pyInstallerArgs into $argumentsArray
 foreach ($arg in $pyInstallerArgs) {
     $argumentsArray += $arg
+}
+if ($env:GITHUB_ACTIONS -eq "true") {  # HACK for github runners using python 3.12
+    $pyInstallerArgs += '--paths C:\Miniconda\'
 }
 
 # Append the final script path

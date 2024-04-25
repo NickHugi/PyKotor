@@ -3,7 +3,9 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QMessageBox
+import qtpy
+
+from qtpy.QtWidgets import QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -21,8 +23,8 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QObject
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -34,7 +36,7 @@ class UTDEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation | None = None,
         *,
-        mainwindow: QWidget | QObject | None = None,
+        mainWindow: QWidget | QObject | None = None,
     ):
         """Initialize the Door Editor.
 
@@ -58,13 +60,23 @@ class UTDEditor(Editor):
             7. Update 3D preview and call new() to initialize editor.
         """
         supported: list[ResourceType] = [ResourceType.UTD]
-        super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
+        super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._genericdoors2DA: TwoDA = installation.htGetCache2DA("genericdoors")
         self._utd: UTD = UTD()
 
-        from toolset.uic.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.utd import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -131,7 +143,13 @@ class UTDEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         super().load(filepath, resref, restype, data)
 
         utd = read_utd(data)
@@ -299,16 +317,14 @@ class UTDEditor(Editor):
         data, filepath = None, None
 
         if not resname or not resname.strip():
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
-                                 "Do you wish to create a file in the override?",
-                                 QMessageBox.Yes | QMessageBox.No).exec_()
-            if QMessageBox.Yes == msgbox:
+            msgbox = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+            if QMessageBox.StandardButton.Yes == msgbox:
                 data = bytearray()
 
                 write_gff(dismantle_dlg(DLG()), data)

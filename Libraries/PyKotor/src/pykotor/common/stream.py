@@ -1,4 +1,5 @@
 """This module holds classes relating to read and write operations."""
+
 from __future__ import annotations
 
 import io
@@ -73,6 +74,16 @@ class BinaryReader:
 
         self._size: int = total_size - self._offset if size is None else size
 
+    @property
+    def _true_stream_position(self) -> int:
+        """Private property to access the current position of the stream for debugging purposes.
+
+        Returns:
+        -------
+            int: The current absolute position of the stream pointer.
+        """
+        return self._stream.tell()
+
     def __enter__(
         self,
     ):
@@ -96,7 +107,8 @@ class BinaryReader:
         if not stream.seekable():
             msg = "Stream must be seekable"
             raise ValueError(msg)
-
+        if isinstance(stream, io.RawIOBase):
+            return cls(io.BufferedReader(stream), offset, size)
         try:
             mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
         except (ValueError, OSError):  # ValueError means mmap cannot map to empty files
@@ -717,19 +729,21 @@ class BinaryReader:
         ------
             OSError: When the attempted read operation exceeds the number of remaining bytes.
         """
-        if self.position() + num > self.size():
+        attempted_seek = self.position() + num
+        if attempted_seek < 0:
+            msg = f"Cannot seek to a negative value {attempted_seek}, abstracted seek value: {num}"
+            raise OSError(msg)
+        if attempted_seek > self.size():
             msg = "This operation would exceed the streams boundaries."
             raise OSError(msg)
 
 
 class BinaryWriter(ABC):
     @abstractmethod
-    def __enter__(self):
-        ...
+    def __enter__(self): ...
 
     @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        ...
+    def __exit__(self, exc_type, exc_val, exc_tb): ...
 
     @classmethod
     def to_file(
@@ -1579,8 +1593,7 @@ class BinaryWriterBytearray(BinaryWriter):
         exc_type,
         exc_val,
         exc_tb,
-    ):
-        ...
+    ): ...
 
     def close(
         self,
@@ -2039,7 +2052,7 @@ class BinaryWriterBytearray(BinaryWriter):
         for language, gender, substring in value:
             string_id: int = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding(), errors="replace")
 
         locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))

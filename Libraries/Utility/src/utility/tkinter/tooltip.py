@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from typing import TYPE_CHECKING
 
-from utility.string import insert_newlines
+from utility.string_util import insert_newlines
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -50,9 +50,7 @@ class ToolTip:
         self.tip_window = tk.Toplevel(self.widget)
         self.tip_window.wm_overrideredirect(boolean=True)
         self.tip_window.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT,
-                         background="#ffffff", relief=tk.SOLID, borderwidth=1,
-                         font=("tahoma", "8", "normal"))
+        label = tk.Label(self.tip_window, text=text, justify=tk.LEFT, background="#ffffff", relief=tk.SOLID, borderwidth=1, font=("tahoma", "8", "normal"))
         label.pack(ipadx=1)
 
     def hide_tip(self, event: tk.Event | None = None):

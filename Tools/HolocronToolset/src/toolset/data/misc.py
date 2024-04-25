@@ -17,7 +17,7 @@ class ControlItem:
         *,
         exactKeys: bool = True,
     ) -> bool:
-        """Handles the mouse scroll event.
+        """Handles the key/mouse events, determine if the conditions are met.
 
         Args:
         ----
@@ -38,4 +38,3 @@ class ControlItem:
         if exactKeys:
             return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)
         return (self.mouse == buttons or self.mouse is None) and (self.keys.issubset(keys))
-

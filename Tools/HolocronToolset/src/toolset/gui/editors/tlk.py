@@ -3,10 +3,12 @@ from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QThread, Qt
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
+import qtpy
+
+from qtpy import QtCore
+from qtpy.QtCore import QSortFilterProxyModel, QThread, Qt
+from qtpy.QtGui import QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -17,20 +19,24 @@ from toolset.gui.dialogs.search import FileResults
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.misc import is_debug_mode
 
 if TYPE_CHECKING:
     import os
 
-    from PyQt5.QtCore import QModelIndex
-    from PyQt5.QtWidgets import QWidget
+    from qtpy.QtCore import QModelIndex
+    from qtpy.QtWidgets import QWidget
+    from typing_extensions import Literal
 
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
 
 class TLKEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation | None = None,
+    ):
         """Initialize the TLK Editor.
 
         Args:
@@ -50,7 +56,16 @@ class TLKEditor(Editor):
         supported: list[ResourceType] = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
-        from toolset.uic.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.tlk import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -92,7 +107,7 @@ class TLKEditor(Editor):
         self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
-        self.ui.talkTable.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.talkTable.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.talkTable.customContextMenuRequested.connect(self.showContextMenu)
 
         self.populateLanguageMenu()
@@ -115,10 +130,13 @@ class TLKEditor(Editor):
         # Add languages from the enum
         for language in Language:
             action = QAction(language.name.replace("_", " "), self)
-            action.triggered.connect(lambda _checked, lang=language: self.onLanguageSelected(lang))
+            action.triggered.connect(lambda _checked=None, lang=language: self.onLanguageSelected(lang))
             self.ui.menuLanguage.addAction(action)
 
-    def onLanguageSelected(self, language):
+    def onLanguageSelected(
+        self,
+        language: Language | Literal["auto_detect"],
+    ):
         if isinstance(language, Language):
             print(f"Language selected: {language.name}")
             self.change_language(language)
@@ -126,7 +144,10 @@ class TLKEditor(Editor):
             print("Auto detect selected")
             self.change_language(Language.UNKNOWN)
 
-    def change_language(self, language: Language):  # sourcery skip: class-extract-method
+    def change_language(
+        self,
+        language: Language,
+    ):  # sourcery skip: class-extract-method
         self.language = language
         if not self._revert:
             return
@@ -137,7 +158,13 @@ class TLKEditor(Editor):
         dialog = LoaderDialog(self, bytes_tlk(tlk), self.model)
         self._init_model_dialog(dialog)
 
-    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
+    def load(
+        self,
+        filepath: os.PathLike | str,
+        resref: str,
+        restype: ResourceType,
+        data: bytes,
+    ):
         """Loads data into the resource from a file.
 
         Args:
@@ -164,7 +191,10 @@ class TLKEditor(Editor):
         dialog = LoaderDialog(self, data, self.model)
         self._init_model_dialog(dialog)
 
-    def _init_model_dialog(self, dialog: LoaderDialog):
+    def _init_model_dialog(
+        self,
+        dialog: LoaderDialog,
+    ):
         dialog.exec_()
         self.model = dialog.model
         self.proxyModel = QSortFilterProxyModel(self)
@@ -195,7 +225,10 @@ class TLKEditor(Editor):
         # Show the menu at the current position
         menu.exec_(self.ui.talkTable.viewport().mapToGlobal(position))
 
-    def findReferences(self, index: QModelIndex):
+    def findReferences(
+        self,
+        index: QModelIndex,
+    ):
         # Implement the logic to find references based on the provided index
         stringref = index.row()
         print(f"Finding references to stringref: {stringref}")
@@ -204,11 +237,15 @@ class TLKEditor(Editor):
             f"Looking for stringref '{stringref}' in {self._installation.path()}...",
             lambda: self._installation.find_tlk_entry_references(stringref),
             errorTitle="An unexpected error occurred searching the installation.",
-            startImmediately=False
+            startImmediately=False,
         )
         loader.setModal(False)
         loader.show()
-        loader.optionalFinishHook.connect(lambda results: self.handleSearchCompleted(stringref, results, self._installation))
+        loader.optionalFinishHook.connect(
+            lambda results: self.handleSearchCompleted(
+                stringref, results, self._installation
+            )
+        )
         loader.startWorker()
         addWindow(loader)
 
@@ -220,7 +257,7 @@ class TLKEditor(Editor):
     ):
         if not results_list:
             QMessageBox(
-                QMessageBox.Information,
+                QMessageBox.Icon.Information,
                 "No resources found",
                 f"There are no GFFs that reference this tlk entry (stringref {stringref})",
                 parent=self,
@@ -245,7 +282,7 @@ class TLKEditor(Editor):
             selection.data(),
             self._installation,
             self,
-            gff_specialized=GlobalSettings().gff_specializedEditors
+            gff_specialized=GlobalSettings().gff_specializedEditors,
         )
 
     def new(self):
@@ -342,7 +379,12 @@ class TLKEditor(Editor):
 
 
 class LoaderDialog(QDialog):
-    def __init__(self, parent, fileData, model):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        fileData: bytes,
+        model: QStandardItemModel,
+    ):
         """Initializes the loading dialog.
 
         Args:
@@ -371,8 +413,8 @@ class LoaderDialog(QDialog):
         self.setWindowTitle("Loading...")
         self.setFixedSize(200, 40)
 
-        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)
@@ -384,17 +426,26 @@ class LoaderDialog(QDialog):
         self.worker.language.connect(self.setupLanguage)
         self.worker.start()
 
-    def onEntryCount(self, count: int):
+    def onEntryCount(
+        self,
+        count: int,
+    ):
         self._progressBar.setMaximum(count)
 
-    def onBatch(self, batch: list[QStandardItem]):
+    def onBatch(
+        self,
+        batch: list[QStandardItem],
+    ):
         for row in batch:
             self.model.appendRow(row)
             index: int = self.model.rowCount() - 1
             self.model.setVerticalHeaderItem(index, QStandardItem(str(index)))
         self._progressBar.setValue(self.model.rowCount())
 
-    def setupLanguage(self, language: Language):
+    def setupLanguage(
+        self,
+        language: Language,
+    ):
         self.language = language
 
     def onLoaded(self):
@@ -402,12 +453,12 @@ class LoaderDialog(QDialog):
 
 
 class LoaderWorker(QThread):
-    batch = QtCore.pyqtSignal(object)
-    entryCount = QtCore.pyqtSignal(object)
-    loaded = QtCore.pyqtSignal()
-    language = QtCore.pyqtSignal(object)
+    batch = QtCore.Signal(object)
+    entryCount = QtCore.Signal(object)
+    loaded = QtCore.Signal()
+    language = QtCore.Signal(object)
 
-    def __init__(self, fileData, model):
+    def __init__(self, fileData: bytes, model: QStandardItemModel):
         super().__init__()
         self._fileData: bytes = fileData
         self._model: QStandardItemModel = model
