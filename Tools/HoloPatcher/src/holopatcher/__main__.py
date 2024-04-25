@@ -27,7 +27,8 @@ from tkinter import (
     messagebox,
     ttk,
 )
-from typing import TYPE_CHECKING, Any, NoReturn
+from types import TracebackType
+from typing import TYPE_CHECKING, NoReturn
 
 
 def is_frozen() -> bool:
@@ -54,11 +55,11 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
-
-from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
+from holopatcher.config import CURRENT_VERSION
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import Installation
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.config import LogLevel
@@ -67,6 +68,7 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.string_util import striprtf
 from utility.system.os_helper import kill_self_pid, win_get_system32_dir
 from utility.system.path import Path
@@ -76,7 +78,6 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Callable
     from datetime import timedelta
-    from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
@@ -175,6 +176,7 @@ class App:
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
+        self.pykotor_logger = get_root_logger()
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -184,6 +186,7 @@ class App:
         cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.execute_commandline(cmdline_args)
+        self.pykotor_logger.debug("Init complete")
 
     def set_window(
         self,
@@ -1045,12 +1048,12 @@ class App:
                 "Wait for the previous task to finish.",
             )
             return False
-        if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-            messagebox.showinfo(
-                "No mod chosen",
-                "Select your mod directory first.",
-            )
-            return False
+        #if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
+        #    messagebox.showinfo(
+        #        "No mod chosen",
+        #        "Select your mod directory first.",
+        #    )
+        #    return False
         game_path: str = self.gamepaths.get()
         if not game_path:
             messagebox.showinfo(
@@ -1116,11 +1119,14 @@ class App:
             - Catches any exceptions during thread start and displays error message
             - Exits program if exception occurs during installation thread start.
         """
+        self.pykotor_logger.debug("Call begin_install")
         try:
             if not self.preinstall_validate_chosen():
                 return
+            self.pykotor_logger.debug("Prevalidate finished, starting install thread")
             self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
             self.task_thread.start()
+            self.pykotor_logger.debug("begin_install_thread called")
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
@@ -1228,7 +1234,11 @@ class App:
         shutil.copy2(str(CaseAwarePath(self.mod_path, "tslpatchdata/port-file-list.txt")), str(case_k2_path / "port-file-list.txt"))
         shutil.copy2(str(case_k2_path / "dialog.tlk"), str(case_k2_path / "dialog.tlk.main"))
 
-    def begin_install_thread(self, should_cancel_thread: Event):
+    def begin_install_thread(
+        self,
+        should_cancel_thread: Event,
+        progress_update_func: Callable | None = None
+    ):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
@@ -1245,10 +1255,12 @@ class App:
             - Handle any exceptions during installation
             - Finally set the install status to not running.
         """
+        self.pykotor_logger.debug("begin_install_thread reached")
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
+        self.pykotor_logger.debug("set ui state")
         self.set_state(state=True)
         self.install_running = True
         self.clear_main_text()
@@ -1258,7 +1270,7 @@ class App:
         self.main_text.config(state=tk.DISABLED)
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths2.get(), ini_file_path, self.logger)
-            self._execute_mod_install(installer, should_cancel_thread)
+            self._execute_mod_install(installer, should_cancel_thread, progress_update_func)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
@@ -1587,10 +1599,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    detailed_msg = format_exception_with_variables(exc, etype, tback)
-    print(detailed_msg)
-    with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-        f.write(f"\n{detailed_msg}")
+    get_root_logger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     with suppress(Exception):
         root = tk.Tk()
