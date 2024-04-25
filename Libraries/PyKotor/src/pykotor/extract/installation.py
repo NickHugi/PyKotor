@@ -773,6 +773,25 @@ class Installation:  # noqa: PLR0904
         ]
 
         game1_xbox_checks: list[bool] = [  # TODO:
+            check("01_SS_Repair01.ini"),
+            check("swpatch.ini"),
+            check("dataxbox/_newbif.bif"),
+            check("rimsxbox"),
+            check("players.erf"),
+            check("downloader.xbe"),
+            check("rimsxbox/manm28ad_adx.rim"),
+            check("rimsxbox/miniglobal.rim"),
+            check("rimsxbox/miniglobaldx.rim"),
+            check("rimsxbox/STUNT_56a_a.rim"),
+            check("rimsxbox/STUNT_56a_adx.rim"),
+            check("rimsxbox/STUNT_57_adx.rim"),
+            check("rimsxbox/subglobal.rim"),
+            check("rimsxbox/subglobaldx.rim"),
+            check("rimsxbox/unk_m44ac_adx.rim"),
+            check("rimsxbox/M12ab_adx.rim"),
+            check("rimsxbox/mainmenu.rim"),
+            check("rimsxbox/mainmenudx.rim"),
+            check("rimsxbox/manm28ad_adx.rim"),
         ]
 
         game1_ios_checks: list[bool] = [
@@ -829,7 +848,40 @@ class Installation:  # noqa: PLR0904
             check("data/Dialogs.bif"),
         ]
 
-        game2_xbox_checks: list[bool] = [  # TODO:
+        game2_xbox_checks: list[bool] = [
+            check("combat.erf"),
+            check("effects.erf"),
+            check("footsteps.erf"),
+            check("footsteps.rim"),
+            check("SWRC"),
+            check("weapons.ERF"),
+            check("SuperModels/smseta.erf"),
+            check("SuperModels/smsetb.erf"),
+            check("SuperModels/smsetc.erf"),
+            check("SWRC/System/Subtitles_Epilogue.int"),
+            check("SWRC/System/Subtitles_YYY_06.int"),
+            check("SWRC/System/SWRepublicCommando.int"),
+            check("SWRC/System/System.ini"),
+            check("SWRC/System/UDebugMenu.u"),
+            check("SWRC/System/UnrealEd.int"),
+            check("SWRC/System/UnrealEd.u"),
+            check("SWRC/System/User.ini"),
+            check("SWRC/System/UWeb.int"),
+            check("SWRC/System/Window.int"),
+            check("SWRC/System/WinDrv.int"),
+            check("SWRC/System/Xbox"),
+            check("SWRC/System/XboxLive.int"),
+            check("SWRC/System/XGame.u"),
+            check("SWRC/System/XGameList.int"),
+            check("SWRC/System/XGames.int"),
+            check("SWRC/System/XInterface.u"),
+            check("SWRC/System/XInterfaceMP.u"),
+            check("SWRC/System/XMapList.int"),
+            check("SWRC/System/XMaps.int"),
+            check("SWRC/System/YYY_TitleCard.int"),
+            check("SWRC/System/Xbox/Engine.int"),
+            check("SWRC/System/Xbox/XboxLive.int"),
+            check("SWRC/Textures/GUIContent.utx"),
         ]
 
         game2_ios_checks: list[bool] = [
