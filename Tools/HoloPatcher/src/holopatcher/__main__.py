@@ -1153,8 +1153,8 @@ class App:
                 formatted_line = line.strip()
                 if not formatted_line:
                     continue
-                src = case_k1_path / key / formatted_line
-                dst = case_k2_path / key.lower().replace("streamwaves", "streamvoice") / Path(formatted_line).name
+                src = case_k1_path / key.lstrip("\\").lstrip("/") / formatted_line.lstrip("\\").lstrip("/")
+                dst = case_k2_path / key.lstrip("\\").lstrip("/").lower().replace("streamwaves", "streamvoice") / Path(formatted_line).name
                 src_str = str(src)
                 dst_str = str(dst)
                 self.logger.add_note(f"Copying '{src_str}' to '{dst_str}'")
