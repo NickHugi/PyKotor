@@ -1336,88 +1336,94 @@ class App:
             7. Shows success or error message based on install result
             8. If CLI, exit regardless of success or error.
         """
-        confirm_msg: str = installer.config().confirm_message.strip()
-        if (
-            confirm_msg
-            and not self.one_shot
-            and confirm_msg != "N/A"
-            and not messagebox.askokcancel(
-                "This mod requires confirmation",
-                confirm_msg,
+        try:
+            confirm_msg: str = installer.config().confirm_message.strip()
+            if (
+                confirm_msg
+                and not self.one_shot
+                and confirm_msg != "N/A"
+                and not messagebox.askokcancel(
+                    "This mod requires confirmation",
+                    confirm_msg,
+                )
+            ):
+                return
+            if progress_update_func is not None:
+                self.progress_bar["maximum"] = len(
+                [
+                    *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
+                    *installer.get_tlk_patches(installer.config()),
+                    *installer.config().patches_2da,
+                    *installer.config().patches_gff,
+                    *installer.config().patches_nss,
+                    *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
+                    *installer.config().patches_ssf,
+                ]
             )
-        ):
-            return
-        if progress_update_func is not None:
-            self.progress_bar["maximum"] = len(
-            [
-                *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
-                *installer.get_tlk_patches(installer.config()),
-                *installer.config().patches_2da,
-                *installer.config().patches_gff,
-                *installer.config().patches_nss,
-                *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
-                *installer.config().patches_ssf,
-            ]
-        )
-        # profiler = cProfile.Profile()
-        # profiler.enable()
-        install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-        installer.install(should_cancel_thread, progress_update_func)
-        total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
-        if progress_update_func is not None:
-            self.progress_value.set(99)
-            self.progress_bar["value"] = 99
-            self.progress_bar["maximum"] = 100
-            self.update_progress_bar_directly()
-            self.root.update_idletasks()
-        # profiler.disable()
-        # profiler_output_file = Path("profiler_output.pstat").resolve()
-        # profiler.dump_stats(str(profiler_output_file))
+            # profiler = cProfile.Profile()
+            # profiler.enable()
+            install_start_time: datetime = datetime.now(timezone.utc).astimezone()
+            installer.install(should_cancel_thread, progress_update_func)
+            total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
+            if progress_update_func is not None:
+                self.progress_value.set(99)
+                self.progress_bar["value"] = 99
+                self.progress_bar["maximum"] = 100
+                self.update_progress_bar_directly()
+                self.root.update_idletasks()
+            # profiler.disable()
+            # profiler_output_file = Path("profiler_output.pstat").resolve()
+            # profiler.dump_stats(str(profiler_output_file))
 
-        days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
-        hours, remainder = divmod(remainder, 60 * 60)
-        minutes, seconds = divmod(remainder, 60)
+            days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
+            hours, remainder = divmod(remainder, 60 * 60)
+            minutes, seconds = divmod(remainder, 60)
 
-        time_str = (
-            f"{f'{int(days)} days, ' if days else ''}"
-            f"{f'{int(hours)} hours, ' if hours else ''}"
-            f"{f'{int(minutes)} minutes, ' if minutes or not (days or hours) else ''}"
-            f"{int(seconds)} seconds"
-        )
+            time_str = (
+                f"{f'{int(days)} days, ' if days else ''}"
+                f"{f'{int(hours)} hours, ' if hours else ''}"
+                f"{f'{int(minutes)} minutes, ' if minutes or not (days or hours) else ''}"
+                f"{int(seconds)} seconds"
+            )
 
-        num_errors: int = len(self.logger.errors)
-        num_warnings: int = len(self.logger.warnings)
-        num_patches: int = installer.config().patch_count()
-        self.logger.add_note(
-            f"The installation is complete with {num_errors} errors and {num_warnings} warnings.{os.linesep}"
-            f"Total install time: {time_str}{os.linesep}"
-            f"Total patches: {num_patches}",
-        )
-        if num_errors > 0:
-            messagebox.showerror(
-                "Install completed with errors!",
-                f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
-                f"{os.linesep * 2}Total install time: {time_str}"
-                f"{os.linesep}Total patches: {num_patches}",
+            num_errors: int = len(self.logger.errors)
+            num_warnings: int = len(self.logger.warnings)
+            num_patches: int = installer.config().patch_count()
+            self.logger.add_note(
+                f"The installation is complete with {num_errors} errors and {num_warnings} warnings.{os.linesep}"
+                f"Total install time: {time_str}{os.linesep}"
+                f"Total patches: {num_patches}",
             )
-            if self.one_shot:
-                sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
-        elif num_warnings > 0:
-            messagebox.showwarning(
-                "Install completed with warnings",
-                f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
-                f"{os.linesep * 2}Total install time: {time_str}"
-                f"{os.linesep}Total patches: {num_patches}",
-            )
-        else:
-            messagebox.showinfo(
-                "Install complete!",
-                f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
-                f"{os.linesep * 2}Total install time: {time_str}"
-                f"{os.linesep}Total patches: {num_patches}",
-            )
-            if self.one_shot:
-                sys.exit(ExitCode.SUCCESS)
+            if num_errors > 0:
+                messagebox.showerror(
+                    "Install completed with errors!",
+                    f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
+                if self.one_shot:
+                    sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
+            elif num_warnings > 0:
+                messagebox.showwarning(
+                    "Install completed with warnings",
+                    f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
+            else:
+                messagebox.showinfo(
+                    "Install complete!",
+                    f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
+                if self.one_shot:
+                    sys.exit(ExitCode.SUCCESS)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
+        finally:
+            self.set_state(state=False)
+            self.logger.add_note("Config reader test is complete.")
 
     @property
     def log_file_path(self) -> Path:
