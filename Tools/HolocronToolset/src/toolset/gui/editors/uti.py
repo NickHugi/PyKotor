@@ -39,7 +39,7 @@ class UTIEditor(Editor):
         Args:
         ----
             parent: {QWidget}: The parent widget
-            installation: {HTInstallation | None}: The installation object
+            installation: {HTInstallation}: The KOTOR installation.
 
         Processing Logic:
         ----------------
@@ -74,10 +74,11 @@ class UTIEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        if installation is not None:  # will only be none in the unittests
-            self._setupInstallation(installation)
 
+        self._setupInstallation(installation)
         self.ui.descEdit.setInstallation(installation)
+
+        self.setMinimumSize(700, 350)
 
         QShortcut("Del", self).activated.connect(self.onDelShortcut)
 
@@ -145,7 +146,8 @@ class UTIEditor(Editor):
                 if subtypeResname == "spells":
                     print("   ", j)
                 name = UTIEditor.subpropertyName(installation, i, j)
-                #assert name is not None
+                if not name or not name.strip():  # removes the blank entries
+                    continue
                 child = QTreeWidgetItem([name])
                 child.setData(0, QtCore.Qt.ItemDataRole.UserRole, i)
                 child.setData(0, QtCore.Qt.ItemDataRole.UserRole + 1, j)
@@ -435,14 +437,16 @@ class UTIEditor(Editor):
         cost: int,
         value: int,
     ) -> str | None:
+        # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
         costtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
         costtable: TwoDA = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
         try:
             stringref: int | None = costtable.get_row(value).get_integer("name")
-        except Exception:  # noqa: BLE001
-            get_root_logger().info("Could not get the costtable 2da row/value", exc_info=True)
-        else:
-            return installation.talktable().string(stringref)
+            if stringref is not None:
+                return installation.talktable().string(stringref)
+        except (IndexError, Exception) as e:  # noqa: BLE001
+            get_root_logger().info(f"Could not get the costtable 2da row/value: {e}")
+            get_root_logger().debug("Could not get the costtable 2da row/value", exc_info=True)
         return None
 
     @staticmethod
