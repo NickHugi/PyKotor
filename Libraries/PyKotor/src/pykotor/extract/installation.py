@@ -17,10 +17,13 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.talktable import TalkTable
+from pykotor.extract.twoda import K1Columns2DA
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.tpc import TPC, read_tpc
+from pykotor.resource.formats.twoda.twoda_auto import read_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
@@ -1443,8 +1446,37 @@ class Installation:  # noqa: PLR0904
                 SearchLocation.MODULES,
             ]
 
-        gffs: set[FileResource] = set()
+        found_resources: set[FileResource] = set()
         gff_extensions: set[str] = GFFContent.get_extensions()
+        relevant_2da_filenames: dict[str, set[str]] = {}
+        if self.game().is_k1():
+            relevant_2da_filenames = K1Columns2DA.StrRefs.as_dict()  # TODO: KOTOR 2's:
+
+        def check_2da(resource2da: FileResource) -> bool:
+            valid_2da: TwoDA | None = None
+            with suppress(ValueError, OSError):
+                valid_2da = read_2da(resource2da.data())
+            if not valid_2da:
+                return False
+            filename_2da = resource2da.filename().lower()
+            for column_name in relevant_2da_filenames[filename_2da]:
+                if column_name == ">>##HEADER##<<":
+                    for header in valid_2da.get_headers():
+                        if not header.strip().isdigit():
+                            if header.strip() and header.strip() not in ("****", "*****", "-1"):
+                                self._log.warn(f"header '{header}' in '{filename_2da}' is invalid, expected a stringref number.")
+                            continue
+                        if int(header.strip()) == query_stringref:
+                            return True
+                else:
+                    for i, cell in enumerate(valid_2da.get_column(column_name)):
+                        if not cell.strip().isdigit():
+                            if cell.strip() and cell.strip() not in ("****", "*****", "-1"):
+                                self._log.warn(f"column '{column_name}' rowindex {i} in '{filename_2da}' is invalid, expected a stringref number. Instead got '{cell}'")
+                            continue
+                        if int(cell.strip()) == query_stringref:
+                            return True
+            return False
 
         def recurse_gff_lists(gff_list: GFFList) -> bool:
             for gff_struct in gff_list:
@@ -1481,6 +1513,12 @@ class Installation:  # noqa: PLR0904
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
                 this_restype: ResourceType = resource.restype()
+                if (
+                    resource.filename().lower() in relevant_2da_filenames
+                    and this_restype is ResourceType.TwoDA
+                    and check_2da(resource)
+                ):
+                    found_resources.add(resource)
                 if this_restype.extension not in gff_extensions:
                     continue
                 valid_gff: GFF | None = try_get_gff(resource.data())
@@ -1488,42 +1526,45 @@ class Installation:  # noqa: PLR0904
                     continue
                 if not recurse_gff_structs(valid_gff.root):
                     continue
-                gffs.add(resource)
+                found_resources.add(resource)
 
         def check_capsules(capsules_list: list[Capsule]):
             for capsule in capsules_list:
                 for resource in capsule.resources():
-                    if resource.restype().extension not in gff_extensions:
+                    this_restype: ResourceType = resource.restype()
+                    if (
+                        resource.filename().lower() in relevant_2da_filenames
+                        and this_restype is ResourceType.TwoDA
+                        and check_2da(resource)
+                    ):
+                        found_resources.add(resource)
+                    if this_restype.extension not in gff_extensions:
                         continue
                     valid_gff: GFF | None = try_get_gff(resource.data())
                     if not valid_gff:
                         continue
                     if not recurse_gff_structs(valid_gff.root):
                         continue
-                    gffs.add(resource)
+                    found_resources.add(resource)
 
         def check_folders(values: list[Path]):
-            gff_files: set[Path] = set()
+            relevant_files: set[Path] = set()
             for folder in values:  # Having two loops makes it easier to filter out irrelevant files when stepping through the 2nd
-                gff_files.update(
+                relevant_files.update(
                     file
                     for file in folder.safe_rglob("*")
                     if (
                         file.suffix
-                        and file.suffix[1:].casefold() in gff_extensions
+                        and (
+                            file.suffix[1:].casefold() in gff_extensions
+                            or (file.name.lower() in relevant_2da_filenames and file.suffix.casefold() == ".2da")
+                        )
                         and file.safe_isfile()
                     )
                 )
-            for gff_file in gff_files:
-                gff_data = BinaryReader.load_file(gff_file)
-                valid_gff: GFF | None = None
-                restype: ResourceType | None = None
-                with suppress(ValueError, OSError):
-                    valid_gff = read_gff(gff_data)
-                    restype = ResourceType.from_extension(gff_file.suffix).validate()
-                if not valid_gff or not restype:
-                    continue
-                if not recurse_gff_structs(valid_gff.root):
+            for gff_file in relevant_files:
+                restype: ResourceType | None = ResourceType.from_extension(gff_file.suffix)
+                if not restype:
                     continue
                 fileres = FileResource(
                     resname=gff_file.stem,
@@ -1532,7 +1573,18 @@ class Installation:  # noqa: PLR0904
                     offset=0,
                     filepath=gff_file
                 )
-                gffs.add(fileres)
+                if restype is ResourceType.TwoDA and check_2da(fileres):
+                    found_resources.add(fileres)
+                else:
+                    gff_data = BinaryReader.load_file(gff_file)
+                    valid_gff: GFF | None = None
+                    with suppress(ValueError, OSError):
+                        valid_gff = read_gff(gff_data)
+                    if not valid_gff:
+                        continue
+                    if not recurse_gff_structs(valid_gff.root):
+                        continue
+                    found_resources.add(fileres)
 
         function_map: dict[SearchLocation, Callable] = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -1547,7 +1599,7 @@ class Installation:  # noqa: PLR0904
             assert isinstance(item, SearchLocation), f"{type(item).__name__}: {item}"
             function_map.get(item, lambda: None)()
 
-        return gffs
+        return found_resources
 
     def sound(
         self,
