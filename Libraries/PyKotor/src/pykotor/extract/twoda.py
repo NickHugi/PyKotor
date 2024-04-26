@@ -32,13 +32,14 @@ class ABSColumns2DA:
         parent_attrs = set(dir(cls.__base__))
         current_attrs = set(dir(cls)) - parent_attrs
         this_dict: dict[str, set[str]] = {}
-        for k, v in current_attrs.__dict__.items():
+        for k in current_attrs:
+            v = cls.__dict__[k]
             if k.startswith("__") or callable(v):
                 continue
             if isinstance(v, ABSColumns2DA):
                 this_dict.update(v.as_dict())
             else:
-                this_dict[k] = v
+                this_dict[f"{k}.2da"] = v
         return this_dict
 
     @classmethod
@@ -47,13 +48,14 @@ class ABSColumns2DA:
         parent_attrs = set(dir(cls.__base__))
         current_attrs = set(dir(cls)) - parent_attrs
         filenames = set()
-        for k, v in current_attrs.__dict__.items():
+        for k in current_attrs:
+            v = cls.__dict__[k]
             if k.startswith("__") or callable(v):
                 continue
             if isinstance(v, ABSColumns2DA):
                 filenames.update(v.all_files())
             else:
-                filenames.add(k)
+                filenames.add(f"{k}.2da")
         return filenames
 
 
@@ -66,8 +68,8 @@ class K1Columns2DA:
         ambientsound: ClassVar[set[str]] = {"description"}
         appearance: ClassVar[set[str]] = {"string_ref"}
         bindablekeys: ClassVar[set[str]] = {"keynamestrref"}
-        classes: ClassVar[set[str]] = {"name" "description"}
-        crtemplates: ClassVar[set[str]] = {"name", "strref"}
+        classes: ClassVar[set[str]] = {"name", "description"}
+        crtemplates: ClassVar[set[str]] = {"strref"}
         creaturesize: ClassVar[set[str]] = {"strref"}
         doortypes: ClassVar[set[str]] = {"stringrefgame"}
         effecticons: ClassVar[set[str]] = {"strref"}
@@ -128,17 +130,17 @@ class K1Columns2DA:
         itempropdef: ClassVar[set[str]] = {"name"}
         itemprops: ClassVar[set[str]] = {"stringref"}
         keymap: ClassVar[set[str]] = {"actionstrref"}
-        loadscreenhints: ClassVar[set[str]] = {"gameplayhint" "storyhint"}
+        loadscreenhints: ClassVar[set[str]] = {"gameplayhint", "storyhint"}
         masterfeats: ClassVar[set[str]] = {"strref"}
         modulesave: ClassVar[set[str]] = {"areaname"}
-        movies: ClassVar[set[str]] = {"strrefname", "descstrref"}
+        movies: ClassVar[set[str]] = {"strrefname", "strrefdesc"}
         placeables: ClassVar[set[str]] = {"strref"}
-        planetary: ClassVar[set[str]] = {"strref"}
+        planetary: ClassVar[set[str]] = {"name", "description"}
         soundset: ClassVar[set[str]] = {"strref"}
-        stringtokens: ClassVar[set[str]] = {"strref1" "strref2" "strref3" "strref4"}
+        stringtokens: ClassVar[set[str]] = {"strref1", "strref2", "strref3", "strref4"}
         texpacks: ClassVar[set[str]] = {"strrefname"}
-        tutorial: ClassVar[set[str]] = {"message0" "message1" "message2"}
-        tutorial_old: ClassVar[set[str]] = {"message0" "message1" "message2"}
+        tutorial: ClassVar[set[str]] = {"message0", "message1", "message2"}
+        tutorial_old: ClassVar[set[str]] = {"message0", "message1", "message2"}
         skills: ClassVar[set[str]] = {"name", "description"}
         spells: ClassVar[set[str]] = {"name", "spelldesc"}
         traps: ClassVar[set[str]] = {"trapname", "name"}
@@ -161,6 +163,9 @@ class K1Columns2DA:
             ammunitiontypes: ClassVar[set[str]] = {"model", "model0", "model1"}
             appearance: ClassVar[set[str]] = {"modela", "modelb", "modelc", "modeld", "modele", "modelf", "modelg", "modelh", "modeli", "modelj"}
             baseitems: ClassVar[set[str]] = {"defaultmodel"}
+            placeables: ClassVar[set[str]] = {"modelname"}
+            planetary: ClassVar[set[str]] = {"model"}
+            upcrystals: ClassVar[set[str]] = {"shortmdlvar", "longmdlvar", "doublemdlvar"}
 
             @dataclass(frozen=True, init=False, repr=False)
             class Doors(ABSColumns2DA):
@@ -204,6 +209,7 @@ class K1Columns2DA:
             heads: ClassVar[set[str]] = {"head", "headtexvvve", "headtexvve", "headtexve", "headtexe", "headtexg", "headtexvg"}
             iprp_spells: ClassVar[set[str]] = {"icon"}
             loadscreens: ClassVar[set[str]] = {"bmpresref"}
+            planetary: ClassVar[set[str]] = {"icon"}
 
         @dataclass(frozen=True, init=False, repr=False)
         class Items(ABSColumns2DA):
@@ -219,11 +225,11 @@ class K1Columns2DA:
         class Scripts(ABSColumns2DA):
             areaeffects: ClassVar[set[str]] = {"onenter", "heartbeat", "onexit"}
             disease: ClassVar[set[str]] = {"end_incu_script", "24_hour_script"}
+            spells: ClassVar[set[str]] = {"impactscript"}
 
 
 
 class TwoDAManager:
-
     def __init__(self, installation: Installation):
         self._installation: Installation = installation
 
