@@ -80,6 +80,7 @@ class Editor(QMainWindow):
         super().__init__(parent)
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
+        self._logger = get_root_logger()
 
         self._filepath: Path | None = None
         self._resname: str | None = None
@@ -163,27 +164,18 @@ class Editor(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def refreshWindowTitle(self):
-        """Refreshes the window title based on the current state.
-
-        Processing Logic:
-        ----------------
-            - Sets the installation name variable based on whether an installation is set or not
-            - Checks if a file path is set, if not just uses the editor title
-            - If encapsulated, constructs the title combining file path, installation, editor title
-            - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
-        """
+        """Refreshes the window title based on the current state of the editor."""
         installationName = "No Installation" if self._installation is None else self._installation.name
-
         if self._filepath is None:
-            self.setWindowTitle(self._editorTitle)
-        elif is_capsule_file(self._filepath.name):
-            assert self._restype is not None
-            self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            self.setWindowTitle(f"{self._editorTitle} - {installationName}")
+            return
+
+        relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
+        if is_bif_file(relpath) or (self._editorTitle != "ERFEditor" and is_capsule_file(self._filepath)):
+            relpath /= f"{self._resname}.{self._restype.extension}"
         else:
-            assert self._restype is not None
-            hierarchy: tuple[str, ...] = self._filepath.parts
-            folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
-            self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            assert relpath.name.lower() == f"{self._resname}.{self._restype}".lower()
+        self.setWindowTitle(f"{self._editorTitle}: {relpath} - {installationName}")
 
     def saveAs(self):
         """Saves the file with the selected filepath.
