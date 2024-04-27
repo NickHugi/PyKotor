@@ -73,13 +73,15 @@ class Module:  # noqa: PLR0904
         root: str,
         installation: Installation,
         custom_capsule: Capsule | None = None,
+        *,
+        use_dot_mod: bool = True
     ):
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
         self._installation: Installation = installation
         self._root: str = root.lower()
 
         # Build all capsules relevant to this root in the provided installation
-        self._capsules: list[Capsule] = self.get_capsules(installation, self._root)
+        self._capsules: list[Capsule] = self.get_capsules(installation, self._root, use_dot_mod=use_dot_mod)
         # Append the custom capsule if provided
         if custom_capsule is not None:
             self._capsules.append(custom_capsule)
@@ -104,12 +106,34 @@ class Module:  # noqa: PLR0904
         self.reload_resources()
 
     @classmethod
-    def get_capsules(cls, installation: Installation, root: str) -> list[Capsule]:
+    def get_capsules(
+        cls,
+        installation: Installation,
+        root: str,
+        *,
+        use_dot_mod: bool = True,
+    ) -> list[Capsule]:
         """Takes the root of the module filename and returns all relevant capsules."""
+        base_path = installation.module_path()
+        if use_dot_mod:
+            mod_filepath = base_path / f"{root}.mod"
+            if mod_filepath.safe_isfile():
+                get_root_logger().info("%s exists, using instead of rim/erfs.", mod_filepath.name)
+                return [Capsule(mod_filepath)]
+
+        _s_rim_path = base_path / f"{root}_s.rim"
+        rim_path = base_path / f"{root}.rim"
+        if installation.game().is_k1():
+            return [
+                Capsule(rim_path),
+                Capsule(_s_rim_path)
+            ]
+
+        _dlg_erf_path = base_path / f"{root}_dlg.erf"
         return [
-            Capsule(installation.module_path() / module)
-            for module in installation.module_names()
-            if cls.get_root(module).lower() == root
+            Capsule(rim_path),
+            Capsule(_s_rim_path),
+            Capsule(_dlg_erf_path)
         ]
 
     def get_id(self) -> str:
