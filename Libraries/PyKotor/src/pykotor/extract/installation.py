@@ -1083,12 +1083,22 @@ class Installation:  # noqa: PLR0904
             handle.seek(location.offset)
             data: bytes = handle.read_bytes(location.size)
 
-            results[query] = ResourceResult(
+            result = ResourceResult(
                 query.resname,
                 query.restype,
                 location.filepath,
                 data,
             )
+            result.set_file_resource(
+                FileResource(
+                    query.resname,
+                    query.restype,
+                    location.size,
+                    location.offset,
+                    location.filepath
+                )
+            )
+            results[query] = result
 
         # Close all open handles
         for handle in handles.values():
@@ -1191,6 +1201,7 @@ class Installation:  # noqa: PLR0904
                         resource.offset(),
                         resource.size(),
                     )
+                    location.set_file_resource(resource)
                     locations[query].append(location)
 
         def check_capsules(values: list[Capsule]):
@@ -1205,6 +1216,7 @@ class Installation:  # noqa: PLR0904
                         resource.offset(),
                         resource.size(),
                     )
+                    location.set_file_resource(resource)
                     locations[resource.identifier()].append(location)
 
         def check_folders(resource_folders: list[Path]):
@@ -1220,6 +1232,16 @@ class Installation:  # noqa: PLR0904
                         filepath=file,
                         offset=0,
                         size=file.stat().st_size,
+                    )
+
+                    location.set_file_resource(
+                        FileResource(
+                            identifier.resname,
+                            identifier.restype,
+                            location.size,
+                            location.offset,
+                            location.filepath
+                        )
                     )
                     locations[identifier].append(location)
 
@@ -1464,7 +1486,7 @@ class Installation:  # noqa: PLR0904
                     for header in valid_2da.get_headers():
                         if not header.strip().isdigit():
                             if header.strip() and header.strip() not in ("****", "*****", "-1"):
-                                self._log.warn(f"header '{header}' in '{filename_2da}' is invalid, expected a stringref number.")
+                                self._log.warning(f"header '{header}' in '{filename_2da}' is invalid, expected a stringref number.")
                             continue
                         if int(header.strip()) == query_stringref:
                             return True
@@ -1472,7 +1494,7 @@ class Installation:  # noqa: PLR0904
                     for i, cell in enumerate(valid_2da.get_column(column_name)):
                         if not cell.strip().isdigit():
                             if cell.strip() and cell.strip() not in ("****", "*****", "-1"):
-                                self._log.warn(f"column '{column_name}' rowindex {i} in '{filename_2da}' is invalid, expected a stringref number. Instead got '{cell}'")
+                                self._log.warning(f"column '{column_name}' rowindex {i} in '{filename_2da}' is invalid, expected a stringref number. Instead got '{cell}'")
                             continue
                         if int(cell.strip()) == query_stringref:
                             return True
@@ -1826,7 +1848,7 @@ class Installation:  # noqa: PLR0904
                 root_to_extensions[lower_root] = {".rim": None, ".mod": None, "_s.rim": None, "_dlg.erf": None}
 
             if qualifier not in root_to_extensions[lower_root]:
-                self._log.warn(f"No area name found for lonewolf capsule 'Modules/{module}'")
+                self._log.warning(f"No area name found for lonewolf capsule 'Modules/{module}'")
                 continue
             root_to_extensions[lower_root][qualifier] = module
 
@@ -1868,7 +1890,7 @@ class Installation:  # noqa: PLR0904
                 root_to_extensions[lower_root] = {".rim": None, ".mod": None, "_s.rim": None, "_dlg.erf": None}
 
             if qualifier not in root_to_extensions[lower_root]:
-                self._log.warn(f"No id found for lonewolf capsule 'Modules/{module}'")
+                self._log.warning(f"No id found for lonewolf capsule 'Modules/{module}'")
                 continue
             root_to_extensions[lower_root][qualifier] = module
 

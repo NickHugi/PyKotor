@@ -161,6 +161,9 @@ class AREEditor(Editor):
             - Sets script properties like onEnter, onExit
             - Sets comment text.
         """
+        if not self._installation:
+            print("Load an installation first.")
+            return
         self._rooms = are.rooms
         if self._resname:
             res_result_lyt: ResourceResult | None = self._installation.resource(self._resname, ResourceType.LYT)

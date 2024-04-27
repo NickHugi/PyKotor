@@ -632,12 +632,13 @@ class ResourceTableWidget(FileTableWidget):
     def __init__(
         self,
         *args,
-        resources: Sequence[FileResource | ResourceResult | LocationResult],
+        resources: Sequence[FileResource | ResourceResult | LocationResult] | None = None,
         **kwargs,
     ):
         self.resources: list[FileResource] = []
         super().__init__(*args, **kwargs)
-        self._unify_resources(resources)
+        if resources is not None:
+            self._unify_resources(resources)
 
     def _unify_resources(
         self,
@@ -812,17 +813,21 @@ class FileSelectionWindow(QMainWindow):
     def __init__(
         self,
         search_results: Sequence[FileResource | ResourceResult | LocationResult],
-        installation: HTInstallation,
+        installation: HTInstallation | None = None,
         *,
         editor: Editor | None = None,
     ):
         super().__init__(editor)
 
         self.resource_table = ResourceTableWidget(0, 3, resources=search_results)  # Start with zero rows and adjust based on checkbox
-        self.installation: HTInstallation = installation
+        self._installation: HTInstallation = installation
         self.editor: Editor | None = editor
         self.detailed_stat_attributes: list[str] = []
         self.init_ui()
+
+    @property
+    def installation(self):
+        return self._installation
 
     def init_ui(self):
         self.setWindowTitle("File Selection")  # Set a window title

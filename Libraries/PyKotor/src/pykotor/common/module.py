@@ -1222,7 +1222,7 @@ class ModuleResource(Generic[T]):
                 [SearchLocation.CHITIN],
             )
             if resource is None:
-                msg = f"Resource '{file_name}' not found in '{self._active}'"
+                msg = f"Resource '{file_name}' not found in BIF '{self._active}' somehow?"
                 raise ValueError(msg)
             return resource.data
 
@@ -1279,7 +1279,7 @@ class ModuleResource(Generic[T]):
                     [SearchLocation.CHITIN],
                 )
                 if resource is None:
-                    msg = f"Resource '{file_name}' not found in '{self._active}'"
+                    msg = f"Resource '{file_name}' not found in BIF '{self._active}' somehow?"
                     raise ValueError(msg)
                 self._resource_obj = conversions[self._restype](resource.data)
 

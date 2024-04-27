@@ -187,9 +187,7 @@ class TranslationOption(Enum):
     def validate_args(self, translator: Translator) -> str:  # type: ignore[return]
         def check(key) -> tuple[str, Any]:
             attr = getattr(translator, key, None)
-            if not attr:
-                return f"Missing {key}", None
-            return "", attr
+            return (f"Missing {key}", None) if not attr else ("", attr)
 
         if self is self.TATOEBA:
             msg, attr = check("database_path")
