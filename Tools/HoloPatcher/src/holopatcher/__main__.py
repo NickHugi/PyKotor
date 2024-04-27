@@ -67,8 +67,8 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.misc import ProcessorArchitecture
 from utility.logger_util import get_root_logger
+from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
 from utility.system.os_helper import kill_self_pid, win_get_system32_dir
 from utility.system.path import Path

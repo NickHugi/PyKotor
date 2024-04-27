@@ -31,11 +31,11 @@ from utility.logger_util import get_root_logger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from logging import Logger
 
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
