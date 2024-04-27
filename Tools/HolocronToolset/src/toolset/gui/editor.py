@@ -200,13 +200,15 @@ class Editor(QMainWindow):
         except ValueError as e:
             get_root_logger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(
+            msgBox = QMessageBox(
                 QMessageBox.Icon.Critical,
                 "Invalid filename/extension",
                 f"Check the filename and try again. Could not save!<br><br>{error_msg}",
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-            ).exec_()
+            )
+            msgBox.setDetailedText(format_exception_with_variables(e))
+            msgBox.exec_()
             return
 
         capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
@@ -267,7 +269,9 @@ class Editor(QMainWindow):
                 file.writelines(lines)
                 file.write("\n----------------------\n")
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", error_msg).exec_()
+            msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", error_msg)
+            msgBox.setDetailedText(lines)
+            msgBox.exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -375,7 +379,7 @@ class Editor(QMainWindow):
         nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [(ResourceIdentifier.from_path(c_filepath), erf_or_rim)]
         for res_ident in reversed(nested_capsule_idents[:-1]):
             nested_erf_or_rim_data = erf_or_rim.get(*res_ident.unpack())
-            if nested_erf_or_rim_data is None:
+            if nested_erf_or_rim_data is None:  # TODO: loop through all windows and send hotkey ctrl+s
                 msg = f"You must save the ERFEditor window you added '{res_ident}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
