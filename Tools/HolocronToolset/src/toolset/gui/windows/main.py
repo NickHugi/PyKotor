@@ -1443,11 +1443,11 @@ class ToolWindow(QMainWindow):
         try:
             data: bytes = resource.data()
 
-            if resource.restype() == ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
+            if resource.restype() is ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
                 # Ignore extracting MDX files if decompiling MDLs
                 return
 
-            if resource.restype() == ResourceType.TPC:
+            if resource.restype() is ResourceType.TPC:
                 tpc: TPC = read_tpc(data, txi_source=r_filepath)
 
                 if self.ui.tpcTxiCheckbox.isChecked():
@@ -1457,7 +1457,7 @@ class ToolWindow(QMainWindow):
                     data = self._decompileTpc(tpc)
                     r_filepath = r_filepath.with_suffix(".tga")
 
-            if resource.restype() == ResourceType.MDL:
+            if resource.restype() is ResourceType.MDL:
                 if self.ui.mdlDecompileCheckbox.isChecked():
                     data = self._decompileMdl(resource, data)
                     r_filepath = r_filepath.with_suffix(".ascii.mdl")
@@ -1506,7 +1506,7 @@ class ToolWindow(QMainWindow):
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
-                    extension = "tga" if file_format == ResourceType.TGA else "tpc"
+                    extension = "tga" if file_format is ResourceType.TGA else "tpc"
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)

@@ -157,7 +157,7 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(human_readable_size(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
 
-        elif restype == ResourceType.RIM:
+        elif restype is ResourceType.RIM:
             rim: RIM = read_rim(data)
             for resource in rim:
                 resrefItem = QStandardItem(str(resource.resref))
@@ -192,7 +192,7 @@ class ERFEditor(Editor):
         data = bytearray()
         resource: ERFResource | RIMResource
 
-        if self._restype == ResourceType.RIM:
+        if self._restype is ResourceType.RIM:
             rim = RIM()
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
@@ -548,7 +548,7 @@ class ERFEditor(Editor):
                     flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint
                 ).exec_()
             new_filepath = self._filepath
-            if resource.restype.name in ERFType.__members__ or resource.restype == ResourceType.RIM:
+            if resource.restype.name in ERFType.__members__ or resource.restype is ResourceType.RIM:
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
             tempPath, editor = openResourceEditor(

@@ -345,7 +345,7 @@ class Editor(QMainWindow):
         rim: RIM = read_rim(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             rim.set_data(self._resname, ResourceType.MDX, data_ext)
 
         rim.set_data(self._resname, self._restype, data)
@@ -369,13 +369,13 @@ class Editor(QMainWindow):
 
         c_parent_filepath = c_filepath.parent
         res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
-        while (res_parent_ident.restype.name in ERFType.__members__ or res_parent_ident.restype == ResourceType.RIM) and not c_parent_filepath.safe_isdir():
+        while (res_parent_ident.restype.name in ERFType.__members__ or res_parent_ident.restype is ResourceType.RIM) and not c_parent_filepath.safe_isdir():
             nested_capsule_idents.append(res_parent_ident)
             c_filepath = c_parent_filepath
             c_parent_filepath = c_filepath.parent
             res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
 
-        erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype == ResourceType.RIM else read_erf(c_filepath)
+        erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype is ResourceType.RIM else read_erf(c_filepath)
         nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [(ResourceIdentifier.from_path(c_filepath), erf_or_rim)]
         for res_ident in reversed(nested_capsule_idents[:-1]):
             nested_erf_or_rim_data = erf_or_rim.get(*res_ident.unpack())
@@ -383,7 +383,7 @@ class Editor(QMainWindow):
                 msg = f"You must save the ERFEditor window you added '{res_ident}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
-            erf_or_rim = read_rim(nested_erf_or_rim_data) if res_ident.restype == ResourceType.RIM else read_erf(nested_erf_or_rim_data)
+            erf_or_rim = read_rim(nested_erf_or_rim_data) if res_ident.restype is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
             nested_capsules.append((res_ident, erf_or_rim))
         for index, (res_ident, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
             if index == 0:
@@ -440,7 +440,7 @@ class Editor(QMainWindow):
         erf.erf_type = erftype
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             assert data_ext is not None, assert_with_variable_trace(data_ext is not None)
             erf.set_data(self._resname, ResourceType.MDX, data_ext)
 
@@ -461,7 +461,7 @@ class Editor(QMainWindow):
             file.write(data)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             with c_filepath.with_suffix(".mdx").open("wb") as file:
                 file.write(data_ext)
 

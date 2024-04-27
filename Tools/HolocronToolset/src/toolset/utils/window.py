@@ -131,7 +131,7 @@ def openResourceEditor(
     if restype in {ResourceType.NSS, ResourceType.NCS}:
         if installation:
             editor = NSSEditor(None, installation)
-        elif restype == ResourceType.NSS:
+        elif restype is ResourceType.NSS:
             QMessageBox.warning(
                 parentWindowWidget,
                 "No installation loaded",
@@ -235,7 +235,7 @@ def openResourceEditor(
         if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
             editor.setWindowIcon(parentWindowWidget.windowIcon())
 
-    if restype.name in ERFType.__members__ or restype == ResourceType.RIM:
+    if restype.name in ERFType.__members__ or restype is ResourceType.RIM:
         editor = ERFEditor(None, installation)
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:

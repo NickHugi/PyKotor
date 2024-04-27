@@ -388,6 +388,7 @@ class ModuleDesigner(QMainWindow):
         mod_filepath = mod_filepath.with_suffix(".mod")
         self.unloadModule()
         if not mod_filepath.is_file():
+            get_root_logger().info(f"No .mod found at '{mod_filepath}'")
             answer = QMessageBox.question(
                 self,
                 "No .mod for this module found.",

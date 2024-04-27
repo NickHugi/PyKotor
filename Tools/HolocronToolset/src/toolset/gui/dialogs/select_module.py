@@ -9,6 +9,7 @@ from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
 from utility.logger_util import get_root_logger
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -76,7 +77,7 @@ class SelectModuleDialog(QDialog):
         listedModules = set()
 
         for module in self._installation.modules_list():
-            lowerModuleFileName = module.lower()
+            lowerModuleFileName = str(PurePath(module).with_stem(Module.get_root(module))).lower()
             if lowerModuleFileName in listedModules:
                 continue
             listedModules.add(lowerModuleFileName)

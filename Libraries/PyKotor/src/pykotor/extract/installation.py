@@ -1354,7 +1354,7 @@ class Installation:  # noqa: PLR0904
                 (
                     resource
                     for resource in resource_list
-                    if resource.resname() == resname and resource.restype() == ResourceType.TXI
+                    if resource.resname() == resname and resource.restype() is ResourceType.TXI
                 ),
                 None,
             )
@@ -1370,7 +1370,7 @@ class Installation:  # noqa: PLR0904
                 if case_resname in case_resnames and resource.restype() in texture_types:
                     case_resnames.remove(case_resname)
                     tpc: TPC = read_tpc(resource.data())
-                    if resource.restype() == ResourceType.TGA:
+                    if resource.restype() is ResourceType.TGA:
                         tpc.txi = get_txi_from_list(case_resname, resource_list)
                     textures[case_resname] = tpc
 
@@ -1388,7 +1388,7 @@ class Installation:  # noqa: PLR0904
 
                     case_resnames.remove(case_resname)
                     tpc: TPC = read_tpc(texture_data) if texture_data else TPC()
-                    if tformat == ResourceType.TGA:
+                    if tformat is ResourceType.TGA:
                         tpc.txi = get_txi_from_list(case_resname, capsule.resources())
                     textures[case_resname] = tpc
 

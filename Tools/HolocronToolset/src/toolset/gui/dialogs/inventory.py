@@ -860,16 +860,16 @@ class ItemBuilderWorker(QThread):
         if self._installation.cacheCoreItems is None:
             queries.extend(
                 resource.identifier()
-                for resource in self._installation.chitin_resources() if resource.restype() == ResourceType.UTI
+                for resource in self._installation.chitin_resources() if resource.restype() is ResourceType.UTI
             )
         queries.extend(
             resource.identifier()
-            for resource in self._installation.override_resources() if resource.restype() == ResourceType.UTI
+            for resource in self._installation.override_resources() if resource.restype() is ResourceType.UTI
         )
         for capsule in self._capsules:
             queries.extend(
                 resource.identifier()
-                for resource in capsule if resource.restype() == ResourceType.UTI
+                for resource in capsule if resource.restype() is ResourceType.UTI
             )
         results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(
             queries,
