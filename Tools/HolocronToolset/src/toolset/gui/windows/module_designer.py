@@ -13,6 +13,7 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QIcon, QPixmap
 from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
+from pykotor.tools.misc import is_mod_file
 
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoCommand, QUndoStack
@@ -49,12 +50,11 @@ from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
 from toolset.gui.editors.git import openInstanceDialog
-from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import assert_with_variable_trace, safe_repr
+from utility.error_handling import safe_repr
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
@@ -383,34 +383,46 @@ class ModuleDesigner(QMainWindow):
     #    @with_variable_trace(Exception)
     def openModule(self, mod_filepath: Path):
         """Opens a module."""
+        orig_filepath = mod_filepath
+        mod_root = self._installation.replace_module_extensions(mod_filepath)
+        mod_filepath = mod_filepath.with_suffix(".mod")
+        self.unloadModule()
+        if not mod_filepath.is_file():
+            answer = QMessageBox.question(
+                self,
+                "No .mod for this module found.",
+                f"The Module Designer would like to create a .mod for module '{mod_root}', would you like to do this now?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            if answer == QMessageBox.StandardButton.Yes:
+                self.log.info(f"Creating '{mod_root}.mod' from the rims/erfs...")
+                module.rim_to_mod(mod_filepath, game=self._installation.game())
+                self._installation.reload_module(mod_filepath.name)
+            else:
+                mod_filepath = orig_filepath
 
         def task() -> tuple[Module, GIT, list[BWM]]:
-            # TODO: prompt/notify the user first at least before creating a .mod
-            mod_root = self._installation.replace_module_extensions(mod_filepath)
-            if GlobalSettings().disableRIMSaving and not mod_filepath.is_file():
-                print(f"Converting {mod_filepath.name} to a .mod")
-                module.rim_to_mod(mod_filepath)
-                self._installation.reload_module(mod_root)
+            combined_module = Module(mod_root, self._installation, use_dot_mod=is_mod_file(mod_filepath))
+            git_resource = combined_module.git()
+            if git_resource is None:
+                raise ValueError(f"This module '{mod_root}' is missing a GIT!")
 
-            new_module = Module(mod_root, self._installation)
-            git: GIT | None = new_module.git().resource()
-            assert git is not None, assert_with_variable_trace(git is not None, f"GIT file cannot be found in {new_module.get_id()}")
+            git: GIT = git_resource.resource()
             walkmeshes: list[BWM] = []
-            for bwm in new_module.resources.values():
+            for bwm in combined_module.resources.values():
                 if bwm.restype() != ResourceType.WOK:
                     continue
                 bwm_res: BWM | None = bwm.resource()
                 if bwm_res is None:
-                    print(f"bwm '{bwm.resname()}.{bwm.restype()}' returned None resource data, skipping...")
+                    self.log.warning(f"bwm '{bwm.resname()}.{bwm.restype()}' returned None resource data, skipping...")
                     continue
-                print(f"Adding walkmesh '{bwm.resname()}.{bwm.restype()}'")
+                self.log.info(f"Adding walkmesh '{bwm.resname()}.{bwm.restype()}'")
                 walkmeshes.append(bwm_res)
-            return (new_module, git, walkmeshes)
-
-        self.unloadModule()
+            return (combined_module, git, walkmeshes)
         loader = AsyncLoader(
             self,
-            f"Loading '{mod_filepath.name}' into designer...",
+            f"Loading module '{mod_filepath.name}' into designer...",
             task,
             "Error occurred loading the module designer",
         )
@@ -418,11 +430,11 @@ class ModuleDesigner(QMainWindow):
             self.log.debug("ModuleDesigner.openModule Loader finished.")
             new_module, git, walkmeshes = loader.value
             self._module = new_module
-            print("setGit")
+            self.log.debug("setGit")
             self.ui.flatRenderer.setGit(git)
-            print("init mainRenderer")
+            self.log.debug("init mainRenderer")
             self.ui.mainRenderer.init(self._installation, new_module)
-            print("set flatRenderer walkmeshes")
+            self.log.debug("set flatRenderer walkmeshes")
             self.ui.flatRenderer.setWalkmeshes(walkmeshes)
             self.ui.flatRenderer.centerCamera()
 
@@ -777,9 +789,11 @@ class ModuleDesigner(QMainWindow):
                     utt = read_utt(dialog.data)
                     instance.tag = utt.tag
                     if not instance.geometry:
+                        get_root_logger().info("Creating default triangle trigger geometry...")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITEncounter):
                     if not instance.geometry:
+                        get_root_logger().info("Creating default triangle trigger geometry...")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
                     utd = read_utd(dialog.data)
