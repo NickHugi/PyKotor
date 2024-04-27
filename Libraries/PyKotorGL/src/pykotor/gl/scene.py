@@ -669,24 +669,30 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def texture(self, name: str, *, lightmap: bool = False) -> Texture:
+    def texture(
+        self,
+        name: str,
+        *,
+        lightmap: bool = False,
+    ) -> Texture:
         if name in self.textures:
             return self.textures[name]
         try:
             tpc: TPC | None = None
             # Check the textures linked to the module first
             if self.module is not None:
-                print(f"Loading texture '{name}' from {self.module._root}")
+                print(f"Locating texture '{name}' in module '{self.module._root}'")
                 module_tex = self.module.texture(name)
-                tpc = None if module_tex is None else module_tex.resource()
+                if module_tex is not None:
+                    print(f"Loading texture '{name}' from module '{self.module._root}'")
+                    tpc = module_tex.resource()
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
-                print(f"Locating texture '{name}' from override/bifs...")
+                print(f"Locating and loading texture '{name}' from override/bifs/texturepacks...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-                print(f"Finished checking installation for texture '{name}'")
             if tpc is None:
-                print(f"NOT FOUND ANYWHERE: Texture '{name}'")
+                get_root_logger().warning("MISSING TEXTURE: '%s'", name)
         except Exception:  # noqa: BLE001
             get_root_logger().exception("Exception thrown while loading texture.")
             # If an error occurs during the loading process, just use a blank image.
@@ -744,7 +750,7 @@ class Scene:
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
             except Exception as e:
-                print(format_exception_with_variables(e))
+                #print(format_exception_with_variables(e))
                 model = gl_load_stitched_model(
                     self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
