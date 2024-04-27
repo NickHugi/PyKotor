@@ -222,21 +222,20 @@ class CustomTableWidget(QTableWidget):
         super().__init__(*args, **kwargs)
 
     def get_column_index(self, column_name: str) -> int:
-        # Check if this is a QListView, which does not support headers
-        if isinstance(self, QListView):
-            raise NotImplementedError("QListView does not support column headers.")
-
-        # Check for horizontal header support typically found in QTableView and QTreeView
-        if isinstance(self, (QTableView, QTreeView)):
-            header = self.horizontalHeader()
-            for i in range(header.count()):
-                headerItem = header.model().headerData(i, Qt.Horizontal)
-                if headerItem == column_name:
+        # This method needs to be context-aware for the type of view
+        if isinstance(self, QTableWidget):
+            for i in range(self.columnCount()):
+                headerItem = self.horizontalHeaderItem(i)
+                if headerItem is None:
+                    continue
+                if headerItem.text() == column_name:
                     return i
-            raise ValueError(f"Column name '{column_name}' does not exist.")
-        
-        # If it reaches here, then the view type might not be directly supported yet
-        raise NotImplementedError("This view does not support horizontal headers or is not recognized.")
+        elif isinstance(self, (QTreeView, QTableView)):
+            model = self.model()
+            for i in range(model.columnCount()):
+                if model.headerData(i, Qt.Horizontal) == column_name:
+                    return i
+        raise ValueError(f"Column name '{column_name}' does not exist in this view.")
 
 
     def create_action(
