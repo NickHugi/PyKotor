@@ -21,7 +21,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.template import OverrideType
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import universal_simplify_exception
 from utility.logger_util import get_root_logger
 from utility.system.path import PurePath
 

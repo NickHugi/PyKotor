@@ -13,7 +13,6 @@ import sys
 import tempfile
 import time
 import tkinter as tk
-import traceback
 import webbrowser
 
 from argparse import ArgumentParser

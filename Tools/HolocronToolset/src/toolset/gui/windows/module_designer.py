@@ -13,6 +13,7 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QIcon, QPixmap
 from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
+
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoCommand, QUndoStack
 elif qtpy.API_NAME in ("PyQt6", "PySide6"):
@@ -775,6 +776,11 @@ class ModuleDesigner(QMainWindow):
                 elif isinstance(instance, GITTrigger):
                     utt = read_utt(dialog.data)
                     instance.tag = utt.tag
+                    if not instance.geometry:
+                        instance.geometry.create_triangle(origin=instance.position)
+                elif isinstance(instance, GITEncounter):
+                    if not instance.geometry:
+                        instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
                     utd = read_utd(dialog.data)
                     instance.tag = utd.tag

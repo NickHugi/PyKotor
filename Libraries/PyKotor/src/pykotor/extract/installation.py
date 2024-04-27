@@ -23,7 +23,6 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.formats.twoda.twoda_auto import read_2da
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
@@ -32,6 +31,7 @@ from utility.logger_util import get_root_logger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from logging import Logger
 
     from pykotor.extract.talktable import StringResult
@@ -754,7 +754,7 @@ class Installation:  # noqa: PLR0904
         """
         r_path: CaseAwarePath = CaseAwarePath.pathify(path)
 
-        def check(x) -> bool:
+        def check(x: str) -> bool:
             c_path: CaseAwarePath = r_path.joinpath(x)
             return c_path.safe_exists() is not False
 
