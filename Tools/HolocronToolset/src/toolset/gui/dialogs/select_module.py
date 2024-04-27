@@ -75,7 +75,7 @@ class SelectModuleDialog(QDialog):
         listedModules = set()
 
         for module in self._installation.modules_list():
-            root = Module.get_root(module)
+            root = Module.get_root(module).lower()
 
             if root in listedModules:
                 continue
