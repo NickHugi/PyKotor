@@ -1402,6 +1402,50 @@ class Polygon3:
             poly3.points.append(Vector3(point.x, point.y, 0))
         return poly3
 
+    def create_triangle(
+        self,
+        size: float = 1.0,
+        origin: Vector3 | tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ):
+        """Creates an equilateral triangle in the XY-plane with the given size and the bottom vertex at the specified origin.
+
+        Args:
+        ----
+            size: The length of each side of the triangle.
+            origin: A tuple representing the (x, y, z) coordinates of the bottom vertex of the triangle.
+
+        This method modifies the instance by adding three Vector3 points defining the triangle.
+        """
+        x, y, z = origin
+        height = size * (3 ** 0.5) / 2
+        self.points = [
+            Vector3(x, y, z),
+            Vector3(x + size, y, z),
+            Vector3(x + size / 2, y + height, z)
+        ]
+
+    def default_square(
+        self,
+        size: float = 1.0,
+        origin: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    ):
+        """Creates a square in the XY-plane with the given size and the bottom-left corner at the specified origin.
+
+        Args:
+        ----
+            size: The length of each side of the square.
+            origin: A tuple representing the (x, y, z) coordinates of the bottom-left corner of the square.
+
+        This method modifies the instance by adding four Vector3 points defining the square.
+        """
+        x, y, z = origin
+        self.points = [
+            Vector3(x, y, z),
+            Vector3(x + size, y, z),
+            Vector3(x + size, y + size, z),
+            Vector3(x, y + size, z)
+        ]
+
     def append(
         self,
         point: Vector3,

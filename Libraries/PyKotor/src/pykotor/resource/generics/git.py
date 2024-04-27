@@ -20,6 +20,7 @@ from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -313,10 +314,6 @@ class GITCamera(GITInstance):
         self,
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
-
-    def pitch(self) -> float:
-        # Following the convention used in rotate method, where pitch affects rotation.z
-        return math.pi - self.orientation.to_euler().z
 
     def roll(self) -> float:
         # Following the convention used in rotate method, where roll affects rotation.y
@@ -880,10 +877,7 @@ def construct_git(
         creature.position.y = creature_struct.acquire("YPosition", 0.0)
         creature.position.z = creature_struct.acquire("ZPosition", 0.0)
         rot_x, rot_y = (
-            creature_struct.acquire(
-                "XOrientation",
-                0.0,
-            ),
+            creature_struct.acquire("XOrientation", 0.0),
             creature_struct.acquire("YOrientation", 0.0),
         )
         creature.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
@@ -896,14 +890,8 @@ def construct_git(
         door.resref = door_struct.acquire("TemplateResRef", ResRef.from_blank())
         door.linked_to = door_struct.acquire("LinkedTo", "")
         door.linked_to_flags = GITModuleLink(door_struct.acquire("LinkedToFlags", 0))
-        door.linked_to_module = door_struct.acquire(
-            "LinkedToModule",
-            ResRef.from_blank(),
-        )
-        door.transition_destination = door_struct.acquire(
-            "TransitionDestin",
-            LocalizedString.from_invalid(),
-        )
+        door.linked_to_module = door_struct.acquire("LinkedToModule", ResRef.from_blank())
+        door.transition_destination = door_struct.acquire("TransitionDestin", LocalizedString.from_invalid())
         door.position.x = door_struct.acquire("X", 0.0)
         door.position.y = door_struct.acquire("Y", 0.0)
         door.position.z = door_struct.acquire("Z", 0.0)
@@ -918,16 +906,21 @@ def construct_git(
         encounter = GITEncounter()
         git.encounters.append(encounter)
         encounter.position = Vector3(x, y, z)
-        encounter.resref = encounter_struct.acquire(
-            "TemplateResRef",
-            ResRef.from_blank(),
-        )
+        encounter.resref = encounter_struct.acquire("TemplateResRef", ResRef.from_blank())
 
-        for geometry_struct in encounter_struct.get_list("Geometry"):
-            x = geometry_struct.acquire("X", 0.0)
-            y = geometry_struct.acquire("Y", 0.0)
-            z = geometry_struct.acquire("Z", 0.0)
-            encounter.geometry.append(Vector3(x, y, z))
+        if encounter_struct.exists("Geometry"):
+            geometry_list = encounter_struct.get_list("Geometry")
+            for geometry_struct in geometry_list:
+                x = geometry_struct.acquire("PointX", 0.0)
+                y = geometry_struct.acquire("PointY", 0.0)
+                z = geometry_struct.acquire("PointZ", 0.0)
+                encounter.geometry.append(Vector3(x, y, z))
+            if not geometry_list:
+                get_root_logger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
+                encounter.geometry.create_triangle(origin=encounter.position)
+        else:
+            get_root_logger().warning("Encounter geometry list missing! Creating a default triangle at its position.")
+            encounter.geometry.create_triangle(origin=encounter.position)
 
         for spawn_struct in encounter_struct.get_list("SpawnPointList"):
             spawn = GITEncounterSpawnPoint()
@@ -941,10 +934,7 @@ def construct_git(
         placeable = GITPlaceable()
         git.placeables.append(placeable)
 
-        placeable.resref = placeable_struct.acquire(
-            "TemplateResRef",
-            ResRef.from_blank(),
-        )
+        placeable.resref = placeable_struct.acquire("TemplateResRef", ResRef.from_blank())
         placeable.position.x = placeable_struct.acquire("X", 0.0)
         placeable.position.y = placeable_struct.acquire("Y", 0.0)
         placeable.position.z = placeable_struct.acquire("Z", 0.0)
@@ -974,10 +964,7 @@ def construct_git(
 
         rot_x, rot_y = (
             store_struct.acquire("XOrientation", 0.0),
-            store_struct.acquire(
-                "YOrientation",
-                0.0,
-            ),
+            store_struct.acquire("YOrientation", 0.0),
         )
         store.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
@@ -991,32 +978,29 @@ def construct_git(
         trigger.position.z = trigger_struct.acquire("ZPosition", 0.0)
         trigger.tag = trigger_struct.acquire("Tag", "")
         trigger.linked_to = trigger_struct.acquire("LinkedTo", "")
-        trigger.linked_to_flags = GITModuleLink(
-            trigger_struct.acquire("LinkedToFlags", 0),
-        )
-        trigger.linked_to_module = trigger_struct.acquire(
-            "LinkedToModule",
-            ResRef.from_blank(),
-        )
-        trigger.transition_destination = trigger_struct.acquire(
-            "TransitionDestin",
-            LocalizedString.from_invalid(),
-        )
+        trigger.linked_to_flags = GITModuleLink(trigger_struct.acquire("LinkedToFlags", 0))
+        trigger.linked_to_module = trigger_struct.acquire("LinkedToModule", ResRef.from_blank())
+        trigger.transition_destination = trigger_struct.acquire("TransitionDestin", LocalizedString.from_invalid())
 
-        for geometry_struct in trigger_struct.get_list("Geometry"):
-            x = geometry_struct.acquire("PointX", 0.0)
-            y = geometry_struct.acquire("PointY", 0.0)
-            z = geometry_struct.acquire("PointZ", 0.0)
-            trigger.geometry.append(Vector3(x, y, z))
+        if trigger_struct.exists("Geometry"):
+            geometry_list = trigger_struct.get_list("Geometry")
+            for geometry_struct in geometry_list:
+                x = geometry_struct.acquire("PointX", 0.0)
+                y = geometry_struct.acquire("PointY", 0.0)
+                z = geometry_struct.acquire("PointZ", 0.0)
+                trigger.geometry.append(Vector3(x, y, z))
+            if not geometry_list:
+                get_root_logger().warning("Trigger geometry list is empty! Creating a default triangle at its position.")
+                trigger.geometry.create_triangle(origin=trigger.position)
+        else:
+            get_root_logger().warning("Trigger geometry list missing! Creating a default triangle at its position.")
+            trigger.geometry.create_triangle(origin=trigger.position)
 
     for waypoint_struct in gff.root.get_list("WaypointList"):
         waypoint = GITWaypoint()
         git.waypoints.append(waypoint)
 
-        waypoint.name = waypoint_struct.acquire(
-            "LocalizedName",
-            LocalizedString.from_invalid(),
-        )
+        waypoint.name = waypoint_struct.acquire("LocalizedName", LocalizedString.from_invalid())
         waypoint.tag = waypoint_struct.acquire("Tag", "")
         waypoint.resref = waypoint_struct.acquire("TemplateResRef", ResRef.from_blank())
         waypoint.position.x = waypoint_struct.acquire("XPosition", 0.0)
@@ -1025,17 +1009,11 @@ def construct_git(
 
         waypoint.has_map_note = bool(waypoint_struct.acquire("HasMapNote", 0))
         if waypoint.has_map_note:
-            waypoint.map_note = waypoint_struct.acquire(
-                "MapNote",
-                LocalizedString.from_invalid(),
-            )
+            waypoint.map_note = waypoint_struct.acquire("MapNote", LocalizedString.from_invalid())
             waypoint.map_note_enabled = bool(waypoint_struct.acquire("MapNoteEnabled", 0))
 
         rot_x, rot_y = (
-            waypoint_struct.acquire(
-                "XOrientation",
-                0.0,
-            ),
+            waypoint_struct.acquire("XOrientation", 0.0),
             waypoint_struct.acquire("YOrientation", 0.0),
         )
         waypoint.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
@@ -1114,6 +1092,10 @@ def dismantle_git(
         encounter_struct.set_single("YPosition", encounter.position.y)
         encounter_struct.set_single("ZPosition", encounter.position.z)
 
+        if not encounter.geometry:
+            get_root_logger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
+            encounter.geometry.create_triangle(origin=encounter.position)
+
         geometry_list = encounter_struct.set_list("Geometry", GFFList())
         for point in encounter.geometry:
             geometry_struct = geometry_list.add(GITEncounter.GFF_GEOMETRY_STRUCT_ID)
@@ -1182,6 +1164,10 @@ def dismantle_git(
         trigger_struct.set_uint8("LinkedToFlags", trigger.linked_to_flags.value)
         trigger_struct.set_resref("LinkedToModule", trigger.linked_to_module)
         trigger_struct.set_locstring("TransitionDestin", trigger.transition_destination)
+
+        if not trigger.geometry:
+            get_root_logger().warning("Missing trigger geometry for '%s', creating a default triangle at its position...", trigger.resref)
+            trigger.geometry.create_triangle(origin=trigger.position)
 
         geometry_list = trigger_struct.set_list("Geometry", GFFList())
         for point in trigger.geometry:
