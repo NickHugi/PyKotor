@@ -217,7 +217,7 @@ class ResourceTableWidgetItem(FileTableWidgetItem):
         return hash(self.resource)
 
 
-class CustomTableWidget(QTableView):
+class CustomTableWidget(QTableWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -234,7 +234,7 @@ class CustomTableWidget(QTableView):
                 if headerItem == column_name:
                     return i
             raise ValueError(f"Column name '{column_name}' does not exist.")
-
+        
         # If it reaches here, then the view type might not be directly supported yet
         raise NotImplementedError("This view does not support horizontal headers or is not recognized.")
 
