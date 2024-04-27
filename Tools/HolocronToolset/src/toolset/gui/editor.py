@@ -171,8 +171,10 @@ class Editor(QMainWindow):
             return
 
         relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
-        if is_bif_file(relpath) or (self._editorTitle != "ERFEditor" and is_capsule_file(self._filepath)):
-            relpath /= f"{self._resname}.{self._restype.extension}"
+        if is_bif_file(relpath) or is_capsule_file(self._filepath):
+            from toolset.gui.editors.erf import ERFEditor
+            if not isinstance(self, ERFEditor):
+                relpath /= f"{self._resname}.{self._restype.extension}"
         else:
             assert relpath.name.lower() == f"{self._resname}.{self._restype}".lower()
         self.setWindowTitle(f"{self._editorTitle}: {relpath} - {installationName}")
