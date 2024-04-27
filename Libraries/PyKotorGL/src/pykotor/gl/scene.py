@@ -677,24 +677,25 @@ class Scene:
     ) -> Texture:
         if name in self.textures:
             return self.textures[name]
+        type_name = "lightmap" if lightmap else "texture"
         try:
             tpc: TPC | None = None
             # Check the textures linked to the module first
             if self.module is not None:
-                print(f"Locating texture '{name}' in module '{self.module._root}'")
+                print(f"Locating {type_name} '{name}' in module '{self.module._root}'")
                 module_tex = self.module.texture(name)
                 if module_tex is not None:
-                    print(f"Loading texture '{name}' from module '{self.module._root}'")
+                    print(f"Loading {type_name} '{name}' from module '{self.module._root}'")
                     tpc = module_tex.resource()
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
-                print(f"Locating and loading texture '{name}' from override/bifs/texturepacks...")
+                print(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
-                get_root_logger().warning("MISSING TEXTURE: '%s'", name)
+                get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)
         except Exception:  # noqa: BLE001
-            get_root_logger().exception("Exception thrown while loading texture.")
+            get_root_logger().exception("Exception thrown while loading %s.", type_name)
             # If an error occurs during the loading process, just use a blank image.
             tpc = TPC()
 

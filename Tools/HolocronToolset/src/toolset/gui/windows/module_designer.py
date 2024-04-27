@@ -385,7 +385,7 @@ class ModuleDesigner(QMainWindow):
         """Opens a module."""
         orig_filepath = mod_filepath
         mod_root = self._installation.replace_module_extensions(mod_filepath)
-        mod_filepath = mod_filepath.with_suffix(".mod")
+        mod_filepath = mod_filepath.with_name(mod_root+".mod")
         self.unloadModule()
         if not mod_filepath.is_file():
             get_root_logger().info(f"No .mod found at '{mod_filepath}'")
@@ -790,11 +790,11 @@ class ModuleDesigner(QMainWindow):
                     utt = read_utt(dialog.data)
                     instance.tag = utt.tag
                     if not instance.geometry:
-                        get_root_logger().info("Creating default triangle trigger geometry...")
+                        get_root_logger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITEncounter):
                     if not instance.geometry:
-                        get_root_logger().info("Creating default triangle trigger geometry...")
+                        get_root_logger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
                     utd = read_utd(dialog.data)
@@ -831,6 +831,9 @@ class ModuleDesigner(QMainWindow):
                 instance.resref = ResRef(dialog.resname)  # type: ignore[reportAttributeAccessIssue]
                 self._module.git().resource().add(instance)
         else:
+            if isinstance(instance, (GITEncounter, GITTrigger)) and not instance.geometry:
+                self.log.info("Creating default triangle geometry for %s.%s", instance.resref, "utt" if isinstance(instance, GITTrigger) else "ute")
+                instance.geometry.create_triangle(origin=instance.position)
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
@@ -839,9 +842,11 @@ class ModuleDesigner(QMainWindow):
         if openInstanceDialog(self, instance, self._installation):
             if not isinstance(instance, GITCamera):
                 ident = instance.identifier()
-                assert ident is not None, "identifier() returned None for a non-GITCamera instance?"
                 self.ui.mainRenderer.scene.clearCacheBuffer.append(ident)
             self.rebuildInstanceList()
+
+    def editGeometry(self, instance: GITInstance):
+        ...
 
     def snapCameraToView(self, instance: GITCamera):
         scene = self.ui.mainRenderer.scene
@@ -863,6 +868,17 @@ class ModuleDesigner(QMainWindow):
         old_orientation = instance.orientation
         orientation_command = OrientationCommand(instance, *old_orientation, *new_orientation)
         self.undoStack.push(orientation_command)
+
+    def snapViewToGITInstance(self, instance: GITInstance):
+        scene = self.ui.mainRenderer.scene
+        assert scene is not None
+        camera: Camera = scene.camera
+        yaw = instance.yaw()
+        camera.yaw = camera.yaw if yaw is None else yaw
+        camera.x, camera.y, camera.z = instance.position
+        camera.y = instance.position.y
+        camera.z = instance.position.z
+        camera.distance = 0
 
     def snapViewToGITCamera(self, instance: GITCamera):
         scene = self.ui.mainRenderer.scene
@@ -973,7 +989,6 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
     def handleUndoRedoFromLongActionFinished(self):
-        print("handleUndoRedoFromLongActionFinished()")
         # Check if we were dragging
         if self.isDragMoving:
             for instance, old_position in self.initialPositions.items():
@@ -1115,14 +1130,14 @@ class ModuleDesigner(QMainWindow):
         else:
             self.setSelection([])
 
-    def onContextMenu(self, world: Vector3, point: QPoint):
+    def onContextMenu(self, world: Vector3, point: QPoint, *, isFlatRendererCall: bool | None = None):
         if self._module is None:
             return
 
         if len(self.ui.mainRenderer.scene.selection) == 0:
             self.onContextMenuSelectionNone(world)
         else:
-            self.onContextMenuSelectionExists()
+            self.onContextMenuSelectionExists(isFlatRendererCall=isFlatRendererCall)
 
     def onContextMenuSelectionNone(self, world: Vector3):
         """Displays a context menu for object insertion.
@@ -1143,7 +1158,7 @@ class ModuleDesigner(QMainWindow):
 
         rot = self.ui.mainRenderer.scene.camera
         menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), walkmeshSnap=False))  # type: ignore[reportArgumentType]
-        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), walkmeshSnap=False))
+        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(rot.x, rot.y, rot.z, rot.yaw, rot.pitch, 0, 0), walkmeshSnap=False))
         menu.addSeparator()
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), walkmeshSnap=True))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), walkmeshSnap=False))
@@ -1157,7 +1172,7 @@ class ModuleDesigner(QMainWindow):
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
-    def onContextMenuSelectionExists(self):
+    def onContextMenuSelectionExists(self, *, isFlatRendererCall: bool | None = None):
         """Checks if a context menu selection exists.
 
         Args:
@@ -1180,9 +1195,13 @@ class ModuleDesigner(QMainWindow):
                 menu.addAction("Snap Camera to 3D View").triggered.connect(lambda: self.snapCameraToView(instance))
                 menu.addAction("Snap 3D View to Camera").triggered.connect(lambda: self.snapViewToGITCamera(instance))
                 menu.addSeparator()
+            if isFlatRendererCall:
+                menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITCamera(instance))
 
             menu.addAction("Copy position to clipboard").triggered.connect(lambda: self.copyInstancePosition(instance))
             menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
+            if isinstance(instance, (GITTrigger, GITEncounter)):
+                menu.addAction("Edit Geometry").triggered.connect(lambda: self.editGeometry(instance))
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
         menu.popup(self.cursor().pos())
@@ -1455,12 +1474,10 @@ class ModuleDesignerControls3d:
                 break
 
         if self.moveCameraToCursor.satisfied(buttons, keys):
-            scene = self.renderer.scene
-            assert scene is not None
-            camera = scene.camera
-            camera.x = scene.cursor.position().x
-            camera.y = scene.cursor.position().y
-            camera.z = scene.cursor.position().z
+            camera = self.renderer.scene.camera
+            camera.x = self.renderer.scene.cursor.position().x
+            camera.y = self.renderer.scene.cursor.position().y
+            camera.z = self.renderer.scene.cursor.position().z
         if self.moveCameraToEntryPoint.satisfied(buttons, keys):
             self.editor.snapCameraToEntryLocation()
 
@@ -1555,7 +1572,8 @@ class ModuleDesignerControlsFreeCam:
         self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=False)
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        print("onMousePressed2d")
 
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
@@ -1627,12 +1645,11 @@ class ModuleDesignerControls2d:
             - Nudges camera zoom by calculated amount.
         """
         if self.zoomCamera.satisfied(buttons, keys):
-            strength: float = self.settings.moveCameraSensitivity2d / 100 / 50
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
 
-            zoomFactor: float = zoomInFactor if delta.y > 0 else zoomOutFactor
-            self.renderer.camera.nudgeZoom(delta.y * zoomFactor * strength)
+            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+            self.renderer.camera.nudgeZoom(zoomFactor)
 
     def onMouseMoved(
         self,
@@ -1721,7 +1738,7 @@ class ModuleDesignerControls2d:
             self._duplicate_instance()  # TODO: undo/redo support
         if self.openContextMenu.satisfied(buttons, keys):
             world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))))
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
 
     def _duplicate_instance(self):
         instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
