@@ -1196,7 +1196,7 @@ class ModuleDesigner(QMainWindow):
                 menu.addAction("Snap 3D View to Camera").triggered.connect(lambda: self.snapViewToGITCamera(instance))
                 menu.addSeparator()
             if isFlatRendererCall:
-                menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITCamera(instance))
+                menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITInstance(instance))
 
             menu.addAction("Copy position to clipboard").triggered.connect(lambda: self.copyInstancePosition(instance))
             menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
