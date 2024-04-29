@@ -1958,7 +1958,7 @@ class Installation:  # noqa: PLR0904
                 if are.root.exists("Name"):
                     actual_ftype = are.root.what_type("Name")
                     if actual_ftype is not GFFFieldType.LocalizedString:
-                        get_root_logger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_List' type '{actual_ftype.name}', expected 'List'")
+                        get_root_logger().warning(f"{area_resource.filename()} has incorrect field 'Name' type '{actual_ftype.name}', expected type 'List'")
                     locstring: LocalizedString = are.root.get_locstring("Name")
                     if locstring.stringref == -1:
                         return locstring.get(Language.ENGLISH, Gender.MALE)
