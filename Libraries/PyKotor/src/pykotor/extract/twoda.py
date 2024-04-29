@@ -160,6 +160,7 @@ class K1Columns2DA:
 
         @dataclass(frozen=True, init=False, repr=False)
         class Models(ABSColumns2DA):
+            """All 2DA columns that reference model resrefs in the first game."""
             ammunitiontypes: ClassVar[set[str]] = {"model", "model0", "model1"}
             appearance: ClassVar[set[str]] = {"modela", "modelb", "modelc", "modeld", "modele", "modelf", "modelg", "modelh", "modeli", "modelj"}
             baseitems: ClassVar[set[str]] = {"defaultmodel"}

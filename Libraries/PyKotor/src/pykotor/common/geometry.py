@@ -1101,7 +1101,7 @@ class Face:
         v1: Vector3,
         v2: Vector3,
         v3: Vector3,
-        material=SurfaceMaterial.UNDEFINED,
+        material: SurfaceMaterial = SurfaceMaterial.UNDEFINED,
     ):
         self.v1: Vector3 = v1
         self.v2: Vector3 = v2

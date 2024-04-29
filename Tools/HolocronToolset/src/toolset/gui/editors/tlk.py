@@ -349,8 +349,8 @@ class TLKEditor(Editor):
         isVisible: bool = self.ui.searchBox.isVisible()
         self.ui.searchBox.setVisible(not isVisible)
         if not isVisible:  # If the jump box was not visible before and now is
-            self.ui.searchBox.setFocus()  # Activate the spinbox for immediate typing
-            self.ui.searchBox.selectAll()  # Optionally, select all text to quickly replace the previous number
+            self.ui.searchEdit.setFocus()  # Activate the spinbox for immediate typing
+            self.ui.searchEdit.selectAll()
 
     def gotoLine(self, line: int):
         index = self.model.index(line, 0)
@@ -363,7 +363,7 @@ class TLKEditor(Editor):
         self.ui.jumpBox.setVisible(not isVisible)
         if not isVisible:  # If the jump box was not visible before and now is
             self.ui.jumpSpinbox.setFocus()  # Activate the spinbox for immediate typing
-            self.ui.jumpSpinbox.selectAll()  # Optionally, select all text to quickly replace the previous number
+            self.ui.jumpSpinbox.selectAll()
 
     def selectionChanged(self):
         """Handle selection changes in the talk table.
