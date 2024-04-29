@@ -138,7 +138,7 @@ class GIT:
     def add(
         self,
         instance: GITInstance,
-    ):
+    ) -> None:
         """Adds instance to the relevant list in the GIT.
 
         Args:

@@ -11,34 +11,34 @@ from qtpy.QtCore import QSettings, Qt
 
 # Full mapping of Qt.MouseButton values to integers
 mouseButtonMap: dict[Qt.MouseButton, int] = {
-    Qt.NoButton: 0,
+    Qt.MouseButton.NoButton: 0,
     Qt.MouseButton.LeftButton: 1,
-    Qt.RightButton: 2,
-    Qt.MiddleButton: 4,
-    Qt.BackButton: 8,
-    Qt.ForwardButton: 16,
-    Qt.TaskButton: 32,
-    Qt.ExtraButton4: 64,
-    Qt.ExtraButton5: 128,
-    Qt.ExtraButton6: 256,
-    Qt.ExtraButton7: 512,
-    Qt.ExtraButton8: 1024,
-    Qt.ExtraButton9: 2048,
-    Qt.ExtraButton10: 4096,
-    Qt.ExtraButton11: 8192,
-    Qt.ExtraButton12: 16384,
-    Qt.ExtraButton13: 32768,
-    Qt.ExtraButton14: 65536,
-    Qt.ExtraButton15: 131072,
-    Qt.ExtraButton16: 262144,
-    Qt.ExtraButton17: 524288,
-    Qt.ExtraButton18: 1048576,
-    Qt.ExtraButton19: 2097152,
-    Qt.ExtraButton20: 4194304,
-    Qt.ExtraButton21: 8388608,
-    Qt.ExtraButton22: 16777216,
-    Qt.ExtraButton23: 33554432,
-    Qt.ExtraButton24: 67108864,
+    Qt.MouseButton.RightButton: 2,
+    Qt.MouseButton.MiddleButton: 4,
+    Qt.MouseButton.BackButton: 8,
+    Qt.MouseButton.ForwardButton: 16,
+    Qt.MouseButton.TaskButton: 32,
+    Qt.MouseButton.ExtraButton4: 64,
+    Qt.MouseButton.ExtraButton5: 128,
+    Qt.MouseButton.ExtraButton6: 256,
+    Qt.MouseButton.ExtraButton7: 512,
+    Qt.MouseButton.ExtraButton8: 1024,
+    Qt.MouseButton.ExtraButton9: 2048,
+    Qt.MouseButton.ExtraButton10: 4096,
+    Qt.MouseButton.ExtraButton11: 8192,
+    Qt.MouseButton.ExtraButton12: 16384,
+    Qt.MouseButton.ExtraButton13: 32768,
+    Qt.MouseButton.ExtraButton14: 65536,
+    Qt.MouseButton.ExtraButton15: 131072,
+    Qt.MouseButton.ExtraButton16: 262144,
+    Qt.MouseButton.ExtraButton17: 524288,
+    Qt.MouseButton.ExtraButton18: 1048576,
+    Qt.MouseButton.ExtraButton19: 2097152,
+    Qt.MouseButton.ExtraButton20: 4194304,
+    Qt.MouseButton.ExtraButton21: 8388608,
+    Qt.MouseButton.ExtraButton22: 16777216,
+    Qt.MouseButton.ExtraButton23: 33554432,
+    Qt.MouseButton.ExtraButton24: 67108864,
     # Qt defines up to ExtraButton24. Add more if your version of Qt supports them.
 }
 mouseButtonMapReverse = {v: k for k, v in mouseButtonMap.items()}
@@ -46,8 +46,8 @@ mouseButtonMapReverse = {v: k for k, v in mouseButtonMap.items()}
 
 class QtTypeWrapper:
     def __init__(self, value: Any, type_str: str):
-        self.value = value
-        self.type_str = type_str
+        self.value: Any = value
+        self.type_str: str = type_str
 
     def reconstruct(self):
         if self.type_str == "Qt.Key":

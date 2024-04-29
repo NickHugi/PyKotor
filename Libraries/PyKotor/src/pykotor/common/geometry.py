@@ -1161,7 +1161,7 @@ class Face:
         self,
         x: float,
         y: float,
-    ):
+    ) -> float:
         """Returns the Z-component determined from the given X and Y components.
 
         This method does not check if the point exists within the face, that must be done separately with inside().
@@ -1202,7 +1202,7 @@ class Polygon2:
     def __repr__(
         self,
     ) -> str:
-        return f"Polygon3({self.points})"
+        return f"Polygon2({self.points})"
 
     def __getitem__(
         self,

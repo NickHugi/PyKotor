@@ -250,7 +250,7 @@ class StructMember:
             msg = f"Unknown datatype: {self.datatype.builtin}"
             raise CompileError(msg)
 
-    def size(self, root: CodeRoot):
+    def size(self, root: CodeRoot) -> int:
         return self.datatype.size(root)
 
 
@@ -1354,7 +1354,7 @@ class EmptyStatement(Statement):
         return_instruction: NCSInstruction,
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
-    ):
+    ) -> DynamicDataType:
         return DynamicDataType.VOID
 
 
@@ -1371,7 +1371,7 @@ class NopStatement(Statement):
         return_instruction: NCSInstruction,
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
-    ):
+    ) -> DynamicDataType:
         ncs.add(NCSInstructionType.NOP, args=[self.string])
         return DynamicDataType.VOID
 
@@ -1558,7 +1558,7 @@ class ReturnStatement(Statement):
         return_instruction: NCSInstruction,
         break_instruction: NCSInstruction | None,
         continue_instruction: NCSInstruction | None,
-    ):
+    ) -> DynamicDataType:
         if self.expression is not None:
             return self.expression.compile(ncs, root, block)
         return DynamicDataType.VOID

@@ -19,7 +19,6 @@ import send2trash
 from qtpy.QtCore import QUrl, Qt
 from qtpy.QtGui import QAction, QDesktopServices, QKeySequence
 from qtpy.QtWidgets import (
-    QAbstractItemView,
     QAction,
     QApplication,
     QCheckBox,
@@ -28,7 +27,6 @@ from qtpy.QtWidgets import (
     QFileDialog,
     QHeaderView,
     QLineEdit,
-    QListView,
     QMainWindow,
     QMenu,
     QMessageBox,

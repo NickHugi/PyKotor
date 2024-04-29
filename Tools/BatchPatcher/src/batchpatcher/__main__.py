@@ -1248,7 +1248,7 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     return bool(c_path.safe_isdir() and c_path.joinpath("chitin.key").safe_isfile())
 
 
-def determine_input_path(path: Path):
+def determine_input_path(path: Path) -> None:
     # sourcery skip: assign-if-exp, reintroduce-else
     if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
         msg = "Path does not exist"

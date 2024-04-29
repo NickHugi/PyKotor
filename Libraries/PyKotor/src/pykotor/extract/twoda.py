@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, ClassVar, NamedTuple
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
+
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.twoda.twoda_data import TwoDARow
     from pykotor.tools.path import CaseAwarePath
