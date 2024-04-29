@@ -1974,7 +1974,7 @@ class Installation:  # noqa: PLR0904
         *,
         use_hardcoded: bool = True,
         use_alternate: bool = False,
-    ) -> str:  # sourcery skip: remove-unreachable-code
+    ) -> str:    # sourcery skip: remove-unreachable-code
         """Returns an identifier for the module that matches the filename/IFO/ARE resname.
 
         NOTE: Since this is only used for sorting currently, does not parse Mod_Area_list or Mod_VO_ID.
@@ -1995,14 +1995,23 @@ class Installation:  # noqa: PLR0904
         try:
             def quick_id(filename: str) -> str:
                 base_name: str = filename.rsplit(".")[0]  # Strip extension
+                if base_name.startswith("danm") and len(base_name) > 4:
+                    base_name = f"dan_m{base_name[4:]}"
+                elif base_name.startswith("manm") and len(base_name) > 4:
+                    base_name = f"man_m{base_name[4:]}"
                 parts: list[str] = base_name.split("_")
+                print(f"parts: {parts}")
 
                 if len(parts) == 1:  # noqa: PLR2004
                     # If there are no underscores, return the base name itself
                     return base_name
                 if len(parts) == 2:  # noqa: PLR2004
                     # If there's exactly one underscore, return the part after the underscore
-                    return parts[1]
+                    return (
+                        parts[0]
+                        if parts[1] in ("s", "dlg")
+                        else parts[1]
+                    )
                 if len(parts) >= 3:  # noqa: PLR2004
                     # If there are three or more underscores, return what's between the first two underscores
                     return (
@@ -2014,7 +2023,7 @@ class Installation:  # noqa: PLR0904
                 return base_name
 
             if use_alternate:
-                return quick_id(module_filename)
+                return quick_id(module_filename).lower()
         except Exception:  # noqa: BLE001
             self._log.exception(f"Could not quick ID capsule '{module_filename}'")
             return root
