@@ -1027,7 +1027,7 @@ class Installation:  # noqa: PLR0904
             folders=folders,
         )
         search: ResourceResult | None = batch[query]
-        if not search or not search.data:
+        if search is None:
             self._log.warning(f"Could not find '{query}' during resource lookup.")
             return None
         return search
