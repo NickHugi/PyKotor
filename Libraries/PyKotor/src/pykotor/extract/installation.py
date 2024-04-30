@@ -8,7 +8,7 @@ from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -81,12 +81,6 @@ class SearchLocation(IntEnum):
 
     CUSTOM_FOLDERS = 13
     """Resource files stored in the folders specified in the method parameters."""
-
-
-class ItemTuple(NamedTuple):
-    resname: str
-    name: str
-    filepath: Path
 
 
 class TexturePackNames(Enum):
@@ -1698,7 +1692,7 @@ class Installation:  # noqa: PLR0904
             for resource in values:
                 case_resname: str = resource.resname().casefold()
                 if case_resname in case_resnames and resource.restype() in sound_formats:
-                    print(f"Found sound at '{resource.filepath()}'")
+                    self._log.debug(f"Found sound at '{resource.filepath()}'")
                     case_resnames.remove(case_resname)
                     sound_data: bytes = resource.data()
                     sounds[resource.resname()] = deobfuscate_audio(sound_data)
@@ -1713,7 +1707,7 @@ class Installation:  # noqa: PLR0904
                             break
                     if sound_data is None:  # No sound data found in this list.
                         continue
-                    print(f"Found sound at '{capsule.path()}'")
+                    self._log.debug(f"Found sound at '{capsule.path()}'")
                     case_resnames.remove(case_resname)
                     sounds[case_resname] = deobfuscate_audio(sound_data)
 
@@ -1730,7 +1724,7 @@ class Installation:  # noqa: PLR0904
                     )
                 )
             for sound_file in queried_sound_files:
-                print(f"Found sound at '{sound_file}'")
+                self._log.debug(f"Found sound at '{sound_file}'")
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = deobfuscate_audio(sound_data)
