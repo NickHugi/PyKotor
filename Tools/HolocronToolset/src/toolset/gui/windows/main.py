@@ -279,6 +279,7 @@ class ToolWindow(QMainWindow):
         self.ui.coreWidget.hideReloadButton()
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
         self.reloadSettings()
+        self.unsetInstallation()
 
         firstTime = self.settings.firstTime
         if firstTime:
