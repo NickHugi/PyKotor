@@ -126,7 +126,7 @@ class TestGIT(unittest.TestCase):
         self.assertAlmostEqual(69.699, git.cameras[0].pitch, 2)
         self.assertAlmostEqual(0.971, git.cameras[0].orientation.x, 2)
         self.assertAlmostEqual(0.000, git.cameras[0].orientation.y, 2)
-        self.assertAlmostEqual(1.925, git.cameras[0].orientation.z, 2)
+        self.assertAlmostEqual(0.000, git.cameras[0].orientation.z, 2)
         self.assertAlmostEqual(0.235, git.cameras[0].orientation.w, 2)
         self.assertAlmostEqual(-57.167, git.cameras[0].position.x, 2)
         self.assertAlmostEqual(-28.255, git.cameras[0].position.y, 2)
