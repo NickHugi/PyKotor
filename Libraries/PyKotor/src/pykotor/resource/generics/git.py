@@ -911,9 +911,9 @@ def construct_git(
         if encounter_struct.exists("Geometry"):
             geometry_list = encounter_struct.get_list("Geometry")
             for geometry_struct in geometry_list:
-                x = geometry_struct.acquire("PointX", 0.0)
-                y = geometry_struct.acquire("PointY", 0.0)
-                z = geometry_struct.acquire("PointZ", 0.0)
+                x = geometry_struct.acquire("X", 0.0)
+                y = geometry_struct.acquire("Y", 0.0)
+                z = geometry_struct.acquire("Z", 0.0)
                 encounter.geometry.append(Vector3(x, y, z))
             if not geometry_list:
                 get_root_logger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
