@@ -5,13 +5,12 @@ import math
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
-import pyperclip
 import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QIcon, QPixmap
-from qtpy.QtWidgets import QAction, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
+from qtpy.QtWidgets import QAction, QApplication, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
 from pykotor.tools.misc import is_mod_file
 
@@ -1249,7 +1248,7 @@ class ModuleDesigner(QMainWindow):
             menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITInstance(instance))
             menu.addSeparator()
 
-        menu.addAction("Copy position to clipboard").triggered.connect(lambda: pyperclip.copy(str(instance.position)))
+        menu.addAction("Copy position to clipboard").triggered.connect(lambda: QApplication.clipboard().setText(str(instance.position)))
         menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
         menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
