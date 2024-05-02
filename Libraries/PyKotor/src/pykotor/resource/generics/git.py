@@ -316,8 +316,7 @@ class GITCamera(GITInstance):
         return math.pi - self.orientation.to_euler().x
 
     def roll(self) -> float:
-        # Following the convention used in rotate method, where roll affects rotation.y
-        return math.pi - self.orientation.to_euler().y
+        raise NotImplementedError("GITCamera's do not have roll.")
 
 
 class GITCreature(GITInstance):
