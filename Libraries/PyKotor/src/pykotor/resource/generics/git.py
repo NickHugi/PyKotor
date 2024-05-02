@@ -266,12 +266,17 @@ class GITCamera(GITInstance):
         self.fov: float = 45
         self.height: float = 0.0
         self.mic_range: float = 0.0
-        self.pitch: float = 0.0
-        self.orientation: Vector4 = Vector4.from_euler(
-            math.pi / 2 - yaw,
-            roll,
-            math.pi - pitch,
-        )
+        self.orientation = Vector4.from_euler(math.pi / 2 - yaw, roll, math.pi - pitch)
+
+    @property
+    def pitch(self) -> float:
+        # Convert from radians to degrees for the getter
+        return math.degrees(math.pi - self.orientation.z)
+
+    @pitch.setter
+    def pitch(self, value: float):
+        # Convert from degrees to radians for the setter
+        self.orientation.z = math.pi - math.radians(value)
 
     def move(
         self,
