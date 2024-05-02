@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Set, cast
 import send2trash
 
 from qtpy.QtCore import QUrl, Qt
-from qtpy.QtGui import QAction, QDesktopServices, QKeySequence
+from qtpy.QtGui import QDesktopServices, QKeySequence
 from qtpy.QtWidgets import (
     QAction,
     QApplication,

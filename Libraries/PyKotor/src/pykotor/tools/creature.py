@@ -70,7 +70,7 @@ def get_body_model(
         baseitems = read_2da(baseitems_lookup.data)
 
     first_name = installation.string(utc.first_name)
-    context_base = f" for UTC {first_name}"
+    context_base = f" for UTC '{first_name}'"
 
     print(f"Lookup appearance row {utc.appearance_id} for get_body_model call.")
     utc_appearance_row = appearance.get_row(utc.appearance_id, context=f"Fetching row based on appearance_id{context_base}")

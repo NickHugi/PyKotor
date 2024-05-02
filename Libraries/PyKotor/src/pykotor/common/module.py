@@ -78,7 +78,8 @@ class Module:  # noqa: PLR0904
     ):
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
         self._installation: Installation = installation
-        self._root: str = root.lower()
+        self._root: str = self.get_root(root.lower())
+        self._dot_mod: bool = use_dot_mod and installation.module_path().joinpath(f"{self._root}.mod").is_file()
 
         # Build all capsules relevant to this root in the provided installation
         self._capsules: list[Capsule] = self.get_capsules(installation, self._root, use_dot_mod=use_dot_mod)
