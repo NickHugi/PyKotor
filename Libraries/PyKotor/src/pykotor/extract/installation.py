@@ -448,7 +448,7 @@ class Installation:  # noqa: PLR0904
 
         if self.use_multithreading:
             num_cores = os.cpu_count() or 1
-            max_workers = num_cores * 4
+            max_workers = num_cores * 2
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 for future in as_completed(executor.submit(self._build_single_resource, file) for file in files_iter):
                     resource = future.result()
@@ -769,7 +769,7 @@ class Installation:  # noqa: PLR0904
             check("modules/mainmenu.mod"),
         ]
 
-        game1_xbox_checks: list[bool] = [  # TODO:
+        game1_xbox_checks: list[bool] = [
             check("01_SS_Repair01.ini"),
             check("swpatch.ini"),
             check("dataxbox/_newbif.bif"),
