@@ -506,7 +506,9 @@ class TextureList(MainWindowList):
         )
 
         # Emit signals to load textures that have not had their icons assigned
-        for item in [item for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures]:
+        for item in iter(self.visibleItems()):
+            if item.text().casefold() in self._scannedTextures:
+                continue
             item_text = item.text()
 
             # Avoid trying to load the same texture multiple times.
