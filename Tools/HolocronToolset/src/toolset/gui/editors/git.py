@@ -14,7 +14,6 @@ from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
-from pykotor.common.module import Module
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import read_lyt
@@ -33,7 +32,6 @@ from pykotor.resource.generics.git import (
     read_git,
 )
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_rim_file
 from pykotor.tools.template import extract_name, extract_tag_from_gff
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.instance.camera import CameraDialog
@@ -103,7 +101,7 @@ class GITEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation | None = None,
+        installation: HTInstallation = None,
     ):
         """Initializes the GIT editor.
 
@@ -626,14 +624,14 @@ class _Mode(ABC):
     @abstractmethod
     def rotateSelectedToPoint(self, x: float, y: float): ...
 
-    @abstractmethod
-    def moveCamera(self, x: float, y: float): ...
+    def moveCamera(self, x: float, y: float):
+        self.walkmeshRenderer.camera.nudgePosition(x, y)
 
-    @abstractmethod
-    def zoomCamera(self, amount: float): ...
+    def zoomCamera(self, amount: float):
+        self.walkmeshRenderer.camera.nudgeZoom(amount)
 
-    @abstractmethod
-    def rotateCamera(self, angle: float): ...
+    def rotateCamera(self, angle: float):
+        self.walkmeshRenderer.camera.nudgeRotation(angle)
 
     @abstractmethod
     def updateStatusBar(self, world: Vector2): ...
@@ -734,11 +732,12 @@ class _InstanceMode(_Mode):
         module_filename = module_filename.lower()
 
         for result in search:
+            get_root_logger().debug(f"Check location result '{result.filepath}'")
             if result.filepath.is_relative_to(self._installation.override_path()):
                 get_root_logger().info("Saving to existing Override file '%s.%s'", resname, restype)
                 filepath = result.filepath
                 break
-            if result.filepath.parent.name.lower() == module_filename and result.filepath.is_relative_to(self._installation.module_path()):
+            if result.filepath.name.lower() == module_filename and result.filepath.is_relative_to(self._installation.module_path()):
                 get_root_logger().info("Saving back to Module '%s' file '%s.%s'", module_filename, resname, restype)
                 filepath = result.filepath
 
@@ -988,6 +987,7 @@ class _InstanceMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
+            get_root_logger().info(f"Not changing selection: selected instance '{selection[0].classification()}' is still underneath the mouse.")
             return
 
         if underMouse:
@@ -1029,15 +1029,6 @@ class _InstanceMode(_Mode):
             else:
                 instance.rotate(-yaw + rotation, 0, 0)
 
-    def moveCamera(self, x: float, y: float):
-        self.walkmeshRenderer.camera.nudgePosition(x, y)
-
-    def zoomCamera(self, amount: float):
-        self.walkmeshRenderer.camera.nudgeZoom(amount)
-
-    def rotateCamera(self, angle: float):
-        self.walkmeshRenderer.camera.nudgeRotation(angle)
-
     # endregion
 
 
@@ -1047,18 +1038,24 @@ class _GeometryMode(_Mode):
         editor: GITEditor | ModuleDesigner,
         installation: HTInstallation,
         git: GIT,
+        *,
+        hideOthers: bool = True,
     ):
         super().__init__(editor, installation, git)
 
-        self.walkmeshRenderer.hideCreatures = True
-        self.walkmeshRenderer.hideDoors = True
-        self.walkmeshRenderer.hidePlaceables = True
-        self.walkmeshRenderer.hideSounds = True
-        self.walkmeshRenderer.hideStores = True
-        self.walkmeshRenderer.hideCameras = True
-        self.walkmeshRenderer.hideTriggers = True
-        self.walkmeshRenderer.hideEncounters = True
-        self.walkmeshRenderer.hideWaypoints = True
+        if hideOthers:
+            self.walkmeshRenderer.hideCreatures = True
+            self.walkmeshRenderer.hideDoors = True
+            self.walkmeshRenderer.hidePlaceables = True
+            self.walkmeshRenderer.hideSounds = True
+            self.walkmeshRenderer.hideStores = True
+            self.walkmeshRenderer.hideCameras = True
+            self.walkmeshRenderer.hideTriggers = True
+            self.walkmeshRenderer.hideEncounters = True
+            self.walkmeshRenderer.hideWaypoints = True
+        else:
+            self.walkmeshRenderer.hideEncounters = False
+            self.walkmeshRenderer.hideTriggers = False
         self.walkmeshRenderer.hideGeomPoints = False
 
     def insertPointAtMouse(self):
@@ -1108,7 +1105,7 @@ class _GeometryMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
-            print(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
+            get_root_logger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
         self.walkmeshRenderer.geometrySelection.select(underMouse or [])
 
@@ -1130,15 +1127,6 @@ class _GeometryMode(_Mode):
 
     def rotateSelectedToPoint(self, x: float, y: float):
         pass
-
-    def moveCamera(self, x: float, y: float):
-        self.walkmeshRenderer.camera.nudgePosition(x, y)
-
-    def zoomCamera(self, amount: float):
-        self.walkmeshRenderer.camera.nudgeZoom(amount)
-
-    def rotateCamera(self, angle: float):
-        self.walkmeshRenderer.camera.nudgeRotation(angle)
 
     # endregion
 

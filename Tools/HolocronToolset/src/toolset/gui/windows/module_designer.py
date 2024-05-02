@@ -48,7 +48,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import openInstanceDialog
+from toolset.gui.editors.git import _GeometryMode, _InstanceMode, openInstanceDialog
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     import os
 
     from glm import vec3
-    from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent
+    from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
     from qtpy.QtWidgets import QCheckBox, QWidget
 
     from pykotor.gl.scene import Camera
@@ -81,90 +81,62 @@ class MoveCommand(QUndoCommand):
         instance: GITInstance,
         old_position: Vector3,
         new_position: Vector3,
+        old_height: float | None = None,
+        new_height: float | None = None,
     ):
-        print(f"Init movecommand with instance {instance.resref}")
+        get_root_logger().debug(f"Init movecommand with instance {instance.resref}")
         super().__init__()
         self.instance: GITInstance = instance
         self.old_position: Vector3 = old_position
         self.new_position: Vector3 = new_position
+        self.old_height: float | None = old_height
+        self.new_height: float | None = new_height
 
     def undo(self):
-        print("Undo position")
+        get_root_logger().debug("Undo position")
         self.instance.position = self.old_position
+        if isinstance(self.instance, GITCamera):
+            if self.old_height is None or self.new_height is None:
+                return
+            get_root_logger().debug("Also undo height.")
+            self.instance.height = self.old_height
 
     def redo(self):
-        print("Redo position")
+        get_root_logger().debug("Redo position")
         self.instance.position = self.new_position
+        if isinstance(self.instance, GITCamera):
+            if self.old_height is None or self.new_height is None:
+                return
+            get_root_logger().debug("Also redo height.")
+            self.instance.height = self.new_height
 
 
 class RotateCommand(QUndoCommand):
     def __init__(
         self,
-        instance: GITInstance,
-        old_yaw: float,
-        old_pitch: float,
-        old_roll: float,
-        new_yaw: float,
-        new_pitch: float,
-        new_roll: float
+        instance: GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint,
+        old_orientation: Vector4 | float,
+        new_orientation: Vector4 | float
     ):
-        print(f"Init rotatecommand with instance {instance.resref}")
-        self.is_super_call = True
+        get_root_logger().debug(f"Init rotatecommand with instance {instance.resref}")
         super().__init__()
-        self.instance: GITInstance = instance
-        self.old_yaw: float = old_yaw
-        self.old_pitch: float = old_pitch
-        self.old_roll: float = old_roll
-        self.new_yaw: float = new_yaw
-        self.new_pitch: float = new_pitch
-        self.new_roll: float = new_roll
+        self.instance: GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint = instance
+        self.old_orientation: Vector4 | float = old_orientation
+        self.new_orientation: Vector4 | float = new_orientation
 
     def undo(self):
-        print(f"Undo rotation: {self.instance.resref}")
-        self.instance.rotate(self.old_yaw, self.old_pitch, self.old_roll)
+        get_root_logger().debug(f"Undo rotation: {self.instance.resref} (NEW {self.new_orientation} --> {self.old_orientation})")
+        if isinstance(self.instance, GITCamera):
+            self.instance.orientation = self.old_orientation
+        else:
+            self.instance.bearing = self.old_orientation
 
     def redo(self):
-        if self.is_super_call:  # This is required because the rotate function doesn't appear to be 100% accurate
-            print("Redo rotation called by super/qt, ignoring")
-            self.is_super_call = False
-            return
-        print(f"Redo rotation: {self.instance.resref}")
-        self.instance.rotate(self.new_yaw, self.new_pitch, self.new_roll)
-
-
-class OrientationCommand(QUndoCommand):
-    def __init__(
-        self,
-        instance: GITCamera,
-        old_x: float,
-        old_y: float,
-        old_z: float,
-        old_w: float,
-        new_x: float,
-        new_y: float,
-        new_z: float,
-        new_w: float,
-    ):
-        print(f"Init orientation with instance {instance.resref}")
-        self.is_super_call = True
-        super().__init__()
-        self.instance: GITCamera = instance
-        self.old_x: float = old_x
-        self.old_y: float = old_y
-        self.old_z: float = old_z
-        self.old_w: float = old_w
-        self.new_x: float = new_x
-        self.new_y: float = new_y
-        self.new_z: float = new_z
-        self.new_w: float = new_w
-
-    def undo(self):
-        print(f"Undo orientation: {self.instance.resref}")
-        self.instance.orientation = Vector4.from_euler(self.old_x, self.old_y, self.old_z, self.old_w)
-
-    def redo(self):
-        print(f"Redo orientation: {self.instance.resref}")
-        self.instance.orientation = Vector4.from_euler(self.new_x, self.new_y, self.new_z, self.new_w)
+        get_root_logger().debug(f"Redo rotation: {self.instance.resref} ({self.old_orientation} --> NEW {self.new_orientation})")
+        if isinstance(self.instance, GITCamera):
+            self.instance.orientation = self.new_orientation
+        else:
+            self.instance.bearing = self.new_orientation
 
 
 class ModuleDesigner(QMainWindow):
@@ -187,9 +159,11 @@ class ModuleDesigner(QMainWindow):
 
         self._installation: HTInstallation = installation
         self._module: Module | None = None
+        self._geomInstance: GITInstance | None = None  # Used to track which trigger/encounter you are editing
+        self._orig_filepath: Path | None = mod_filepath
 
         self.initialPositions: dict[GITInstance, Vector3] = {}
-        self.initialRotations: dict[GITInstance, Vector3] = {}
+        self.initialRotations: dict[GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint, Vector4 | float] = {}
         self.undoStack = QUndoStack(self)
 
         self.selectedInstances: list[GITInstance] = []
@@ -282,8 +256,13 @@ class ModuleDesigner(QMainWindow):
 
         if mod_filepath is None:  # Use singleShot timer so the ui window opens while the loading is happening.
             QTimer().singleShot(33, self.openModuleWithDialog)
-        else:
-            self.openModule(mod_filepath)  # for some reason 3d rendering never loads when QTimer is used here...
+
+    def showEvent(self, a0: QShowEvent):
+        super().showEvent(a0)
+        if self._orig_filepath is None:
+            return
+        filepath = self._orig_filepath
+        QTimer().singleShot(33, lambda: self.openModule(filepath))  # for some reason 3d rendering never loads when QTimer is used here...
 
     def closeEvent(self, event: QCloseEvent):
         reply = QMessageBox.question(
@@ -433,6 +412,7 @@ class ModuleDesigner(QMainWindow):
             self._module = new_module
             self.log.debug("setGit")
             self.ui.flatRenderer.setGit(git)
+            self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
             self.log.debug("init mainRenderer")
             self.ui.mainRenderer.init(self._installation, new_module)
             self.log.debug("set flatRenderer walkmeshes")
@@ -861,30 +841,21 @@ class ModuleDesigner(QMainWindow):
                 self.ui.mainRenderer.scene.clearCacheBuffer.append(ident)
             self.rebuildInstanceList()
 
-    def editGeometry(self, instance: GITInstance):
-        ...
-
     def snapCameraToView(self, instance: GITCamera):
         scene = self.ui.mainRenderer.scene
         assert scene is not None
 
         view: vec3 = scene.camera.true_position()
         rot: Camera = scene.camera
-        old_pitch = instance.pitch
-        instance.pitch = 0
-        instance.height = 0
-        old_position = instance.position
         new_position = Vector3(view.x, view.y, view.z)
-        self.undoStack.push(MoveCommand(instance, old_position, new_position))
+        self.undoStack.push(MoveCommand(instance, instance.position, new_position, instance.height, scene.camera.height))
+        instance.height = scene.camera.height
         instance.position = new_position
 
         self.log.debug("Create RotateCommand for undo/redo functionality")
-        rotate_command = RotateCommand(instance, 0, old_pitch, 0, 0, 0, 0)
-        self.undoStack.push(rotate_command)
         new_orientation = Vector4.from_euler(math.pi / 2 - rot.yaw, 0, math.pi - rot.pitch)
-        old_orientation = instance.orientation
-        orientation_command = OrientationCommand(instance, *old_orientation, *new_orientation)
-        self.undoStack.push(orientation_command)
+        self.undoStack.push(RotateCommand(instance, instance.orientation, new_orientation))
+        instance.orientation = new_orientation
 
     def snapViewToGITInstance(self, instance: GITInstance):
         scene = self.ui.mainRenderer.scene
@@ -1024,21 +995,15 @@ class ModuleDesigner(QMainWindow):
 
             # Reset for the next drag operation
             self.initialPositions.clear()
-            print("No longer drag moving 3d")
+            self.log.debug("No longer drag moving 3d")
             self.isDragMoving = False
 
         if self.isDragRotating:
             for instance, old_rotation in self.initialRotations.items():
-                old_yaw, old_pitch, old_roll = old_rotation
-                new_yaw = instance.yaw() or 0
-                new_pitch = instance.get_pitch() if hasattr(instance, "get_pitch") else 0  # type: ignore[]
-                new_roll = instance.get_roll() if hasattr(instance, "get_roll") else 0  # type: ignore[]
-                new_rotation = Vector3(new_yaw, new_pitch, new_roll)
+                new_rotation = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
                 if old_rotation and new_rotation != old_rotation:
                     self.log.debug("Create the RotateCommand for undo/redo functionality")
-                    rotate_command = RotateCommand(instance, old_yaw, old_pitch, old_roll, new_yaw, new_pitch, new_roll)
-                    self.undoStack.push(rotate_command)
-                    self.log.debug("Push stack")
+                    self.undoStack.push(RotateCommand(instance, old_rotation, new_rotation))
                 elif not old_rotation:
                     self.log.debug("No old rotation for %s", instance.resref)
                 else:
@@ -1046,7 +1011,7 @@ class ModuleDesigner(QMainWindow):
 
             # Reset for the next drag operation
             self.initialRotations.clear()
-            print("No longer drag rotating 3d")
+            self.log.debug("No longer drag rotating 3d")
             self.isDragRotating = False
 
     def onInstanceListDoubleClicked(self):
@@ -1084,6 +1049,16 @@ class ModuleDesigner(QMainWindow):
         self.ui.viewStoreCheck.setChecked(False)
 
         checkbox.setChecked(True)
+
+    def enterInstanceMode(self):
+        self._mode = _InstanceMode(self, self._installation, self.git())
+
+    def enterGeometryMode(self):
+        self._mode = _GeometryMode(self, self._installation, self.git(), hideOthers=False)
+
+    def enterSpawnMode(self):
+        ...
+        # TODO
 
     def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
@@ -1166,7 +1141,7 @@ class ModuleDesigner(QMainWindow):
             menu = self.onContextMenuSelectionExists(isFlatRendererCall=isFlatRendererCall, getMenu=True)
         if isFlatRendererCall:
             menu.addSeparator()
-            #self._controls2d._mode._getRenderContextMenu(world, menu)
+            self._controls2d._mode._getRenderContextMenu(world, menu)
 
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
@@ -1258,6 +1233,8 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
         self._refreshWindowTitle()
         self.updateToggles()
+        self.show()
+        self.activateWindow()
 
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseMoved, screen: %s, delta: %s, buttons: %s, keys: %s", screen, delta, buttons, keys)
@@ -1417,7 +1394,7 @@ class ModuleDesignerControls3d:
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
             for instance in self.editor.selectedInstances:
-                print("Moving instance 3d", instance.resref)
+                self.editor.log.debug("Moving instance 3d '%s'", instance.resref)
                 scene = self.renderer.scene
                 assert scene is not None
 
@@ -1435,17 +1412,12 @@ class ModuleDesignerControls3d:
 
         if self.rotateSelected.satisfied(buttons, keys):
             if not self.editor.isDragRotating and not self.editor.ui.lockInstancesCheck.isChecked():
-                print("rotateSelected instance in 3d")
+                self.editor.log.debug("rotateSelected instance in 3d")
                 for instance in self.editor.selectedInstances:
-                    old_yaw = instance.yaw()
-                    if old_yaw is None:
-                        print(instance.resref, "does not support rotating yaw")
-                        continue
-                    old_pitch = instance.pitch() if hasattr(instance, "pitch") else 0  # type: ignore[]
-                    old_roll = instance.roll() if hasattr(instance, "roll") else 0  # type: ignore[]
-                    old_rotation = Vector3(old_yaw, old_pitch, old_roll)
-                    self.editor.initialRotations[instance] = old_rotation
-                print("3d rotate set isDragRotating")
+                    if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                        continue  # doesn't support rotations.
+                    self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
+                self.editor.log.debug("3d rotate set isDragRotating")
                 self.editor.isDragRotating = True
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
@@ -1663,6 +1635,7 @@ class ModuleDesignerControls2d:
         self.editor: ModuleDesigner = editor
         self.renderer: WalkmeshRenderer = renderer
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
+        self._mode: _InstanceMode | _GeometryMode
 
         self.moveCamera: ControlItem = ControlItem(self.settings.moveCamera2dBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera2dBind)
@@ -1691,6 +1664,7 @@ class ModuleDesignerControls2d:
             - Calculates zoom strength from scroll delta and sensitivity setting
             - Nudges camera zoom by calculated amount.
         """
+        self.editor.log.debug("onMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
         if self.zoomCamera.satisfied(buttons, keys):
             zoomInFactor = 1.1
             zoomOutFactor = 0.90
@@ -1727,6 +1701,11 @@ class ModuleDesignerControls2d:
             self.renderer.camera.nudgeRotation(screenDelta.x * strength)
 
         if self.moveSelected.satisfied(buttons, keys):
+            if isinstance(self._mode, _GeometryMode):
+                get_root_logger().debug("Move geometry point? %s, %s", worldDelta.x, worldDelta.y)
+                self._mode.moveSelected(worldDelta.x, worldDelta.y)
+                return
+
             if not self.editor.isDragMoving:
                 get_root_logger().debug("moveSelected instance in 2d")
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
@@ -1741,10 +1720,9 @@ class ModuleDesignerControls2d:
                     continue
                 if not self.editor.isDragRotating:
                     get_root_logger().debug("rotateSelected instance in 2d")
-                    old_pitch = instance.pitch() if hasattr(instance, "pitch") else 0  # type: ignore[]
-                    old_roll = instance.roll() if hasattr(instance, "roll") else 0  # type: ignore[]
-                    old_rotation = Vector3(old_yaw, old_pitch, old_roll)
-                    self.editor.initialRotations[instance] = old_rotation
+                    if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                        continue  # doesn't support rotations.
+                    self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
 
                 rotation: float = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
                 new_yaw = old_yaw - rotation if isinstance(instance, GITCamera) else -old_yaw + rotation
@@ -1770,6 +1748,10 @@ class ModuleDesignerControls2d:
         """
         get_root_logger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
         if self.selectUnderneath.satisfied(buttons, keys):
+            if isinstance(self._mode, _GeometryMode):
+                self._mode.selectUnderneath()
+                return
+
             if self.renderer.instancesUnderMouse():
                 get_root_logger().debug("onMousePressed, selectUnderneath FOUND INSTANCES")
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
@@ -1806,6 +1788,9 @@ class ModuleDesignerControls2d:
             - Check if toggle instance lock shortcut satisfied and toggle lock instances checkbox
         """
         if self.deleteSelected.satisfied(buttons, keys):
+            if isinstance(self._mode, _GeometryMode):
+                self._mode.deleteSelected()
+                return
             self.editor.deleteSelected()
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
