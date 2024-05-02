@@ -6,8 +6,8 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QSortFilterProxyModel
-from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QFileDialog, QLabel, QListWidgetItem, QMenu, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
+from qtpy.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QApplication, QFileDialog, QLabel, QListWidgetItem, QMenu, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -452,7 +452,7 @@ class GFFEditor(Editor):
             self.ui.blankPage.layout().addWidget(binaryDataLabel)
             copyButton = QPushButton("Copy Binary Data")
             self.ui.blankPage.layout().addWidget(copyButton)
-            copyButton.clicked.connect(lambda: pyperclip.copy(hexDataStr))
+            copyButton.clicked.connect(lambda: QApplication.clipboard().setText(hexDataStr))
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
             locstring: LocalizedString = item.data(_VALUE_NODE_ROLE)
             self.ui.pages.setCurrentWidget(self.ui.substringPage)
