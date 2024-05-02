@@ -346,7 +346,7 @@ class GITEditor(Editor):
         reply = QMessageBox.question(
             self,
             "Confirm Exit",
-            "Really quit the module designer? You may lose unsaved changes.",
+            "Really quit the GIT editor? You may lose unsaved changes.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
