@@ -1167,7 +1167,7 @@ class ModuleDesigner(QMainWindow):
             menu = self.onContextMenuSelectionExists(isFlatRendererCall=isFlatRendererCall, getMenu=True)
         if isFlatRendererCall:
             menu.addSeparator()
-            self._controls2d._mode._getRenderContextMenu(world, menu)
+            #self._controls2d._mode._getRenderContextMenu(world, menu)
 
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
