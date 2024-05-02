@@ -1816,8 +1816,9 @@ class Installation:  # noqa: PLR0904
         result = re.sub(r"\.rim$", "", module_filename, flags=re.IGNORECASE)
         for erftype_name in ERFType.__members__:
             result = re.sub(rf"\.{erftype_name}$", "", result, flags=re.IGNORECASE)
-        result = result[:-2] if result.lower().endswith("_s") else result
-        result = result[:-4] if result.lower().endswith("_dlg") else result
+        lowercase = result.lower()
+        result = result[:-2] if lowercase.endswith("_s") else result
+        result = result[:-4] if lowercase.endswith("_dlg") else result
         return result  # noqa: RET504
 
     def module_names(self, *, use_hardcoded: bool = True) -> dict[str, str]:
@@ -1968,7 +1969,7 @@ class Installation:  # noqa: PLR0904
         *,
         use_hardcoded: bool = True,
         use_alternate: bool = False,
-    ) -> str:    # sourcery skip: remove-unreachable-code
+    ) -> str:    # sourcery skip: assign-if-exp, remove-unreachable-code
         """Returns an identifier for the module that matches the filename/IFO/ARE resname.
 
         NOTE: Since this is only used for sorting currently, does not parse Mod_Area_list or Mod_VO_ID.
@@ -1977,8 +1978,7 @@ class Installation:  # noqa: PLR0904
         ----
             module_filename: str - The name of the module file.
             use_hardcoded: bool - Deprecated (does nothing)
-            use_alternate: bool - Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns
-                the ID name that matches the existing ARE/GIT resources.
+            use_alternate: bool - Gets the ID that matches the part of the filename. Only really useful for sorting. Normally this function returns the ID name that matches the existing ARE/GIT resources.
 
         Returns:
         -------
@@ -1987,34 +1987,28 @@ class Installation:  # noqa: PLR0904
         root: str = self.replace_module_extensions(module_filename)
 
         try:
+            @lru_cache(maxsize=1000)
             def quick_id(filename: str) -> str:
                 base_name: str = filename.rsplit(".")[0]  # Strip extension
-                if base_name.startswith("danm") and len(base_name) > 4:
-                    base_name = f"dan_m{base_name[4:]}"
-                elif base_name.startswith("manm") and len(base_name) > 4:
-                    base_name = f"man_m{base_name[4:]}"
+                if len(base_name) >= 6 and base_name[3:4].lower() == "m" and base_name[4:6].isdigit():  # e.g. 'danm13', 'manm26mg'...
+                    base_name = f"{base_name[:3]}_{base_name[3:]}"
                 parts: list[str] = base_name.split("_")
-                print(f"parts: {parts}")
 
-                if len(parts) == 1:  # noqa: PLR2004
-                    # If there are no underscores, return the base name itself
-                    return base_name
-                if len(parts) == 2:  # noqa: PLR2004
+                mod_id = base_name  # If there are no underscores, return the base name itself
+                if len(parts) == 2:
                     # If there's exactly one underscore, return the part after the underscore
-                    return (
-                        parts[0]
-                        if parts[1] in ("s", "dlg")
-                        else parts[1]
-                    )
-                if len(parts) >= 3:  # noqa: PLR2004
+                    if parts[1] in ("s", "dlg"):
+                        mod_id = parts[0]
+                    else:  # ...except when the part after matches a qualifier
+                        mod_id = parts[1]
+                elif len(parts) >= 3:
                     # If there are three or more underscores, return what's between the first two underscores
-                    return (
-                        "_".join(parts[1:-1])
-                        if parts[-1].lower() in ("s", "dlg")
-                        else "_".join(parts[1:2])
-                    )
-
-                return base_name
+                    if parts[-1].lower() in ("s", "dlg"):
+                        mod_id = "_".join(parts[1:-1])
+                    else:  # ...except when the last part matches a qualifier
+                        mod_id = "_".join(parts[1:-2])
+                self._log.debug("parts: %s id: '%s'", parts, mod_id)
+                return mod_id
 
             if use_alternate:
                 return quick_id(module_filename).lower()

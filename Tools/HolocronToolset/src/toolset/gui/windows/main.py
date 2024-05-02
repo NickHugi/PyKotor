@@ -839,7 +839,8 @@ class ToolWindow(QMainWindow):
                 QMessageBox.Icon.Question,
                 "Reload the installations?",
                 "You appear to have made changes to your installations, would you like to reload?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
             if result == QMessageBox.StandardButton.Yes:
                 self.reloadSettings()
@@ -1126,7 +1127,7 @@ class ToolWindow(QMainWindow):
             elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
                 sortStr = areaNames.get(moduleFileName, "y").lower()
             else:  # alternate mod id that attempts to match to filename.
-                sortStr = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
+                sortStr = self.active.module_id(moduleFileName, use_alternate=True)
             sortStr += f"_{lowerModuleFileName}".lower()
             return sortStr
 
