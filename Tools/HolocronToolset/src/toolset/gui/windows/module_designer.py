@@ -1162,8 +1162,15 @@ class ModuleDesigner(QMainWindow):
 
         if len(self.ui.mainRenderer.scene.selection) == 0:
             self.log.debug("onContextMenu No selection")
+            menu = self.onContextMenuSelectionNone(world)
         else:
-            self.onContextMenuSelectionExists(isFlatRendererCall=isFlatRendererCall)
+            menu = self.onContextMenuSelectionExists(isFlatRendererCall=isFlatRendererCall, getMenu=True)
+        if isFlatRendererCall:
+            menu.addSeparator()
+            self._controls2d._mode._getRenderContextMenu(world, menu)
+
+        menu.popup(self.cursor().pos())
+        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def onContextMenuSelectionNone(self, world: Vector3):
         """Displays a context menu for object insertion.
@@ -1194,11 +1201,14 @@ class ModuleDesigner(QMainWindow):
         menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), walkmeshSnap=False))
         menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), walkmeshSnap=False))
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), walkmeshSnap=False))
+        return menu
 
-        menu.popup(self.cursor().pos())
-        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
-
-    def onContextMenuSelectionExists(self, *, isFlatRendererCall: bool | None = None):
+    def onContextMenuSelectionExists(
+        self,
+        *,
+        isFlatRendererCall: bool | None = None,
+        getMenu: bool | None = None,
+    ):
         """Checks if a context menu selection exists.
 
         Args:
@@ -1218,6 +1228,10 @@ class ModuleDesigner(QMainWindow):
 
         if self.selectedInstances:
             self._newContextMenuSelectedInstances(menu, isFlatRendererCall=isFlatRendererCall)
+        if not getMenu:
+            menu.popup(self.cursor().pos())
+            menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
+            return None
         return menu
 
     def _newContextMenuSelectedInstances(
