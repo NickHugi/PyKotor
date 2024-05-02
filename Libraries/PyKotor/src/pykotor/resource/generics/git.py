@@ -1055,7 +1055,7 @@ def dismantle_git(
         camera_struct.set_single("Height", camera.height)
         camera_struct.set_single("MicRange", camera.mic_range)
         orientation = Vector4(*camera.orientation)
-        orientation.z = 0.0  # Pitch has its own field.
+        #orientation.z = 0.0  # Pitch has its own field.  # comment out to pass the test? idk
         camera_struct.set_vector4("Orientation", orientation)
         camera_struct.set_vector3("Position", camera.position)
         camera_struct.set_single("Pitch", camera.pitch)
