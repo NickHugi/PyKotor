@@ -1054,7 +1054,9 @@ def dismantle_git(
         camera_struct.set_single("FieldOfView", camera.fov)
         camera_struct.set_single("Height", camera.height)
         camera_struct.set_single("MicRange", camera.mic_range)
-        camera_struct.set_vector4("Orientation", camera.orientation)
+        orientation = Vector4(*camera.orientation)
+        orientation.z = 0.0  # Pitch has its own field.
+        camera_struct.set_vector4("Orientation", orientation)
         camera_struct.set_vector3("Position", camera.position)
         camera_struct.set_single("Pitch", camera.pitch)
 
