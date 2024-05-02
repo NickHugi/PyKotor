@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Large bag of small bugfixes<br>Update when you're able.:)<br><br>- Fix an occasional bug that could happen if QSettings became corrupted, causing editors to fail loading.<br>- Fix a bug preventing most hotkeys from working.<br>- Fix 'Add Instance' when 'create new' chosen in the dialog.<br> - Improve module designer chooser dialog, prompt when .mod must be created. - Ensure UTE/UTT have default geometry to prevent crashes. - Other bugfixes.",
+    "toolsetLatestBetaNotes": "Large bag of small bugfixes<br>Update when you're able.:)",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
