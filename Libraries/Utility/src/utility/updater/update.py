@@ -94,10 +94,7 @@ class LibUpdate:
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
         self.log = logger or get_root_logger()
 
-    @property
-    def filename(self) -> str:
-        # sourcery skip: assign-if-exp, switch, use-fstring-for-concatenation
-        # TODO(th3w1zard1): allow customization of this in the constructor.
+    def get_expected_filename(self):
         os_lookup_str = platform.system()
         if os_lookup_str == "Windows":
             return f"{self.filestem}.exe"
@@ -106,6 +103,14 @@ class LibUpdate:
         if os_lookup_str == "Darwin":
             return f"{self.filestem}.app"
         raise ValueError(f"Unsupported return from platform.system() call: '{os_lookup_str}'")
+
+    @property
+    def filename(self) -> str:
+        # sourcery skip: assign-if-exp, switch, use-fstring-for-concatenation
+        # TODO(th3w1zard1): allow customization of this in the constructor.
+        if is_frozen():  # The application is frozen with PyInstaller
+            return Path(sys.executable).name
+        return self.get_expected_filename()
 
     @property
     def version(self) -> str:
@@ -631,9 +636,8 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
     def _win_overwrite(self, *, restart: bool = False):
         """Moves update to current directory of running application then restarts application using new update."""
-        exe_name = self.filename
         update_folder_path = Path(self.update_folder)
-        current_app_path = self._current_app_dir / exe_name
+        current_app_path = self._current_app_dir / self.filename
         archive_stem = self.archive_name[:self.archive_name.find(".")]
 
         # TODO(th3w1zard1): clean this up... i'm ashamed.
@@ -647,7 +651,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         elif check_path2.safe_isdir():
             updated_app_path = check_path2
         else:
-            updated_app_path = Path(self.update_folder, exe_name)
+            updated_app_path = Path(self.update_folder, self.get_expected_filename())
 
         r = Restarter(
             current_app_path,

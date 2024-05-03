@@ -18,7 +18,7 @@ from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_t
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import kill_child_processes
+from utility.system.os_helper import terminate_child_processes
 from utility.updater.github import GithubRelease
 from utility.updater.update import AppUpdate
 
@@ -206,9 +206,25 @@ class UpdateDialog(QDialog):
         changelog_html: str = convert_markdown_to_html(release.body)
         self.changelogEdit.setHtml(changelog_html)
 
+    def get_latest_release(self) -> GithubRelease | None:
+        base_version = "0.0.0"
+        # Modify sorting key to provide the required localVersion
+        for release in sorted(self.releases, key=lambda x: bool(remoteVersionNewer(base_version, x.tag_name))):
+            if "toolset" not in release.tag_name.lower():
+                continue
+            return release
+        self.include_prerelease = True
+        self.filter_releases_based_on_prerelease()
+        for release in sorted(self.releases, key=lambda x: bool(remoteVersionNewer(base_version, x.tag_name))):
+            if "toolset" not in release.tag_name.lower():
+                continue
+            return release
+        return None
+
     def on_update_latest_clicked(self):
-        latest_release = self.releases[0]
+        latest_release = self.get_latest_release()
         if not latest_release:
+            print("No toolset releases found?")
             return
         self.start_update(latest_release)
 
@@ -257,7 +273,7 @@ class UpdateDialog(QDialog):
                     get_root_logger().debug(f"Terminating QThread: {obj}")
                     obj.terminate()
                     obj.wait()
-            kill_child_processes()
+            terminate_child_processes()
             if kill_self_here:
                 sys.exit(0)
 

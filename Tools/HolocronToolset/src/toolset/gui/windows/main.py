@@ -996,10 +996,10 @@ class ToolWindow(QMainWindow):
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
-            upToDateMsgBox.button(QMessageBox.StandardButton.Ok).setText("Reinstall?")
+            upToDateMsgBox.button(QMessageBox.Ok).setText("Reinstall?")
             upToDateMsgBox.setWindowIcon(self.windowIcon())
             result = upToDateMsgBox.exec_()
-            if result == QMessageBox.StandardButton.Ok:
+            if result == QMessageBox.Ok:
                 toolset_updater = UpdateDialog(self)
                 toolset_updater.exec_()
             return
@@ -1007,18 +1007,21 @@ class ToolWindow(QMainWindow):
         betaString = "release " if releaseVersionChecked else "beta "
         newVersionMsgBox = QMessageBox(
             QMessageBox.Icon.Information,
-            f"New toolset {betaString}version available.",
-            f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
-            QMessageBox.StandardButton.Ok | QMessageBox.Abort,
+            f"Your toolset version {CURRENT_VERSION} is outdated.",
+            f"A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br><br>{toolsetLatestNotes}",
+            QMessageBox.Ok | QMessageBox.Abort,
             parent=None,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         )
-        newVersionMsgBox.button(QMessageBox.StandardButton.Ok).setText("Install Now")
+        newVersionMsgBox.setDefaultButton(QMessageBox.Abort)
+        #newVersionMsgBox.button(QMessageBox.Ok).setText("Install Now")
+        newVersionMsgBox.button(QMessageBox.Yes).setText("Open")
         newVersionMsgBox.button(QMessageBox.Abort).setText("Ignore")
         newVersionMsgBox.setWindowIcon(self.windowIcon())
         response = newVersionMsgBox.exec_()
-        if response == QMessageBox.StandardButton.Ok:
-            #self.autoupdate_toolset(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+        if response == QMessageBox.Ok:
+            self.autoupdate_toolset(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+        elif response == QMessageBox.Yes:
             toolset_updater = UpdateDialog(self)
             toolset_updater.exec_()
 
@@ -1031,7 +1034,7 @@ class ToolWindow(QMainWindow):
     ):
         """A fast and quick way to auto-install a specific toolset version.
 
-        Deprecated in favor of the UpdateDialog.
+        Uses toolsetDirectLinks and toolsetBetaDirectLinks
         """
         proc_arch = ProcessorArchitecture.from_os()
         assert proc_arch == ProcessorArchitecture.from_python()
