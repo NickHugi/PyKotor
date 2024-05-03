@@ -244,10 +244,13 @@ class UpdateDialog(QDialog):
             download_url = asset.browser_download_url
             links = [download_url]
         else:
-            result = QMessageBox(  # TODO(th3w1zard1): compile from src
+            # TODO(th3w1zard1): compile from src.
+            # Realistically wouldn't be that hard, just run ./install_powershell.ps1 and ./compile/compile_toolset.ps1 and run the exe.
+            # The difficult part would be finishing LibUpdate, currently only AppUpdate is working.
+            result = QMessageBox(
                 QMessageBox.Icon.Question,
                 "No asset found for this release.",
-                "There are no binaries available for download. Would you like to compile this release from source instead?",
+                f"There are no binaries available for download for release '{release.tag_name}'.", #Would you like to compile this release from source instead?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
