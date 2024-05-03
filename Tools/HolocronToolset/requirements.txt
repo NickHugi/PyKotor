@@ -13,3 +13,4 @@ setuptools>=67.8.0
 Pillow>=9.5
 pycryptodome
 jsonpickle
+send2trash
