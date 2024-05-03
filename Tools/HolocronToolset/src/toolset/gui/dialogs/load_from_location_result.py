@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 import faulthandler
 import os
 import pathlib
@@ -39,7 +40,6 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from typing_extensions import OrderedDict
 
 if __name__ == "__main__":
     with suppress(Exception):
