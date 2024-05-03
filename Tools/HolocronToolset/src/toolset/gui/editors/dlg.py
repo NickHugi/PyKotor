@@ -503,12 +503,18 @@ class DLGEditor(Editor):
         self.ui.logicSpin.setEnabled(installation.tsl)
 
         # Load required 2da files if they have not been loaded already
-        required: list[str] = [
-            HTInstallation.TwoDA_EMOTIONS,
-            HTInstallation.TwoDA_EXPRESSIONS,
-            HTInstallation.TwoDA_VIDEO_EFFECTS,
-            HTInstallation.TwoDA_DIALOG_ANIMS,
-        ]
+        if installation.game().is_k1():
+            required: list[str] = [
+                HTInstallation.TwoDA_VIDEO_EFFECTS,
+                HTInstallation.TwoDA_DIALOG_ANIMS
+            ]
+        else:
+            required = [
+                HTInstallation.TwoDA_EMOTIONS,
+                HTInstallation.TwoDA_EXPRESSIONS,
+                HTInstallation.TwoDA_VIDEO_EFFECTS,
+                HTInstallation.TwoDA_DIALOG_ANIMS,
+            ]
         installation.htBatchCache2DA(required)
 
         if installation.tsl:
