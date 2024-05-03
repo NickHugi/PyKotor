@@ -47,6 +47,7 @@ from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, R
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
+from toolset.utils.window import addWindow
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
@@ -789,6 +790,8 @@ class _InstanceMode(_Mode):
         if isinstance(instance, GITCamera):
             return menu
         locations = self._installation.location(*instance.identifier().unpack())
+        if not locations:
+            return menu
         # Create the main context menu
         fileMenu = menu.addMenu("File Actions")
         # Get the current position of the mouse cursor
@@ -807,6 +810,7 @@ class _InstanceMode(_Mode):
             )
             selectionWindow.show()
             selectionWindow.activateWindow()
+            addWindow(selectionWindow)
         fileMenu.addAction("Details...").triggered.connect(moreInfo)
         return menu
 
