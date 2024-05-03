@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 import faulthandler
 import os
 import pathlib
@@ -10,6 +9,7 @@ import subprocess
 import sys
 import time
 
+from collections import OrderedDict
 from contextlib import suppress
 from datetime import datetime
 from tempfile import TemporaryDirectory
