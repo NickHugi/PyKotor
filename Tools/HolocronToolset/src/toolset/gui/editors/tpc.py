@@ -131,6 +131,7 @@ class TPCEditor(Editor):
 
         # Create QImage and scale it
         image = QImage(img_bytes, width, height, QImage.Format_RGB888)
+        image = image.mirrored(False, True)  # False for no horizontal flip, True for vertical flip
         scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         # Create QPixmap from the scaled QImage

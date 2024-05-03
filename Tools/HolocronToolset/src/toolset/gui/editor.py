@@ -80,6 +80,7 @@ class Editor(QMainWindow):
         super().__init__(parent)
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
+        self._logger = get_root_logger()
 
         self._filepath: Path | None = None
         self._resname: str | None = None
@@ -163,27 +164,20 @@ class Editor(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def refreshWindowTitle(self):
-        """Refreshes the window title based on the current state.
-
-        Processing Logic:
-        ----------------
-            - Sets the installation name variable based on whether an installation is set or not
-            - Checks if a file path is set, if not just uses the editor title
-            - If encapsulated, constructs the title combining file path, installation, editor title
-            - If not encapsulated, constructs title combining parent folder, file, installation, editor title.
-        """
+        """Refreshes the window title based on the current state of the editor."""
         installationName = "No Installation" if self._installation is None else self._installation.name
-
         if self._filepath is None:
-            self.setWindowTitle(self._editorTitle)
-        elif is_capsule_file(self._filepath.name):
-            assert self._restype is not None
-            self.setWindowTitle(f"{self._filepath.name}/{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            self.setWindowTitle(f"{self._editorTitle} - {installationName}")
+            return
+
+        relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
+        if is_bif_file(relpath) or is_capsule_file(self._filepath):
+            from toolset.gui.editors.erf import ERFEditor
+            if not isinstance(self, ERFEditor):
+                relpath /= f"{self._resname}.{self._restype.extension}"
         else:
-            assert self._restype is not None
-            hierarchy: tuple[str, ...] = self._filepath.parts
-            folder = f"{hierarchy[-2]}/" if len(hierarchy) >= 2 else ""
-            self.setWindowTitle(f"{folder}{self._resname}.{self._restype.extension} - {installationName} - {self._editorTitle}")
+            assert relpath.name.lower() == f"{self._resname}.{self._restype}".lower()
+        self.setWindowTitle(f"{self._editorTitle}: {relpath} - {installationName}")
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -206,13 +200,15 @@ class Editor(QMainWindow):
         except ValueError as e:
             get_root_logger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(
+            msgBox = QMessageBox(
                 QMessageBox.Icon.Critical,
                 "Invalid filename/extension",
                 f"Check the filename and try again. Could not save!<br><br>{error_msg}",
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-            ).exec_()
+            )
+            msgBox.setDetailedText(format_exception_with_variables(e))
+            msgBox.exec_()
             return
 
         capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
@@ -273,7 +269,9 @@ class Editor(QMainWindow):
                 file.writelines(lines)
                 file.write("\n----------------------\n")
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", error_msg).exec_()
+            msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", error_msg)
+            msgBox.setDetailedText(lines)
+            msgBox.exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         """Saves data if dialog returns specific options.
@@ -347,7 +345,7 @@ class Editor(QMainWindow):
         rim: RIM = read_rim(self._filepath)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             rim.set_data(self._resname, ResourceType.MDX, data_ext)
 
         rim.set_data(self._resname, self._restype, data)
@@ -371,21 +369,21 @@ class Editor(QMainWindow):
 
         c_parent_filepath = c_filepath.parent
         res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
-        while (res_parent_ident.restype.name in ERFType.__members__ or res_parent_ident.restype == ResourceType.RIM) and not c_parent_filepath.safe_isdir():
+        while (res_parent_ident.restype.name in ERFType.__members__ or res_parent_ident.restype is ResourceType.RIM) and not c_parent_filepath.safe_isdir():
             nested_capsule_idents.append(res_parent_ident)
             c_filepath = c_parent_filepath
             c_parent_filepath = c_filepath.parent
             res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
 
-        erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype == ResourceType.RIM else read_erf(c_filepath)
+        erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype is ResourceType.RIM else read_erf(c_filepath)
         nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [(ResourceIdentifier.from_path(c_filepath), erf_or_rim)]
         for res_ident in reversed(nested_capsule_idents[:-1]):
             nested_erf_or_rim_data = erf_or_rim.get(*res_ident.unpack())
-            if nested_erf_or_rim_data is None:
+            if nested_erf_or_rim_data is None:  # TODO: loop through all windows and send hotkey ctrl+s
                 msg = f"You must save the ERFEditor window you added '{res_ident}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
-            erf_or_rim = read_rim(nested_erf_or_rim_data) if res_ident.restype == ResourceType.RIM else read_erf(nested_erf_or_rim_data)
+            erf_or_rim = read_rim(nested_erf_or_rim_data) if res_ident.restype is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
             nested_capsules.append((res_ident, erf_or_rim))
         for index, (res_ident, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
             if index == 0:
@@ -442,7 +440,7 @@ class Editor(QMainWindow):
         erf.erf_type = erftype
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             assert data_ext is not None, assert_with_variable_trace(data_ext is not None)
             erf.set_data(self._resname, ResourceType.MDX, data_ext)
 
@@ -463,7 +461,7 @@ class Editor(QMainWindow):
             file.write(data)
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
-        if self._restype == ResourceType.MDL:
+        if self._restype is ResourceType.MDL:
             with c_filepath.with_suffix(".mdx").open("wb") as file:
                 file.write(data_ext)
 

@@ -62,7 +62,7 @@ def log(message: str):
             log_file.write(message + "\n")
 
 
-def scale_value(value: float, scale_factor: float):
+def scale_value(value: float, scale_factor: float) -> int:
     return int(value * scale_factor)
 
 

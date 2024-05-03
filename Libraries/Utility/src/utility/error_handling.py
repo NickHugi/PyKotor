@@ -170,7 +170,7 @@ def safe_repr(
             return representation
 
         attrs: list[str] = []
-        for attr_name in dir(obj):
+        for attr_name in vars(obj):
             attr_value = getattr(obj, attr_name)
             if not attr_name.startswith("__") and not callable(attr_value):
                 try:

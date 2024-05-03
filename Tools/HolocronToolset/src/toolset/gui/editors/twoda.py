@@ -3,12 +3,11 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-import pyperclip
 import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QMessageBox
+from qtpy.QtWidgets import QAction, QApplication, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
@@ -302,7 +301,7 @@ class TwoDAEditor(Editor):
             if j != bottom:
                 clipboard += "\n"
 
-        pyperclip.copy(clipboard)
+        QApplication.clipboard().setText(clipboard)
 
     def pasteSelection(self):
         """Pastes the clipboard contents into the selected table cells.
@@ -322,7 +321,7 @@ class TwoDAEditor(Editor):
                 - Resets column to the left column after each row
                 - Increments the row.
         """
-        rows: list[str] = pyperclip.paste().split("\n")
+        rows: list[str] = QApplication.clipboard().text().split("\n")
 
         topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
         topLeftItem: QStandardItem | None = self.model.itemFromIndex(topLeftIndex)

@@ -13,7 +13,6 @@ import sys
 import tempfile
 import time
 import tkinter as tk
-import traceback
 import webbrowser
 
 from argparse import ArgumentParser
@@ -56,6 +55,9 @@ if not is_frozen():
             update_sys_path(utility_path.parent)
 
 from holopatcher.config import CURRENT_VERSION
+from types import TracebackType
+
+from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -69,8 +71,9 @@ from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.logger_util import get_root_logger
+from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
-from utility.system.os_helper import kill_self_pid, win_get_system32_dir
+from utility.system.os_helper import terminate_main_process, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 
@@ -78,6 +81,7 @@ if TYPE_CHECKING:
     from argparse import Namespace
     from collections.abc import Callable
     from datetime import timedelta
+    from multiprocessing import Process
 
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
@@ -1617,7 +1621,7 @@ sys.excepthook = onAppCrash
 def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
-    kill_self_pid()
+    terminate_main_process()
     app.root.destroy()
 
 

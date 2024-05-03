@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import logging
 import multiprocessing
+import os
 import sys
 import threading
 
 from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
-from queue import Empty
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 from utility.error_handling import format_exception_with_variables
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from typing_extensions import Literal
+
 
 class UTF8StreamWrapper:
     def __init__(self, original_stream):
@@ -41,12 +43,14 @@ class UTF8StreamWrapper:
         # Delegate any other method calls to the original stream
         return getattr(self.original_stream, attr)
 
+
 # region threading
 
 # Global lock for thread-safe operations
 LOGGING_LOCK = threading.Lock()
 THREAD_LOCAL = threading.local()
 THREAD_LOCAL.is_logging = False
+
 
 @contextmanager
 def logging_context():
@@ -61,7 +65,13 @@ def logging_context():
         with LOGGING_LOCK:
             THREAD_LOCAL.is_logging = prev_state
 
+
 # endregion
+def get_this_child_pid() -> None | int:
+    """Get our pid, if we're main process return None."""
+    cur_process = multiprocessing.current_process()
+    return None if cur_process.name == "MainProcess" else cur_process.pid
+
 
 class CustomPrintToLogger:
     def __init__(
@@ -74,6 +84,7 @@ class CustomPrintToLogger:
         self.log_type: Literal["stdout", "stderr"] = log_type
         self.logger: logging.Logger = logger
         self.configure_logger_stream()
+
 
     def configure_logger_stream(self):
         utf8_wrapper = UTF8StreamWrapper(self.original_out)
@@ -96,6 +107,7 @@ class CustomPrintToLogger:
                     self.logger.info(message.strip())
 
     def flush(self): ...
+
 
 class SafeEncodingLogger(logging.Logger):
     """A custom logger that safely handles log messages containing characters
@@ -141,62 +153,12 @@ class SafeEncodingLogger(logging.Logger):
             self._safe_log(logging.CRITICAL, msg, *args, **kwargs)
 
 
-# region multiprocessing
-
-LISTENER_THREAD: threading.Thread | None = None
-LOG_QUEUE = multiprocessing.Queue()
-
-
-def setup_main_listener():
-    import atexit
-    global LISTENER_THREAD  # noqa: PLW0603
-    LISTENER_THREAD = threading.Thread(target=listener_thread_function, args=(LOG_QUEUE,))
-    LISTENER_THREAD.daemon = True
-    LISTENER_THREAD.start()
-    atexit.register(stop_listener)
-
-
-def listener_thread_function(queue: multiprocessing.Queue):
-    """Function run by the listener thread to process log messages."""
-    while True:
-        try:
-            record: logging.LogRecord = queue.get(timeout=2)
-            if record == "STOP":
-                break
-            logger = logging.getLogger(record.name)
-            logger.handle(record)
-        except Empty:  # noqa: S112
-            continue
-
-
-def stop_listener():
-    LOG_QUEUE.put("STOP")
-    if LISTENER_THREAD is not None:
-        LISTENER_THREAD.join()
-
-class QueueLogHandler(logging.Handler):
-    """A handler that writes logs to a shared multiprocessing queue."""
-
-    def __init__(
-        self,
-        log_queue: multiprocessing.Queue,
-    ):
-        super().__init__()
-        self.log_queue: multiprocessing.Queue = log_queue
-
-    def emit(
-        self,
-        record: logging.LogRecord,
-    ):
-        self.log_queue.put(record)
-# endregion
-
-
 logging.setLoggerClass(SafeEncodingLogger)
 
 
 class CustomExceptionFormatter(logging.Formatter):
     sep = "\n----------------------------------------------------------------\n"
+
     def formatException(
         self,
         ei: tuple[type[BaseException], BaseException, TracebackType | None] | tuple[None, None, None],
@@ -219,6 +181,7 @@ class CustomExceptionFormatter(logging.Formatter):
 class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
     try:
         import colorama  # type: ignore[import-untyped, reportMissingModuleSource]
+
         colorama.init()
         USING_COLORAMA = True
     except ImportError:
@@ -255,6 +218,7 @@ class JSONFormatter(logging.Formatter):
 
 class LogLevelFilter(logging.Filter):
     """Filters (allows) all the log messages at or above a specific level."""
+
     def __init__(
         self,
         passlevel: int,
@@ -274,10 +238,43 @@ class LogLevelFilter(logging.Filter):
         return record.levelno >= self.passlevel
 
 
+def get_fallback_log_dir() -> Path:
+    """Determine a known good location based on the platform."""
+    if sys.platform.startswith("win"):  # Use ProgramData for Windows, which is typically for application data for all users
+        return Path(os.environ.get("PROGRAMDATA", "C:/ProgramData")) / "PyUtility"
+    return Path.home() / ".pyutility"
+
+
+def get_log_directory(subdir: os.PathLike | str | None = None) -> Path:
+    """Determine the best directory for logs based on availability and permissions."""
+    def check(path: Path) -> Path:
+        if not path.exists() or not path.is_dir():
+            path.unlink(missing_ok=True)
+            path.mkdir(parents=True, exist_ok=True)  # Attempt to create the fallback directory
+        from utility.system.os_helper import dir_requires_admin
+        if dir_requires_admin(path, ignore_errors=False):
+            raise PermissionError(f"Directory '{path}' requires admin.")
+        return path
+
+    cwd = Path.cwd()
+    subdir = Path("logs") if subdir is None else Path(subdir)
+    try:
+        return check(subdir)
+    except Exception as e:
+        print(f"Failed to init 'logs' dir in cwd '{cwd}': {e}")
+        try:
+            return check(cwd)
+        except Exception as e2:  # noqa: BLE001
+            print(f"Failed to init cwd fallback '{cwd}' as log directory: {e2}\noriginal: {e}")
+            return check(get_fallback_log_dir())
+
+
 def get_root_logger(
     use_level: int = logging.DEBUG,
 ) -> logging.Logger:
     """Setup a logger with some standard features.
+
+    The goal is to have this be able to be called anywhere anytime regardless of whether a logger is setup yet.
 
     Args:
     ----
@@ -288,24 +285,25 @@ def get_root_logger(
         logging.Logger: The root logger with the specified handlers and formatters.
     """
     logger = logging.getLogger()
-    if multiprocessing.current_process().name == "MainProcess":
-        if not logger.handlers:
-            setup_main_listener()
-    else:
-        logger.setLevel(use_level)
-        handler = QueueLogHandler(LOG_QUEUE)
-        logger.addHandler(handler)
-        return logger
-
     if not logger.handlers:
         logger.setLevel(use_level)
 
-        everything_log_file = "debug_pykotor.log"
-        info_warning_log_file = "pykotor.log"
-        error_critical_log_file = "errors_pykotor.log"
+        cur_process = multiprocessing.current_process()
+        console_format_str = "%(levelname)s(%(name)s): %(message)s"
+        if cur_process.name == "MainProcess":
+            log_dir = get_log_directory(subdir="logs")
+            everything_log_file = log_dir / "debug_pykotor.log"
+            info_warning_log_file = log_dir / "pykotor.log"
+            error_critical_log_file = log_dir / "errors_pykotor.log"
+        else:
+            log_dir = get_log_directory(subdir=f"logs/{cur_process.pid}")
+            everything_log_file = log_dir / f"debug_pykotor_{cur_process.pid}.log"
+            info_warning_log_file = log_dir / f"pykotor_{cur_process.pid}.log"
+            error_critical_log_file = log_dir / f"errors_pykotor_{cur_process.pid}.log"
+            console_format_str = f"PID={cur_process.pid} - {console_format_str}"
 
         console_handler = ColoredConsoleHandler()
-        formatter = logging.Formatter("%(levelname)s(%(name)s): %(message)s")
+        formatter = logging.Formatter(console_format_str)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 

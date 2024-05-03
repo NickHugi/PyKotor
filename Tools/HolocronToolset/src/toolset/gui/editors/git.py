@@ -4,17 +4,16 @@ import math
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtGui import QColor, QIcon, QKeySequence
-from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu
+from qtpy.QtGui import QColor, QCursor, QIcon, QKeySequence
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
-from pykotor.common.module import Module
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import read_lyt
@@ -33,8 +32,7 @@ from pykotor.resource.generics.git import (
     read_git,
 )
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_rim_file
-from pykotor.tools.template import extract_name, extract_tag
+from pykotor.tools.template import extract_name, extract_tag_from_gff
 from toolset.data.misc import ControlItem
 from toolset.gui.dialogs.instance.camera import CameraDialog
 from toolset.gui.dialogs.instance.creature import CreatureDialog
@@ -45,27 +43,26 @@ from toolset.gui.dialogs.instance.sound import SoundDialog
 from toolset.gui.dialogs.instance.store import StoreDialog
 from toolset.gui.dialogs.instance.trigger import TriggerDialog
 from toolset.gui.dialogs.instance.waypoint import WaypointDialog
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
-from toolset.utils.misc import getResourceFromFile
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import addWindow
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     import os
 
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QKeyEvent
+    from qtpy.QtGui import QCloseEvent, QKeyEvent
     from qtpy.QtWidgets import QCheckBox, QWidget
 
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt import LYT
-    from pykotor.resource.generics.git import (
-        GITInstance,
-    )
+    from pykotor.resource.generics.git import GITInstance
     from toolset.data.installation import HTInstallation
-    from utility.system.path import Path
+    from toolset.gui.windows.module_designer import ModuleDesigner
 
 
 def openInstanceDialog(
@@ -103,7 +100,7 @@ class GITEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation | None = None,
+        installation: HTInstallation = None,
     ):
         """Initializes the GIT editor.
 
@@ -141,7 +138,7 @@ class GITEditor(Editor):
 
         self.settings = GITSettings()
 
-        def intColorToQColor(intvalue):
+        def intColorToQColor(intvalue: int) -> QColor:
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
@@ -342,6 +339,20 @@ class GITEditor(Editor):
     def new(self):
         super().new()
 
+    def closeEvent(self, event: QCloseEvent):
+        reply = QMessageBox.question(
+            self,
+            "Confirm Exit",
+            "Really quit the GIT editor? You may lose unsaved changes.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            event.accept()  # Let the window close
+        else:
+            event.ignore()  # Ignore the close event
+
     def loadLayout(self, layout: LYT):
         """Load layout walkmeshes into the UI renderer.
 
@@ -447,7 +458,7 @@ class GITEditor(Editor):
             res: ResourceResult | None = self._installation.resource(resid.resname, resid.restype)
             if res is None:
                 return None
-            self.tagBuffer[resid] = extract_tag(res.data)
+            self.tagBuffer[resid] = extract_tag_from_gff(res.data)
         return self.tagBuffer[resid]
 
     def enterInstanceMode(self):
@@ -462,8 +473,10 @@ class GITEditor(Editor):
 
     def moveCameraToSelection(self):
         instance = self.ui.renderArea.instanceSelection.last()
-        if instance:
-            self.ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
+        if not instance:
+            self._logger.warning("No instance selected - moveCameraToSelection")
+            return
+        self.ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
 
     # region Mode Calls
     def openListContextMenu(self, item: QListWidgetItem, point: QPoint): ...
@@ -502,18 +515,6 @@ class GITEditor(Editor):
 
     # region Signal Callbacks
     def onContextMenu(self, point: QPoint):
-        """Opens context menu on right click in render area.
-
-        Args:
-        ----
-            point: Point of right click in local coordinates
-        Returns:
-            None
-        Processes right click context menu:
-            - Maps point from local to global coordinates
-            - Converts point from local to world coordinates
-        - Passes world point and global point to mode for context menu handling
-        """
         globalPoint: QPoint = self.ui.renderArea.mapToGlobal(point)
         world: Vector3 = self.ui.renderArea.toWorldCoords(point.x(), point.y())
         self._mode.onRenderContextMenu(Vector2.from_vector3(world), globalPoint)
@@ -525,17 +526,6 @@ class GITEditor(Editor):
         self._mode.onItemSelectionChanged(self.ui.listWidget.currentItem())
 
     def onItemContextMenu(self, point: QPoint):
-        """Opens context menu for the current list item.
-
-        Args:
-        ----
-            point: Point of context menu click
-
-        Processes context menu click:
-            - Maps local point to global coordinate system
-            - Gets current list item
-        - Opens context menu through mode manager
-        """
         globalPoint: QPoint = self.ui.listWidget.mapToGlobal(point)
         item: QListWidgetItem | None = self.ui.listWidget.currentItem()
         assert item is not None, f"item cannot be None in {self!r}.onItemContextMenu({point!r})"
@@ -560,8 +550,7 @@ class GITEditor(Editor):
         worldDelta: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         self._controls.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
-        mode: _InstanceMode = cast(_InstanceMode, self._mode)
-        mode.updateStatusBar(Vector2.from_vector3(world))
+        self._mode.updateStatusBar(Vector2.from_vector3(world))
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         self._controls.onMouseScrolled(delta, buttons, keys)
@@ -585,12 +574,21 @@ class GITEditor(Editor):
 
 
 class _Mode(ABC):
-    def __init__(self, editor: GITEditor, installation: HTInstallation, git: GIT):
-        self._editor: GITEditor = editor
+    def __init__(
+        self,
+        editor: GITEditor | ModuleDesigner,
+        installation: HTInstallation,
+        git: GIT,
+    ):
+        self._editor: GITEditor | ModuleDesigner = editor
         self._installation: HTInstallation = installation
         self._git: GIT = git
 
         self._ui = editor.ui
+        self.walkmeshRenderer = editor.ui.renderArea if isinstance(editor, GITEditor) else editor.ui.flatRenderer
+
+    def listWidget(self):
+        return self._ui.listWidget if isinstance(self._editor, GITEditor) else self._ui.instanceList
 
     @abstractmethod
     def onItemSelectionChanged(self, item: QListWidgetItem): ...
@@ -625,23 +623,31 @@ class _Mode(ABC):
     @abstractmethod
     def rotateSelectedToPoint(self, x: float, y: float): ...
 
-    @abstractmethod
-    def moveCamera(self, x: float, y: float): ...
+    def moveCamera(self, x: float, y: float):
+        self.walkmeshRenderer.camera.nudgePosition(x, y)
+
+    def zoomCamera(self, amount: float):
+        self.walkmeshRenderer.camera.nudgeZoom(amount)
+
+    def rotateCamera(self, angle: float):
+        self.walkmeshRenderer.camera.nudgeRotation(angle)
 
     @abstractmethod
-    def zoomCamera(self, amount: float): ...
-
-    @abstractmethod
-    def rotateCamera(self, angle: float): ...
+    def updateStatusBar(self, world: Vector2): ...
 
     # endregion
 
 
 class _InstanceMode(_Mode):
-    def __init__(self, editor: GITEditor, installation: HTInstallation, git: GIT):
+    def __init__(
+        self,
+        editor: GITEditor | ModuleDesigner,
+        installation: HTInstallation,
+        git: GIT,
+    ):
         super().__init__(editor, installation, git)
-        self._ui.renderArea.hideGeomPoints = True
-        self._ui.renderArea.geometrySelection.clear()
+        self.walkmeshRenderer.hideGeomPoints = True
+        self.walkmeshRenderer.geometrySelection.clear()
         self.updateVisibility()
 
     def setSelection(self, instances: list[GITInstance]):
@@ -659,18 +665,18 @@ class _InstanceMode(_Mode):
             - Loop through list widget items and select matching instances
             - Unblock list widget signals.
         """
-        self._ui.renderArea.instanceSelection.select(instances)
+        self.walkmeshRenderer.instanceSelection.select(instances)
 
         # set the list widget selection
-        self._ui.listWidget.blockSignals(True)
-        for i in range(self._ui.listWidget.count()):
-            item = self._ui.listWidget.item(i)
+        self.listWidget().blockSignals(True)
+        for i in range(self.listWidget().count()):
+            item = self.listWidget().item(i)
             if item is None:
                 continue
             instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
             if instance in instances:
-                self._ui.listWidget.setCurrentItem(item)
-        self._ui.listWidget.blockSignals(False)
+                self.listWidget().setCurrentItem(item)
+        self.listWidget().blockSignals(False)
 
     def editSelectedInstance(self):
         """Edits the selected instance.
@@ -687,7 +693,7 @@ class _InstanceMode(_Mode):
             - Opens an instance dialog to edit the selected instance properties
             - Rebuilds the instance list after editing.
         """
-        selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
+        selection: list[GITInstance] = self.walkmeshRenderer.instanceSelection.all()
 
         if selection:
             instance: GITInstance = selection[-1]
@@ -705,44 +711,43 @@ class _InstanceMode(_Mode):
             - Checks if the path contains "override" or is in the module root
             - Opens the resource editor with the file if a path is found.
         """
-        selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
+        selection: list[GITInstance] = self.walkmeshRenderer.instanceSelection.all()
 
         if not selection:
             return
         instance: GITInstance = selection[-1]
         resname, restype = instance.identifier().unpack()
-        filepath: Path | None = None
 
         order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
         search: list[LocationResult] = self._installation.location(resname, restype, order)
 
-        for result in search:
-            lowercase_path_parts: list[str] = [f.lower() for f in result.filepath.parts]
-            if "override" in lowercase_path_parts:
-                filepath = result.filepath
-            else:
-                module_root: str = Module.get_root(self._editor.filepath())
-
-                # TODO: document what the purpose of this is. Why check parents.
-                lowercase_path_parents: list[str] = [str(parent).lower() for parent in result.filepath.parents]
-                if module_root.lower() in lowercase_path_parents and (filepath is None or is_rim_file(filepath)):
-                    filepath = result.filepath
-
-        if filepath:
-            data: bytes = getResourceFromFile(filepath, resname, restype)
-            openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
+        if isinstance(self._editor, GITEditor):
+            assert self._editor._filepath is not None
+            module_root: str = self._installation.replace_module_extensions(self._editor._filepath.name)
         else:
-            # TODO Make prompt for override/MOD
-            ...
+            assert self._editor._module is not None
+            module_root = self._editor._module._root
+        module_root = module_root.lower()
+        for loc in search:
+            if (
+                loc.filepath.parent.name.lower() == "modules"
+                and self._installation.replace_module_extensions(loc.filepath.name.lower()) != self._editor._module._root
+            ):
+                get_root_logger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
+                search.remove(loc)
+        if search:
+            selectionWindow = FileSelectionWindow(search, self._installation)
+            selectionWindow.show()
+            selectionWindow.activateWindow()
 
     def editSelectedInstanceGeometry(self):
-        if self._ui.renderArea.instanceSelection.last():
-            self._ui.renderArea.instanceSelection.last()
+        if self.walkmeshRenderer.instanceSelection.last():
+            self.walkmeshRenderer.instanceSelection.last()
             self._editor.enterGeometryMode()
 
     def editSelectedInstanceSpawns(self):
-        if self._ui.renderArea.instanceSelection.last():
-            self._ui.renderArea.instanceSelection.last()
+        if self.walkmeshRenderer.instanceSelection.last():
+            self.walkmeshRenderer.instanceSelection.last()
             # TODO
 
     def addInstance(self, instance: GITInstance):
@@ -778,6 +783,36 @@ class _InstanceMode(_Mode):
 
         if isinstance(instance, GITEncounter):
             menu.addAction("Edit Spawn Points").triggered.connect(self.editSelectedInstanceSpawns)
+        menu.addSeparator()
+        self.addResourceSubMenu(menu, instance)
+
+    def addResourceSubMenu(self, menu: QMenu, instance: GITInstance) -> QMenu:
+        if isinstance(instance, GITCamera):
+            return menu
+        locations = self._installation.location(*instance.identifier().unpack())
+        if not locations:
+            return menu
+        # Create the main context menu
+        fileMenu = menu.addMenu("File Actions")
+        # Get the current position of the mouse cursor
+        global_position = QCursor.pos()
+
+        # Iterate over each location to create submenus
+        for result in locations:
+            # Create a submenu for each location
+            location_menu = fileMenu.addMenu(str(result.filepath.joinpath(str(instance.identifier())).relative_to(self._installation.path())))
+            resourceMenuBuilder = ResourceItems(resources=[result])
+            resourceMenuBuilder.build_menu(global_position, location_menu)
+        def moreInfo():
+            selectionWindow = FileSelectionWindow(
+                locations,
+                self._installation,
+            )
+            selectionWindow.show()
+            selectionWindow.activateWindow()
+            addWindow(selectionWindow)
+        fileMenu.addAction("Details...").triggered.connect(moreInfo)
+        return menu
 
     def setListItemLabel(self, item: QListWidgetItem, instance: GITInstance):
         """Sets the label text of a QListWidget item for a game instance.
@@ -855,7 +890,7 @@ class _InstanceMode(_Mode):
 
     # region Interface Methods
     def onFilterEdited(self, text: str):
-        self._ui.renderArea.instanceFilter = text
+        self.walkmeshRenderer.instanceFilter = text
         self.buildList()
 
     def onItemSelectionChanged(self, item: QListWidgetItem):
@@ -865,8 +900,8 @@ class _InstanceMode(_Mode):
             self.setSelection([item.data(QtCore.Qt.ItemDataRole.UserRole)])
 
     def updateStatusBar(self, world: Vector2):
-        if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
-            instance = self._ui.renderArea.instancesUnderMouse()[-1]
+        if self.walkmeshRenderer.instancesUnderMouse() and self.walkmeshRenderer.instancesUnderMouse()[-1] is not None:
+            instance = self.walkmeshRenderer.instancesUnderMouse()[-1]
             resname = "" if isinstance(instance, GITCamera) else instance.identifier().resname
             self._editor.statusBar().showMessage(f"({world.x:.1f}, {world.y:.1f}) {resname}")
         else:
@@ -877,7 +912,7 @@ class _InstanceMode(_Mode):
             return
 
         instance = item.data(QtCore.Qt.ItemDataRole.UserRole)
-        menu = QMenu(self._ui.listWidget)
+        menu = QMenu(self.listWidget())
 
         self.addInstanceActionsToMenu(instance, menu)
 
@@ -897,29 +932,29 @@ class _InstanceMode(_Mode):
             - Adds instance actions to selected instance if single selection
             - Adds deselect action for instances under mouse
         """
-        underMouse: list[GITInstance] = self._ui.renderArea.instancesUnderMouse()
+        menu = QMenu(self.listWidget())
+        self._getRenderContextMenu(world, menu)
+        menu.popup(point)
 
-        menu = QMenu(self._ui.listWidget)
-
-        if not self._ui.renderArea.instanceSelection.isEmpty():
-            self.addInstanceActionsToMenu(self._ui.renderArea.instanceSelection.last(), menu)
+    def _getRenderContextMenu(self, world: Vector2, menu: QMenu):
+        underMouse: list[GITInstance] = self.walkmeshRenderer.instancesUnderMouse()
+        if not self.walkmeshRenderer.instanceSelection.isEmpty():
+            self.addInstanceActionsToMenu(self.walkmeshRenderer.instanceSelection.last(), menu)
         else:
-            self._add_submenu(menu, world)
+            self.addInsertActionsToMenu(menu, world)
         if underMouse:
             menu.addSeparator()
             for instance in underMouse:
-                icon = QIcon(self._ui.renderArea.instancePixmap(instance))
+                icon = QIcon(self.walkmeshRenderer.instancePixmap(instance))
                 reference = "" if instance.identifier() is None else instance.identifier().resname
                 index = self._editor.git().index(instance)
 
                 instanceAction = menu.addAction(icon, f"[{index}] {reference}")
                 instanceAction.triggered.connect(lambda _=None, inst=instance: self.setSelection([inst]))
-                instanceAction.setEnabled(instance not in self._ui.renderArea.instanceSelection.all())
+                instanceAction.setEnabled(instance not in self.walkmeshRenderer.instanceSelection.all())
                 menu.addAction(instanceAction)
 
-        menu.popup(point)
-
-    def _add_submenu(self, menu: QMenu, world: Vector2):
+    def addInsertActionsToMenu(self, menu: QMenu, world: Vector2):
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))
         menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(world.x, world.y)))
@@ -936,7 +971,9 @@ class _InstanceMode(_Mode):
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(simpleTrigger))
 
     def buildList(self):
-        self._ui.listWidget.clear()
+        if not isinstance(self._editor, GITEditor):
+            return
+        self.listWidget().clear()
 
         def instanceSort(inst: GITInstance) -> str:
             textToSort: str = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname
@@ -945,33 +982,34 @@ class _InstanceMode(_Mode):
         instances: list[GITInstance] = sorted(self._git.instances(), key=instanceSort)
         for instance in instances:
             filterSource: str = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
-            isVisible: bool | None = self._ui.renderArea.isInstanceVisible(instance)
+            isVisible: bool | None = self.walkmeshRenderer.isInstanceVisible(instance)
             isFiltered: bool = self._ui.filterEdit.text().lower() in filterSource.lower()
 
             if isVisible and isFiltered:
-                icon = QIcon(self._ui.renderArea.instancePixmap(instance))
+                icon = QIcon(self.walkmeshRenderer.instancePixmap(instance))
                 item = QListWidgetItem(icon, "")
                 self.setListItemLabel(item, instance)
-                self._ui.listWidget.addItem(item)
+                self.listWidget().addItem(item)
 
     def updateVisibility(self):
-        self._ui.renderArea.hideCreatures = not self._ui.viewCreatureCheck.isChecked()
-        self._ui.renderArea.hidePlaceables = not self._ui.viewPlaceableCheck.isChecked()
-        self._ui.renderArea.hideDoors = not self._ui.viewDoorCheck.isChecked()
-        self._ui.renderArea.hideTriggers = not self._ui.viewTriggerCheck.isChecked()
-        self._ui.renderArea.hideEncounters = not self._ui.viewEncounterCheck.isChecked()
-        self._ui.renderArea.hideWaypoints = not self._ui.viewWaypointCheck.isChecked()
-        self._ui.renderArea.hideSounds = not self._ui.viewSoundCheck.isChecked()
-        self._ui.renderArea.hideStores = not self._ui.viewStoreCheck.isChecked()
-        self._ui.renderArea.hideCameras = not self._ui.viewCameraCheck.isChecked()
+        self.walkmeshRenderer.hideCreatures = not self._ui.viewCreatureCheck.isChecked()
+        self.walkmeshRenderer.hidePlaceables = not self._ui.viewPlaceableCheck.isChecked()
+        self.walkmeshRenderer.hideDoors = not self._ui.viewDoorCheck.isChecked()
+        self.walkmeshRenderer.hideTriggers = not self._ui.viewTriggerCheck.isChecked()
+        self.walkmeshRenderer.hideEncounters = not self._ui.viewEncounterCheck.isChecked()
+        self.walkmeshRenderer.hideWaypoints = not self._ui.viewWaypointCheck.isChecked()
+        self.walkmeshRenderer.hideSounds = not self._ui.viewSoundCheck.isChecked()
+        self.walkmeshRenderer.hideStores = not self._ui.viewStoreCheck.isChecked()
+        self.walkmeshRenderer.hideCameras = not self._ui.viewCameraCheck.isChecked()
         self.buildList()
 
     def selectUnderneath(self):
-        underMouse: list[GITInstance] = self._ui.renderArea.instancesUnderMouse()
-        selection: list[GITInstance] = self._ui.renderArea.instanceSelection.all()
+        underMouse: list[GITInstance] = self.walkmeshRenderer.instancesUnderMouse()
+        selection: list[GITInstance] = self.walkmeshRenderer.instanceSelection.all()
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
+            get_root_logger().info(f"Not changing selection: selected instance '{selection[0].classification()}' is still underneath the mouse.")
             return
 
         if underMouse:
@@ -980,14 +1018,14 @@ class _InstanceMode(_Mode):
             self.setSelection([])
 
     def deleteSelected(self):
-        for instance in self._ui.renderArea.instanceSelection.all():
+        for instance in self.walkmeshRenderer.instanceSelection.all():
             self._git.remove(instance)
-            self._ui.renderArea.instanceSelection.remove(instance)
+            self.walkmeshRenderer.instanceSelection.remove(instance)
         self.buildList()
 
     def duplicateSelected(self, position: Vector3):
-        if self._ui.renderArea.instanceSelection.all():
-            instance: GITInstance = deepcopy(self._ui.renderArea.instanceSelection.all()[-1])
+        if self.walkmeshRenderer.instanceSelection.all():
+            instance: GITInstance = deepcopy(self.walkmeshRenderer.instanceSelection.all()[-1])
             instance.position = position
             self._git.add(instance)
             self.buildList()
@@ -997,15 +1035,15 @@ class _InstanceMode(_Mode):
         if self._ui.lockInstancesCheck.isChecked():
             return
 
-        for instance in self._ui.renderArea.instanceSelection.all():
+        for instance in self.walkmeshRenderer.instanceSelection.all():
             instance.move(x, y, 0)
 
     def rotateSelected(self, angle: float):
-        for instance in self._ui.renderArea.instanceSelection.all():
+        for instance in self.walkmeshRenderer.instanceSelection.all():
             instance.rotate(angle, 0, 0)
 
     def rotateSelectedToPoint(self, x: float, y: float):
-        for instance in self._ui.renderArea.instanceSelection.all():
+        for instance in self.walkmeshRenderer.instanceSelection.all():
             rotation: float = -math.atan2(x - instance.position.x, y - instance.position.y)
             yaw = instance.yaw() or 0.01
             if isinstance(instance, GITCamera):
@@ -1013,40 +1051,42 @@ class _InstanceMode(_Mode):
             else:
                 instance.rotate(-yaw + rotation, 0, 0)
 
-    def moveCamera(self, x: float, y: float):
-        self._ui.renderArea.camera.nudgePosition(x, y)
-
-    def zoomCamera(self, amount: float):
-        self._ui.renderArea.camera.nudgeZoom(amount)
-
-    def rotateCamera(self, angle: float):
-        self._ui.renderArea.camera.nudgeRotation(angle)
-
     # endregion
 
 
 class _GeometryMode(_Mode):
-    def __init__(self, editor: GITEditor, installation: HTInstallation, git: GIT):
+    def __init__(
+        self,
+        editor: GITEditor | ModuleDesigner,
+        installation: HTInstallation,
+        git: GIT,
+        *,
+        hideOthers: bool = True,
+    ):
         super().__init__(editor, installation, git)
 
-        self._ui.renderArea.hideCreatures = True
-        self._ui.renderArea.hideDoors = True
-        self._ui.renderArea.hidePlaceables = True
-        self._ui.renderArea.hideSounds = True
-        self._ui.renderArea.hideStores = True
-        self._ui.renderArea.hideCameras = True
-        self._ui.renderArea.hideTriggers = True
-        self._ui.renderArea.hideEncounters = True
-        self._ui.renderArea.hideWaypoints = True
-        self._ui.renderArea.hideGeomPoints = False
+        if hideOthers:
+            self.walkmeshRenderer.hideCreatures = True
+            self.walkmeshRenderer.hideDoors = True
+            self.walkmeshRenderer.hidePlaceables = True
+            self.walkmeshRenderer.hideSounds = True
+            self.walkmeshRenderer.hideStores = True
+            self.walkmeshRenderer.hideCameras = True
+            self.walkmeshRenderer.hideTriggers = True
+            self.walkmeshRenderer.hideEncounters = True
+            self.walkmeshRenderer.hideWaypoints = True
+        else:
+            self.walkmeshRenderer.hideEncounters = False
+            self.walkmeshRenderer.hideTriggers = False
+        self.walkmeshRenderer.hideGeomPoints = False
 
     def insertPointAtMouse(self):
-        screen: QPoint = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
-        world: Vector3 = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
+        screen: QPoint = self.walkmeshRenderer.mapFromGlobal(self._editor.cursor().pos())
+        world: Vector3 = self.walkmeshRenderer.toWorldCoords(screen.x(), screen.y())
 
-        instance: GITInstance = self._ui.renderArea.instanceSelection.get(0)
+        instance: GITInstance = self.walkmeshRenderer.instanceSelection.get(0)
         point: Vector3 = world - instance.position
-        self._ui.renderArea.geomPointsUnderMouse().append(GeomPoint(instance, point))
+        self.walkmeshRenderer.geomPointsUnderMouse().append(GeomPoint(instance, point))
 
     # region Interface Methods
     def onItemSelectionChanged(self, item: QListWidgetItem):
@@ -1056,25 +1096,24 @@ class _GeometryMode(_Mode):
         pass
 
     def updateStatusBar(self, world: Vector2):
-        instance: GITInstance | None = self._ui.renderArea.instanceSelection.last()
+        instance: GITInstance | None = self.walkmeshRenderer.instanceSelection.last()
         if instance:
-            self._editor.statusBar().showMessage(
-                f"({world.x:.1f}, {world.y:.1f}) Editing Geometry of {instance.identifier().resname}",
-            )
+            self._editor.statusBar().showMessage(f"({world.x:.1f}, {world.y:.1f}) Editing Geometry of {instance.identifier().resname}")
 
     def onRenderContextMenu(self, world: Vector2, screen: QPoint):
         menu = QMenu(self._editor)
+        self._getRenderContextMenu(world, menu)
+        menu.popup(screen)
 
-        if not self._ui.renderArea.geometrySelection.isEmpty():
+    def _getRenderContextMenu(self, world: Vector2, menu: QMenu):
+        if not self.walkmeshRenderer.geometrySelection.isEmpty():
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
-        if self._ui.renderArea.geometrySelection.count() == 0:
+        if self.walkmeshRenderer.geometrySelection.count() == 0:
             menu.addAction("Insert").triggered.connect(self.insertPointAtMouse)
 
         menu.addSeparator()
         menu.addAction("Finish Editing").triggered.connect(self._editor.enterInstanceMode)
-
-        menu.popup(screen)
 
     def openListContextMenu(self, item: QListWidgetItem, screen: QPoint):
         pass
@@ -1083,25 +1122,25 @@ class _GeometryMode(_Mode):
         pass
 
     def selectUnderneath(self):
-        underMouse: list[GeomPoint] = self._ui.renderArea.geomPointsUnderMouse()
-        selection: list[GeomPoint] = self._ui.renderArea.geometrySelection.all()
+        underMouse: list[GeomPoint] = self.walkmeshRenderer.geomPointsUnderMouse()
+        selection: list[GeomPoint] = self.walkmeshRenderer.geometrySelection.all()
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
-            print(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
+            get_root_logger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
-        self._ui.renderArea.geometrySelection.select(underMouse or [])
+        self.walkmeshRenderer.geometrySelection.select(underMouse or [])
 
     def deleteSelected(self):
-        vertex: GeomPoint | None = self._ui.renderArea.geometrySelection.last()
+        vertex: GeomPoint | None = self.walkmeshRenderer.geometrySelection.last()
         instance: GITInstance = vertex.instance
-        self._ui.renderArea.geometrySelection.remove(GeomPoint(instance, vertex.point))  # FIXME
+        self.walkmeshRenderer.geometrySelection.remove(GeomPoint(instance, vertex.point))
 
     def duplicateSelected(self, position: Vector3):
         pass
 
     def moveSelected(self, x: float, y: float):
-        for vertex in self._ui.renderArea.geometrySelection.all():
+        for vertex in self.walkmeshRenderer.geometrySelection.all():
             vertex.point.x += x
             vertex.point.y += y
 
@@ -1110,15 +1149,6 @@ class _GeometryMode(_Mode):
 
     def rotateSelectedToPoint(self, x: float, y: float):
         pass
-
-    def moveCamera(self, x: float, y: float):
-        self._ui.renderArea.camera.nudgePosition(x, y)
-
-    def zoomCamera(self, amount: float):
-        self._ui.renderArea.camera.nudgeZoom(amount)
-
-    def rotateCamera(self, angle: float):
-        self._ui.renderArea.camera.nudgeRotation(angle)
 
     # endregion
 

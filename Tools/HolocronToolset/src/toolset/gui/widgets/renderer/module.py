@@ -73,6 +73,10 @@ class ModuleRenderer(QOpenGLWidget):
         self._installation: HTInstallation | None = None
         self._init = False
 
+        self.loopTimer = QTimer(self)
+        self.loopTimer.timeout.connect(self.loop)
+        self.loopInterval = 33  # ms, approx 30 FPS
+
         self._renderTime: int = 0
         self._keysDown: set[int] = set()
         self._mouseDown: set[int] = set()
@@ -83,11 +87,21 @@ class ModuleRenderer(QOpenGLWidget):
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
         self.delta: float = 0.0333
 
+    def pauseLoop(self):
+        """Pauses the rendering loop by stopping the timer."""
+        if self.loopTimer.isActive():
+            self.loopTimer.stop()
+
+    def resumeLoop(self):
+        """Resumes the rendering loop by starting the timer."""
+        if not self.loopTimer.isActive():
+            self.loopTimer.start(self.loopInterval)
+
     def init(self, installation: HTInstallation, module: Module):
         self._installation = installation
         self._module = module
-
-        QTimer.singleShot(33, self.loop)
+        self._init = False
+        self.resumeLoop()
 
     def loop(self):
         """Repaints and checks for keyboard input on mouse press.
@@ -106,9 +120,6 @@ class ModuleRenderer(QOpenGLWidget):
         self.repaint()
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
-
-        delay = max(0, 33 - self._renderTime)
-        QTimer.singleShot(delay, self.loop)
 
     def walkmeshPoint(
         self,
@@ -174,6 +185,8 @@ class ModuleRenderer(QOpenGLWidget):
             - Renders the scene
             - Records render time.
         """
+        if not self.loopTimer.isActive():
+            return
         start = datetime.now(tz=timezone.utc).astimezone()
         if not self._init:
             self._initialize_paintGL()

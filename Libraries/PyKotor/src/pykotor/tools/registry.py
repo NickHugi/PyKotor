@@ -69,7 +69,7 @@ def find_software_key(software_name: str) -> str | None:
     return None
 
 
-def resolve_reg_key_to_path(reg_key: str, keystr: str):
+def resolve_reg_key_to_path(reg_key: str, keystr: str) -> str | None:
     r"""Resolves a registry key to a file system path.
 
     Args:

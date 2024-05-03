@@ -8,7 +8,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QSortFilterProxyModel, QThread, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QVBoxLayout
+from qtpy.QtWidgets import QAction, QDialog, QMenu, QMessageBox, QProgressBar, QShortcut, QSpinBox, QVBoxLayout
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -24,11 +24,25 @@ if TYPE_CHECKING:
     import os
 
     from qtpy.QtCore import QModelIndex
+    from qtpy.QtGui import QKeyEvent
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
+
+
+class EnterSpinBox(QSpinBox):
+    # Custom signal that you can emit when Enter is pressed
+    enterPressed = QtCore.Signal()
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            # Emit the custom signal when Enter or Return is pressed
+            self.enterPressed.emit()
+        else:
+            # Otherwise, proceed with the default behavior
+            super().keyPressEvent(event)
 
 
 class TLKEditor(Editor):
@@ -99,6 +113,10 @@ class TLKEditor(Editor):
         """
         self.ui.actionGoTo.triggered.connect(self.toggleGotoBox)
         self.ui.jumpButton.clicked.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
+        #self.ui.jumpSpinbox.editingFinished.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
+        self.ui.jumpSpinbox.__class__ = EnterSpinBox
+        assert isinstance(self.ui.jumpSpinbox, EnterSpinBox)
+        self.ui.jumpSpinbox.enterPressed.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
         self.ui.searchButton.clicked.connect(lambda: self.doFilter(self.ui.searchEdit.text()))
         self.ui.actionInsert.triggered.connect(self.insert)
@@ -328,7 +346,11 @@ class TLKEditor(Editor):
         self.proxyModel.setFilterFixedString(text)
 
     def toggleFilterBox(self):
-        self.ui.searchBox.setVisible(not self.ui.searchBox.isVisible())
+        isVisible: bool = self.ui.searchBox.isVisible()
+        self.ui.searchBox.setVisible(not isVisible)
+        if not isVisible:  # If the jump box was not visible before and now is
+            self.ui.searchEdit.setFocus()  # Activate the spinbox for immediate typing
+            self.ui.searchEdit.selectAll()
 
     def gotoLine(self, line: int):
         index = self.model.index(line, 0)
@@ -337,7 +359,11 @@ class TLKEditor(Editor):
         self.ui.talkTable.setCurrentIndex(proxyIndex)
 
     def toggleGotoBox(self):
-        self.ui.jumpBox.setVisible(not self.ui.jumpBox.isVisible())
+        isVisible: bool = self.ui.jumpBox.isVisible()
+        self.ui.jumpBox.setVisible(not isVisible)
+        if not isVisible:  # If the jump box was not visible before and now is
+            self.ui.jumpSpinbox.setFocus()  # Activate the spinbox for immediate typing
+            self.ui.jumpSpinbox.selectAll()
 
     def selectionChanged(self):
         """Handle selection changes in the talk table.

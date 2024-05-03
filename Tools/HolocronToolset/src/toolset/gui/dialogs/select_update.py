@@ -18,7 +18,7 @@ from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_t
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import kill_child_processes
+from utility.system.os_helper import terminate_child_processes
 from utility.updater.github import GithubRelease
 from utility.updater.update import AppUpdate
 
@@ -33,7 +33,6 @@ def convert_markdown_to_html(md_text: str) -> str:
 class UpdateDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.include_prerelease: bool = False
         self.remoteInfo: dict[str, Any] = {}
         self.releases: list[GithubRelease] = []
         self.forksCache: dict[str, list[GithubRelease]] = {}
@@ -43,10 +42,20 @@ class UpdateDialog(QDialog):
         self.init_ui()
         self.init_config()
 
+    def include_prerelease(self) -> bool:
+        return self.preReleaseCheckBox.isChecked()
+
+    def set_prerelease(self, value):
+        return self.preReleaseCheckBox.setChecked(value)
+
     def init_ui(self):
         mainLayout = QVBoxLayout(self)
         mainLayout.setSpacing(10)
         mainLayout.setContentsMargins(10, 10, 10, 10)
+
+        # Include Pre-releases Checkbox
+        self.preReleaseCheckBox = QCheckBox("Include Pre-releases")
+        self.preReleaseCheckBox.stateChanged.connect(self.on_pre_release_changed)
 
         # Fetch Releases Button
         fetchReleasesButton = QPushButton("Fetch Releases")
@@ -76,10 +85,6 @@ class UpdateDialog(QDialog):
         formLayout.addRow("Select Release:", self.releaseComboBox)
 
         mainLayout.addLayout(formLayout)
-
-        # Include Pre-releases Checkbox
-        self.preReleaseCheckBox = QCheckBox("Include Pre-releases")
-        self.preReleaseCheckBox.stateChanged.connect(self.on_pre_release_changed)
         mainLayout.addWidget(self.preReleaseCheckBox)
 
         # Install Selected Button
@@ -116,7 +121,7 @@ class UpdateDialog(QDialog):
 
 
     def init_config(self):
-        self.include_prerelease = self.preReleaseCheckBox.isChecked()
+        self.set_prerelease(False)
         self.fetch_and_cache_forks_with_releases()
         self.forksCache["NickHugi/PyKotor"] = self.fetch_fork_releases("NickHugi/PyKotor", include_all=True)
         self.populate_fork_combo_box()
@@ -149,20 +154,11 @@ class UpdateDialog(QDialog):
                 return [GithubRelease.from_json(r) for r in releases_json]
             return [
                 GithubRelease.from_json(r) for r in releases_json
-                if not r["draft"] and (self.include_prerelease or not r["prerelease"])
+                if not r["draft"] and (self.include_prerelease() or not r["prerelease"])
             ]
         except requests.HTTPError as e:
             get_root_logger().exception(f"Failed to fetch releases for {fork_full_name}: {e}")
             return []
-
-    def update_release_combo_box(self):
-        self.releaseComboBox.clear()
-        self.changelogEdit.clear()
-        for release in self.releases:
-            if "toolset" not in release.tag_name.lower():
-                continue
-            self.releaseComboBox.addItem(release.tag_name, release)
-        self.on_release_changed(self.releaseComboBox.currentIndex())
 
     def populate_fork_combo_box(self):
         self.forkComboBox.clear()
@@ -171,22 +167,32 @@ class UpdateDialog(QDialog):
             self.forkComboBox.addItem(fork)
 
     def on_pre_release_changed(self, state: bool):
-        self.include_prerelease = state == Qt.CheckState.Checked
         self.filter_releases_based_on_prerelease()
 
     def filter_releases_based_on_prerelease(self):
         selected_fork = self.forkComboBox.currentText()
         if selected_fork in self.forksCache:
-            filtered_releases = [
+            self.releases = [
                 release for release in self.forksCache[selected_fork]
                 if not release.draft
-                and (self.include_prerelease or not release.prerelease)
+                and "toolset" in release.tag_name.lower()
+                and release.prerelease == self.include_prerelease()
             ]
-            self.releases = filtered_releases
         else:
             self.releases = []
 
-        self.update_release_combo_box()
+        if not self.include_prerelease() and not self.releases:  # Don't show empty release comboboxes.
+            print("No releases found, attempt to try again with prereleases")
+            self.set_prerelease(True)
+            return
+        self.releases.sort(key=lambda x: bool(remoteVersionNewer("0.0.0", x.tag_name)))
+
+        # Update Combo Box
+        self.releaseComboBox.clear()
+        self.changelogEdit.clear()
+        for release in self.releases:
+            self.releaseComboBox.addItem(release.tag_name, release)
+        self.on_release_changed(self.releaseComboBox.currentIndex())
 
     def on_fork_changed(self, index: int):
         if index < 0:
@@ -206,9 +212,16 @@ class UpdateDialog(QDialog):
         changelog_html: str = convert_markdown_to_html(release.body)
         self.changelogEdit.setHtml(changelog_html)
 
+    def get_latest_release(self) -> GithubRelease | None:
+        if self.releases:
+            return self.releases[0]
+        self.set_prerelease(True)
+        return self.releases[0] if self.releases else None
+
     def on_update_latest_clicked(self):
-        latest_release = self.releases[0]
+        latest_release = self.get_latest_release()
         if not latest_release:
+            print("No toolset releases found?")
             return
         self.start_update(latest_release)
 
@@ -228,10 +241,13 @@ class UpdateDialog(QDialog):
             download_url = asset.browser_download_url
             links = [download_url]
         else:
-            result = QMessageBox(  # TODO(th3w1zard1): compile from src
+            # TODO(th3w1zard1): compile from src.
+            # Realistically wouldn't be that hard, just run ./install_powershell.ps1 and ./compile/compile_toolset.ps1 and run the exe.
+            # The difficult part would be finishing LibUpdate, currently only AppUpdate is working.
+            result = QMessageBox(
                 QMessageBox.Icon.Question,
                 "No asset found for this release.",
-                "There are no binaries available for download. Would you like to compile this release from source instead?",
+                f"There are no binaries available for download for release '{release.tag_name}'.", #Would you like to compile this release from source instead?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
@@ -257,7 +273,7 @@ class UpdateDialog(QDialog):
                     get_root_logger().debug(f"Terminating QThread: {obj}")
                     obj.terminate()
                     obj.wait()
-            kill_child_processes()
+            terminate_child_processes()
             if kill_self_here:
                 sys.exit(0)
 

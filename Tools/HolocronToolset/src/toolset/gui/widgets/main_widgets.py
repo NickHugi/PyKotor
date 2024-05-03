@@ -15,6 +15,7 @@ from qtpy.QtWidgets import QHeaderView, QMenu, QWidget
 
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
@@ -208,34 +209,24 @@ class ResourceList(MainWindowList):
     def onResourceContextMenu(self, point: QPoint):
         """Shows context menu for selected resources.
 
+        an Installation/HTInstallation instance is not available in this code, that is emitted back to the ToolWindow.
+
         Args:
         ----
             point: QPoint - Mouse position for context menu
-
-        Processing Logic:
-        ----------------
-            - Create QMenu at mouse position
-            - Get selected resources
-            - If single resource and GFF type:
-                - Add "Open" and "Open with GFF Editor" actions
-                - Connect actions to emit signals to open resource.
         """
         resources: list[FileResource] = self.selectedResources()
-        if len(resources) == 1:
-            resource: FileResource = resources[0]
-            if resource.restype().contents == "gff":
-                menu = QMenu(self)
-
-                def open1():
-                    return self.requestOpenResource.emit(resources, False)
-
-                def open2():
-                    return self.requestOpenResource.emit(resources, True)
-
-                menu.addAction("Open").triggered.connect(open2)
-                menu.addAction("Open with GFF Editor").triggered.connect(open1)
-
-                menu.popup(self.ui.resourceTree.mapToGlobal(point))
+        if not resources:
+            return
+        menu = QMenu(self)
+        menu.addAction("Open").triggered.connect(lambda: self.requestOpenResource.emit(resources, True))
+        if all(resource.restype().contents == "gff" for resource in resources):
+            menu.addAction("Open with GFF Editor").triggered.connect(lambda: self.requestOpenResource.emit(resources, False))
+        menu.addSeparator()
+        builder = ResourceItems(resources=resources)
+        builder.viewport = lambda: self.ui.resourceTree
+        builder.runContextMenu(point, menu=menu)
+        #menu.popup(self.ui.resourceTree.mapToGlobal(point))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
@@ -506,7 +497,9 @@ class TextureList(MainWindowList):
         )
 
         # Emit signals to load textures that have not had their icons assigned
-        for item in [item for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures]:
+        for item in iter(self.visibleItems()):
+            if item.text().casefold() in self._scannedTextures:
+                continue
             item_text = item.text()
 
             # Avoid trying to load the same texture multiple times.

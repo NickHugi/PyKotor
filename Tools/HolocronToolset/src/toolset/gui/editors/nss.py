@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
+from typing import TYPE_CHECKING, Any, ClassVar, Generator, NamedTuple
 
 import qtpy
 
@@ -166,7 +166,7 @@ class NSSEditor(Editor):
         saved_connection: Any  # Specify the actual type here instead of 'any' if possible
 
     @contextmanager
-    def _snapshotResTypeContext(self, saved_file_callback=None):
+    def _snapshotResTypeContext(self, saved_file_callback=None) -> Generator[SavedContext, Any, None]:
         """Snapshots the current _restype and associated state, to restore after a with statement.
 
         This saves the current _filepath, _resname and _revert data in a context object and restores it when done.
@@ -243,7 +243,7 @@ class NSSEditor(Editor):
                 self.new()
             except NoConfigurationSetError as e:
                 QMessageBox(QMessageBox.Icon.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                self.new()
+                self.new()  # minor TODO(th3w1zard1): should we destroy self here?
 
     def build(self) -> tuple[bytes | None, bytes]:
         if self._restype != ResourceType.NCS:
