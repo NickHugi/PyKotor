@@ -55,6 +55,8 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
+from types import TracebackType
+
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
@@ -80,7 +82,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import timedelta
     from multiprocessing import Process
-    from types import TracebackType
 
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
