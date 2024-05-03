@@ -250,19 +250,13 @@ class ModuleDesigner(QMainWindow):
         self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControls3d(self, self.ui.mainRenderer)
         self._controls2d: ModuleDesignerControls2d = ModuleDesignerControls2d(self, self.ui.flatRenderer)
 
-        self._refreshWindowTitle()
-        self.rebuildResourceTree()
-        self.rebuildInstanceList()
-
         if mod_filepath is None:  # Use singleShot timer so the ui window opens while the loading is happening.
             QTimer().singleShot(33, self.openModuleWithDialog)
+        else:
+            QTimer().singleShot(33, lambda: self.openModule(mod_filepath))
 
     def showEvent(self, a0: QShowEvent):
         super().showEvent(a0)
-        if self._orig_filepath is None:
-            return
-        filepath = self._orig_filepath
-        QTimer().singleShot(33, lambda: self.openModule(filepath))  # for some reason 3d rendering never loads when QTimer is used here...
 
     def closeEvent(self, event: QCloseEvent):
         reply = QMessageBox.question(
@@ -355,12 +349,13 @@ class ModuleDesigner(QMainWindow):
         dialog = SelectModuleDialog(self, self._installation)
 
         if dialog.exec_():
-            mod_filepath = self._installation.module_path().joinpath(f"{dialog.module}.mod")
+            mod_filepath = self._installation.module_path().joinpath(dialog.module)
             self.openModule(mod_filepath)
 
     #    @with_variable_trace(Exception)
     def openModule(self, mod_filepath: Path):
         """Opens a module."""
+        self.ui.mainRenderer.pauseLoop()
         orig_filepath = mod_filepath
         mod_root = self._installation.replace_module_extensions(mod_filepath)
         mod_filepath = mod_filepath.with_name(f"{mod_root}.mod")
@@ -379,6 +374,17 @@ class ModuleDesigner(QMainWindow):
                 module.rim_to_mod(mod_filepath, game=self._installation.game())
                 self._installation.reload_module(mod_filepath.name)
             else:
+                mod_filepath = orig_filepath
+        elif mod_filepath != orig_filepath:
+            self.log.debug("User chose non-dotmod '%s'", orig_filepath)
+            answer = QMessageBox.question(
+                self,
+                f"{orig_filepath.suffix} file chosen when {mod_filepath.suffix} preferred.",
+                f"You've chosen '{orig_filepath.name}' with a '{orig_filepath.suffix}' extension. The Module Designer recommends modifying .mod's.<br><br>Use '{mod_filepath.name}' instead?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes
+            )
+            if answer != QMessageBox.StandardButton.Yes:
                 mod_filepath = orig_filepath
 
         def task() -> tuple[Module, GIT, list[BWM]]:
@@ -418,6 +424,9 @@ class ModuleDesigner(QMainWindow):
             self.log.debug("set flatRenderer walkmeshes")
             self.ui.flatRenderer.setWalkmeshes(walkmeshes)
             self.ui.flatRenderer.centerCamera()
+            self.show()
+            self.activateWindow()
+            # Inherently calls On3dSceneInitialized when done.
 
     def unloadModule(self):
         self._module = None

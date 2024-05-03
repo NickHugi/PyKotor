@@ -360,7 +360,7 @@ class ToolWindow(QMainWindow):
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )
             )
-            addWindow(designerUi)
+            addWindow(designerUi, show=False)
             return designerUi
 
         self.ui.specialActionButton.clicked.connect(openModuleDesigner)

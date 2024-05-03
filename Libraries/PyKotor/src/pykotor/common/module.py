@@ -125,17 +125,19 @@ class Module:  # noqa: PLR0904
         _s_rim_path = base_path / f"{root}_s.rim"
         rim_path = base_path / f"{root}.rim"
         if installation.game().is_k1():
-            return [
+            capsules = [
                 Capsule(rim_path),
                 Capsule(_s_rim_path)
             ]
-
-        _dlg_erf_path = base_path / f"{root}_dlg.erf"
-        return [
-            Capsule(rim_path),
-            Capsule(_s_rim_path),
-            Capsule(_dlg_erf_path)
-        ]
+        else:
+            _dlg_erf_path = base_path / f"{root}_dlg.erf"
+            capsules = [
+                Capsule(rim_path),
+                Capsule(_s_rim_path),
+                Capsule(_dlg_erf_path)
+            ]
+        get_root_logger().info(f"Using Module instance with the following paths: [{tuple(capsule._path for capsule in capsules)}]")
+        return capsules
 
     def get_id(self) -> str:
         return self._root

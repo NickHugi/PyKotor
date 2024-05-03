@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 WINDOWS: list[QWidget] = []
 
 unique_sentinel = object()
-def addWindow(window: QWidget | QDialog | QMainWindow):
+def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool=True):
     """Prevents Qt's garbage collection by keeping a reference to the window."""
     # Save the original closeEvent method
     original_closeEvent = window.closeEvent
@@ -47,7 +47,8 @@ def addWindow(window: QWidget | QDialog | QMainWindow):
 
     # Add the window to the global list and show it
     WINDOWS.append(window)
-    window.show()
+    if show:
+        window.show()
 
 
 def openResourceEditor(
