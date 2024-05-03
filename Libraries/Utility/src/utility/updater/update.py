@@ -468,8 +468,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             else:
                 current_app_path.unlink()
 
-        if current_app_path.safe_exists():
-            remove_any(current_app_path)
+        remove_any(current_app_path)
 
         self.log.info("Moving update: %s --> %s", app_update_path, self._current_app_dir)
         shutil.move(str(app_update_path), str(current_app_path))

@@ -70,7 +70,7 @@ from utility.error_handling import format_exception_with_variables, universal_si
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
-from utility.system.os_helper import kill_self_pid, win_get_system32_dir
+from utility.system.os_helper import terminate_main_process, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 from utility.tkinter.updater import TkProgressDialog
@@ -1590,7 +1590,7 @@ sys.excepthook = onAppCrash
 def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
-    kill_self_pid()
+    terminate_main_process()
     app.root.destroy()
 
 

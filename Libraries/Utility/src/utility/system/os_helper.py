@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 
@@ -43,7 +44,23 @@ def get_size_on_disk(
     file_path: Path,
     stat_result: os.stat_result | None = None,
 ) -> int:
-    """Returns the size on disk of the file at file_path in bytes."""
+    """Get the size of a file on disk.
+
+    Args:
+    ----
+        - file_path (Path): Path to the file.
+        - stat_result (os.stat_result | None): A cached os.stat_result to use. If None, will grab from the file_path passed.
+
+    Returns:
+    -------
+        - int: Size of the file on disk in bytes.
+
+    Processing Logic:
+    ----------------
+        - Call pathlib.Path(file_path).stat() if stat_result is not passed.
+        - If windows, call return result of windows_get_size_on_disk.
+        - Otherwise, multiply stat_result.st_blocks by 512 to get the size in bytes.
+    """
     if os.name == "posix":
         if stat_result is None:
             stat_result = file_path.stat()
@@ -53,93 +70,147 @@ def get_size_on_disk(
     return windows_get_size_on_disk(file_path)
 
 
-def kill_child_processes(
+def shutdown_main_process(main_pid: int, *, timeout: int = 3):
+    """Watchdog process to monitor and shut down the main application."""
+    try:
+        get_root_logger().debug(f"Waiting {timeout} second(s) before starting the shutdown failsafe.")
+        time.sleep(timeout)
+        get_root_logger().debug("Perform the shutdown/cleanup sequence")
+        terminate_main_process(timeout, main_pid)
+    except Exception:  # noqa: BLE001
+        get_root_logger().exception("Shutdown process encountered an exception!", exc_info=True)
+
+
+def terminate_child_processes(
     timeout: int = 3,
-):
+    ignored_pids: list[int] | None = None,
+) -> bool:
     """Attempt to gracefully terminate and join all child processes of the given PID with a timeout.
+
     Forcefully terminate any child processes that do not terminate within the timeout period.
     """
+    ignored_pids = [] if ignored_pids is None else ignored_pids
     import multiprocessing
-    active_children = multiprocessing.active_children()
-    for child in active_children:
-        # Politely ask child processes to terminate
-        child.terminate()
+    log = get_root_logger()
+    log.info("Attempting to terminate child processes gracefully...")
 
-        # Wait for the process to terminate, with a timeout
+    active_children = multiprocessing.active_children()
+    log.debug("%s active child processes found", len(active_children))
+    number_timeout_children = 0
+    number_failed_children = 0
+    for child in active_children:
+        if child.pid in ignored_pids:
+            log.debug("Ignoring pid %s, found in ignore list.", child.pid)
+            continue
+
+        log.debug("Politely ask child process %s to terminate", child.pid)
         try:
+            child.terminate()
+            log.debug("Waiting for process %s to terminate with timeout of %s", child.pid, timeout)
             child.join(timeout)
         except multiprocessing.TimeoutError:
-            from utility.logger_util import get_root_logger
-            log = get_root_logger()
+            number_timeout_children += 1
+            log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
             try:
-                log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
-                # Forcefully terminate the child process if it didn't terminate in time
                 if sys.platform == "win32":
                     sys32path = win_get_system32_dir()
-                    subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], check=True)  # noqa: S603
+                    subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], creationflags=subprocess.CREATE_NO_WINDOW, check=True)  # noqa: S603
                 else:
                     import signal
                     os.kill(child.pid, signal.SIGKILL)  # Use SIGKILL as a last resort
             except Exception:
-                log.critical("Failed to kill process", exc_info=True)
+                number_failed_children += 1
+                log.critical("Failed to kill process %s", child.pid, exc_info=True)
+    if number_failed_children:
+        log.error("Failed to terminate %s total processes!", number_failed_children)
+    return bool(number_failed_children)
+
+def gracefully_shutdown_threads(timeout: int = 3) -> bool:
+    """Attempts to gracefully join all threads in the main process with a specified timeout.
+
+    If any thread does not terminate within the timeout, record the error and proceed to terminate the next thread.
+    After attempting with all threads, if any have timed out, force shutdown the process.
+
+    If all terminate gracefully or if there are no threads, exit normally.
+    """
+    get_root_logger().info("Attempting to terminate threads gracefully...")
+    main_thread = threading.main_thread()
+    other_threads = [t for t in threading.enumerate() if t is not main_thread]
+    number_timeout_threads = 0
+    get_root_logger().debug("%s existing threads to terminate.", len(other_threads))
+    if not other_threads:
+        return True
+
+    for thread in other_threads:
+        if thread.__class__.__name__ == "_DummyThread":
+            get_root_logger().debug("Ignoring dummy thread '%s'", thread.getName())
+            continue
+        if not thread.is_alive():
+            get_root_logger().debug("Ignoring dead thread '%s'", thread.getName())
+            continue
+        try:
+            thread.join(timeout)
+            if thread.is_alive():
+                get_root_logger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
+                number_timeout_threads += 1
+        except Exception:
+            get_root_logger().exception("Failed to stop the thread")
+
+    if number_timeout_threads:
+        get_root_logger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
+    else:
+        get_root_logger().debug("All threads terminated gracefully; exiting normally.")
+    return bool(number_timeout_threads)
 
 
-def kill_self_pid(timeout=3):
+def terminate_main_process(timeout=3, actual_self_pid=None):
     """Waits for a specified timeout for threads to complete.
-    If threads other than the main thread are still running after the timeout,
-    it forcefully terminates the process. Otherwise, exits normally.
+
+    If threads other than the main thread are still running after the timeout, it forcefully terminates
+    the process. Otherwise, exits normally.
     """
     # Wait for the timeout period to give threads a chance to finish
     time.sleep(timeout)
-    from utility.logger_util import get_root_logger
-    try:
-        import threading
-        # First, try to clean up child processes gracefully
-        kill_child_processes(timeout=timeout)
+    result1, result2 = True, True
 
-        # Check for any active threads
-        number_threads_remaining = len(threading.enumerate())
-        if number_threads_remaining > 1:
-            self_pid = os.getpid()
-            # More than one thread means threads other than the main thread are still running
-            get_root_logger().warning("%s threads still running. Forcefully terminating the main process pid %s.", number_threads_remaining, self_pid)
-            if sys.platform == "win32":
-                # Forcefully terminate the process on Windows
-                from utility.updater.restarter import Restarter
-                sys32path = Restarter.win_get_system32_dir()
-                subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/PID", str(self_pid)], check=True)  # noqa: S603
-            else:
-                # Send SIGKILL to the current process on Unix-like systems
-                import signal
-                os.kill(self_pid, signal.SIGKILL)
+    try:
+        result1 = terminate_child_processes(timeout=timeout)
+        if actual_self_pid is None:
+            result2 = gracefully_shutdown_threads(timeout=timeout)
+            main_pid = os.getpid()
         else:
-            # Only the main thread is running, can exit normally
-            get_root_logger().debug("No additional threads running. Exiting normally.")
+            main_pid = actual_self_pid
+        if result1 and result2:
             sys.exit(0)
+
+        get_root_logger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", main_pid)
+        if sys.platform == "win32":
+            sys32path = win_get_system32_dir()
+            subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(main_pid)], creationflags=subprocess.CREATE_NO_WINDOW, check=True)  # noqa: S603
+        else:
+            import signal
+            os.kill(main_pid, signal.SIGKILL)
     except Exception:
         get_root_logger().exception("Exception occurred while stopping main process")
     finally:
-        os._exit(0)
+        os._exit(0 if result1 and result2 else 1)
 
 
 def get_app_dir() -> Path:
     if is_frozen():
         return Path(sys.executable).resolve().parent
     main_module = sys.modules["__main__"]
-    # Try to get the __file__ attribute that contains the path of the entry-point script.
+    get_root_logger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
     main_script_path = getattr(main_module, "__file__", None)
     if main_script_path is not None:
         return Path(main_script_path).resolve().parent
-    # Fall back to the current working directory if the __file__ attribute was not found.
+    get_root_logger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
     return Path.cwd()
 
 
 def is_frozen() -> bool:
-    return (
-        getattr(sys, "frozen", False)
-        or getattr(sys, "_MEIPASS", False)
-        or tempfile.gettempdir() in sys.executable
-    )
+    return getattr(sys, "frozen", False) or getattr(sys, "_MEIPASS", False) or tempfile.gettempdir() in sys.executable
+
 
 def requires_admin(path: os.PathLike | str) -> bool:    # pragma: no cover
     """Check if a dir or a file requires admin permissions for read/write."""
@@ -226,21 +297,24 @@ def remove_any(
 
 
 def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
-    """Returns parent directory of mac .app.
+    """Returns the .app directory of literal executable.
+
+    For example if `directory` is '~/MyApp.app/Contents/MacOS/MyApp', will return MyApp.app
 
     Args:
     ----
-       directory (os.PathLike | str): Current directory
+       directory (os.PathLike | str): Directory of the literal executable inside the .app (e.g. '~/MyApp.app/Contents/MacOS/MyApp')
 
     Returns:
     -------
-       (Path): Folder containing the mac .app
+       (pathlib.Path): Path to the .app
     """
     return Path.pathify(directory).parents[2]
 
 
 def win_get_system32_dir() -> Path:
     import ctypes
+
     try:  # PyInstaller sometimes fails to import wintypes.
         ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
         ctypes.windll.kernel32.GetSystemDirectoryW.restype = ctypes.c_uint
