@@ -1267,7 +1267,7 @@ class ModuleResource(Generic[T]):
 
             file_name: str = f"{self._resname}.{self._restype.extension}"
             if self._active is None:
-                assert_with_variable_trace(self._resource_obj is not None)
+                return None
             elif is_capsule_file(self._active.name):
                 data: bytes | None = Capsule(self._active).resource(self._resname, self._restype)
                 if data is None:
