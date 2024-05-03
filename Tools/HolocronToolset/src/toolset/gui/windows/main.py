@@ -494,7 +494,7 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
-            if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames?
+            if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
                 print(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
@@ -563,7 +563,7 @@ class ToolWindow(QMainWindow):
             print("No installation loaded, cannot refresh Override")
             return
         print(f"Refreshing list of override folders available at {self.active.path()}")
-        self.refreshOverrideList(reload=False)
+        self.refreshOverrideList(reload=True)
 
     def onTexturesChanged(self, newTexturepack: str):
         if not self.active:
@@ -1205,7 +1205,7 @@ class ToolWindow(QMainWindow):
             def task() -> list[QStandardItem]:
                 return self._getOverrideList()
 
-            loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
+            loader = AsyncLoader(self, f"{action} override list...", task, f"Error {action}ing override list.")
             loader.exec_()
             overrideItems = loader.value
         self.ui.overrideWidget.setSections(overrideItems)

@@ -214,27 +214,9 @@ class ResourceTableWidgetItem(FileTableWidgetItem):
     def __hash__(self):
         return hash(self.resource)
 
-
-class CustomTableWidget(QTableWidget):
+class CustomItem:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def get_column_index(self, column_name: str) -> int:
-        # This method needs to be context-aware for the type of view
-        if isinstance(self, QTableWidget):
-            for i in range(self.columnCount()):
-                headerItem = self.horizontalHeaderItem(i)
-                if headerItem is None:
-                    continue
-                if headerItem.text() == column_name:
-                    return i
-        elif isinstance(self, (QTreeView, QTableView)):
-            model = self.model()
-            for i in range(model.columnCount()):
-                if model.headerData(i, Qt.Horizontal) == column_name:
-                    return i
-        raise ValueError(f"Column name '{column_name}' does not exist in this view.")
-
 
     def create_action(
         self,
@@ -254,29 +236,18 @@ class CustomTableWidget(QTableWidget):
         selected = self.selectedItems()
         if not selected:
             return menu_dict
-        singleSelected = selected[0]
-
-        self.create_action(
-            menu_dict,
-            f"Row: {singleSelected.row()} Column: {singleSelected.column()}",
-            lambda: print(
-                "Debug Info:",
-                "Row:", singleSelected.row(),
-                "Column:", singleSelected.column(),
-                "Text:", singleSelected.text(),
-                "Data (UserRole):", singleSelected.data(Qt.UserRole)
-            ),
-        )
-        self.create_action(menu_dict, "Copy as Text", self.copy_selection_to_clipboard).setShortcut(QKeySequence.StandardKey.Copy)
-        self.create_action(menu_dict, "Remove from Table", self.remove_selected_result)
+        if hasattr(self, "selectedIndexes"):
+            self.create_action(menu_dict, "Copy as Text", self.copy_selection_to_clipboard).setShortcut(QKeySequence.StandardKey.Copy)
+            self.create_action(menu_dict, "Remove from Table", self.remove_selected_result)
 
         return menu_dict
 
     def build_menu(
         self,
         position: QPoint,
+        menu: QMenu | None = None,
     ) -> QMenu:
-        menu = QMenu(self)
+        menu = QMenu() if menu is None else menu
         menu_dict = self.create_context_menu_dict(position)
         for action, func in menu_dict.values():
             action.setParent(menu)
@@ -337,9 +308,10 @@ class CustomTableWidget(QTableWidget):
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
 
 
-class FileTableWidget(CustomTableWidget):
+class FileItems(CustomItem):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.temp_path: Path | None = None
 
     def show_confirmation_dialog(
         self,
@@ -359,11 +331,13 @@ class FileTableWidget(CustomTableWidget):
 
         reply = QMessageBox(
             QMessageBox.Icon.Question,
-            title,
-            text,
+            title + (" "*1000),
+            text + (" "*1000),
             buttons,
-            self,
-            flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint
+            flags=Qt.WindowType.Dialog
+            | Qt.WindowType.WindowDoesNotAcceptFocus
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.WindowSystemMenuHint,
         )
         reply.setDefaultButton(default_button)
         if detailedMsg:
@@ -399,7 +373,7 @@ class FileTableWidget(CustomTableWidget):
 
             def get_new_name(self) -> str:
                 return self.line_edit.text()
-        dialog = RenameDialog(file_path.name, self)
+        dialog = RenameDialog(file_path.name, None)
         result = dialog.exec_()
         new_filename = dialog.get_new_name()
         get_root_logger().info("Renaming '%s' to '%s'", file_path, new_filename)
@@ -413,22 +387,24 @@ class FileTableWidget(CustomTableWidget):
         selected = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
         if not selected:
             return menu_dict
-        if len(selected) == 1 and next(iter(selected)).__class__ is FileTableWidgetItem:
-            self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
-
         openAction = self.create_action(menu_dict, f"Open ({platform.system()})", lambda: self.do_file_action(self._open_file, "Open file(s) with system"))
         openFolderAction = self.create_action(menu_dict, "Open Containing Folder", lambda: self.do_file_action(self._open_containing_folder, "Open Containing Folder"))
         saveSelectedAction = self.create_action(menu_dict, "Save selected files to...", lambda: self.do_file_action(self._save_files, "Save As..."))
+        renameAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
         sendToTrash = self.create_action(menu_dict, "Send to Recycle Bin", lambda: self.do_file_action(self._sendToRecycleBin, "Send to Recycle Bin"))
         deleteAction = self.create_action(menu_dict, "Delete PERMANENTLY", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
         propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
 
-        file_paths_exist = self.selected_files_exist(selected)
+        file_paths_exist = all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
+        inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
+        inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
+
         openAction.setEnabled(file_paths_exist)
         openFolderAction.setEnabled(file_paths_exist)
         saveSelectedAction.setEnabled(file_paths_exist)
-        sendToTrash.setEnabled(file_paths_exist)
-        deleteAction.setEnabled(file_paths_exist)
+        renameAction.setEnabled(file_paths_exist and len(selected) == 1 and not inside_capsule and not inside_bif)
+        sendToTrash.setEnabled(file_paths_exist and not inside_bif)
+        deleteAction.setEnabled(file_paths_exist and not inside_bif)
         propertiesAction.setEnabled(file_paths_exist)
 
         return menu_dict
@@ -466,10 +442,21 @@ class FileTableWidget(CustomTableWidget):
         file_path: Path,
         tableItem: FileTableWidgetItem,
     ):
-        savepath_str, _ = QFileDialog.getSaveFileName(self, "Save As", "")
-        if not savepath_str or not savepath_str.strip():
-            return
-        savepath = Path(savepath_str)
+        selected = self.selectedItems()
+        if len(selected) == 1:
+            savepath_str, _ = QFileDialog.getSaveFileName(None, "Save As", "")
+            if not savepath_str or not savepath_str.strip():
+                return
+            savepath = Path(savepath_str)
+        else:
+            # Multiple files, save to folder
+            if self.temp_path is None:
+                savepath_str = QFileDialog.getExistingDirectory(None, f"Save {len(selected)} files to...")
+                if not savepath_str or not savepath_str.strip():
+                    self.temp_path = ""  # Don't ask again for this sesh
+                    return
+                self.temp_path = Path(savepath_str)
+            savepath = self.temp_path / file_path.name
         with file_path.open("rb") as reader, savepath.open("wb") as writer:
             writer.write(reader.read())
 
@@ -534,7 +521,8 @@ class FileTableWidget(CustomTableWidget):
     ):
         get_root_logger().info(f"Moving '{file_path}' to Recycle Bin")
         send2trash.send2trash(file_path)
-        self.removeRow(tableItem.row())
+        if hasattr(self, "removeRow"):
+            self.removeRow(tableItem.row())
 
     def _delete_files_permanently(
         self,
@@ -542,7 +530,8 @@ class FileTableWidget(CustomTableWidget):
         tableItem: FileTableWidgetItem,
     ):
         file_path.unlink(missing_ok=True)
-        self.removeRow(tableItem.row())
+        if hasattr(self, "removeRow"):
+            self.removeRow(tableItem.row())
 
     def _prepare_func(
         self,
@@ -550,7 +539,6 @@ class FileTableWidget(CustomTableWidget):
         tableItem: FileTableWidgetItem,
         func: Callable[[Path, FileTableWidgetItem], Any],
         missing_files: list[Path],
-        error_files: dict[Path, Exception],
     ):
         if not path.is_file():
             missing_files.append(path)
@@ -567,11 +555,15 @@ class FileTableWidget(CustomTableWidget):
         selected = self.selectedItems()
         if not selected:
             return
-        if confirmation and self.show_confirmation_dialog(
+        if (
+            confirmation
+            and self.show_confirmation_dialog(
                 QMessageBox.Question,
                 "Action requires confirmation",
-                f"Really perform action '{action_name}'?"
-            ) != QMessageBox.Yes:
+                f"Really perform action '{action_name}'?",
+            )
+            != QMessageBox.Yes
+        ):
             return
 
         missing_files: list[Path] = []
@@ -580,7 +572,7 @@ class FileTableWidget(CustomTableWidget):
             file_path = Path(tableItem.data(Qt.ItemDataRole.UserRole))
             try:
                 assert isinstance(tableItem, FileTableWidgetItem)
-                self._prepare_func(file_path, tableItem, func, missing_files, error_files)
+                self._prepare_func(file_path, tableItem, func, missing_files)
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
@@ -590,6 +582,7 @@ class FileTableWidget(CustomTableWidget):
             self._show_missing_results(missing_files)
         if error_files:
             self._show_errored_results(error_files)
+        self.temp_path = None
 
     def _show_missing_results(
         self,
@@ -598,8 +591,7 @@ class FileTableWidget(CustomTableWidget):
         missingMsgBox = QMessageBox(
             QMessageBox.Icon.Warning,
             "Nonexistent files found." + (" "*1000),
-            f"The following {len(missing_files)} files no longer exist:" + (" "*1000) + ("<br>"*1000),
-            parent=self,
+            f"The following {len(missing_files)} files no longer exist:" + (" "*1000) + ("<br>"*4),
             flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
         )
         separator="-"*80
@@ -613,8 +605,7 @@ class FileTableWidget(CustomTableWidget):
         errMsgBox = QMessageBox(
             QMessageBox.Icon.Critical,
             "Errors occurred." + (" "*1000),
-            f"The following {len(error_files)} files threw errors:" + (" "*1000) + ("<br>"*1000),
-            parent=self,
+            f"The following {len(error_files)} files threw errors:" + (" "*1000) + ("<br>"*4),
             flags=Qt.WindowType.Dialog
             | Qt.WindowType.WindowDoesNotAcceptFocus
             | Qt.WindowType.WindowStaysOnTopHint
@@ -626,7 +617,7 @@ class FileTableWidget(CustomTableWidget):
         errMsgBox.exec_()
 
 
-class ResourceTableWidget(FileTableWidget):
+class ResourceItems(FileItems):
     def __init__(
         self,
         *args,
@@ -657,7 +648,7 @@ class ResourceTableWidget(FileTableWidget):
         return resource.identifier()
 
     def selectedItems(self) -> list[ResourceTableWidgetItem]:
-        return super().selectedItems()
+        return [ResourceTableWidgetItem(value=res.identifier(), resource=res) for res in self.resources]
 
     def selected_files_exist(
         self,
@@ -671,7 +662,6 @@ class ResourceTableWidget(FileTableWidget):
         tableItem: ResourceTableWidgetItem,
         func: Callable[[Path, ResourceTableWidgetItem], Any],
         missing_files: list[Path],
-        error_files: dict[Path, Exception],
     ):
         assert isinstance(tableItem, ResourceTableWidgetItem)
         if not path.is_file():
@@ -718,7 +708,7 @@ class ResourceTableWidget(FileTableWidget):
             resource: FileResource = tableItem.resource
             filepath = resource.filepath()
             try:
-                self._prepare_func(filepath, tableItem, func, missing_files, error_files)
+                self._prepare_func(filepath, tableItem, func, missing_files)
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
@@ -733,20 +723,23 @@ class ResourceTableWidget(FileTableWidget):
         self,
         position: QPoint,
         installation: HTInstallation | None = None,
+        *,
+        menu: QMenu | None = None,
     ) -> QAction:
         resources: set[FileResource] = {tableItem.resource for tableItem in self.selectedItems()}
-        menu: QMenu = self.build_menu(position)
+        menu: QMenu = self.build_menu(position, menu)
         if all(resource.restype().target_type().contents == "gff" for resource in resources):
             open_with_menu = menu.addMenu("Open With")  # This is the submenu
 
             # Add actions to the submenu
             open_with_menu.addAction("Open with GFF Editor").triggered.connect(
                 lambda: self.open_selected_resource(resources, installation, gff_specialized=False))
-            open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
-                lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
-            open_with_menu.addAction("Open with Default Editor").triggered.connect(
-                lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
-        else:
+            if installation is not None:
+                open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+                open_with_menu.addAction("Open with Default Editor").triggered.connect(
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+        elif installation is not None:
             menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
 
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
@@ -805,6 +798,29 @@ class ResourceTableWidget(FileTableWidget):
                 QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
                 return
             openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
+
+
+class CustomTableWidget(CustomItem, QTableWidget):
+    def get_column_index(self, column_name: str) -> int:
+        # This method needs to be context-aware for the type of view
+        if isinstance(self, QTableWidget):
+            for i in range(self.columnCount()):
+                headerItem = self.horizontalHeaderItem(i)
+                if headerItem is None:
+                    continue
+                if headerItem.text() == column_name:
+                    return i
+        elif isinstance(self, (QTreeView, QTableView)):
+            model = self.model()
+            for i in range(model.columnCount()):
+                if model.headerData(i, Qt.Horizontal) == column_name:
+                    return i
+        raise ValueError(f"Column name '{column_name}' does not exist in this view.")
+
+class FileTableWidget(FileItems, CustomTableWidget): ...
+class ResourceTableWidget(FileTableWidget, ResourceItems):
+    def selectedItems(self) -> list[ResourceTableWidgetItem]:
+        return super().selectedItems()
 
 
 class FileSelectionWindow(QMainWindow):

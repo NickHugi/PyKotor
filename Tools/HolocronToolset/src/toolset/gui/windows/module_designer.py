@@ -140,7 +140,12 @@ class RotateCommand(QUndoCommand):
 
 
 class ModuleDesigner(QMainWindow):
-    def __init__(self, parent: QWidget | None, installation: HTInstallation, mod_filepath: Path | None = None):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        installation: HTInstallation,
+        mod_filepath: Path | None = None,
+    ):
         """Initializes the Module Designer window.
 
         Args:
@@ -1147,10 +1152,7 @@ class ModuleDesigner(QMainWindow):
             self.log.debug("onContextMenu No selection")
             menu = self.onContextMenuSelectionNone(world)
         else:
-            menu = self.onContextMenuSelectionExists(isFlatRendererCall=isFlatRendererCall, getMenu=True)
-        if isFlatRendererCall:
-            menu.addSeparator()
-            self._controls2d._mode._getRenderContextMenu(world, menu)
+            menu = self.onContextMenuSelectionExists(world, isFlatRendererCall=isFlatRendererCall, getMenu=True)
 
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
@@ -1188,10 +1190,11 @@ class ModuleDesigner(QMainWindow):
 
     def onContextMenuSelectionExists(
         self,
+        world: Vector3,
         *,
         isFlatRendererCall: bool | None = None,
         getMenu: bool | None = None,
-    ):
+    ):  # sourcery skip: extract-method
         """Checks if a context menu selection exists.
 
         Args:
@@ -1210,31 +1213,23 @@ class ModuleDesigner(QMainWindow):
         menu = QMenu(self)
 
         if self.selectedInstances:
-            self._newContextMenuSelectedInstances(menu, isFlatRendererCall=isFlatRendererCall)
+            instance = self.selectedInstances[0]
+            if isinstance(instance, GITCamera):
+                menu.addAction("Snap Camera to 3D View").triggered.connect(lambda: self.snapCameraToView(instance))
+                menu.addAction("Snap 3D View to Camera").triggered.connect(lambda: self.snapViewToGITCamera(instance))
+            else:
+                menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITInstance(instance))
+            menu.addSeparator()
+            menu.addAction("Copy position to clipboard").triggered.connect(lambda: QApplication.clipboard().setText(str(instance.position)))
+            #menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
+            menu.addAction("Remove").triggered.connect(self.deleteSelected)
+            menu.addSeparator()
+            self._controls2d._mode._getRenderContextMenu(Vector2(world.x, world.y), menu)
         if not getMenu:
             menu.popup(self.cursor().pos())
             menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
             return None
         return menu
-
-    def _newContextMenuSelectedInstances(
-        self,
-        menu: QMenu,
-        *,
-        isFlatRendererCall: bool | None = None,
-    ):
-        instance = self.selectedInstances[0]
-        if isinstance(instance, GITCamera):
-            menu.addAction("Snap Camera to 3D View").triggered.connect(lambda: self.snapCameraToView(instance))
-            menu.addAction("Snap 3D View to Camera").triggered.connect(lambda: self.snapViewToGITCamera(instance))
-            menu.addSeparator()
-        if isFlatRendererCall:
-            menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITInstance(instance))
-            menu.addSeparator()
-
-        menu.addAction("Copy position to clipboard").triggered.connect(lambda: QApplication.clipboard().setText(str(instance.position)))
-        menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
-        menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
     def on3dSceneInitialized(self):
         self.log.debug("ModuleDesigner on3dSceneInitialized")

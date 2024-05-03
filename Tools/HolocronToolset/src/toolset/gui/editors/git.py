@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtGui import QColor, QIcon, QKeySequence
+from qtpy.QtGui import QColor, QCursor, QIcon, QKeySequence
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
@@ -43,11 +43,10 @@ from toolset.gui.dialogs.instance.sound import SoundDialog
 from toolset.gui.dialogs.instance.store import StoreDialog
 from toolset.gui.dialogs.instance.trigger import TriggerDialog
 from toolset.gui.dialogs.instance.waypoint import WaypointDialog
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
-from toolset.utils.misc import getResourceFromFile
-from toolset.utils.window import openResourceEditor
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
@@ -63,7 +62,6 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.module_designer import ModuleDesigner
-    from utility.system.path import Path
 
 
 def openInstanceDialog(
@@ -718,38 +716,28 @@ class _InstanceMode(_Mode):
             return
         instance: GITInstance = selection[-1]
         resname, restype = instance.identifier().unpack()
-        filepath: Path | None = None
 
         order: list[SearchLocation] = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
         search: list[LocationResult] = self._installation.location(resname, restype, order)
 
         if isinstance(self._editor, GITEditor):
             assert self._editor._filepath is not None
-            module_filename: str = self._editor._filepath.name
+            module_root: str = self._installation.replace_module_extensions(self._editor._filepath.name)
         else:
             assert self._editor._module is not None
-            module_filename = self._editor._module._root + (".mod" if self._editor._module._dot_mod else ".rim")
-        module_filename = module_filename.lower()
-        get_root_logger().debug(f"Module filename: '{module_filename}'")
-
-        for result in search:
-            rel_to_override = result.filepath.is_relative_to(self._installation.override_path())
-            rel_to_modules = result.filepath.is_relative_to(self._installation.module_path())
-            get_root_logger().debug(f"Check location result '{result.filepath}'. rel to override? {rel_to_override} rel to modules? {rel_to_modules}")
-            if rel_to_override:
-                get_root_logger().info("Saving to existing Override file '%s.%s'", resname, restype)
-                filepath = result.filepath
-                break
-            if rel_to_modules:
-                get_root_logger().info("Saving back to Module '%s' file '%s.%s'", module_filename, resname, restype)
-                filepath = result.filepath
-
-        if filepath is not None:
-            data: bytes = getResourceFromFile(filepath, resname, restype)
-            openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
-        else:
-            # TODO Make prompt for override/MOD
-            ...
+            module_root = self._editor._module._root
+        module_root = module_root.lower()
+        for loc in search:
+            if (
+                loc.filepath.parent.name.lower() == "modules"
+                and self._installation.replace_module_extensions(loc.filepath.name.lower()) != self._editor._module._root
+            ):
+                get_root_logger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
+                search.remove(loc)
+        if search:
+            selectionWindow = FileSelectionWindow(search, self._installation)
+            selectionWindow.show()
+            selectionWindow.activateWindow()
 
     def editSelectedInstanceGeometry(self):
         if self.walkmeshRenderer.instanceSelection.last():
@@ -794,6 +782,33 @@ class _InstanceMode(_Mode):
 
         if isinstance(instance, GITEncounter):
             menu.addAction("Edit Spawn Points").triggered.connect(self.editSelectedInstanceSpawns)
+        menu.addSeparator()
+        self.addResourceSubMenu(menu, instance)
+
+    def addResourceSubMenu(self, menu: QMenu, instance: GITInstance) -> QMenu:
+        if isinstance(instance, GITCamera):
+            return menu
+        locations = self._installation.location(*instance.identifier().unpack())
+        # Create the main context menu
+        fileMenu = menu.addMenu("File Actions")
+        # Get the current position of the mouse cursor
+        global_position = QCursor.pos()
+
+        # Iterate over each location to create submenus
+        for result in locations:
+            # Create a submenu for each location
+            location_menu = fileMenu.addMenu(str(result.filepath.joinpath(str(instance.identifier())).relative_to(self._installation.path())))
+            resourceMenuBuilder = ResourceItems(resources=[result])
+            resourceMenuBuilder.build_menu(global_position, location_menu)
+        def moreInfo():
+            selectionWindow = FileSelectionWindow(
+                locations,
+                self._installation,
+            )
+            selectionWindow.show()
+            selectionWindow.activateWindow()
+        fileMenu.addAction("Details...").triggered.connect(moreInfo)
+        return menu
 
     def setListItemLabel(self, item: QListWidgetItem, instance: GITInstance):
         """Sets the label text of a QListWidget item for a game instance.
