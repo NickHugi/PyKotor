@@ -525,7 +525,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.setResources(resources)
 
     def onModuleRefresh(self):
-        self.refreshModuleList(reload=False)
+        self.refreshModuleList(reload=True)
 
     def onOverrideFileUpdated(self, changedFile: str, eventType: str):
         if eventType == "deleted":
@@ -1171,7 +1171,7 @@ class ToolWindow(QMainWindow):
             action = "Reloading" if reload else "Refreshing"
 
             def task() -> list[QStandardItem]:
-                return self._getModulesList(reload=reload)
+                return self._getModulesList()
 
             loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
             loader.exec_()
@@ -1199,13 +1199,11 @@ class ToolWindow(QMainWindow):
         overrideItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        if reload:
-            self.active.load_override()
         if not overrideItems:
             action = "Reloading" if reload else "Refreshing"
 
             def task() -> list[QStandardItem]:
-                return self._getOverrideList(reload=reload)
+                return self._getOverrideList()
 
             loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
             loader.exec_()
