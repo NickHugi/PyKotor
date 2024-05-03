@@ -4,14 +4,13 @@ from copy import copy, deepcopy
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
-import pyperclip
 import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from qtpy.QtMultimedia import QMediaPlayer
-from qtpy.QtWidgets import QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
+from qtpy.QtWidgets import QApplication, QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -504,12 +503,18 @@ class DLGEditor(Editor):
         self.ui.logicSpin.setEnabled(installation.tsl)
 
         # Load required 2da files if they have not been loaded already
-        required: list[str] = [
-            HTInstallation.TwoDA_EMOTIONS,
-            HTInstallation.TwoDA_EXPRESSIONS,
-            HTInstallation.TwoDA_VIDEO_EFFECTS,
-            HTInstallation.TwoDA_DIALOG_ANIMS,
-        ]
+        if installation.game().is_k1():
+            required: list[str] = [
+                HTInstallation.TwoDA_VIDEO_EFFECTS,
+                HTInstallation.TwoDA_DIALOG_ANIMS
+            ]
+        else:
+            required = [
+                HTInstallation.TwoDA_EMOTIONS,
+                HTInstallation.TwoDA_EXPRESSIONS,
+                HTInstallation.TwoDA_VIDEO_EFFECTS,
+                HTInstallation.TwoDA_DIALOG_ANIMS,
+            ]
         installation.htBatchCache2DA(required)
 
         if installation.tsl:
@@ -696,7 +701,7 @@ class DLGEditor(Editor):
         elif isinstance(node, DLGReply):
             path = f"ReplyList\\{node.list_index}"
         if path:
-            pyperclip.copy(path)
+            QApplication.clipboard().setText(path)
 
     def deleteNode(self, item: QStandardItem | None):
         """Deletes a node from the diagram.

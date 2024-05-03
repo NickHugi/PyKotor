@@ -13,7 +13,6 @@ import sys
 import tempfile
 import time
 import tkinter as tk
-import traceback
 import webbrowser
 
 from argparse import ArgumentParser
@@ -28,7 +27,8 @@ from tkinter import (
     messagebox,
     ttk,
 )
-from typing import TYPE_CHECKING, Any, NoReturn
+from types import TracebackType
+from typing import TYPE_CHECKING, NoReturn
 
 
 def is_frozen() -> bool:
@@ -55,7 +55,6 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
-
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
@@ -68,9 +67,10 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
-from utility.system.os_helper import kill_self_pid, win_get_system32_dir
+from utility.system.os_helper import terminate_main_process, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.tooltip import ToolTip
 from utility.tkinter.updater import TkProgressDialog
@@ -175,6 +175,7 @@ class App:
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
+        self.pykotor_logger = get_root_logger()
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -184,6 +185,7 @@ class App:
         cmdline_args: Namespace = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.execute_commandline(cmdline_args)
+        self.pykotor_logger.debug("Init complete")
 
     def set_window(
         self,
@@ -880,10 +882,7 @@ class App:
         *,
         msgbox: bool = True,
     ):
-        detailed_msg = format_exception_with_variables(exc, message=custom_msg)
-        print(detailed_msg)
-        with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-            f.write(detailed_msg)
+        self.pykotor_logger.exception(custom_msg, exc_info=exc)
         error_name, msg = universal_simplify_exception(exc)
         if msgbox:
             messagebox.showerror(
@@ -1195,9 +1194,11 @@ class App:
             - Exits program if exception occurs during installation thread start.
 
         """
+        self.pykotor_logger.debug("Call begin_install")
         try:
             if not self.preinstall_validate_chosen():
                 return
+            self.pykotor_logger.debug("Prevalidate finished, starting install thread")
             self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
             self.task_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -1225,10 +1226,12 @@ class App:
             - Handle any exceptions during installation
             - Finally set the install status to not running.
         """
+        self.pykotor_logger.debug("begin_install_thread reached")
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
+        self.pykotor_logger.debug("set ui state")
         self.set_state(state=True)
         self.install_running = True
         self.clear_main_text()
@@ -1329,88 +1332,94 @@ class App:
             7. Shows success or error message based on install result
             8. If CLI, exit regardless of success or error.
         """
-        confirm_msg: str = installer.config().confirm_message.strip()
-        if (
-            confirm_msg
-            and not self.one_shot
-            and confirm_msg != "N/A"
-            and not messagebox.askokcancel(
-                "This mod requires confirmation",
-                confirm_msg,
+        try:
+            confirm_msg: str = installer.config().confirm_message.strip()
+            if (
+                confirm_msg
+                and not self.one_shot
+                and confirm_msg != "N/A"
+                and not messagebox.askokcancel(
+                    "This mod requires confirmation",
+                    confirm_msg,
+                )
+            ):
+                return
+            if progress_update_func is not None:
+                self.progress_bar["maximum"] = len(
+                [
+                    *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
+                    *installer.get_tlk_patches(installer.config()),
+                    *installer.config().patches_2da,
+                    *installer.config().patches_gff,
+                    *installer.config().patches_nss,
+                    *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
+                    *installer.config().patches_ssf,
+                ]
             )
-        ):
-            return
-        if progress_update_func is not None:
-            self.progress_bar["maximum"] = len(
-            [
-                *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
-                *installer.get_tlk_patches(installer.config()),
-                *installer.config().patches_2da,
-                *installer.config().patches_gff,
-                *installer.config().patches_nss,
-                *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
-                *installer.config().patches_ssf,
-            ]
-        )
-        # profiler = cProfile.Profile()
-        # profiler.enable()
-        install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-        installer.install(should_cancel_thread, progress_update_func)
-        total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
-        if progress_update_func is not None:
-            self.progress_value.set(99)
-            self.progress_bar["value"] = 99
-            self.progress_bar["maximum"] = 100
-            self.update_progress_bar_directly()
-            self.root.update_idletasks()
-        # profiler.disable()
-        # profiler_output_file = Path("profiler_output.pstat").resolve()
-        # profiler.dump_stats(str(profiler_output_file))
+            # profiler = cProfile.Profile()
+            # profiler.enable()
+            install_start_time: datetime = datetime.now(timezone.utc).astimezone()
+            installer.install(should_cancel_thread, progress_update_func)
+            total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
+            if progress_update_func is not None:
+                self.progress_value.set(99)
+                self.progress_bar["value"] = 99
+                self.progress_bar["maximum"] = 100
+                self.update_progress_bar_directly()
+                self.root.update_idletasks()
+            # profiler.disable()
+            # profiler_output_file = Path("profiler_output.pstat").resolve()
+            # profiler.dump_stats(str(profiler_output_file))
 
-        days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
-        hours, remainder = divmod(remainder, 60 * 60)
-        minutes, seconds = divmod(remainder, 60)
+            days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
+            hours, remainder = divmod(remainder, 60 * 60)
+            minutes, seconds = divmod(remainder, 60)
 
-        time_str = (
-            f"{f'{int(days)} days, ' if days else ''}"
-            f"{f'{int(hours)} hours, ' if hours else ''}"
-            f"{f'{int(minutes)} minutes, ' if minutes or not (days or hours) else ''}"
-            f"{int(seconds)} seconds"
-        )
+            time_str = (
+                f"{f'{int(days)} days, ' if days else ''}"
+                f"{f'{int(hours)} hours, ' if hours else ''}"
+                f"{f'{int(minutes)} minutes, ' if minutes or not (days or hours) else ''}"
+                f"{int(seconds)} seconds"
+            )
 
-        num_errors: int = len(self.logger.errors)
-        num_warnings: int = len(self.logger.warnings)
-        num_patches: int = installer.config().patch_count()
-        self.logger.add_note(
-            f"The installation is complete with {num_errors} errors and {num_warnings} warnings.{os.linesep}"
-            f"Total install time: {time_str}{os.linesep}"
-            f"Total patches: {num_patches}",
-        )
-        if num_errors > 0:
-            messagebox.showerror(
-                "Install completed with errors!",
-                f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
-                f"{os.linesep * 2}Total install time: {time_str}"
-                f"{os.linesep}Total patches: {num_patches}",
+            num_errors: int = len(self.logger.errors)
+            num_warnings: int = len(self.logger.warnings)
+            num_patches: int = installer.config().patch_count()
+            self.logger.add_note(
+                f"The installation is complete with {num_errors} errors and {num_warnings} warnings.{os.linesep}"
+                f"Total install time: {time_str}{os.linesep}"
+                f"Total patches: {num_patches}",
             )
-            if self.one_shot:
-                sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
-        elif num_warnings > 0:
-            messagebox.showwarning(
-                "Install completed with warnings",
-                f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
-                f"{os.linesep * 2}Total install time: {time_str}"
-                f"{os.linesep}Total patches: {num_patches}",
-            )
-        else:
-            messagebox.showinfo(
-                "Install complete!",
-                f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
-                f"{os.linesep * 2}Total install time: {time_str}"
-                f"{os.linesep}Total patches: {num_patches}",
-            )
-            if self.one_shot:
-                sys.exit(ExitCode.SUCCESS)
+            if num_errors > 0:
+                messagebox.showerror(
+                    "Install completed with errors!",
+                    f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
+                if self.one_shot:
+                    sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
+            elif num_warnings > 0:
+                messagebox.showwarning(
+                    "Install completed with warnings",
+                    f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
+            else:
+                messagebox.showinfo(
+                    "Install complete!",
+                    f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
+                if self.one_shot:
+                    sys.exit(ExitCode.SUCCESS)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
+        finally:
+            self.set_state(state=False)
+            self.logger.add_note("Config reader test is complete.")
 
     @property
     def log_file_path(self) -> Path:
@@ -1435,8 +1444,7 @@ class App:
             - Sets the install flag to False
             - Reraises the exception.
         """
-        with self.log_file_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"{traceback.format_exc()}\n")
+        self.pykotor_logger.exception("Unhandled exception in HoloPatcher", exc_info=e)
         error_name, msg = universal_simplify_exception(e)
         self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
         messagebox.showerror(
@@ -1566,10 +1574,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    detailed_msg = format_exception_with_variables(exc, etype, tback)
-    print(detailed_msg)
-    with Path.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-        f.write(f"\n{detailed_msg}")
+    get_root_logger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     with suppress(Exception):
         root = tk.Tk()
@@ -1585,7 +1590,7 @@ sys.excepthook = onAppCrash
 def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
-    kill_self_pid()
+    terminate_main_process()
     app.root.destroy()
 
 

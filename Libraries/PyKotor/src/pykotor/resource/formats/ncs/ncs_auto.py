@@ -12,6 +12,8 @@ from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from ply import yacc
+
     from pykotor.common.misc import Game
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -98,8 +100,8 @@ def compile_nss(
     optimizers: list[NCSOptimizer] | None = None,
     library_lookup: list[str | Path] | list[Path] | list[str] | str | Path | None = None,
     *,
-    errorlog=None,
-    debug=False,
+    errorlog: yacc.NullLogger | None = None,
+    debug: bool = False,
 ) -> NCS:
     """Returns NCS object compiled from input source string.
 

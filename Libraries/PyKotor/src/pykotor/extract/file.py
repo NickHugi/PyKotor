@@ -3,11 +3,12 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Iterator
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
+from utility.logger_util import get_root_logger
 from utility.misc import generate_hash
 from utility.system.path import Path, PurePath
 
@@ -91,6 +92,10 @@ class FileResource:
             return True if self is other else self._path_ident_obj == other._path_ident_obj
         return NotImplemented
 
+    def as_file_resource(self):
+        """For unifying use with LocationResult and ResourceResult."""
+        return self
+
     def resname(self) -> str:
         return self._resname
 
@@ -126,12 +131,14 @@ class FileResource:
 
     def _index_resource(
         self,
+        *,
+        reload: bool = False,
     ):
         if self.inside_capsule:
             from pykotor.extract.capsule import Capsule  # Prevent circular imports
 
             capsule = Capsule(self._filepath)
-            res: FileResource | None = capsule.info(self._resname, self._restype)
+            res: FileResource | None = capsule.info(self._resname, self._restype, reload=reload)
             if res is None and self._identifier == self._filepath.name and self._filepath.safe_isfile():  # the capsule is the resource itself:
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
@@ -145,6 +152,21 @@ class FileResource:
         elif not self.inside_bif:  # bifs are read-only, offset/data will never change.
             self._offset = 0
             self._size = self._filepath.stat().st_size
+
+    def exists(
+        self,
+        *,
+        reload: bool = False,
+    ) -> bool:
+        """Determines if the resource exists. This method is completely safe to call and will never throw."""
+        try:
+            if self.inside_capsule:
+                from pykotor.extract.capsule import Capsule  # Prevent circular imports
+                return bool(Capsule(self._filepath).info(self._resname, self._restype, reload=reload))
+            return self.inside_bif or bool(self._filepath.safe_isfile())
+        except Exception:
+            get_root_logger().exception("Failed to check existence of FileResource.")
+            return False
 
     def data(
         self,
@@ -168,7 +190,7 @@ class FileResource:
         self._internal = True
         try:
             if reload:
-                self._index_resource()
+                self._index_resource(reload=reload)
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
@@ -201,18 +223,57 @@ class FileResource:
     def identifier(self) -> ResourceIdentifier:
         return self._identifier
 
-
-class ResourceResult(NamedTuple):
+@dataclass(frozen=True)
+class ResourceResult:
     resname: str
     restype: ResourceType
     filepath: Path
     data: bytes
+    _resource: FileResource | None = field(repr=False, default=None, init=False)  # Metadata is hidden in the representation
+
+    def __post_init__(self):
+        # Use object.__setattr__ to bypass the frozen state to set _metadata initially
+        object.__setattr__(self, "_metadata", None)
+
+    def __iter__(self) -> Iterator[str | ResourceType | Path | bytes]:
+        """This method enables unpacking like tuple behavior."""
+        return iter((self.resname, self.restype, self.filepath, self.data))
+
+    def set_file_resource(self, value: FileResource) -> None:
+        # Allow _metadata to be set only once
+        if self._resource is None:
+            object.__setattr__(self, "_resource", value)
+        else:
+            raise RuntimeError("Metadata can only be set once.")
+
+    def as_file_resource(self) -> FileResource:
+        return self._resource
 
 
-class LocationResult(NamedTuple):
+@dataclass(frozen=True)
+class LocationResult:
     filepath: Path
     offset: int
     size: int
+    _resource: FileResource | None = field(repr=False, default=None, init=False)  # Metadata is hidden in the representation
+
+    def __post_init__(self):
+        # Use object.__setattr__ to bypass the frozen state to set _metadata initially
+        object.__setattr__(self, "_metadata", None)
+
+    def __iter__(self) -> Iterator[Path | int]:
+        """This method enables unpacking like tuple behavior."""
+        return iter((self.filepath, self.offset, self.size))
+
+    def set_file_resource(self, value: FileResource) -> None:
+        # Allow _metadata to be set only once
+        if self._resource is None:
+            object.__setattr__(self, "_resource", value)
+        else:
+            raise RuntimeError("Metadata can only be set once.")
+
+    def as_file_resource(self) -> FileResource:
+        return self._resource
 
 
 @dataclass(frozen=True)

@@ -8,6 +8,8 @@ from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
+from utility.logger_util import get_root_logger
+from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -75,15 +77,14 @@ class SelectModuleDialog(QDialog):
         listedModules = set()
 
         for module in self._installation.modules_list():
-            root = Module.find_root(module)
-
-            if root in listedModules:
+            lowerModuleFileName = str(PurePath(module).with_stem(Module.find_root(module))).lower()
+            if lowerModuleFileName in listedModules:
                 continue
-            listedModules.add(root)
+            listedModules.add(lowerModuleFileName)
 
-            item = QListWidgetItem(f"{moduleNames[module]}  [{root}]")
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, root)
-            self.ui.moduleList.addItem(item)
+            item = QListWidgetItem(f"{moduleNames[module]}  [{lowerModuleFileName}]")
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, lowerModuleFileName)
+            self.ui.moduleList.addItem(item)  # type: ignore[reportCallIssue]
 
     def browse(self):
         filepath, _ = QFileDialog.getOpenFileName(
@@ -93,9 +94,10 @@ class SelectModuleDialog(QDialog):
             "Module File (*.mod *.rim *.erf)",
         )
 
-        if filepath:
-            self.module = Module.find_root(filepath)
-            self.accept()
+        if not filepath or not filepath.strip():
+            return
+        self.module = Module.find_root(filepath)
+        self.accept()
 
     def confirm(self):
         """Confirms the selected module
@@ -106,7 +108,11 @@ class SelectModuleDialog(QDialog):
         - Gets the currently selected module from the module list widget
         - Calls accept to close the dialog and apply changes.
         """
-        self.module = self.ui.moduleList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)
+        curItem = self.ui.moduleList.currentItem()
+        if curItem is None:
+            get_root_logger().warning("currentItem() returned None in SelectModuleDialog.confirm()")
+            return
+        self.module = curItem.data(QtCore.Qt.ItemDataRole.UserRole)
         self.accept()
 
     def onRowChanged(self):
@@ -127,4 +133,7 @@ class SelectModuleDialog(QDialog):
         text = self.ui.filterEdit.text()
         for row in range(self.ui.moduleList.count()):
             item = self.ui.moduleList.item(row)
+            if item is None:
+                get_root_logger().warning(f"found None-typed item at row {row} while filtering text.")
+                continue
             item.setHidden(text.lower() not in item.text().lower())

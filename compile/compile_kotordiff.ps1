@@ -64,7 +64,6 @@ $pyInstallerArgs = @{
         'PyQt5-sip',
         'watchdog',
         'Markdown',
-        'pyperclip',
         'setuptools',
         'wheel',
         'ruff',

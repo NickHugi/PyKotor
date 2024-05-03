@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qtpy.QtGui import QImage, QPixmap, QTransform
 
@@ -14,6 +14,7 @@ from pykotor.resource.type import ResourceType
 if TYPE_CHECKING:
     from qtpy.QtGui import QStandardItemModel
     from qtpy.QtWidgets import QWidget
+    from typing_extensions import Self
 
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
@@ -65,17 +66,44 @@ class HTInstallation(Installation):
     TwoDA_PLOT = "plot"
     TwoDA_CAMERAS = "camerastyle"
 
-    def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
+    def __init__(
+        self,
+        path: str,
+        name: str,
+        mainWindow: QWidget,
+        *,
+        tsl: bool | None = None,
+    ):
         super().__init__(path)
 
         self.name: str = name
-        self.tsl: bool = tsl
 
         self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: QStandardItemModel | None = None
 
+        self._tsl: bool | None = tsl
         self._cache2da: dict[str, TwoDA] = {}
         self._cacheTpc: dict[str, TPC] = {}
+
+    @property
+    def tsl(self) -> bool:
+        if self._tsl is None:
+            self._tsl = self.game().is_k2()
+        return self._tsl
+
+    @classmethod
+    def as_ht(cls, installation: Installation, mainWindow: QWidget) -> Self:
+        ht_installation = cast(cls, installation)
+
+        ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
+        ht_installation._tsl = installation.game().is_k2()
+        ht_installation.mainWindow = mainWindow
+        ht_installation.cacheCoreItems = None
+        ht_installation._cache2da = {}  # noqa: SLF001
+        ht_installation._cacheTpc = {}  # noqa: SLF001
+
+        ht_installation.__class__ = cls
+        return ht_installation
 
     # region Cache 2DA
     def htGetCache2DA(self, resname: str) -> TwoDA:

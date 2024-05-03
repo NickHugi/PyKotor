@@ -170,7 +170,7 @@ class Shader:
 
 class Texture:
     def __init__(self, tex_id: int):
-        self._id = tex_id
+        self._id: int = tex_id
 
     @classmethod
     def from_tpc(cls, tpc: TPC) -> Texture:

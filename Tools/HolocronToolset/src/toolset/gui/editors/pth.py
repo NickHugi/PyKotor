@@ -5,12 +5,11 @@ import traceback
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
-import pyperclip
 import qtpy
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -140,7 +139,7 @@ class PTHEditor(Editor):
 
         self.settings = GITSettings()
 
-        def intColorToQColor(num_color) -> QColor:
+        def intColorToQColor(num_color: int) -> QColor:
             color = Color.from_rgba_integer(num_color)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
@@ -486,7 +485,7 @@ class PTHControlScheme:
 
         menu = QMenu(self.editor)
         menu.addAction("Add Node").triggered.connect(lambda _=None: self.editor.addNode(world.x, world.y))
-        menu.addAction("Copy XY coords").triggered.connect(lambda: pyperclip.copy(str(self.editor.stdout.mouse_pos)))
+        menu.addAction("Copy XY coords").triggered.connect(lambda: QApplication.clipboard().setText(str(self.editor.stdout.mouse_pos)))
         if underMouseIndex is not None:
             menu.addAction("Remove Node").triggered.connect(lambda _=None: self.editor.removeNode(underMouseIndex))
 

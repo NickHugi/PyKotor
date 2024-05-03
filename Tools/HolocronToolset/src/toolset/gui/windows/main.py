@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import tempfile
+import uuid
+
 try:
     import cProfile
 except ImportError:
@@ -10,7 +13,6 @@ import sys
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
 
 import qtpy
@@ -277,6 +279,7 @@ class ToolWindow(QMainWindow):
         self.ui.coreWidget.hideReloadButton()
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
         self.reloadSettings()
+        self.unsetInstallation()
 
         firstTime = self.settings.firstTime
         if firstTime:
@@ -284,8 +287,7 @@ class ToolWindow(QMainWindow):
             self.settings.selectedTheme = "Default (Light)"
 
             # Create a directory used for dumping temp files
-            with suppress(Exception):
-                self.settings.extractPath = str(Path(str(TemporaryDirectory().name)))
+            self.settings.extractPath = str(Path(tempfile.gettempdir(), f"toolset_{uuid.uuid4()}_extract"))
 
         title = f"Holocron Toolset ({qtpy.API_NAME})"
         self.setWindowTitle(title)
@@ -358,7 +360,7 @@ class ToolWindow(QMainWindow):
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )
             )
-            addWindow(designerUi)
+            addWindow(designerUi, show=False)
             return designerUi
 
         self.ui.specialActionButton.clicked.connect(openModuleDesigner)
@@ -492,7 +494,7 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
-            if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames?
+            if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
                 print(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
@@ -523,7 +525,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.setResources(resources)
 
     def onModuleRefresh(self):
-        self.refreshModuleList(reload=False)
+        self.refreshModuleList(reload=True)
 
     def onOverrideFileUpdated(self, changedFile: str, eventType: str):
         if eventType == "deleted":
@@ -561,7 +563,7 @@ class ToolWindow(QMainWindow):
             print("No installation loaded, cannot refresh Override")
             return
         print(f"Refreshing list of override folders available at {self.active.path()}")
-        self.refreshOverrideList(reload=False)
+        self.refreshOverrideList(reload=True)
 
     def onTexturesChanged(self, newTexturepack: str):
         if not self.active:
@@ -837,7 +839,8 @@ class ToolWindow(QMainWindow):
                 QMessageBox.Icon.Question,
                 "Reload the installations?",
                 "You appear to have made changes to your installations, would you like to reload?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
             if result == QMessageBox.StandardButton.Yes:
                 self.reloadSettings()
@@ -993,10 +996,10 @@ class ToolWindow(QMainWindow):
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
-            upToDateMsgBox.button(QMessageBox.StandardButton.Ok).setText("Reinstall?")
+            upToDateMsgBox.button(QMessageBox.Ok).setText("Reinstall?")
             upToDateMsgBox.setWindowIcon(self.windowIcon())
             result = upToDateMsgBox.exec_()
-            if result == QMessageBox.StandardButton.Ok:
+            if result == QMessageBox.Ok:
                 toolset_updater = UpdateDialog(self)
                 toolset_updater.exec_()
             return
@@ -1004,18 +1007,21 @@ class ToolWindow(QMainWindow):
         betaString = "release " if releaseVersionChecked else "beta "
         newVersionMsgBox = QMessageBox(
             QMessageBox.Icon.Information,
-            f"New toolset {betaString}version available.",
-            f"Your toolset version ({CURRENT_VERSION}) is outdated.<br>A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br>{toolsetLatestNotes}",
-            QMessageBox.StandardButton.Ok | QMessageBox.Abort,
+            f"Your toolset version {CURRENT_VERSION} is outdated.",
+            f"A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br><br>{toolsetLatestNotes}",
+            QMessageBox.Ok | QMessageBox.Abort,
             parent=None,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         )
-        newVersionMsgBox.button(QMessageBox.StandardButton.Ok).setText("Install Now")
+        newVersionMsgBox.setDefaultButton(QMessageBox.Abort)
+        #newVersionMsgBox.button(QMessageBox.Ok).setText("Install Now")
+        newVersionMsgBox.button(QMessageBox.Yes).setText("Open")
         newVersionMsgBox.button(QMessageBox.Abort).setText("Ignore")
         newVersionMsgBox.setWindowIcon(self.windowIcon())
         response = newVersionMsgBox.exec_()
-        if response == QMessageBox.StandardButton.Ok:
-            #self.autoupdate_toolset(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+        if response == QMessageBox.Ok:
+            self.autoupdate_toolset(greatestAvailableVersion, remoteInfo, isRelease=releaseVersionChecked)
+        elif response == QMessageBox.Yes:
             toolset_updater = UpdateDialog(self)
             toolset_updater.exec_()
 
@@ -1028,7 +1034,7 @@ class ToolWindow(QMainWindow):
     ):
         """A fast and quick way to auto-install a specific toolset version.
 
-        Deprecated in favor of the UpdateDialog.
+        Uses toolsetDirectLinks and toolsetBetaDirectLinks
         """
         proc_arch = ProcessorArchitecture.from_os()
         assert proc_arch == ProcessorArchitecture.from_python()
@@ -1124,7 +1130,7 @@ class ToolWindow(QMainWindow):
             elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
                 sortStr = areaNames.get(moduleFileName, "y").lower()
             else:  # alternate mod id that attempts to match to filename.
-                sortStr = self.active.module_id(moduleFileName, use_hardcoded=False, use_alternate=True)
+                sortStr = self.active.module_id(moduleFileName, use_alternate=True)
             sortStr += f"_{lowerModuleFileName}".lower()
             return sortStr
 
@@ -1165,7 +1171,7 @@ class ToolWindow(QMainWindow):
             action = "Reloading" if reload else "Refreshing"
 
             def task() -> list[QStandardItem]:
-                return self._getModulesList(reload=reload)
+                return self._getModulesList()
 
             loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
             loader.exec_()
@@ -1193,15 +1199,13 @@ class ToolWindow(QMainWindow):
         overrideItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        if reload:
-            self.active.load_override()
         if not overrideItems:
             action = "Reloading" if reload else "Refreshing"
 
             def task() -> list[QStandardItem]:
-                return self._getOverrideList(reload=reload)
+                return self._getOverrideList()
 
-            loader = AsyncLoader(self, f"{action} override list...", task, "Error refreshing override list.")
+            loader = AsyncLoader(self, f"{action} override list...", task, f"Error {action}ing override list.")
             loader.exec_()
             overrideItems = loader.value
         self.ui.overrideWidget.setSections(overrideItems)
@@ -1343,7 +1347,7 @@ class ToolWindow(QMainWindow):
                 if self.settings.profileToolset and cProfile is not None:
                     profiler = cProfile.Profile()
                     profiler.enable()
-                new_active = HTInstallation(path, name, tsl, self)
+                new_active = HTInstallation(path, name, self, tsl=tsl)
                 if self.settings.profileToolset and profiler:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
@@ -1442,11 +1446,11 @@ class ToolWindow(QMainWindow):
         try:
             data: bytes = resource.data()
 
-            if resource.restype() == ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
+            if resource.restype() is ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
                 # Ignore extracting MDX files if decompiling MDLs
                 return
 
-            if resource.restype() == ResourceType.TPC:
+            if resource.restype() is ResourceType.TPC:
                 tpc: TPC = read_tpc(data, txi_source=r_filepath)
 
                 if self.ui.tpcTxiCheckbox.isChecked():
@@ -1456,7 +1460,7 @@ class ToolWindow(QMainWindow):
                     data = self._decompileTpc(tpc)
                     r_filepath = r_filepath.with_suffix(".tga")
 
-            if resource.restype() == ResourceType.MDL:
+            if resource.restype() is ResourceType.MDL:
                 if self.ui.mdlDecompileCheckbox.isChecked():
                     data = self._decompileMdl(resource, data)
                     r_filepath = r_filepath.with_suffix(".ascii.mdl")
@@ -1505,7 +1509,7 @@ class ToolWindow(QMainWindow):
                     if self.ui.tpcTxiCheckbox.isChecked():
                         self._extractTxi(tpc, folderpath.joinpath(f"{texture}.tpc"))
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
-                    extension = "tga" if file_format == ResourceType.TGA else "tpc"
+                    extension = "tga" if file_format is ResourceType.TGA else "tpc"
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                 except Exception as e:  # noqa: PERF203
                     etype, msg = universal_simplify_exception(e)

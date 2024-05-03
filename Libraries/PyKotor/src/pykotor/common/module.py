@@ -291,10 +291,13 @@ class Module:  # noqa: PLR0904
         self,
         root: str,
         installation: Installation,
+        *,
+        use_dot_mod: bool = True
     ):
         self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
         self._installation: Installation = installation
-        self._root: str = root.lower()
+        self._root: str = self.get_root(root.lower())
+        self._dot_mod: bool = use_dot_mod and installation.module_path().joinpath(f"{self._root}.mod").is_file()
 
         # Build all capsules relevant to this root in the provided installation
         self._link_capsule = ModuleLinkPiece(installation.path().joinpath("Modules", self._root + ModuleType.MAIN.value))
@@ -455,7 +458,7 @@ class Module:  # noqa: PLR0904
         look_for = []
         textures: set[str] = set()
         for model in self.models():
-            get_root_logger().info("Finding textures/lightmaps for model %s...", model)
+            get_root_logger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
             try:
                 data: bytes = model.data()
                 for texture in list_textures(data):
@@ -486,7 +489,7 @@ class Module:  # noqa: PLR0904
             ],
         )
         for identifier, locations in search2.items():
-            get_root_logger().info("Adding %s locations for resource '%s'...", identifier, len(locations))
+            get_root_logger().info("Adding %s locations for resource '%s'...", len(locations), identifier)
             if not locations:
                 continue
             self.add_locations(
@@ -522,7 +525,7 @@ class Module:  # noqa: PLR0904
         """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
-        filename_ext = (ResourceType.TPC if restype == ResourceType.TGA else restype).extension
+        filename_ext = (ResourceType.TPC if restype is ResourceType.TGA else restype).extension
         filename: str = f"{resname}.{filename_ext}"
         module_resource: ModuleResource = self.resources.get(filename)
         if module_resource is None:
@@ -710,7 +713,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if resource.resname().lower() == "module" and resource.restype() == ResourceType.IFO
+                if resource.resname().lower() == "module" and resource.restype() is ResourceType.IFO
             ),
             None,
         )
@@ -740,7 +743,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTC
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTC
             ),
             None,
         )
@@ -764,7 +767,7 @@ class Module:  # noqa: PLR0904
             - Check if each resource's type is UTC
             - Add matching resources to the return list.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTC]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTC]
 
     def placeable(
         self,
@@ -791,7 +794,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTP
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTP
             ),
             None,
         )
@@ -815,7 +818,7 @@ class Module:  # noqa: PLR0904
             - Check if resource type is UTP
             - Add matching resources to the return list.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTP]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTP]
 
     def door(
         self,
@@ -842,7 +845,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTD
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTD
             ),
             None,
         )
@@ -866,7 +869,7 @@ class Module:  # noqa: PLR0904
             - Check if each resource's type is UTD
             - Add matching resources to the return list.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTD]
 
     def item(
         self,
@@ -893,7 +896,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTI
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTI
             ),
             None,
         )
@@ -918,7 +921,7 @@ class Module:  # noqa: PLR0904
             - If equal, add it to the return list
             - Return the list of UTI resources.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTD]
 
     def encounter(
         self,
@@ -945,7 +948,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTE
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTE
             ),
             None,
         )
@@ -970,7 +973,7 @@ class Module:  # noqa: PLR0904
             - If type matches, add it to the return list
             - Return the list of UTE resources.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTE]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTE]
 
     def store(self, resname: str | ResRef) -> ModuleResource[UTM] | None:
         """Looks up a material (UTM) resource by the specified resname from this module and returns the resource data.
@@ -995,7 +998,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTM
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTM
             ),
             None,
         )
@@ -1004,7 +1007,7 @@ class Module:  # noqa: PLR0904
         self,
     ) -> list[ModuleResource[UTM]]:
         """Returns a list of material (UTM) resources for this module."""
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTM]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTM]
 
     def trigger(
         self,
@@ -1032,7 +1035,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTT
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTT
             ),
             None,
         )
@@ -1057,7 +1060,7 @@ class Module:  # noqa: PLR0904
             - Add matching resources to a list
             - Return the list of UTT resources.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTT]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTT]
 
     def waypoint(
         self,
@@ -1085,7 +1088,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTW
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTW
             ),
             None,
         )
@@ -1106,7 +1109,7 @@ class Module:  # noqa: PLR0904
             - Add matching resources to return list
             - Return list of UTW resources.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTW]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTW]
 
     def model(
         self,
@@ -1133,7 +1136,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.MDL
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.MDL
             ),
             None,
         )
@@ -1162,7 +1165,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.MDX
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.MDX
             ),
             None,
         )
@@ -1185,7 +1188,7 @@ class Module:  # noqa: PLR0904
             - Checks if the resource type is MDL
             - Adds matching resources to the return list.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDL]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.MDL]
 
     def model_exts(
         self,
@@ -1205,7 +1208,7 @@ class Module:  # noqa: PLR0904
             - Checks if the resource type is MDX
             - Adds matching resources to the return list.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDX]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.MDX]
 
     def texture(
         self,
@@ -1286,7 +1289,7 @@ class Module:  # noqa: PLR0904
             (
                 resource
                 for resource in self.resources.values()
-                if lower_resname == resource.resname().lower() and resource.restype() == ResourceType.UTS
+                if lower_resname == resource.resname().lower() and resource.restype() is ResourceType.UTS
             ),
             None,
         )
@@ -1311,7 +1314,7 @@ class Module:  # noqa: PLR0904
             - Add matching resources to a list
             - Return the list of UTS resources.
         """
-        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTS]
+        return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTS]
 
 
 class ModuleResource(Generic[T]):
@@ -1419,7 +1422,7 @@ class ModuleResource(Generic[T]):
                 [SearchLocation.CHITIN],
             )
             if resource is None:
-                msg = f"Resource '{file_name}' not found in '{self.active()}'"
+                msg = f"Resource '{file_name}' not found in BIF '{self._active}' somehow?"
                 raise ValueError(msg)
             return resource.data
 

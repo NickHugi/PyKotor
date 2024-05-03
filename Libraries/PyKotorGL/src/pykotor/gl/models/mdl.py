@@ -36,7 +36,13 @@ class Model:
         self._scene: Scene = scene
         self.root: Node = root
 
-    def draw(self, shader: Shader, transform: mat4, *, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        *,
+        override_texture: str | None = None,
+    ):
         self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Node | None:
@@ -88,7 +94,13 @@ class Model:
 
         return min_point, max_point
 
-    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3):
+    def _box_rec(
+        self,
+        node: Node,
+        transform: mat4,
+        min_point: vec3,
+        max_point: vec3,
+    ):
         """Calculates bounding box of node and its children recursively.
 
         Call the 'box' function to get started here, don't call this directly.
@@ -129,7 +141,12 @@ class Model:
 
 
 class Node:
-    def __init__(self, scene: Scene, parent: Node | None, name: str):
+    def __init__(
+        self,
+        scene: Scene,
+        parent: Node | None,
+        name: str,
+    ):
         self._scene: Scene = scene
         self._parent: Node | None = parent
         self.name: str = name
@@ -200,11 +217,21 @@ class Node:
     def rotation(self) -> quat:
         return copy(self._rotation)
 
-    def set_rotation(self, pitch: float, yaw: float, roll: float):
+    def set_rotation(
+        self,
+        pitch: float,
+        yaw: float,
+        roll: float,
+    ):
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 
-    def draw(self, shader: Shader, transform: mat4, override_texture: str | None = None):
+    def draw(
+        self,
+        shader: Shader,
+        transform: mat4,
+        override_texture: str | None = None,
+    ):
         transform = transform * self._transform
 
         if self.mesh and self.render:
@@ -391,7 +418,11 @@ class Cube:
 
 
 class Boundary:
-    def __init__(self, scene: Scene, vertices: list[Vector3]):
+    def __init__(
+        self,
+        scene: Scene,
+        vertices: list[Vector3],
+    ):
         """Initializes a mesh from vertices.
 
         Args:
@@ -430,7 +461,12 @@ class Boundary:
         glBindVertexArray(0)
 
     @classmethod
-    def from_circle(cls, scene: Scene, radius: float, smoothness: int = 10) -> Boundary:
+    def from_circle(
+        cls,
+        scene: Scene,
+        radius: float,
+        smoothness: int = 10,
+    ) -> Boundary:
         """Generates a circular boundary from a circle.
 
         Args:

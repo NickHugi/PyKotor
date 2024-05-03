@@ -42,7 +42,13 @@ class ScraperCons:
 scraper_cons_instance = ScraperCons(sync_playwright)
 
 
-def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: float = 5, headless: bool | None = None):
+def deepl_tr(
+    text: str,
+    from_lang: str = "auto",
+    to_lang: str = "zh",
+    timeout: float = 5,
+    headless: bool | None = None,
+) -> str:
     r"""Deepl via playwright-sync.
 
     text = "Test it and\n\n more"

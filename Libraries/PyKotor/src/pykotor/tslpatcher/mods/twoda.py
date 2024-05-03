@@ -8,6 +8,7 @@ from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.logger_util import get_root_logger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class TargetType(IntEnum):
 
 
 class Target:
-    def __init__(self, target_type: TargetType, value: str | int):
+    def __init__(self, target_type: TargetType, value: str | int | RowValue2DAMemory | RowValueTLKMemory):
         self.target_type: TargetType = target_type
         self.value: str | int | RowValueTLKMemory | RowValue2DAMemory = value
 
@@ -573,6 +574,7 @@ class Modifications2DA(PatcherModifications):
                     f.write(f"\n{detailed_msg}")
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)
+                    get_root_logger().debug(msg, exc_info=True)
                 else:
                     logger.add_error(msg)
                     break

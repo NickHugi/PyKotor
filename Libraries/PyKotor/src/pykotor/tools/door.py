@@ -32,6 +32,9 @@ def get_model(
         Returns the model name for the door.
     """
     if genericdoors is None:
-        genericdoors = read_2da(installation.resource("placeables", ResourceType.TwoDA).data)
+        result = installation.resource("placeables", ResourceType.TwoDA)
+        if not result:
+            raise ValueError("Resource 'placeables.2da' not found in the installation, cannot get UTD model.")
+        genericdoors = read_2da(result.data)
 
     return genericdoors.get_row(utd.appearance_id).get_string("modelname")

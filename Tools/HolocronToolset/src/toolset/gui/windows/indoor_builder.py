@@ -342,7 +342,7 @@ class IndoorMapBuilder(QMainWindow):
         if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             # LMB + CTRL
             self.ui.mapRenderer.panCamera(-worldDelta.x, -worldDelta.y)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+        elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
         elif QtCore.Qt.MouseButton.LeftButton in buttons:
@@ -406,7 +406,7 @@ class IndoorMapBuilder(QMainWindow):
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
-        if QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
+        if QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
             self.ui.mapRenderer.toggleCursorFlip()
 
     def _build_indoor_map_room_and_refresh(

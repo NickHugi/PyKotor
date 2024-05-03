@@ -6,7 +6,7 @@ from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
 from qtpy import QtCore
-from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
+from qtpy.QtCore import QPointF, QRect, QRectF, QTimer, Qt
 from qtpy.QtGui import (
     QColor,
     QImage,
@@ -34,6 +34,7 @@ from pykotor.resource.generics.git import (
 )
 from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import (
@@ -839,6 +840,12 @@ class WalkmeshRenderer(QWidget):
             - Emits mouseMoved signal
             - Finds instances and geometry points under mouse.
         """
+        current_buttons = e.buttons()
+        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
+        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
+            get_root_logger().debug("Inferred Release (mouseMoveEvent): Right Button")
+            self._mouseDown.discard(Qt.RightButton)
+        super().mouseMoveEvent(e)
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
         self._mousePrev = coords
@@ -871,12 +878,30 @@ class WalkmeshRenderer(QWidget):
                     self._pathNodesUnderMouse.append(point)
 
     def mousePressEvent(self, e: QMouseEvent):
-        self._mouseDown.add(e.button())
+        current_buttons = e.buttons()
+        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
+        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
+            get_root_logger().debug("Inferred Release (mousePressEvent): Right Button")
+            self._mouseDown.discard(Qt.RightButton)
+        super().mousePressEvent(e)
+        button = e.button()
+        get_root_logger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
+        self._mouseDown.add(button)
+        get_root_logger().debug(f"mouseDown is now {self._mouseDown}")
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
     def mouseReleaseEvent(self, e: QMouseEvent):
-        self._mouseDown.discard(e.button())
+        current_buttons = e.buttons()
+        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
+        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
+            get_root_logger().debug("Inferred Release (mouseReleaseEvent): Right Button")
+            self._mouseDown.discard(Qt.RightButton)
+        super().mouseReleaseEvent(e)
+        button = e.button()
+        get_root_logger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
+        self._mouseDown.discard(button)
+        get_root_logger().debug(f"mouseDown is now {self._mouseDown}")
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)

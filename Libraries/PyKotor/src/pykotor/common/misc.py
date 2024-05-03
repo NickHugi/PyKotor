@@ -132,6 +132,7 @@ class ResRef:
         resname = ResourceIdentifier.from_path(file_path).resname
         return cls(resname)
 
+    @classmethod
     def is_valid(self, text: str) -> bool:
         if not isinstance(text, str):
             return False

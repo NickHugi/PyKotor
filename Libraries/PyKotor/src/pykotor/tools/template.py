@@ -31,6 +31,6 @@ def extract_name(data: bytes) -> LocalizedString:
     return gff.root.get_locstring("LocName")
 
 
-def extract_tag(data: bytes) -> str:
+def extract_tag_from_gff(data: bytes) -> str:
     gff = read_gff(data)
     return gff.root.get_string("Tag")

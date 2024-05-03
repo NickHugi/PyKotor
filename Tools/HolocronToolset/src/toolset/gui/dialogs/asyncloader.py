@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from qtpy import QtCore
 from qtpy.QtCore import QThread, QTimer, Qt
-from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout
+from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.system.path import Path
@@ -131,7 +131,9 @@ class AsyncLoader(QDialog, Generic[T]):
         self.layout().addWidget(self._infoText)
 
         self.setWindowTitle(title)
-        self.setFixedSize(260, 40)
+        self.setMinimumSize(260, 40)
+        # Update size policy
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
 
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
 

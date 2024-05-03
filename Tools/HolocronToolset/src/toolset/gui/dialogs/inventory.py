@@ -29,7 +29,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
-from utility.error_handling import format_exception_with_variables
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     import os
@@ -860,30 +860,33 @@ class ItemBuilderWorker(QThread):
         if self._installation.cacheCoreItems is None:
             queries.extend(
                 resource.identifier()
-                for resource in self._installation.chitin_resources() if resource.restype() == ResourceType.UTI
+                for resource in self._installation.chitin_resources() if resource.restype() is ResourceType.UTI
             )
         queries.extend(
             resource.identifier()
-            for resource in self._installation.override_resources() if resource.restype() == ResourceType.UTI
+            for resource in self._installation.override_resources() if resource.restype() is ResourceType.UTI
         )
         for capsule in self._capsules:
             queries.extend(
                 resource.identifier()
-                for resource in capsule if resource.restype() == ResourceType.UTI
+                for resource in capsule if resource.restype() is ResourceType.UTI
             )
         results: dict[ResourceIdentifier, ResourceResult | None] = self._installation.resources(
             queries,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
             capsules=self._capsules,
         )
-        for result in results.values():
+        for identifier, resource_result in results.items():
+            if resource_result is None:
+                get_root_logger().warning("Could not find UTI resource '%s'", identifier)
+                continue
             uti: UTI | None = None
             try:  # FIXME(th3w1zard1): this section seems to crash often.
-                uti = read_uti(result.data)
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                print(format_exception_with_variables(e, message="This exception has been suppressed but needs to be fixed."))
+                uti = read_uti(resource_result.data)
+            except Exception:  # pylint: disable=W0718  # noqa: BLE001
+                get_root_logger().exception("Error reading UTI resource while building items.")
             else:
-                self.utiLoaded.emit(uti, result)
+                self.utiLoaded.emit(uti, resource_result)
         self.finished.emit()
 
 

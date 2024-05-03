@@ -70,7 +70,7 @@ def get_body_model(
         baseitems = read_2da(baseitems_lookup.data)
 
     first_name = installation.string(utc.first_name)
-    context_base = f" for UTC {first_name}"
+    context_base = f" for UTC '{first_name}'"
 
     print(f"Lookup appearance row {utc.appearance_id} for get_body_model call.")
     utc_appearance_row = appearance.get_row(utc.appearance_id, context=f"Fetching row based on appearance_id{context_base}")
@@ -79,22 +79,22 @@ def get_body_model(
 
     modeltype = utc_appearance_row.get_string("modeltype", context=f"Fetching model type{context_base}")
     if modeltype != "B":
-        print(f"appearance.2da: utc 'modeltype' is '{modeltype}', fetching 'race' model{context_base}")
+        get_root_logger().debug(f"appearance.2da: utc 'modeltype' is '{modeltype}', fetching 'race' model{context_base}")
         body_model = utc_appearance_row.get_string("race", context=context_base)
     else:
-        print("appearance.2da: utc 'modeltype' is 'B'")
+        get_root_logger().debug("appearance.2da: utc 'modeltype' is 'B'")
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
-            print(f"utc is wearing armor, fetch '{armor_resref}.uti'")
+            get_root_logger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
             armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
             if armor_res_lookup is None:
                 raise ValueError(f"'{armor_resref}.uti' missing from installation{context_base}")
 
             armor_uti = read_uti(armor_res_lookup.data)
-            print(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
+            get_root_logger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
             body_row = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
             body_cell = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
-            print(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
+            get_root_logger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
 
             armor_variation = body_cell.lower()
             model_column = f"model{armor_variation}"

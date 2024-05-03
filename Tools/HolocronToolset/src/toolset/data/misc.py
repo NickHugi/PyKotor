@@ -36,5 +36,5 @@ class ControlItem:
             - If False, check if buttons are equal sets or one is None, and keys is a superset.
         """
         if exactKeys:
-            return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)
-        return (self.mouse == buttons or self.mouse is None) and (self.keys.issubset(keys))
+            return (self.mouse == buttons or not self.mouse) and (self.keys == keys or not self.keys)
+        return (self.mouse == buttons or not self.mouse) and (self.keys.issubset(keys))
