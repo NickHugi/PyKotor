@@ -141,22 +141,22 @@ def is_frozen() -> bool:
         or tempfile.gettempdir() in sys.executable
     )
 
-def requires_admin(path: os.PathLike | str) -> bool:  # pragma: no cover
-    """Check if a dir or a file requires admin permissions write/change."""
+def requires_admin(path: os.PathLike | str) -> bool:    # pragma: no cover
+    """Check if a dir or a file requires admin permissions for read/write."""
     path_obj = Path.pathify(path)
-    if path_obj.safe_isdir():
+    isdir_check = path_obj.safe_isdir()
+    if isdir_check is True:
         return dir_requires_admin(path)
-    if path_obj.safe_isfile():
+    isfile_check = path_obj.safe_isfile()
+    if isfile_check:
         return file_requires_admin(path)
-    if is_frozen():
-        raise ValueError("requires_admin needs dir or file, or doesn't have permissions to determine properly...")
-    return False
+    return isdir_check is None or isfile_check is None
 
 
 def file_requires_admin(file_path: os.PathLike | str) -> bool:  # pragma: no cover
-    """Check if a file requires admin permissions change."""
+    """Check if a file requires admin permissions for read/write."""
     try:
-        with Path.pathify(file_path).open("a", encoding="utf-8"):
+        with Path.pathify(file_path).open("a"):
             ...
     except PermissionError:
         return True
@@ -164,50 +164,65 @@ def file_requires_admin(file_path: os.PathLike | str) -> bool:  # pragma: no cov
         return False
 
 
-def dir_requires_admin(_dir: os.PathLike | str) -> bool:  # pragma: no cover
+def dir_requires_admin(
+    dirpath: os.PathLike | str,
+    *,
+    ignore_errors: bool = True,
+) -> bool:  # pragma: no cover
     """Check if a dir required admin permissions to write.
     If dir is a file test it's directory.
     """
-    _dirpath = Path.pathify(_dir)
+    _dirpath = Path.pathify(dirpath)
     dummy_filepath = _dirpath / str(uuid.uuid4())
     try:
-        with dummy_filepath.open("w", encoding="utf-8"):
+        with dummy_filepath.open("w"):
             ...
-        remove_any(dummy_filepath)
+        remove_any(dummy_filepath, ignore_errors=False, missing_ok=False)
     except OSError:
-        return True
+        if ignore_errors:
+            return True
+        raise
     else:
         return False
 
 
-def remove_any(path):
-    log = get_root_logger()
+def remove_any(
+    path: os.PathLike | str,
+    *,
+    ignore_errors: bool = True,
+    missing_ok: bool = True
+):
     path_obj = Path.pathify(path)
-    if not path_obj.safe_exists():
-        return
+    isdir_func = Path.safe_isdir if ignore_errors else Path.is_dir
+    exists_func = Path.safe_exists if ignore_errors else Path.exists
+    if not exists_func(path_obj):
+        if missing_ok:
+            return
+        import errno
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path_obj))
 
     def _remove_any(x: Path):
-        if x.safe_isdir():
-            shutil.rmtree(str(x), ignore_errors=True)
+        if isdir_func(x):
+            shutil.rmtree(str(x), ignore_errors=ignore_errors)
         else:
-            x.unlink(missing_ok=True)
+            x.unlink(missing_ok=missing_ok)
 
     if sys.platform != "win32":
         _remove_any(path_obj)
     else:
-        for _ in range(100):
+        for i in range(100):
             try:
                 _remove_any(path_obj)
-            except Exception as err:  # noqa: PERF203
-                log.debug(err, exc_info=True)
+            except Exception:  # noqa: PERF203, BLE001
+                if not ignore_errors:
+                    raise
                 time.sleep(0.01)
             else:
-                break
-        else:
-            try:
-                _remove_any(path_obj)
-            except Exception as err:
-                log.debug(err, exc_info=True)
+                if not exists_func(path_obj):
+                    return
+                print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)
+        if not ignore_errors:  # should raise at this point.
+            _remove_any(path_obj)
 
 
 def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
