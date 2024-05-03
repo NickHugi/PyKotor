@@ -730,14 +730,17 @@ class _InstanceMode(_Mode):
             assert self._editor._module is not None
             module_filename = self._editor._module._root + (".mod" if self._editor._module._dot_mod else ".rim")
         module_filename = module_filename.lower()
+        get_root_logger().debug(f"Module filename: '{module_filename}'")
 
         for result in search:
-            get_root_logger().debug(f"Check location result '{result.filepath}'")
-            if result.filepath.is_relative_to(self._installation.override_path()):
+            rel_to_override = result.filepath.is_relative_to(self._installation.override_path())
+            rel_to_modules = result.filepath.is_relative_to(self._installation.module_path())
+            get_root_logger().debug(f"Check location result '{result.filepath}'. rel to override? {rel_to_override} rel to modules? {rel_to_modules}")
+            if rel_to_override:
                 get_root_logger().info("Saving to existing Override file '%s.%s'", resname, restype)
                 filepath = result.filepath
                 break
-            if result.filepath.name.lower() == module_filename and result.filepath.is_relative_to(self._installation.module_path()):
+            if rel_to_modules:
                 get_root_logger().info("Saving back to Module '%s' file '%s.%s'", module_filename, resname, restype)
                 filepath = result.filepath
 
