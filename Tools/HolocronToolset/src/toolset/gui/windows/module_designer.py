@@ -423,7 +423,7 @@ class ModuleDesigner(QMainWindow):
             self._module = new_module
             self.log.debug("setGit")
             self.ui.flatRenderer.setGit(git)
-            self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
+            self.enableInstanceMode()
             self.log.debug("init mainRenderer")
             self.ui.mainRenderer.init(self._installation, new_module)
             self.log.debug("set flatRenderer walkmeshes")
@@ -432,6 +432,11 @@ class ModuleDesigner(QMainWindow):
             self.show()
             self.activateWindow()
             # Inherently calls On3dSceneInitialized when done.
+
+    def enableInstanceMode(self):
+        self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
+        self._controls2d._mode.deleteSelected = self.deleteSelected
+        self._controls2d._mode.editSelectedInstance = self.editInstance
 
     def unloadModule(self):
         self._module = None
