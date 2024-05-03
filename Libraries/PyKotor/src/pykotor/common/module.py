@@ -265,7 +265,7 @@ class Module:  # noqa: PLR0904
         look_for = []
         textures: set[str] = set()
         for model in self.models():
-            get_root_logger().info("Finding textures/lightmaps for model '%s'...", model.identifier())
+            get_root_logger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
             try:
                 data: bytes = model.data()
                 for texture in list_textures(data):

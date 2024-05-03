@@ -682,15 +682,15 @@ class Scene:
             tpc: TPC | None = None
             # Check the textures linked to the module first
             if self.module is not None:
-                print(f"Locating {type_name} '{name}' in module '{self.module._root}'")
+                get_root_logger().debug(f"Locating {type_name} '{name}' in module '{self.module._root}'")
                 module_tex = self.module.texture(name)
                 if module_tex is not None:
-                    print(f"Loading {type_name} '{name}' from module '{self.module._root}'")
+                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module._root}'")
                     tpc = module_tex.resource()
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
-                print(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                get_root_logger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
                 get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)

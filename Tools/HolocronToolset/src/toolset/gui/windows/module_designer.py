@@ -423,7 +423,7 @@ class ModuleDesigner(QMainWindow):
             self._module = new_module
             self.log.debug("setGit")
             self.ui.flatRenderer.setGit(git)
-            self.enableInstanceMode()
+            self.enterInstanceMode()
             self.log.debug("init mainRenderer")
             self.ui.mainRenderer.init(self._installation, new_module)
             self.log.debug("set flatRenderer walkmeshes")
@@ -432,11 +432,6 @@ class ModuleDesigner(QMainWindow):
             self.show()
             self.activateWindow()
             # Inherently calls On3dSceneInitialized when done.
-
-    def enableInstanceMode(self):
-        self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
-        self._controls2d._mode.deleteSelected = self.deleteSelected
-        self._controls2d._mode.editSelectedInstance = self.editInstance
 
     def unloadModule(self):
         self._module = None
@@ -1070,10 +1065,12 @@ class ModuleDesigner(QMainWindow):
         checkbox.setChecked(True)
 
     def enterInstanceMode(self):
-        self._mode = _InstanceMode(self, self._installation, self.git())
+        self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
+        self._controls2d._mode.deleteSelected = self.deleteSelected
+        self._controls2d._mode.editSelectedInstance = self.editInstance
 
     def enterGeometryMode(self):
-        self._mode = _GeometryMode(self, self._installation, self.git(), hideOthers=False)
+        self._controls2d._mode = _GeometryMode(self, self._installation, self.git(), hideOthers=False)
 
     def enterSpawnMode(self):
         ...
@@ -1758,6 +1755,7 @@ class ModuleDesignerControls2d:
         get_root_logger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
         if self.selectUnderneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
+                print("selectUnderneathGeometry?")
                 self._mode.selectUnderneath()
                 return
 
