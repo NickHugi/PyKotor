@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.resource.type import ResourceType
 
@@ -42,7 +42,7 @@ class LIP:
 
     def __getitem__(
         self,
-        item,
+        item,  # noqa: ANN001
     ) -> LIPKeyFrame:
         """Returns a keyframe from the specified index.
 
@@ -90,7 +90,11 @@ class LIP:
         """
         return self.frames[index] if index < len(self.frames) else None
 
-    def compare(self, other: LIP, log_func=print) -> bool:
+    def compare(
+        self,
+        other: LIP,
+        log_func: Callable[[str], Any] = print,
+    ) -> bool:
         ret = True
 
         # Check for differences in the length attribute

@@ -1086,7 +1086,7 @@ class App:
         directory: Path,
         *,
         recurse: bool = False,
-        should_filter=False,
+        should_filter: bool = False,
     ) -> bool:
         """Check access to a directory.
 

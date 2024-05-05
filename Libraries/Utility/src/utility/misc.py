@@ -7,7 +7,7 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, Any, SupportsFloat, SupportsInt, TypeVar
+from typing import TYPE_CHECKING, Any, Iterable, SupportsFloat, SupportsInt, TypeVar
 
 from utility.system.path import Path
 
@@ -56,12 +56,15 @@ class ProcessorArchitecture(Enum):
         return self == self.BIT_64
 
 
-def format_gpu_info(info, headers):
+def format_gpu_info(
+    info: Iterable,
+    headers: tuple[str, ...],
+) -> str:
     # Determine the maximum width for each column
     column_widths: list[int] = [max(len(str(row[i])) for row in (headers, *info)) for i in range(len(headers))]
 
     # Function to format a single row
-    def format_row(row) -> str:
+    def format_row(row: Iterable) -> str:
         return " | ".join(f"{str(item).ljust(column_widths[i])}" for i, item in enumerate(row))
 
     # Build the output string

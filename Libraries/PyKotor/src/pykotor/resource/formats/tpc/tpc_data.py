@@ -737,8 +737,8 @@ class TPC:
     @staticmethod
     def _interpolate_rgb(
         weight: float,
-        color0,
-        color1,
+        color0: tuple[int, int, int],
+        color1: tuple[int, int, int],
     ) -> tuple[int, int, int]:
         color0_blue = color0[2]
         color0_greed = color0[1]

@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import ChDir, get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
-from utility.system.path import Path, PurePath
+from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any, win_hide_file
+from utility.system.path import ChDir, Path, PurePath
 from utility.updater.downloader import FileDownloader, download_mega_file_url
 from utility.updater.restarter import RestartStrategy, Restarter, UpdateStrategy
 
@@ -41,7 +41,7 @@ class LibUpdate:
         progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
-        http_timeout=None,
+        http_timeout: int | None = None,
         u_strategy: UpdateStrategy = UpdateStrategy.RENAME,
         r_strategy: RestartStrategy = RestartStrategy.DEFAULT,
         logger: Logger | None = None,
@@ -94,7 +94,7 @@ class LibUpdate:
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
         self.log = logger or get_root_logger()
 
-    def get_expected_filename(self):
+    def get_expected_filename(self) -> str:
         os_lookup_str = platform.system()
         if os_lookup_str == "Windows":
             return f"{self.filestem}.exe"
@@ -222,7 +222,7 @@ class LibUpdate:
             return False
         return True
 
-    def _download(self):
+    def _download(self) -> bool:
         if self.filestem is not None:
             if self._is_downloaded():  # pragma: no cover
                 self._download_status = True
@@ -255,18 +255,20 @@ class LibUpdate:
                         return
             self._recursive_extract(archive_path)
 
-    def _recursive_extract(self, archive_path: Path):
+    @classmethod
+    def _recursive_extract(cls, archive_path: Path):
+        log = get_root_logger()
         if not archive_path.safe_isfile():
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(archive_path))
         if not os.access(str(archive_path), os.R_OK):
             raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(archive_path))
 
-        self.log.debug(f"(recursive) Extracting '{archive_path}'...")  # noqa: G004
+        log.debug(f"(recursive) Extracting '{archive_path}'...")  # noqa: G004
         archive_ext = archive_path.suffix.lower()
         if archive_ext in {".gz", ".bz2", ".tar"}:
-            self.extract_tar(archive_path, recursive_extract=True)
+            cls.extract_tar(archive_path, recursive_extract=True)
         elif archive_ext == ".zip":
-            self.extract_zip(archive_path, recursive_extract=True)
+            cls.extract_zip(archive_path, recursive_extract=True)
         else:
             raise ValueError(f"Invalid file extension: '{archive_ext}' for archive path '{archive_path}'")
 
@@ -412,13 +414,26 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
         max_download_retries: int | None = None,
         downloader: Callable | None = None,
-        http_timeout=None,
+        http_timeout: int | None = None,
         u_strategy: UpdateStrategy = UpdateStrategy.RENAME,
         r_strategy: RestartStrategy = RestartStrategy.DEFAULT,
         exithook: Callable | None = None,
         version_to_tag_parser: Callable | None = None,
     ):
-        super().__init__(update_urls, filestem, current_version, latest, progress_hooks, max_download_retries, downloader, http_timeout, u_strategy, r_strategy, None, version_to_tag_parser)
+        super().__init__(
+            update_urls,
+            filestem,
+            current_version,
+            latest,
+            progress_hooks,
+            max_download_retries,
+            downloader,
+            http_timeout,
+            u_strategy,
+            r_strategy,
+            None,
+            version_to_tag_parser,
+        )
         self.exithook = exithook
 
     def extract_restart(self):
@@ -494,7 +509,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,
-            exithook=self.exithook
+            exithook=self.exithook,
         )
         r.process()
 
@@ -527,8 +542,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         if cur_app_filepath.safe_isdir():
             raise ValueError(f"Current app path '{cur_app_filepath}' cannot be a directory!")
 
-        old_exe_name = f"{exe_name}.old"
-        old_app_path = self._current_app_dir / old_exe_name
+        old_app_path = self._current_app_dir / f"{exe_name}.old"
         temp_app_filepath = self.update_temp_path.joinpath(exe_name)
 
         # Ensure it's a file.
@@ -559,7 +573,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
                 raise ValueError(f"Old app path at '{old_app_path}' was neither a file or directory, perhaps we don't have permission to check? No changes have been made.")
         except PermissionError:
             # Fallback to the good ol' rename strategy.
-            randomized_old_app_path = old_app_path.add_suffix(str(uuid.uuid4()))
+            randomized_old_app_path = old_app_path.add_suffix(uuid.uuid4().hex[:7])
             old_app_path.rename(randomized_old_app_path)
 
         # On Windows, it's possible to rename a currently running exe file
@@ -577,15 +591,8 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         assert temp_app_filepath.safe_isfile()
         if is_frozen() or old_app_path.safe_isfile():  # exe may not exist if running from .py source
             try:
-                # Hide the old app
-                import ctypes
-
-                ret = ctypes.windll.kernel32.SetFileAttributesW(str(old_app_path), 0x02)
-                if not ret:
-                    # WinError will automatically grab the relevant code and message
-                    raise ctypes.WinError()
+                win_hide_file(old_app_path)
             except OSError:
-                # Failed to hide file, which is fine - we can still continue
                 self.log.info("Failed to hide file. This is fine - we can still continue", exc_info=True)
 
         if not restart:
@@ -658,6 +665,6 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,
-            exithook=self.exithook
+            exithook=self.exithook,
         )
         r.process()

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 def _load_node(
-    scene,
+    scene: Scene,
     node: Node | None,
     mdl: BinaryReader,
     mdx: BinaryReader,

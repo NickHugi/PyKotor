@@ -178,7 +178,8 @@ class ModInstaller:
         exists: bool
         if is_capsule_file(patch.destination):
             module_root = Installation.replace_module_extensions(output_container_path)
-            tslrcm_omitted_rims = ("702KOR", "421DXN")
+            tslrcm_omitted_rims = ("702KOR", "401DXN")
+            mod_from_rim_called = False
             if not output_container_path.safe_isfile():
                 if is_mod_file(output_container_path):
                     self.log.add_note(
@@ -187,6 +188,8 @@ class ModInstaller:
                         +  f"\n    Modules/{module_root}_s.rim"
                         + (f"\n    Modules/{module_root}_dlg.erf" if self.game is not None and self.game.is_k2() else "")
                     )
+                    create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
+                    mod_from_rim_called = True
                     try:
                         rim_to_mod(output_container_path, self.game_path / "Modules", module_root, self.game)
                     except Exception as e:  # noqa: BLE001
@@ -200,8 +203,9 @@ class ModInstaller:
             elif module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
             capsule = Capsule(output_container_path)
-            create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
-            exists = capsule.contains(*ResourceIdentifier.from_path(patch.saveas).unpack())
+            if not mod_from_rim_called:
+                create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
+            exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas).unpack())
         else:
             create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
             exists = output_container_path.joinpath(patch.saveas).is_file()
@@ -257,9 +261,9 @@ class ModInstaller:
         # modrim_type: str = patch.modrim_type.lower().strip()
         # if not modrim_type or modrim_type == ignore
         #    return
-        modrim_path = self.game_path / patch.destination / patch.saveas
-        mod_path = modrim_path.with_name(f"{Installation.replace_module_extensions(modrim_path.name)}.mod")
-        if modrim_path != mod_path and mod_path.safe_isfile():
+        erfrim_path = self.game_path / patch.destination / patch.saveas
+        mod_path = erfrim_path.with_name(f"{Installation.replace_module_extensions(erfrim_path.name)}.mod")
+        if erfrim_path != mod_path and mod_path.safe_isfile():
             self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 
     def handle_override_type(self, patch: PatcherModifications):
@@ -352,8 +356,6 @@ class ModInstaller:
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")  # noqa: E501
             return False
 
-        # In capsules, I haven't seen any TSLPatcher mods reach this point. TSLPatcher at least supports this portion for non-capsules.
-        # Most mods will use an [InstallList] to ensure the files exist before patching anyways, but not all.
         save_type: str = "adding" if capsule is not None and patch.saveas == patch.sourcefile else "saving"
         saving_as_str = f"as '{patch.saveas}' in" if patch.saveas != patch.sourcefile else "to"
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")

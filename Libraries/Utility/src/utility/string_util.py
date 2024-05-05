@@ -865,7 +865,7 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
 
     def translate(
         self,
-        __table,
+        __table,  # noqa: ANN001
     ) -> Self:
         """Replace each character in the string using the given translation table.
 

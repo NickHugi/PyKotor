@@ -17,6 +17,7 @@ from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+    from logging import Logger
 
     from typing_extensions import Self
 
@@ -894,3 +895,23 @@ class PosixPath(Path):  # type: ignore[misc]
 
 class WindowsPath(Path):  # type: ignore[misc]
     _flavour = pathlib.PureWindowsPath._flavour  # noqa: SLF001  # type: ignore[reportAttributeAccessIssue]
+
+
+
+class ChDir:
+    def __init__(
+        self,
+        path: os.PathLike | str,
+        logger: Logger | None = None,
+    ):
+        self.old_dir: Path = Path.cwd()
+        self.new_dir: Path = Path.pathify(path)
+        self.log = logger or get_root_logger()
+
+    def __enter__(self):
+        self.log.debug(f"Changing to Directory --> '{self.new_dir}'")  # noqa: G004
+        os.chdir(self.new_dir)
+
+    def __exit__(self, *args, **kwargs):
+        self.log.debug(f"Moving back to Directory --> '{self.old_dir}'")  # noqa: G004
+        os.chdir(self.old_dir)

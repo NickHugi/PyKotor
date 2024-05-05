@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import Any
 
 
 # BCP 47 language code
@@ -132,7 +133,7 @@ class Language(IntEnum):
     JAPANESE = 131
 
     @staticmethod
-    def _missing_(value) -> IntEnum:
+    def _missing_(value: Any) -> IntEnum:
         if not isinstance(value, int):
             return NotImplemented
 

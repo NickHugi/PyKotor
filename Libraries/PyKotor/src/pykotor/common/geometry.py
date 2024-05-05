@@ -47,7 +47,7 @@ class Vector2:
     def __eq__(
         self,
         other,
-    ) -> bool:
+    ):
         """Two Vector2 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -128,7 +128,7 @@ class Vector2:
     def __getitem__(
         self,
         item,
-    ) -> float:
+    ):
         if isinstance(item, int):
             if item == 0:
                 return self.x
@@ -408,7 +408,7 @@ class Vector3:
     def __sub__(
         self,
         other,
-    ) -> Vector3:
+    ):
         """Subtracts the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -688,7 +688,7 @@ class Vector4:
     def __eq__(
         self,
         other,
-    ) -> bool:
+    ):
         """Two Vector4 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -702,7 +702,7 @@ class Vector4:
     def __add__(
         self,
         other,
-    ) -> Vector4:
+    ):
         """Adds the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -717,7 +717,7 @@ class Vector4:
     def __sub__(
         self,
         other,
-    ) -> Vector4:
+    ):
         """Subtracts the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented

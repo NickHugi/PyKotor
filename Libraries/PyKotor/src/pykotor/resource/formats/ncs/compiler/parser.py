@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Collection, NoReturn
 
 from ply import yacc
 
@@ -74,7 +74,7 @@ class NssParser:
         library: dict[str, bytes],
         library_lookup: list[str | Path] | list[str] | list[Path] | str | Path | None,
         errorlog: yacc.NullLogger | None = yacc.NullLogger(),  # noqa: B008
-        debug=False,  # noqa: FBT002
+        debug: bool = False,
     ):
         self.parser: yacc.LRParser = yacc.yacc(
             module=self,
@@ -460,7 +460,7 @@ class NssParser:
         """  # noqa: D400, D212, D415, D205
         p[0] = UnaryOperatorExpression(p[2], p[1].unary)
 
-    def p_return_statement(self, p):
+    def p_return_statement(self, p: Collection):
         """
         return_statement : RETURN ';'
                          | RETURN expression ';'

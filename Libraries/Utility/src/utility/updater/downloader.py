@@ -67,7 +67,7 @@ class FileDownloader:
         headers: dict[str, Any] | None = None,
         max_download_retries: int | None = None,
         verify: bool = True,
-        http_timeout=None,
+        http_timeout: int | None = None,
         logger: Logger | None = None,
     ):
         # We'll append the filename to one of the provided urls
@@ -321,7 +321,7 @@ def _download_file(
     dest: os.PathLike | str | None = None,
     dest_filename: str | None = None,
     is_public: bool = False,
-    file=None,
+    file: dict[str, Any] | None = None,
     progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
 ):
     dest_path = Path.pathify(dest or Path.cwd()).absolute()
