@@ -205,15 +205,14 @@ if __name__ == "__main__":
     def last_resort_cleanup():
         """Prevents the toolset from running in the background after sys.exit is called..."""
         from utility.logger_util import get_root_logger
-        from utility.system.os_helper import gracefully_shutdown_threads, shutdown_main_process
+        from utility.system.os_helper import gracefully_shutdown_threads, start_shutdown_process
 
         get_root_logger().info("Fully shutting down Holocron Toolset...")
         # kill_self_pid()
         gracefully_shutdown_threads()
-        shutdown_process = multiprocessing.Process(target=shutdown_main_process, args=(os.getpid(),))
         get_root_logger().debug("Starting new shutdown process...")
-        shutdown_process.start()
-        get_root_logger().debug(f"Shutdown process {shutdown_process.pid} started...")
+        start_shutdown_process()
+        get_root_logger().debug("Shutdown process started...")
 
     app.aboutToQuit.connect(qt_cleanup)
     atexit.register(last_resort_cleanup)

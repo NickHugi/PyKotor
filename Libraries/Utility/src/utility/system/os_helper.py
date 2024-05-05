@@ -69,6 +69,24 @@ def get_size_on_disk(
 
     return windows_get_size_on_disk(file_path)
 
+def start_shutdown_process():
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(sys.path)
+    command = f"import os; from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"
+    # Setup to hide the console window on Windows
+    startupinfo = None
+    if os.name == "nt":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+    creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+    subprocess.Popen(
+        [sys.executable, "-c", command],
+        creationflags=creationflags,
+        start_new_session=True,
+        env=env,
+        startupinfo=startupinfo
+    )
 
 def shutdown_main_process(main_pid: int, *, timeout: int = 3):
     """Watchdog process to monitor and shut down the main application."""
