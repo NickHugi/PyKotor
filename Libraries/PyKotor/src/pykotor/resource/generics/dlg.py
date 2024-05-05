@@ -371,7 +371,9 @@ class DLGNode:
     def __repr__(
         self,
     ) -> str:
-        return str(self.text.get(Language.ENGLISH, Gender.MALE))
+        text = self.text.get(Language.ENGLISH, Gender.MALE, use_fallback=True)
+        strref_display = f"stringref={self.text.stringref}" if text is None else f"text={text}"
+        return f"{self.__class__.__name__}({strref_display}, list_index={self.list_index}, links={self.links})"
 
 
 class DLGReply(DLGNode):
@@ -460,6 +462,9 @@ class DLGLink:
         self.active2_param4: int = 0
         self.active2_param5: int = 0
         self.active2_param6: str = ""
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(link_index={self.link_index})"#, node={self.node})"
 
 
 class DLGStunt:
