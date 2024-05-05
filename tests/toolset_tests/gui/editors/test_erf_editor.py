@@ -56,7 +56,7 @@ from pykotor.resource.type import ResourceType
 )
 @unittest.skipIf(
     QTest is None or not QApplication,
-    "qtpy is required, please run pip install -r requirements.txt before running this test.",
+    "qtpy is required, please run pip install -r requirements-dev.txt before running this test.",
 )
 class ERFEditorTest(TestCase):
     @classmethod

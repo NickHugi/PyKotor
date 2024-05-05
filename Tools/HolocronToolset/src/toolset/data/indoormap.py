@@ -232,7 +232,7 @@ class IndoorMap:
             - Adds the resource data to the mod with the extracted name and type.
         """
         for filename, data in room.component.kit.always.items():
-            resname, restype = ResourceIdentifier.from_path(filename)
+            resname, restype = ResourceIdentifier.from_path(filename).unpack()
             if restype == ResourceType.INVALID:
                 print("Invalid resource, skipping...", filename, restype)
                 continue

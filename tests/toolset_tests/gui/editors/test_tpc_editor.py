@@ -58,7 +58,7 @@ class TPCEditorTest(TestCase):
         cls.TPCEditor = TPCEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
+        cls.INSTALLATION = HTInstallation(K1_PATH, "", None, tsl=False)
 
     def setUp(self):
         self.app = QApplication([])

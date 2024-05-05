@@ -840,7 +840,7 @@ class FileSelectionWindow(QMainWindow):
         self.init_ui()
 
     @property
-    def installation(self):
+    def installation(self) -> HTInstallation:
         return self._installation
 
     def init_ui(self):
