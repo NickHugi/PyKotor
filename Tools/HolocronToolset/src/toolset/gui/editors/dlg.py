@@ -792,7 +792,7 @@ class DLGEditor(Editor):
                 break
             items.extend([item.child(i, 0) for i in range(item.rowCount())])
         else:
-            print("Failed to find original")
+            self._logger.debug("Failed to find original")
 
     def refreshItem(self, item: QStandardItem):
         """Refreshes the item text and formatting based on the node data.  Refreshes the item in-place.
@@ -936,21 +936,37 @@ class DLGEditor(Editor):
             - It updates the selection in the tree view.
             - It syncs the changes to the underlying DLG data structure by moving the corresponding link.
         """
+        itemText = item.text()
         oldRow: int = item.row()
-        parent = self.model if item.parent() is None else item.parent()
+        itemParent = item.parent()
+        parent = self.model if item.parent() is None else itemParent
         newRow: int = oldRow + amount
+        itemParentText = "" if itemParent is None else itemParent.text()
+
+        self._logger.debug("Received item: '%s', row shift amount %s", itemText, amount)
+        self._logger.debug("Attempting to change row index for '%s' from %s to %s", itemParentText, oldRow, newRow)
 
         if newRow >= parent.rowCount() or newRow < 0:
-            return  # Already at the start/end of the branch
+            self._logger.info("New row index '%s' out of bounds. Already at the start/end of the branch. Cancelling operation.", newRow)
+            return
 
-        item = parent.takeRow(oldRow)[0]
-        parent.insertRow(newRow, item)
-        self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
+        itemToMove = parent.takeRow(oldRow)[0]
+        self._logger.debug("itemToMove '%s' taken from old position: '%s', moving to '%s'", itemToMove.text(), oldRow, newRow)
+        parent.insertRow(newRow, itemToMove)
+        selectionModel = self.ui.dialogTree.selectionModel()
+        if selectionModel is not None:
+            selectionModel.select(itemToMove.index(), QItemSelectionModel.ClearAndSelect)
+            self._logger.debug("Selection updated to new index")
 
         # Sync DLG to tree changes
-        links: list[DLGLink] = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
+        itemParent = itemToMove.parent()
+        self._logger.debug("Item new parent after move: '%s'", itemParent.text() if itemParent else "Root")
+        itemParentNode: DLGEntry | DLGReply | None = None if itemParent is None else itemParent.data(_LINK_ROLE).node
+        links: list[DLGLink] = self._dlg.starters if itemParentNode is None else itemParentNode.links
+        self._logger.debug("Links list length before removal: %s", len(links))
         link: DLGLink = links.pop(oldRow)
         links.insert(newRow, link)
+        self._logger.info("Moved link from %s to %s", oldRow, newRow)
 
     def onTreeContextMenu(self, point: QPoint):
         """Displays context menu for tree items.
@@ -1008,9 +1024,8 @@ class DLGEditor(Editor):
 
         menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
         menu.addSeparator()
-        # REMOVEME: moving nodes is a horrible idea. It's currently broken anyway.
-        # menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
-        # menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+        menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+        menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
         menu.addSeparator()
 
         if isCopy:
