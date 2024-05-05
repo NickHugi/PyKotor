@@ -890,8 +890,6 @@ def dismantle_dlg(
 
     all_entries: list[DLGEntry] = dlg.all_entries()
     all_replies: list[DLGReply] = dlg.all_replies()
-    all_entries.reverse()
-    all_replies.reverse()
 
     gff = GFF(GFFContent.DLG)
 
