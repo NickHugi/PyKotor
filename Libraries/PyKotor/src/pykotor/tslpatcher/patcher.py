@@ -255,9 +255,9 @@ class ModInstaller:
         # modrim_type: str = patch.modrim_type.lower().strip()
         # if not modrim_type or modrim_type == ignore
         #    return
-        modrim_path = self.game_path / patch.destination / patch.saveas
-        mod_path = modrim_path.with_name(f"{Installation.replace_module_extensions(modrim_path.name)}.mod")
-        if modrim_path != mod_path and mod_path.safe_isfile():
+        erfrim_path = self.game_path / patch.destination / patch.saveas
+        mod_path = erfrim_path.with_name(f"{Installation.replace_module_extensions(erfrim_path.name)}.mod")
+        if erfrim_path != mod_path and mod_path.safe_isfile():
             self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 
     def handle_override_type(self, patch: PatcherModifications):
@@ -350,8 +350,6 @@ class ModInstaller:
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")  # noqa: E501
             return False
 
-        # In capsules, I haven't seen any TSLPatcher mods reach this point. TSLPatcher at least supports this portion for non-capsules.
-        # Most mods will use an [InstallList] to ensure the files exist before patching anyways, but not all.
         save_type: str = "adding" if capsule is not None and patch.saveas == patch.sourcefile else "saving"
         saving_as_str = f"as '{patch.saveas}' in" if patch.saveas != patch.sourcefile else "to"
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
