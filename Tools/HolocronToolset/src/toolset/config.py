@@ -17,11 +17,11 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
     "currentVersion": "3.0.0b5",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "3.0.0b4",
+    "toolsetLatestBetaVersion": "3.0.0b5",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b4-toolset",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b5-toolset",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Fix most known bugs since v3.0.0-toolset-b2. Please update when you're able",
+    "toolsetLatestBetaNotes": "Fix the DLG editor node sort order. Implement Move up/down actions.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
