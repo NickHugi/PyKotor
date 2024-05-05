@@ -1478,19 +1478,21 @@ class Installation:  # noqa: PLR0904
             for column_name in relevant_2da_filenames[filename_2da]:
                 if column_name == ">>##HEADER##<<":
                     for header in valid_2da.get_headers():
-                        if not header.strip().isdigit():
-                            if header.strip() and header.strip() not in ("****", "*****", "-1"):
+                        stripped_header = header.strip()
+                        if not stripped_header.isdigit():
+                            if stripped_header and stripped_header not in ("****", "*****", "-1"):
                                 self._log.warning(f"header '{header}' in '{filename_2da}' is invalid, expected a stringref number.")
                             continue
-                        if int(header.strip()) == query_stringref:
+                        if int(stripped_header) == query_stringref:
                             return True
                 else:
                     for i, cell in enumerate(valid_2da.get_column(column_name)):
-                        if not cell.strip().isdigit():
-                            if cell.strip() and cell.strip() not in ("****", "*****", "-1"):
+                        stripped_cell = cell.strip()
+                        if not stripped_cell.isdigit():
+                            if stripped_cell and stripped_cell not in ("****", "*****", "-1"):
                                 self._log.warning(f"column '{column_name}' rowindex {i} in '{filename_2da}' is invalid, expected a stringref number. Instead got '{cell}'")
                             continue
-                        if int(cell.strip()) == query_stringref:
+                        if int(stripped_cell) == query_stringref:
                             return True
             return False
 
