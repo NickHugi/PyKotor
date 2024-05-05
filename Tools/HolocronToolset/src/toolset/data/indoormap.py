@@ -5,7 +5,7 @@ import json
 import math
 
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
@@ -758,7 +758,7 @@ class IndoorMap:
 
     def _load_data(
         self,
-        data,
+        data: dict[str, Any],
         kits: list[Kit],
     ):
         """Load data into an indoor map object.

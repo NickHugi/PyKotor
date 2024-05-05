@@ -3,6 +3,8 @@ from __future__ import annotations
 import ctypes
 import subprocess
 
+from typing import Iterable
+
 
 def is_admin() -> bool:
     try:  # sourcery skip: do-not-use-bare-except
@@ -11,7 +13,13 @@ def is_admin() -> bool:
         return False
 
 
-def execute_process(program, args, use_shell_execute: bool, hide_process) -> tuple[int, bytes, bytes]:
+def execute_process(
+    program: str,
+    args: Iterable[str],
+    *,
+    use_shell_execute: bool,
+    hide_process: bool,
+) -> tuple[int, bytes, bytes]:
     stdout_option: int | None = subprocess.PIPE if hide_process else None
     stderr_option: int | None = subprocess.PIPE if hide_process else None
 

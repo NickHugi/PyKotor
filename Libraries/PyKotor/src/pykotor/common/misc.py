@@ -61,7 +61,7 @@ class ResRef:
     class CaseSensitivityError(ValueError):
         """ResRefs cannot be converted to a different case."""
 
-        def __init__(self, resref: ResRef, func_name, *args, **kwargs):
+        def __init__(self, resref: ResRef, func_name: str, *args, **kwargs):
             super().__init__(f"ResRef's must be case-insensitive, attempted {resref!r}.{func_name}({args, kwargs})")
 
     def __init__(
@@ -133,15 +133,15 @@ class ResRef:
         return cls(resname)
 
     @classmethod
-    def is_valid(self, text: str) -> bool:
+    def is_valid(cls, text: str) -> bool:
         if not isinstance(text, str):
             return False
         return next(
-            (False for char in self.INVALID_CHARACTERS if char in text),
+            (False for char in cls.INVALID_CHARACTERS if char in text),
             (
                 text != ""
                 and text.isascii()
-                and len(text) <= self.MAX_LENGTH
+                and len(text) <= cls.MAX_LENGTH
                 and text == text.strip()
             ),
         )
@@ -584,13 +584,13 @@ class CaseInsensitiveHashSet(set, Generic[T]):
             for item in other:
                 self.add(item)
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item):
         return super().__contains__(self._normalize_key(item))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other):
         return super().__eq__({self._normalize_key(item) for item in other})
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other):
         return super().__ne__({self._normalize_key(item) for item in other})
 
 

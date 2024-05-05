@@ -474,7 +474,7 @@ class GFFStruct:
             "EditorInfo",
         }
 
-        def is_ignorable_value(v) -> bool:
+        def is_ignorable_value(v: Any) -> bool:
             return not v or str(v) in {"0", "-1"}
 
         def is_ignorable_comparison(
