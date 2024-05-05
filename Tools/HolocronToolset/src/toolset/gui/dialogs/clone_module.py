@@ -162,7 +162,7 @@ class CloneModuleDialog(QDialog):
         options: dict[str, ModuleOption] = {}
         for installation in self._installations.values():
             for filename, name in installation.module_names().items():
-                root = Module.get_root(filename)
+                root = Module.find_root(filename)
                 if root not in options:
                     options[root] = ModuleOption(name, root, [], installation)
                 options[root].files.append(filename)

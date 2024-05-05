@@ -8,6 +8,7 @@ import types
 
 from contextlib import suppress
 from contextvars import ContextVar
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -253,7 +254,7 @@ def format_frame_info(
             detailed_message.append(formatted_var)
     return detailed_message
 
-
+@lru_cache(maxsize=128)
 def format_exception_with_variables(
     exc: BaseException,
     etype: type[BaseException] | None = None,

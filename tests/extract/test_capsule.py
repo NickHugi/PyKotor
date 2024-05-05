@@ -35,7 +35,7 @@ class TestCapsule(TestCase):
 
         self.assertEqual(3, len(erf_capsule))
 
-        self.assertTrue(erf_capsule.exists("001ebo", ResourceType.ARE))
+        self.assertTrue(erf_capsule.contains("001ebo", ResourceType.ARE))
         self.assertEqual(4865, len(erf_capsule.resource("001ebo", ResourceType.ARE)))
         self.assertEqual("ARE ", erf_capsule.resource("001ebo", ResourceType.ARE)[:4].decode())
 
@@ -52,7 +52,7 @@ class TestCapsule(TestCase):
 
         self.assertEqual(3, len(rim_capsule))
 
-        self.assertTrue(rim_capsule.exists("m13aa", ResourceType.ARE))
+        self.assertTrue(rim_capsule.contains("m13aa", ResourceType.ARE))
         self.assertEqual(4096, len(rim_capsule.resource("m13aa", ResourceType.ARE)))
         self.assertEqual("ARE ", rim_capsule.resource("m13aa", ResourceType.ARE)[:4].decode())
 
@@ -60,7 +60,7 @@ class TestCapsule(TestCase):
         self.assertEqual(51747, len(rim_capsule.resource("m13aa", ResourceType.GIT)))
         self.assertEqual("GIT ", rim_capsule.resource("m13aa", ResourceType.GIT)[:4].decode())
 
-        self.assertTrue(rim_capsule.exists("module", ResourceType.IFO, reload=True))
+        self.assertTrue(rim_capsule.contains("module", ResourceType.IFO, reload=True))
         self.assertEqual(1655, len(rim_capsule.resource("module", ResourceType.IFO)))
         self.assertEqual("IFO ", rim_capsule.resource("module", ResourceType.IFO)[:4].decode())
 

@@ -77,7 +77,7 @@ class SelectModuleDialog(QDialog):
         listedModules = set()
 
         for module in self._installation.modules_list():
-            lowerModuleFileName = str(PurePath(module).with_stem(Module.get_root(module))).lower()
+            lowerModuleFileName = str(PurePath(module).with_stem(Module.find_root(module))).lower()
             if lowerModuleFileName in listedModules:
                 continue
             listedModules.add(lowerModuleFileName)
@@ -96,7 +96,7 @@ class SelectModuleDialog(QDialog):
 
         if not filepath or not filepath.strip():
             return
-        self.module = Module.get_root(filepath)
+        self.module = Module.find_root(filepath)
         self.accept()
 
     def confirm(self):

@@ -259,10 +259,9 @@ class LibUpdate:
     def _recursive_extract(cls, archive_path: Path):
         log = get_root_logger()
         if not archive_path.safe_isfile():
-            log.debug("File does not exist")
-            raise FileNotFoundError(errno.ENOENT, "File does not exist", str(archive_path))
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(archive_path))
         if not os.access(str(archive_path), os.R_OK):
-            raise PermissionError(errno.EACCES, "Permission denied", str(archive_path))
+            raise PermissionError(errno.EACCES, os.strerror(errno.EACCES), str(archive_path))
 
         log.debug(f"(recursive) Extracting '{archive_path}'...")  # noqa: G004
         archive_ext = archive_path.suffix.lower()

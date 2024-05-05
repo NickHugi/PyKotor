@@ -1469,3 +1469,17 @@ class Polygon3:
         point: Vector3,
     ) -> int:
         return self.points.index(point)
+
+def get_aurora_scale(obj):
+    """If the scale is uniform, i.e, x=y=z, we will return
+    the value. Else we'll return 1.
+    """
+    scale = obj.scale
+    if (scale[0] == scale[1] == scale[2]):
+        return scale[0]
+
+    return 1.0
+
+def get_aurora_rot_from_object(obj):
+    q = obj.rotation_quaternion
+    return [q.axis[0], q.axis[1], q.axis[2], q.angle]

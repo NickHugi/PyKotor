@@ -75,9 +75,7 @@ def clone_module(
     old_module = Module(root, installation)
     new_module = ERF(ERFType.MOD)
 
-    ifo: IFO | None = old_module.info().resource()
-    assert_with_variable_trace(ifo is not None, f"ifo {ifo!r} cannot be None in clone_module")
-    assert ifo is not None, f"ifo {ifo!r} cannot be None in clone_module"
+    ifo: IFO = old_module.info().resource()
 
     old_resref: ResRef = ifo.resref
     ifo.resref.set_data(identifier)

@@ -63,7 +63,7 @@
        <item>
         <widget class="QCheckBox" name="mergeRimCheck">
          <property name="text">
-          <string>Merge RIM files in the Modules tab of the Main Window.</string>
+          <string>Merge secondary ERF/RIM's in the Modules tab of the Main Window (i.e. '_s.rim' and '_dlg.erf').</string>
          </property>
         </widget>
        </item>

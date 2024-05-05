@@ -947,8 +947,8 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
 def determine_input_path(path: Path) -> None:
     # sourcery skip: assign-if-exp, reintroduce-else
     if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
-        msg = "Path does not exist"
-        raise FileNotFoundError(msg)
+        import errno
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
 
     if is_kotor_install_dir(path):
         return patch_install(path)

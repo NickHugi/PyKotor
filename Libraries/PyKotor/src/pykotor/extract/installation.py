@@ -8,7 +8,7 @@ from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -1145,10 +1145,10 @@ class Installation:  # noqa: PLR0904
 
     def locations(
         self,
-        queries: list[ResourceIdentifier] | set[ResourceIdentifier],
+        queries: Iterable[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
         *,
-        capsules: list[Capsule] | None = None,
+        capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, list[LocationResult]]:
         """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that respective resource.
@@ -1186,17 +1186,18 @@ class Installation:  # noqa: PLR0904
 
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
+            lookup_dict = {resource.identifier(): resource for resource in resource_list}
             for query in queries:
-                for resource in resource_list:
-                    if resource.identifier() != query:
-                        continue
-                    location = LocationResult(
-                        resource.filepath(),
-                        resource.offset(),
-                        resource.size(),
-                    )
-                    location.set_file_resource(resource)
-                    locations[query].append(location)
+                resource = lookup_dict.get(query)
+                if resource is None:
+                    continue
+                location = LocationResult(
+                    resource.filepath(),
+                    resource.offset(),
+                    resource.size(),
+                )
+                location.set_file_resource(resource)
+                locations[query].append(location)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1301,7 +1302,7 @@ class Installation:  # noqa: PLR0904
 
     def textures(
         self,
-        resnames: list[str],
+        resnames: Iterable[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1330,7 +1331,8 @@ class Installation:  # noqa: PLR0904
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        case_resnames: list[str] = [resname.lower() for resname in resnames]
+        resnames: set[str] = set(resnames)
+        case_resnames: set[str] = {resname.lower() for resname in resnames}
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
@@ -1341,18 +1343,25 @@ class Installation:  # noqa: PLR0904
             textures[resname] = None
 
         def decode_txi(txi_bytes: bytes) -> str:
-            return txi_bytes.decode("ascii", errors="ignore")
+            return txi_bytes.decode("ascii", errors="ignore").strip()
 
-        def get_txi_from_list(resname: str, resource_list: list[FileResource]) -> str:
+        def get_txi_from_list(case_resname: str, resource_list: list[FileResource]) -> str:
             txi_resource: FileResource | None = next(
                 (
                     resource
                     for resource in resource_list
-                    if resource.resname() == resname and resource.restype() is ResourceType.TXI
+                    if resource.restype() is ResourceType.TXI and resource.identifier().lower_resname == case_resname
                 ),
                 None,
             )
-            return "" if txi_resource is None else decode_txi(txi_resource.data())
+            if txi_resource is not None:
+                self._log.debug("Found txi resource '%s' at %s", txi_resource.identifier(), txi_resource.filepath().relative_to(self._path.parent))
+                contents = decode_txi(txi_resource.data())
+                if contents and not contents.isascii():
+                    self._log.warning("Texture TXI '%s' is not ascii! (found at %s)", txi_resource.identifier(), txi_resource.filepath())
+                return contents
+            self._log.debug("'%s.txi' resource not found during texture lookup.", case_resname)
+            return ""
 
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
@@ -1360,13 +1369,16 @@ class Installation:  # noqa: PLR0904
 
         def check_list(resource_list: list[FileResource]):
             for resource in resource_list:
-                case_resname = resource.resname().casefold()
-                if case_resname in case_resnames and resource.restype() in texture_types:
-                    case_resnames.remove(case_resname)
-                    tpc: TPC = read_tpc(resource.data())
-                    if resource.restype() is ResourceType.TGA:
-                        tpc.txi = get_txi_from_list(case_resname, resource_list)
-                    textures[case_resname] = tpc
+                if resource.restype() not in texture_types:
+                    continue
+                case_resname = resource.identifier().lower_resname
+                if case_resname not in case_resnames:
+                    continue
+                case_resnames.remove(case_resname)
+                tpc: TPC = read_tpc(resource.data())
+                if resource.restype() is ResourceType.TGA:
+                    tpc.txi = get_txi_from_list(case_resname, resource_list)
+                textures[case_resname] = tpc
 
         def check_capsules(values: list[Capsule]):  # NOTE: This function does not support txi's in the Override folder.
             for capsule in values:
@@ -1465,8 +1477,8 @@ class Installation:  # noqa: PLR0904
         found_resources: set[FileResource] = set()
         gff_extensions: set[str] = GFFContent.get_extensions()
         relevant_2da_filenames: dict[str, set[str]] = {}
-        if self.game().is_k1():
-            relevant_2da_filenames = K1Columns2DA.StrRefs.as_dict()  # TODO: KOTOR 2's:
+        if self.game().is_k1():  # TODO: TSL:
+            relevant_2da_filenames = K1Columns2DA.StrRefs.as_dict()
 
         def check_2da(resource2da: FileResource) -> bool:
             valid_2da: TwoDA | None = None
@@ -1647,7 +1659,7 @@ class Installation:  # noqa: PLR0904
 
     def sounds(
         self,
-        resnames: list[str],
+        resnames: Iterable[str],
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
@@ -1668,7 +1680,8 @@ class Installation:  # noqa: PLR0904
         -------
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        case_resnames: list[str] = [resname.casefold() for resname in resnames]
+        resnames: set[str] = set(resnames)
+        case_resnames: set[str] = {resname.casefold() for resname in resnames}
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
         if order is None:
@@ -1692,12 +1705,15 @@ class Installation:  # noqa: PLR0904
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                case_resname: str = resource.resname().casefold()
-                if case_resname in case_resnames and resource.restype() in sound_formats:
-                    self._log.debug(f"Found sound at '{resource.filepath()}'")
-                    case_resnames.remove(case_resname)
-                    sound_data: bytes = resource.data()
-                    sounds[resource.resname()] = deobfuscate_audio(sound_data)
+                if resource.restype() not in sound_formats:
+                    continue
+                case_resname = resource.identifier().lower_resname
+                if case_resname not in case_resnames:
+                    continue
+                self._log.debug("Found sound at '%s'", resource.filepath())
+                case_resnames.remove(case_resname)
+                sound_data: bytes = resource.data()
+                sounds[resource.resname()] = deobfuscate_audio(sound_data)
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
@@ -1709,7 +1725,7 @@ class Installation:  # noqa: PLR0904
                             break
                     if sound_data is None:  # No sound data found in this list.
                         continue
-                    self._log.debug(f"Found sound at '{capsule.path()}'")
+                    self._log.debug("Found sound at '%s'", capsule.filepath())
                     case_resnames.remove(case_resname)
                     sounds[case_resname] = deobfuscate_audio(sound_data)
 
@@ -1726,7 +1742,7 @@ class Installation:  # noqa: PLR0904
                     )
                 )
             for sound_file in queried_sound_files:
-                self._log.debug(f"Found sound at '{sound_file}'")
+                self._log.debug("Found sound at '%s'", sound_file)
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = deobfuscate_audio(sound_data)
@@ -2009,7 +2025,7 @@ class Installation:  # noqa: PLR0904
                         mod_id = "_".join(parts[1:-1])
                     else:  # ...except when the last part matches a qualifier
                         mod_id = "_".join(parts[1:-2])
-                self._log.debug("parts: %s id: '%s'", parts, mod_id)
+                #self._log.debug("parts: %s id: '%s'", parts, mod_id)
                 return mod_id
 
             if use_alternate:

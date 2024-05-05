@@ -264,13 +264,9 @@ class Editor(QMainWindow):
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-                lines = format_exception_with_variables(e)
-                file.writelines(lines)
-                file.write("\n----------------------\n")
-            error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
-            msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", error_msg)
-            msgBox.setDetailedText(lines)
+            get_root_logger().critical("Failed to write to file", exc_info=True)
+            msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
+            msgBox.setDetailedText(format_exception_with_variables(e))
             msgBox.exec_()
 
     def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
@@ -333,7 +329,7 @@ class Editor(QMainWindow):
             dialog.exec_()
             if dialog.option == RimSaveOption.MOD:
                 folderpath: Path = self._filepath.parent
-                filename: str = f"{Module.get_root(self._filepath)}.mod"
+                filename: str = f"{Module.find_root(self._filepath)}.mod"
                 self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()

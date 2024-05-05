@@ -694,8 +694,9 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
 
             # If the function fails, it returns INVALID_FILE_ATTRIBUTES
             if attrs == -1:
-                msg = f"Cannot access attributes of file: {file_path}"
-                raise FileNotFoundError(msg)
+                import errno
+                msg = "Cannot access attributes of the file"
+                raise FileNotFoundError(errno.ENOENT, msg, str(file_path))
 
             # Check for specific attributes
             is_read_only = bool(attrs & FILE_ATTRIBUTE_READONLY)

@@ -4,7 +4,7 @@ import math
 import struct
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, Generator, NamedTuple
 
 from pykotor.common.geometry import Vector4
 from pykotor.common.misc import Game
@@ -80,7 +80,7 @@ def rename(
 
 def list_textures(
     data: bytes,
-) -> list[str]:
+) -> Generator[str, Any, None]:
     """Extracts textures from a binary file.
 
     Args:
@@ -119,16 +119,14 @@ def list_textures(
             nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 168)
-                texture = reader.read_string(32)
+                texture = reader.read_string(32, encoding="ascii", errors="ignore").strip()
                 if texture and texture != "NULL" and texture.lower() not in textures:
-                    textures.append(texture.lower())
-
-    return textures
+                    yield texture.lower()
 
 
 def list_lightmaps(
     data: bytes,
-) -> list[str]:
+) -> Generator[str, Any, None]:
     """Extracts lightmap names from a Unity lightmap data file.
 
     Args:
@@ -146,9 +144,7 @@ def list_lightmaps(
         - Duplicate and empty names are filtered out
         - The unique lightmap names are returned as a list.
     """
-    lightmaps: list[str] = []
     lightmaps_caseset: set[str] = set()
-
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
@@ -167,13 +163,11 @@ def list_lightmaps(
             nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
             if node_id & 32:
                 reader.seek(node_offset + 200)
-                lightmap = reader.read_string(32)
+                lightmap = reader.read_string(32, encoding="ascii", errors="ignore").strip()
                 lowercase_lightmap = lightmap.lower()
                 if lightmap and lightmap != "NULL" and lowercase_lightmap not in lightmaps_caseset:
-                    lightmaps.append(lightmap)
+                    yield lightmap
                     lightmaps_caseset.add(lowercase_lightmap)
-
-    return lightmaps
 
 
 def change_textures(

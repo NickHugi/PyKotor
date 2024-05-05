@@ -375,7 +375,7 @@ class UTPEditor(Editor):
         capsules: list[Capsule] = []
 
         with suppress(Exception):
-            root = Module.get_root(self._filepath)
+            root = Module.find_root(self._filepath)
             moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
             capsules.extend(newCapsules)
