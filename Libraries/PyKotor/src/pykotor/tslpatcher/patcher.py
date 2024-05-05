@@ -177,7 +177,7 @@ class ModInstaller:
         exists: bool
         if is_capsule_file(patch.destination):
             module_root = Installation.replace_module_extensions(output_container_path)
-            tslrcm_omitted_rims = ("702KOR", "421DXN")
+            tslrcm_omitted_rims = ("702KOR", "401DXN")
             if not output_container_path.safe_isfile():
                 if is_mod_file(output_container_path):
                     self.log.add_note(
