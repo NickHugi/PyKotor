@@ -38,7 +38,7 @@ class LYTRoom:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
@@ -47,7 +47,7 @@ class LYTRoom:
     ):
         if not isinstance(other, LYTRoom):
             return NotImplemented
-        return self.model == other.model and self.position == other.position
+        return self.model.lower() == other.model.lower() and self.position == other.position
 
     def __hash__(
         self,
@@ -71,7 +71,7 @@ class LYTTrack:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
@@ -80,7 +80,7 @@ class LYTTrack:
     ):
         if not isinstance(other, LYTTrack):
             return NotImplemented
-        return self.model == other.model and self.position == other.position
+        return self.model.lower() == other.model.lower() and self.position == other.position
 
 
 class LYTObstacle:
@@ -99,7 +99,7 @@ class LYTObstacle:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
@@ -108,7 +108,7 @@ class LYTObstacle:
     ):
         if not isinstance(other, LYTObstacle):
             return NotImplemented
-        return self.model == other.model and self.position == other.position
+        return self.model.lower() == other.model.lower() and self.position == other.position
 
 
 class LYTDoorHook:
