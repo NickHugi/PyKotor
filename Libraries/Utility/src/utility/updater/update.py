@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import ChDir, get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
-from utility.system.path import Path, PurePath
+from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
+from utility.system.path import ChDir, Path, PurePath
 from utility.updater.downloader import FileDownloader, download_mega_file_url
 from utility.updater.restarter import RestartStrategy, Restarter, UpdateStrategy
 

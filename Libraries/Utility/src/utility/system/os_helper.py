@@ -10,13 +10,8 @@ import threading
 import time
 import uuid
 
-from typing import TYPE_CHECKING
-
 from utility.logger_util import get_root_logger
 from utility.system.path import Path
-
-if TYPE_CHECKING:
-    from logging import Logger
 
 
 def windows_get_size_on_disk(file_path: os.PathLike | str) -> int:
@@ -354,22 +349,3 @@ def win_get_system32_dir() -> Path:
         buffer = ctypes.create_unicode_buffer(260)
         ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
         return Path(buffer.value).joinpath("system32")
-
-
-class ChDir:
-    def __init__(
-        self,
-        path: os.PathLike | str,
-        logger: Logger | None = None,
-    ):
-        self.old_dir: Path = Path.cwd()
-        self.new_dir: Path = Path.pathify(path)
-        self.log = logger or get_root_logger()
-
-    def __enter__(self):
-        self.log.debug(f"Changing to Directory --> '{self.new_dir}'")  # noqa: G004
-        os.chdir(self.new_dir)
-
-    def __exit__(self, *args, **kwargs):
-        self.log.debug(f"Moving back to Directory --> '{self.old_dir}'")  # noqa: G004
-        os.chdir(self.old_dir)
