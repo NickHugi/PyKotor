@@ -543,6 +543,8 @@ class LocalizedString:
         self,
         language: Language,
         gender: Gender,
+        *,
+        use_fallback: bool = False,
     ) -> str | None:
         """Gets the substring text with the corresponding language/gender pair.
 
@@ -556,7 +558,7 @@ class LocalizedString:
             The text of the substring if a matching pair is found, otherwise returns None.
         """
         substring_id: int = LocalizedString.substring_id(language, gender)
-        return self._substrings.get(substring_id, None)
+        return self._substrings.get(substring_id, next(iter(self._substrings.values()), None) if use_fallback else None)
 
     def remove(
         self,

@@ -371,7 +371,9 @@ class DLGNode:
     def __repr__(
         self,
     ) -> str:
-        return str(self.text.get(Language.ENGLISH, Gender.MALE))
+        text = self.text.get(Language.ENGLISH, Gender.MALE, use_fallback=True)
+        strref_display = f"stringref={self.text.stringref}" if text is None else f"text={text}"
+        return f"{self.__class__.__name__}({strref_display}, list_index={self.list_index}, links={self.links})"
 
 
 class DLGReply(DLGNode):
@@ -460,6 +462,9 @@ class DLGLink:
         self.active2_param4: int = 0
         self.active2_param5: int = 0
         self.active2_param6: str = ""
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(link_index={self.link_index})"#, node={self.node})"
 
 
 class DLGStunt:
@@ -768,6 +773,8 @@ def dismantle_dlg(
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
         gff_struct.set_resref("Active", link.active1)
+        if link.comment and link.comment.strip():
+            gff_struct.set_string("LinkComment", link.comment)
         if game.is_k2():
             gff_struct.set_resref("Active2", link.active2)
             gff_struct.set_int32("Logic", link.logic)
@@ -789,7 +796,7 @@ def dismantle_dlg(
     def dismantle_node(
         gff_struct: GFFStruct,
         node: DLGNode,
-        nodes: list,
+        nodes: list[DLGEntry] | list[DLGReply],
         list_name: Literal["EntriesList", "RepliesList"],
     ):
         """Disassembles a DLGNode into a GFFStruct.
@@ -797,9 +804,9 @@ def dismantle_dlg(
         Args:
         ----
             gff_struct: GFFStruct - The GFFStruct to populate
-            node: DLGNode - The DLGNode to disassemble
-            nodes: list - The nodes list, used for linking
-            list_name: str - the nested list's name.
+            node: DLGNode - The DLGNode to dismantle into a EntryList/ReplyList GFFStruct node.
+            nodes: list - The nodes list (abstracted EntryList/ReplyList represented as list[DLGEntry] | list[DLGReply])
+            list_name: Literal["EntriesList", "RepliesList"] - the name of the nested linked list. If nodes is list[DLGEntry], should be 'RepliesList' and vice versa.
 
         Processing Logic:
         ----------------
@@ -883,8 +890,6 @@ def dismantle_dlg(
 
     all_entries: list[DLGEntry] = dlg.all_entries()
     all_replies: list[DLGReply] = dlg.all_replies()
-    all_entries.reverse()
-    all_replies.reverse()
 
     gff = GFF(GFFContent.DLG)
 
@@ -940,6 +945,8 @@ def dismantle_dlg(
         reply_struct: GFFStruct = reply_list.add(i)
         dismantle_node(reply_struct, reply, all_entries, "EntriesList")
 
+    # This part helps preserve the original GFF if this DLG was in fact constructed from one.
+    # In scenarios where a brand new DLG is created from scratch this sort algo probably does nothing.
     def sort_entry(struct: GFFStruct) -> int:
         entry: DLGEntry = all_entries[struct.struct_id]
         struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index
