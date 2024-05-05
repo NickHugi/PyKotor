@@ -17,10 +17,10 @@ if TYPE_CHECKING:
 
 
 class LazyCapsule(FileResource):
-    """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod/.sav files used by the game.
+    """LazyCapsule object is used for loading the list of resources stored in the .erf/.rim/.mod/.sav files used by the game.
 
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
-    Capsule.resource() method. Use the CachedCapsule, RIM, or ERF classes if you want to solely work with capsules in memory.
+    LazyCapsule.resource() method. Use the Capsule, RIM, or ERF classes if you want to solely work with capsules in memory.
     """
     def __init__(
         self,
