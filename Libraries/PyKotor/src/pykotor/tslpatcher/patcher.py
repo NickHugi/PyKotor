@@ -178,6 +178,7 @@ class ModInstaller:
         if is_capsule_file(patch.destination):
             module_root = Installation.replace_module_extensions(output_container_path)
             tslrcm_omitted_rims = ("702KOR", "401DXN")
+            mod_from_rim_called = False
             if not output_container_path.safe_isfile():
                 if is_mod_file(output_container_path):
                     self.log.add_note(
@@ -186,6 +187,8 @@ class ModInstaller:
                         +  f"\n    Modules/{module_root}_s.rim"
                         + (f"\n    Modules/{module_root}_dlg.erf" if self.game is not None and self.game.is_k2() else "")
                     )
+                    create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
+                    mod_from_rim_called = True
                     try:
                         rim_to_mod(output_container_path, self.game_path / "Modules", module_root, self.game)
                     except Exception as e:  # noqa: BLE001
@@ -198,7 +201,8 @@ class ModInstaller:
             elif module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
             capsule = Capsule(output_container_path)
-            create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
+            if not mod_from_rim_called:
+                create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
             exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas).unpack())
         else:
             create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
