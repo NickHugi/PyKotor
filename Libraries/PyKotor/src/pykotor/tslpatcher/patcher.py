@@ -69,13 +69,14 @@ class ModInstaller:
         self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
         self.log: PatchLogger = logger or PatchLogger()
         self.game: Game | None = Installation.determine_game(self.game_path)
-        if not self.changes_ini_path.safe_isfile():  # handle legacy syntax
+        if not self.changes_ini_path.safe_isfile():  # Handle legacy syntax
             self.changes_ini_path = self.mod_path / self.changes_ini_path.name
             if not self.changes_ini_path.safe_isfile():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
             if not self.changes_ini_path.safe_isfile():
-                msg = f"Could not find the changes ini file '{self.changes_ini_path}' on disk."
-                raise FileNotFoundError(msg)
+                import errno
+                msg = "Could not find the changes ini file on disk."
+                raise FileNotFoundError(errno.ENOENT, msg, str(self.changes_ini_path))
 
         self._config: PatcherConfig | None = None
         self._backup: CaseAwarePath | None = None
@@ -193,8 +194,9 @@ class ModInstaller:
                         self.log.add_error(msg)
                         raise
                 else:
+                    import errno
                     msg = f"The capsule '{patch.destination}' did not exist, or permission issues occurred, when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."  # noqa: E501
-                    raise FileNotFoundError(msg)
+                    raise FileNotFoundError(errno.ENOENT, msg, str(output_container_path))
             elif module_root.upper() not in tslrcm_omitted_rims and is_rim_file(output_container_path):
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
             capsule = Capsule(output_container_path)

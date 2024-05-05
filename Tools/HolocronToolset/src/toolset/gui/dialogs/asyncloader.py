@@ -10,7 +10,7 @@ from qtpy.QtCore import QThread, QTimer, Qt
 from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.system.path import Path
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
@@ -171,15 +171,13 @@ class AsyncLoader(QDialog, Generic[T]):
         self.error = error
         self.optionalErrorHook.emit(error)
         self.reject()
-
-        with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-            lines = format_exception_with_variables(self.error)
-            file.writelines(lines)
-            file.write("\n----------------------\n")
+        get_root_logger().error(str(error), exc_info=error)
 
         if self.errorTitle:
-            error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>")
-            QMessageBox(QMessageBox.Icon.Critical, self.errorTitle, error_msg).exec_()
+            error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>") + " "*700 + "<br>"*2
+            msgBox = QMessageBox(QMessageBox.Icon.Critical, self.errorTitle + " "*700, error_msg)
+            msgBox.setDetailedText(format_exception_with_variables(error))
+            msgBox.exec_()
 
 
 class AsyncWorker(QThread):
@@ -290,11 +288,7 @@ class AsyncBatchLoader(QDialog):
         self.errors.append(error)
         self.failCount += 1
         self._progressBar.setValue(self._progressBar.value() + 1)
-        with Path("errorlog.txt").open("a", encoding="utf-8") as file:
-            try:
-                file.writelines(format_exception_with_variables(error))
-            except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                file.writelines(str(error))
+        get_root_logger().error(str(error), exc_info=error)
 
     def _onAllCompleted(self):
         if not self.errors:
@@ -308,12 +302,16 @@ class AsyncBatchLoader(QDialog):
         errorTitle = self.errorTitle
         if self.failCount:
             errorTitle = f"{self.errorTitle} ({self.failCount} errors)"
-        QMessageBox(
+        msgBox = QMessageBox(
             QMessageBox.Icon.Critical,
             errorTitle,
-            "\n".join(str(universal_simplify_exception(error)).replace(",", ":", 1) + "<br>" for error in self.errors),
-            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
-        ).exec_()
+            f"{len(self.errors)} total error(s) occurred<br>" + ("\n".join( ( str(universal_simplify_exception(error)).replace( ",", ":", 1 ) + "<br>" ) for error in self.errors)),
+            flags=Qt.WindowType.Window
+            | Qt.WindowType.Dialog
+            | Qt.WindowType.WindowStaysOnTopHint,
+        )
+        msgBox.setDetailedText("\n".join(format_exception_with_variables(e) for e in self.errors))
+        msgBox.exec_()
 
 
 class AsyncBatchWorker(QThread):

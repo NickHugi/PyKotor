@@ -208,7 +208,7 @@ def _prompt_additional_include_dirs(
             if file.stem.lower() not in source_nss_lowercase and file.stem.lower() not in stderr.lower():
                 continue  # Skip any files in the include_path that aren't referenced by the script (faster)
 
-            if ResourceIdentifier.from_path(file).restype != ResourceType.NSS:
+            if ResourceIdentifier.from_path(file).restype is not ResourceType.NSS:
                 log.debug("%s is not an NSS script, skipping...", file.name)
                 continue
             if not file.safe_isfile():
@@ -302,7 +302,8 @@ def _execute_nwnnsscomp_compile(
 
     # All the abstraction work is now complete... verify the file exists one last time then return the compiled script's data.
     if not tempCompiledPath.safe_isfile():
-        raise FileNotFoundError(f"Could not find temp compiled script at '{tempCompiledPath}'")  # noqa: TRY003, EM102
+        import errno
+        raise FileNotFoundError(errno.ENOENT, "Could not find the temp compiled script!", str(tempCompiledPath))  # noqa: TRY003, EM102
     return BinaryReader.load_file(tempCompiledPath)
 
 

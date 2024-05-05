@@ -246,7 +246,7 @@ class NSSEditor(Editor):
                 self.new()  # minor TODO(th3w1zard1): should we destroy self here?
 
     def build(self) -> tuple[bytes | None, bytes]:
-        if self._restype != ResourceType.NCS:
+        if self._restype is not ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
         print("compiling script from nsseditor")

@@ -206,9 +206,8 @@ def compile_with_abstract_compatible(
 
         if not ncs_path.is_file():
             # raise it so _handle_compile_exc can be used to reduce duplicated logging code.
-            new_exc = FileNotFoundError(f"Could not find NCS compiled script on disk, '{compiler_identifier}' compiler failed.")
-            new_exc.filename = ncs_path
-            raise new_exc
+            import errno
+            raise FileNotFoundError(errno.ENOENT, f"Could not find NCS compiled script on disk, '{compiler_identifier}' compiler failed.", str(ncs_path))
 
     except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
         if isinstance(compiler, ExternalNCSCompiler):
@@ -403,9 +402,8 @@ def test_bizarre_compiler(script_data: tuple[Game, tuple[FileResource, Path, Pat
             log_file(f"Failed bizarre compilation, no NCS returned: '{working_dir.name}/{nss_path}'", filepath="fallback_out.txt")
             pytest.fail(f"Failed bizarre compilation, no NCS returned: '{working_dir.name}/{nss_path}'")
         if not ncs_path.is_file():
-            new_exc = FileNotFoundError(f"Could not find NCS compiled script on disk at '{working_dir.name}/{nss_path}', bizarre compiler failed.")
-            new_exc.filename = ncs_path
-            raise new_exc  # noqa: TRY301
+            import errno
+            raise FileNotFoundError(errno.ENOENT, f"Could not find NCS compiled script on disk at '{working_dir.name}/{nss_path}', bizarre compiler failed.", str(ncs_path))
 
     except EntryPointError as e:
         pytest.xfail(f"Bizarre Compiler: No entry point found in '{working_dir.name}/{nss_path}': {e}")
