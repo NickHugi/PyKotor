@@ -23,6 +23,7 @@ from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     import os
@@ -429,6 +430,10 @@ class UTPEditor(Editor):
 
         data, _ = self.build()
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        if not modelname or not modelname.strip():
+            get_root_logger().warning("Placeable '%s.%s' has no model to render!", self._resname, self._restype)
+            self.ui.previewRenderer.clearModel()
+            return
         mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
         mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
         if mdl is not None and mdx is not None:
