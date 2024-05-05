@@ -228,6 +228,8 @@ class Scene:
                 appearance=self.table_creatures,
                 baseitems=self.table_baseitems,
             )
+            if not body_model or not body_model.strip():
+                raise ValueError("creature.get_body_model failed to return a valid body_model resref str.")  # noqa: TRY301
             head_model, head_texture = creature.get_head_model(
                 utc,
                 self.installation,
@@ -271,8 +273,8 @@ class Scene:
                 elif head_obj is not None:
                     head_obj.children.append(mask_obj)
 
-        except Exception as e:
-            print(format_exception_with_variables(e))
+        except Exception:
+            get_root_logger().exception("Exception occurred getting the creature render object.")
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", data=instance)
 

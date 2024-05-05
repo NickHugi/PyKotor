@@ -1355,7 +1355,7 @@ class Installation:  # noqa: PLR0904
                 None,
             )
             if txi_resource is not None:
-                self._log.debug("Found txi resource '%s' at %s", txi_resource.identifier(), txi_resource.filepath())
+                self._log.debug("Found txi resource '%s' at %s", txi_resource.identifier(), txi_resource.filepath().relative_to(self._path.parent))
                 contents = decode_txi(txi_resource.data())
                 if contents and not contents.isascii():
                     self._log.warning("Texture TXI '%s' is not ascii! (found at %s)", txi_resource.identifier(), txi_resource.filepath())
