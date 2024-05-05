@@ -525,7 +525,7 @@ def log_output(*args, **kwargs):
     #buffer = StringIO()
 
     # Print to the in-memory stream
-    print(*args, **kwargs)  # ,file=buffer)
+    #print(*args, **kwargs, file=buffer)
 
     # Retrieve the printed content
     # msg: str = buffer.getvalue()
