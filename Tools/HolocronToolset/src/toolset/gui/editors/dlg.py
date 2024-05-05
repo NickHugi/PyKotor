@@ -354,7 +354,7 @@ class DLGEditor(Editor):
         self.model.clear()
         seenLinks: list[DLGLink] = []
         seenNodes: list[DLGNode] = []
-        for start in reversed(dlg.starters):  # reversed = ascending order
+        for start in dlg.starters:  # descending order - matches what the game does.
             item = QStandardItem()
             self._loadDLGRec(item, start, seenLinks, seenNodes)
             self.model.appendRow(item)
@@ -400,7 +400,7 @@ class DLGEditor(Editor):
         self.refreshItem(item)
 
         if not alreadyListed:
-            for child_link in reversed(node.links):  # reversed = ascending order
+            for child_link in node.links:  # descending order - matches what the game does
                 child_item = QStandardItem()
                 self._loadDLGRec(child_item, child_link, seenLinks, seenNodes)
                 item.appendRow(child_item)
