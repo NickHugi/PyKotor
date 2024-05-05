@@ -232,7 +232,7 @@ def is_frozen() -> bool:
     return (
         getattr(sys, "frozen", False)
         or getattr(sys, "_MEIPASS", False)
-        or tempfile.gettempdir() in sys.executable
+        # or tempfile.gettempdir() in sys.executable  # Not sure any frozen implementations use this (PyInstaller/py2exe). Re-enable if we find one that does.
     )
 
 
