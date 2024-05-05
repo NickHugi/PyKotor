@@ -269,7 +269,7 @@ class ERFEditor(Editor):
             if not filepath_str and not filepath_str.strip():
                 get_root_logger().debug("User cancelled single file saving.")
                 return
-            self._handle_single_file_save(Path(filepath_str), resource.data, catch_exceptions=True)
+            self._handle_single_file_save(Path(filepath_str), resource.data, erf_relpath, catch_exceptions=True)
             return
 
         # Handle multiple files with folder dialog
