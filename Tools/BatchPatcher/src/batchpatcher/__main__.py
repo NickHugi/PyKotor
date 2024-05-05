@@ -522,13 +522,13 @@ def relative_path_from_to(
 
 def log_output(*args, **kwargs):
     # Create an in-memory text stream
-    buffer = StringIO()
+    #buffer = StringIO()
 
     # Print to the in-memory stream
-    print(*args, file=buffer, **kwargs)
+    print(*args, **kwargs)  # ,file=buffer)
 
     # Retrieve the printed content
-    msg: str = buffer.getvalue()
+    # msg: str = buffer.getvalue()
 
     # Write the captured output to the file
     #with Path("log_batch_patcher.log").open("a", encoding="utf-8", errors="ignore") as f:
