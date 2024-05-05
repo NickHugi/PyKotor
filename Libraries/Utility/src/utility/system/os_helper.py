@@ -31,7 +31,7 @@ def windows_get_size_on_disk(file_path: os.PathLike | str) -> int:
     # Call GetCompressedFileSizeW
     low = GetCompressedFileSizeW(str(file_path), ctypes.byref(filesizehigh))
 
-    if low == 0xFFFFFFFF:  # Check for an error condition.
+    if low == 0xFFFFFFFF:  # Check for an error condition.  # noqa: PLR2004
         error = ctypes.GetLastError()
         if error:
             raise ctypes.WinError(error)
@@ -72,7 +72,6 @@ def get_size_on_disk(
 def start_shutdown_process():
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(sys.path)
-    command = f"from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"
     # Setup to hide the console window on Windows
     startupinfo = None
     if os.name == "nt":
@@ -80,13 +79,14 @@ def start_shutdown_process():
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = subprocess.SW_HIDE
     creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
-    subprocess.Popen(
-        [sys.executable, "-c", command],
-        creationflags=creationflags,
-        start_new_session=True,
-        env=env,
-        startupinfo=startupinfo
-    )
+    if not is_frozen():
+        subprocess.Popen(
+            [sys.executable, "-c", f"from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"],  # noqa: S603
+            creationflags=creationflags, start_new_session=True, env=env, startupinfo=startupinfo
+        )
+    else:
+        import multiprocessing
+        multiprocessing.Process(target=shutdown_main_process, args=(os.getpid(),))
 
 def shutdown_main_process(main_pid: int, *, timeout: int = 3):
     """Watchdog process to monitor and shut down the main application."""
@@ -131,12 +131,12 @@ def terminate_child_processes(
             log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
             try:
                 if sys.platform == "win32":
-                    sys32path = win_get_system32_dir()
-                    subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)], creationflags=subprocess.CREATE_NO_WINDOW, check=True)  # noqa: S603
+                    subprocess.run([str(win_get_system32_dir() / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)],  # noqa: S603
+                                   creationflags=subprocess.CREATE_NO_WINDOW, check=True)
                 else:
                     import signal
                     os.kill(child.pid, signal.SIGKILL)  # Use SIGKILL as a last resort
-            except Exception:
+            except Exception:  # noqa: BLE001
                 number_failed_children += 1
                 log.critical("Failed to kill process %s", child.pid, exc_info=True)
     if number_failed_children:
@@ -171,7 +171,7 @@ def gracefully_shutdown_threads(timeout: int = 3) -> bool:
             if thread.is_alive():
                 get_root_logger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
                 number_timeout_threads += 1
-        except Exception:
+        except Exception:  # noqa: BLE001
             get_root_logger().exception("Failed to stop the thread")
 
     if number_timeout_threads:
@@ -195,19 +195,21 @@ def terminate_main_process(timeout=3, actual_self_pid=None):
         result1 = terminate_child_processes(timeout=timeout)
         if actual_self_pid is None:
             result2 = gracefully_shutdown_threads(timeout=timeout)
-            main_pid = os.getpid()
-        else:
-            main_pid = actual_self_pid
+            actual_self_pid = os.getpid()
         if result1 and result2:
             sys.exit(0)
 
-        get_root_logger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", main_pid)
+        get_root_logger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
         if sys.platform == "win32":
             sys32path = win_get_system32_dir()
-            subprocess.run([str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(main_pid)], creationflags=subprocess.CREATE_NO_WINDOW, check=True)  # noqa: S603
+            subprocess.run(
+                [str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(actual_self_pid)],  # noqa: S603
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                check=True,
+            )
         else:
             import signal
-            os.kill(main_pid, signal.SIGKILL)
+            os.kill(actual_self_pid, signal.SIGKILL)
     except Exception:
         get_root_logger().exception("Exception occurred while stopping main process")
     finally:
@@ -227,7 +229,11 @@ def get_app_dir() -> Path:
 
 
 def is_frozen() -> bool:
-    return getattr(sys, "frozen", False) or getattr(sys, "_MEIPASS", False) or tempfile.gettempdir() in sys.executable
+    return (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+        or tempfile.gettempdir() in sys.executable
+    )
 
 
 def requires_admin(path: os.PathLike | str) -> bool:    # pragma: no cover
@@ -259,6 +265,7 @@ def dir_requires_admin(
     ignore_errors: bool = True,
 ) -> bool:  # pragma: no cover
     """Check if a dir required admin permissions to write.
+
     If dir is a file test it's directory.
     """
     _dirpath = Path.pathify(dirpath)
@@ -309,7 +316,7 @@ def remove_any(
             else:
                 if not exists_func(path_obj):
                     return
-                print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)
+                print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)  # DO NOT IMPORT GET_ROOT_LOGGER HERE
         if not ignore_errors:  # should raise at this point.
             _remove_any(path_obj)
 
@@ -348,7 +355,11 @@ def win_get_system32_dir() -> Path:
 
 
 class ChDir:
-    def __init__(self, path: os.PathLike | str, logger: Logger | None = None):
+    def __init__(
+        self,
+        path: os.PathLike | str,
+        logger: Logger | None = None,
+    ):
         self.old_dir: Path = Path.cwd()
         self.new_dir: Path = Path.pathify(path)
         self.log = logger or get_root_logger()
