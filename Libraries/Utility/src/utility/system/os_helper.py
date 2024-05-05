@@ -72,7 +72,7 @@ def get_size_on_disk(
 def start_shutdown_process():
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(sys.path)
-    command = f"import os; from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"
+    command = f"from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"
     # Setup to hide the console window on Windows
     startupinfo = None
     if os.name == "nt":
