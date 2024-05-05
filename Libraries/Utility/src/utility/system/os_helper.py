@@ -178,7 +178,10 @@ def gracefully_shutdown_threads(timeout: int = 3) -> bool:
     return bool(number_timeout_threads)
 
 
-def terminate_main_process(timeout=3, actual_self_pid=None):
+def terminate_main_process(
+    timeout: int = 3,
+    actual_self_pid: int | None = None,
+):
     """Waits for a specified timeout for threads to complete.
 
     If threads other than the main thread are still running after the timeout, it forcefully terminates
@@ -349,3 +352,21 @@ def win_get_system32_dir() -> Path:
         buffer = ctypes.create_unicode_buffer(260)
         ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
         return Path(buffer.value).joinpath("system32")
+
+def win_hide_file(filepath: os.PathLike | str):
+    """Hides a file. More specifically, uses `ctypes` to set the hidden attribute.
+
+    Args:
+    ----
+        filepath: os.PathLike | str - the path to the file
+
+    Raises:
+    ------
+        OSError: Some os error occurred, probably permissions related.
+    """
+    import ctypes
+
+    ret = ctypes.windll.kernel32.SetFileAttributesW(str(filepath), 0x02)
+    if not ret:
+        # WinError will automatically grab the relevant code and message
+        raise ctypes.WinError()

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from utility.logger_util import get_root_logger
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any
+from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any, win_hide_file
 from utility.system.path import ChDir, Path, PurePath
 from utility.updater.downloader import FileDownloader, download_mega_file_url
 from utility.updater.restarter import RestartStrategy, Restarter, UpdateStrategy
@@ -543,8 +543,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         if cur_app_filepath.safe_isdir():
             raise ValueError(f"Current app path '{cur_app_filepath}' cannot be a directory!")
 
-        old_exe_name = f"{exe_name}.old"
-        old_app_path = self._current_app_dir / old_exe_name
+        old_app_path = self._current_app_dir / f"{exe_name}.old"
         temp_app_filepath = self.update_temp_path.joinpath(exe_name)
 
         # Ensure it's a file.
@@ -575,7 +574,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
                 raise ValueError(f"Old app path at '{old_app_path}' was neither a file or directory, perhaps we don't have permission to check? No changes have been made.")
         except PermissionError:
             # Fallback to the good ol' rename strategy.
-            randomized_old_app_path = old_app_path.add_suffix(str(uuid.uuid4()))
+            randomized_old_app_path = old_app_path.add_suffix(uuid.uuid4().hex[:7])
             old_app_path.rename(randomized_old_app_path)
 
         # On Windows, it's possible to rename a currently running exe file
@@ -593,13 +592,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         assert temp_app_filepath.safe_isfile()
         if is_frozen() or old_app_path.safe_isfile():  # exe may not exist if running from .py source
             try:
-                # Hide the old app
-                import ctypes
-
-                ret = ctypes.windll.kernel32.SetFileAttributesW(str(old_app_path), 0x02)
-                if not ret:
-                    # WinError will automatically grab the relevant code and message
-                    raise ctypes.WinError()
+                win_hide_file(old_app_path)
             except OSError:
                 self.log.info("Failed to hide file. This is fine - we can still continue", exc_info=True)
 
