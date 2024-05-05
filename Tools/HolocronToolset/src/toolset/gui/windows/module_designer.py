@@ -13,6 +13,7 @@ from qtpy.QtGui import QColor, QIcon, QPixmap
 from qtpy.QtWidgets import QAction, QApplication, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
 from pykotor.tools.misc import is_mod_file
+from utility.misc import is_debug_mode
 
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoCommand, QUndoStack
@@ -327,7 +328,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
         self.ui.instanceList.customContextMenuRequested.connect(self.onContextMenuSelectionExists)
 
-        self.ui.mainRenderer.sceneInitalized.connect(self.on3dSceneInitialized)
+        self.ui.mainRenderer.rendererInitialized.connect(self.on3dRendererInitialized)
+        self.ui.mainRenderer.sceneInitialized.connect(self.on3dSceneInitialized)
         self.ui.mainRenderer.mousePressed.connect(self.on3dMousePressed)
         self.ui.mainRenderer.mouseReleased.connect(self.on3dMouseReleased)
         self.ui.mainRenderer.mouseMoved.connect(self.on3dMouseMoved)
@@ -360,11 +362,9 @@ class ModuleDesigner(QMainWindow):
     #    @with_variable_trace(Exception)
     def openModule(self, mod_filepath: Path):
         """Opens a module."""
-        self.ui.mainRenderer.pauseLoop()
         orig_filepath = mod_filepath
         mod_root = self._installation.replace_module_extensions(mod_filepath)
         mod_filepath = mod_filepath.with_name(f"{mod_root}.mod")
-        self.unloadModule()
         if not mod_filepath.is_file():
             self.log.info("No .mod found at '%s'", mod_filepath)
             answer = QMessageBox.question(
@@ -401,7 +401,7 @@ class ModuleDesigner(QMainWindow):
             git: GIT = git_resource.resource()
             walkmeshes: list[BWM] = []
             for bwm in combined_module.resources.values():
-                if bwm.restype() != ResourceType.WOK:
+                if bwm.restype() is not ResourceType.WOK:
                     continue
                 bwm_res: BWM | None = bwm.resource()
                 if bwm_res is None:
@@ -411,32 +411,40 @@ class ModuleDesigner(QMainWindow):
                 walkmeshes.append(bwm_res)
             return (combined_module, git, walkmeshes)
 
-        loader = AsyncLoader(
-            self,
-            f"Loading module '{mod_filepath.name}' into designer...",
-            task,
-            "Error occurred loading the module designer",
-        )
-        if loader.exec_():
-            self.log.debug("ModuleDesigner.openModule Loader finished.")
-            new_module, git, walkmeshes = loader.value
-            self._module = new_module
-            self.log.debug("setGit")
-            self.ui.flatRenderer.setGit(git)
-            self.enterInstanceMode()
-            self.log.debug("init mainRenderer")
-            self.ui.mainRenderer.init(self._installation, new_module)
-            self.log.debug("set flatRenderer walkmeshes")
-            self.ui.flatRenderer.setWalkmeshes(walkmeshes)
-            self.ui.flatRenderer.centerCamera()
-            self.show()
-            self.activateWindow()
-            # Inherently calls On3dSceneInitialized when done.
+        # Point of no return: unload any previous module and load the new one.
+        self.unloadModule()
+        if is_debug_mode():
+            result = task()
+        else:
+            loader = AsyncLoader(
+                self,
+                f"Loading module '{mod_filepath.name}' into designer...",
+                task,
+                "Error occurred loading the module designer",
+            )
+            result = loader.value
+            if not loader.exec_():
+                return
+        self.log.debug("ModuleDesigner.openModule Loader finished.")
+        new_module, git, walkmeshes = result
+        self._module = new_module
+        self.log.debug("setGit")
+        self.ui.flatRenderer.setGit(git)
+        self.enterInstanceMode()
+        self.log.debug("init mainRenderer")
+        self.ui.mainRenderer.initializeRenderer(self._installation, new_module)
+        self.ui.mainRenderer.scene.show_cursor = self.ui.cursorCheck.isChecked()
+        self.log.debug("set flatRenderer walkmeshes")
+        self.ui.flatRenderer.setWalkmeshes(walkmeshes)
+        self.ui.flatRenderer.centerCamera()
+        self.show()
+        self.activateWindow()
+        # Inherently calls On3dSceneInitialized when done.
 
     def unloadModule(self):
         self._module = None
-        self.ui.mainRenderer.scene = None
-        self.ui.mainRenderer._init = False
+        self.ui.mainRenderer.shutdownRenderer()
+        self.ui.mainRenderer._scene = None
 
     def showHelpWindow(self):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
@@ -1233,13 +1241,16 @@ class ModuleDesigner(QMainWindow):
             return None
         return menu
 
+    def on3dRendererInitialized(self):
+        self.log.debug("ModuleDesigner on3dRendererInitialized")
+        self.show()
+
     def on3dSceneInitialized(self):
         self.log.debug("ModuleDesigner on3dSceneInitialized")
         self.rebuildResourceTree()
         self.rebuildInstanceList()
         self._refreshWindowTitle()
         self.updateToggles()
-        self.show()
         self.activateWindow()
 
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
@@ -1333,9 +1344,6 @@ class ModuleDesignerControls3d:
         self.zoomCameraIn: ControlItem = ControlItem(self.settings.zoomCameraIn3dBind)
         self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
-
-        if self.renderer.scene is not None:
-            self.renderer.scene.show_cursor = self.editor.ui.cursorCheck.isChecked()
         self.renderer.freeCam = False
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 

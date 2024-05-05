@@ -19,7 +19,6 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     GL_DEPTH_TEST,
     GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA,
-    GL_TEXTURE_2D,
     glBlendFunc,
     glClear,
     glClearColor,
@@ -133,9 +132,9 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        module_id_part = "" if module is None else f" from module '{module._area_name}'"
+        module_id_part = "" if module is None else f" from module '{module._root}'"
         get_root_logger().info("Start initialize Scene%s", module_id_part)
-        glEnable(GL_TEXTURE_2D)
+
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
@@ -184,7 +183,7 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
-        module_id_part = "" if module is None else f" from module '{module._area_name}'"
+        module_id_part = "" if module is None else f" from module '{module._root}'"
         get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
@@ -682,7 +681,7 @@ class Scene:
             tpc: TPC | None = None
             # Check the textures linked to the module first
             if self.module is not None:
-                get_root_logger().debug(f"Locating {type_name} '{name}' in module '{self.module._root}'")
+                get_root_logger().info(f"Locating {type_name} '{name}' in module '{self.module._root}'")
                 module_tex = self.module.texture(name)
                 if module_tex is not None:
                     get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module._root}'")
@@ -690,7 +689,7 @@ class Scene:
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
-                get_root_logger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                get_root_logger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
                 get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)

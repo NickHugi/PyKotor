@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator
 
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -22,6 +23,13 @@ class LYT:
         self.tracks: list[LYTTrack] = []
         self.obstacles: list[LYTObstacle] = []
         self.doorhooks: list[LYTDoorHook] = []
+
+    def iter_resource_identifiers(self) -> Generator[ResourceIdentifier, Any, None]:
+        """Does not guarantee the ResourceType exists, only the resname/resref."""
+        for room in self.rooms:
+            yield ResourceIdentifier(room.model, ResourceType.MDL)
+            yield ResourceIdentifier(room.model, ResourceType.MDX)
+            yield ResourceIdentifier(room.model, ResourceType.WOK)
 
 
 class LYTRoom:

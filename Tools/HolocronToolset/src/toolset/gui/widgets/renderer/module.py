@@ -7,8 +7,8 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from qtpy import QtCore
-from qtpy.QtCore import QTimer
-from qtpy.QtWidgets import QOpenGLWidget
+from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
+from qtpy.QtWidgets import QApplication, QMessageBox, QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
@@ -16,6 +16,7 @@ from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
+from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from glm import vec3
@@ -28,7 +29,10 @@ if TYPE_CHECKING:
 
 
 class ModuleRenderer(QOpenGLWidget):
-    sceneInitalized = QtCore.Signal()
+    rendererInitialized = QtCore.Signal()
+    """Signal emitted when the context is being setup, the QMainWindow must be in an activated/unhidden state."""
+
+    sceneInitialized = QtCore.Signal()
     """Signal emitted when scene has been initialized."""
 
     mouseMoved = QtCore.Signal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
@@ -67,15 +71,14 @@ class ModuleRenderer(QOpenGLWidget):
 
         from toolset.gui.windows.module_designer import ModuleDesignerSettings  # noqa: PLC0415  # pylint: disable=C0415
 
-        self.scene: Scene | None = None
+        self._scene: Scene | None = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._module: Module | None = None
         self._installation: HTInstallation | None = None
-        self._init = False
 
         self.loopTimer = QTimer(self)
         self.loopTimer.timeout.connect(self.loop)
-        self.loopInterval = 33  # ms, approx 30 FPS
+        self.loopInterval: int = 33  # ms, approx 30 FPS
 
         self._renderTime: int = 0
         self._keysDown: set[int] = set()
@@ -87,21 +90,136 @@ class ModuleRenderer(QOpenGLWidget):
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
         self.delta: float = 0.0333
 
-    def pauseLoop(self):
+    @property
+    def scene(self) -> Scene:
+        if self._scene is None:
+            if QThread.currentThread() == QApplication.instance().thread():
+                self.showSceneNotReadyMessage()
+            else:
+                QMetaObject.invokeMethod(self, "showSceneNotReadyMessage", Qt.QueuedConnection)
+            raise ValueError("Scene is not initialized.")
+        return self._scene
+
+    def showSceneNotReadyMessage(self):
+        QMessageBox.warning(self, "Scene Not Ready", "The scene is not ready yet.")
+
+    def isReady(self) -> bool:
+        return bool(self._module and self._installation)
+
+    def initializeRenderer(self, installation: HTInstallation, module: Module):
+        get_root_logger().debug("Initialize ModuleRenderer")
+        self.shutdownRenderer()
+        self.show()
+        QApplication.processEvents()  # Force the application to process all pending events
+        self.rendererInitialized.emit()  # Tell QMainWindow to show itself, required for a gl context to be created.
+
+        # Check if the widget and its top-level window are visible
+        if not self.isVisible() or (self.window() and not self.window().isVisible()):
+            get_root_logger().error("Widget or its window is not visible; OpenGL context may not be initialized.")
+            raise RuntimeError("The OpenGL context is not available because the widget or its parent window is not visible.")
+
+        # After ensuring visibility, finally check if a context is available.
+        if not self.context():
+            get_root_logger().error("initializeGL was not called or did not complete successfully.")
+            raise RuntimeError("Failed to initialize OpenGL context. Ensure that the widget is visible and properly integrated into the application's window.")
+
+        self._installation = installation
+        self._module = module
+        self._scene = Scene(installation=installation, module=module)
+        self.scene.camera.fov = self.settings.fieldOfView
+        self.scene.camera.width = self.width()
+        self.scene.camera.height = self.height()
+        self.sceneInitialized.emit()
+        self.resumeRenderLoop()
+
+    def initializeGL(self):
+        get_root_logger().debug("ModuleRenderer.initializeGL called.")
+        super().initializeGL()
+        get_root_logger().debug("ModuleRenderer.initializeGL - opengl context setup.")
+
+    def resizeEvent(self, e: QResizeEvent):
+        get_root_logger().debug("ModuleRenderer resizeEvent called.")
+        super().resizeEvent(e)
+
+    def resizeGL(self, width: int, height: int):
+        get_root_logger().debug("ModuleRenderer resizeGL called.")
+        super().resizeGL(width, height)
+        if not self._scene:
+            get_root_logger().debug("ignoring scene camera width/height updates in ModuleRenderer resizeGL - the scene is not initialized yet.")
+            return
+        self.scene.camera.width = width
+        self.scene.camera.height = height
+
+    def resumeRenderLoop(self):
+        """Resumes the rendering loop by starting the timer."""
+        get_root_logger().debug("ModuleRenderer - resumeRenderLoop called.")
+        if not self.loopTimer.isActive():
+            self.loopTimer.start(self.loopInterval)
+        self.scene.camera.width = self.width()
+        self.scene.camera.height = self.height()
+
+    def pauseRenderLoop(self):
         """Pauses the rendering loop by stopping the timer."""
+        get_root_logger().debug("ModuleRenderer - pauseRenderLoop called.")
         if self.loopTimer.isActive():
             self.loopTimer.stop()
 
-    def resumeLoop(self):
-        """Resumes the rendering loop by starting the timer."""
-        if not self.loopTimer.isActive():
-            self.loopTimer.start(self.loopInterval)
+    def shutdownRenderer(self):
+        """Stops the rendering loop, unloads the module and installation, and attempts to destroy the OpenGL context."""
+        get_root_logger().debug("ModuleRenderer - shutdownRenderer called.")
+        self.pauseRenderLoop()
+        self._module = None
+        self._installation = None
 
-    def init(self, installation: HTInstallation, module: Module):
-        self._installation = installation
-        self._module = module
-        self._init = False
-        self.resumeLoop()
+        # Attempt to destroy the OpenGL context
+        glContext = self.context()
+        if glContext:
+            glContext.doneCurrent()  # Ensure the context is not current
+            self.update()  # Trigger an update which will indirectly handle context recreation when needed
+
+        self.hide()  # Optionally hide the widget to reset its state
+
+    def paintGL(self):
+        """Renders the scene and handles object selection.
+
+        Args:
+        ----
+            self: The viewport widget
+
+        Processing Logic:
+        ----------------
+            - Initializes painting if not already initialized
+            - Handles object selection on mouse click
+            - Sets cursor position based on mouse
+            - Renders the scene
+            - Records render time.
+        """
+        if not self.loopTimer.isActive():
+            get_root_logger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
+            return
+        if not self.isReady():
+            get_root_logger().warning("ModuleDesigner.paintGL - not initialized.")
+            return  # Do nothing if not initialized
+        #get_root_logger().debug("ModuleDesigner.paintGL called.")
+        super().paintGL()
+        start = datetime.now(tz=timezone.utc).astimezone()
+        if self.doSelect:
+            self.doSelect = False
+            obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
+
+            if obj is not None and isinstance(obj.data, GITInstance):
+                self.objectSelected.emit(obj.data)
+            else:
+                self.scene.selection.clear()
+                self.objectSelected.emit(None)
+
+        screenCursor = self.mapFromGlobal(self.cursor().pos())
+        worldCursor = self.scene.screenToWorld(screenCursor.x(), screenCursor.y())
+        if screenCursor.x() < self.width() and screenCursor.x() >= 0 and screenCursor.y() < self.height() and screenCursor.y() >= 0:
+            self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
+
+        self.scene.render()
+        self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
 
     def loop(self):
         """Repaints and checks for keyboard input on mouse press.
@@ -147,7 +265,7 @@ class ModuleRenderer(QOpenGLWidget):
         """
         face: BWMFace | None = None
         for module_resource in self._module.resources.values():
-            if module_resource.restype() != ResourceType.WOK:
+            if module_resource.restype() is not ResourceType.WOK:
                 continue
             walkmesh_resource = module_resource.resource()
             if walkmesh_resource is None:
@@ -164,59 +282,8 @@ class ModuleRenderer(QOpenGLWidget):
         z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
-    def initializeGL(self):
-        self.scene = Scene()
-
     def resetMouseButtons(self):
         self._mouseDown.clear()
-
-    def paintGL(self):
-        """Renders the scene and handles object selection.
-
-        Args:
-        ----
-            self: The viewport widget
-
-        Processing Logic:
-        ----------------
-            - Initializes painting if not already initialized
-            - Handles object selection on mouse click
-            - Sets cursor position based on mouse
-            - Renders the scene
-            - Records render time.
-        """
-        if not self.loopTimer.isActive():
-            return
-        start = datetime.now(tz=timezone.utc).astimezone()
-        if not self._init:
-            self._initialize_paintGL()
-        if self.doSelect:
-            self.doSelect = False
-            obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
-
-            if obj is not None and isinstance(obj.data, GITInstance):
-                self.objectSelected.emit(obj.data)
-            else:
-                self.scene.selection.clear()
-                self.objectSelected.emit(None)
-
-        screenCursor = self.mapFromGlobal(self.cursor().pos())
-        worldCursor = self.scene.screenToWorld(screenCursor.x(), screenCursor.y())
-        if screenCursor.x() < self.width() and screenCursor.x() >= 0 and screenCursor.y() < self.height() and screenCursor.y() >= 0:
-            self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
-
-        self.scene.render()
-        self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
-
-    def _initialize_paintGL(self):
-        self._init = True
-
-        self.scene = Scene(installation=self._installation, module=self._module)
-        self.scene.camera.fov = self.settings.fieldOfView
-        self.scene.camera.width = self.width()
-        self.scene.camera.height = self.height()
-
-        self.sceneInitalized.emit()
 
     # region Accessors
     def keysDown(self) -> set[int]:
@@ -283,15 +350,9 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
     # region Events
-    def resizeEvent(self, e: QResizeEvent):
-        super().resizeEvent(e)
-        if self.scene is None:
-            return
-
-        self.scene.camera.width = e.size().width()
-        self.scene.camera.height = e.size().height()
 
     def wheelEvent(self, e: QWheelEvent):
+        super().wheelEvent(e)
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent):
@@ -308,13 +369,12 @@ class ModuleRenderer(QOpenGLWidget):
             3. Get world position of cursor
             4. Emit signal with mouse data if time since press > threshold
         """
+        super().mouseMoveEvent(e)
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
         else:
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
-        if self.scene is None:
-            return
 
         world = self.scene.cursor.position()
         self._mousePrev = screen
@@ -322,23 +382,27 @@ class ModuleRenderer(QOpenGLWidget):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
 
     def mousePressEvent(self, e: QMouseEvent):
+        super().mousePressEvent(e)
         self._mousePressTime = datetime.now(tz=timezone.utc).astimezone()
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
     def mouseReleaseEvent(self, e: QMouseEvent):
+        super().mouseReleaseEvent(e)
         self._mouseDown.discard(e.button())
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+        super().keyPressEvent(e)
         self._keysDown.add(e.key())
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
+        super().keyReleaseEvent(e)
         self._keysDown.discard(e.key())
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)

@@ -199,7 +199,7 @@ class ModInstaller:
                 self.log.add_warning(f"This mod is patching RIM file Modules/{output_container_path.name}!\nPatching RIMs is highly incompatible, not recommended, and widely considered bad practice. Please request the mod developer to fix this.")
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
-            exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas).unpack())
+            exists = capsule.contains(*ResourceIdentifier.from_path(patch.saveas).unpack())
         else:
             create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
             exists = output_container_path.joinpath(patch.saveas).is_file()
@@ -346,7 +346,7 @@ class ModInstaller:
             self.log.add_note(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
-        if capsule is not None and not capsule.path().safe_isfile():
+        if capsule is not None and not capsule.filepath().safe_isfile():
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")  # noqa: E501
             return False
 
