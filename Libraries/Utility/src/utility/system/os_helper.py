@@ -78,6 +78,8 @@ def start_shutdown_process():
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = subprocess.SW_HIDE
+    else:
+        os.fork()
     creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
     if not is_frozen():
         subprocess.Popen(
