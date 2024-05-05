@@ -94,7 +94,7 @@ class LibUpdate:
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
         self.log = logger or get_root_logger()
 
-    def get_expected_filename(self):
+    def get_expected_filename(self) -> str:
         os_lookup_str = platform.system()
         if os_lookup_str == "Windows":
             return f"{self.filestem}.exe"
@@ -222,7 +222,7 @@ class LibUpdate:
             return False
         return True
 
-    def _download(self):
+    def _download(self) -> bool:
         if self.filestem is not None:
             if self._is_downloaded():  # pragma: no cover
                 self._download_status = True
@@ -255,19 +255,21 @@ class LibUpdate:
                         return
             self._recursive_extract(archive_path)
 
-    def _recursive_extract(self, archive_path: Path):
+    @classmethod
+    def _recursive_extract(cls, archive_path: Path):
+        log = get_root_logger()
         if not archive_path.safe_isfile():
-            self.log.debug("File does not exist")
+            log.debug("File does not exist")
             raise FileNotFoundError(errno.ENOENT, "File does not exist", str(archive_path))
         if not os.access(str(archive_path), os.R_OK):
             raise PermissionError(errno.EACCES, "Permission denied", str(archive_path))
 
-        self.log.debug(f"(recursive) Extracting '{archive_path}'...")  # noqa: G004
+        log.debug(f"(recursive) Extracting '{archive_path}'...")  # noqa: G004
         archive_ext = archive_path.suffix.lower()
         if archive_ext in {".gz", ".bz2", ".tar"}:
-            self.extract_tar(archive_path, recursive_extract=True)
+            cls.extract_tar(archive_path, recursive_extract=True)
         elif archive_ext == ".zip":
-            self.extract_zip(archive_path, recursive_extract=True)
+            cls.extract_zip(archive_path, recursive_extract=True)
         else:
             raise ValueError(f"Invalid file extension: '{archive_ext}' for archive path '{archive_path}'")
 
@@ -419,7 +421,20 @@ class AppUpdate(LibUpdate):  # pragma: no cover
         exithook: Callable | None = None,
         version_to_tag_parser: Callable | None = None,
     ):
-        super().__init__(update_urls, filestem, current_version, latest, progress_hooks, max_download_retries, downloader, http_timeout, u_strategy, r_strategy, None, version_to_tag_parser)
+        super().__init__(
+            update_urls,
+            filestem,
+            current_version,
+            latest,
+            progress_hooks,
+            max_download_retries,
+            downloader,
+            http_timeout,
+            u_strategy,
+            r_strategy,
+            None,
+            version_to_tag_parser,
+        )
         self.exithook = exithook
 
     def extract_restart(self):
@@ -495,7 +510,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,
-            exithook=self.exithook
+            exithook=self.exithook,
         )
         r.process()
 
@@ -586,7 +601,6 @@ class AppUpdate(LibUpdate):  # pragma: no cover
                     # WinError will automatically grab the relevant code and message
                     raise ctypes.WinError()
             except OSError:
-                # Failed to hide file, which is fine - we can still continue
                 self.log.info("Failed to hide file. This is fine - we can still continue", exc_info=True)
 
         if not restart:
@@ -659,6 +673,6 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             restart_strategy=self.r_strategy,
             filename=self.filestem,
             update_strategy=self.u_strategy,
-            exithook=self.exithook
+            exithook=self.exithook,
         )
         r.process()
