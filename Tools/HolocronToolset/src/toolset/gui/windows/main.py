@@ -1009,7 +1009,7 @@ class ToolWindow(QMainWindow):
             QMessageBox.Icon.Information,
             f"Your toolset version {CURRENT_VERSION} is outdated.",
             f"A new toolset {betaString}version ({greatestAvailableVersion}) available for <a href='{toolsetDownloadLink}'>download</a>.<br><br>{toolsetLatestNotes}",
-            QMessageBox.Ok | QMessageBox.Abort,
+            QMessageBox.Yes | QMessageBox.Abort,
             parent=None,
             flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
         )
