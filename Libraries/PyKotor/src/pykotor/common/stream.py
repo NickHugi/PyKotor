@@ -18,7 +18,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from types import TracebackType
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal, Self
 
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
@@ -122,7 +122,7 @@ class BinaryReader:
         path: os.PathLike | str,
         offset: int = 0,
         size: int | None = None,
-    ) -> BinaryReader:
+    ) -> Self:
         """Returns a new BinaryReader with a stream established to the specified path.
 
         Args:
@@ -147,7 +147,7 @@ class BinaryReader:
         data: bytes | memoryview | bytearray,
         offset: int = 0,
         size: int | None = None,
-    ) -> BinaryReader:
+    ) -> Self:
         """Returns a new BinaryReader with a stream established to the bytes stored in memory.
 
         Args:
@@ -169,7 +169,7 @@ class BinaryReader:
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int | None = None,
-    ) -> BinaryReader:
+    ) -> Self:
         if isinstance(source, (os.PathLike, str)):  # is path
             reader = cls.from_file(source, offset, size)
 
