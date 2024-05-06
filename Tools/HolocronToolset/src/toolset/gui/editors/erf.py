@@ -359,7 +359,7 @@ class ERFEditor(Editor):
         if failed_extractions:
             self._handle_failed_extractions(failed_extractions)
 
-    def _handle_failed_extractions(self, failed_extractions):
+    def _handle_failed_extractions(self, failed_extractions: dict[Path, Exception]):
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Icon.Critical)
         msgBox.setWindowTitle("Failed to extract files to disk.")
@@ -439,7 +439,7 @@ class ERFEditor(Editor):
                         new_path = new_path.with_stem(f"{new_path.stem} ({i})")
                 with new_path.open("wb") as file:
                     file.write(data)
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203, BLE001
                 simple_exc_str = str(universal_simplify_exception(e))
                 msg = f"ERFEditor: Failed to extract {erf_relpath}"
                 if not catch_exceptions:
