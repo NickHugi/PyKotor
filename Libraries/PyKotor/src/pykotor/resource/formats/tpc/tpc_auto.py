@@ -110,11 +110,14 @@ def read_tpc(
         raise ValueError(msg)
     if txi_source is None and isinstance(source, (os.PathLike, str)):
         txi_source = CaseAwarePath.pathify(source).with_suffix(".txi")
-
+        if not txi_source.safe_isfile():
+            return loaded_tpc
     elif isinstance(txi_source, (os.PathLike, str)):
         txi_source = CaseAwarePath.pathify(txi_source).with_suffix(".txi")
+        if not txi_source.safe_isfile():
+            return loaded_tpc
 
-    if txi_source is None or not txi_source.safe_isfile():
+    if txi_source is None:
         return loaded_tpc
     with BinaryReader.from_auto(txi_source) as f:
         loaded_tpc.txi = f.read_all().decode(encoding="ascii", errors="ignore")
