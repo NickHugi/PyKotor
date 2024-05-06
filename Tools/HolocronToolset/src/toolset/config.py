@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Fix the DLG editor node sort order. Implement Move up/down actions.",
+    "toolsetLatestBetaNotes": "Fix exporing textures in the Texture tab.<br>Fix extracting from ERFEditor<br>Fix ModelRendering bug.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
