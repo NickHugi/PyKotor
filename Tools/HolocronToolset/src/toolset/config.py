@@ -17,11 +17,11 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
     "currentVersion": "3.0.0b6",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "3.0.0b5",
+    "toolsetLatestBetaVersion": "3.0.0b6",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b5-toolset",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b6-toolset",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
