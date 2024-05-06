@@ -110,7 +110,7 @@ def is_running_from_temp() -> bool:
 
 if __name__ == "__main__":
 
-    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method which breaks the updater.
+    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
     if is_frozen():
         from utility.logger_util import get_root_logger
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
 
     from toolset.gui.windows.main import ToolWindow
 
-    profiler = False  # Set to False or None to disable profiler
+    profiler: bool | cProfile.Profile = False  # Set to False or None to disable profiler
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()
