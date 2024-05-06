@@ -115,7 +115,7 @@ class ModelRenderer(QOpenGLWidget):
         self.scene.render()
 
     def clearModel(self):
-        if self.scene is not None and "model" in self.scene.objects:
+        if self._scene is not None and "model" in self.scene.objects:
             del self.scene.objects["model"]
 
     def setModel(self, data: bytes, data_ext: bytes):
