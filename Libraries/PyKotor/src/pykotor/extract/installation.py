@@ -1476,8 +1476,11 @@ class Installation:  # noqa: PLR0904
         found_resources: set[FileResource] = set()
         gff_extensions: set[str] = GFFContent.get_extensions()
         relevant_2da_filenames: dict[str, set[str]] = {}
-        if self.game().is_k1():  # TODO: TSL:
+        from pykotor.extract.twoda import K1Columns2DA, K2Columns2DA
+        if self.game().is_k1():  # TODO(th3w1zard1): TSL:
             relevant_2da_filenames = K1Columns2DA.StrRefs.as_dict()
+        elif self.game().is_k2():
+            relevant_2da_filenames = K2Columns2DA.StrRefs.as_dict()
 
         def check_2da(resource2da: FileResource) -> bool:
             valid_2da: TwoDA | None = None
