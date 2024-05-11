@@ -346,9 +346,7 @@ class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler
         record: logging.LogRecord,
     ) -> Literal[1, 0]:
         """Check for rollover based on both size and time."""
-        time_based = TimedRotatingFileHandler.shouldRollover(self, record)
-        size_based = RotatingFileHandler.shouldRollover(self, record)
-        return time_based or size_based
+        return RotatingFileHandler.shouldRollover(self, record)
 
     def _rotate(
         self,
