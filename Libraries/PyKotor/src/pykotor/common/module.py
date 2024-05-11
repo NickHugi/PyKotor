@@ -1671,7 +1671,7 @@ class ModuleResource(Generic[T]):
             self._active = self._locations[0] if self._locations else None
         else:
             r_filepath = Path.pathify(filepath)
-            if r_filepath in self._locations:
+            if r_filepath not in self._locations:
                 self._locations.append(r_filepath)
             self._active = r_filepath
         if self._active is None:
