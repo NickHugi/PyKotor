@@ -1672,10 +1672,8 @@ class ModuleResource(Generic[T]):
         else:
             r_filepath = Path.pathify(filepath)
             if r_filepath in self._locations:
-                self._active = r_filepath
-            else:
-                msg = f"The filepath '{r_filepath}' is not being tracked as a location for the resource."
-                raise ValueError(msg)
+                self._locations.append(r_filepath)
+            self._active = r_filepath
         if self._active is None:
             get_root_logger().debug("No locations found for '%s'", self.identifier())
 
