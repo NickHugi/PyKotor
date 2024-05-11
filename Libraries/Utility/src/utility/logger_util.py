@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 import multiprocessing
 import os
+import re
 import sys
 import threading
+import time
 
-from contextlib import contextmanager
-from logging.handlers import RotatingFileHandler
+from contextlib import contextmanager, suppress
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
@@ -268,13 +271,134 @@ def get_log_directory(subdir: os.PathLike | str | None = None) -> Path:
             print(f"Failed to init cwd fallback '{cwd}' as log directory: {e2}\noriginal: {e}")
             return check(get_fallback_log_dir())
 
+def safe_isfile(path: Path):
+    with suppress(Exception):
+        return path.is_file()
+    return False
+
+def safe_isdir(path: Path):
+    with suppress(Exception):
+        return path.is_dir()
+    return False
+
+class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler):
+    """Handler for logging into daily directories with a static filename."""
+    def __init__(
+        self,
+        base_log_dir: os.PathLike | str,
+        filename: os.PathLike | str,
+        mode: str = "a",
+        maxBytes: int = 1048576,  # noqa: N803
+        when: Literal["s", "m", "h", "d", "w", "S", "M", "H", "D", "W", "W0", "W1", "W2", "W3", "W4", "W5", "W6", "w0", "w1", "w2", "w3", "w4", "w5", "w6", "MIDNIGHT", "midnight"] = "h",
+        interval: int = 1,
+        backupCount: int = 0,  # noqa: N803
+        encoding: str | None = None,
+        delay: bool = False,  # noqa: FBT001, FBT002
+        utc: bool = False,  # noqa: FBT001, FBT002
+        atTime: datetime.time | None = None,  # noqa: N803
+    ):
+        self._base_dir = Path(base_log_dir)
+        self._filename = Path(filename).name
+
+        # Initialize both Timed and Rotating handlers
+        TimedRotatingFileHandler.__init__(
+            self, filename=self.baseFilename, when=when, interval=interval,
+            backupCount=backupCount, encoding=encoding, delay=delay, utc=utc, atTime=atTime)
+        RotatingFileHandler.__init__(
+            self, filename=self.baseFilename, mode=mode, maxBytes=maxBytes,
+            backupCount=backupCount, encoding=encoding, delay=delay)
+
+        self.maxBytes: int = maxBytes
+        self.rotator = self._rotate
+
+    @property
+    def baseFilename(self) -> str:
+        if not hasattr(self, "rolloverAt"):
+            # Temporarily assign the base filename
+            return str(self._base_dir / self._filename)  # Use a direct path for initial setup
+        return str(self._get_cur_directory() / self._filename)
+
+    @baseFilename.setter
+    def baseFilename(self, value):
+        ...  # Override to do nothing
+
+    def _get_timestamp_folder_name(self):
+        """Get the time that this sequence started at and make it a TimeTuple."""
+        currentTime = int(time.time())
+        dstNow = time.localtime(currentTime)[-1]
+        t = self.rolloverAt - self.interval
+        if self.utc:
+            timeTuple = time.gmtime(t)
+        else:
+            timeTuple = time.localtime(t)
+            dstThen = timeTuple[-1]
+            if dstNow != dstThen:
+                addend = 3600 if dstNow else -3600
+                timeTuple = time.localtime(t + addend)
+        return self.rotation_filename(time.strftime(self.suffix, timeTuple))
+
+    def _get_cur_directory(self) -> Path:
+        """Generate the directory path based on the current date or interval."""
+        return get_log_directory(self._base_dir / self._get_timestamp_folder_name())
+
+    def shouldRollover(
+        self,
+        record: logging.LogRecord,
+    ) -> Literal[1, 0]:
+        """Check for rollover based on both size and time."""
+        time_based = TimedRotatingFileHandler.shouldRollover(self, record)
+        size_based = RotatingFileHandler.shouldRollover(self, record)
+        return time_based or size_based
+
+    def _rotate(
+        self,
+        source: os.PathLike | str,
+        dest: os.PathLike | str,
+    ):
+        """Custom rotate method that handles file rotation."""
+        src_path = Path(source)
+        if src_path.exists():
+            src_path.rename(Path(dest))
+
+    def doRollover(self):
+        """Perform a rollover.
+        In this version, old files are never deleted.
+        """
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+
+        current_path = Path(self.baseFilename)
+        root = current_path.stem
+        ext = current_path.suffix
+        directory = current_path.parent
+
+        # Regex to match files that follow the naming pattern 'root.number.ext'
+        pattern = re.compile(rf"^{re.escape(root)}\.(\d+){re.escape(ext)}$")
+
+        # Collect and parse existing log files to determine the next file number
+        files: list[int] = []
+        for f in directory.iterdir():
+            if not safe_isfile(f):
+                continue
+            match = pattern.match(f.name)
+            if match:
+                files.append(int(match.group(1)))
+
+        next_file_number = max(files) + 1 if files else 1
+        new_name = directory / f"{root}.{next_file_number}{ext}"
+        self.rotate(self.baseFilename, str(new_name))
+
+        if not self.delay:
+            self.stream = self._open()
+
 
 def get_root_logger(
     use_level: int = logging.DEBUG,
 ) -> logging.Logger:
     """Setup a logger with some standard features.
 
-    The goal is to have this be able to be called anywhere anytime regardless of whether a logger is setup yet.
+    The goal is to have this be callable anywhere anytime regardless of whether a logger is setup yet.
 
     Args:
     ----
@@ -292,14 +416,14 @@ def get_root_logger(
         console_format_str = "%(levelname)s(%(name)s): %(message)s"
         if cur_process.name == "MainProcess":
             log_dir = get_log_directory(subdir="logs")
-            everything_log_file = log_dir / "debug_pykotor.log"
-            info_warning_log_file = log_dir / "pykotor.log"
-            error_critical_log_file = log_dir / "errors_pykotor.log"
+            everything_log_file = "debug_pykotor.log"
+            info_warning_log_file = "pykotor.log"
+            error_critical_log_file = "errors_pykotor.log"
         else:
             log_dir = get_log_directory(subdir=f"logs/{cur_process.pid}")
-            everything_log_file = log_dir / f"debug_pykotor_{cur_process.pid}.log"
-            info_warning_log_file = log_dir / f"pykotor_{cur_process.pid}.log"
-            error_critical_log_file = log_dir / f"errors_pykotor_{cur_process.pid}.log"
+            everything_log_file = f"debug_pykotor_{cur_process.pid}.log"
+            info_warning_log_file = f"pykotor_{cur_process.pid}.log"
+            error_critical_log_file = f"errors_pykotor_{cur_process.pid}.log"
             console_format_str = f"PID={cur_process.pid} - {console_format_str}"
 
         console_handler = ColoredConsoleHandler()
@@ -312,20 +436,20 @@ def get_root_logger(
         sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
 
         # Handler for everything (DEBUG and above)
-        everything_handler = RotatingFileHandler(everything_log_file, maxBytes=1048576, backupCount=3, delay=True, encoding="utf8")
+        everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=1048576, backupCount=100000000, delay=True, encoding="utf8")
         everything_handler.setLevel(logging.DEBUG)
         everything_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(everything_handler)
 
         # Handler for INFO and WARNING
-        info_warning_handler = RotatingFileHandler(info_warning_log_file, maxBytes=1048576, backupCount=3, delay=True, encoding="utf8")
+        info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=1048576, backupCount=100000000, delay=True, encoding="utf8")
         info_warning_handler.setLevel(logging.INFO)
         info_warning_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
         logger.addHandler(info_warning_handler)
 
         # Handler for ERROR and CRITICAL
-        error_critical_handler = RotatingFileHandler(error_critical_log_file, maxBytes=1048576, backupCount=3, delay=True, encoding="utf8")
+        error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=1048576, backupCount=0, delay=True, encoding="utf8")
         error_critical_handler.setLevel(logging.ERROR)
         error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
         error_critical_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
