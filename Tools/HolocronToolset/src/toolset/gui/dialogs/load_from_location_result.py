@@ -777,8 +777,9 @@ class ResourceItems(FileItems):
 
     def on_double_click(self, *args, installation: HTInstallation):
         get_root_logger().debug(f"doubleclick args: {args} installation: {installation}")
+        first_item = next(iter(self.selectedItems()))
         self.open_selected_resource(
-            {item.resource for item in self.selectedItems()},
+            {first_item.resource},
             installation,
         )
 
