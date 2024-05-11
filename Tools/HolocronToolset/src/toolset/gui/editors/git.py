@@ -739,6 +739,7 @@ class _InstanceMode(_Mode):
             selectionWindow = FileSelectionWindow(search, self._installation)
             selectionWindow.show()
             selectionWindow.activateWindow()
+            addWindow(selectionWindow)
 
     def editSelectedInstanceGeometry(self):
         if self.walkmeshRenderer.instanceSelection.last():
