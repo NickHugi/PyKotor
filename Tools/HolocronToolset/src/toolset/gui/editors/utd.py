@@ -34,7 +34,7 @@ class UTDEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation | None = None,
+        installation: HTInstallation = None,
         *,
         mainWindow: QWidget | QObject | None = None,
     ):

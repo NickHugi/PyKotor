@@ -495,7 +495,7 @@ class ToolWindow(QMainWindow):
             self.onModuleRefresh()
         else:
             if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
-                print(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
+                get_root_logger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)

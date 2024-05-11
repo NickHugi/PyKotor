@@ -10,7 +10,7 @@ import uuid
 from contextlib import suppress
 from functools import lru_cache
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from utility.error_handling import format_exception_with_variables
 from utility.logger_util import get_root_logger
@@ -198,7 +198,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
                 self_compare = self_compare.lower()
                 other_compare = other_compare.lower()
 
-        return self_compare == other_compare
+        return cast(bool, self_compare == other_compare)
 
     def __hash__(self):
         return hash(self.as_posix() if self._flavour.sep == "/" else self.as_windows())  # type: ignore[reportAttributeAccessIssue]
