@@ -51,6 +51,10 @@
       ],
       "console": "integratedTerminal",
       "justMyCode": true,
+      "autoReload": {
+        "enable": true,
+      },
+      ""
     },
     {
       "name": "Run HoloPatcher",
