@@ -1404,7 +1404,7 @@ class ModuleDesignerControls3d:
             return  # save users from motion sickness: don't process other commands during view rotations.
 
         if self.zoomCameraMM.satisfied(buttons, keys):
-            strength = self.settings.zoomCameraSensitivity3d / 5000
+            strength = self.settings.zoomCameraSensitivity3d / 10000
             self.renderer.scene.camera.distance -= screenDelta.y * strength
 
         # Handle movement of selected instances.

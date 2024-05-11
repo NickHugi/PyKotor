@@ -429,7 +429,7 @@ class Module:  # noqa: PLR0904
         -------
             A tuple of linked capsules.
         """
-        return [cap for cap in self._capsules.values() if cap is not None]
+        return [cast(ModulePieceResource, cap) for cap in self._capsules.values() if cap is not None]
 
     def reload_resources(self):
         """Reload resources from modules, LYT/VIS and overrides.
@@ -572,11 +572,11 @@ class Module:  # noqa: PLR0904
             - Adds the locations to the existing or newly created ModuleResource
             - Does not return anything, modifies the dictionary in-place.
         """
+        if not isinstance(locations, Collection):
+            locations = list(locations)
         if not locations:
             get_root_logger().warning("No locations found for search '%s.%s'", resname, restype)
         else:
-            if not isinstance(locations, Collection):
-                locations = list(locations)
             get_root_logger().debug("Adding %s location(s) for resource '%s.%s'...", len(locations), resname, restype)
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
