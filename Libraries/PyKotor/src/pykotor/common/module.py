@@ -1658,9 +1658,7 @@ class ModuleResource(Generic[T]):
     ):
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
-        Raises:
-        ------
-            ValueError: If the filepath is not stored in the resource list of locations.
+        If the filepath is not in the stored locations, calling this method will add it.
 
         Args:
         ----
