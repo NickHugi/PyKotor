@@ -176,7 +176,6 @@ def clone_module(
             uts_res = old_module.sound(old_resname)
             assert uts_res is not None, assert_with_variable_trace(uts_res is not None, "old_module.sound() returned None in clone_module")  # noqa: S101, E501
             uts: UTS | None = uts_res.resource()
-            assert uts is not None, assert_with_variable_trace(uts is not None, "old_module.sound().resource() returned None in clone_module")  # noqa: S101, E501
 
             data = bytearray()
             write_gff(dismantle_uts(uts), data)

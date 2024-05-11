@@ -395,10 +395,14 @@ class Scene:
 
         for sound in self.git.sounds:
             if sound not in self.objects:
+                uts: UTS | None = None
                 try:
-                    uts: UTS = self.module.sound(str(sound.resref)).resource() or UTS()
+                    resource = self.module.sound(str(sound.resref))
+                    if resource is not None:
+                        uts = resource.resource()
                 except Exception as e:
                     print(format_exception_with_variables(e))
+                if uts is None:
                     uts = UTS()
 
                 obj = RenderObject(

@@ -387,7 +387,7 @@ class Installation:  # noqa: PLR0904
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return {}
 
-        self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
+        self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
         files_iter = path.safe_rglob("*") if recurse else path.safe_iterdir()
 
         resources_dict: dict[str, list[FileResource]] = {}

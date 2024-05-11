@@ -12,28 +12,33 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
+from pykotor.resource.formats.bwm.bwm_auto import write_bwm
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType
 from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
+from pykotor.resource.formats.lyt.lyt_auto import write_lyt
+from pykotor.resource.formats.ncs.ncs_auto import write_ncs
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
+from pykotor.resource.formats.tpc.tpc_auto import write_tpc
 from pykotor.resource.formats.vis import bytes_vis, read_vis
-from pykotor.resource.generics.are import bytes_are, read_are
-from pykotor.resource.generics.dlg import bytes_dlg, read_dlg
-from pykotor.resource.generics.git import bytes_git, read_git
-from pykotor.resource.generics.ifo import IFO, bytes_ifo, read_ifo
-from pykotor.resource.generics.pth import bytes_pth, read_pth
-from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc
-from pykotor.resource.generics.utd import UTD, bytes_utd, read_utd
-from pykotor.resource.generics.ute import UTE, bytes_ute, read_ute
-from pykotor.resource.generics.uti import bytes_uti, read_uti
-from pykotor.resource.generics.utm import UTM, bytes_utm, read_utm
-from pykotor.resource.generics.utp import UTP, bytes_utp, read_utp
-from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
-from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
-from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.vis.vis_auto import write_vis
+from pykotor.resource.generics.are import bytes_are, read_are, write_are
+from pykotor.resource.generics.dlg import bytes_dlg, read_dlg, write_dlg
+from pykotor.resource.generics.git import bytes_git, read_git, write_git
+from pykotor.resource.generics.ifo import IFO, bytes_ifo, read_ifo, write_ifo
+from pykotor.resource.generics.pth import bytes_pth, read_pth, write_pth
+from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc, write_utc
+from pykotor.resource.generics.utd import UTD, bytes_utd, read_utd, write_utd
+from pykotor.resource.generics.ute import UTE, bytes_ute, read_ute, write_ute
+from pykotor.resource.generics.uti import bytes_uti, read_uti, write_uti
+from pykotor.resource.generics.utm import UTM, bytes_utm, read_utm, write_utm
+from pykotor.resource.generics.utp import UTP, bytes_utp, read_utp, write_utp
+from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts, write_uts
+from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt, write_utt
+from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw, write_utw
+from pykotor.resource.type import TARGET_TYPES, ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath
@@ -389,7 +394,7 @@ class Module:  # noqa: PLR0904
             return self._cached_mod_id
         data_capsule = self.lookup_main_capsule()
         found_id = data_capsule.module_id()
-        get_root_logger().debug("Found fallback '%s' for module '%s'", found_id, data_capsule.filename())
+        get_root_logger().debug("Found module id '%s' for module '%s'", found_id, data_capsule.filename())
         self._cached_mod_id = found_id
         return found_id
 
@@ -1465,7 +1470,7 @@ class ModuleResource(Generic[T]):
         print(f"Could not find a localized name for a ModuleResource typed {type(res).__name__}")
         return None
 
-    def data(self) -> bytes:
+    def data(self) -> bytes | None:
         """Opens the file at the active location and returns the data.
 
         Raises:
@@ -1477,15 +1482,18 @@ class ModuleResource(Generic[T]):
             The bytes data of the active file.
         """
         file_name: str = f"{self._resname}.{self._restype.extension}"
+        active_path = self.active()
+        if active_path is None:
+            return None
 
-        if is_capsule_file(self.active()):
-            data: bytes | None = Capsule(self.active()).resource(self._resname, self._restype)
+        if is_capsule_file(active_path):
+            data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
             if data is None:
-                msg = f"Resource '{file_name}' not found in '{self.active()}'"
+                msg = f"Resource '{file_name}' not found in '{active_path}'"
                 raise ValueError(msg)
             return data
 
-        if is_bif_file(self.active()):
+        if is_bif_file(active_path):
             resource: ResourceResult | None = self._installation.resource(
                 self._resname,
                 self._restype,
@@ -1496,17 +1504,17 @@ class ModuleResource(Generic[T]):
                 raise ValueError(msg)
             return resource.data
 
-        return BinaryReader.load_file(self.active())
+        return BinaryReader.load_file(active_path)
 
-    def resource(self) -> T:
+    def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns:
         -------
             The resource object.
 
-        Raises:
-            ValueError - resource not found somewhere
+        Returns:
+            The abstracted resource, or None if not found.
         """
         if self._resource_obj is None:
             conversions: dict[ResourceType, Callable[[SOURCE_TYPES], Any]] = {
@@ -1531,30 +1539,62 @@ class ModuleResource(Generic[T]):
                 ResourceType.VIS: read_vis,
                 ResourceType.WOK: read_bwm,
             }
+            active_path = self.active()
+            if active_path is None:
+                return None
 
-            if is_capsule_file(self.active().name):
-                data: bytes | None = Capsule(self.active()).resource(self._resname, self._restype)
+            if is_capsule_file(active_path):
+                data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
                 if data is None:
-                    msg = f"Resource '{self._identifier}' not found in '{self.active()}'"
+                    msg = f"Resource '{self._identifier}' not found in '{active_path}'"
                     raise ValueError(msg)
                 self._resource_obj = conversions[self._restype](data)
 
-            elif is_bif_file(self.active().name):
+            elif is_bif_file(active_path):
                 resource: ResourceResult | None = self._installation.resource(
                     self._resname,
                     self._restype,
                     [SearchLocation.CHITIN],
                 )
                 if resource is None:
-                    msg = f"Resource '{self._identifier}' not found in '{self.active()}'"
+                    msg = f"Resource '{self._identifier}' not found in '{active_path}'"
                     raise ValueError(msg)
                 self._resource_obj = conversions[self._restype](resource.data)
 
             else:
-                data = BinaryReader.load_file(self.active())
+                data = BinaryReader.load_file(active_path)
                 self._resource_obj = conversions[self._restype](data)
 
         return self._resource_obj
+
+    def to_bytes(self) -> bytes | None:
+        if self._resource_obj is None:
+            return None
+        conversions: dict[ResourceType, Callable[[Any, TARGET_TYPES], Any]] = {
+            ResourceType.ARE: write_are,
+            ResourceType.DLG: write_dlg,
+            ResourceType.GIT: write_git,
+            ResourceType.IFO: write_ifo,
+            ResourceType.LYT: write_lyt,
+            ResourceType.NCS: write_ncs,
+            ResourceType.PTH: write_pth,
+            ResourceType.TPC: write_tpc,
+            ResourceType.TGA: write_tpc,
+            ResourceType.UTD: write_utd,
+            ResourceType.UTE: write_ute,
+            ResourceType.UTI: write_uti,
+            ResourceType.UTM: write_utm,
+            ResourceType.UTP: write_utp,
+            ResourceType.UTS: write_uts,
+            ResourceType.UTT: write_utt,
+            ResourceType.UTW: write_utw,
+            ResourceType.UTC: write_utc,
+            ResourceType.VIS: write_vis,
+            ResourceType.WOK: write_bwm,
+        }
+        result: bytearray = bytearray()
+        conversions[self._restype](self._resource_obj, result)
+        return bytes(result)
 
     def add_locations(self, filepaths: Iterable[Path]):
         """Adds a list of filepaths to the list of locations stored for the resource.
@@ -1648,7 +1688,7 @@ class ModuleResource(Generic[T]):
         self._resource_obj = None
         self.resource()
 
-    def active(self) -> Path:
+    def active(self) -> Path | None:
         """Returns the filepath of the currently active file for the resource.
 
         Returns:
@@ -1656,7 +1696,12 @@ class ModuleResource(Generic[T]):
             Filepath to the active resource.
         """
         if self._active is None:
-            raise RuntimeError(f"{self!r}.activate(filepath) must be called before use.")
+            next_path = next(iter(self._locations), None)
+            if next_path is None:
+                get_root_logger().warning("No resource found for '%s'", self._identifier)
+                return None
+            self.activate()
+            #raise RuntimeError(f"{self!r}.activate(filepath) must be called before use.")
         return self._active
 
     def isActive(self) -> bool:
@@ -1704,27 +1749,37 @@ class ModuleResource(Generic[T]):
             ResourceType.WOK: bytes_bwm,
         }
 
-        if is_bif_file(self.active().name):
+        active_path = self.active()
+        if not active_path:
+            bytedata = self.to_bytes()
+            if bytedata is not None:
+                get_root_logger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
+                active_path = self._installation.override_path().joinpath(self.filename())
+                with active_path.open("wb") as f:
+                    f.write(bytedata)
+                self.activate(active_path)
+
+        if is_bif_file(active_path.name):
             msg = "Cannot save file to BIF."
             raise ValueError(msg)
 
-        if is_any_erf_type_file(self.active().name):
-            erf: ERF = read_erf(self.active())
+        if is_any_erf_type_file(active_path.name):
+            erf: ERF = read_erf(active_path)
             erf.set_data(
                 self._resname,
                 self._restype,
                 conversions[self._restype](self.resource()),
             )
-            write_erf(erf, self.active())
+            write_erf(erf, active_path)
 
-        elif is_rim_file(self.active().name):
-            rim: RIM = read_rim(self.active())
+        elif is_rim_file(active_path.name):
+            rim: RIM = read_rim(active_path)
             rim.set_data(
                 self._resname,
                 self._restype,
                 conversions[self._restype](self.resource()),
             )
-            write_rim(rim, self.active())
+            write_rim(rim, active_path)
 
         else:
-            BinaryWriter.dump(self.active(), conversions[self._restype](self.resource()))
+            BinaryWriter.dump(active_path, conversions[self._restype](self.resource()))

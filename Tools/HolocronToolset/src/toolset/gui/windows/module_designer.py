@@ -624,12 +624,15 @@ class ModuleDesigner(QMainWindow):
             - Filter instances based on visible type mappings
             - Add each instance to the list with icon, text, tooltips from the instance data.
         """
+        self.log.debug("rebuildInstanceList called.")
         self.ui.instanceList.clear()
         self.ui.instanceList.setEnabled(True)
+        self.ui.instanceList.setVisible(True)
 
         # Only build if module is loaded
         if self._module is None:
             self.ui.instanceList.setEnabled(False)
+            self.ui.instanceList.setVisible(False)
             return
 
         visibleMapping = {
@@ -681,21 +684,26 @@ class ModuleDesigner(QMainWindow):
                 resname: str = this_ident.resname
                 name: str = resname
                 tag: str = ""
-                are_module_resource: ModuleResource[ARE] | None = self._module.resource(this_ident.resname, this_ident.restype)
+                module_resource: ModuleResource[ARE] | None = self._module.resource(this_ident.resname, this_ident.restype)
+                if module_resource is None:
+                    continue
+                abstracted_resource = module_resource.resource()
+                if abstracted_resource is None:
+                    continue
 
-                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and are_module_resource):
+                if isinstance(instance, GITDoor) or (isinstance(instance, GITTrigger) and module_resource):
                     # Tag is stored in the GIT
-                    name = are_module_resource.localized_name() or resname
+                    name = module_resource.localized_name() or resname
                     tag = instance.tag
                 elif isinstance(instance, GITWaypoint):
                     # Name and tag are stored in the GIT
                     name = self._installation.string(instance.name)
                     tag = instance.tag
-                elif are_module_resource:
-                    name = are_module_resource.localized_name() or resname
-                    tag = are_module_resource.resource().tag
+                elif module_resource:
+                    name = module_resource.localized_name() or resname
+                    tag = abstracted_resource.tag
 
-                if are_module_resource is None:
+                if module_resource is None:
                     font.setItalic(True)
 
                 item.setText(name)
@@ -1204,7 +1212,7 @@ class ModuleDesigner(QMainWindow):
         *,
         isFlatRendererCall: bool | None = None,
         getMenu: bool | None = None,
-    ):  # sourcery skip: extract-method
+    ) -> QMenu | None:  # sourcery skip: extract-method
         """Checks if a context menu selection exists.
 
         Args:
@@ -1219,7 +1227,7 @@ class ModuleDesigner(QMainWindow):
             - Pops up the context menu at the mouse cursor position
             - Resets mouse buttons when menu closes.
         """
-        print(f"onContextMenuSelectionExists(isFlatRendererCall={isFlatRendererCall})")
+        print(f"onContextMenuSelectionExists(isFlatRendererCall={isFlatRendererCall}, getMenu={getMenu})")
         menu = QMenu(self)
 
         if self.selectedInstances:
@@ -1775,6 +1783,7 @@ class ModuleDesignerControls2d:
                 self.editor.setSelection([])
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
+            get_root_logger().debug(f"duplicateInstance 2d ({self.editor.selectedInstances[-1]!r})")
             self._duplicate_instance()  # TODO: undo/redo support
         if self.openContextMenu.satisfied(buttons, keys):
             world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
