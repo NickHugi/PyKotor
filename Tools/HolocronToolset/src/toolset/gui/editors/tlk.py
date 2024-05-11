@@ -235,10 +235,10 @@ class TLKEditor(Editor):
         menu.addAction(findAction)
 
         # Add more actions as needed
-        otherAction = QAction("Other Action", self)
+        #otherAction = QAction("Other Action", self)
         # Connect otherAction to its slot here
 
-        menu.addAction(otherAction)
+        #menu.addAction(otherAction)
 
         # Show the menu at the current position
         menu.exec_(self.ui.talkTable.viewport().mapToGlobal(position))
