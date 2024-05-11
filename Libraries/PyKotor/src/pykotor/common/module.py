@@ -1673,7 +1673,7 @@ class ModuleResource(Generic[T]):
                 self._locations.append(r_filepath)
             self._active = r_filepath
         if self._active is None:
-            get_root_logger().debug("No locations found for '%s'", self.identifier())
+            get_root_logger().warning("No locations found for '%s'", self.identifier())
 
     def unload(self):
         """Clears the cached resource object from memory."""
