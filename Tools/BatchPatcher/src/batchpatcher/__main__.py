@@ -1007,7 +1007,8 @@ def find_unused_textures(k_install: Installation, all_layouts: list[FileResource
 
 def patch_install(install_path: os.PathLike | str):
     log_output()
-    log_output_with_separator(f"Install dir:\t{install_path}", above=True)
+    log_output_with_separator(f"Using install dir for operations:\t{install_path}", above=True)
+    log_output("Note: Logging to this UI is extremely slow, this app will mostly use the .log files instead. Don't panic if there's no output on screen.")
     log_output()
 
     k_install = Installation(install_path)
