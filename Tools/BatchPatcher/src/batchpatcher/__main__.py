@@ -970,19 +970,19 @@ def find_unused_textures(k_install: Installation, all_layouts: list[FileResource
     log_output(f"Found {len(all_used_models)} total models to check for texture references.")
     texture_lookups: dict[FileResource, list[str]] = {}
     for model_resource in all_used_models:
-        print(f"First pass of '{model_resource._path_ident_obj}'")
+        print(f"Finding textures in '{model_resource._path_ident_obj}'")
         texture_names: list[str] = []
         try:
             for texture_name in list_textures(model_resource.data()):
                 texture_names.append(texture_name)
         except Exception as e:
             log_output(f"Error listing textures in '{model_resource._path_ident_obj}': {type(e).__name__}: {e}")
+        print(f"Finding lightmaps in '{model_resource._path_ident_obj}'")
         try:
             for lightmap_name in list_lightmaps(model_resource.data()):
                 texture_names.append(lightmap_name)
         except Exception as e:
             log_output(f"Error listing lightmaps in '{model_resource._path_ident_obj}': {type(e).__name__}: {e}")
-        print(f"Enumerated {len(texture_names)} total lightmaps/textures from {model_resource.filename()}")
         texture_lookups[model_resource] = texture_names
     for model_resource, texture_list in texture_lookups.items():
         print(f"Second pass of '{model_resource._path_ident_obj}'")
@@ -1061,7 +1061,7 @@ def patch_install(install_path: os.PathLike | str):
             if SCRIPT_GLOBALS.is_patching():
                 patch_and_save_noncapsule(resource)
             if (
-                SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
+                SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl")
             ):
                 check_model(resource, k_install)
 
@@ -1071,7 +1071,7 @@ def patch_install(install_path: os.PathLike | str):
         if SCRIPT_GLOBALS.fix_dialog_skipping or SCRIPT_GLOBALS.translate or SCRIPT_GLOBALS.set_unskippable:
             patch_and_save_noncapsule(resource, savedir=override_path)
         if (
-            SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
+            SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl")
         ):
             check_model(resource, k_install)
 
