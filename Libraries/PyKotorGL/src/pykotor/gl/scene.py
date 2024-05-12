@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import math
 
 from copy import copy
+import threading
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
@@ -31,7 +33,7 @@ from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
-from pykotor.common.module import Module
+from pykotor.common.module import Module, ModulePieceResource
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
@@ -146,6 +148,11 @@ class Scene:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
+        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.texture_data_futures = {}
+        self.textures_data_queue: dict[str, tuple[TPC | None, bool]] = {}  # This will hold the texture data loaded in the background
+        self.textures_data_lock: threading.Lock = threading.Lock()
+
         self.installation: Installation | None = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
@@ -154,6 +161,8 @@ class Scene:
         self._module: Module | None = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
+        self.blank_texture: Texture | None = None
+        self.blank_lightmap: Texture | None = None
 
         self.textures["NULL"] = Texture.from_color()
 
@@ -190,7 +199,7 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
-        module_id_part = "" if module is None else f" from module '{module._root}'"
+        module_id_part = "" if module is None else f" from module '{module.root()}'"
         get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
@@ -406,13 +415,13 @@ class Scene:
 
         for door in self.git.doors:
             if door not in self.objects:
+                model_name = "unknown"  # If failed to load door models, use an empty model instead
                 try:
                     utd = self._resource_from_gitinstance(door, self._module.door)
                     if utd is not None:
                         model_name: str = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 except Exception:  # noqa: BLE001
                     get_root_logger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
-                    model_name = "unknown"  # If failed to load door models, use an empty model instead
                 if utd is None:
                     utd = UTD()
 
@@ -423,13 +432,13 @@ class Scene:
 
         for placeable in self.git.placeables:
             if placeable not in self.objects:
+                model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
                 try:
                     utp = self._resource_from_gitinstance(placeable, self._module.placeable)
                     if utp is not None:
                         model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 except Exception:  # noqa: BLE001
                     get_root_logger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
-                    model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
                 if utp is None:
                     utp = UTP()
 
@@ -566,9 +575,14 @@ class Scene:
             - Render non-selected boundaries
             - Render cursor if shown.
         """
-        #module_id_part = "" if self.module is None else f" from module '{self.module._id}'"
+        if self.blank_texture is None:
+            self.blank_texture = Texture.from_color(255, 0, 255)
+        if self.blank_lightmap is None:
+            self.blank_lightmap = Texture.from_color(0,0,0)
+        #module_id_part = "" if self._module is None else f" from module '{self.module._id}'"
         #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
+        self.update_textures()  # Ensure newly loaded textures are created
 
         self._prepare_gl_and_shader()
         self.shader.set_bool("enableLightmap", self.use_lightmap)
@@ -611,6 +625,23 @@ class Scene:
         if self.show_cursor:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
+
+    def update_textures(self):
+        """Create OpenGL textures from data loaded in background."""
+        with self.textures_data_lock:
+            for name, result in list(self.textures_data_queue.items()):
+                if result is None:  # still processing...
+                    continue
+                tpc, is_lightmap = result
+                if name in self.textures:
+                    continue  # Skip if already created
+                if tpc is None:
+                    if self.blank_lightmap is None or self.blank_texture is None:
+                        return
+                    self.textures[name] = self.blank_lightmap if is_lightmap else self.blank_texture
+                else:
+                    self.textures[name] = Texture.from_tpc(tpc)
+                del self.textures_data_queue[name]
 
     def should_hide_obj(self, obj: RenderObject) -> bool:
         result = False
@@ -685,7 +716,7 @@ class Scene:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
         instances = list(self.objects.values())
-        return instances[pixel] if pixel != 0xFFFFFF else None
+        return instances[pixel] if pixel != 0xFFFFFF else None  # noqa: PLR2004
 
     def select(
         self,
@@ -735,23 +766,38 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def texture(
+    def loadTexture(
         self,
         name: str,
         *,
         lightmap: bool = False,
-    ) -> Texture:
+    ):
+        """Load texture data asynchronously."""
         if name in self.textures:
             return self.textures[name]
+        self.executor.submit(self.fetch_texture_data, name, lightmap=lightmap)
+        return self.blank_lightmap if lightmap else self.blank_texture
+
+    def fetch_texture_data(
+        self,
+        name: str,
+        *,
+        lightmap: bool = False,
+    ):
+        """This function runs in a background thread and handles the I/O and processing to get the texture data."""
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return
+            self.textures_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
         type_name = "lightmap" if lightmap else "texture"
         try:
             tpc: TPC | None = None
             # Check the textures linked to the module first
-            if self.module is not None:
-                get_root_logger().info(f"Locating {type_name} '{name}' in module '{self.module._root}'")
+            if self._module is not None:
+                get_root_logger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
                 module_tex = self.module.texture(name)
                 if module_tex is not None:
-                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module._root}'")
+                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
                     tpc = module_tex.resource()
 
             # Otherwise just search through all relevant game files
@@ -765,9 +811,8 @@ class Scene:
             # If an error occurs during the loading process, just use a blank image.
             tpc = TPC()
 
-        blank_texture = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(0xFF, 0, 0xFF)
-        self.textures[name] = blank_texture if tpc is None else Texture.from_tpc(tpc)
-        return self.textures[name]
+        with self.textures_data_lock:
+            self.textures_data_queue[name] = (tpc or TPC(), lightmap)  # Using a dummy TPC class
 
     def model(self, name: str) -> Model:
         mdl_data = EMPTY_MDL_DATA
@@ -805,7 +850,7 @@ class Scene:
                 mdl_data = UNKNOWN_MDL_DATA
                 mdx_data = UNKNOWN_MDX_DATA
             elif self.installation is not None:
-                capsules: list[Capsule] = [] if self.module is None else self.module.capsules()
+                capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
                 mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
                 if mdl_search is not None and mdx_search is not None:
@@ -828,7 +873,7 @@ class Scene:
         return self.models[name]
 
     def jump_to_entry_location(self):
-        if self.module is None:
+        if self._module is None:
             self.camera.x = 0
             self.camera.y = 0
             self.camera.z = 0

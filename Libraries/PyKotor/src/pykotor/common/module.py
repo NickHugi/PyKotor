@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 
     from pykotor.common.language import LocalizedString
     from pykotor.common.misc import Game, ResRef
-    from pykotor.extract.file import LocationResult, ResourceResult
+    from pykotor.extract.file import FileResource, LocationResult, ResourceResult
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.erf.erf_data import ERF
     from pykotor.resource.formats.gff.gff_data import GFF
@@ -197,6 +197,7 @@ class ModulePieceResource(Capsule):
     ):
         path_obj = CaseAwarePath.pathify(path)
         self.piece_info: ModulePieceInfo = ModulePieceInfo.from_filename(path_obj.name)
+        self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1)
         super().__init__(path_obj, *args, **kwargs)
 
 
