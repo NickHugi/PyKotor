@@ -4,7 +4,7 @@ import math
 
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Generator, NoReturn
+from typing import TYPE_CHECKING, Any, Generator, List, NoReturn, cast
 
 from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -96,19 +96,20 @@ class GIT:
         -------
             A list of all stored instances.
         """
-        instances: list[GITInstance] = []
-        # We could just add these all together rather than using the extend method, but then PyCharms would get cranky
-        # about the type hints...
-        instances.extend(self.cameras)
-        instances.extend(self.creatures)
-        instances.extend(self.doors)
-        instances.extend(self.encounters)
-        instances.extend(self.placeables)
-        instances.extend(self.sounds)
-        instances.extend(self.stores)
-        instances.extend(self.triggers)
-        instances.extend(self.waypoints)
-        return instances
+        return cast(
+            List[GITInstance],
+            [
+                *self.cameras,
+                *self.creatures,
+                *self.doors,
+                *self.encounters,
+                *self.placeables,
+                *self.sounds,
+                *self.stores,
+                *self.triggers,
+                *self.waypoints,
+            ]
+        )
 
     def remove(
         self,
