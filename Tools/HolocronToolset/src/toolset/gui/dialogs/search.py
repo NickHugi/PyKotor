@@ -158,58 +158,7 @@ class FileSearcher(QDialog):
                 results.append(resource)
             if query.filenamesOnly:
                 return
-
-            if resource.restype() is ResourceType.TwoDA:
-                for row in read_2da(resource.data()):
-                    findIn0 = row.label() if query.caseSensitive else row.label().lower()
-                    if searchText in findIn0:
-                        results.append(resource)
-                        return
-                    for k, v in row._data.items():
-                        findInKey = k if query.caseSensitive else k.lower()
-                        findInValue = v if query.caseSensitive else v.lower()
-                        if searchText in findInKey or searchText in findInValue:
-                            results.append(resource)
-                            return
-                return
-            if (
-                resource.restype().extension.lower() in GFFContent.get_extensions()
-                or resource.restype().contents == "gff"
-            ):
-
-                def recurse_gff(gff_struct: GFFStruct) -> bool:
-                    for label, ftype, value in gff_struct:
-                        findIn1 = label if query.caseSensitive else label.lower()
-                        if searchText in findIn1:
-                            return True
-                        if ftype is GFFFieldType.Struct:
-                            if recurse_gff(value):
-                                return True
-                        elif ftype is GFFFieldType.List:
-                            assert isinstance(value, GFFList)
-                            for struct in value._structs:
-                                if recurse_gff(struct):
-                                    return True
-                        elif isinstance(value, (str, ResRef)):
-                            findIn2 = str(value) if query.caseSensitive else str(value).lower()
-                            if searchText in findIn2:
-                                return True
-                        elif isinstance(value, LocalizedString):
-                            for substring in value._substrings.values():
-                                findIn3 = substring if query.caseSensitive else substring.lower()
-                                if searchText in findIn3:
-                                    return True
-                    return False
-                if recurse_gff(read_gff(resource.data()).root):
-                    results.append(resource)
-                return
-            if resource.restype().contents == "plaintext":
-                ascii_text = resource.data().decode(encoding="windows-1252", errors="ignore")
-                if searchText in (ascii_text if query.caseSensitive else ascii_text.lower()):
-                    results.append(resource)
-                return
-
-            resource_data: str = resource.data().decode(encoding="windows-1252", errors="ignore")  # HACK:
+            resource_data: str = resource.data().decode(encoding="ascii", errors="ignore")  # HACK:
             if searchText in (resource_data if query.caseSensitive else resource_data.lower()):
                 results.append(resource)
 
