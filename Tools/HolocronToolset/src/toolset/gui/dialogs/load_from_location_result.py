@@ -777,9 +777,10 @@ class ResourceItems(FileItems):
 
     def on_double_click(self, *args, installation: HTInstallation):
         get_root_logger().debug(f"doubleclick args: {args} installation: {installation}")
-        first_item = next(iter(self.selectedItems()))
+        #first_item = next(iter(self.selectedItems()))
+        selected = {res.resource for res in self.selectedItems()}
         self.open_selected_resource(
-            {first_item.resource},
+            selected,
             installation,
         )
 
@@ -821,7 +822,7 @@ class CustomTableWidget(CustomItem, QTableWidget):
 class FileTableWidget(FileItems, CustomTableWidget): ...
 class ResourceTableWidget(FileTableWidget, ResourceItems):
     def selectedItems(self) -> list[ResourceTableWidgetItem]:
-        return super().selectedItems()
+        return QTableWidget.selectedItems(self)
 
 
 class FileSelectionWindow(QMainWindow):
