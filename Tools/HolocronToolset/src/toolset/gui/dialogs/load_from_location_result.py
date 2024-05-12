@@ -313,9 +313,9 @@ class CustomItem:
 
 
 class FileItems(CustomItem):
-    def __init__(self, *args, filepaths: list[Path], **kwargs):
+    def __init__(self, *args, filepaths: list[Path] | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.filepaths: list[Path] = []
+        self.filepaths: list[Path] = [] if filepaths is None else filepaths
         self.temp_path: Path | None = None
 
     def selectedItems(self) -> list[FileTableWidgetItem]:
