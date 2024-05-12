@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
-SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
+BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
+SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
@@ -250,6 +251,10 @@ class ResourceType(Enum):
         self.contents: str = contents
         self.is_invalid: bool = is_invalid
         self.target_member: str | None = target_member
+
+    def is_gff(self) -> bool:
+        """Returns True if this resourcetype is a gff, excluding the xml/json abstractions, False otherwise."""
+        return self.contents == "gff"
 
     def target_type(self):
         return self if self.target_member is None else self.__class__.__members__[self.target_member]
