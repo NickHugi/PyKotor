@@ -56,7 +56,7 @@ class LazyCapsule(FileResource):
         if create_nonexisting and not c_filepath.safe_isfile():
             if is_rim_file(c_filepath):
                 write_rim(RIM(), c_filepath)
-            elif is_any_erf_type_file(self._filepath):
+            elif is_any_erf_type_file(c_filepath):
                 write_erf(ERF(ERFType.from_extension(c_filepath.suffix)), c_filepath)
         super().__init__(*ident.unpack(), c_filepath.stat().st_size, 0x0, c_filepath)
 
@@ -237,13 +237,13 @@ class LazyCapsule(FileResource):
 
         Args:
         ----
-            resname: Name of the resource to add in one line.
-            restype: Type of the resource to add in one line.
-            resdata: Data of the resource to add in one line.
+            resname: Name of the resource to add.
+            restype: Type of the resource to add.
+            resdata: Data of the resource to add.
 
         Returns:
         -------
-            None: No value is returned in one line.
+            None: No value is returned.
 
         Processing Logic:
         ----------------
@@ -252,22 +252,88 @@ class LazyCapsule(FileResource):
             - Calls set_data to add the resource
             - Writes the container back to the file.
         """
-        container: RIM | ERF
-        if is_rim_file(self._filepath.name):
-            container = RIM()
+        def _add_to(container: RIM | ERF):
             container.set_data(resname, restype, resdata)
             for resource in self.resources():
                 container.set_data(resource.resname(), resource.restype(), resource.data())
+            self._hash_task_running = True
+            self._file_hash = ""
+            self._hash_task_running = False
+
+        if is_rim_file(self._filepath.name):
+            container = RIM()
+            _add_to(container)
             write_rim(container, self._filepath)
         elif is_any_erf_type_file(self._filepath.name):
             container = ERF(ERFType.from_extension(self._filepath))
-            container.set_data(resname, restype, resdata)
-            for resource in self.resources():
-                container.set_data(resource.resname(), resource.restype(), resource.data())
+            _add_to(container)
             write_erf(container, self._filepath)
         else:
             msg = f"File '{self._filepath}' is not a ERF/MOD/SAV/RIM capsule."
             raise NotImplementedError(msg)
+
+    def delete(
+        self,
+        resname: str,
+        restype: ResourceType,
+    ):
+        """Removes a resource from the capsule and writes the updated capsule to the disk.
+
+        Args:
+        ----
+            resname: Name of the resource to add.
+            restype: Type of the resource to add.
+
+        Returns:
+        -------
+            None: No value is returned.
+
+        Processing Logic:
+        ----------------
+            - Checks if the file is RIM or a type of ERF
+            - Reads the file as appropriate container
+            - Calls ERF.remove or RIM.remove
+            - Writes the container back to the file.
+        """
+        def _remove_from(container: RIM | ERF):
+            for resource in self.resources():
+                if resource.resname().lower() == resname.lower() and resource.restype() is restype:
+                    continue
+                container.set_data(resource.resname(), resource.restype(), resource.data())
+            self._hash_task_running = True
+            self._file_hash = ""
+            self._hash_task_running = False
+
+        if is_rim_file(self._filepath.name):
+            container = RIM()
+            _remove_from(container)
+            write_rim(container, self._filepath)
+        elif is_any_erf_type_file(self._filepath.name):
+            container = ERF(ERFType.from_extension(self._filepath))
+            _remove_from(container)
+            write_erf(container, self._filepath)
+        else:
+            msg = f"File '{self._filepath}' is not a ERF/MOD/SAV/RIM capsule."
+            raise NotImplementedError(msg)
+
+    def as_cached_erf(self, erf_type: ERFType | None = None) -> ERF:
+        erf: ERF = ERF() if erf_type is None else ERF(ERFType(erf_type))
+        for resource in self.resources():
+            erf.set_data(resource.resname(), resource.restype(), resource.data())
+        return erf
+
+    def as_cached_rim(self) -> RIM:
+        rim: RIM = RIM()
+        for resource in self.resources():
+            rim.set_data(resource.resname(), resource.restype(), resource.data())
+        return rim
+
+    def as_cached(self) -> ERF | RIM:
+        return (
+            self.as_cached_erf()
+            if is_any_erf_type_file(self._filepath)
+            else self.as_cached_rim()
+        )
 
     def _load_erf(
         self,
@@ -521,7 +587,6 @@ class Capsule(LazyCapsule):
     def reload(
         self,
     ):
-        # nothing to reload if capsule doesn't exist on disk (from_file will error if not existing)
         """Reload the list of resource info linked from the module file.
 
         Args:
