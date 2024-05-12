@@ -434,20 +434,20 @@ def get_root_logger(
         sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
 
         # Handler for everything (DEBUG and above)
-        everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=1048576, backupCount=100000000, delay=True, encoding="utf8")
+        everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
         everything_handler.setLevel(logging.DEBUG)
         everything_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         logger.addHandler(everything_handler)
 
         # Handler for INFO and WARNING
-        info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=1048576, backupCount=100000000, delay=True, encoding="utf8")
+        info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
         info_warning_handler.setLevel(logging.INFO)
         info_warning_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
         info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
         logger.addHandler(info_warning_handler)
 
         # Handler for ERROR and CRITICAL
-        error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=1048576, backupCount=0, delay=True, encoding="utf8")
+        error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
         error_critical_handler.setLevel(logging.ERROR)
         error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
         error_critical_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
