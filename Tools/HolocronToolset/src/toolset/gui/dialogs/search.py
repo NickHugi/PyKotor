@@ -8,12 +8,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QListWidgetItem
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef
 from pykotor.extract.file import FileResource
-from pykotor.resource.formats.gff.gff_auto import read_gff
-from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList
-from pykotor.resource.formats.twoda.twoda_auto import read_2da
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
@@ -22,7 +17,6 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 
 @dataclass
