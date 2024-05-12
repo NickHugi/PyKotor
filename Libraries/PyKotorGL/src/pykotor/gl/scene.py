@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from copy import copy
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
 
@@ -31,7 +31,9 @@ from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
+from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.gl.models.mdl import Boundary, Cube, Empty
 from pykotor.gl.models.predefined_mdl import (
@@ -68,9 +70,11 @@ from pykotor.gl.shader import (
     Texture,
 )
 from pykotor.resource.formats.lyt import LYTRoom
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.generics.git import (
+    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
@@ -82,10 +86,11 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
+from pykotor.resource.generics.utd import UTD
+from pykotor.resource.generics.utp import UTP
 from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
-from utility.error_handling import format_exception_with_variables
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
@@ -93,17 +98,19 @@ if TYPE_CHECKING:
 
     from typing_extensions import Literal
 
-    from pykotor.common.module import Module
+    from pykotor.common.module import Module, ModuleResource
     from pykotor.extract.capsule import Capsule
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
-    from pykotor.gl.models.mdl import Model
+    from pykotor.gl.models.mdl import Model, Node
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.generics.git import GIT
+    from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.utc import UTC
-    from pykotor.resource.generics.utd import UTD
-    from pykotor.resource.generics.utp import UTP
 
+from typing import TYPE_CHECKING
+
+T = TypeVar("T")
 SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
@@ -144,7 +151,7 @@ class Scene:
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: dict[Any, RenderObject] = {}
         self.selection: list[RenderObject] = []
-        self.module: Module | None = module
+        self._module: Module | None = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
 
@@ -193,6 +200,7 @@ class Scene:
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
+
     def getCreatureRenderObject(
         self,
         instance: GITCreature,
@@ -217,7 +225,7 @@ class Scene:
         """
         try:
             if utc is None:
-                utc = self.module.creature(str(instance.resref)).resource()
+                utc = self._resource_from_gitinstance(instance, self.module.creature)
 
             head_obj: RenderObject | None = None
             mask_hook = None
@@ -280,12 +288,68 @@ class Scene:
 
         return obj
 
-    def _transform_hand(self, arg0, arg1, obj):
-        rhand_obj = RenderObject(arg0)
-        rhand_obj.set_transform(arg1.global_transform())
+    def _transform_hand(
+        self,
+        modelname: str,
+        hook: Node,
+        obj: RenderObject,
+    ):
+        rhand_obj = RenderObject(modelname)
+        rhand_obj.set_transform(hook.global_transform())
         obj.children.append(rhand_obj)
 
-    def buildCache(self, *, clear_cache: bool = False):
+    @property
+    def module(self) -> Module:
+        if not self._module:
+            raise RuntimeError("Module must be defined before a Scene can be rendered.")
+        return self._module
+
+    @module.setter
+    def module(self, value):
+        self._module = value
+
+    def _getGit(self) -> GIT:
+        module_resource_git = self.module.git()
+        return self._resource_from_module(module_resource_git, "' is missing a GIT.")
+
+    def _getLyt(self) -> LYT:
+        layout_module_resource = self.module.layout()
+        return self._resource_from_module(layout_module_resource, "' is missing a LYT.")
+
+    def _getIfo(self) -> IFO:
+        info_module_resource = self.module.info()
+        return self._resource_from_module(info_module_resource, "' is missing an IFO.")
+
+    def _resource_from_module(self, module_res: ModuleResource[T] | None, errpart: str) -> T | None:
+        if module_res is None:
+            get_root_logger().error(f"Cannot render a frame in Scene when this module '{self.module.root()}{errpart}")
+            return None
+        git_resource = module_res.resource()
+        if git_resource is None:
+            get_root_logger().error(f"No locations found for '{module_res.identifier()}', needed to render a Scene for module '{self.module.root()}'")
+            return None
+        return git_resource
+
+    def _resource_from_gitinstance(
+        self,
+        instance: GITInstance,
+        lookup_func: Callable[..., ModuleResource[T] | None],
+    ) -> T | None:
+        resource = lookup_func(str(instance.resref))
+        if resource is None:
+            get_root_logger().error(f"The module '{self.module.root()}' does not store '{instance.identifier()}' needed to render a Scene.")
+            return None
+        resource_data = resource.resource()
+        if resource_data is None:
+            get_root_logger().error(f"No locations found for '{resource.identifier()}' needed by module '{self.module.root()}'")
+            return None
+        return resource_data
+
+    def buildCache(
+        self,
+        *,
+        clear_cache: bool = False,
+    ):
         """Builds and caches game objects from the module.
 
         Args:
@@ -299,11 +363,17 @@ class Scene:
             - Retrieve/update game objects from module
             - Add/update objects in cache..
         """
-        if self.module is None:
+        if self._module is None:
             return
 
         if clear_cache:
             self.objects = {}
+
+        if self.git is None:
+            self.git = self._getGit()
+
+        if self.layout is None:
+            self.layout = self._getLyt()
 
         for identifier in self.clearCacheBuffer:
             for git_creature in copy(self.git.creatures):
@@ -322,18 +392,12 @@ class Scene:
             if identifier.restype == ResourceType.GIT:
                 for instance in self.git.instances():
                     del self.objects[instance]
-                self.git = self.module.git().resource()
+                self.git = self._getGit()
             if identifier.restype == ResourceType.LYT:
                 for room in self.layout.rooms:
                     del self.objects[room]
-                self.layout = self.module.layout().resource()
+                self.layout = self._getLyt()
         self.clearCacheBuffer = []
-
-        if self.git is None:
-            self.git = self.module.git().resource()
-
-        if self.layout is None:
-            self.layout = self.module.layout().resource()
 
         for room in self.layout.rooms:
             if room not in self.objects:
@@ -343,12 +407,14 @@ class Scene:
         for door in self.git.doors:
             if door not in self.objects:
                 try:
-                    utd: UTD | None = self.module.door(str(door.resref)).resource()
-                    model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
-                except Exception as e:
+                    utd = self._resource_from_gitinstance(door, self._module.door)
+                    if utd is not None:
+                        model_name: str = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
+                except Exception:  # noqa: BLE001
                     get_root_logger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
-                    # If failed to load creature models, use an empty model instead
-                    model_name = "unknown"
+                    model_name = "unknown"  # If failed to load door models, use an empty model instead
+                if utd is None:
+                    utd = UTD()
 
                 self.objects[door] = RenderObject(model_name, vec3(), vec3(), data=door)
 
@@ -358,12 +424,14 @@ class Scene:
         for placeable in self.git.placeables:
             if placeable not in self.objects:
                 try:
-                    utp: UTP | None = self.module.placeable(str(placeable.resref)).resource()
-                    model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
-                except Exception:
+                    utp = self._resource_from_gitinstance(placeable, self._module.placeable)
+                    if utp is not None:
+                        model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+                except Exception:  # noqa: BLE001
                     get_root_logger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
-                    # If failed to load creature models, use an empty model instead
-                    model_name = "unknown"
+                    model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
+                if utp is None:
+                    utp = UTP()
 
                 self.objects[placeable] = RenderObject(model_name, vec3(), vec3(), data=placeable)
 
@@ -395,23 +463,15 @@ class Scene:
 
         for sound in self.git.sounds:
             if sound not in self.objects:
-                uts: UTS | None = None
                 try:
-                    resource = self.module.sound(str(sound.resref))
-                    if resource is not None:
-                        uts = resource.resource()
-                except Exception as e:
-                    print(format_exception_with_variables(e))
+                    uts = self._resource_from_gitinstance(sound, self._module.sound)
+                except Exception:  # noqa: BLE001
+                    get_root_logger().exception(f"Could not get the sound resource '{sound.resref}.uts' and/or the appearance.2da")
                 if uts is None:
                     uts = UTS()
 
-                obj = RenderObject(
-                    "sound",
-                    vec3(),
-                    vec3(),
-                    data=sound,
-                    gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance),
-                )
+                obj = RenderObject("sound", vec3(), vec3(),
+                                    data=sound, gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance))
                 self.objects[sound] = obj
 
             self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
@@ -419,13 +479,8 @@ class Scene:
 
         for encounter in self.git.encounters:
             if encounter not in self.objects:
-                obj = RenderObject(
-                    "encounter",
-                    vec3(),
-                    vec3(),
-                    data=encounter,
-                    gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points),
-                )
+                obj = RenderObject("encounter", vec3(), vec3(),
+                                    data=encounter, gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points))
                 self.objects[encounter] = obj
 
             self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
@@ -433,13 +488,8 @@ class Scene:
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-                obj = RenderObject(
-                    "trigger",
-                    vec3(),
-                    vec3(),
-                    data=trigger,
-                    gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points),
-                )
+                obj = RenderObject("trigger", vec3(), vec3(),
+                                    data=trigger, gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points))
                 self.objects[trigger] = obj
 
             self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
@@ -460,27 +510,38 @@ class Scene:
 
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
-            self._del_git_objects(obj)
+            self._del_git_objects(obj, self.git, self.objects)
 
-    def _del_git_objects(self, obj):
-        if isinstance(obj, GITCreature) and obj not in self.git.creatures:
-            del self.objects[obj]
-        if isinstance(obj, GITPlaceable) and obj not in self.git.placeables:
-            del self.objects[obj]
-        if isinstance(obj, GITDoor) and obj not in self.git.doors:
-            del self.objects[obj]
-        if isinstance(obj, GITTrigger) and obj not in self.git.triggers:
-            del self.objects[obj]
-        if isinstance(obj, GITStore) and obj not in self.git.stores:
-            del self.objects[obj]
-        if isinstance(obj, GITCamera) and obj not in self.git.cameras:
-            del self.objects[obj]
-        if isinstance(obj, GITWaypoint) and obj not in self.git.waypoints:
-            del self.objects[obj]
-        if isinstance(obj, GITEncounter) and obj not in self.git.encounters:
-            del self.objects[obj]
-        if isinstance(obj, GITSound) and obj not in self.git.sounds:
-            del self.objects[obj]
+    def _fetch2da(self, resname: str, installation: Installation) -> ResourceResult:
+        result = installation.resource(resname, ResourceType.TwoDA, SEARCH_ORDER_2DA)
+        if result is None:
+            raise RuntimeError(f"Cannot find '{resname}.2da' in the installation, required to render a Scene.")
+        return result
+
+    @staticmethod
+    def _del_git_objects(
+        obj: GITInstance | LYTRoom,
+        git: GIT,
+        objects: dict[GITInstance | LYTRoom, RenderObject],
+    ):
+        if isinstance(obj, GITCreature) and obj not in git.creatures:
+            del objects[obj]
+        if isinstance(obj, GITPlaceable) and obj not in git.placeables:
+            del objects[obj]
+        if isinstance(obj, GITDoor) and obj not in git.doors:
+            del objects[obj]
+        if isinstance(obj, GITTrigger) and obj not in git.triggers:
+            del objects[obj]
+        if isinstance(obj, GITStore) and obj not in git.stores:
+            del objects[obj]
+        if isinstance(obj, GITCamera) and obj not in git.cameras:
+            del objects[obj]
+        if isinstance(obj, GITWaypoint) and obj not in git.waypoints:
+            del objects[obj]
+        if isinstance(obj, GITEncounter) and obj not in git.encounters:
+            del objects[obj]
+        if isinstance(obj, GITSound) and obj not in git.sounds:
+            del objects[obj]
 
     def render(self):
         """Renders the scene.

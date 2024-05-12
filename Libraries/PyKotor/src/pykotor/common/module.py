@@ -573,8 +573,12 @@ class Module:  # noqa: PLR0904
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations)).activate()
 
         # Finally iterate through all resources we may have missed.
-        for module_resource in self.resources.values():
+        for ident, module_resource in self.resources.items():
             if module_resource.isActive():
+                continue
+            if ident.restype is ResourceType.TPC and f"{ident.lower_resname}.tga" in self.resources:
+                continue
+            if ident.restype is ResourceType.TGA and f"{ident.lower_resname}.tpc" in self.resources:
                 continue
             module_resource.activate()
 
@@ -636,10 +640,6 @@ class Module:  # noqa: PLR0904
             locations = list(locations)
         if not locations:
             get_root_logger().warning("No locations found for '%s.%s' which are intended to add to module '%s'", resname, restype, self._root)
-        # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
-        # instead of the .TGA for the dictionary key.
-        if restype is ResourceType.TGA:  # TODO(th3w1zard1): txi?
-            restype = ResourceType.TPC
         module_resource: ModuleResource | None = self.resource(resname, restype)
         if module_resource is None:
             module_resource = ModuleResource(resname, restype, self._installation)
@@ -1552,8 +1552,7 @@ class ModuleResource(Generic[T]):
         if is_capsule_file(active_path):
             data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
             if data is None:
-                msg = f"Resource '{file_name}' not found in '{active_path}'"
-                raise ValueError(msg)
+                get_root_logger().error(f"Resource '{file_name}' not found in '{active_path}'")
             return data
 
         if is_bif_file(active_path):
@@ -1564,7 +1563,8 @@ class ModuleResource(Generic[T]):
             )
             if resource is None:
                 msg = f"Resource '{file_name}' not found in BIF '{self._active}' somehow?"
-                raise ValueError(msg)
+                get_root_logger().error(msg)
+                return None
             return resource.data
 
         return BinaryReader.load_file(active_path)
@@ -1610,7 +1610,8 @@ class ModuleResource(Generic[T]):
                 data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
                 if data is None:
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
-                    raise ValueError(msg)
+                    get_root_logger().error(msg)
+                    return None
                 self._resource_obj = conversions[self._restype](data)
 
             elif is_bif_file(active_path):
@@ -1621,7 +1622,8 @@ class ModuleResource(Generic[T]):
                 )
                 if resource is None:
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
-                    raise ValueError(msg)
+                    get_root_logger().error(msg)
+                    return None
                 self._resource_obj = conversions[self._restype](resource.data)
 
             else:
