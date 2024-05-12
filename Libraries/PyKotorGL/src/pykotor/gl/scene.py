@@ -346,7 +346,7 @@ class Scene:
                     utd: UTD | None = self.module.door(str(door.resref)).resource()
                     model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 except Exception as e:
-                    print(format_exception_with_variables(e))
+                    get_root_logger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
                     # If failed to load creature models, use an empty model instead
                     model_name = "unknown"
 
@@ -360,8 +360,8 @@ class Scene:
                 try:
                     utp: UTP | None = self.module.placeable(str(placeable.resref)).resource()
                     model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
-                except Exception as e:
-                    print(format_exception_with_variables(e))
+                except Exception:
+                    get_root_logger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
                     # If failed to load creature models, use an empty model instead
                     model_name = "unknown"
 
