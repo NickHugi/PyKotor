@@ -55,7 +55,6 @@ if not is_frozen():
         if utility_path.exists():
             update_sys_path(utility_path.parent)
 
-from types import TracebackType
 
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
 from pykotor.common.misc import Game
