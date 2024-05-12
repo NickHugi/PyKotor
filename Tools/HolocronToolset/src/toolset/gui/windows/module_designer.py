@@ -586,7 +586,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.resourceTree.clearSelection()
         this_ident = instance.identifier()
         if this_ident is None:  # Should only ever be None for GITCamera.
-            self.log.warning("Cannot select a resource for GITCamera instances: %s(%s)", instance, repr(instance))
+            assert isinstance(instance, GITCamera), f"Should only ever be None for GITCamera, not {type(instance).__name__}."
             return
 
         for i in range(self.ui.resourceTree.topLevelItemCount()):
@@ -1239,7 +1239,7 @@ class ModuleDesigner(QMainWindow):
                 menu.addAction("Snap 3D View to Instance Position").triggered.connect(lambda: self.snapViewToGITInstance(instance))
             menu.addSeparator()
             menu.addAction("Copy position to clipboard").triggered.connect(lambda: QApplication.clipboard().setText(str(instance.position)))
-            #menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
+            menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
             menu.addSeparator()
             self._controls2d._mode._getRenderContextMenu(Vector2(world.x, world.y), menu)

@@ -727,6 +727,7 @@ class _InstanceMode(_Mode):
         else:
             assert self._editor._module is not None
             module_root = self._editor._module._root
+
         module_root = module_root.lower()
         for loc in search:
             if (
@@ -781,7 +782,8 @@ class _InstanceMode(_Mode):
             - Connects each action to a method on the class to handle the trigger
         """
         menu.addAction("Remove").triggered.connect(self.deleteSelected)
-        menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
+        if isinstance(self._editor, GITEditor):
+            menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
 
         actionEditResource = menu.addAction("Edit Resource")
         actionEditResource.triggered.connect(self.editSelectedInstanceResource)
