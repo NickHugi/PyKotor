@@ -120,7 +120,12 @@ def list_textures(
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32, encoding="ascii", errors="ignore").strip()
-                if texture and texture != "NULL" and texture.lower() not in textures:
+                if (
+                    texture
+                    and texture != "NULL"
+                    and texture.lower() not in textures
+                    and texture.lower() != "dirt"  # TODO(th3w1zard1) determine if the game really prevents the literal resname of 'dirt'.
+                ):
                     yield texture.lower()
 
 
