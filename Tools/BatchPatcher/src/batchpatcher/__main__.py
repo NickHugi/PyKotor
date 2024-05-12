@@ -21,8 +21,6 @@ from tkinter import (
 )
 from typing import TYPE_CHECKING, Any
 
-from utility.tkinter.updater import human_readable_size
-
 if getattr(sys, "frozen", False) is False:
 
     def add_sys_path(path: pathlib.Path):
@@ -42,7 +40,6 @@ if getattr(sys, "frozen", False) is False:
         add_sys_path(utility_path.parent)
 
 
-
 from batchpatcher.translate.language_translator import TranslationOption, Translator
 from pykotor.common.alien_sounds import ALIEN_SOUNDS
 from pykotor.common.language import Language, LocalizedString
@@ -58,6 +55,7 @@ from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
@@ -88,6 +86,7 @@ from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
 from utility.logger_util import get_root_logger
 from utility.system.path import Path, PurePath
+from utility.tkinter.updater import human_readable_size
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -498,7 +497,13 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 resource._path_ident_obj,  # noqa: SLF001
             )
             made_change: bool = False
-            if SCRIPT_GLOBALS.set_unskippable and alien_owner in {0, "0", None} and alien_vo_count != -1 and alien_vo_count < 3 and gff.content == GFFContent.DLG:
+            if (
+                SCRIPT_GLOBALS.set_unskippable
+                and alien_owner in {0, "0", None}
+                and alien_vo_count != -1
+                and alien_vo_count < 3
+                and gff.content == GFFContent.DLG
+            ):
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
@@ -684,7 +689,7 @@ def patch_file(file: os.PathLike | str):
         if SCRIPT_GLOBALS.is_patching():
             patch_and_save_noncapsule(fileres)
         if (
-            SCRIPT_GLOBALS.check_textures and fileres.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
+            SCRIPT_GLOBALS.check_textures and fileres.restype().extension.lower() in ("mdl")
         ):
             check_model(fileres, None)
 
@@ -696,46 +701,54 @@ def patch_folder(folder_path: os.PathLike | str):
         patch_file(file_path)
 
 
-def get_active_layouts(k_install: Installation) -> list[FileResource]:
-    layout_resources: list[FileResource] = []
+def get_active_layouts(k_install: Installation) -> dict[FileResource, LYT]:
+    layout_resources: dict[FileResource, LYT] = {}
     module_filenames = k_install.module_names()
+    lower_module_filenames = [filename.lower() for filename in module_filenames]
     for resource in k_install:
         if resource.restype() is not ResourceType.LYT:
             continue
+
         # Determine if the game is using it.
-        rim_filename = f"{resource.resname()}.rim"
-        mod_filename = f"{resource.resname()}.mod"
-        if rim_filename in module_filenames:
-            #print(f"Found layout '{resource.filename()}' used by 'Modules/{rim_filename}'")
-            layout_resources.append(resource)
-        if mod_filename in module_filenames:
-            #print(f"Found layout '{resource.filename()}' used by 'Modules/{mod_filename}'")
-            layout_resources.append(resource)
+        layout_display_path = resource._path_ident_obj.relative_to(k_install.path().parent)
+        rim_filename = f"{resource.resname().lower()}.rim"
+        mod_filename = f"{resource.resname().lower()}.mod"
+        if rim_filename in lower_module_filenames:
+            print(f"Found layout '{resource.filename()}' used by 'Modules/{rim_filename}'")
+            try:
+                layout_resources[resource] = read_lyt(resource.data())
+            except (OSError, ValueError):
+                print(f"File '{layout_display_path}' is unreadable or possible corrupted.")
+                continue
+        if mod_filename in lower_module_filenames:
+            print(f"Found layout '{resource.filename()}' used by 'Modules/{mod_filename}'")
+            try:
+                layout_resources[resource] = read_lyt(resource.data())
+            except (OSError, ValueError):
+                print(f"File '{layout_display_path}' is unreadable or possible corrupted.")
+                continue
     return layout_resources
 
 
 def determine_if_model_utilized(
     model_resource: FileResource,
-    layout_resources: list[FileResource],
+    layout_resources: dict[FileResource, LYT],
     k_install: Installation,
     lightmap_or_texture: Literal["texture", "lightmap"] = "texture",
     lmtex_name: str | None = None,
     missing_writer: TextIOWrapper | None = None,
 ):
-    log_output(f"Determining if '{model_resource._path_ident_obj}' is used by the game...")
-    for layout_resource in layout_resources:
+    model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+    log_output(f"Determining if '{model_display_path}' is used by the game...")
+    for layout_resource, lyt in layout_resources.items():
+        layout_display_path = layout_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
         if layout_resource.restype() is not ResourceType.LYT:
-            continue
-        try:
-            lyt = read_lyt(layout_resource.data())
-        except (OSError, ValueError):
-            print(f"File '{layout_resource._path_ident_obj}' is unreadable or possible corrupted.")
             continue
         for index, room in enumerate(lyt.rooms):
             if room.model.lower() == model_resource.resname().lower():
                 if lmtex_name is not None:
                     log_output(
-                        f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {layout_resource.filepath()}/{layout_resource.filename()}, room index {index}, position {room.position})"
+                        f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {layout_display_path}, room index {index}, position {room.position})"
                     )
                     needed_module = f"{layout_resource.resname()}.rim"
                     log_output_with_separator(f"Missing texture is needed by Modules/{needed_module}")
@@ -756,10 +769,11 @@ def determine_if_model_utilized(
             continue
 
         resource2da = result_2da.as_file_resource()
+        display_path_2da = resource2da._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
-            get_root_logger().error(f"Corrupted/unreadable file: '{resource2da._path_ident_obj}'")
+            get_root_logger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
             continue
         filename_2da = resource2da.filename().lower()
         for column_name in model_2da_resref_info[filename_2da]:
@@ -770,9 +784,9 @@ def determine_if_model_utilized(
                         if stripped_header.lower() == model_resource.resname().lower():
                             if lmtex_name is not None:
                                 log_output(
-                                    f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {model_resource._path_ident_obj})"
+                                    f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {model_display_path})"
                                 )  # noqa: E501, SLF001
-                                log_output_with_separator(f"Model is referenced by '{resource2da._path_ident_obj}' header, row '{header_row_index}'")  # noqa: E501, SLF001
+                                log_output_with_separator(f"Model is referenced by '{display_path_2da}' header, row '{header_row_index}'")  # noqa: E501, SLF001
                             if missing_writer is not None:
                                 missing_writer.write(f"Module={layout_resource.resname()}, Texture={lmtex_name}\n, 2DA={filename_2da}, Path={resource2da.filepath()}")  # noqa: E501
 
@@ -787,16 +801,19 @@ def determine_if_model_utilized(
                         if stripped_cell.lower() == model_resource.resname().lower():
                             if lmtex_name is not None:
                                 log_output(
-                                    f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {model_resource._path_ident_obj})"
+                                    f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {model_display_path})"
                                 )  # noqa: E501, SLF001
-                                log_output_with_separator(f"Model is referenced by '{resource2da._path_ident_obj}', column '{column_name}', row '{colenum_row_index}'")  # noqa: E501, SLF001
+                                log_output_with_separator(f"Model is referenced by '{display_path_2da}', column '{column_name}', row '{colenum_row_index}'")  # noqa: E501, SLF001
                             if missing_writer is not None:
                                 missing_writer.write(f"Module={layout_resource.resname()}, Texture={lmtex_name}\n, 2DA={filename_2da}, Path={resource2da.filepath()}")  # noqa: E501, SLF001
 
-                            print(f"model '{model_resource.filename()}' is used by the game, referenced by '{resource2da._path_ident_obj}', column '{column_name}', row '{colenum_row_index}'")
+                            print(
+                                f"model '{model_resource.filename()}' is used by the game, referenced by '{display_path_2da}', column '{column_name}', row '{colenum_row_index}'"
+                            )
                             return True
                 except Exception as e:
                     get_root_logger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
+    log_output("Nope")
     return False
 
 
@@ -805,18 +822,20 @@ def find_missing_model_textures_lightmaps(
     lightmap_or_texture: Literal["lightmap", "texture"],
     order: list[SearchLocation],
     k_install: Installation | None = None,
+    layout_resources: dict[FileResource, LYT] | None = None,
 ) -> None | bool:
+    model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
     try:
         texture_names: list[str] = []
         gen_func = list_textures if lightmap_or_texture == "texture" else list_lightmaps
         for lmtex_name in gen_func(model_resource.data()):
             texture_names.append(lmtex_name)
     except Exception as e:
-        log_output(f"Error listing {lightmap_or_texture}s in '{model_resource._path_ident_obj}': {e}")
+        log_output(f"Error listing {lightmap_or_texture}s in '{model_display_path}': {e}")
         return None
     else:
         if not texture_names:
-            print(f"Model '{model_resource._path_ident_obj}' has no {lightmap_or_texture}s.")
+            print(f"Model '{model_display_path}' has no {lightmap_or_texture}s.")
             return True
         mdl_tex_outpath = _write_all_found_in_mdl(
             texture_names,
@@ -828,7 +847,7 @@ def find_missing_model_textures_lightmaps(
         if k_install is None:
             return None
 
-        layout_resources = get_active_layouts(k_install)
+        assert layout_resources is not None
         mdl_missing_tex_outpath = mdl_tex_outpath.parent.joinpath("missing", mdl_tex_outpath.name)
         mdl_missing_tex_outpath.parent.mkdir(exist_ok=True)
         missing_writer = mdl_missing_tex_outpath.open("a", encoding="utf-8")
@@ -865,6 +884,7 @@ def find_missing_model_textures_lightmaps(
 def check_model(
     model_resource: FileResource,
     k_install: Installation | None,
+    all_layouts: dict[FileResource, LYT] | None = None,
 ):
     if model_resource._path_ident_obj.parent.safe_isdir():
         # log_output(f"Will include override for model {resource._path_ident_obj}")
@@ -880,8 +900,8 @@ def check_model(
             SearchLocation.TEXTURES_GUI,
             SearchLocation.CHITIN,
         ]
-    result_tex = find_missing_model_textures_lightmaps(model_resource, "texture", order, k_install)
-    result_lmp = find_missing_model_textures_lightmaps(model_resource, "lightmap", order, k_install)
+    result_tex = find_missing_model_textures_lightmaps(model_resource, "texture", order, k_install, all_layouts)
+    result_lmp = find_missing_model_textures_lightmaps(model_resource, "lightmap", order, k_install, all_layouts)
 
 
 def _write_all_found_in_mdl(
@@ -904,15 +924,11 @@ def _write_all_found_in_mdl(
     return result
 
 
-def find_unused_textures(k_install: Installation, all_layouts: list[FileResource]):
+def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource, LYT]):
     log_output(f"Finding unused textures at '{k_install.path()}'")
     # Define all textures found in the installation.
     all_found_textures = {
-        res.resname().lower(): res
-        for res in k_install
-        if res.restype() in (ResourceType.TGA, ResourceType.TPC)
-        and not res.inside_bif
-        and not res.inside_capsule
+        res.resname().lower(): res for res in k_install if res.restype() in (ResourceType.TGA, ResourceType.TPC) and not res.inside_bif and not res.inside_capsule
     }
     log_output(f"Found total of '{len(all_found_textures)}' texture files in the installation to check.")
 
@@ -928,41 +944,44 @@ def find_unused_textures(k_install: Installation, all_layouts: list[FileResource
             continue
 
         resource2da = result_2da.as_file_resource()
+        display_path_2da = resource2da._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
-            get_root_logger().error(f"Corrupted/unreadable file: '{resource2da._path_ident_obj}'")
+            get_root_logger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
             continue
         filename_2da = resource2da.filename().lower()
-        for column_name in rel_2da_info[filename_2da]:
-            if column_name == ">>##HEADER##<<":
-                try:
-                    for header_row_index, header in enumerate(valid_2da.get_headers()):
-                        stripped_header = header.strip()
-                        if not stripped_header:
-                            continue
-                        parsed_lower_header = stripped_header.lower()
-                        if parsed_lower_header in all_found_textures:
-                            print(f"Found texture '{stripped_header}' at header row index {header_row_index} of '{filename_2da}'")
-                            del all_found_textures[parsed_lower_header]
-                        else:
-                            print(f"Missing texture '{stripped_header}' (referenced by header at row {header_row_index} of '{filename_2da}')")
-                except Exception:
-                    get_root_logger().error("Error parsing '%s' headers", filename_2da, exc_info=True)
-            else:
-                try:
-                    for colnum_row_index, cell in enumerate(valid_2da.get_column(column_name)):
-                        stripped_cell = cell.strip()
-                        if not stripped_cell:
-                            continue
-                        parsed_lower_cell = stripped_cell.lower()
-                        if parsed_lower_cell in all_found_textures:
-                            print(f"Found texture '{stripped_cell}', column '{column_name}' row index {colnum_row_index} of '{filename_2da}'")
-                            del all_found_textures[parsed_lower_cell]
-                        else:
-                            print(f"Missing texture '{stripped_cell}' (referenced by column '{column_name}' at row {colnum_row_index} of '{filename_2da}')")
-                except Exception:
-                    get_root_logger().error("Error parsing '%s' column '%s'", filename_2da, column_name, exc_info=True)
+        tex_appends = ("", "01") if filename_2da == "appearance.2da" else ("",)
+        for tex_append in tex_appends:
+            for column_name in rel_2da_info[filename_2da]:
+                if column_name == ">>##HEADER##<<":
+                    try:
+                        for header_row_index, header in enumerate(valid_2da.get_headers()):
+                            stripped_header = header.strip()
+                            if not stripped_header:
+                                continue
+                            parsed_lower_header = stripped_header.lower() + tex_append
+                            if parsed_lower_header in all_found_textures:
+                                print(f"Found texture '{stripped_header}' at header row index {header_row_index} of '{filename_2da}'")
+                                del all_found_textures[parsed_lower_header]
+                            else:
+                                print(f"Missing texture '{stripped_header}' (referenced by header at row {header_row_index} of '{filename_2da}')")
+                    except Exception:
+                        get_root_logger().error("Error parsing '%s' headers", filename_2da, exc_info=True)
+                else:
+                    try:
+                        for colnum_row_index, cell in enumerate(valid_2da.get_column(column_name)):
+                            stripped_cell = cell.strip()
+                            if not stripped_cell:
+                                continue
+                            parsed_lower_cell = stripped_cell.lower() + tex_append
+                            if parsed_lower_cell in all_found_textures:
+                                print(f"Found texture '{stripped_cell}', column '{column_name}' row index {colnum_row_index} of '{filename_2da}'")
+                                del all_found_textures[parsed_lower_cell]
+                            else:
+                                print(f"Missing texture '{stripped_cell}' (referenced by column '{column_name}' at row {colnum_row_index} of '{filename_2da}')")
+                    except Exception:
+                        get_root_logger().error("Error parsing '%s' column '%s'", filename_2da, column_name, exc_info=True)
 
     # Check mdl
     log_output("Checking mdl's for any texture references... this may take a while.")
@@ -970,22 +989,24 @@ def find_unused_textures(k_install: Installation, all_layouts: list[FileResource
     log_output(f"Found {len(all_used_models)} total models to check for texture references.")
     texture_lookups: dict[FileResource, list[str]] = {}
     for model_resource in all_used_models:
-        print(f"Finding textures in '{model_resource._path_ident_obj}'")
+        model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        print(f"Finding textures in '{model_display_path}'")
         texture_names: list[str] = []
         try:
             for texture_name in list_textures(model_resource.data()):
                 texture_names.append(texture_name)
         except Exception as e:
-            log_output(f"Error listing textures in '{model_resource._path_ident_obj}': {type(e).__name__}: {e}")
-        print(f"Finding lightmaps in '{model_resource._path_ident_obj}'")
+            log_output(f"Error listing textures in '{model_display_path}': {type(e).__name__}: {e}")
+        print(f"Finding lightmaps in '{model_display_path}'")
         try:
             for lightmap_name in list_lightmaps(model_resource.data()):
                 texture_names.append(lightmap_name)
         except Exception as e:
-            log_output(f"Error listing lightmaps in '{model_resource._path_ident_obj}': {type(e).__name__}: {e}")
+            log_output(f"Error listing lightmaps in '{model_display_path}': {type(e).__name__}: {e}")
         texture_lookups[model_resource] = texture_names
+        print(f"Found {len(texture_names)} textures: {texture_names!r}")
     for model_resource, texture_list in texture_lookups.items():
-        print(f"Second pass of '{model_resource._path_ident_obj}'")
+        print(f"Second pass of '{model_display_path}'")
         for texture_name in texture_list:
             if not texture_name:
                 continue
@@ -993,17 +1014,18 @@ def find_unused_textures(k_install: Installation, all_layouts: list[FileResource
             if not parsed_texname:
                 continue
             if parsed_texname in all_found_textures:
-                print(f"Found texture '{parsed_texname}' (referenced by model at {model_resource._path_ident_obj})")
+                print(f"Found texture '{parsed_texname}' (referenced by model at {model_display_path})")
                 del all_found_textures[parsed_texname]
 
     # Finally output results.
     total_size = 0
     for unused_texture_resource in all_found_textures.values():
-        log_output(unused_texture_resource._path_ident_obj)  # noqa: SLF001
+        log_output(unused_texture_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent))  # noqa: SLF001
         total_size += unused_texture_resource.size()
 
     log_output(f"Found {len(all_found_textures)} total unused textures.")
     log_output_with_separator(f"Total wasted space: {human_readable_size(total_size)}")
+
 
 def patch_install(install_path: os.PathLike | str):
     log_output()
@@ -1013,8 +1035,9 @@ def patch_install(install_path: os.PathLike | str):
 
     k_install = Installation(install_path)
     all_layouts: list[FileResource] | None = None
-    if SCRIPT_GLOBALS.find_unused_textures:
+    if SCRIPT_GLOBALS.find_unused_textures or SCRIPT_GLOBALS.check_textures:
         all_layouts = get_active_layouts(k_install)
+    if SCRIPT_GLOBALS.find_unused_textures:
         find_unused_textures(k_install, all_layouts)
     # k_install.reload_all()
     if SCRIPT_GLOBALS.is_patching():
@@ -1060,20 +1083,16 @@ def patch_install(install_path: os.PathLike | str):
         for resource in k_install.override_resources(folder):
             if SCRIPT_GLOBALS.is_patching():
                 patch_and_save_noncapsule(resource)
-            if (
-                SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl")
-            ):
-                check_model(resource, k_install)
+            if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):
+                check_model(resource, k_install, all_layouts)
 
     if SCRIPT_GLOBALS.is_patching():
         log_output_with_separator("Extract and patch BIF data, saving to Override (will not overwrite)")
     for resource in k_install.chitin_resources():
         if SCRIPT_GLOBALS.fix_dialog_skipping or SCRIPT_GLOBALS.translate or SCRIPT_GLOBALS.set_unskippable:
             patch_and_save_noncapsule(resource, savedir=override_path)
-        if (
-            SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl")
-        ):
-            check_model(resource, k_install)
+        if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):
+            check_model(resource, k_install, all_layouts)
 
     patch_file(k_install.path().joinpath("dialog.tlk"))
 
