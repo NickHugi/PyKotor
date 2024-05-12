@@ -132,13 +132,12 @@ class PTHEdge:
 
     def __eq__(
         self,
-        other: PTHEdge,
+        other: PTHEdge | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, PTHEdge):
             return self.source == other.source and self.target == other.target
-
-        msg = f"Cannot compare {self!r} with {other!r}."
-        print(msg)
         return NotImplemented
 
 

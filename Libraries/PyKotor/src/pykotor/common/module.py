@@ -1408,6 +1408,8 @@ class ModuleResource(Generic[T]):
         return f"ModuleResource(resname={self._resname} restype={self._restype!r} installation={self._installation!r})"
 
     def __eq__(self, other):
+        if self is other:
+            return True
         if isinstance(other, ResourceIdentifier):
             return self._identifier == other
         if isinstance(other, ModuleResource):

@@ -293,6 +293,8 @@ class ResourceType(Enum):
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
+        if self is other:
+            return True
         if isinstance(other, ResourceType):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid

@@ -520,7 +520,9 @@ class TwoDARow:
     ):
         return f"{self.__class__.__name__}(row_label={self._row_label}, row_data={self._data})"
 
-    def __eq__(self, other: TwoDARow):
+    def __eq__(self, other: TwoDARow | object):
+        if self is other:
+            return True
         if isinstance(other, TwoDARow):
             return self._row_label == other._row_label and self._data == other._data
         return NotImplemented

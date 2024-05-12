@@ -53,6 +53,8 @@ class LYTRoom:
         self,
         other: LYTRoom,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTRoom):
             return NotImplemented
         return self.model.lower() == other.model.lower() and self.position == other.position
@@ -86,6 +88,8 @@ class LYTTrack:
         self,
         other: LYTTrack,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTTrack):
             return NotImplemented
         return self.model.lower() == other.model.lower() and self.position == other.position
@@ -114,6 +118,8 @@ class LYTObstacle:
         self,
         other: LYTObstacle,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTObstacle):
             return NotImplemented
         return self.model.lower() == other.model.lower() and self.position == other.position
@@ -148,6 +154,8 @@ class LYTDoorHook:
         self,
         other: LYTDoorHook,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTDoorHook):
             return NotImplemented
         return (

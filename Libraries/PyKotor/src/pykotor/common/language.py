@@ -457,9 +457,11 @@ class LocalizedString:
             return text
         return "-1"
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other) -> bool:  # noqa: ANN001
+        if self is other:
+            return True
         if not isinstance(other, LocalizedString):
-            return False
+            return NotImplemented
         if other.stringref != self.stringref:
             return False
         return other._substrings == self._substrings

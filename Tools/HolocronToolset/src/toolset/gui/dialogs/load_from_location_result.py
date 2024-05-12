@@ -192,6 +192,8 @@ class FileTableWidgetItem(SortableTableWidgetItem):
         self.filepath: Path = filepath
 
     def __eq__(self, other):
+        if self is other:
+            return True
         return isinstance(other, FileTableWidgetItem) and self.filepath == other.filepath
 
     def __hash__(self):
@@ -209,6 +211,8 @@ class ResourceTableWidgetItem(FileTableWidgetItem):
         self.resource: FileResource = resource
 
     def __eq__(self, other):
+        if self is other:
+            return True
         return isinstance(other, ResourceTableWidgetItem) and self.resource == other.resource
 
     def __hash__(self):

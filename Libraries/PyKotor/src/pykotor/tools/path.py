@@ -330,6 +330,8 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
 
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
+        if self is other:
+            return True
         if not isinstance(other, (os.PathLike, str)):
             print(f"Cannot compare {self!r} with {other!r}")
             return NotImplemented

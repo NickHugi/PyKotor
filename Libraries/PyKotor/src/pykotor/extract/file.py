@@ -88,6 +88,8 @@ class FileResource:
         self,
         other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
         if isinstance(other, FileResource):
@@ -339,6 +341,8 @@ class ResourceIdentifier:
 
     def __eq__(self, other: object):
         # sourcery skip: assign-if-exp, reintroduce-else
+        if self is other:
+            return True
         if isinstance(other, ResourceIdentifier):
             return str(self) == str(other)
         if isinstance(other, str):

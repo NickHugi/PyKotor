@@ -174,6 +174,8 @@ class TLKEntry:
         other: TLKEntry,
     ):
         """Returns True if the text and voiceover match."""
+        if self is other:
+            return True
         if not isinstance(other, TLKEntry):
             return NotImplemented
         return other.text == self.text and other.voiceover == self.voiceover

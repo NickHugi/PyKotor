@@ -49,6 +49,8 @@ class Vector2:
         other,
     ):
         """Two Vector2 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector2):
             return NotImplemented
 
@@ -383,6 +385,8 @@ class Vector3:
         other: Vector3 | object,
     ) -> bool:
         """Two Vector3 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector3):
             return NotImplemented
 
@@ -690,6 +694,8 @@ class Vector4:
         other,
     ):
         """Two Vector4 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector4):
             return NotImplemented
 

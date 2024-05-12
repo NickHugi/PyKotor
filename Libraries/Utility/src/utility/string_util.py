@@ -332,6 +332,8 @@ class WrappedStr(str):  # (metaclass=StrType):  # noqa: PLR0904
         self,
         __value: object,
     ):
+        if self is __value:
+            return True
         return self._content == self._assert_str_type(__value)
 
     def __hash__(self):
@@ -929,6 +931,8 @@ class CaseInsensitiveWrappedStr(WrappedStr):
         self,
         __value,
     ):
+        if self is __value:
+            return True
         return self._lower_content.__eq__(self._coerce_str(__value))
 
     def __ne__(

@@ -105,7 +105,10 @@ class Identifier:
     def __init__(self, label: str):
         self.label: str = label
 
-    def __eq__(self, other: Identifier | str):
+    def __eq__(self, other: Identifier | str) -> bool:
+        # sourcery skip: assign-if-exp, reintroduce-else
+        if self is other:
+            return True
         if isinstance(other, Identifier):
             return self.label == other.label
         if isinstance(other, str):
@@ -791,7 +794,9 @@ class IdentifierExpression(Expression):
         super().__init__()
         self.identifier: Identifier = value
 
-    def __eq__(self, other: IdentifierExpression):
+    def __eq__(self, other: IdentifierExpression | object) -> bool:
+        if self is other:
+            return True
         if isinstance(other, IdentifierExpression):
             return self.identifier == other.identifier
         return NotImplemented
@@ -845,7 +850,9 @@ class StringExpression(Expression):
         super().__init__()
         self.value: str = value
 
-    def __eq__(self, other: StringExpression):
+    def __eq__(self, other: StringExpression | object):
+        if self is other:
+            return True
         if isinstance(other, StringExpression):
             return self.value == other.value
         return NotImplemented
@@ -863,7 +870,9 @@ class IntExpression(Expression):
         super().__init__()
         self.value: int = value
 
-    def __eq__(self, other: IntExpression):
+    def __eq__(self, other: IntExpression | object):
+        if self is other:
+            return True
         if isinstance(other, IntExpression):
             return self.value == other.value
         return NotImplemented
@@ -881,7 +890,9 @@ class ObjectExpression(Expression):
         super().__init__()
         self.value: int = value
 
-    def __eq__(self, other: ObjectExpression):
+    def __eq__(self, other: ObjectExpression | object):
+        if self is other:
+            return True
         if isinstance(other, ObjectExpression):
             return self.value == other.value
         return NotImplemented
@@ -899,7 +910,9 @@ class FloatExpression(Expression):
         super().__init__()
         self.value: float = value
 
-    def __eq__(self, other: FloatExpression):
+    def __eq__(self, other: FloatExpression | object):
+        if self is other:
+            return True
         if isinstance(other, FloatExpression):
             return self.value == other.value
         return NotImplemented
@@ -919,7 +932,9 @@ class VectorExpression(Expression):
         self.y: FloatExpression = y
         self.z: FloatExpression = z
 
-    def __eq__(self, other: VectorExpression):
+    def __eq__(self, other: VectorExpression | object):
+        if self is other:
+            return True
         if isinstance(other, VectorExpression):
             return self.x == other.x and self.y == other.y and self.z == other.z
         return NotImplemented
@@ -1999,7 +2014,9 @@ class DynamicDataType:
         self.builtin: DataType = datatype
         self._struct: str | None = struct_name
 
-    def __eq__(self, other: DynamicDataType | DataType) -> bool:
+    def __eq__(self, other: DynamicDataType | DataType | object) -> bool:
+        if self is other:
+            return True
         if isinstance(other, DynamicDataType):
             if self.builtin == other.builtin:
                 return self.builtin != DataType.STRUCT or (self.builtin == DataType.STRUCT and self._struct == other._struct)

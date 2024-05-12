@@ -225,11 +225,10 @@ class UTCClass:
         self,
         other: UTCClass | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
-
-        msg = f"Cannot compare {self!r} with {other!r}"
-        print(msg)
         return NotImplemented
 
 
