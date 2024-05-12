@@ -639,7 +639,7 @@ class ResourceItems(FileItems):
         if resources is not None:
             self._unify_resources(resources)
         filepaths = [res.filepath() for res in self.resources]
-        super().__init__(*args, filepaths, **kwargs)
+        super().__init__(*args, filepaths=filepaths, **kwargs)
 
     def _unify_resources(
         self,
