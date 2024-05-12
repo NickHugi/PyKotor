@@ -989,7 +989,7 @@ class Installation:  # noqa: PLR0904
         restype: ResourceType,
         order: list[SearchLocation] | None = None,
         *,
-        capsules: list[Capsule] | None = None,
+        capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> ResourceResult | None:
         """Returns a resource matching the specified resref and restype.

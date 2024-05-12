@@ -81,15 +81,15 @@ def rename(
 def list_textures(
     data: bytes,
 ) -> Generator[str, Any, None]:
-    """Extracts textures from a binary file.
+    """Extracts textures from a mdl file, and yields each one in lowercase.
 
     Args:
     ----
-        data: bytes - The binary data to parse
+        data: bytes - The raw mdl data to parse
 
     Returns:
     -------
-        list[str] - A list of unique texture names
+        list[str] - A list of unique texture names in lowercase.
 
     Processing Logic:
     ----------------
@@ -127,15 +127,15 @@ def list_textures(
 def list_lightmaps(
     data: bytes,
 ) -> Generator[str, Any, None]:
-    """Extracts lightmap names from a Unity lightmap data file.
+    """Extracts lightmap names from a mdl file, and yields each one in lowercase.
 
     Args:
     ----
-        data: {Bytes containing lightmap data}.
+        data: The raw mdl data to parse.
 
     Returns:
     -------
-        lightmaps: {A list of unique lightmap names}
+        lightmaps: {A list of unique lightmap names in lowercase}
 
     Processing Logic:
     ----------------

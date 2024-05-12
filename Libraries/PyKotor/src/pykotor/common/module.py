@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 
 from dataclasses import dataclass
@@ -16,7 +17,7 @@ from pykotor.resource.formats.bwm.bwm_auto import write_bwm
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType
-from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
+from pykotor.resource.formats.lyt import LYT, bytes_lyt, read_lyt
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
 from pykotor.resource.formats.ncs.ncs_auto import write_ncs
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -26,7 +27,7 @@ from pykotor.resource.formats.vis import bytes_vis, read_vis
 from pykotor.resource.formats.vis.vis_auto import write_vis
 from pykotor.resource.generics.are import bytes_are, read_are, write_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg, write_dlg
-from pykotor.resource.generics.git import bytes_git, read_git, write_git
+from pykotor.resource.generics.git import GIT, bytes_git, read_git, write_git
 from pykotor.resource.generics.ifo import IFO, bytes_ifo, read_ifo, write_ifo
 from pykotor.resource.generics.pth import bytes_pth, read_pth, write_pth
 from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc, write_utc
@@ -56,13 +57,11 @@ if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.erf.erf_data import ERF
     from pykotor.resource.formats.gff.gff_data import GFF
-    from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
     from pykotor.resource.formats.rim.rim_data import RIM
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.vis import VIS
     from pykotor.resource.generics.are import ARE
-    from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.pth import PTH
     from pykotor.resource.generics.uti import UTI
@@ -349,6 +348,9 @@ class Module:  # noqa: PLR0904
 
         self.reload_resources()
 
+    def root(self):
+        return self._root
+
     def get_capsules(self) -> list[ModulePieceResource]:
         """Returns all relevant ERFs/RIMs for this module."""
         return list(self._capsules.values())
@@ -443,121 +445,179 @@ class Module:  # noqa: PLR0904
             - Look for texture paths for models
             - Add found locations to the resource registry.
         """
-        # Look in module files
-        for capsule in self._capsules.values():
-            if capsule is None:
-                continue
-            typed_capsule = cast(ModulePieceResource, capsule)  # No idea why static types aren't working here as that's the whole point of the TypedDict...
-            for resource in typed_capsule:
-                get_root_logger().debug("Adding locations for resource '%s' of module resource %s", resource.identifier(), typed_capsule.identifier())
-                self.add_locations(resource.resname(), resource.restype(), [typed_capsule.filepath()])
-
-        # Look for LYT/VIS
-        for directory in self._installation.override_list():
-            for resource in self._installation.override_resources(directory):
-                if resource.resref() != self.module_id():
-                    continue
-                self.add_locations(resource.resname(), resource.restype(), [resource.filepath()])
-        for resource in self._installation.chitin_resources():
-            if resource.resref() != self.module_id():
-                continue
-            self.add_locations(resource.resname(), resource.restype(), [resource.filepath()])
-
-        # Any resource linked in the GIT not present in the module files
-        original_git: ModuleResource[GIT] | None = self.git()
-        if original_git is None:
-            raise ValueError("Module '%s' is missing a GIT!", self._root)
-
-        original_git_path: Path = original_git.active()
-        look_for = set()
-        for location in original_git.locations():
-            original_git.activate(location)
-            git: GIT = original_git.resource()
-            look_for.update(git.iter_resource_identifiers())
-        original_git.activate(original_git_path)
-
-        # Models referenced in LYTs
-        original_layout: ModuleResource[LYT] | None = self.layout()
-        if original_layout is None:
-            raise ValueError("Module '%s' is missing a layout LYT!", self._root)  # TODO(th3w1zard1): Stop raising ValueError out of laziness, raise a more specific error type.
-
-        original_lyt_path = original_layout.active()
-        layout_locations = original_layout.locations()
-        for location in layout_locations:
-            original_layout.activate(location)
-            layout: LYT = original_layout.resource()
-            look_for.update(layout.iter_resource_identifiers())
-        original_layout.activate(original_lyt_path)
-
+        display_name = f"{self._root}.mod" if self.dot_mod else f"{self._root}.rim"
+        get_root_logger().info("Loading module resources needed for '%s'", display_name)
+        mod_capsule = self._capsules[ModuleType.MOD.name]
+        capsules_to_search = [self.lookup_main_capsule()] if mod_capsule is None else [mod_capsule]
+        # Lookup the GIT and LYT first.
         order = [
             SearchLocation.OVERRIDE,
             SearchLocation.CUSTOM_MODULES,
             SearchLocation.CHITIN,
         ]
-        mod_capsule = self._capsules[ModuleType.MOD.name]
-        search: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
+        link_resname = str(self.module_id())
+        lyt_query = ResourceIdentifier(link_resname, ResourceType.LYT)
+        git_query = ResourceIdentifier(link_resname, ResourceType.GIT)
+
+        # Start in our module resources.
+        # Needs to happen first so we can determine what resources are part of our module.
+        for capsule in self._capsules.values():
+            if capsule is None:
+                continue
+            typed_capsule = cast(ModulePieceResource, capsule)  # No idea why static types aren't working here as that's the whole point of the TypedDict...
+            for resource in typed_capsule:
+                get_root_logger().info("Adding location '%s' for resource '%s' from erf/rim '%s'",
+                                        typed_capsule.filepath(), resource.identifier(), typed_capsule.identifier())
+                self.add_locations(resource.resname(), resource.restype(), [typed_capsule.filepath()])
+
+        # Find references needs to happen second. This will be done in GIT/LYT. 2da comes during the rendering process itself, those aren't part of the module.
+
+        # Any resource linked in the GIT not present in the module files
+        # First ensure we have a git.
+        main_search_results: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
+            [lyt_query, git_query],
+            order,
+            capsules=capsules_to_search
+        )
+        look_for = self._handle_git_lyt_reloads(
+            main_search_results,
+            git_query,
+            GIT,
+            "Git is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
+        )
+        look_for = self._handle_git_lyt_reloads(
+            main_search_results,
+            lyt_query,
+            LYT,
+            "Lyt is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
+        )
+        # From GIT/LYT references, find them in the installation.
+        search_results: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
             look_for,
             order,
-            capsules=[] if mod_capsule is None else [mod_capsule]
+            capsules=capsules_to_search
         )
-        for identifier, locations in search.items():
-            self.add_locations(
-                identifier.resname,
-                identifier.restype,
-                (location.filepath for location in locations),
-            )
+        for identifier, locations in search_results.items():
+            self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations))
+
+        # Third. Since we now have a known full list of resources necessary, we can now process Override and chitin in one fell swoop.
+        # Realistically we'll do this at the end, but right now we're interested in enumerating the models so we can find textures.
+
+        # Check chitin first.
+        for resource in self._installation.chitin_resources():
+            if resource.identifier() in self.resources or resource.identifier() in look_for:
+                get_root_logger().info("Found chitin location '%s' for resource '%s' for module '%s'",
+                                        resource.filepath(), resource.identifier(), display_name)
+                self.add_locations(resource.resname(), resource.restype(), (resource.filepath(),)).activate()
+
+        # Prioritize Override by checking/activating last.
+        for directory in self._installation.override_list():
+            for resource in self._installation.override_resources(directory):
+                if resource.identifier() in self.resources or resource.identifier() in look_for:
+                    get_root_logger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
+                    self.add_locations(resource.resname(), resource.restype(), [resource.filepath()]).activate()
 
         # Also try get paths for textures in models
-        textures: set[str] = set()
+        lookup_texture_queries: set[str] = set()
         for model in self.models():
             get_root_logger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
             try:
-                textures.update(list_textures(model.data()))
-            except OSError as e:  # noqa: PERF203
-                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() with model '%s': %s", repr(self), model.identifier(), e)
-            except Exception:  # noqa: BLE001
-                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+                model_data = model.data()
+            except OSError:
+                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s", repr(self), model.identifier(), e)
+                continue
+            else:
+                if model_data is None:
+                    get_root_logger().warning("Missing model '%s', needed by module '%s'", model.identifier(), display_name)
+                    continue
+                if not model_data:
+                    get_root_logger().warning("model '%s' was unexpectedly empty, but is needed by module '%s'", model.identifier(), display_name)
+                    continue
             try:
-                textures.update(list_lightmaps(model.data()))
+                model_textures = list_textures(model_data)
             except OSError as e:  # noqa: PERF203
-                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() with model '%s': %s", repr(self), model.identifier(), e)
+                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() in list_textures() with model '%s': %s", repr(self), model.identifier(), e)
             except Exception:  # noqa: BLE001
                 get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+            else:
+                get_root_logger().info("Found %s textures in '%s'", model.identifier(), display_name)
+                lookup_texture_queries.update(model_textures)
+            try:
+                lookup_texture_queries.update(list_lightmaps(model_data))
+            except OSError as e:  # noqa: PERF203
+                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() in list_lightmaps() with model '%s': %s", repr(self), model.identifier(), e)
+            except Exception:  # noqa: BLE001
+                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+            else:
+                get_root_logger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
+                lookup_texture_queries.update(model_textures)
 
         texture_search: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
             (
                 ResourceIdentifier(texture, res_type)
-                for texture in textures
+                for texture in lookup_texture_queries
                 for res_type in (ResourceType.TPC, ResourceType.TGA)
             ),
             [
                 SearchLocation.OVERRIDE,
                 SearchLocation.CHITIN,
                 SearchLocation.TEXTURES_TPA,
-                #SearchLocation.TEXTURES_TPB,
-                #SearchLocation.TEXTURES_TPC,
+                #SearchLocation.TEXTURES_TPB,  # lower quality version of tpa
+                #SearchLocation.TEXTURES_TPC,  # even worse quality than tpb
             ],
         )
         for identifier, locations in texture_search.items():
-            self.add_locations(
-                identifier.resname,
-                identifier.restype,
-                (location.filepath for location in locations),
-            )
+            if identifier == "dirt.tpc":
+                continue  # skip this constant name that sometimes appears in list_textures
+            get_root_logger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
+            self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations)).activate()
 
-        for resident, module_resource in self.resources.items():
+        # Finally iterate through all resources we may have missed.
+        for module_resource in self.resources.values():
             if module_resource.isActive():
                 continue
-            get_root_logger().debug("Activating module resource '%s'...", resident)
             module_resource.activate()
+
+    def _handle_git_lyt_reloads(
+        self,
+        main_search_results: dict[ResourceIdentifier, list[LocationResult]],
+        query: ResourceIdentifier,
+        useable_type: type[GIT | LYT],
+        errmsg: str,
+    ) -> set[ResourceIdentifier]:
+        if not main_search_results.get(query):
+            raise FileNotFoundError(
+                errno.ENOENT,
+                os.strerror(errno.ENOENT),
+                self.lookup_main_capsule().filepath() / str(query),
+            )
+        original_git_or_lyt = self.add_locations(
+            query.resname,
+            query.restype,
+            (loc.filepath for loc in main_search_results[query]),
+        )
+        # Activate each GIT/LYT location for this module, and fill this module with all of their resources (all of the resources their instances point to).
+        original_path: Path = original_git_or_lyt.locations()[0]
+        result: set[ResourceIdentifier] = set()
+        for location in original_git_or_lyt.locations():
+            original_git_or_lyt.activate(location)
+            loaded_git_or_lyt: useable_type | None = original_git_or_lyt.resource()
+            if not isinstance(loaded_git_or_lyt, useable_type):
+                raise RuntimeError(errmsg)  # noqa: TRY004
+            result.update(loaded_git_or_lyt.iter_resource_identifiers())
+        original_git_or_lyt.activate(original_path)  # reactivate the main one.
+
+        return result
 
     def add_locations(
         self,
         resname: str,
         restype: ResourceType,
         locations: Iterable[Path],
-    ):
-        """Adds resource locations to a ModuleResource.
+    ) -> ModuleResource:
+        """Creates or extends a ModuleResource keyed by the resname/restype with additional locations.
+
+        This is how Module.resources dict gets filled.
 
         Args:
         ----
@@ -575,16 +635,17 @@ class Module:  # noqa: PLR0904
         if not isinstance(locations, Collection):
             locations = list(locations)
         if not locations:
-            get_root_logger().warning("No locations found for search '%s.%s'", resname, restype)
-        else:
-            get_root_logger().debug("Adding %s location(s) for resource '%s.%s'...", len(locations), resname, restype)
+            get_root_logger().warning("No locations found for '%s.%s' which are intended to add to module '%s'", resname, restype, self._root)
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
+        if restype is ResourceType.TGA:  # TODO(th3w1zard1): txi?
+            restype = ResourceType.TPC
         module_resource: ModuleResource | None = self.resource(resname, restype)
         if module_resource is None:
             module_resource = ModuleResource(resname, restype, self._installation)
             self.resources[module_resource.identifier()] = module_resource
         module_resource.add_locations(locations)
+        return module_resource
 
     def installation(self) -> Installation:
         return self._installation
@@ -1617,9 +1678,10 @@ class ModuleResource(Generic[T]):
             return
         if not self._locations:
             return
-        self.activate(self._locations[0])
+        #self.activate(self._locations[0])
 
     def select_activation_path(self):
+        # sourcery skip: assign-if-exp, reintroduce-else
         """Just realized this function isn't necessary because Installation.locations() allows a searchorder."""
         # Categorize paths based on their priority
         override_paths = []
@@ -1675,7 +1737,10 @@ class ModuleResource(Generic[T]):
                 self._locations.append(r_filepath)
             self._active = r_filepath
         if self._active is None:
-            get_root_logger().warning("No locations found for '%s'", self.identifier())
+            get_root_logger().warning("Cannot activate module resource '%s': No locations found.", self.identifier())
+        else:
+            get_root_logger().info("Activating module resource '%s' at filepath '%s' (%s other locations available)", self.identifier(), self._active, len(self._locations)-1)
+        return self._active
 
     def unload(self):
         """Clears the cached resource object from memory."""
@@ -1749,14 +1814,7 @@ class ModuleResource(Generic[T]):
 
         active_path = self.active()
         if not active_path:
-            bytedata = self.to_bytes()
-            if bytedata is not None:
-                get_root_logger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
-                active_path = self._installation.override_path().joinpath(self.filename())
-                with active_path.open("wb") as f:
-                    f.write(bytedata)
-                self.activate(active_path)
-
+            active_path = self._create_anew_in_override()
         if is_bif_file(active_path.name):
             msg = "Cannot save file to BIF."
             raise ValueError(msg)
@@ -1781,3 +1839,15 @@ class ModuleResource(Generic[T]):
 
         else:
             BinaryWriter.dump(active_path, conversions[self._restype](self.resource()))
+
+    def _create_anew_in_override(self) -> CaseAwarePath:
+        bytedata = self.to_bytes()
+        if bytedata is None:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self._installation.override_path().joinpath(self.filename()))
+
+        get_root_logger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
+        result = self._installation.override_path().joinpath(self.filename())
+        with result.open("wb") as f:
+            f.write(bytedata)
+        self.activate(result)
+        return result
