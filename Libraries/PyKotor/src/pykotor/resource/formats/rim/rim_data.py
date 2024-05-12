@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import copy
+from typing import Any, Generator
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
@@ -20,7 +21,7 @@ class RIM:
 
     def __iter__(
         self,
-    ):
+    ) -> Generator[RIMResource, Any, None]:
         """Iterates through the stored resources yielding a copied resource each iteration."""
         for resource in self._resources:
             yield copy(resource)
