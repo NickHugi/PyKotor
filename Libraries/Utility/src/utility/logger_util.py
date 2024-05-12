@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import json
 import logging
 import multiprocessing
@@ -18,6 +17,8 @@ from typing import TYPE_CHECKING, ClassVar
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    import datetime
+
     from io import TextIOWrapper
     from types import TracebackType
 
@@ -417,11 +418,13 @@ def get_root_logger(
             everything_log_file = "debug_pykotor.log"
             info_warning_log_file = "pykotor.log"
             error_critical_log_file = "errors_pykotor.log"
+            exception_log_file = "exception_pykotor.log"
         else:
             log_dir = get_log_directory(subdir=f"logs/{cur_process.pid}")
             everything_log_file = f"debug_pykotor_{cur_process.pid}.log"
             info_warning_log_file = f"pykotor_{cur_process.pid}.log"
             error_critical_log_file = f"errors_pykotor_{cur_process.pid}.log"
+            exception_log_file = f"exception_pykotor_{cur_process.pid}.log"
             console_format_str = f"PID={cur_process.pid} - {console_format_str}"
 
         console_handler = ColoredConsoleHandler()
@@ -433,16 +436,19 @@ def get_root_logger(
         sys.stdout = CustomPrintToLogger(logger, sys.__stdout__, log_type="stdout")
         sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
 
+        default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
         # Handler for everything (DEBUG and above)
         everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
         everything_handler.setLevel(logging.DEBUG)
-        everything_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        everything_handler.setFormatter(default_formatter)
         logger.addHandler(everything_handler)
 
         # Handler for INFO and WARNING
         info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
         info_warning_handler.setLevel(logging.INFO)
-        info_warning_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        info_warning_handler.setFormatter(default_formatter)
         info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
         logger.addHandler(info_warning_handler)
 
@@ -450,8 +456,15 @@ def get_root_logger(
         error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
         error_critical_handler.setLevel(logging.ERROR)
         error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
-        error_critical_handler.setFormatter(CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        error_critical_handler.setFormatter(exception_formatter)
         logger.addHandler(error_critical_handler)
+
+        # Handler for EXCEPTIONS ONLY (using CustomExceptionFormatter)
+        exception_handler = DirectoryRotatingFileHandler(log_dir, exception_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
+        exception_handler.setLevel(logging.ERROR)
+        exception_handler.setFormatter(exception_formatter)
+        exception_handler.addFilter(LogLevelFilter(logging.ERROR))  # Only log ERROR and CRITICAL levels
+        logger.addHandler(exception_handler)
 
     return logger
 
