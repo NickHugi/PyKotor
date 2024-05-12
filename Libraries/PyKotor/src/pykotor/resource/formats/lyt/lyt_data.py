@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Generator
 
+from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
@@ -25,11 +26,22 @@ class LYT:
         self.doorhooks: list[LYTDoorHook] = []
 
     def iter_resource_identifiers(self) -> Generator[ResourceIdentifier, Any, None]:
-        """Does not guarantee the ResourceType exists, only the resname/resref."""
+        """Generates resources that utilize this LYT.
+
+        Does not guarantee the ResourceType exists, only the resname/resref.
+        """
         for room in self.rooms:
             yield ResourceIdentifier(room.model, ResourceType.MDL)
             yield ResourceIdentifier(room.model, ResourceType.MDX)
             yield ResourceIdentifier(room.model, ResourceType.WOK)
+
+    def all_room_models(self) -> Generator[str, Any, None]:
+        """Returns all models used by this LYT."""
+        for room in self.rooms:
+            parsed_model = room.model.strip()
+            assert parsed_model == room.model, "room model names cannot contain spaces."
+            assert ResRef.is_valid(parsed_model), f"invalid room model: '{room.model}' at room {self.rooms.index(room)}, must conform to resref restrictions."
+            yield parsed_model.lower()
 
 
 class LYTRoom:
