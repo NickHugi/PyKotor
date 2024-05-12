@@ -313,9 +313,13 @@ class CustomItem:
 
 
 class FileItems(CustomItem):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, filepaths: list[Path], **kwargs):
         super().__init__(*args, **kwargs)
+        self.filepaths: list[Path] = []
         self.temp_path: Path | None = None
+
+    def selectedItems(self) -> list[FileTableWidgetItem]:
+        return [FileTableWidgetItem(value=str(path), filepath=path) for path in self.filepaths]
 
     def show_confirmation_dialog(
         self,
@@ -460,6 +464,8 @@ class FileItems(CustomItem):
                     self.temp_path = ""  # Don't ask again for this sesh
                     return
                 self.temp_path = Path(savepath_str)
+            if not self.temp_path:
+                return
             savepath = self.temp_path / file_path.name
         with file_path.open("rb") as reader, savepath.open("wb") as writer:
             writer.write(reader.read())
@@ -628,10 +634,12 @@ class ResourceItems(FileItems):
         resources: Sequence[FileResource | ResourceResult | LocationResult] | None = None,
         **kwargs,
     ):
+        self.viewport: Callable
         self.resources: list[FileResource] = []
-        super().__init__(*args, **kwargs)
         if resources is not None:
             self._unify_resources(resources)
+        filepaths = [res.filepath() for res in self.resources]
+        super().__init__(filepaths, *args, **kwargs)
 
     def _unify_resources(
         self,
@@ -823,7 +831,10 @@ class CustomTableWidget(CustomItem, QTableWidget):
                     return i
         raise ValueError(f"Column name '{column_name}' does not exist in this view.")
 
-class FileTableWidget(FileItems, CustomTableWidget): ...
+class FileTableWidget(FileItems, CustomTableWidget):
+    def selectedItems(self) -> list[FileTableWidgetItem]:
+        return QTableWidget.selectedItems(self)
+
 class ResourceTableWidget(FileTableWidget, ResourceItems):
     def selectedItems(self) -> list[ResourceTableWidgetItem]:
         return QTableWidget.selectedItems(self)
