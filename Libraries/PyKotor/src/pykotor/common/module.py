@@ -38,7 +38,7 @@ from pykotor.resource.generics.utp import UTP, bytes_utp, read_utp, write_utp
 from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts, write_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt, write_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw, write_utw
-from pykotor.resource.type import TARGET_TYPES, ResourceType
+from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath
@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.pth import PTH
     from pykotor.resource.generics.uti import UTI
-    from pykotor.resource.type import SOURCE_TYPES
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 T = TypeVar("T")
 SEARCH_ORDER: list[SearchLocation] = [
