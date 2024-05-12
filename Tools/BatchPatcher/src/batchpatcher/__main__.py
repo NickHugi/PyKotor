@@ -21,6 +21,8 @@ from tkinter import (
 )
 from typing import TYPE_CHECKING, Any
 
+from pykotor.resource.salvage import validate_capsule
+
 if getattr(sys, "frozen", False) is False:
 
     def add_sys_path(path: pathlib.Path):
@@ -45,7 +47,7 @@ from pykotor.common.alien_sounds import ALIEN_SOUNDS
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.extract.capsule import Capsule
+from pykotor.extract.capsule import Capsule, LazyCapsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.extract.twoda import K1Columns2DA, K2Columns2DA
@@ -55,7 +57,6 @@ from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt
-from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
@@ -83,7 +84,7 @@ from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import universal_simplify_exception
 from utility.logger_util import get_root_logger
 from utility.system.path import Path, PurePath
 from utility.tkinter.updater import human_readable_size
@@ -94,6 +95,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Literal
 
+    from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 
@@ -125,6 +127,7 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 
 class Globals:
     def __init__(self):
+        self.always_backup: bool = True
         self.chosen_languages: list[Language] = []
         self.create_fonts: bool = False
         self.check_textures: bool = False
@@ -352,68 +355,104 @@ def convert_gff_game(
     resource: FileResource,
 ):
     to_game = Game.K2 if from_game.is_k1() else Game.K1
-    converted_filepath: Path = resource.filepath().with_name(f"{resource.resname()}_{to_game.name!s}.{resource.restype()!s}")
-    log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name} and saving as {converted_filepath.name}")
-    generic: Any
-
-    if resource.restype() == ResourceType.ARE:
-        generic = read_are(resource.data(), offset=0, size=resource.size())
-        write_are(generic, converted_filepath, to_game)
-
-    elif resource.restype() == ResourceType.DLG:
-        generic = read_dlg(resource.data(), offset=0, size=resource.size())
-        write_dlg(generic, converted_filepath, to_game)
-
-    elif resource.restype() == ResourceType.GIT:
-        generic = read_git(resource.data(), offset=0, size=resource.size())
-        write_git(generic, converted_filepath, to_game)
-
-    elif resource.restype() == ResourceType.JRL:
-        generic = read_jrl(resource.data(), offset=0, size=resource.size())
-        write_jrl(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.PTH:
-        generic = read_pth(resource.data(), offset=0, size=resource.size())
-        write_pth(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTC:
-        generic = read_utc(resource.data(), offset=0, size=resource.size())
-        write_utc(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTD:
-        generic = read_utd(resource.data(), offset=0, size=resource.size())
-        write_utd(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTE:
-        generic = read_ute(resource.data(), offset=0, size=resource.size())
-        write_ute(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTI:
-        generic = read_uti(resource.data(), offset=0, size=resource.size())
-        write_uti(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTM:
-        generic = read_utm(resource.data(), offset=0, size=resource.size())
-        write_utm(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTP:
-        generic = read_utp(resource.data(), offset=0, size=resource.size())
-        write_utp(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTS:
-        generic = read_uts(resource.data(), offset=0, size=resource.size())
-        write_uts(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTT:
-        generic = read_utt(resource.data(), offset=0, size=resource.size())
-        write_utt(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTW:
-        generic = read_utw(resource.data(), offset=0, size=resource.size())
-        write_utw(generic, converted_filepath, game=to_game)
-
+    new_name = resource.filename()
+    converted_data: Path | bytearray = bytearray()
+    if not resource.inside_capsule:
+        new_name = f"{resource.resname()}_{to_game.name!s}.{resource.restype()!s}" if SCRIPT_GLOBALS.always_backup else resource.filename()
+        converted_data = resource.filepath().with_name(new_name)
+        savepath = converted_data
     else:
-        log_output(f"Unsupported gff: {resource.identifier()}")
+        # TODO(th3w1zard1): define this up the stack
+        #savepath = (
+        #    resource.filepath().with_name(f"{resource.filepath().stem}_{to_game.name!s}{resource.filepath().suffix}")
+        #    if SCRIPT_GLOBALS.always_backup
+        #    else resource.filepath()
+        #)
+        savepath = resource.filepath()
+    log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name}")
+    generic: Any
+    try:
+        if resource.restype() is ResourceType.ARE:
+            generic = read_are(resource.data(), offset=0, size=resource.size())
+            write_are(generic, converted_data, to_game)
+
+        elif resource.restype() is ResourceType.DLG:
+            generic = read_dlg(resource.data(), offset=0, size=resource.size())
+            write_dlg(generic, converted_data, to_game)
+
+        elif resource.restype() is ResourceType.GIT:
+            generic = read_git(resource.data(), offset=0, size=resource.size())
+            write_git(generic, converted_data, to_game)
+
+        elif resource.restype() is ResourceType.JRL:
+            generic = read_jrl(resource.data(), offset=0, size=resource.size())
+            write_jrl(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.PTH:
+            generic = read_pth(resource.data(), offset=0, size=resource.size())
+            write_pth(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTC:
+            generic = read_utc(resource.data(), offset=0, size=resource.size())
+            write_utc(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTD:
+            generic = read_utd(resource.data(), offset=0, size=resource.size())
+            write_utd(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTE:
+            generic = read_ute(resource.data(), offset=0, size=resource.size())
+            write_ute(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTI:
+            generic = read_uti(resource.data(), offset=0, size=resource.size())
+            write_uti(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTM:
+            generic = read_utm(resource.data(), offset=0, size=resource.size())
+            write_utm(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTP:
+            generic = read_utp(resource.data(), offset=0, size=resource.size())
+            write_utp(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTS:
+            generic = read_uts(resource.data(), offset=0, size=resource.size())
+            write_uts(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTT:
+            generic = read_utt(resource.data(), offset=0, size=resource.size())
+            write_utt(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTW:
+            generic = read_utw(resource.data(), offset=0, size=resource.size())
+            write_utw(generic, converted_data, game=to_game)
+
+        else:
+            log_output(f"Unsupported gff: {resource.identifier()}")
+    except (OSError, ValueError):
+        get_root_logger().error(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...", exc_info=False)
+        if not resource.inside_capsule:
+            log_output(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...")
+            return
+        log_output(f"Corrupted GFF: '{resource._path_ident_obj}', will start validation process of '{resource.filepath().name}'...")
+        new_erfrim = validate_capsule(resource.filepath(), strict=True, game=to_game)
+        if isinstance(new_erfrim, ERF):
+            log_output(f"Saving salvaged ERF to '{savepath}'")
+            write_erf(new_erfrim, savepath)
+            return
+        if isinstance(new_erfrim, RIM):
+            log_output(f"Saving salvaged RIM to '{savepath}'")
+            write_rim(new_erfrim, savepath)
+            return
+        log_output(f"Whole erf/rim is corrupt: {resource!r}")
+        return
+
+    if isinstance(converted_data, bytearray):
+        log_output(f"Saving conversions in ERF/RIM at '{savepath}'")
+        lazy_capsule = LazyCapsule(savepath, create_nonexisting=True)
+        lazy_capsule.delete(resource.resname(), resource.restype())
+        lazy_capsule.add(resource.resname(), resource.restype(), converted_data)
 
 
 def patch_resource(resource: FileResource) -> GFF | TPC | None:
@@ -444,17 +483,18 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
-                    log_output(format_exception_with_variables(e, message=f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}"))
-                    print(format_exception_with_variables(exc))
+                    get_root_logger().exception(f"tlk strref {strref} generated an exception")
+                    log_output(f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}")
+                    log_output(traceback.format_exc())
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            log_output(format_exception_with_variables(e, message=f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!"))
-            print(format_exception_with_variables(e))
+        except Exception:  # pylint: disable=W0718  # noqa: BLE001
+            get_root_logger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
+            log_output(traceback.format_exc())
             return None
 
         if not tlk:
@@ -475,16 +515,16 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         return TPCTGAReader(resource.data()).load()
 
     if resource.restype().name.upper() in {x.name for x in GFFContent}:
-        if SCRIPT_GLOBALS.k1_convert_gffs:
+        if SCRIPT_GLOBALS.k1_convert_gffs and not resource.inside_capsule:
             convert_gff_game(Game.K2, resource)
-        if SCRIPT_GLOBALS.tsl_convert_gffs:
+        if SCRIPT_GLOBALS.tsl_convert_gffs and not resource.inside_capsule:
             convert_gff_game(Game.K1, resource)
         gff: GFF | None = None
         try:
             # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
             alien_owner: str | None = None
-            if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
+            if gff.content is GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
@@ -502,7 +542,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 and alien_owner in {0, "0", None}
                 and alien_vo_count != -1
                 and alien_vo_count < 3
-                and gff.content == GFFContent.DLG
+                and gff.content is GFFContent.DLG
             ):
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
@@ -522,7 +562,10 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             if made_change or result_made_change:
                 return gff
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource._path_ident_obj}'!"))
+            log_output(f"[Error] cannot load corrupted GFF '{resource._path_ident_obj}'!")
+            if not isinstance(e, (OSError, ValueError)):
+                get_root_logger().exception(f"[Error] loading GFF '{resource._path_ident_obj}'!")
+                log_output(traceback.format_exc())
             # raise
             return None
 
@@ -583,6 +626,7 @@ def patch_capsule_file(c_file: Path):
     try:
         file_capsule = Capsule(c_file)
     except ValueError as e:
+        get_root_logger().exception(f"Could not load '{c_file}'")
         log_output(f"Could not load '{c_file}'. Reason: {universal_simplify_exception(e)}")
         return
 
@@ -650,7 +694,7 @@ def patch_erf_or_rim(
         elif isinstance(patched_data, TPC):
             log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
             txi_resource: FileResource | None = next(
-                (res for res in resources if res.resname() == resource.resname() and res.restype() == ResourceType.TXI),
+                (res for res in resources if res.resname() == resource.resname() and res.restype() is ResourceType.TXI),
                 None,
             )
             if txi_resource:
@@ -662,7 +706,13 @@ def patch_erf_or_rim(
             omitted_resources.append(resource.identifier())
     for resource in resources:
         if resource.identifier() not in omitted_resources:
-            erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
+            try:
+                erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
+            except (OSError, ValueError):
+                get_root_logger().error(f"Corrupted resource: {resource!r}, skipping...", exc_info=True)
+                log_output(f"Corrupted resource: {resource!r}, skipping...")
+            except Exception:
+                get_root_logger().exception(f"Unexpected exception occurred for resource {resource!r}")
     return new_filename
 
 
@@ -718,14 +768,16 @@ def get_active_layouts(k_install: Installation) -> dict[FileResource, LYT]:
             try:
                 layout_resources[resource] = read_lyt(resource.data())
             except (OSError, ValueError):
-                print(f"File '{layout_display_path}' is unreadable or possible corrupted.")
+                get_root_logger().exception(f"Corrupted resource: {resource!r}, skipping...")
+                log_output(f"File '{layout_display_path}' is unreadable or possible corrupted.")
                 continue
         if mod_filename in lower_module_filenames:
             print(f"Found layout '{resource.filename()}' used by 'Modules/{mod_filename}'")
             try:
                 layout_resources[resource] = read_lyt(resource.data())
             except (OSError, ValueError):
-                print(f"File '{layout_display_path}' is unreadable or possible corrupted.")
+                get_root_logger().exception(f"Corrupted resource: {resource!r}, skipping...")
+                log_output(f"File '{layout_display_path}' is unreadable or possible corrupted.")
                 continue
     return layout_resources
 
@@ -766,6 +818,7 @@ def determine_if_model_utilized(
         result_2da = locations_2da.get(ResourceIdentifier.from_path(filename))
         if not result_2da:
             get_root_logger().warning(f"No locations found for '{filename}'")
+            log_output(f"No locations found for '{filename}'")
             continue
 
         resource2da = result_2da.as_file_resource()
@@ -774,6 +827,7 @@ def determine_if_model_utilized(
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
             get_root_logger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
+            log_output(f"Corrupted/unreadable file: '{display_path_2da}'")
             continue
         filename_2da = resource2da.filename().lower()
         for column_name in model_2da_resref_info[filename_2da]:
@@ -792,8 +846,10 @@ def determine_if_model_utilized(
 
                             print(f"model '{model_resource.filename()}' is used by the game.")
                             return True
-                    except Exception as e:  # noqa: PERF203
-                        get_root_logger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
+                    except Exception:  # noqa: PERF203
+                        get_root_logger().exception("Error parsing '%s' header '%s'", filename_2da, header)
+                        log_output(f"Error parsing '{filename_2da}' header '{header}'")
+                        log_output(traceback.format_exc())
             else:
                 try:
                     for colenum_row_index, cell in enumerate(valid_2da.get_column(column_name)):
@@ -811,8 +867,10 @@ def determine_if_model_utilized(
                                 f"model '{model_resource.filename()}' is used by the game, referenced by '{display_path_2da}', column '{column_name}', row '{colenum_row_index}'"
                             )
                             return True
-                except Exception as e:
-                    get_root_logger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
+                except Exception:
+                    get_root_logger().exception("Error parsing '%s' column '%s'", filename_2da, column_name)
+                    log_output(f"Error parsing '{filename_2da}' column '{column_name}'")
+                    log_output(traceback.format_exc())
     log_output("Nope")
     return False
 
@@ -831,6 +889,7 @@ def find_missing_model_textures_lightmaps(
         for lmtex_name in gen_func(model_resource.data()):
             texture_names.append(lmtex_name)
     except Exception as e:
+        get_root_logger().exception(f"Error listing {lightmap_or_texture}s in '{model_display_path}'")
         log_output(f"Error listing {lightmap_or_texture}s in '{model_display_path}': {e}")
         return None
     else:
@@ -941,6 +1000,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
         result_2da = locations_2da.get(ResourceIdentifier.from_path(filename))
         if not result_2da:
             get_root_logger().warning(f"No locations found for '{filename}'")
+            log_output(f"No locations found for '{filename}'")
             continue
 
         resource2da = result_2da.as_file_resource()
@@ -948,7 +1008,9 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
-            get_root_logger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
+            get_root_logger().exception(f"Corrupted resource: {resource2da!r}, skipping...")
+            log_output(f"Corrupted/unreadable file: '{display_path_2da}'")
+            log_output(traceback.format_exc())
             continue
         filename_2da = resource2da.filename().lower()
         tex_appends = ("", "01") if filename_2da == "appearance.2da" else ("",)
@@ -968,6 +1030,8 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
                                 print(f"Missing texture '{stripped_header}' (referenced by header at row {header_row_index} of '{filename_2da}')")
                     except Exception:
                         get_root_logger().error("Error parsing '%s' headers", filename_2da, exc_info=True)
+                        log_output(f"Error parsing '{filename_2da}' headers")
+                        log_output(traceback.format_exc())
                 else:
                     try:
                         for colnum_row_index, cell in enumerate(valid_2da.get_column(column_name)):
@@ -982,6 +1046,8 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
                                 print(f"Missing texture '{stripped_cell}' (referenced by column '{column_name}' at row {colnum_row_index} of '{filename_2da}')")
                     except Exception:
                         get_root_logger().error("Error parsing '%s' column '%s'", filename_2da, column_name, exc_info=True)
+                        log_output(f"Error parsing '{filename_2da}' column {column_name}")
+                        log_output(traceback.format_exc())
 
     # Check mdl
     log_output("Checking mdl's for any texture references... this may take a while.")
@@ -1042,6 +1108,19 @@ def patch_install(install_path: os.PathLike | str):
     # k_install.reload_all()
     if SCRIPT_GLOBALS.is_patching():
         log_output_with_separator("Patching modules...")
+        if SCRIPT_GLOBALS.k1_convert_gffs or SCRIPT_GLOBALS.tsl_convert_gffs:
+            for module_name in k_install._modules:
+                log_output(f"Validating ERF/RIM in the Modules folder: '{module_name}'")
+                module_path = k_install.module_path().joinpath(module_name)
+                to_game = Game.K2 if SCRIPT_GLOBALS.tsl_convert_gffs else Game.K1
+                erf_or_rim = validate_capsule(module_path, strict=True, game=to_game)
+                if isinstance(erf_or_rim, ERF):
+                    write_erf(erf_or_rim, module_path)
+                elif isinstance(erf_or_rim, RIM):
+                    write_rim(erf_or_rim, module_path)
+                else:
+                    log_output(f"Unknown ERF/RIM: '{module_path.relative_to(k_install.path().parent)}'")
+        k_install.load_modules()
         for module_name, resources in k_install._modules.items():  # noqa: SLF001
             res_ident = ResourceIdentifier.from_path(module_name)
             filename = str(res_ident)
@@ -1126,9 +1205,10 @@ def execute_patchloop_thread() -> str | None:
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
     except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-        log_output(format_exception_with_variables(e, message="Unhandled exception during the patching process."))
+        get_root_logger().exception("Unhandled exception during the patching process.")
+        log_output(traceback.format_exc())
         SCRIPT_GLOBALS.install_running = False
-        return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
+        return messagebox.showerror("Error", f"An error occurred during patching\n{universal_simplify_exception(e)}")
 
 
 def do_main_patchloop() -> str:
@@ -1306,7 +1386,7 @@ class KOTORPatchingToolUI:
         browse_folder_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
         browse_folder_button.config(width=15)
         browse_file_button = ttk.Button(self.root, text="Browse File", command=self.browse_source_file)
-        browse_file_button.grid(row=row, column=4, padx=2)  # Stick to both sides within its cell
+        browse_file_button.grid(row=row+1, column=3, padx=2)  # Stick to both sides within its cell
         browse_file_button.config(width=15)
         row += 1
 
@@ -1625,7 +1705,8 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e)))
+            get_root_logger().exception("Unhandled exception during the patching process.")
+            messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e) + "\n" + traceback.format_exc()))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
         return None
@@ -1646,5 +1727,6 @@ if __name__ == "__main__":
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
     except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
+        get_root_logger().exception("Unhandled main exception")
         log_output(traceback.format_exc())
         raise
