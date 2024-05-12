@@ -47,7 +47,7 @@ from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, R
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
-from toolset.utils.window import addWindow
+from toolset.utils.window import addWindow, openResourceEditor
 from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
@@ -731,15 +731,24 @@ class _InstanceMode(_Mode):
         for loc in search:
             if (
                 loc.filepath.parent.name.lower() == "modules"
-                and self._installation.replace_module_extensions(loc.filepath.name.lower()) != self._editor._module._root
+                and self._installation.replace_module_extensions(loc.filepath.name.lower()) != module_root
             ):
                 get_root_logger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
                 search.remove(loc)
-        if search:
+        if len(search) > 1:
             selectionWindow = FileSelectionWindow(search, self._installation)
             selectionWindow.show()
             selectionWindow.activateWindow()
             addWindow(selectionWindow)
+        elif search:
+            resource = search[0].as_file_resource()
+            openResourceEditor(
+                resource.filepath(),
+                resource.resname(),
+                resource.restype(),
+                resource.data(),
+                self._installation
+            )
 
     def editSelectedInstanceGeometry(self):
         if self.walkmeshRenderer.instanceSelection.last():
