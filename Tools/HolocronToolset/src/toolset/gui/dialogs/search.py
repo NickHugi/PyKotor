@@ -143,14 +143,13 @@ class FileSearcher(QDialog):
         searchText = query.text if query.caseSensitive else query.text.lower()
 
         def _search(resource: FileResource):
-            if resource.restype() not in query.checkTypes:
-                return
-
             resource_name: str = resource.resname()
             name_check: bool = searchText in (resource_name if query.caseSensitive else resource_name.lower())
             if name_check:
                 results.append(resource)
             if query.filenamesOnly:
+                return
+            if resource.restype() not in query.checkTypes:
                 return
             resource_data: str = resource.data().decode(encoding="ascii", errors="ignore")  # HACK:
             if searchText in (resource_data if query.caseSensitive else resource_data.lower()):
