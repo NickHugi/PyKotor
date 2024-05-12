@@ -28,7 +28,7 @@ from tkinter import (
     ttk,
 )
 from types import TracebackType
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
 
 def is_frozen() -> bool:
