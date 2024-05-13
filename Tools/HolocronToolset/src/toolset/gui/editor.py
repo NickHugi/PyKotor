@@ -57,7 +57,7 @@ class Editor(QMainWindow):
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
         installation: HTInstallation | None = None,
-        mainWindow: QMainWindow | None = None,
+        mainWindow: QMainWindow | QWidget | None = None,
     ):
         """Initializes the editor.
 

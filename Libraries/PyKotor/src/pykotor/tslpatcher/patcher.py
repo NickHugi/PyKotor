@@ -12,6 +12,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
+from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tools.module import rim_to_mod
@@ -20,6 +21,7 @@ from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
+from pykotor.tslpatcher.mods.nss import ModificationsNSS, MutableString
 from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import universal_simplify_exception
 from utility.logger_util import get_root_logger
@@ -382,8 +384,8 @@ class ModInstaller:
             msg = "Chosen KOTOR directory is not a valid installation - cannot initialize ModInstaller."
             raise RuntimeError(msg)
 
+        memory = PatcherMemory()
         config: PatcherConfig = self.config()
-        temp_script_folder: CaseAwarePath | None = self._prepare_compilelist(config)
         patches_list: list[PatcherModifications] = [
             *config.install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
             *self.get_tlk_patches(config),
@@ -394,11 +396,18 @@ class ModInstaller:
             *config.patches_ssf,
         ]
 
-        memory = PatcherMemory()
+        temp_script_folder: CaseAwarePath | None = self._prepare_compilelist(config, memory)
+        finished_preprocessed_scripts: bool = False
         for patch in patches_list:
             if should_cancel is not None and should_cancel.is_set():
                 print("ModInstaller.install() received termination request, cancelling...")
                 sys.exit()
+
+            # Must run preprocessed scripts directly before GFFList so we don't interfere with !FieldPath assignments to 2DAMEMORY.
+            if not finished_preprocessed_scripts and isinstance(patch, ModificationsNSS):
+                self._prepare_compilelist(config, memory, self.log, self.game)
+                finished_preprocessed_scripts = True
+
             # if self.game.is_ios():  # TODO:
             #    patch.destination = patch.destination.lower()
             output_container_path: CaseAwarePath = self.game_path / patch.destination
@@ -445,7 +454,13 @@ class ModInstaller:
         num_patches_completed: int = config.patch_count()
         self.log.add_note(f"Successfully completed {num_patches_completed} {'patch' if num_patches_completed == 1 else 'total patches'}.")  # noqa: E501
 
-    def _prepare_compilelist(self, config: PatcherConfig) -> CaseAwarePath | None:
+    def _prepare_compilelist(
+        self,
+        config: PatcherConfig,
+        log: PatchLogger,
+        memory: PatcherMemory,
+        game: Game,
+    ) -> CaseAwarePath | None:
         """tslpatchdata should be read-only, this allows us to replace memory tokens while ensuring include scripts work correctly."""  # noqa: D403, E501
         if not config.patches_nss:
             return None
@@ -469,6 +484,19 @@ class ModInstaller:
             if file.suffix.lower() != ".nss" or not file.safe_isfile():
                 continue
             shutil.copy(file, temp_script_folder)
+
+        # Next process the strref/2damemory in each. It's very important this function is called after 2dalist and tlklist are handled due to this.
+        scripts_list: list[CaseAwarePath] = [*set(temp_script_folder.iterdir())]
+        log.add_verbose(f"Preprocessing #StrRef# and #2DAMEMORY# tokens for all {len(scripts_list)} scripts, before running [CompileList]")
+        for script in temp_script_folder.iterdir():
+            if script.suffix.lower() != ".nss" or not file.safe_isfile():
+                continue
+            log.add_verbose(f"Parsing tokens in '{script.name}'...")
+            with script.open(mode="rb") as f:
+                m_content = MutableString(decode_bytes_with_fallbacks(f.read()))
+            ModificationsNSS(script.name).apply(m_content, memory, log, game)
+            with script.open(mode="w", encoding="windows-1252") as f:
+                f.write(m_content.value)
 
         # Store the location of the temp folder in each nss patch.
         for nss_patch in config.patches_nss:

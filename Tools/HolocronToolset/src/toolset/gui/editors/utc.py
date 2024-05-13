@@ -46,7 +46,7 @@ class UTCEditor(Editor):
         parent: QWidget | None,
         installation: HTInstallation = None,
         *,
-        mainWindow: QMainWindow | None = None,
+        mainWindow: QMainWindow | QWidget | None = None,
     ):
         """Initializes the Creature Editor window.
 
