@@ -125,7 +125,7 @@ HARDCODED_MODULE_NAMES: dict[str, str] = {
 }
 
 
-class Installation:  # noqa: PLR0904
+class Installation:
     """Installation provides a centralized location for loading resources stored in the game through its various folders and formats."""  # noqa: E501
 
     TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
@@ -178,6 +178,7 @@ class Installation:  # noqa: PLR0904
         elif self.game().is_k2():
             self.load_streamvoice()
         self.load_textures()
+        self.load_saves()
         self._log.info("Finished loading the installation from %s", self._path)
         self._initialized = True
 
@@ -301,6 +302,64 @@ class Installation:  # noqa: PLR0904
         """
         return self._find_resource_folderpath(("streamvoice", "streamwaves"))
 
+    def save_locations(self) -> list[Path]:
+        # sourcery skip: assign-if-exp, extract-method
+        """Returns a list of existing save locations (paths where save files can be found)."""
+        save_paths: list[Path] = [self._find_resource_folderpath("saves", optional=True)]
+        if self.game().is_k2():
+            cloudsave_dir = self._find_resource_folderpath("cloudsaves", optional=True)
+            if cloudsave_dir.safe_isdir():
+                for folder in cloudsave_dir.iterdir():
+                    if not folder.safe_isdir():
+                        continue
+                    save_paths.append(folder)
+        system = platform.system()
+
+        if system == "Windows":
+            roamingappdata_env: str = os.getenv("APPDATA", "")
+            if not roamingappdata_env.strip() or not Path(roamingappdata_env).safe_isdir():
+                roamingappdata_path = Path.home().joinpath("AppData", "Roaming")
+            else:
+                roamingappdata_path = Path(roamingappdata_env)
+
+            game_folder1 = "kotor" if self.game().is_k1() else "kotor2"  # FIXME: k1 is known but k2's 'kotor2' is a guess
+            save_paths.append(roamingappdata_path.joinpath("LucasArts", game_folder1, "saves"))
+
+            localappdata_env: str = os.getenv("LOCALAPPDATA", "")
+            if not localappdata_env.strip() or not Path(localappdata_env).safe_isdir():
+                localappdata_path = Path.home().joinpath("AppData", "Local")
+            else:
+                localappdata_path = Path(localappdata_env)
+
+            local_virtual_store = localappdata_path / "VirtualStore"
+            game_folder2 = "SWKotOR2" if self.game().is_k2() else "SWKotOR"
+            save_paths.extend(
+                (
+                    local_virtual_store.joinpath("Program Files", "LucasArts", game_folder2, "saves"),
+                    local_virtual_store.joinpath("Program Files (x86)", "LucasArts", game_folder2, "saves")
+                )
+            )
+
+        elif system == "Darwin":  # TODO
+            home = Path.home()
+            save_paths.extend(
+                (
+                    home.joinpath("Library", "Application Support", "Star Wars Knights of the Old Republic II", "saves"),
+                    home.joinpath("Library", "Containers", "com.aspyr.kotor2.appstore", "Data", "Library", "Application Support",
+                                  "Star Wars Knights of the Old Republic II", "saves")
+                )
+            )
+
+        elif system == "Linux":  # TODO
+            xdg_data_home = os.getenv("XDG_DATA_HOME", "")
+            remaining_path_parts = PurePath("aspyr-media", "kotor2", "saves")
+            if xdg_data_home.strip() and Path(xdg_data_home).safe_isdir():
+                save_paths.append(Path(xdg_data_home, remaining_path_parts))
+            save_paths.append(Path.home().joinpath(".local", "share", remaining_path_parts))
+
+        # Filter and return existing paths
+        return [path for path in save_paths if path.safe_isdir()]
+
     def _find_resource_folderpath(
         self,
         folder_names: tuple[str, ...] | str,
@@ -332,7 +391,7 @@ class Installation:  # noqa: PLR0904
                 resource_path: CaseAwarePath = self._path / folder_name
                 if resource_path.safe_isdir():
                     return resource_path
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
             raise OSError(msg) from e
         else:
@@ -509,6 +568,30 @@ class Installation:  # noqa: PLR0904
     ):
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
         self._texturepacks = self.load_resources_dict(self.texturepacks_path(), capsule_check=is_erf_file)
+
+    def load_saves(
+        self,
+    ):
+        """Reloads the data in the 'saves' folder linked to the Installation."""
+        self._saves = {}
+        for save_location in self.save_locations():
+            print(f"Found an active save location at '{save_location}'")
+            self._saves[save_location] = {}
+            for this_save_path in save_location.iterdir():
+                if not this_save_path.safe_isdir():
+                    continue
+                print(f"Discovered a save bundle '{this_save_path.name}'")
+                self._saves[save_location][this_save_path] = []
+                for file in this_save_path.iterdir():
+                    res_ident = ResourceIdentifier.from_path(file)
+                    file_res = FileResource(
+                        res_ident.resname,
+                        res_ident.restype,
+                        file.stat().st_size,
+                        0,
+                        file
+                    )
+                    self._saves[save_location][this_save_path].append(file_res)
 
     def load_override(self, directory: str | None = None):
         """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
