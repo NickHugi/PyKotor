@@ -294,6 +294,10 @@ class GlobalSettings(Settings):
         "disableRIMSaving",
         True,
     )
+    attemptKeepOldGFFFields = Settings.addSetting(
+        "attemptKeepOldGFFFields",
+        False,
+    )
     useBetaChannel = Settings.addSetting(
         "useBetaChannel",
         True,

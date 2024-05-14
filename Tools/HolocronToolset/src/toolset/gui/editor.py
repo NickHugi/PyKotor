@@ -14,6 +14,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF
+from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
@@ -167,7 +168,7 @@ class Editor(QMainWindow):
         """Refreshes the window title based on the current state of the editor."""
         installationName = "No Installation" if self._installation is None else self._installation.name
         if self._filepath is None:
-            self.setWindowTitle(f"{self._editorTitle} - {installationName}")
+            self.setWindowTitle(f"{self._editorTitle}({installationName})")
             return
 
         relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
@@ -177,7 +178,7 @@ class Editor(QMainWindow):
                 relpath /= f"{self._resname}.{self._restype.extension}"
         else:
             assert relpath.name.lower() == f"{self._resname}.{self._restype}".lower()
-        self.setWindowTitle(f"{self._editorTitle}: {relpath} - {installationName}")
+        self.setWindowTitle(f"{relpath} - {self._editorTitle}({installationName})")
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -249,6 +250,10 @@ class Editor(QMainWindow):
             data, data_ext = self.build()
             if data is None:  # nsseditor
                 return
+            if self._restype.is_gff():
+                old_gff = read_gff(self._revert)
+                new_gff = read_gff(data)
+                new_gff.root.add_missing(old_gff.root)
             self._revert = data
 
             self.refreshWindowTitle()
@@ -536,9 +541,9 @@ class Editor(QMainWindow):
         self._restype = restype
         self._revert = data
         for action in self.menuBar().actions()[0].menu().actions():
-            if action.text() != "Revert":
-                continue
-            action.setEnabled(True)
+            if action.text() == "Revert":
+                action.setEnabled(True)
+                break
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resname, self._restype, data)
 

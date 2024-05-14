@@ -68,6 +68,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="attemptKeepOldGFFFields">
+         <property name="text">
+          <string>Attempts to keep any pre-existing GFF fields when saving the editor. Required for save editing.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QComboBox" name="moduleSortOptionComboBox">
             <property name="editable">
                 <bool>false</bool>

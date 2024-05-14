@@ -609,6 +609,71 @@ class GFFStruct:
     ) -> Any:
         return self._fields[label].value()
 
+    def add_missing(self, other: GFFStruct):
+        """Updates this GFFStruct with any missing fields from the other GFFStruct, deepcopying their values.
+
+        Args:
+        ----
+            other: The GFFStruct from which missing fields will be sourced.
+        """
+        self._add_missing(self, other)
+
+    @staticmethod
+    def _add_missing(target: GFFStruct, source: GFFStruct):
+        """Static method to update target with missing fields from source, handling nested structures.
+
+        Args:
+        ----
+            target: The GFFStruct to which fields will be added if they are missing.
+            source: The GFFStruct from which missing fields will be sourced.
+        """
+        for label, field_type, value in source:
+            if target.exists(label):
+                if field_type == GFFFieldType.Struct:
+                    assert isinstance(value, GFFStruct)
+                    value.add_missing(source.get_struct(label))
+                elif field_type == GFFFieldType.List:
+                    assert isinstance(value, GFFList)
+                    target_list = target.get_list(label)
+                    for target_item, source_item in zip(target_list, value):
+                        target_item.add_missing(source_item)
+            elif field_type == GFFFieldType.UInt8:
+                target.set_uint8(label, deepcopy(value))
+            elif field_type == GFFFieldType.UInt16:
+                target.set_uint16(label, deepcopy(value))
+            elif field_type == GFFFieldType.UInt32:
+                target.set_uint32(label, deepcopy(value))
+            elif field_type == GFFFieldType.UInt64:
+                target.set_uint64(label, deepcopy(value))
+            elif field_type == GFFFieldType.Int8:
+                target.set_int8(label, deepcopy(value))
+            elif field_type == GFFFieldType.Int16:
+                target.set_int16(label, deepcopy(value))
+            elif field_type == GFFFieldType.Int32:
+                target.set_int32(label, deepcopy(value))
+            elif field_type == GFFFieldType.Int64:
+                target.set_int64(label, deepcopy(value))
+            elif field_type == GFFFieldType.Single:
+                target.set_single(label, deepcopy(value))
+            elif field_type == GFFFieldType.Double:
+                target.set_double(label, deepcopy(value))
+            elif field_type == GFFFieldType.ResRef:
+                target.set_resref(label, deepcopy(value))
+            elif field_type == GFFFieldType.String:
+                target.set_string(label, deepcopy(value))
+            elif field_type == GFFFieldType.LocalizedString:
+                target.set_locstring(label, deepcopy(value))
+            elif field_type == GFFFieldType.Binary:
+                target.set_binary(label, deepcopy(value))
+            elif field_type == GFFFieldType.Vector3:
+                target.set_vector3(label, deepcopy(value))
+            elif field_type == GFFFieldType.Vector4:
+                target.set_vector4(label, deepcopy(value))
+            elif field_type == GFFFieldType.Struct:
+                target.set_struct(label, deepcopy(value))
+            elif field_type == GFFFieldType.List:
+                target.set_list(label, deepcopy(value))
+
     def set_uint8(
         self,
         label: str,
