@@ -55,4 +55,4 @@ with the following commands:
 python -m site --user-site
 ```
 
-Then navigate to ```./qt5_applications/Qt/bin``` and open the ```designer.exe``` file.
+Then navigate to ```./site-packages/qt5_applications/Qt/bin``` and open the ```designer.exe``` file.

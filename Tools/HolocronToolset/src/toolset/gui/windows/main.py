@@ -90,7 +90,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
-    from pykotor.tools.path import CaseAwarePath
     from toolset.gui.widgets.main_widgets import TextureList
 
 class CustomTitleBar(QWidget):
@@ -352,6 +351,12 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.modulesWidget.requestOpenResource.connect(self.onOpenResources)
 
+        self.ui.savesWidget.sectionChanged.connect(self.onSavepathChanged)
+        self.ui.savesWidget.requestReload.connect(self.onSaveReload)
+        self.ui.savesWidget.requestRefresh.connect(self.onSaveRefresh)
+        self.ui.savesWidget.requestExtractResource.connect(self.onExtractResources)
+        self.ui.savesWidget.requestOpenResource.connect(self.onOpenResources)
+
         def openModuleDesigner() -> ModuleDesigner:
             designerUi = (
                 ModuleDesigner(
@@ -527,6 +532,13 @@ class ToolWindow(QMainWindow):
     def onModuleRefresh(self):
         self.refreshModuleList(reload=True)
 
+    def onSaveReload(self, saveDir: str):
+        print(f"Reloading '{saveDir}'")
+        self.onSavepathChanged(saveDir)
+
+    def onSaveRefresh(self):
+        self.refreshSavesList()
+
     def onOverrideFileUpdated(self, changedFile: str, eventType: str):
         if eventType == "deleted":
             self.onOverrideRefresh()
@@ -535,6 +547,63 @@ class ToolWindow(QMainWindow):
 
     def onOverrideChanged(self, newDirectory: str):
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
+
+    def onSavepathChanged(self, newSaveDir: str):
+        if not self.active:
+            print(f"No installation loaded, cannot change to save directory '{newSaveDir}'")
+            return
+
+        print("Loading save resources into UI...")
+
+        # Clear the entire model before loading new save resources
+        self.ui.savesWidget.modulesModel.invisibleRootItem().removeRows(0, self.ui.savesWidget.modulesModel.rowCount())
+        newSaveDirPath = CaseAwarePath(newSaveDir)
+        if newSaveDirPath not in self.active._saves:
+            self.active.load_saves()
+        if newSaveDirPath not in self.active._saves:
+            print(f"Cannot load save {newSaveDirPath}: not found in saves list")
+            return
+        for save_path, resource_list in self.active._saves[newSaveDirPath].items():
+            # Create a new parent item for the save_path
+            save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
+            self.ui.savesWidget.modulesModel.invisibleRootItem().appendRow(save_path_item)
+
+            # Dictionary to keep track of category items under this save_path_item
+            categoryItemsUnderSavePath = {}
+
+            for resource in resource_list:
+                resourceType = resource.restype()
+                category = resourceType.category
+
+                # Check if the category item already exists under this save_path_item
+                if category not in categoryItemsUnderSavePath:
+                    # Create new category item similar to _getCategoryItem logic
+                    categoryItem = QStandardItem(category)
+                    categoryItem.setSelectable(False)
+                    unusedItem = QStandardItem("")
+                    unusedItem.setSelectable(False)
+                    save_path_item.appendRow([categoryItem, unusedItem])
+                    categoryItemsUnderSavePath[category] = categoryItem
+
+                # Now, categoryItem is guaranteed to exist
+                categoryItem = categoryItemsUnderSavePath[category]
+
+                # Check if resource is already listed under this category
+                foundResource = False
+                for i in range(categoryItem.rowCount()):
+                    item = categoryItem.child(i)
+                    if item and item.resource == resource:
+                        # Update the resource reference if necessary
+                        item.resource = resource
+                        foundResource = True
+                        break
+
+                if not foundResource:
+                    # Add new resource under the category
+                    item1 = QStandardItem(resource.resname())
+                    item1.resource = resource
+                    item2 = QStandardItem(resourceType.extension.upper())
+                    categoryItem.appendRow([item1, item2])
 
     def onOverrideReload(self, file_or_folder: str):
         if not self.active:
@@ -1105,6 +1174,8 @@ class ToolWindow(QMainWindow):
             return self.ui.overrideWidget
         if currentWidget is self.ui.texturesTab:
             return self.ui.texturesWidget
+        if currentWidget is self.ui.savesTab:
+            return self.ui.savesWidget
         raise ValueError(f"Unknown current widget: {currentWidget}")
 
     def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:
@@ -1192,6 +1263,22 @@ class ToolWindow(QMainWindow):
             sections.append(section)
         return sections
 
+    def refreshSavesList(self, *, reload=True):
+        """Refreshes the list of override directories in the overrideFolderCombo combobox."""
+        if self.active is None:
+            print("no installation is currently loaded, cannot refresh saves list")
+            return
+        if reload:
+            self.active.load_saves()
+
+        sections: list[QStandardItem] = []
+        for save_path in self.active._saves:
+            save_path_str = str(save_path)
+            section = QStandardItem(save_path_str)
+            section.setData(save_path_str, QtCore.Qt.UserRole)
+            sections.append(section)
+        self.ui.savesWidget.setSections(sections)
+
     def refreshOverrideList(
         self,
         *,
@@ -1254,11 +1341,13 @@ class ToolWindow(QMainWindow):
         if tree == self.ui.coreWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
             self.ui.coreWidget.setResourceSelection(resource)
+
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
             filename = resource.filepath().name
             self.changeModule(filename)
             self.ui.modulesWidget.setResourceSelection(resource)
+
         elif tree == self.ui.overrideWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
@@ -1268,6 +1357,11 @@ class ToolWindow(QMainWindow):
                 if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
                     subfolder = folder_name
             self.changeOverrideFolder(subfolder)
+
+        elif tree == self.ui.savesWidget:
+            self.ui.resourceTabs.setCurrentWidget(self.ui.savesTab)
+            filename = resource.filepath().name
+            self.onSaveReload(filename)
 
     def changeOverrideFolder(self, subfolder: str):
         self.ui.overrideWidget.changeSection(subfolder)
@@ -1394,6 +1488,8 @@ class ToolWindow(QMainWindow):
 
             self.log.debug("Loading core installation resources into UI...")
             self.ui.coreWidget.setResources(self.active.chitin_resources())
+            self.log.info("Loading saves list into UI...")
+            self.refreshSavesList(reload=True)
 
             self.log.debug("Remove unused categories...")
             self.ui.coreWidget.modulesModel.removeUnusedCategories()
