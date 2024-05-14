@@ -857,11 +857,11 @@ class Scene:
                     mdl_data: bytes = mdl_search.data
                     mdx_data: bytes = mdx_search.data
 
-            try:
+            try:  # TODO(th3w1zard1): offload to another thread.
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 #print(format_exception_with_variables(e))
                 model = gl_load_stitched_model(
                     self,
