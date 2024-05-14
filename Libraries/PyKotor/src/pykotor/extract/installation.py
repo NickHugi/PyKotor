@@ -1114,7 +1114,7 @@ class Installation:
         queries: list[ResourceIdentifier] | set[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
         *,
-        capsules: list[Capsule] | None = None,
+        capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found.

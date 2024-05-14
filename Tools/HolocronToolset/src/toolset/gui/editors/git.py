@@ -307,6 +307,7 @@ class GITEditor(Editor):
         order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
         result: ResourceResult | None = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
+            self._logger.debug("Found GITEditor layout for '%s'", filepath)
             self.loadLayout(read_lyt(result.data))
 
         git = read_git(data)
@@ -372,7 +373,12 @@ class GITEditor(Editor):
             order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
             findBWM: ResourceResult | None = self._installation.resource(room.model, ResourceType.WOK, order)
             if findBWM is not None:
-                walkmeshes.append(read_bwm(findBWM.data))
+                try:
+                    walkmeshes.append(read_bwm(findBWM.data))
+                except (ValueError, OSError):
+                    self._logger.error("Corrupted walkmesh cannot be loaded: '%s.wok'", room.model)
+            else:
+                self._logger.warning("Missing walkmesh '%s.wok'", room.model)
 
         self.ui.renderArea.setWalkmeshes(walkmeshes)
 
