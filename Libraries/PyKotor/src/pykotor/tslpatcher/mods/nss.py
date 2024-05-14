@@ -45,6 +45,7 @@ class ModificationsNSS(PatcherModifications):
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
         self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
+        self.backup_nwnnsscomp_path: Path
         self.temp_script_folder: Path
         self.skip_if_not_replace = True
 

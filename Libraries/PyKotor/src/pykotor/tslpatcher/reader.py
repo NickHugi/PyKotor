@@ -136,6 +136,7 @@ class ConfigReader:
         self.previously_parsed_sections = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
+        self.base_path: CaseAwarePath | None = None  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
