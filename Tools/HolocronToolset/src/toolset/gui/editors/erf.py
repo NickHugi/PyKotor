@@ -256,7 +256,18 @@ class ERFEditor(Editor):
         data: tuple[bytes, bytes] = self.build()
         self._revert = data[0]
         if is_capsule_file(self._filepath.parent) and not self._filepath.safe_isfile():
-            self._saveNestedCapsule(*data)
+            try:
+                self._saveNestedCapsule(*data)
+            except ValueError as e:
+                msg = str(e)
+                if msg.startswith("You must save the ERFEditor"):  # HACK(th3w1zard1): fix later.
+                    QMessageBox(
+                        QMessageBox.Icon.Information,
+                        "New resource added to parent ERF/RIM",
+                        "You've added a new ERF/RIM and tried to save inside that new ERF/RIM's editor. You must save the ERFEditor you added the nested to first. Do so and try again."
+                    ).exec_()
+                else:
+                    raise
         else:
             with self._filepath.open("wb") as file:
                 file.write(data[0])
