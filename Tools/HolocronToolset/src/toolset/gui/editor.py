@@ -398,7 +398,7 @@ class Editor(QMainWindow):
                 continue
             child_index = len(nested_capsules) - index
             child_capsule_path, child_erf_or_rim = nested_capsules[child_index]
-            if self._filepath == child_capsule_path:
+            if self._filepath == child_capsule_path and self._is_capsule_editor:
                 print(f"Found target '{child_capsule_path.relative_to(c_parent_filepath)}', using argument data for this save.")
             else:
                 data = bytearray()
