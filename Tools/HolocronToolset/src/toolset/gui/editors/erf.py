@@ -365,7 +365,7 @@ class ERFEditor(Editor):
                     i = 1
                     while new_path.safe_exists():
                         i += 1
-                        new_path = new_path.with_stem(f"{new_path.stem if i == 2 else new_path.stem[:-4]} ({i})")
+                        new_path = new_path.with_stem(f"{path.stem} ({i})")
                     is_rename = "with new filename" if path.safe_isfile() else "saving as"
                     get_root_logger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_rename, new_path.name)
                     self._handle_single_file_save(new_path, data, erf_relpath, choice)
