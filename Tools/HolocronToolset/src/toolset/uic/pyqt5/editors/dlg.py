@@ -23,7 +23,7 @@ class Ui_MainWindow(object):
         self.splitter.setOrientation(QtCore.Qt.Vertical)
         self.splitter.setObjectName("splitter")
         self.dialogTree = QtWidgets.QTreeView(self.splitter)
-        self.dialogTree.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.dialogTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.dialogTree.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.dialogTree.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.dialogTree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)

@@ -78,7 +78,7 @@ class Ui_MainWindow(object):
         self.mapRenderer.setObjectName(u"mapRenderer")
         self.mapRenderer.setMouseTracking(True)
         self.mapRenderer.setFocusPolicy(Qt.StrongFocus)
-        self.mapRenderer.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.mapRenderer.setContextMenuPolicy(Qt.CustomContextMenu)
 
         self.horizontalLayout.addWidget(self.mapRenderer)
 

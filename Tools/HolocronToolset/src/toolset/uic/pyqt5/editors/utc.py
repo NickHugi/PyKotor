@@ -162,7 +162,7 @@ class Ui_MainWindow(object):
         self.portraitPicture.setMinimumSize(QtCore.QSize(64, 64))
         self.portraitPicture.setMaximumSize(QtCore.QSize(64, 64))
         self.portraitPicture.setStyleSheet("background-color: black;")
-        self.portraitPicture.setFrameShape(QtWidgets.QFrame.Shape.Box)
+        self.portraitPicture.setFrameShape(QtWidgets.QFrame.Box)
         self.portraitPicture.setText("")
         self.portraitPicture.setScaledContents(True)
         self.portraitPicture.setObjectName("portraitPicture")

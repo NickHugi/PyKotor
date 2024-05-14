@@ -24,7 +24,7 @@ class Ui_MainWindow(object):
         self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.tableView.setDragEnabled(True)
         self.tableView.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
-        self.tableView.setDefaultDropAction(QtCore.Qt.DropAction.CopyAction)
+        self.tableView.setDefaultDropAction(QtCore.Qt.CopyAction)
         self.tableView.setAlternatingRowColors(True)
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tableView.setGridStyle(QtCore.Qt.NoPen)

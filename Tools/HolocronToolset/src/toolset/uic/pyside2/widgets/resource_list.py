@@ -67,7 +67,7 @@ class Ui_Form(object):
 
         self.resourceTree = QTreeView(Form)
         self.resourceTree.setObjectName(u"resourceTree")
-        self.resourceTree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.resourceTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.resourceTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.resourceTree.setAlternatingRowColors(True)
         self.resourceTree.setSelectionMode(QAbstractItemView.ExtendedSelection)

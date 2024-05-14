@@ -86,10 +86,10 @@ def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
 
     if source_timestamp > target_timestamp or ignore_timestamp:
         rc_compiler = {
+            "pyqt5": "pyrcc5",
+            "pyqt6": "pyside6-rcc",
             "pyside2": "pyside2-rcc",
             "pyside6": "pyside6-rcc",
-            "pyqt5": "pyrcc5",
-            "pyqt6": "pyside6-rcc"
         }[qt_version]
         command = f"{rc_compiler} {qrc_source} -o {qrc_target}"
         os.system(command)  # noqa: S605
@@ -110,6 +110,6 @@ if __name__ == "__main__":
         qt_versions_to_run = qt_versions
 
     for qt_version in qt_versions_to_run:
-        compile_ui(qt_version, ignore_timestamp=False)
-        compile_qrc(qt_version, ignore_timestamp=False)
+        compile_ui(qt_version, ignore_timestamp=True)
+        compile_qrc(qt_version, ignore_timestamp=True)
     print("All ui compilations completed")

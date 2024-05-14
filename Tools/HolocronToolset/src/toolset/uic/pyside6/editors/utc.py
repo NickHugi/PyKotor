@@ -279,7 +279,7 @@ class Ui_MainWindow(object):
         self.portraitPicture.setMinimumSize(QSize(64, 64))
         self.portraitPicture.setMaximumSize(QSize(64, 64))
         self.portraitPicture.setStyleSheet(u"background-color: black;")
-        self.portraitPicture.setFrameShape(QFrame.Shape.Box)
+        self.portraitPicture.setFrameShape(QFrame.Box)
         self.portraitPicture.setScaledContents(True)
 
         self.horizontalLayout_7.addWidget(self.portraitPicture)
