@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 import math
-
-from copy import copy
 import threading
+
+from concurrent.futures import ThreadPoolExecutor
+from copy import copy
+import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
@@ -33,11 +34,11 @@ from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
-from pykotor.common.module import Module, ModulePieceResource
+from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty
+from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -100,8 +101,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Literal
 
-    from pykotor.common.module import Module, ModuleResource
-    from pykotor.extract.capsule import Capsule
+    from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
     from pykotor.gl.models.mdl import Model, Node
@@ -114,7 +114,7 @@ from typing import TYPE_CHECKING
 
 T = TypeVar("T")
 SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
-SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+SEARCH_ORDER: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
@@ -152,6 +152,9 @@ class Scene:
         self.texture_data_futures = {}
         self.textures_data_queue: dict[str, tuple[TPC | None, bool]] = {}  # This will hold the texture data loaded in the background
         self.textures_data_lock: threading.Lock = threading.Lock()
+        self.model_data_futures = {}
+        self.models_data_queue: dict[str, Any] = {}
+        self.models_data_lock: threading.Lock = threading.Lock()
 
         self.installation: Installation | None = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
@@ -583,6 +586,7 @@ class Scene:
         #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
         self.update_textures()  # Ensure newly loaded textures are created
+        #self.update_models()
 
         self._prepare_gl_and_shader()
         self.shader.set_bool("enableLightmap", self.use_lightmap)
@@ -642,6 +646,17 @@ class Scene:
                 else:
                     self.textures[name] = Texture.from_tpc(tpc)
                 del self.textures_data_queue[name]
+
+    def update_models(self):
+        with self.models_data_lock:
+            for result in self.models_data_queue.copy().values():
+                if result is None:  # still processing...
+                    continue
+                name, model = result
+                if name in self.models:
+                    continue  # Skip if already created.
+                self.models[name] = model
+                del self.models_data_queue[name]
 
     def should_hide_obj(self, obj: RenderObject) -> bool:
         result = False
@@ -775,44 +790,91 @@ class Scene:
         """Load texture data asynchronously."""
         if name in self.textures:
             return self.textures[name]
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return self.blank_lightmap if lightmap else self.blank_texture
         self.executor.submit(self.fetch_texture_data, name, lightmap=lightmap)
         return self.blank_lightmap if lightmap else self.blank_texture
 
-    def fetch_texture_data(
+    def loadModel(self, name: str) -> Model:
+        """Load model data asynchronously."""
+        if name in self.models:
+            return self.models[name]
+        with self.models_data_lock:
+            if name not in self.models_data_queue:
+                get_root_logger().debug(f"Offloading {name}.mdl")
+                self.executor.submit(self.fetch_model_data, name)
+        return gl_load_stitched_model(
+            self,
+            BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+            BinaryReader.from_bytes(EMPTY_MDX_DATA),
+        )
+
+    def fetch_model_data(
         self,
         name: str,
-        *,
-        lightmap: bool = False,
     ):
-        """This function runs in a background thread and handles the I/O and processing to get the texture data."""
-        with self.textures_data_lock:
-            if name in self.textures_data_queue:
+        """This function runs in a background thread and handles the I/O and processing to get the model data."""
+        get_root_logger().debug(f"async queue {name}.mdl call")
+        mdl_data = EMPTY_MDL_DATA
+        mdx_data = EMPTY_MDX_DATA
+
+        with self.models_data_lock:
+            if name in self.models_data_queue:
                 return
-            self.textures_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
-        type_name = "lightmap" if lightmap else "texture"
-        try:
-            tpc: TPC | None = None
-            # Check the textures linked to the module first
-            if self._module is not None:
-                get_root_logger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
-                module_tex = self.module.texture(name)
-                if module_tex is not None:
-                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
-                    tpc = module_tex.resource()
+            self.models_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
+        if name == "waypoint":
+            mdl_data = WAYPOINT_MDL_DATA
+            mdx_data = WAYPOINT_MDX_DATA
+        elif name == "sound":
+            mdl_data = SOUND_MDL_DATA
+            mdx_data = SOUND_MDX_DATA
+        elif name == "store":
+            mdl_data = STORE_MDL_DATA
+            mdx_data = STORE_MDX_DATA
+        elif name == "entry":
+            mdl_data = ENTRY_MDL_DATA
+            mdx_data = ENTRY_MDX_DATA
+        elif name == "encounter":
+            mdl_data = ENCOUNTER_MDL_DATA
+            mdx_data = ENCOUNTER_MDX_DATA
+        elif name == "trigger":
+            mdl_data = TRIGGER_MDL_DATA
+            mdx_data = TRIGGER_MDX_DATA
+        elif name == "camera":
+            mdl_data = CAMERA_MDL_DATA
+            mdx_data = CAMERA_MDX_DATA
+        elif name == "empty":
+            mdl_data = EMPTY_MDL_DATA
+            mdx_data = EMPTY_MDX_DATA
+        elif name == "cursor":
+            mdl_data = CURSOR_MDL_DATA
+            mdx_data = CURSOR_MDX_DATA
+        elif name == "unknown":
+            mdl_data = UNKNOWN_MDL_DATA
+            mdx_data = UNKNOWN_MDX_DATA
+        elif self.installation is not None:
+            mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER)
+            mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER)
+            if mdl_search is not None and mdx_search is not None and mdl_search.data:
+                mdl_data: bytes = mdl_search.data
+                mdx_data: bytes = mdx_search.data
+            try:
+                print(f"update from queue: {name}.mdl")
+                mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
+                mdx_reader = BinaryReader.from_bytes(mdx_data)
+                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
+            except Exception as e:  # noqa: BLE001, PERF203
+                get_root_logger().debug(traceback.format_exc())
+                model = gl_load_stitched_model(
+                    self,
+                    BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                    BinaryReader.from_bytes(EMPTY_MDX_DATA),
+                )
 
-            # Otherwise just search through all relevant game files
-            if tpc is None and self.installation:
-                get_root_logger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
-                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-            if tpc is None:
-                get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)
-        except Exception:  # noqa: BLE001
-            get_root_logger().exception("Exception thrown while loading %s.", type_name)
-            # If an error occurs during the loading process, just use a blank image.
-            tpc = TPC()
-
-        with self.textures_data_lock:
-            self.textures_data_queue[name] = (tpc or TPC(), lightmap)  # Using a dummy TPC class
+        with self.models_data_lock:
+            get_root_logger().debug("async finally queue model data to load.")
+            self.models_data_queue[name] = (name, model)
 
     def model(self, name: str) -> Model:
         mdl_data = EMPTY_MDL_DATA
@@ -871,6 +933,42 @@ class Scene:
 
             self.models[name] = model
         return self.models[name]
+
+    def fetch_texture_data(
+        self,
+        name: str,
+        *,
+        lightmap: bool = False,
+    ):
+        """This function runs in a background thread and handles the I/O and processing to get the texture data."""
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return
+            self.textures_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
+        type_name = "lightmap" if lightmap else "texture"
+        try:
+            tpc: TPC | None = None
+            # Check the textures linked to the module first
+            if self._module is not None:
+                get_root_logger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
+                module_tex = self.module.texture(name)
+                if module_tex is not None:
+                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
+                    tpc = module_tex.resource()
+
+            # Otherwise just search through all relevant game files
+            if tpc is None and self.installation:
+                get_root_logger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+            if tpc is None:
+                get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)
+        except Exception:  # noqa: BLE001
+            get_root_logger().exception("Exception thrown while loading %s.", type_name)
+            # If an error occurs during the loading process, just use a blank image.
+            tpc = TPC()
+
+        with self.textures_data_lock:
+            self.textures_data_queue[name] = (tpc or TPC(), lightmap)  # Using a dummy TPC class
 
     def jump_to_entry_location(self):
         if self._module is None:
