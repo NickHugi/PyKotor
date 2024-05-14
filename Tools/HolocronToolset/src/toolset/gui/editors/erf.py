@@ -238,9 +238,6 @@ class ERFEditor(Editor):
         data: tuple[bytes, bytes] = self.build()
         self._revert = data[0]
         if is_capsule_file(self._filepath.parent) and not self._filepath.safe_isfile():
-            self.saveAs()
-            # saveNested currently broken.
-            return
             self._saveNestedCapsule(*data)
         else:
             with self._filepath.open("wb") as file:
@@ -538,15 +535,7 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             resource: ERFResource = item.data()
 
-            if resource.restype.name in ERFType.__members__:
-                QMessageBox(
-                    QMessageBox.Icon.Warning,
-                    "Nested ERF/RIM files is mostly unsupported.",
-                    "You are attempting to open a nested ERF/RIM. Any action besides extracting from them will not work. You've been warned.",
-                    QMessageBox.StandardButton.Ok,
-                    self,
-                    flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint
-                ).exec_()
+            #  if resource.restype.name in ERFType.__members__:  check if in nested erf/rim if needed
             new_filepath = self._filepath
             if resource.restype.name in ERFType.__members__ or resource.restype is ResourceType.RIM:
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
