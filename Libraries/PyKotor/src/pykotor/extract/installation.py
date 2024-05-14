@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import platform
 import re
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
