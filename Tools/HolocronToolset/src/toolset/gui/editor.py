@@ -256,6 +256,7 @@ class Editor(QMainWindow):
                 self._global_settings.attemptKeepOldGFFFields
                 and self._restype.is_gff()
                 and not isinstance(self, GFFEditor)
+                and self._revert is not None
             ):
                 print("Adding deleted fields from original gff into final gff.")
                 old_gff = read_gff(self._revert)
