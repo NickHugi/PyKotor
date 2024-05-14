@@ -250,7 +250,7 @@ class Editor(QMainWindow):
             data, data_ext = self.build()
             if data is None:  # nsseditor
                 return
-            if self._restype.is_gff():
+            if self._global_settings.attemptKeepOldGFFFields and self._restype.is_gff():
                 old_gff = read_gff(self._revert)
                 new_gff = read_gff(data)
                 new_gff.root.add_missing(old_gff.root)
