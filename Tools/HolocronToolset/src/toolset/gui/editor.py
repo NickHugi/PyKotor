@@ -365,7 +365,7 @@ class Editor(QMainWindow):
             nested_paths.append(c_filepath)
 
         c_parent_filepath = c_filepath.parent
-        while (
+        while (  # Iterate all parents until we find a physical folder on disk.
             ResourceType.from_extension(c_parent_filepath.suffix).name in ERFType.__members__
             or ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM
         ) and not c_parent_filepath.safe_isdir():
@@ -374,35 +374,38 @@ class Editor(QMainWindow):
             c_parent_filepath = c_filepath.parent
 
         # At this point, c_filepath points to the physical ERF/RIM on disk
-        # let's define the physical folder on disk.
-        physical_parent_folder = c_filepath.parent
+        # and c_parent_filepath points to the physical folder containing the file.
         erf_or_rim = read_rim(c_filepath) if ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM else read_erf(c_filepath)
         nested_capsules: list[tuple[PurePath, ERF | RIM]] = [(c_filepath, erf_or_rim)]
         for capsule_path in reversed(nested_paths[:-1]):
             nested_erf_or_rim_data = erf_or_rim.get(capsule_path.stem, ResourceType.from_extension(capsule_path.suffix))
             if nested_erf_or_rim_data is None:  # TODO: loop through all windows and send hotkey ctrl+s
-                msg = f"You must save the ERFEditor for '{capsule_path.relative_to(physical_parent_folder)}' to before modifying its nested resources. Do so and try again."
+                msg = f"You must save the ERFEditor for '{capsule_path.relative_to(c_parent_filepath)}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
             erf_or_rim = read_rim(nested_erf_or_rim_data) if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
             nested_capsules.append((capsule_path, erf_or_rim))
+
+        # Let's now save each erf/rim to its parent.
         for index, (capsule_path, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
+            rel_capsule_path = capsule_path.relative_to(c_parent_filepath)
             if index == 0:
                 if self._is_capsule_editor:
-                    print(f"Not saving '{self._resname}.{self._restype.extension}' to '{capsule_path.relative_to(physical_parent_folder)}', is ERF/RIM editor save.")
-                    continue
-                print(f"Saving non ERF/RIM '{self._resname}.{self._restype.extension}' to '{capsule_path.relative_to(physical_parent_folder)}'")
-                this_erf_or_rim.set_data(self._resname, self._restype, data)
+                    print(f"Not saving '{self._resname}.{self._restype.extension}' to '{rel_capsule_path}', is ERFEditor save.")
+                else:
+                    print(f"Saving non ERF/RIM '{self._resname}.{self._restype.extension}' to '{rel_capsule_path}'")
+                    this_erf_or_rim.set_data(self._resname, self._restype, data)
                 continue
             child_index = len(nested_capsules) - index
             child_capsule_path, child_erf_or_rim = nested_capsules[child_index]
             if self._filepath == child_capsule_path:
-                print(f"Found target '{child_capsule_path.relative_to(physical_parent_folder)}', using argument data for this save.")
+                print(f"Found target '{child_capsule_path.relative_to(c_parent_filepath)}', using argument data for this save.")
             else:
                 data = bytearray()
-                print(f"Saving {child_capsule_path.relative_to(physical_parent_folder)} to {capsule_path.relative_to(physical_parent_folder)}")
+                print(f"Saving {child_capsule_path.relative_to(c_parent_filepath)} to {capsule_path.relative_to(c_parent_filepath)}")
                 write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
             this_erf_or_rim.set_data(child_capsule_path.stem, ResourceType.from_extension(child_capsule_path.suffix), bytes(data))
+
         print(f"Finally saving '{c_filepath}'")
         write_erf(this_erf_or_rim, c_filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, c_filepath)
         self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
