@@ -242,6 +242,11 @@ class GITInstance(ABC):
         self.position: Vector3 = Vector3(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
 
+    def __repr__(self):
+        if isinstance(self, GITCamera):
+            return f"{self.__class__.__name__}(camera_id={self.camera_id})"
+        return f"{self.__class__.__name__}({self.identifier()})"
+
     @abstractmethod
     def identifier(self) -> ResourceIdentifier:
         """Returns the resource identifier of the instance, or None if it doesn't have one."""
@@ -349,7 +354,7 @@ class GITCamera(GITInstance):
     ) -> str:
         return "Camera"
 
-    def yaw(  # TODO: Why is this not y...?
+    def yaw(
         self,
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
