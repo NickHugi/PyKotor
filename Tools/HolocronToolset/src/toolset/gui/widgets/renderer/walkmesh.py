@@ -875,11 +875,7 @@ class WalkmeshRenderer(QWidget):
                     self._pathNodesUnderMouse.append(point)
 
     def mousePressEvent(self, e: QMouseEvent):
-        current_buttons = e.buttons()
-        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
-        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            get_root_logger().debug("Inferred Release (mousePressEvent): Right Button")
-            self._mouseDown.discard(Qt.RightButton)
+        self._contextMenuRightMouseButtonFix(e, "mousePressEvent")
         super().mousePressEvent(e)
         button = e.button()
         get_root_logger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
@@ -888,12 +884,15 @@ class WalkmeshRenderer(QWidget):
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseReleaseEvent(self, e: QMouseEvent):
+    def _contextMenuRightMouseButtonFix(self, e: QMouseEvent, parentFuncName: str):
         current_buttons = e.buttons()
         rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
         if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            get_root_logger().debug("Inferred Release (mouseReleaseEvent): Right Button")
+            get_root_logger().debug(f"Inferred Release ({parentFuncName}): Right Button")
             self._mouseDown.discard(Qt.RightButton)
+
+    def mouseReleaseEvent(self, e: QMouseEvent):
+        self._contextMenuRightMouseButtonFix(e, "mouseReleaseEvent")
         super().mouseReleaseEvent(e)
         button = e.button()
         get_root_logger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
