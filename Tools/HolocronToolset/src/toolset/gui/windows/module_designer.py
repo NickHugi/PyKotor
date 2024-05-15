@@ -49,7 +49,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import _GeometryMode, _InstanceMode, openInstanceDialog
+from toolset.gui.editors.git import _GeometryMode, _InstanceMode, MoveCommand, RotateCommand, openInstanceDialog
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
@@ -74,70 +74,6 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from utility.system.path import Path
-
-
-class MoveCommand(QUndoCommand):
-    def __init__(
-        self,
-        instance: GITInstance,
-        old_position: Vector3,
-        new_position: Vector3,
-        old_height: float | None = None,
-        new_height: float | None = None,
-    ):
-        get_root_logger().debug(f"Init movecommand with instance {instance.resref}")
-        super().__init__()
-        self.instance: GITInstance = instance
-        self.old_position: Vector3 = old_position
-        self.new_position: Vector3 = new_position
-        self.old_height: float | None = old_height
-        self.new_height: float | None = new_height
-
-    def undo(self):
-        get_root_logger().debug("Undo position")
-        self.instance.position = self.old_position
-        if isinstance(self.instance, GITCamera):
-            if self.old_height is None or self.new_height is None:
-                return
-            get_root_logger().debug("Also undo height.")
-            self.instance.height = self.old_height
-
-    def redo(self):
-        get_root_logger().debug("Redo position")
-        self.instance.position = self.new_position
-        if isinstance(self.instance, GITCamera):
-            if self.old_height is None or self.new_height is None:
-                return
-            get_root_logger().debug("Also redo height.")
-            self.instance.height = self.new_height
-
-
-class RotateCommand(QUndoCommand):
-    def __init__(
-        self,
-        instance: GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint,
-        old_orientation: Vector4 | float,
-        new_orientation: Vector4 | float
-    ):
-        get_root_logger().debug(f"Init rotatecommand with instance {instance.resref}")
-        super().__init__()
-        self.instance: GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint = instance
-        self.old_orientation: Vector4 | float = old_orientation
-        self.new_orientation: Vector4 | float = new_orientation
-
-    def undo(self):
-        get_root_logger().debug(f"Undo rotation: {self.instance.resref} (NEW {self.new_orientation} --> {self.old_orientation})")
-        if isinstance(self.instance, GITCamera):
-            self.instance.orientation = self.old_orientation
-        else:
-            self.instance.bearing = self.old_orientation
-
-    def redo(self):
-        get_root_logger().debug(f"Redo rotation: {self.instance.resref} ({self.old_orientation} --> NEW {self.new_orientation})")
-        if isinstance(self.instance, GITCamera):
-            self.instance.orientation = self.new_orientation
-        else:
-            self.instance.bearing = self.new_orientation
 
 
 class ModuleDesigner(QMainWindow):
@@ -549,7 +485,11 @@ class ModuleDesigner(QMainWindow):
 
     def copyResourceToOverride(self, resource: ModuleResource):
         location: CaseAwarePath = self._installation.override_path() / f"{resource.identifier()}"
-        BinaryWriter.dump(location, resource.data())
+        data = resource.data()
+        if data is None:
+            get_root_logger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
+            return
+        BinaryWriter.dump(location, data)
         resource.add_locations([location])
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(resource.identifier())
@@ -996,7 +936,7 @@ class ModuleDesigner(QMainWindow):
         if self.ui.lockInstancesCheck.isChecked():
             return
 
-        for instance in self.selectedInstances:  # HACK: I have no idea what's going on with the rotation here, but this incorporates the old logic.
+        for instance in self.selectedInstances:
             new_yaw = x / 60
             new_pitch = (y or 1) / 60
             new_roll = 0.0
@@ -1082,7 +1022,9 @@ class ModuleDesigner(QMainWindow):
 
     def enterInstanceMode(self):
         self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
+        # HACK:
         self._controls2d._mode.deleteSelected = self.deleteSelected
+        self._controls2d._mode.duplicateSelected = self._controls3d._duplicateSelectedInstance
         self._controls2d._mode.editSelectedInstance = self.editInstance
 
     def enterGeometryMode(self):
@@ -1101,10 +1043,10 @@ class ModuleDesigner(QMainWindow):
 
         data = curItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(data, ModuleResource):
-            self._build_active_override_menu(data, menu)
+            self._active_instance_location_menu(data, menu)
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
 
-    def _build_active_override_menu(self, data: ModuleResource, menu: QMenu):
+    def _active_instance_location_menu(self, data: ModuleResource, menu: QMenu):
         """Builds an active override menu for a module resource.
 
         Args:

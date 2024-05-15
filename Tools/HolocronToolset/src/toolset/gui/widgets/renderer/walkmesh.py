@@ -407,12 +407,6 @@ class WalkmeshRenderer(QWidget):
         Returns:
         -------
             list[GITInstance]: A list of GITInstance objects under the mouse
-
-        Processing Logic:
-        ----------------
-            - Checks the mouse position against the bounding boxes of all GITInstances
-            - Returns a list of all instances whose bounding box contains the mouse position
-            - If no instances are under the mouse, an empty list is returned.
         """
         return self._instancesUnderMouse
 
@@ -440,46 +434,46 @@ class WalkmeshRenderer(QWidget):
             - Return None if type is invalid
         """
         retBool: bool | None = None
-        if isinstance(instance, GITCreature):
+        if isinstance(instance, GITCamera):
+            retBool = not self.hideCameras
+        elif isinstance(instance, GITCreature):
             retBool = not self.hideCreatures
         elif isinstance(instance, GITDoor):
             retBool = not self.hideDoors
-        elif isinstance(instance, GITPlaceable):
-            retBool = not self.hidePlaceables
-        elif isinstance(instance, GITTrigger):
-            retBool = not self.hideTriggers
-        elif isinstance(instance, GITCamera):
-            retBool = not self.hideCameras
         elif isinstance(instance, GITEncounter):
             retBool = not self.hideEncounters
+        elif isinstance(instance, GITPlaceable):
+            retBool = not self.hidePlaceables
         elif isinstance(instance, GITSound):
             retBool = not self.hideSounds
-        elif isinstance(instance, GITWaypoint):
-            retBool = not self.hideWaypoints
         elif isinstance(instance, GITStore):
             retBool = not self.hideStores
+        elif isinstance(instance, GITTrigger):
+            retBool = not self.hideTriggers
+        elif isinstance(instance, GITWaypoint):
+            retBool = not self.hideWaypoints
         return retBool
 
     def instancePixmap(self, instance: GITInstance) -> QPixmap | None:
         retPixmap: QPixmap | None = None
+        if isinstance(instance, GITCamera):
+            retPixmap = self._pixmapCamera
         if isinstance(instance, GITCreature):
             retPixmap = self._pixmapCreature
         if isinstance(instance, GITDoor):
             retPixmap = self._pixmapDoor
+        if isinstance(instance, GITEncounter):
+            retPixmap = self._pixmapEncounter
         if isinstance(instance, GITPlaceable):
             retPixmap = self._pixmapPlaceable
         if isinstance(instance, GITTrigger):
             retPixmap = self._pixmapTrigger
-        if isinstance(instance, GITCamera):
-            retPixmap = self._pixmapCamera
-        if isinstance(instance, GITEncounter):
-            retPixmap = self._pixmapEncounter
         if isinstance(instance, GITSound):
             retPixmap = self._pixmapSound
-        if isinstance(instance, GITWaypoint):
-            retPixmap = self._pixmapWaypoint
         if isinstance(instance, GITStore):
             retPixmap = self._pixmapMerchant
+        if isinstance(instance, GITWaypoint):
+            retPixmap = self._pixmapWaypoint
         return retPixmap
 
     def centerCamera(self):

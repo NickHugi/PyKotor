@@ -14,7 +14,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF
-from pykotor.resource.formats.gff.gff_auto import read_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
@@ -249,7 +249,7 @@ class Editor(QMainWindow):
 
         try:
             data, data_ext = self.build()
-            if data is None:  # nsseditor
+            if data is None:  # HACK: nsseditor
                 return
             from toolset.gui.editors.gff import GFFEditor
 
@@ -263,6 +263,7 @@ class Editor(QMainWindow):
                 old_gff = read_gff(self._revert)
                 new_gff = read_gff(data)
                 new_gff.root.add_missing(old_gff.root)
+                data = bytes_gff(new_gff)
             self._revert = data
 
             self.refreshWindowTitle()

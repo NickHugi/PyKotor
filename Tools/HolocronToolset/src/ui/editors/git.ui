@@ -10,6 +10,25 @@
     <height>648</height>
    </rect>
   </property>
+  <action name="actionUndo">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -584,6 +603,9 @@ QCheckBox::indicator:checked:hover {
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
     <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
