@@ -40,7 +40,7 @@ class SaveInfo:
         self.area_name: str = ""
         self.cheat_used: bool = False  # Also in PartyTable?
         self.gameplay_hint: int = 0  # Some strref to the tlk, also in loadscreenhints.2da
-        self.last_module: str = ""  # Confirmed (e.g. 'tar_m11aa')
+        self.last_module: str = ""  # Confirmed (e.g. 'danm13')
 
         # Xbox live stuff.
         self.live1: str = ""
@@ -277,6 +277,6 @@ class SaveFolderEntry:
 
 
 if __name__ == "__main__":
-    game59_save = SaveFolderEntry(r"C:\Program Files (x86)\Steam\steamapps\common\swkotor\saves\000060 - game59")
+    game59_save = SaveFolderEntry(r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\saves\000002 - Game1")
     game59_save.load()
     game59_save.save()
