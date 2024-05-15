@@ -213,7 +213,7 @@ class ERFEditor(Editor):
                 rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
 
-        elif self._restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
+        elif self._restype in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.from_extension(self._restype.extension))
             if self._restype is ResourceType.SAV:
                 erf.is_save_erf = True
@@ -591,7 +591,8 @@ class ERFEditor(Editor):
 
             #  if resource.restype.name in ERFType.__members__:  check if in nested erf/rim if needed
             new_filepath = self._filepath
-            if resource.restype.name in ERFType.__members__ or resource.restype is ResourceType.RIM:
+            if resource.restype in (ResourceType.ERF, ResourceType.SAV, ResourceType.RIM, ResourceType.MOD):
+                get_root_logger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
             tempPath, editor = openResourceEditor(
