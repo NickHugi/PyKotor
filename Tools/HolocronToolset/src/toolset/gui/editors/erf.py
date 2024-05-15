@@ -89,9 +89,8 @@ class ERFEditor(Editor):
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
 
         # Disable saving file into module
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        self._saveFilter = self._saveFilter.replace(f";;Save into module ({capsule_types})", "")
-        self._openFilter = self._openFilter.replace(f";;Load from module ({capsule_types})", "")
+        self._saveFilter = self._saveFilter.replace(f";;Save into module ({self.CAPSULE_FILTER})", "")
+        self._openFilter = self._openFilter.replace(f";;Load from module ({self.CAPSULE_FILTER})", "")
 
         self.new()
 
@@ -216,6 +215,8 @@ class ERFEditor(Editor):
 
         elif self._restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.from_extension(self._restype.extension))
+            if self._restype is ResourceType.SAV:
+                erf.is_save_erf = True
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()

@@ -92,5 +92,5 @@ def bytes_erf(
         write_erf(erf, data, file_format)
         return data
 
-    msg = f"Unsupported format specified: '{file_format!r}'; expected one of {', '.join(member.name for member in ERFType)}."
+    msg = f"Unsupported format specified: '{file_format!r}'; expected one of [SAV, {', '.join(member.name for member in ERFType)}]"
     raise ValueError(msg)

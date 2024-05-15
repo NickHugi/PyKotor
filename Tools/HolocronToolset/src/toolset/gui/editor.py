@@ -51,6 +51,8 @@ class Editor(QMainWindow):
     savedFile = QtCore.Signal(object, object, object, object)
     loadedFile = QtCore.Signal(object, object, object, object)
 
+    CAPSULE_FILTER = "*.mod *.erf *.rim *.sav"
+
     def __init__(
         self,
         parent: QWidget | None,
@@ -109,22 +111,21 @@ class Editor(QMainWindow):
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += f" {capsule_types});;"
+        self._saveFilter += f" {self.CAPSULE_FILTER});;"
         for resource in writeSupported:
             self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += f"Save into module ({capsule_types})"
+        self._saveFilter += f"Save into module ({self.CAPSULE_FILTER})"
 
         self._openFilter: str = "All valid files ("
         for resource in readSupported:
             self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += f" {capsule_types});;"
+        self._openFilter += f" {self.CAPSULE_FILTER});;"
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += f"Load from module ({capsule_types})"
+        self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -213,8 +214,7 @@ class Editor(QMainWindow):
             msgBox.exec_()
             return
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        if is_capsule_file(filepath_str) and f"Save into module ({capsule_types})" in self._saveFilter:
+        if is_capsule_file(filepath_str) and f"Save into module ({self.CAPSULE_FILTER})" in self._saveFilter:
             if self._resname is None:
                 self._resname = "new"
                 self._restype = self._writeSupported[0]
@@ -505,8 +505,7 @@ class Editor(QMainWindow):
             return
         r_filepath = Path(filepath_str)
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        if is_capsule_file(r_filepath) and f"Load from module ({capsule_types})" in self._openFilter:
+        if is_capsule_file(r_filepath) and f"Load from module ({self.CAPSULE_FILTER})" in self._openFilter:
             dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)
             if dialog.exec_():
                 self._load_module_from_dialog_info(dialog, r_filepath)
