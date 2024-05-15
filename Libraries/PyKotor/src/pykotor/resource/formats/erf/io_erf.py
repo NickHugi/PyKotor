@@ -69,7 +69,7 @@ class ERFBinaryReader(ResourceReader):
         self._reader.skip(8)
         description_strref = self._reader.read_uint32()
         if description_strref == 0 and file_type == ERFType.MOD.value:
-            get_root_logger().debug("Assuming this is a SAV file?")
+            get_root_logger().debug("Assuming this is a SAV file")
             self._erf.is_save_erf = True
 
         resrefs: list[str] = []
@@ -118,14 +118,20 @@ class ERFBinaryWriter(ResourceWriter):
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
-        offset_to_localized_strings = offset_to_resources + ERFBinaryWriter.RESOURCE_ELEMENT_SIZE * entry_count
+        offset_to_localized_strings = 0x0
         description_strref_dword_value = 0xFFFFFFFF
         if self.erf.is_save_erf:
-            description_strref_dword_value = 0x00000000  # might matter.
+            # might matter.
+            offset_to_localized_strings = 0xA0
+            description_strref_dword_value = 0x00000000
         elif self.erf.erf_type is ERFType.ERF:
-            description_strref_dword_value = 0xCDCDCDCD  # default, also doesn't matter
+            # default, also doesn't matter
+            offset_to_localized_strings = 0x69
+            description_strref_dword_value = 0xCDCDCDCD
         elif self.erf.erf_type is ERFType.MOD:
-            description_strref_dword_value = 0xFFFFFFFF  # mod's aren't in the vanilla game, doesn't matter
+            # mod's aren't in the vanilla game, doesn't matter
+            offset_to_localized_strings = 0x0
+            description_strref_dword_value = 0xFFFFFFFF
 
         self._writer.write_string(self.erf.erf_type.value)
         self._writer.write_string("V1.0")
