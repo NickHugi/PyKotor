@@ -35,7 +35,9 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
-      "purpose": ["debug-test"],
+      "purpose": [
+        "debug-test"
+      ],
       "justMyCode": true,
     },
     {
@@ -61,7 +63,9 @@
       "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
       "module": "holopatcher",
       "console": "integratedTerminal",
-      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"},
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"
+      },
       "justMyCode": true,
       "autoReload": {
         "enable": true,
@@ -74,7 +78,9 @@
       "module": "batchpatcher",
       "cwd": "${workspaceFolder}/Tools/BatchPatcher/src/",
       "console": "integratedTerminal",
-      "env": {"PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"},
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"
+      },
       "justMyCode": true,
       "autoReload": {
         "enable": true,
