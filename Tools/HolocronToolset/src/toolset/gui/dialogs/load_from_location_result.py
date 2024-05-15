@@ -407,6 +407,10 @@ class FileItems(CustomItem):
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
 
+        if os.name == "nt":
+            openWindowsMenuAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
+            openWindowsMenuAction.setEnabled(file_paths_exist)
+
         openAction.setEnabled(file_paths_exist)
         openFolderAction.setEnabled(file_paths_exist)
         saveSelectedAction.setEnabled(file_paths_exist)
@@ -469,6 +473,14 @@ class FileItems(CustomItem):
             savepath = self.temp_path / file_path.name
         with file_path.open("rb") as reader, savepath.open("wb") as writer:
             writer.write(reader.read())
+
+    def _open_windows_explorer_context_menu(
+        self,
+        file_path: Path,
+        tableItem: FileTableWidgetItem,
+    ):
+        from utility.system.windows_context_menu import windows_context_menu_file
+        return windows_context_menu_file(file_path)
 
     def _open_file(
         self,
