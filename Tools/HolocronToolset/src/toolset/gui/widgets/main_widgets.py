@@ -10,7 +10,15 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
-from qtpy.QtGui import QCursor, QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform, QEnterEvent, QMouseEvent
+from qtpy.QtGui import (
+    QCursor,
+    QIcon,
+    QImage,
+    QPixmap,
+    QStandardItem,
+    QStandardItemModel,
+    QTransform,
+)
 from qtpy.QtWidgets import QHeaderView, QMenu, QToolTip, QWidget
 
 from pykotor.extract.installation import SearchLocation
@@ -21,7 +29,10 @@ from utility.logger_util import get_root_logger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
-    from qtpy.QtGui import QResizeEvent
+    from qtpy.QtGui import (
+        QMouseEvent,
+        QResizeEvent,
+    )
 
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
