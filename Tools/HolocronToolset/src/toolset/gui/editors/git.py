@@ -309,6 +309,8 @@ class GITEditor(Editor):
         if result:
             self._logger.debug("Found GITEditor layout for '%s'", filepath)
             self.loadLayout(read_lyt(result.data))
+        else:
+            self._logger.warning("Missing layout %s.lyt, needed for GITEditor '%s.%s'", resref, resref, restype)
 
         git = read_git(data)
         self._loadGIT(git)
@@ -376,7 +378,7 @@ class GITEditor(Editor):
                 try:
                     walkmeshes.append(read_bwm(findBWM.data))
                 except (ValueError, OSError):
-                    self._logger.error("Corrupted walkmesh cannot be loaded: '%s.wok'", room.model)
+                    self._logger.exception("Corrupted walkmesh cannot be loaded: '%s.wok'", room.model)
             else:
                 self._logger.warning("Missing walkmesh '%s.wok'", room.model)
 
@@ -652,6 +654,7 @@ class _InstanceMode(_Mode):
         git: GIT,
     ):
         super().__init__(editor, installation, git)
+        get_root_logger().debug("init InstanceMode")
         self.walkmeshRenderer.hideGeomPoints = True
         self.walkmeshRenderer.geometrySelection.clear()
         self.updateVisibility()
@@ -1002,7 +1005,7 @@ class _InstanceMode(_Mode):
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(simpleTrigger))
 
     def buildList(self):
-        if not isinstance(self._editor, GITEditor):
+        if not isinstance(self._editor, GITEditor):  # module designer check
             return
         self.listWidget().clear()
 
@@ -1115,9 +1118,13 @@ class _GeometryMode(_Mode):
         screen: QPoint = self.walkmeshRenderer.mapFromGlobal(self._editor.cursor().pos())
         world: Vector3 = self.walkmeshRenderer.toWorldCoords(screen.x(), screen.y())
 
-        instance: GITInstance = self.walkmeshRenderer.instanceSelection.get(0)
+        instance: GITTrigger | GITEncounter = self.walkmeshRenderer.instanceSelection.get(0)
         point: Vector3 = world - instance.position
-        self.walkmeshRenderer.geomPointsUnderMouse().append(GeomPoint(instance, point))
+        new_geom_point = GeomPoint(instance, point)
+        instance.geometry.append(point)
+        self.walkmeshRenderer.geomPointsUnderMouse().append(new_geom_point)
+        self.walkmeshRenderer.geometrySelection._selection.append(new_geom_point)
+        get_root_logger().debug(f"inserting a new geompoint under mouse for instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
 
     # region Interface Methods
     def onItemSelectionChanged(self, item: QListWidgetItem):
@@ -1165,6 +1172,7 @@ class _GeometryMode(_Mode):
     def deleteSelected(self):
         vertex: GeomPoint | None = self.walkmeshRenderer.geometrySelection.last()
         instance: GITInstance = vertex.instance
+        get_root_logger().debug(f"Removing last geometry point for instance {instance.identifier()}")
         self.walkmeshRenderer.geometrySelection.remove(GeomPoint(instance, vertex.point))
 
     def duplicateSelected(self, position: Vector3):

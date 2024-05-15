@@ -1771,11 +1771,9 @@ class ModuleDesignerControls2d:
         get_root_logger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
         if self.selectUnderneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                print("selectUnderneathGeometry?")
+                get_root_logger().debug("selectUnderneathGeometry?")
                 self._mode.selectUnderneath()
-                return
-
-            if self.renderer.instancesUnderMouse():
+            elif self.renderer.instancesUnderMouse():
                 get_root_logger().debug("onMousePressed, selectUnderneath FOUND INSTANCES")
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
             else:
@@ -1813,8 +1811,10 @@ class ModuleDesignerControls2d:
         """
         if self.deleteSelected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
+                get_root_logger().debug("_GeometryMode: moduleDesignerControls2d deleteSelected satisfied ")
                 self._mode.deleteSelected()
                 return
+            get_root_logger().debug(f"{self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             self.editor.deleteSelected()
 
         if self.snapCameraToSelected.satisfied(buttons, keys):

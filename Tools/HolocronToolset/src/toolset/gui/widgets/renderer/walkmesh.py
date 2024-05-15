@@ -840,11 +840,6 @@ class WalkmeshRenderer(QWidget):
             - Emits mouseMoved signal
             - Finds instances and geometry points under mouse.
         """
-        current_buttons = e.buttons()
-        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
-        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            get_root_logger().debug("Inferred Release (mouseMoveEvent): Right Button")
-            self._mouseDown.discard(Qt.RightButton)
         super().mouseMoveEvent(e)
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
@@ -862,6 +857,7 @@ class WalkmeshRenderer(QWidget):
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):
+                    get_root_logger().debug(f"instance {instance!r} within required distance and is visible, emitting hovered/undermouse")
                     self.instanceHovered.emit(instance)
                     self._instancesUnderMouse.append(instance)
 
@@ -870,6 +866,7 @@ class WalkmeshRenderer(QWidget):
                     for point in instance.geometry:
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
+                            get_root_logger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:
