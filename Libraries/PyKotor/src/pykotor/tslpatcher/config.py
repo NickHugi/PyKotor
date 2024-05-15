@@ -66,7 +66,13 @@ class PatcherConfig:
         # optional hp features
         self.ignore_file_extensions: bool = False
 
-    def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None):
+    def load(
+        self,
+        ini_text: str,
+        mod_path: os.PathLike | str,
+        logger: PatchLogger | None = None,
+        tslpatchdata_path: os.PathLike | str | None = None,
+    ):
         """Loads configuration from a TSLPatcher changes ini text string.
 
         Args:

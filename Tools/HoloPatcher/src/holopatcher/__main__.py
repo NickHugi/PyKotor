@@ -1225,7 +1225,8 @@ class App:
         """
         self.pykotor_logger.debug("begin_install_thread reached")
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-        ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
+        tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
+        ini_file_path = tslpatchdata_path.joinpath(namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
         self.pykotor_logger.debug("set ui state")
@@ -1238,6 +1239,7 @@ class App:
         self.main_text.config(state=tk.DISABLED)
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
+            installer.tslpatchdata_path = tslpatchdata_path
             self._execute_mod_install(installer, should_cancel_thread, update_progress_func)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_exception_during_install(e)

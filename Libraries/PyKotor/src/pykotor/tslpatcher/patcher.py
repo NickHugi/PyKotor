@@ -68,6 +68,7 @@ class ModInstaller:
         self.game_path: CaseAwarePath = CaseAwarePath.pathify(game_path)
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
+        self.tslpatchdata_path: CaseAwarePath | None = None
         self.log: PatchLogger = logger or PatchLogger()
         self.game: Game | None = Installation.determine_game(self.game_path)
         if not self.changes_ini_path.safe_isfile():  # Handle legacy syntax
@@ -100,7 +101,7 @@ class ModInstaller:
             ini_text = ini_file_bytes.decode(errors="ignore")
 
         self._config = PatcherConfig()
-        self._config.load(ini_text, self.mod_path, self.log)
+        self._config.load(ini_text, self.mod_path, self.log, self.tslpatchdata_path)
 
         if self._config.required_files:
             for i, files in enumerate(self._config.required_files):

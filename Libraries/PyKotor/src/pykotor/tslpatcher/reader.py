@@ -132,11 +132,12 @@ class ConfigReader:
         ini: ConfigParser,
         mod_path: os.PathLike | str,
         logger: PatchLogger | None = None,
+        tslpatchdata_path: os.PathLike | str | None = None,
     ):
         self.previously_parsed_sections = set()
         self.ini: ConfigParser = ini
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
-        self.base_path: CaseAwarePath | None = None  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
+        self.tslpatchdata_path: CaseAwarePath | None = tslpatchdata_path  # path to the tslpatchdata, optional but we'll use it here for the nwnnsscomp.exe if it exists.
         self.config: PatcherConfig
         self.log: PatchLogger = logger or PatchLogger()
 
@@ -679,6 +680,10 @@ class ConfigReader:
         default_destination: str = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
         default_source_folder = compilelist_section_dict.pop("!DefaultSourceFolder", ".")
 
+        nwnnsscomp_exepath = self.mod_path / default_source_folder / "nwnnsscomp.exe"
+        if not nwnnsscomp_exepath.safe_isfile():
+            nwnnsscomp_exepath = None if self.tslpatchdata_path is None else self.tslpatchdata_path / "nwnnsscomp.exe"  # TSLPatcher default
+
         for identifier, file in compilelist_section_dict.items():
             replace: bool = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
@@ -690,7 +695,7 @@ class ConfigReader:
                 file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name])
                 modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
-            modifications.nwnnsscomp_path = self.mod_path / modifications.sourcefolder / "nwnnsscomp.exe"
+            modifications.nwnnsscomp_path = nwnnsscomp_exepath
             self.config.patches_nss.append(modifications)
 
     def load_hack_list(self):
