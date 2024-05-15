@@ -366,7 +366,7 @@ class FileItems(CustomItem):
         class RenameDialog(QDialog):
             def __init__(self, original_name="", parent=None):
                 super().__init__(parent)
-                self.setWindowTitle("Rename/Move File")
+                self.setWindowTitle("Rename File")
 
                 self.line_edit = QLineEdit(original_name, self)
                 ok_button = QPushButton("OK", self)
