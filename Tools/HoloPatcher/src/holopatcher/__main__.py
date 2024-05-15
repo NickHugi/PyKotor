@@ -1539,10 +1539,14 @@ class App:
             if this_log.log_type == LogType.VERBOSE:
                 return "DEBUG"
             return this_log.log_type.name
-        with self.log_file_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"{log.formatted_message}\n")
-        if log.log_type.value < log_type_to_level().value:
-            return
+        try:
+            self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.log_file_path.open("a", encoding="utf-8") as log_file:
+                log_file.write(f"{log.formatted_message}\n")
+            if log.log_type.value < log_type_to_level().value:
+                return
+        except OSError as e:
+            get_root_logger().error(f"Failed to write the log file at '{self.log_file_path}': {e.__class__.__name__}: {e}")
 
         self.main_text.config(state=tk.NORMAL)
         self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
