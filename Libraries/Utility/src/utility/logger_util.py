@@ -91,6 +91,9 @@ class CustomPrintToLogger:
         self.logger: logging.Logger = logger
         self.configure_logger_stream()
 
+    def isatty(self):
+        return True
+
 
     def configure_logger_stream(self):
         utf8_wrapper = UTF8StreamWrapper(self.original_out)
