@@ -1526,16 +1526,16 @@ class ModuleDesignerControls3d:
             self.editor.deleteSelected()
 
         if self.rotateCameraLeft.satisfied(buttons, keys):
-            print("rotateCameraLeft")
+            get_root_logger().debug("rotateCameraLeft")
             self.renderer.rotateCamera(math.pi / 4, 0)
         if self.rotateCameraRight.satisfied(buttons, keys):
-            print("rotateCameraRight")
+            get_root_logger().debug("rotateCameraRight")
             self.renderer.rotateCamera(-math.pi / 4, 0)
         if self.rotateCameraUp.satisfied(buttons, keys):
-            print("rotateCameraUp")
+            get_root_logger().debug("rotateCameraUp")
             self.renderer.rotateCamera(0, math.pi / 4)
         if self.rotateCameraDown.satisfied(buttons, keys):
-            print("rotateCameraDown")
+            get_root_logger().debug("rotateCameraDown")
             self.renderer.rotateCamera(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(buttons, keys):

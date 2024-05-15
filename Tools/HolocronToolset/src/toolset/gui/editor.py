@@ -27,7 +27,7 @@ from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.logger_util import get_root_logger
-from utility.system.path import Path, PurePath
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
+    from utility.system.path import PurePath
 
 
 # TODO: Creating a child editor from this class is not intuitive, document the requirements at some point.

@@ -12,7 +12,6 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tools.module import rim_to_mod

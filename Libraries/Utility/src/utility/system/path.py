@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 import uuid
@@ -738,11 +739,12 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                     hide_window_cmdpart = ""
                     creation_flags = 0
 
-                # Construct the command to run the batch script with elevated privileges
-                run_script_cmd: list[str] = [
+                # Use shlex to escape arguments properly
+                run_script_cmd = [
                     "Powershell",
                     "-Command",
-                    f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path_str}\"' -Verb RunAs{hide_window_cmdpart} -Wait",
+                    f"Start-Process cmd.exe -ArgumentList {shlex.quote(f'{cmd_switch} {script_path_str}')}"
+                    f" -Verb RunAs{hide_window_cmdpart} -Wait",
                 ]
 
                 # Execute the batch script
@@ -754,7 +756,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             # Delete the batch script after execution
             with suppress(Exception):
                 if script_path.safe_isfile():
-                    script_path.unlink()
+                    script_path.unlink(missing_ok=True)
 
         # Inspired by the C# code provided by KOTORModSync at https://github.com/th3w1zard1/KOTORModSync
         def request_native_access(
@@ -877,7 +879,6 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 return
 
     if os.name == "posix":
-
         def get_highest_posix_permission(
             self: Path,  # type: ignore[reportGeneralTypeIssues]
             uid: int | None = None,

@@ -7,31 +7,19 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import uuid
 
 from utility.logger_util import get_root_logger
 from utility.system.path import Path
 
 
-def windows_get_size_on_disk(file_path: os.PathLike | str) -> int:
-    # Define GetCompressedFileSizeW from the Windows API
-    GetCompressedFileSizeW = ctypes.windll.kernel32.GetCompressedFileSizeW
-    GetCompressedFileSizeW.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_ulong)]
-    GetCompressedFileSizeW.restype = ctypes.c_ulong
-
-    # Prepare the high-order DWORD
-    filesizehigh = ctypes.c_ulong()
-
-    # Call GetCompressedFileSizeW
-    low = GetCompressedFileSizeW(str(file_path), ctypes.byref(filesizehigh))
-
-    if low == 0xFFFFFFFF:  # Check for an error condition.  # noqa: PLR2004
-        error = ctypes.GetLastError()
-        if error:
-            raise ctypes.WinError(error)
-
-    # Combine the low and high parts
-    return (filesizehigh.value << 32) + low
+def is_admin() -> bool:
+    try:  # sourcery skip: do-not-use-bare-except
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except OSError:  # noqa: E722
+        print(f"An error occurred while determining user permissions:\n{traceback.format_exc()}", file=sys.stderr)
+        return False
 
 
 def get_size_on_disk(
@@ -61,7 +49,25 @@ def get_size_on_disk(
         # st_blocks are 512-byte blocks
         return stat_result.st_blocks * 512  # type: ignore[attr-defined]
 
-    return windows_get_size_on_disk(file_path)
+    # Define GetCompressedFileSizeW from the Windows API
+    GetCompressedFileSizeW = ctypes.windll.kernel32.GetCompressedFileSizeW
+    GetCompressedFileSizeW.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_ulong)]
+    GetCompressedFileSizeW.restype = ctypes.c_ulong
+
+    # Prepare the high-order DWORD
+    filesizehigh = ctypes.c_ulong()
+
+    # Call GetCompressedFileSizeW
+    low = GetCompressedFileSizeW(str(file_path), ctypes.byref(filesizehigh))
+
+    if low == 0xFFFFFFFF:  # Check for an error condition.  # noqa: PLR2004
+        error = ctypes.GetLastError()
+        if error:
+            raise ctypes.WinError(error)
+
+    # Combine the low and high parts
+    return (filesizehigh.value << 32) + low
+
 
 def start_shutdown_process():
     env = os.environ.copy()
@@ -83,6 +89,7 @@ def start_shutdown_process():
     else:
         import multiprocessing
         multiprocessing.Process(target=shutdown_main_process, args=(os.getpid(),))
+
 
 def shutdown_main_process(main_pid: int, *, timeout: int = 3):
     """Watchdog process to monitor and shut down the main application."""
@@ -138,6 +145,7 @@ def terminate_child_processes(
     if number_failed_children:
         log.error("Failed to terminate %s total processes!", number_failed_children)
     return bool(number_failed_children)
+
 
 def gracefully_shutdown_threads(timeout: int = 3) -> bool:
     """Attempts to gracefully join all threads in the main process with a specified timeout.
@@ -337,8 +345,6 @@ def get_mac_dot_app_dir(directory: os.PathLike | str) -> Path:
 
 
 def win_get_system32_dir() -> Path:
-    import ctypes
-
     try:  # PyInstaller sometimes fails to import wintypes.
         ctypes.windll.kernel32.GetSystemDirectoryW.argtypes = [ctypes.c_wchar_p, ctypes.c_uint]
         ctypes.windll.kernel32.GetSystemDirectoryW.restype = ctypes.c_uint
@@ -352,6 +358,7 @@ def win_get_system32_dir() -> Path:
         ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
         return Path(buffer.value).joinpath("system32")
 
+
 def win_hide_file(filepath: os.PathLike | str):
     """Hides a file. More specifically, uses `ctypes` to set the hidden attribute.
 
@@ -363,8 +370,6 @@ def win_hide_file(filepath: os.PathLike | str):
     ------
         OSError: Some os error occurred, probably permissions related.
     """
-    import ctypes
-
     ret = ctypes.windll.kernel32.SetFileAttributesW(str(filepath), 0x02)
     if not ret:
         # WinError will automatically grab the relevant code and message
