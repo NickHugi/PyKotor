@@ -12,7 +12,7 @@ from qtpy import QtCore
 from qtpy.QtGui import QColor, QCursor, QIcon, QKeySequence
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand, QUndoStack
 
-from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
+from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -57,6 +57,7 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent, QKeyEvent
     from qtpy.QtWidgets import QCheckBox, QWidget
 
+    from pykotor.common.geometry import Vector4
     from pykotor.extract.file import LocationResult, ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.formats.lyt import LYT

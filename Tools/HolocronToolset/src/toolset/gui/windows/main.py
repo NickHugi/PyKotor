@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import tempfile
-import uuid
-
-try:
-    import cProfile
-except ImportError:
-    cProfile = None
+import cProfile
 import platform
 import sys
+import tempfile
+import uuid
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
@@ -81,6 +77,7 @@ from utility.updater.update import AppUpdate
 if TYPE_CHECKING:
     import os
 
+    from logging import Logger
     from typing import NoReturn
 
     from qtpy import QtGui
@@ -231,13 +228,13 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
-        self.log = get_root_logger()
+        self.log: Logger = get_root_logger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
-        self.original_style = self.style().objectName()
-        self.original_palette = self.palette()
+        self.original_style: str = self.style().objectName()
+        self.original_palette: QPalette = self.palette()
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
@@ -360,7 +357,7 @@ class ToolWindow(QMainWindow):
         def openModuleDesigner() -> ModuleDesigner:
             designerUi = (
                 ModuleDesigner(
-                    self,
+                    None,
                     self.active,
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )

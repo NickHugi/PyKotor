@@ -16,9 +16,9 @@ from pykotor.tools.misc import is_mod_file
 from utility.misc import is_debug_mode
 
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import QUndoCommand, QUndoStack
+    from qtpy.QtWidgets import QUndoStack
 elif qtpy.API_NAME in ("PyQt6", "PySide6"):
-    from qtpy.QtGui import QUndoCommand, QUndoStack
+    from qtpy.QtGui import QUndoStack
 else:
     raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
 
@@ -49,7 +49,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import _GeometryMode, _InstanceMode, MoveCommand, RotateCommand, openInstanceDialog
+from toolset.gui.editors.git import MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, openInstanceDialog
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse

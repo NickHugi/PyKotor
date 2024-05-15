@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import platform
-import re
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
@@ -18,7 +17,6 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.tpc import TPC, read_tpc
