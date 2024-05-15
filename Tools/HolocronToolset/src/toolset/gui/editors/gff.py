@@ -225,17 +225,6 @@ class GFFEditor(Editor):
         gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
         gff_type = ResourceType.GFF
 
-        exts = gff_type.extension.split(".")
-        test_content = gff_type.name.upper()
-        if len(exts) > 1 and exts[-1].lower() == "xml":
-            gff_type = ResourceType.GFF_XML
-            test_content = exts[-2].upper()
-        if test_content in GFFContent.__members__:
-            # gff_content = GFFContent.__members__[test_content]
-            gff_content = GFFContent.GFF
-        if not gff_content:
-            gff_content = GFFContent.GFF
-
         gff = GFF(gff_content)
         self._build_struct(self.model.item(0, 0), gff.root)
 
