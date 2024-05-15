@@ -5,9 +5,11 @@ import logging
 import multiprocessing
 import os
 import re
+import shutil
 import sys
 import threading
 import time
+import uuid
 
 from contextlib import contextmanager, suppress
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
@@ -128,31 +130,31 @@ class SafeEncodingLogger(logging.Logger):
     ):
         super().__init__(name, *args, **kwargs)
 
-    def _safe_log(self, level: int, msg: str, *args, **kwargs):
+    def _safe_log(self, level: int, msg: object, *args, **kwargs):
         try:
             # Encode to UTF-8 and decode back with 'replace' to handle unencodable chars
-            safe_msg = msg.encode("utf-8", "replace").decode("utf-8", "replace")
+            safe_msg = str(msg).encode("utf-8", "replace").decode("utf-8", "replace")
         except Exception as e:  # noqa: BLE001
-            safe_msg = f"Failed to encode message: {e}"
+            safe_msg = f"SafeEncodingLogger: Failed to encode message: {e}"
         super()._log(level, safe_msg, args, **kwargs)
 
-    def debug(self, msg: str, *args, **kwargs):
+    def debug(self, msg: object, *args, **kwargs):
         if self.isEnabledFor(logging.DEBUG):
             self._safe_log(logging.DEBUG, msg, *args, **kwargs)
 
-    def info(self, msg: str, *args, **kwargs):
+    def info(self, msg: object, *args, **kwargs):
         if self.isEnabledFor(logging.INFO):
             self._safe_log(logging.INFO, msg, *args, **kwargs)
 
-    def warning(self, msg: str, *args, **kwargs):
+    def warning(self, msg: object, *args, **kwargs):
         if self.isEnabledFor(logging.WARNING):
             self._safe_log(logging.WARNING, msg, *args, **kwargs)
 
-    def error(self, msg: str, *args, **kwargs):
+    def error(self, msg: object, *args, **kwargs):
         if self.isEnabledFor(logging.ERROR):
             self._safe_log(logging.ERROR, msg, *args, **kwargs)
 
-    def critical(self, msg: str, *args, **kwargs):
+    def critical(self, msg: object, *args, **kwargs):
         if self.isEnabledFor(logging.CRITICAL):
             self._safe_log(logging.CRITICAL, msg, *args, **kwargs)
 
@@ -242,6 +244,76 @@ class LogLevelFilter(logging.Filter):
         return record.levelno >= self.passlevel
 
 
+def dir_requires_admin(
+    dirpath: os.PathLike | str,
+    *,
+    ignore_errors: bool = True,
+) -> bool:  # pragma: no cover
+    """Check if a dir required admin permissions to write.
+
+    If dir is a file test it's directory.
+    """
+    _dirpath = Path(dirpath)
+    dummy_filepath = _dirpath / str(uuid.uuid4())
+    try:
+        with dummy_filepath.open("w"):
+            ...
+        remove_any(dummy_filepath, ignore_errors=False, missing_ok=False)
+    except OSError:
+        if ignore_errors:
+            return True
+        raise
+    else:
+        return False
+
+
+def remove_any(
+    path: os.PathLike | str,
+    *,
+    ignore_errors: bool = True,
+    missing_ok: bool = True
+):
+    path_obj = Path(path)
+    def safe_isdir(x: Path):
+        with suppress(OSError, ValueError):
+            return x.is_dir()
+        return None
+    def safe_isfile(x: Path):
+        with suppress(OSError, ValueError):
+            return x.is_file()
+        return None
+    isdir_func = safe_isdir if ignore_errors else Path.is_dir
+    exists_func = safe_isfile if ignore_errors else Path.exists
+    if not exists_func(path_obj):
+        if missing_ok:
+            return
+        import errno
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path_obj))
+
+    def _remove_any(x: Path):
+        if isdir_func(x):
+            shutil.rmtree(str(x), ignore_errors=ignore_errors)
+        else:
+            x.unlink(missing_ok=missing_ok)
+
+    if sys.platform != "win32":
+        _remove_any(path_obj)
+    else:
+        for i in range(100):
+            try:
+                _remove_any(path_obj)
+            except Exception:  # noqa: PERF203, BLE001
+                if not ignore_errors:
+                    raise
+                time.sleep(0.01)
+            else:
+                if not exists_func(path_obj):
+                    return
+                print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)
+        if not ignore_errors:  # should raise at this point.
+            _remove_any(path_obj)
+
+
 def get_fallback_log_dir() -> Path:
     """Determine a known good location based on the platform."""
     if sys.platform.startswith("win"):  # Use ProgramData for Windows, which is typically for application data for all users
@@ -255,7 +327,6 @@ def get_log_directory(subdir: os.PathLike | str | None = None) -> Path:
         if not path.exists() or not path.is_dir():
             path.unlink(missing_ok=True)
             path.mkdir(parents=True, exist_ok=True)  # Attempt to create the fallback directory
-        from utility.system.os_helper import dir_requires_admin
         if dir_requires_admin(path, ignore_errors=False):
             raise PermissionError(f"Directory '{path}' requires admin.")
         return path
@@ -392,9 +463,7 @@ class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler
             self.stream = self._open()
 
 
-def get_root_logger(
-    use_level: int = logging.DEBUG,
-) -> logging.Logger:
+class RootLoggerWrapper:
     """Setup a logger with some standard features.
 
     The goal is to have this be callable anywhere anytime regardless of whether a logger is setup yet.
@@ -407,72 +476,90 @@ def get_root_logger(
     -------
         logging.Logger: The root logger with the specified handlers and formatters.
     """
-    logger = logging.getLogger()
-    if not logger.handlers:
-        logger.setLevel(use_level)
+    _logger = None
 
-        cur_process = multiprocessing.current_process()
-        console_format_str = "%(levelname)s(%(name)s): %(message)s"
-        if cur_process.name == "MainProcess":
-            log_dir = get_log_directory(subdir="logs")
-            everything_log_file = "debug_pykotor.log"
-            info_warning_log_file = "pykotor.log"
-            error_critical_log_file = "errors_pykotor.log"
-            exception_log_file = "exception_pykotor.log"
-        else:
-            log_dir = get_log_directory(subdir=f"logs/{cur_process.pid}")
-            everything_log_file = f"debug_pykotor_{cur_process.pid}.log"
-            info_warning_log_file = f"pykotor_{cur_process.pid}.log"
-            error_critical_log_file = f"errors_pykotor_{cur_process.pid}.log"
-            exception_log_file = f"exception_pykotor_{cur_process.pid}.log"
-            console_format_str = f"PID={cur_process.pid} - {console_format_str}"
+    def __init__(self, use_level=logging.DEBUG):
+        self._logger: logging.Logger = self._setup_logger(use_level) if self._logger is None else self._logger
 
-        console_handler = ColoredConsoleHandler()
-        formatter = logging.Formatter(console_format_str)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+    def _setup_logger(
+        self,
+        use_level: logging._Level = logging.DEBUG,
+    ) -> logging.Logger:
+        self._logger = logger = logging.getLogger()
+        if not logger.handlers:
+            logger.setLevel(use_level)
 
-        # Redirect stdout and stderr
-        sys.stdout = CustomPrintToLogger(logger, sys.__stdout__, log_type="stdout")
-        sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
+            cur_process = multiprocessing.current_process()
+            console_format_str = "%(levelname)s(%(name)s): %(message)s"
+            if cur_process.name == "MainProcess":
+                log_dir = get_log_directory(subdir="logs")
+                everything_log_file = "debug_pykotor.log"
+                info_warning_log_file = "pykotor.log"
+                error_critical_log_file = "errors_pykotor.log"
+                exception_log_file = "exception_pykotor.log"
+            else:
+                log_dir = get_log_directory(subdir=f"logs/{cur_process.pid}")
+                everything_log_file = f"debug_pykotor_{cur_process.pid}.log"
+                info_warning_log_file = f"pykotor_{cur_process.pid}.log"
+                error_critical_log_file = f"errors_pykotor_{cur_process.pid}.log"
+                exception_log_file = f"exception_pykotor_{cur_process.pid}.log"
+                console_format_str = f"PID={cur_process.pid} - {console_format_str}"
 
-        default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            console_handler = ColoredConsoleHandler()
+            formatter = logging.Formatter(console_format_str)
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
 
-        # Handler for everything (DEBUG and above)
-        everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
-        everything_handler.setLevel(logging.DEBUG)
-        everything_handler.setFormatter(default_formatter)
-        logger.addHandler(everything_handler)
+            # Redirect stdout and stderr
+            sys.stdout = CustomPrintToLogger(logger, sys.__stdout__, log_type="stdout")
+            sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
 
-        # Handler for INFO and WARNING
-        info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
-        info_warning_handler.setLevel(logging.INFO)
-        info_warning_handler.setFormatter(default_formatter)
-        info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
-        logger.addHandler(info_warning_handler)
+            default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-        # Handler for ERROR and CRITICAL
-        error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
-        error_critical_handler.setLevel(logging.ERROR)
-        error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
-        error_critical_handler.setFormatter(exception_formatter)
-        logger.addHandler(error_critical_handler)
+            # Handler for everything (DEBUG and above)
+            everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            everything_handler.setLevel(logging.DEBUG)
+            everything_handler.setFormatter(default_formatter)
+            logger.addHandler(everything_handler)
 
-        # Handler for EXCEPTIONS ONLY (using CustomExceptionFormatter)
-        exception_handler = DirectoryRotatingFileHandler(log_dir, exception_log_file, maxBytes=20485760, backupCount=100000000, delay=True, encoding="utf8")
-        exception_handler.setLevel(logging.ERROR)
-        exception_handler.setFormatter(exception_formatter)
-        exception_handler.addFilter(LogLevelFilter(logging.ERROR))  # Only log ERROR and CRITICAL levels
-        logger.addHandler(exception_handler)
+            # Handler for INFO and WARNING
+            info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            info_warning_handler.setLevel(logging.INFO)
+            info_warning_handler.setFormatter(default_formatter)
+            info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
+            logger.addHandler(info_warning_handler)
 
-    return logger
+            # Handler for ERROR and CRITICAL
+            error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            error_critical_handler.setLevel(logging.ERROR)
+            error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
+            error_critical_handler.setFormatter(exception_formatter)
+            logger.addHandler(error_critical_handler)
+
+            # Handler for EXCEPTIONS ONLY (using CustomExceptionFormatter)
+            exception_handler = DirectoryRotatingFileHandler(log_dir, exception_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            exception_handler.setLevel(logging.ERROR)
+            exception_handler.setFormatter(exception_formatter)
+            exception_handler.addFilter(LogLevelFilter(logging.ERROR))  # Only log ERROR and CRITICAL levels
+            logger.addHandler(exception_handler)
+
+        return logger
+
+    def __call__(self) -> logging.Logger:
+        return self._setup_logger() if self._logger is None else self._logger
+
+    def __getattr__(self, attr):
+        return getattr(self._setup_logger() if self._logger is None else self._logger, attr)
+
+
+get_root_logger = RootLoggerWrapper()
 
 
 # Example usage
 if __name__ == "__main__":
+    get_root_logger.debug("This is a debug message.")
     logger = get_root_logger()
-    logger.debug("This is a debug message.")
     logger.info("This is an info message.")
     logger.warning("This is a warning message.")
     logger.error("This is an error message.")
