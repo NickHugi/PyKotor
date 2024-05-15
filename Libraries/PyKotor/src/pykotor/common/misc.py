@@ -94,6 +94,9 @@ class ResRef:
             return NotImplemented
         return other_value == self._value.lower()
 
+    def __hash__(self):
+        return hash(self._value.lower())
+
     def __repr__(
         self,
     ):
