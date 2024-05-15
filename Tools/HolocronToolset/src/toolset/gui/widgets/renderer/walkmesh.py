@@ -851,7 +851,7 @@ class WalkmeshRenderer(QWidget):
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):
-                    get_root_logger().debug(f"Emitting Hovered/UnderMouse for instance {instance!r}")
+                    #get_root_logger().debug(f"Emitting Hovered/UnderMouse for instance {instance!r}")
                     self.instanceHovered.emit(instance)
                     self._instancesUnderMouse.append(instance)
 
