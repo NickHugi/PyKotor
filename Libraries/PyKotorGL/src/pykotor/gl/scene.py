@@ -141,7 +141,7 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        module_id_part = "" if module is None else f" from module '{module._root}'"
+        module_id_part = "" if module is None else f" from module '{module.root()}'"
         get_root_logger().info("Start initialize Scene%s", module_id_part)
 
         glEnable(GL_DEPTH_TEST)
@@ -235,9 +235,13 @@ class Scene:
             - Creates base render object and attaches head, hands and mask sub-objects
             - Catches exceptions and returns default "unknown" render object if model loading fails.
         """
+        assert self.installation is not None
         try:
             if utc is None:
                 utc = self._resource_from_gitinstance(instance, self.module.creature)
+            if utc is None:
+                get_root_logger().error(f"Cannot getCreatureRenderObject of GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                return RenderObject("unknown", data=instance)
 
             head_obj: RenderObject | None = None
             mask_hook = None
