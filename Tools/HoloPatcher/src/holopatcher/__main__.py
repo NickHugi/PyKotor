@@ -54,6 +54,8 @@ if not is_frozen():
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
+    with suppress(Exception):
+        update_sys_path(pathlib.Path(__file__).parents[1])
 
 
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
