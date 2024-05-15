@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import math
 import threading
+import traceback
 
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy
-import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
