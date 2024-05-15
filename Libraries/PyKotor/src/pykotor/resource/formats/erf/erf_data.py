@@ -29,7 +29,7 @@ class ERFType(Enum):
         if is_mod_file(ext_or_filepath):
             return cls.MOD
         if is_sav_file(ext_or_filepath):
-            return cls.SAV
+            return cls.MOD
         msg = f"Invalid ERF extension in filepath '{ext_or_filepath}'."
         raise ValueError(msg)
 

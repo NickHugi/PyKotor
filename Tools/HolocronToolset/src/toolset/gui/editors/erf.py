@@ -215,7 +215,7 @@ class ERFEditor(Editor):
             write_rim(rim, data)
 
         elif self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
-            erf = ERF(ERFType.__members__[self._restype.name])
+            erf = ERFType.from_extension(self._restype.extension)
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
