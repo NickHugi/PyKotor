@@ -928,7 +928,7 @@ class _InstanceMode(_Mode):
 
         if isinstance(self._editor, GITEditor):
             assert self._editor._filepath is not None
-            module_root: str = self._installation.replace_module_extensions(self._editor._filepath.name)
+            module_root: str = self._installation.get_module_root(self._editor._filepath.name)
         else:
             assert self._editor._module is not None
             module_root = self._editor._module._root
@@ -937,7 +937,7 @@ class _InstanceMode(_Mode):
         for loc in search:
             if (
                 loc.filepath.parent.name.lower() == "modules"
-                and self._installation.replace_module_extensions(loc.filepath.name.lower()) != module_root
+                and self._installation.get_module_root(loc.filepath.name.lower()) != module_root
             ):
                 get_root_logger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
                 search.remove(loc)

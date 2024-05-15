@@ -140,7 +140,7 @@ def populate_all_gffs(
             filepath = resource.filepath()
 
             if resource.inside_capsule:
-                subfolder = Installation.replace_module_extensions(filepath)
+                subfolder = Installation.get_module_root(filepath)
             elif resource.inside_bif:
                 subfolder = filepath.name
             else:
@@ -176,7 +176,7 @@ def populate_all_scripts(
             filepath = resource.filepath()
 
             if resource.inside_capsule:
-                subfolder = Installation.replace_module_extensions(filepath)
+                subfolder = Installation.get_module_root(filepath)
             elif resource.inside_bif:
                 subfolder = filepath.name
             else:

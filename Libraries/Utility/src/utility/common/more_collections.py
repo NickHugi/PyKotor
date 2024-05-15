@@ -11,79 +11,109 @@ T = TypeVar("T")
 VT = TypeVar("VT")
 
 class OrderedSet(list, MutableSet[T]):
-    def __init__(self, iterable: Iterable[T] | None = None) -> None:
-        super().__init__()
-        self._set = set()
+    def __init__(
+        self,
+        iterable: Iterable[T] | None = None,
+    ) -> None:
+        self._list: list[T] = []
+        self._set: set[T] = set()
         if iterable is not None:
             self.extend(iterable)
-
-    def append(self, value: T) -> None:
-        if value not in self._set:
-            super().append(value)
-            self._set.add(value)
-
-    def extend(self, iterable: Iterable[T]) -> None:
-        for item in iterable:
-            self.append(item)
-
-    def insert(self, index: SupportsIndex, value: T) -> None:
-        if value not in self._set:
-            super().insert(index, value)
-            self._set.add(value)
-
-    def remove(self, value: T) -> None:
-        if value in self._set:
-            super().remove(value)
-            self._set.remove(value)
-
-    def pop(self, index: SupportsIndex = -1) -> T:
-        value = super().pop(index)
-        self._set.remove(value)
-        return value
-
-    def clear(self) -> None:
-        super().clear()
-        self._set.clear()
-
-    def __setitem__(self, index: SupportsIndex | slice, value: T | Iterable[T]) -> None:
-        if isinstance(index, slice):
-            items_to_set = list(value)
-            for item in items_to_set:
-                if item in self._set:
-                    raise ValueError(f"Duplicate item found: {item}")
-            for item in self[index]:
-                self._set.remove(item)
-            super().__setitem__(index, items_to_set)
-            self._set.update(items_to_set)
-        else:
-            if value in self._set and value != self[index]:
-                raise ValueError(f"Duplicate item found: {value}")
-            self._set.remove(self[index])
-            super().__setitem__(index, value)
-            self._set.add(value)
-
-    def __delitem__(self, index: SupportsIndex | slice) -> None:
-        if isinstance(index, slice):
-            for item in self[index]:
-                self._set.remove(item)
-        else:
-            self._set.remove(self[index])
-        super().__delitem__(index)
 
     def __contains__(self, value: object) -> bool:
         return value in self._set
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({list(self)})"
+    def __iter__(self) -> Iterator[T]:
+        return iter(self._list)
+
+    def __len__(self) -> int:
+        return len(self._list)
+
+    def add(self, value: T) -> None:
+        if value not in self._set:
+            self._list.append(value)
+            self._set.add(value)
+
+    def append(self, value: T) -> None:
+        self.add(value)
+
+    def discard(self, value: T) -> None:
+        self._set.remove(value)
+        self._list.remove(value)
+
+    def remove(self, value: T) -> None:
+        self.discard(value)
+
+    def insert(self, index: int, value: T) -> None:
+        if value not in self._set:
+            self._list.insert(index, value)
+            self._set.add(value)
+
+    def update(self, other: Iterable[T]):
+        for item in other:
+            self.append(item)
+
+    def extend(self, iterable: Iterable[T]) -> None:
+        self.update(iterable)
+
+    def pop(self, index: SupportsIndex = -1) -> T:
+        value = self._list.pop(index)
+        self._set.remove(value)
+        return value
+
+    def __getitem__(self, index: int) -> T:
+        return self._list[index]
+
+    def __setitem__(self, index: int, value: T) -> None:
+        #if value in self._set:
+        #    raise ValueError(f"Duplicate item found: {value}")
+        old_value = self._list[index]
+        self._list[index] = value
+        self._set.remove(old_value)
+        self._set.add(value)
+
+    def clear(self) -> None:
+        self._list.clear()
+        self._set.clear()
 
     def copy(self) -> Self[T]:
-        return self.__class__(self)
+        new_set = self.__class__()
+        new_set._list = self._list.copy()  # noqa: SLF001
+        new_set._set = self._set.copy()  # noqa: SLF001
+        return new_set
+
+    def __delitem__(self, index: int) -> None:
+        try:
+            value = self._list.pop(index)
+            self._set.remove(value)
+        except KeyError:
+            raise IndexError(index)  # noqa: B904
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._list})"
 
     def count(self, value: T) -> int:
-        return list(self).count(value)
+        return self._list.count(value)
 
     def index(self, value: T, start: SupportsIndex = 0, stop: SupportsIndex = sys.maxsize) -> int:
-        return list(self).index(value, start, stop)
+        return self._list.index(value, start, stop)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, (OrderedSet, list)):
+            return NotImplemented
+        return self._list.__eq__(other) and self._set.__eq__(other)
+
+    def __lt__(self, other: list[T]) -> bool:
+        return self._list.__lt__(other)
+
+    def __le__(self, other: list[T]) -> bool:
+        return self._list.__le__(other)
+
+    def __gt__(self, other: list[T]) -> bool:
+        return self._list.__gt__(other)
+
+    def __ge__(self, other: list[T]) -> bool:
+        return self._list.__ge__(other)
 
     def sort(
         self,
@@ -91,47 +121,27 @@ class OrderedSet(list, MutableSet[T]):
         key: Callable[[T], Any] | None = None,
         reverse: bool = False,
     ) -> None:
-        sorted_items = sorted(self, key=key, reverse=reverse)
-        self.clear()
-        self.extend(sorted_items)
+        self._list.sort(key=key, reverse=reverse)
 
     def reverse(self) -> None:
-        super().reverse()
+        self._list.reverse()
 
     def __add__(self, other: Iterable[T]) -> Self[T]:
-        new_list: Self[T] = self.copy()
-        new_list.extend(other)
-        return new_list
+        return self._set + other
 
     def __iadd__(self, other: Iterable[T]) -> Self[T]:
-        self.extend(other)
-        return self
+        self._set += other
+        self._list += other
 
     def __reversed__(self) -> Iterator[T]:
-        return reversed(list(self))
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, (OrderedSet, list)):
-            return NotImplemented
-        return list(self) == list(other)
-
-    def __gt__(self, other: Iterable[T]) -> bool:
-        return list(self) > list(other)
-
-    def __ge__(self, other: Iterable[T]) -> bool:
-        return list(self) >= list(other)
-
-    def __lt__(self, other: Iterable[T]) -> bool:
-        return list(self) < list(other)
-
-    def __le__(self, other: Iterable[T]) -> bool:
-        return list(self) <= list(other)
+        return reversed(self._list)
 
     __hash__ = None  # type: ignore[assignment]
 
     @classmethod
     def __class_getitem__(cls, item: Any) -> Any:
         return cls
+
 
 _unique_sentinel = object()
 class CaseInsensitiveDict(Generic[T]):

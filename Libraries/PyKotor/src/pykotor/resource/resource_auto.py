@@ -97,7 +97,7 @@ def read_resource(
             return bytes_2da(read_2da(source))
         if resource_ext == "lip":
             return bytes_lip(read_lip(source))
-        if resource_ext.upper() in ERFType.__members__:
+        if ResourceType.from_extension(resource_ext) in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
             return bytes_erf(read_erf(source))
         if resource_ext == "rim":
             return bytes_rim(read_rim(source))

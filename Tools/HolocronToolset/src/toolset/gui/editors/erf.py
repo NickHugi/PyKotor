@@ -62,7 +62,7 @@ class ERFEditor(Editor):
             - Disable saving/loading to modules
             - Create new empty ERF.
         """
-        supported: list[ResourceType] = [ResourceType.__members__[name] for name in ERFType.__members__]
+        supported: list[ResourceType] = [ResourceType.RIM, ResourceType.ERF, ResourceType.MOD, ResourceType.SAV]
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -162,7 +162,7 @@ class ERFEditor(Editor):
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
 
-        if restype.name in ERFType.__members__:
+        if restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
             erf: ERF = read_erf(data)
             for resource in erf:
                 resrefItem = QStandardItem(str(resource.resref))
@@ -215,7 +215,7 @@ class ERFEditor(Editor):
             write_rim(rim, data)
 
         elif self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
-            erf = ERFType.from_extension(self._restype.extension)
+            erf = ERF(ERFType.from_extension(self._restype.extension))
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()

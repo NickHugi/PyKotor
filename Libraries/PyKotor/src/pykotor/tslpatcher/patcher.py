@@ -179,7 +179,7 @@ class ModInstaller:
         capsule: Capsule | None = None
         exists: bool
         if is_capsule_file(patch.destination):
-            module_root = Installation.replace_module_extensions(output_container_path)
+            module_root = Installation.get_module_root(output_container_path)
             tslrcm_omitted_rims = ("702KOR", "401DXN")
             mod_from_rim_called = False
             if not output_container_path.safe_isfile():
@@ -264,7 +264,7 @@ class ModInstaller:
         # if not modrim_type or modrim_type == ignore
         #    return
         erfrim_path = self.game_path / patch.destination / patch.saveas
-        mod_path = erfrim_path.with_name(f"{Installation.replace_module_extensions(erfrim_path.name)}.mod")
+        mod_path = erfrim_path.with_name(f"{Installation.get_module_root(erfrim_path.name)}.mod")
         if erfrim_path != mod_path and mod_path.safe_isfile():
             self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 

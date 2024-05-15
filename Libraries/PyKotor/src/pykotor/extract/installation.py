@@ -1922,15 +1922,11 @@ class Installation:
 
     @staticmethod
     @lru_cache(maxsize=1000)
-    def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
-        module_filename: str = PurePath(module_filepath).name
-        result = re.sub(r"\.rim$", "", module_filename, flags=re.IGNORECASE)
-        for erftype_name in ERFType.__members__:
-            result = re.sub(rf"\.{erftype_name}$", "", result, flags=re.IGNORECASE)
-        lowercase = result.lower()
-        result = result[:-2] if lowercase.endswith("_s") else result
-        result = result[:-4] if lowercase.endswith("_dlg") else result
-        return result  # noqa: RET504
+    def get_module_root(module_filepath: os.PathLike | str) -> str:
+        root: str = PurePath(module_filepath).stem.lower()
+        root = root[:-2] if root.endswith("_s") else root
+        root = root[:-4] if root.endswith("_dlg") else root
+        return root  # noqa: RET504
 
     def module_names(self, *, use_hardcoded: bool = True) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the name of the area.
@@ -1946,7 +1942,7 @@ class Installation:
 
         for module in self._modules:
             lower_module = module.lower()
-            root = self.replace_module_extensions(lower_module)
+            root = self.get_module_root(lower_module)
             lower_root = root.lower()
             qualifier = lower_module[len(root):]
 
@@ -1988,7 +1984,7 @@ class Installation:
 
         for module in self._modules:
             lower_module = module.lower()
-            root = self.replace_module_extensions(lower_module)
+            root = self.get_module_root(lower_module)
             lower_root = root.lower()
             qualifier = lower_module[len(root):]
 
@@ -2037,7 +2033,7 @@ class Installation:
         -------
             The name of the area for the module.
         """
-        root: str = self.replace_module_extensions(module_filename)
+        root: str = self.get_module_root(module_filename)
         upper_root: str = root.upper()
         if use_hardcoded and upper_root in HARDCODED_MODULE_NAMES:
             return HARDCODED_MODULE_NAMES[upper_root]
@@ -2095,7 +2091,7 @@ class Installation:
         -------
             The ID of the area for the module.
         """
-        root: str = self.replace_module_extensions(module_filename)
+        root: str = self.get_module_root(module_filename)
 
         try:
             @lru_cache(maxsize=1000)

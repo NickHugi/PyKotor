@@ -20,7 +20,6 @@ class ERFType(Enum):
 
     ERF = "ERF "
     MOD = "MOD "
-    SAV = "SAV "
 
     @classmethod
     def from_extension(cls, ext_or_filepath: os.PathLike | str) -> ERFType:
@@ -47,9 +46,12 @@ class ERF:
     def __init__(
         self,
         erf_type: ERFType = ERFType.ERF,
+        *,
+        is_save: bool = False,
     ):
         self.erf_type: ERFType = erf_type
         self._resources: OrderedSet[ERFResource] = OrderedSet()
+        self.is_save_erf: bool = is_save
 
         # used for faster lookups
         self._resource_dict: dict[ResourceIdentifier, ERFResource] = {}

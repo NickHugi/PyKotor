@@ -217,7 +217,7 @@ class LazyCapsule(FileResource):
             file_type = reader.read_string(4)
             reader.skip(4)  # file version
 
-            if file_type in {ERFType.__members__[erf_name].value for erf_name in ERFType.__members__}:
+            if file_type in (member.value for member in ERFType):
                 resources = self._load_erf(reader)
             elif file_type == "RIM ":
                 resources = self._load_rim(reader)

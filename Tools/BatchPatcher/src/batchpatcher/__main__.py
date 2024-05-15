@@ -1134,8 +1134,10 @@ def patch_install(install_path: os.PathLike | str):
                 log_output(f"Saving rim {new_rim_filename}")
                 write_rim(new_rim, filepath.parent / new_rim_filename, res_ident.restype)
 
-            elif res_ident.restype.name in ERFType.__members__:
-                new_erf = ERF(ERFType.__members__[res_ident.restype.name])
+            elif res_ident.restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
+                new_erf = ERF(ERFType.from_extension(filepath.suffix))
+                if res_ident.restype is ResourceType.SAV:
+                    new_erf.is_save_erf = True
                 new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
                 log_output(f"Saving erf {new_erf_filename}")
                 write_erf(new_erf, filepath.parent / new_erf_filename, res_ident.restype)

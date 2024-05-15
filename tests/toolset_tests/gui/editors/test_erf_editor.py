@@ -99,7 +99,7 @@ class ERFEditorTest(TestCase):
     )
     def test_erf_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for erf_resource in (resource for resource in self.installation if resource.restype() in {ERFType.__members__[erf_type] for erf_type in ERFType.__members__}):
+        for erf_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.ERF, ResourceType.MOD, ResourceType.SAV}):
             old = read_erf(erf_resource.data())
             self.editor.load(erf_resource.filepath(), erf_resource.resname(), erf_resource.restype(), erf_resource.data())
 
@@ -114,7 +114,7 @@ class ERFEditorTest(TestCase):
     )
     def test_erf_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for erf_resource in (resource for resource in self.installation if resource.restype() in {ERFType.__members__[erf_type] for erf_type in ERFType.__members__}):
+        for erf_resource in (resource for resource in self.installation if resource.restype() in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV)):
             old = read_erf(erf_resource.data())
             self.editor.load(erf_resource.filepath(), erf_resource.resname(), erf_resource.restype(), erf_resource.data())
 

@@ -381,8 +381,8 @@ class Editor(QMainWindow):
 
         c_parent_filepath = c_filepath.parent
         while (  # Iterate all parents until we find a physical folder on disk.
-            ResourceType.from_extension(c_parent_filepath.suffix).name in ERFType.__members__
-            or ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM
+            ResourceType.from_extension(c_parent_filepath.suffix).name
+            in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.RIM)
         ) and not c_parent_filepath.safe_isdir():
             nested_paths.append(c_parent_filepath)
             c_filepath = c_parent_filepath

@@ -299,7 +299,7 @@ class ModuleDesigner(QMainWindow):
     def openModule(self, mod_filepath: Path):
         """Opens a module."""
         orig_filepath = mod_filepath
-        mod_root = self._installation.replace_module_extensions(mod_filepath)
+        mod_root = self._installation.get_module_root(mod_filepath)
         mod_filepath = mod_filepath.with_name(f"{mod_root}.mod")
         if not mod_filepath.is_file():
             self.log.info("No .mod found at '%s'", mod_filepath)

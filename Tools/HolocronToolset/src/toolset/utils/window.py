@@ -236,7 +236,7 @@ def openResourceEditor(
         if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
             editor.setWindowIcon(parentWindowWidget.windowIcon())
 
-    if restype.name in ERFType.__members__ or restype is ResourceType.RIM:
+    if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM):
         editor = ERFEditor(None, installation)
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:
