@@ -100,7 +100,7 @@ class PatcherConfig:
         ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]  # use case-sensitive keys
         ini.read_string(ini_text)
 
-        ConfigReader(ini, mod_path, logger).load(self)
+        ConfigReader(ini, mod_path, logger, tslpatchdata_path).load(self)
 
     @classmethod
     def as_namespace(cls, filepath: CaseAwarePath) -> PatcherNamespace:
