@@ -16,7 +16,20 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QCoreApplication, QFile, QMetaObject, QTextStream, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
-from qtpy.QtWidgets import QAction, QApplication, QDialog, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QStyle, QVBoxLayout, QWidget
+from qtpy.QtWidgets import (
+    QAction,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QStyle,
+    QVBoxLayout,
+    QWidget,
+)
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -82,6 +95,7 @@ if TYPE_CHECKING:
 
     from qtpy import QtGui
     from qtpy.QtGui import QCloseEvent
+    from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
     from pykotor.resource.formats.mdl.mdl_data import MDL
@@ -362,6 +376,7 @@ class ToolWindow(QMainWindow):
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )
             )
+            designerUI.setIcon
             addWindow(designerUi, show=False)
             return designerUi
 
@@ -487,6 +502,13 @@ class ToolWindow(QMainWindow):
             dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, Qt.GlobalColor.darkGray)
             dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Qt.GlobalColor.darkGray)
             dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Light, QColor(53, 53, 53))
+            app.setStyleSheet("""
+                QToolTip {
+                    background-color: rgba(0, 0, 0, 180); /* Semi-transparent background */
+                    color: white; /* Text color */
+                    border: 1px solid white; /* Border color */
+                }
+            """)
             QApplication.setPalette(dark_palette)
         print("themeName:", themeName)
         self.show()  # Re-apply the window with new flags
@@ -654,7 +676,7 @@ class ToolWindow(QMainWindow):
             - If multiple resources selected, prompt user for extract directory and extract each with original name.
         """
         if len(resources) == 1:
-            # Player saves resource with a specific name
+            # User saves resource with a specific name
             default = f"{resources[0].resname()}.{resources[0].restype().extension}"
             filepath: str = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
@@ -665,7 +687,7 @@ class ToolWindow(QMainWindow):
                 #QMessageBox(QMessageBox.Icon.Information, "Finished extracting", f"Extracted {len(resources)} resources to '{filepath}'").exec_()
 
         elif len(resources) >= 1:
-            # Player saves resources with original name to a specific directory
+            # User saves resources with original name to a specific directory
             folderpath: str = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
             if not folderpath:
                 return
@@ -1632,7 +1654,7 @@ class FolderObserver(FileSystemEventHandler):
         self.window: ToolWindow = window
         self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
 
-    def on_any_event(self, event):
+    def on_any_event(self, event: FileSystemEvent):
         rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
         if rightnow - self.lastModified < timedelta(seconds=1):
             return
