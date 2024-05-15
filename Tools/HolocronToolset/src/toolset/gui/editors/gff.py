@@ -58,9 +58,9 @@ class GFFEditor(Editor):
         self._setupMenus()
         self._setupSignals()
 
-        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
 
-        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)  # type: ignore[arg-type]
         self.ui.treeView.setSortingEnabled(True)
 
         # Make the right panel take as little space possible
@@ -150,7 +150,7 @@ class GFFEditor(Editor):
 
         sourceIndex = self.model.indexFromItem(rootNode)
         proxyIndex = self.proxyModel.mapFromSource(sourceIndex)
-        self.ui.treeView.expand(proxyIndex)
+        self.ui.treeView.expand(proxyIndex)  # type: ignore[arg-type]
 
     def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct):
         """Loads a GFFStruct into a QStandardItem node.
