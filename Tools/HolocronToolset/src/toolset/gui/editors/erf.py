@@ -214,13 +214,15 @@ class ERFEditor(Editor):
                 rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
 
-        elif self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
+        elif self._restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
             erf = ERF(ERFType.from_extension(self._restype.extension))
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
                 erf.set_data(str(resource.resref), resource.restype, resource.data)
             write_erf(erf, data)
+        else:
+            raise ValueError(f"Invalid restype for ERFEditor: {self._restype!r}")
 
         return data, b""
 
