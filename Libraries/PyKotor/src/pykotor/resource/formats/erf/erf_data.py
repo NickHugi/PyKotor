@@ -9,6 +9,7 @@ from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_file, is_mod_file, is_sav_file
+from utility.common.more_collections import OrderedSet
 
 if TYPE_CHECKING:
     import os
@@ -48,7 +49,7 @@ class ERF:
         erf_type: ERFType = ERFType.ERF,
     ):
         self.erf_type: ERFType = erf_type
-        self._resources: list[ERFResource] = []
+        self._resources: OrderedSet[ERFResource] = OrderedSet()
 
         # used for faster lookups
         self._resource_dict: dict[ResourceIdentifier, ERFResource] = {}
@@ -170,6 +171,12 @@ class ERF:
             rim.set_data(str(resource.resref), resource.restype, resource.data)
         return rim
 
+    def __eq__(self, other):
+        from pykotor.resource.formats.rim import RIM
+        if not isinstance(other, (ERF, RIM)):
+            return NotImplemented
+        return set(self._resources) == set(other._resources)
+
 
 class ERFResource:
     def __init__(
@@ -181,3 +188,19 @@ class ERFResource:
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
         self.data: bytes = data
+
+    def __eq__(
+        self,
+        other,
+    ):
+        from pykotor.resource.formats.rim import RIMResource
+        if not isinstance(other, (ERFResource, RIMResource)):
+            return NotImplemented
+        return (
+            self.resref == other.resref
+            and self.restype == other.restype
+            and self.data == other.data
+        )
+
+    def __hash__(self):
+        return hash((self.resref, self.restype, self.data))
