@@ -1138,7 +1138,7 @@ def dismantle_git(
         encounter_struct.set_single("ZPosition", encounter.position.z)
 
         if not encounter.geometry:
-            get_root_logger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
+            RootLogger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
             encounter.geometry.create_triangle(origin=encounter.position)
 
         geometry_list = encounter_struct.set_list("Geometry", GFFList())
