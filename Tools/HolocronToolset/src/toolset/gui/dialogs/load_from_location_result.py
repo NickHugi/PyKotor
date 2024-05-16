@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import faulthandler
 import os
 import pathlib

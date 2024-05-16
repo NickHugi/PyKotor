@@ -9,10 +9,9 @@ from utility.logger_util import RobustRootLogger
 from utility.misc import is_int
 
 if TYPE_CHECKING:
+    from toolset.data.misc import Bind
     from toolset.gui.widgets.edit.color import ColorEdit
     from toolset.gui.widgets.set_bind import SetBindWidget
-    from toolset.data.misc import Bind
-    from toolset.data.settings import Settings
 
 
 class SettingsWidget(QWidget):

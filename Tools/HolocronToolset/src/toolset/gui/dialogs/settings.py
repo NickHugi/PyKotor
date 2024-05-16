@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog
 
 if TYPE_CHECKING:
@@ -28,6 +29,9 @@ class SettingsDialog(QDialog):
             - Connect signal handlers.
         """
         super().__init__(parent)
+        # Add maximize and minimize buttons
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+
 
         self.installationEdited: bool = False
 
