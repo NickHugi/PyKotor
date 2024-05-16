@@ -472,7 +472,7 @@ class Ui_MainWindow(object):
         self.actionModuleDesigner.setText(QCoreApplication.translate("MainWindow", u"Module Designer", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.coreTab), QCoreApplication.translate("MainWindow", u"Core", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.savesTab), QCoreApplication.translate("MainWindow", u"Saves", None))
-        self.specialActionButton.setText(QCoreApplication.translate("MainWindow", u"Open in Module Designer", None))
+        self.specialActionButton.setText(QCoreApplication.translate("MainWindow", u"Designer", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.modulesTab), QCoreApplication.translate("MainWindow", u"Modules", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.overrideTab), QCoreApplication.translate("MainWindow", u"Override", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.texturesTab), QCoreApplication.translate("MainWindow", u"Textures", None))

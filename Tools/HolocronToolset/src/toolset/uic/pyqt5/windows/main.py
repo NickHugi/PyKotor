@@ -368,7 +368,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Holocron Toolset"))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.coreTab), _translate("MainWindow", "Core"))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.savesTab), _translate("MainWindow", "Saves"))
-        self.specialActionButton.setText(_translate("MainWindow", "Open in Module Designer"))
+        self.specialActionButton.setText(_translate("MainWindow", "Designer"))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.modulesTab), _translate("MainWindow", "Modules"))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.overrideTab), _translate("MainWindow", "Override"))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.texturesTab), _translate("MainWindow", "Textures"))

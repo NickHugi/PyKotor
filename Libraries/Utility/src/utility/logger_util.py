@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import multiprocessing
 import os
@@ -209,19 +208,6 @@ class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
         if record.exc_info:
             msg += f"\n{self.formatException(record.exc_info)}"
         return f"{self.COLOR_CODES.get(record.levelno, '')}{msg}{self.RESET_CODE}"
-
-
-class JSONFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        log_record: dict[str, str] = {
-            "timestamp": self.formatTime(record, self.datefmt),
-            "level": record.levelname,
-            "name": record.name,
-            "message": record.getMessage(),
-        }
-        if record.exc_info:
-            log_record["exception"] = super().formatException(record.exc_info)
-        return json.dumps(log_record)
 
 
 class LogLevelFilter(logging.Filter):
