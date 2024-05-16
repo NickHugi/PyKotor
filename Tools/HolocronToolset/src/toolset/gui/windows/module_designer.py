@@ -56,7 +56,7 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -488,7 +488,7 @@ class ModuleDesigner(QMainWindow):
         location: CaseAwarePath = self._installation.override_path() / f"{resource.identifier()}"
         data = resource.data()
         if data is None:
-            RootLogger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
+            RobustRootLogger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
             return
         BinaryWriter.dump(location, data)
         resource.add_locations([location])
@@ -754,11 +754,11 @@ class ModuleDesigner(QMainWindow):
                     utt = read_utt(dialog.data)
                     instance.tag = utt.tag
                     if not instance.geometry:
-                        RootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
+                        RobustRootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITEncounter):
                     if not instance.geometry:
-                        RootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
+                        RobustRootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
                     utd = read_utd(dialog.data)
@@ -1469,16 +1469,16 @@ class ModuleDesignerControls3d:
             self.editor.deleteSelected()
 
         if self.rotateCameraLeft.satisfied(buttons, keys):
-            RootLogger().debug("rotateCameraLeft")
+            RobustRootLogger().debug("rotateCameraLeft")
             self.renderer.rotateCamera(math.pi / 4, 0)
         if self.rotateCameraRight.satisfied(buttons, keys):
-            RootLogger().debug("rotateCameraRight")
+            RobustRootLogger().debug("rotateCameraRight")
             self.renderer.rotateCamera(-math.pi / 4, 0)
         if self.rotateCameraUp.satisfied(buttons, keys):
-            RootLogger().debug("rotateCameraUp")
+            RobustRootLogger().debug("rotateCameraUp")
             self.renderer.rotateCamera(0, math.pi / 4)
         if self.rotateCameraDown.satisfied(buttons, keys):
-            RootLogger().debug("rotateCameraDown")
+            RobustRootLogger().debug("rotateCameraDown")
             self.renderer.rotateCamera(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(buttons, keys):
@@ -1562,21 +1562,28 @@ class ModuleDesignerControlsFreeCam:
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
+        RobustRootLogger().debug(f"onKeyboardPressed, buttons: {buttons}, keys: {keys}")
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
 
         strength = self.settings.flyCameraSpeedFC / 100
         if self.moveCameraUp.satisfied(buttons, keys, exactKeys=False):
+            RobustRootLogger().debug(f"moveCameraUp satisfied in onKeyboardPressed (strength {strength})")
             self.renderer.moveCamera(0, 0, strength)
         if self.moveCameraDown.satisfied(buttons, keys, exactKeys=False):
+            RobustRootLogger().debug(f"moveCameraDown satisfied in onKeyboardPressed (strength {strength})")
             self.renderer.moveCamera(0, 0, -strength)
         if self.moveCameraLeft.satisfied(buttons, keys, exactKeys=False):
+            RobustRootLogger().debug(f"moveCameraLeft satisfied in onKeyboardPressed (strength {strength})")
             self.renderer.moveCamera(0, -strength, 0)
         if self.moveCameraRight.satisfied(buttons, keys, exactKeys=False):
+            RobustRootLogger().debug(f"moveCameraRight satisfied in onKeyboardPressed (strength {strength})")
             self.renderer.moveCamera(0, strength, 0)
         if self.moveCameraForward.satisfied(buttons, keys, exactKeys=False):
+            RobustRootLogger().debug(f"moveCameraForward satisfied in onKeyboardPressed (strength {strength})")
             self.renderer.moveCamera(strength, 0, 0)
         if self.moveCameraBackward.satisfied(buttons, keys, exactKeys=False):
+            RobustRootLogger().debug(f"moveCameraBackward satisfied in onKeyboardPressed (strength {strength})")
             self.renderer.moveCamera(-strength, 0, 0)
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
@@ -1667,12 +1674,12 @@ class ModuleDesignerControls2d:
 
         if self.moveSelected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                RootLogger().debug("Move geometry point? %s, %s", worldDelta.x, worldDelta.y)
+                RobustRootLogger().debug("Move geometry point? %s, %s", worldDelta.x, worldDelta.y)
                 self._mode.moveSelected(worldDelta.x, worldDelta.y)
                 return
 
             if not self.editor.isDragMoving:
-                RootLogger().debug("moveSelected instance in 2d")
+                RobustRootLogger().debug("moveSelected instance in 2d")
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
             self.editor.moveSelected(worldDelta.x, worldDelta.y, noUndoStack=True, noZCoord=True)
@@ -1684,7 +1691,7 @@ class ModuleDesignerControls2d:
                     print(instance.resref, "does not support rotating yaw")
                     continue
                 if not self.editor.isDragRotating:
-                    RootLogger().debug("rotateSelected instance in 2d")
+                    RobustRootLogger().debug("rotateSelected instance in 2d")
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
                     self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
@@ -1711,20 +1718,20 @@ class ModuleDesignerControls2d:
             - Check if duplicate button is pressed and duplicate selected instance
             - Check if context menu button is pressed and open context menu.
         """
-        RootLogger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
+        RobustRootLogger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
         if self.selectUnderneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                RootLogger().debug("selectUnderneathGeometry?")
+                RobustRootLogger().debug("selectUnderneathGeometry?")
                 self._mode.selectUnderneath()
             elif self.renderer.instancesUnderMouse():
-                RootLogger().debug("onMousePressed, selectUnderneath FOUND INSTANCES")
+                RobustRootLogger().debug("onMousePressed, selectUnderneath FOUND INSTANCES")
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
             else:
-                RootLogger().debug("onMousePressed, selectUnderneath DID NOT FIND INSTANCES!")
+                RobustRootLogger().debug("onMousePressed, selectUnderneath DID NOT FIND INSTANCES!")
                 self.editor.setSelection([])
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            RootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
+            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
             if isinstance(self.editor._controls2d._mode, _InstanceMode) and self.editor.selectedInstances:
                 self._duplicate_instance()
         if self.openContextMenu.satisfied(buttons, keys):
@@ -1754,7 +1761,7 @@ class ModuleDesignerControls2d:
             - Check if toggle instance lock shortcut satisfied and toggle lock instances checkbox
         """
         if self.deleteSelected.satisfied(buttons, keys):
-            RootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
+            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             if isinstance(self._mode, _GeometryMode):
                 get_root_logger().debug("_GeometryMode: moduleDesignerControls2d deleteSelected satisfied ")
                 self._mode.deleteSelected()
@@ -1763,7 +1770,7 @@ class ModuleDesignerControls2d:
             self.editor.deleteSelected()
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
-            RootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d snapToCamera satisfied ")
+            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d snapToCamera satisfied ")
             for instance in self.editor.selectedInstances:
                 self.renderer.snapCameraToPoint(instance.position)
                 break
