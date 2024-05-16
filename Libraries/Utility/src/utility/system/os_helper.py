@@ -10,7 +10,7 @@ import time
 import traceback
 import uuid
 
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.system.path import Path
 
 
@@ -94,12 +94,12 @@ def start_shutdown_process():
 def shutdown_main_process(main_pid: int, *, timeout: int = 3):
     """Watchdog process to monitor and shut down the main application."""
     try:
-        get_root_logger().debug(f"Waiting {timeout} second(s) before starting the shutdown failsafe.")
+        RootLogger().debug(f"Waiting {timeout} second(s) before starting the shutdown failsafe.")
         time.sleep(timeout)
-        get_root_logger().debug("Perform the shutdown/cleanup sequence")
+        RootLogger().debug("Perform the shutdown/cleanup sequence")
         terminate_main_process(timeout, main_pid)
     except Exception:  # noqa: BLE001
-        get_root_logger().exception("Shutdown process encountered an exception!", exc_info=True)
+        RootLogger().exception("Shutdown process encountered an exception!", exc_info=True)
 
 
 def terminate_child_processes(
@@ -112,7 +112,7 @@ def terminate_child_processes(
     """
     ignored_pids = [] if ignored_pids is None else ignored_pids
     import multiprocessing
-    log = get_root_logger()
+    log = RootLogger()
     log.info("Attempting to terminate child processes gracefully...")
 
     active_children = multiprocessing.active_children()
@@ -155,33 +155,33 @@ def gracefully_shutdown_threads(timeout: int = 3) -> bool:
 
     If all terminate gracefully or if there are no threads, exit normally.
     """
-    get_root_logger().info("Attempting to terminate threads gracefully...")
+    RootLogger().info("Attempting to terminate threads gracefully...")
     main_thread = threading.main_thread()
     other_threads = [t for t in threading.enumerate() if t is not main_thread]
     number_timeout_threads = 0
-    get_root_logger().debug("%s existing threads to terminate.", len(other_threads))
+    RootLogger().debug("%s existing threads to terminate.", len(other_threads))
     if not other_threads:
         return True
 
     for thread in other_threads:
         if thread.__class__.__name__ == "_DummyThread":
-            get_root_logger().debug("Ignoring dummy thread '%s'", thread.getName())
+            RootLogger().debug("Ignoring dummy thread '%s'", thread.getName())
             continue
         if not thread.is_alive():
-            get_root_logger().debug("Ignoring dead thread '%s'", thread.getName())
+            RootLogger().debug("Ignoring dead thread '%s'", thread.getName())
             continue
         try:
             thread.join(timeout)
             if thread.is_alive():
-                get_root_logger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
+                RootLogger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
                 number_timeout_threads += 1
         except Exception:  # noqa: BLE001
-            get_root_logger().exception("Failed to stop the thread")
+            RootLogger().exception("Failed to stop the thread")
 
     if number_timeout_threads:
-        get_root_logger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
+        RootLogger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
     else:
-        get_root_logger().debug("All threads terminated gracefully; exiting normally.")
+        RootLogger().debug("All threads terminated gracefully; exiting normally.")
     return bool(number_timeout_threads)
 
 
@@ -206,7 +206,7 @@ def terminate_main_process(
         if result1 and result2:
             sys.exit(0)
 
-        get_root_logger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
+        RootLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
         if sys.platform == "win32":
             sys32path = win_get_system32_dir()
             subprocess.run(
@@ -218,7 +218,7 @@ def terminate_main_process(
             import signal
             os.kill(actual_self_pid, signal.SIGKILL)
     except Exception:
-        get_root_logger().exception("Exception occurred while stopping main process")
+        RootLogger().exception("Exception occurred while stopping main process")
     finally:
         os._exit(0 if result1 and result2 else 1)
 
@@ -227,11 +227,11 @@ def get_app_dir() -> Path:
     if is_frozen():
         return Path(sys.executable).resolve().parent
     main_module = sys.modules["__main__"]
-    get_root_logger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
+    RootLogger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
     main_script_path = getattr(main_module, "__file__", None)
     if main_script_path is not None:
         return Path(main_script_path).resolve().parent
-    get_root_logger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
+    RootLogger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
     return Path.cwd()
 
 
@@ -282,6 +282,7 @@ def dir_requires_admin(
             ...
         remove_any(dummy_filepath, ignore_errors=False, missing_ok=False)
     except OSError:
+        remove_any(dummy_filepath, ignore_errors=True, missing_ok=True)
         if ignore_errors:
             return True
         raise
@@ -353,7 +354,7 @@ def win_get_system32_dir() -> Path:
         ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
         return Path(buffer.value)
     except Exception:  # noqa: BLE001
-        get_root_logger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+        RootLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
         buffer = ctypes.create_unicode_buffer(260)
         ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
         return Path(buffer.value).joinpath("system32")

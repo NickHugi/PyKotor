@@ -14,7 +14,7 @@ import zipfile
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable
 
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any, win_hide_file
 from utility.system.path import ChDir, Path, PurePath
@@ -92,7 +92,7 @@ class LibUpdate:
         self.archive_name = self.get_archive_names()[0]
         self._current_app_dir: Path = get_app_dir()
         self._download_status: bool = False  # The status of the download. Once downloaded this will be True
-        self.log = logger or get_root_logger()
+        self.log = logger or RootLogger()
 
     def get_expected_filename(self) -> str:
         os_lookup_str = platform.system()
@@ -257,7 +257,7 @@ class LibUpdate:
 
     @classmethod
     def _recursive_extract(cls, archive_path: Path):
-        log = get_root_logger()
+        log = RootLogger()
         if not archive_path.safe_isfile():
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(archive_path))
         if not os.access(str(archive_path), os.R_OK):
@@ -279,7 +279,7 @@ class LibUpdate:
         *,
         recursive_extract: bool = False,
     ):
-        log = get_root_logger()
+        log = RootLogger()
         log.info("Extracting TAR/GZ/BZIP archive at path '%s'", archive_path)
         try:
             with tarfile.open(archive_path, "r:*") as tfile:
@@ -304,7 +304,7 @@ class LibUpdate:
                     if sanitized_path.suffix.lower() in {".gz", ".bz2", ".tar", ".zip"} and sanitized_path.safe_isfile():
                         cls._recursive_extract(sanitized_path)
         except Exception as err:  # pragma: no cover
-            log = get_root_logger()
+            log = RootLogger()
             log.debug(err, exc_info=True)
             raise ValueError(f"Error reading tar/gzip file: {archive_path}") from err
 
@@ -315,7 +315,7 @@ class LibUpdate:
         *,
         recursive_extract: bool = False,
     ):
-        log = get_root_logger()
+        log = RootLogger()
         log.info("Extracting ZIP '%s'", archive_path)
         try:
             with zipfile.ZipFile(archive_path, "r") as zfile:

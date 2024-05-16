@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from logging import Logger
 import math
 
 from copy import deepcopy
@@ -55,7 +56,7 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 
 if TYPE_CHECKING:
     import os
@@ -110,7 +111,7 @@ class ModuleDesigner(QMainWindow):
 
         self.selectedInstances: list[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.log = get_root_logger()
+        self.log: Logger = RootLogger()
 
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
@@ -487,7 +488,7 @@ class ModuleDesigner(QMainWindow):
         location: CaseAwarePath = self._installation.override_path() / f"{resource.identifier()}"
         data = resource.data()
         if data is None:
-            get_root_logger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
+            RootLogger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
             return
         BinaryWriter.dump(location, data)
         resource.add_locations([location])
@@ -753,11 +754,11 @@ class ModuleDesigner(QMainWindow):
                     utt = read_utt(dialog.data)
                     instance.tag = utt.tag
                     if not instance.geometry:
-                        get_root_logger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
+                        RootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITEncounter):
                     if not instance.geometry:
-                        get_root_logger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
+                        RootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
                     utd = read_utd(dialog.data)
@@ -1468,16 +1469,16 @@ class ModuleDesignerControls3d:
             self.editor.deleteSelected()
 
         if self.rotateCameraLeft.satisfied(buttons, keys):
-            get_root_logger().debug("rotateCameraLeft")
+            RootLogger().debug("rotateCameraLeft")
             self.renderer.rotateCamera(math.pi / 4, 0)
         if self.rotateCameraRight.satisfied(buttons, keys):
-            get_root_logger().debug("rotateCameraRight")
+            RootLogger().debug("rotateCameraRight")
             self.renderer.rotateCamera(-math.pi / 4, 0)
         if self.rotateCameraUp.satisfied(buttons, keys):
-            get_root_logger().debug("rotateCameraUp")
+            RootLogger().debug("rotateCameraUp")
             self.renderer.rotateCamera(0, math.pi / 4)
         if self.rotateCameraDown.satisfied(buttons, keys):
-            get_root_logger().debug("rotateCameraDown")
+            RootLogger().debug("rotateCameraDown")
             self.renderer.rotateCamera(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(buttons, keys):
@@ -1666,12 +1667,12 @@ class ModuleDesignerControls2d:
 
         if self.moveSelected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                get_root_logger().debug("Move geometry point? %s, %s", worldDelta.x, worldDelta.y)
+                RootLogger().debug("Move geometry point? %s, %s", worldDelta.x, worldDelta.y)
                 self._mode.moveSelected(worldDelta.x, worldDelta.y)
                 return
 
             if not self.editor.isDragMoving:
-                get_root_logger().debug("moveSelected instance in 2d")
+                RootLogger().debug("moveSelected instance in 2d")
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
             self.editor.moveSelected(worldDelta.x, worldDelta.y, noUndoStack=True, noZCoord=True)
@@ -1683,7 +1684,7 @@ class ModuleDesignerControls2d:
                     print(instance.resref, "does not support rotating yaw")
                     continue
                 if not self.editor.isDragRotating:
-                    get_root_logger().debug("rotateSelected instance in 2d")
+                    RootLogger().debug("rotateSelected instance in 2d")
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
                     self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
@@ -1710,21 +1711,22 @@ class ModuleDesignerControls2d:
             - Check if duplicate button is pressed and duplicate selected instance
             - Check if context menu button is pressed and open context menu.
         """
-        get_root_logger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
+        RootLogger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
         if self.selectUnderneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                get_root_logger().debug("selectUnderneathGeometry?")
+                RootLogger().debug("selectUnderneathGeometry?")
                 self._mode.selectUnderneath()
             elif self.renderer.instancesUnderMouse():
-                get_root_logger().debug("onMousePressed, selectUnderneath FOUND INSTANCES")
+                RootLogger().debug("onMousePressed, selectUnderneath FOUND INSTANCES")
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
             else:
-                get_root_logger().debug("onMousePressed, selectUnderneath DID NOT FIND INSTANCES!")
+                RootLogger().debug("onMousePressed, selectUnderneath DID NOT FIND INSTANCES!")
                 self.editor.setSelection([])
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            get_root_logger().debug(f"duplicateInstance 2d ({self.editor.selectedInstances[-1]!r})")
-            self._duplicate_instance()  # TODO: undo/redo support
+            RootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
+            if isinstance(self.editor._controls2d._mode, _InstanceMode) and self.editor.selectedInstances:
+                self._duplicate_instance()
         if self.openContextMenu.satisfied(buttons, keys):
             world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
@@ -1752,6 +1754,7 @@ class ModuleDesignerControls2d:
             - Check if toggle instance lock shortcut satisfied and toggle lock instances checkbox
         """
         if self.deleteSelected.satisfied(buttons, keys):
+            RootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             if isinstance(self._mode, _GeometryMode):
                 get_root_logger().debug("_GeometryMode: moduleDesignerControls2d deleteSelected satisfied ")
                 self._mode.deleteSelected()
@@ -1760,6 +1763,7 @@ class ModuleDesignerControls2d:
             self.editor.deleteSelected()
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
+            RootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d snapToCamera satisfied ")
             for instance in self.editor.selectedInstances:
                 self.renderer.snapCameraToPoint(instance.position)
                 break

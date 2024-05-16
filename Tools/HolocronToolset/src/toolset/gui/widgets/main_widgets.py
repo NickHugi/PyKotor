@@ -25,7 +25,7 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from utility.error_handling import format_exception_with_variables
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
@@ -166,7 +166,7 @@ class ResourceList(MainWindowList):
     ):
         for i in range(self.ui.sectionCombo.count()):
             if section in self.ui.sectionCombo.itemText(i):
-                get_root_logger().debug("changing to section '%s'", section)
+                RootLogger().debug("changing to section '%s'", section)
                 self.ui.sectionCombo.setCurrentIndex(i)
 
     def setResources(

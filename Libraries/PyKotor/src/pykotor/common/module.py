@@ -43,7 +43,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -252,14 +252,14 @@ class ModuleLinkPiece(ModulePieceResource):
         if link_resources:
             check_resname = next(iter(link_resources)).identifier().lower_resname
             if all(check_resname == res.identifier().lower_resname for res in link_resources):
-                get_root_logger().debug("Module ID, Check 1: All link resources have the same resref of '%s'", check_resname)
+                RootLogger().debug("Module ID, Check 1: All link resources have the same resref of '%s'", check_resname)
                 return check_resname
 
         ifo = self.ifo()
         if ifo.root.exists("Mod_Area_list"):
             actual_ftype = ifo.root.what_type("Mod_Area_list")
             if actual_ftype is not GFFFieldType.List:
-                get_root_logger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_list' type '{actual_ftype.name}', expected 'List'")
+                RootLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_list' type '{actual_ftype.name}', expected 'List'")
             else:
                 area_list = ifo.root.get_list("Mod_Area_list")
                 area_localized_name = next(
@@ -271,11 +271,11 @@ class ModuleLinkPiece(ModulePieceResource):
                     None
                 )
                 if area_localized_name is not None and str(area_localized_name).strip():
-                    get_root_logger().debug("Module ID, Check 2: Found in Mod_Area_list: %s", area_localized_name)
+                    RootLogger().debug("Module ID, Check 2: Found in Mod_Area_list: %s", area_localized_name)
                     return area_localized_name
-            get_root_logger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_list. Could not get the module id!")
+            RootLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_list. Could not get the module id!")
         else:
-            get_root_logger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_list.")
+            RootLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_list.")
         return None
 
     def area_name(self) -> LocalizedString | ResRef:
@@ -289,9 +289,9 @@ class ModuleLinkPiece(ModulePieceResource):
             if are.root.exists("Name"):
                 actual_ftype = are.root.what_type("Name")
                 if actual_ftype is not GFFFieldType.LocalizedString:
-                    get_root_logger().warning(f"{self.filename()} has IFO with incorrect field 'Name' type '{actual_ftype.name}', expected 'LocalizedString'")
+                    RootLogger().warning(f"{self.filename()} has IFO with incorrect field 'Name' type '{actual_ftype.name}', expected 'LocalizedString'")
                 result = are.root.get_locstring("Name")
-                get_root_logger().debug("Check 1 result: '%s'", result)
+                RootLogger().debug("Check 1 result: '%s'", result)
                 return result
         # TODO(th3w1zard1): Lookup the modulesaves.2da for the fallback.
         raise ValueError(f"Failed to get the area name from module '{self.filename()}'")
@@ -397,7 +397,7 @@ class Module:  # noqa: PLR0904
             return self._cached_mod_id
         data_capsule = self.lookup_main_capsule()
         found_id = data_capsule.module_id()
-        get_root_logger().debug("Found module id '%s' for module '%s'", found_id, data_capsule.filename())
+        RootLogger().debug("Found module id '%s' for module '%s'", found_id, data_capsule.filename())
         self._cached_mod_id = found_id
         return found_id
 
@@ -447,7 +447,7 @@ class Module:  # noqa: PLR0904
             - Add found locations to the resource registry.
         """
         display_name = f"{self._root}.mod" if self.dot_mod else f"{self._root}.rim"
-        get_root_logger().info("Loading module resources needed for '%s'", display_name)
+        RootLogger().info("Loading module resources needed for '%s'", display_name)
         mod_capsule = self._capsules[ModuleType.MOD.name]
         capsules_to_search = [self.lookup_main_capsule()] if mod_capsule is None else [mod_capsule]
         # Lookup the GIT and LYT first.
@@ -467,7 +467,7 @@ class Module:  # noqa: PLR0904
                 continue
             typed_capsule = cast(ModulePieceResource, capsule)  # No idea why static types aren't working here as that's the whole point of the TypedDict...
             for resource in typed_capsule:
-                get_root_logger().info("Adding location '%s' for resource '%s' from erf/rim '%s'",
+                RootLogger().info("Adding location '%s' for resource '%s' from erf/rim '%s'",
                                         typed_capsule.filepath(), resource.identifier(), typed_capsule.identifier())
                 self.add_locations(resource.resname(), resource.restype(), [typed_capsule.filepath()])
 
@@ -507,7 +507,7 @@ class Module:  # noqa: PLR0904
         # Check chitin first.
         for resource in self._installation.chitin_resources():
             if resource.identifier() in self.resources or resource.identifier() in look_for:
-                get_root_logger().info("Found chitin location '%s' for resource '%s' for module '%s'",
+                RootLogger().info("Found chitin location '%s' for resource '%s' for module '%s'",
                                         resource.filepath(), resource.identifier(), display_name)
                 self.add_locations(resource.resname(), resource.restype(), (resource.filepath(),)).activate()
 
@@ -515,42 +515,42 @@ class Module:  # noqa: PLR0904
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
                 if resource.identifier() in self.resources or resource.identifier() in look_for:
-                    get_root_logger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
+                    RootLogger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
                     self.add_locations(resource.resname(), resource.restype(), [resource.filepath()]).activate()
 
         # Also try get paths for textures in models
         lookup_texture_queries: set[str] = set()
         for model in self.models():
-            get_root_logger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
+            RootLogger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
             try:
                 model_data = model.data()
             except OSError:
-                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s", repr(self), model.identifier(), e)
+                RootLogger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s", repr(self), model.identifier(), e)
                 continue
             else:
                 if model_data is None:
-                    get_root_logger().warning("Missing model '%s', needed by module '%s'", model.identifier(), display_name)
+                    RootLogger().warning("Missing model '%s', needed by module '%s'", model.identifier(), display_name)
                     continue
                 if not model_data:
-                    get_root_logger().warning("model '%s' was unexpectedly empty, but is needed by module '%s'", model.identifier(), display_name)
+                    RootLogger().warning("model '%s' was unexpectedly empty, but is needed by module '%s'", model.identifier(), display_name)
                     continue
             try:
                 model_textures = list_textures(model_data)
             except OSError as e:  # noqa: PERF203
-                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() in list_textures() with model '%s': %s", repr(self), model.identifier(), e)
+                RootLogger().warning("Suppressed known exception while executing %s.reload_resources() in list_textures() with model '%s': %s", repr(self), model.identifier(), e)
             except Exception:  # noqa: BLE001
-                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+                RootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
             else:
-                get_root_logger().info("Found %s textures in '%s'", model.identifier(), display_name)
+                RootLogger().info("Found %s textures in '%s'", model.identifier(), display_name)
                 lookup_texture_queries.update(model_textures)
             try:
                 lookup_texture_queries.update(list_lightmaps(model_data))
             except OSError as e:  # noqa: PERF203
-                get_root_logger().warning("Suppressed known exception while executing %s.reload_resources() in list_lightmaps() with model '%s': %s", repr(self), model.identifier(), e)
+                RootLogger().warning("Suppressed known exception while executing %s.reload_resources() in list_lightmaps() with model '%s': %s", repr(self), model.identifier(), e)
             except Exception:  # noqa: BLE001
-                get_root_logger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+                RootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
             else:
-                get_root_logger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
+                RootLogger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
                 lookup_texture_queries.update(model_textures)
 
         texture_search: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
@@ -570,7 +570,7 @@ class Module:  # noqa: PLR0904
         for identifier, locations in texture_search.items():
             if identifier == "dirt.tpc":
                 continue  # skip this constant name that sometimes appears in list_textures
-            get_root_logger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
+            RootLogger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations)).activate()
 
         # Finally iterate through all resources we may have missed.
@@ -640,7 +640,7 @@ class Module:  # noqa: PLR0904
         if not isinstance(locations, Collection):
             locations = list(locations)
         if not locations:
-            get_root_logger().warning("No locations found for '%s.%s' which are intended to add to module '%s'", resname, restype, self._root)
+            RootLogger().warning("No locations found for '%s.%s' which are intended to add to module '%s'", resname, restype, self._root)
         module_resource: ModuleResource | None = self.resource(resname, restype)
         if module_resource is None:
             module_resource = ModuleResource(resname, restype, self._installation)
@@ -779,7 +779,6 @@ class Module:  # noqa: PLR0904
             ),
             None,
         )
-        return result  # noqa: RET504
         if result is None:  # noqa: RET503
             fallback = next(
                 (
@@ -790,7 +789,8 @@ class Module:  # noqa: PLR0904
                 None,
             )
             if fallback is not None:  # noqa: RET503
-                get_root_logger().warning("This module '%s' has an incorrect GIT resname/resref! Expected '%s', found '%s'", self._root, self.module_id(), fallback.resname())  # noqa: RET503
+                RootLogger().warning("This module '%s' has an incorrect GIT resname/resref! Expected '%s', found '%s'", self._root, self.module_id(), fallback.resname())  # noqa: RET503
+        return result  # noqa: RET504
 
 
     def pth(
@@ -1553,7 +1553,7 @@ class ModuleResource(Generic[T]):
         if is_capsule_file(active_path):
             data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
             if data is None:
-                get_root_logger().error(f"Resource '{file_name}' not found in '{active_path}'")
+                RootLogger().error(f"Resource '{file_name}' not found in '{active_path}'")
             return data
 
         if is_bif_file(active_path):
@@ -1564,7 +1564,7 @@ class ModuleResource(Generic[T]):
             )
             if resource is None:
                 msg = f"Resource '{file_name}' not found in BIF '{self._active}' somehow?"
-                get_root_logger().error(msg)
+                RootLogger().error(msg)
                 return None
             return resource.data
 
@@ -1611,7 +1611,7 @@ class ModuleResource(Generic[T]):
                 data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
                 if data is None:
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
-                    get_root_logger().error(msg)
+                    RootLogger().error(msg)
                     return None
                 self._resource_obj = conversions[self._restype](data)
 
@@ -1623,7 +1623,7 @@ class ModuleResource(Generic[T]):
                 )
                 if resource is None:
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
-                    get_root_logger().error(msg)
+                    RootLogger().error(msg)
                     return None
                 self._resource_obj = conversions[self._restype](resource.data)
 
@@ -1740,9 +1740,9 @@ class ModuleResource(Generic[T]):
                 self._locations.append(r_filepath)
             self._active = r_filepath
         if self._active is None:
-            get_root_logger().warning("Cannot activate module resource '%s': No locations found.", self.identifier())
+            RootLogger().warning("Cannot activate module resource '%s': No locations found.", self.identifier())
         else:
-            get_root_logger().info("Activating module resource '%s' at filepath '%s' (%s other locations available)", self.identifier(), self._active, len(self._locations)-1)
+            RootLogger().info("Activating module resource '%s' at filepath '%s' (%s other locations available)", self.identifier(), self._active, len(self._locations)-1)
         return self._active
 
     def unload(self):
@@ -1764,7 +1764,7 @@ class ModuleResource(Generic[T]):
         if self._active is None:
             next_path = next(iter(self._locations), None)
             if next_path is None:
-                get_root_logger().warning("No resource found for '%s'", self._identifier)
+                RootLogger().warning("No resource found for '%s'", self._identifier)
                 return None
             self.activate()
             #raise RuntimeError(f"{self!r}.activate(filepath) must be called before use.")
@@ -1848,7 +1848,7 @@ class ModuleResource(Generic[T]):
         if bytedata is None:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self._installation.override_path().joinpath(self.filename()))
 
-        get_root_logger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
+        RootLogger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
         result = self._installation.override_path().joinpath(self.filename())
         with result.open("wb") as f:
             f.write(bytedata)

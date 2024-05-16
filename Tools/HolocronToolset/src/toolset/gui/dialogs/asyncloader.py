@@ -10,7 +10,7 @@ from qtpy.QtCore import QThread, QTimer, Qt
 from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
 
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
@@ -171,7 +171,7 @@ class AsyncLoader(QDialog, Generic[T]):
         self.error = error
         self.optionalErrorHook.emit(error)
         self.reject()
-        get_root_logger().error(str(error), exc_info=error)
+        RootLogger().error(str(error), exc_info=error)
 
         if self.errorTitle:
             error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>") + " "*700 + "<br>"*2
@@ -288,7 +288,7 @@ class AsyncBatchLoader(QDialog):
         self.errors.append(error)
         self.failCount += 1
         self._progressBar.setValue(self._progressBar.value() + 1)
-        get_root_logger().error(str(error), exc_info=error)
+        RootLogger().error(str(error), exc_info=error)
 
     def _onAllCompleted(self):
         if not self.errors:

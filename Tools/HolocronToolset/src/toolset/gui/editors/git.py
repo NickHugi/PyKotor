@@ -48,7 +48,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 
 if TYPE_CHECKING:
     import os
@@ -75,7 +75,7 @@ class MoveCommand(QUndoCommand):
         old_height: float | None = None,
         new_height: float | None = None,
     ):
-        get_root_logger().debug(f"Init movecommand with instance {instance.identifier()}")
+        RootLogger().debug(f"Init movecommand with instance {instance.identifier()}")
         super().__init__()
         self.instance: GITInstance = instance
         self.old_position: Vector3 = old_position
@@ -84,21 +84,21 @@ class MoveCommand(QUndoCommand):
         self.new_height: float | None = new_height
 
     def undo(self):
-        get_root_logger().debug(f"Undo position: {self.instance.identifier()}")
+        RootLogger().debug(f"Undo position: {self.instance.identifier()}")
         self.instance.position = self.old_position
         if isinstance(self.instance, GITCamera):
             if self.old_height is None or self.new_height is None:
                 return
-            get_root_logger().debug("Also undo height.")
+            RootLogger().debug("Also undo height.")
             self.instance.height = self.old_height
 
     def redo(self):
-        get_root_logger().debug(f"Redo position: {self.instance.identifier()}")
+        RootLogger().debug(f"Redo position: {self.instance.identifier()}")
         self.instance.position = self.new_position
         if isinstance(self.instance, GITCamera):
             if self.old_height is None or self.new_height is None:
                 return
-            get_root_logger().debug("Also redo height.")
+            RootLogger().debug("Also redo height.")
             self.instance.height = self.new_height
 
 
@@ -109,21 +109,21 @@ class RotateCommand(QUndoCommand):
         old_orientation: Vector4 | float,
         new_orientation: Vector4 | float
     ):
-        get_root_logger().debug(f"Init rotatecommand with instance: {instance.identifier()}")
+        RootLogger().debug(f"Init rotatecommand with instance: {instance.identifier()}")
         super().__init__()
         self.instance: GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint = instance
         self.old_orientation: Vector4 | float = old_orientation
         self.new_orientation: Vector4 | float = new_orientation
 
     def undo(self):
-        get_root_logger().debug(f"Undo rotation: {self.instance.identifier()} (NEW {self.new_orientation} --> {self.old_orientation})")
+        RootLogger().debug(f"Undo rotation: {self.instance.identifier()} (NEW {self.new_orientation} --> {self.old_orientation})")
         if isinstance(self.instance, GITCamera):
             self.instance.orientation = self.old_orientation
         else:
             self.instance.bearing = self.old_orientation
 
     def redo(self):
-        get_root_logger().debug(f"Redo rotation: {self.instance.identifier()} ({self.old_orientation} --> NEW {self.new_orientation})")
+        RootLogger().debug(f"Redo rotation: {self.instance.identifier()} ({self.old_orientation} --> NEW {self.new_orientation})")
         if isinstance(self.instance, GITCamera):
             self.instance.orientation = self.new_orientation
         else:
@@ -144,7 +144,7 @@ class DuplicateCommand(QUndoCommand):
 
     def undo(self):
         for instance in self.instances:
-            get_root_logger().debug(f"Undo duplicate: {instance.identifier()}")
+            RootLogger().debug(f"Undo duplicate: {instance.identifier()}")
             self.git.remove(instance)
         self.rebuildInstanceList()
 
@@ -164,7 +164,7 @@ class DuplicateCommand(QUndoCommand):
 
     def redo(self):
         for instance in self.instances:
-            get_root_logger().debug(f"Redo duplicate: {instance.identifier()}")
+            RootLogger().debug(f"Redo duplicate: {instance.identifier()}")
             self.git.add(instance)
         self.rebuildInstanceList()
 
@@ -183,7 +183,7 @@ class DeleteCommand(QUndoCommand):
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
-        get_root_logger().debug(f"Undo delete: {[instance.identifier() for instance in self.instances]}")
+        RootLogger().debug(f"Undo delete: {[instance.identifier() for instance in self.instances]}")
         for instance in self.instances:
             self.git.add(instance)
         self.rebuildInstanceList()
@@ -206,7 +206,7 @@ class DeleteCommand(QUndoCommand):
             print("Skipping first redo of DeleteCommand.")
             self._firstRun = False
             return
-        get_root_logger().debug(f"Redo delete: {[instance.identifier() for instance in self.instances]}")
+        RootLogger().debug(f"Redo delete: {[instance.identifier() for instance in self.instances]}")
         for instance in self.instances:
             self.git.remove(instance)
         self.rebuildInstanceList()
@@ -226,7 +226,7 @@ class InsertCommand(QUndoCommand):
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
-        get_root_logger().debug(f"Undo insert: {self.instance.identifier()}")
+        RootLogger().debug(f"Undo insert: {self.instance.identifier()}")
         self.git.remove(self.instance)
         self.rebuildInstanceList()
 
@@ -248,7 +248,7 @@ class InsertCommand(QUndoCommand):
             print("Skipping first redo of InsertCommand.")
             self._firstRun = False
             return
-        get_root_logger().debug(f"Redo insert: {self.instance.identifier()}")
+        RootLogger().debug(f"Redo insert: {self.instance.identifier()}")
         self.git.add(self.instance)
         self.rebuildInstanceList()
 
@@ -851,7 +851,7 @@ class _InstanceMode(_Mode):
         git: GIT,
     ):
         super().__init__(editor, installation, git)
-        get_root_logger().debug("init InstanceMode")
+        RootLogger().debug("init InstanceMode")
         self.walkmeshRenderer.hideGeomPoints = True
         self.walkmeshRenderer.geometrySelection.clear()
         self.updateVisibility()
@@ -940,7 +940,7 @@ class _InstanceMode(_Mode):
                 loc.filepath.parent.name.lower() == "modules"
                 and self._installation.get_module_root(loc.filepath.name.lower()) != module_root
             ):
-                get_root_logger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
+                RootLogger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
                 search.remove(loc)
         if len(search) > 1:
             selectionWindow = FileSelectionWindow(search, self._installation)
@@ -1243,7 +1243,7 @@ class _InstanceMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
-            get_root_logger().info(f"Not changing selection: selected instance '{selection[0].classification()}' is still underneath the mouse.")
+            RootLogger().info(f"Not changing selection: selected instance '{selection[0].classification()}' is still underneath the mouse.")
             return
 
         if underMouse:
@@ -1279,7 +1279,7 @@ class _InstanceMode(_Mode):
         noUndoStack: bool = False,
     ):
         if self._ui.lockInstancesCheck.isChecked():
-            get_root_logger().info("Ignoring moveSelected for instancemode, lockInstancesCheck is checked.")
+            RootLogger().info("Ignoring moveSelected for instancemode, lockInstancesCheck is checked.")
             return
 
         for instance in self.walkmeshRenderer.instanceSelection.all():
@@ -1337,7 +1337,7 @@ class _GeometryMode(_Mode):
         instance.geometry.append(point)
         self.walkmeshRenderer.geomPointsUnderMouse().append(new_geom_point)
         self.walkmeshRenderer.geometrySelection._selection.append(new_geom_point)
-        get_root_logger().debug(f"inserting a new geompoint under mouse for instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
+        RootLogger().debug(f"inserting a new geompoint under mouse for instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
 
     # region Interface Methods
     def onItemSelectionChanged(self, item: QListWidgetItem):
@@ -1378,17 +1378,17 @@ class _GeometryMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
-            get_root_logger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
+            RootLogger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
         self.walkmeshRenderer.geometrySelection.select(underMouse or [])
 
     def deleteSelected(self):
         vertex: GeomPoint | None = self.walkmeshRenderer.geometrySelection.last()
         if vertex is None:
-            get_root_logger().error("Could not delete last GeomPoint, there's none selected.")
+            RootLogger().error("Could not delete last GeomPoint, there's none selected.")
             return
         instance: GITInstance = vertex.instance
-        get_root_logger().debug(f"Removing last geometry point for instance {instance.identifier()}")
+        RootLogger().debug(f"Removing last geometry point for instance {instance.identifier()}")
         self.walkmeshRenderer.geometrySelection.remove(GeomPoint(instance, vertex.point))
 
     def duplicateSelected(self, position: Vector3):
@@ -1415,7 +1415,7 @@ class GITControlScheme:
     def __init__(self, editor: GITEditor):
         self.editor: GITEditor = editor
         self.settings: GITSettings = GITSettings()
-        self.log = get_root_logger()
+        self.log = RootLogger()
 
         # Undo/Redo support setup.
         self.undoStack = QUndoStack(self.editor)
@@ -1475,7 +1475,7 @@ class GITControlScheme:
             self.editor.rotateCamera(screenDelta.y)
         if self.moveSelected.satisfied(buttons, keys):
             if not self.isDragMoving and isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                get_root_logger().debug("moveSelected instance GITControlScheme")
+                RootLogger().debug("moveSelected instance GITControlScheme")
                 selection: list[GITInstance] = self.editor._mode.walkmeshRenderer.instanceSelection.all()  # noqa: SLF001
                 self.initialPositions = {instance: Vector3(*instance.position) for instance in selection}
                 self.isDragMoving = True

@@ -94,7 +94,7 @@ from pykotor.resource.generics.utp import UTP
 from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -142,7 +142,7 @@ class Scene:
             - Sets other renderer options.
         """
         module_id_part = "" if module is None else f" from module '{module.root()}'"
-        get_root_logger().info("Start initialize Scene%s", module_id_part)
+        RootLogger().info("Start initialize Scene%s", module_id_part)
 
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -203,7 +203,7 @@ class Scene:
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
         module_id_part = "" if module is None else f" from module '{module.root()}'"
-        get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
+        RootLogger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -240,7 +240,7 @@ class Scene:
             if utc is None:
                 utc = self._resource_from_gitinstance(instance, self.module.creature)
             if utc is None:
-                get_root_logger().error(f"Cannot getCreatureRenderObject of GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                RootLogger().error(f"Cannot getCreatureRenderObject of GITCreature instance '{instance.identifier()}', not found in mod/override.")
                 return RenderObject("unknown", data=instance)
 
             head_obj: RenderObject | None = None
@@ -298,7 +298,7 @@ class Scene:
                     head_obj.children.append(mask_obj)
 
         except Exception:
-            get_root_logger().exception("Exception occurred getting the creature render object.")
+            RootLogger().exception("Exception occurred getting the creature render object.")
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", data=instance)
 
@@ -338,11 +338,11 @@ class Scene:
 
     def _resource_from_module(self, module_res: ModuleResource[T] | None, errpart: str) -> T | None:
         if module_res is None:
-            get_root_logger().error(f"Cannot render a frame in Scene when this module '{self.module.root()}{errpart}")
+            RootLogger().error(f"Cannot render a frame in Scene when this module '{self.module.root()}{errpart}")
             return None
         git_resource = module_res.resource()
         if git_resource is None:
-            get_root_logger().error(f"No locations found for '{module_res.identifier()}', needed to render a Scene for module '{self.module.root()}'")
+            RootLogger().error(f"No locations found for '{module_res.identifier()}', needed to render a Scene for module '{self.module.root()}'")
             return None
         return git_resource
 
@@ -353,11 +353,11 @@ class Scene:
     ) -> T | None:
         resource = lookup_func(str(instance.resref))
         if resource is None:
-            get_root_logger().error(f"The module '{self.module.root()}' does not store '{instance.identifier()}' needed to render a Scene.")
+            RootLogger().error(f"The module '{self.module.root()}' does not store '{instance.identifier()}' needed to render a Scene.")
             return None
         resource_data = resource.resource()
         if resource_data is None:
-            get_root_logger().error(f"No locations found for '{resource.identifier()}' needed by module '{self.module.root()}'")
+            RootLogger().error(f"No locations found for '{resource.identifier()}' needed by module '{self.module.root()}'")
             return None
         return resource_data
 
@@ -428,7 +428,7 @@ class Scene:
                     if utd is not None:
                         model_name: str = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 except Exception:  # noqa: BLE001
-                    get_root_logger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
+                    RootLogger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
                 if utd is None:
                     utd = UTD()
 
@@ -445,7 +445,7 @@ class Scene:
                     if utp is not None:
                         model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 except Exception:  # noqa: BLE001
-                    get_root_logger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
+                    RootLogger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
                 if utp is None:
                     utp = UTP()
 
@@ -482,7 +482,7 @@ class Scene:
                 try:
                     uts = self._resource_from_gitinstance(sound, self._module.sound)
                 except Exception:  # noqa: BLE001
-                    get_root_logger().exception(f"Could not get the sound resource '{sound.resref}.uts' and/or the appearance.2da")
+                    RootLogger().exception(f"Could not get the sound resource '{sound.resref}.uts' and/or the appearance.2da")
                 if uts is None:
                     uts = UTS()
 
@@ -806,7 +806,7 @@ class Scene:
             return self.models[name]
         with self.models_data_lock:
             if name not in self.models_data_queue:
-                get_root_logger().debug(f"Offloading {name}.mdl")
+                RootLogger().debug(f"Offloading {name}.mdl")
                 self.executor.submit(self.fetch_model_data, name)
         return gl_load_stitched_model(
             self,
@@ -819,7 +819,7 @@ class Scene:
         name: str,
     ):
         """This function runs in a background thread and handles the I/O and processing to get the model data."""
-        get_root_logger().debug(f"async queue {name}.mdl call")
+        RootLogger().debug(f"async queue {name}.mdl call")
         mdl_data = EMPTY_MDL_DATA
         mdx_data = EMPTY_MDX_DATA
 
@@ -869,7 +869,7 @@ class Scene:
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
             except Exception as e:  # noqa: BLE001, PERF203
-                get_root_logger().debug(traceback.format_exc())
+                RootLogger().debug(traceback.format_exc())
                 model = gl_load_stitched_model(
                     self,
                     BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
@@ -877,7 +877,7 @@ class Scene:
                 )
 
         with self.models_data_lock:
-            get_root_logger().debug("async finally queue model data to load.")
+            RootLogger().debug("async finally queue model data to load.")
             self.models_data_queue[name] = (name, model)
 
     def model(self, name: str) -> Model:
@@ -954,20 +954,20 @@ class Scene:
             tpc: TPC | None = None
             # Check the textures linked to the module first
             if self._module is not None:
-                get_root_logger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
+                RootLogger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
                 module_tex = self.module.texture(name)
                 if module_tex is not None:
-                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
+                    RootLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
                     tpc = module_tex.resource()
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
-                get_root_logger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                RootLogger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
-                get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)
+                RootLogger().warning(f"MISSING {type_name.upper()}: '%s'", name)
         except Exception:  # noqa: BLE001
-            get_root_logger().exception("Exception thrown while loading %s.", type_name)
+            RootLogger().exception("Exception thrown while loading %s.", type_name)
             # If an error occurs during the loading process, just use a blank image.
             tpc = TPC()
 

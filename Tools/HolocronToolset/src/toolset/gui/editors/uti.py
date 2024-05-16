@@ -16,7 +16,7 @@ from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 
 if TYPE_CHECKING:
     import os
@@ -445,8 +445,8 @@ class UTIEditor(Editor):
             if stringref is not None:
                 return installation.talktable().string(stringref)
         except (IndexError, Exception) as e:  # noqa: BLE001
-            get_root_logger().info(f"Could not get the costtable 2da row/value: {e}")
-            get_root_logger().debug("Could not get the costtable 2da row/value", exc_info=True)
+            RootLogger().info(f"Could not get the costtable 2da row/value: {e}")
+            RootLogger().debug("Could not get the costtable 2da row/value", exc_info=True)
         return None
 
     @staticmethod
@@ -460,7 +460,7 @@ class UTIEditor(Editor):
         try:
             stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
         except Exception as e:
-            get_root_logger().info("Could not get the paramtable 2da row/value", exc_info=True)
+            RootLogger().info("Could not get the paramtable 2da row/value", exc_info=True)
         else:
             return installation.talktable().string(stringref)
         return None

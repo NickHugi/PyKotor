@@ -82,7 +82,7 @@ from utility.error_handling import (
     format_exception_with_variables,
     universal_simplify_exception,
 )
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate
@@ -242,7 +242,7 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
-        self.log: Logger = get_root_logger()
+        self.log: Logger = RootLogger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
@@ -519,7 +519,7 @@ class ToolWindow(QMainWindow):
             self.onModuleRefresh()
         else:
             if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
-                get_root_logger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
+                RootLogger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)
@@ -758,7 +758,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Icon.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-            get_root_logger().exception("Error extracting capsule %s", module_name)
+            RootLogger().exception("Error extracting capsule %s", module_name)
             QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
 
     def onOpenResources(

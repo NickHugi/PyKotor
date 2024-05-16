@@ -8,7 +8,7 @@ from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:
@@ -110,7 +110,7 @@ class SelectModuleDialog(QDialog):
         """
         curItem = self.ui.moduleList.currentItem()
         if curItem is None:
-            get_root_logger().warning("currentItem() returned None in SelectModuleDialog.confirm()")
+            RootLogger().warning("currentItem() returned None in SelectModuleDialog.confirm()")
             return
         self.module = curItem.data(QtCore.Qt.ItemDataRole.UserRole)
         self.accept()
@@ -134,6 +134,6 @@ class SelectModuleDialog(QDialog):
         for row in range(self.ui.moduleList.count()):
             item = self.ui.moduleList.item(row)
             if item is None:
-                get_root_logger().warning(f"found None-typed item at row {row} while filtering text.")
+                RootLogger().warning(f"found None-typed item at row {row} while filtering text.")
                 continue
             item.setHidden(text.lower() not in item.text().lower())

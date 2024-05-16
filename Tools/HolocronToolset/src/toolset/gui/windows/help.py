@@ -28,7 +28,7 @@ from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.system.os_helper import is_frozen
 from utility.system.path import Path
 from utility.updater.github import download_github_file
@@ -95,7 +95,7 @@ class HelpWindow(QMainWindow):
             # self.version = data["version"]
             # self._setupContentsRecJSON(None, data)
         except Exception:
-            get_root_logger().debug("Suppressed error in HelpWindow._setupContents", exc_info=True)
+            RootLogger().debug("Suppressed error in HelpWindow._setupContents", exc_info=True)
 
     def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict[str, Any]):
         addItem: Callable[[QTreeWidgetItem], None] = (
@@ -138,7 +138,7 @@ class HelpWindow(QMainWindow):
                 title = "Update available"
                 text = "A newer version of the help book is available for download, would you like to download it?"
             else:
-                get_root_logger().debug("No help booklet updates available, using version %s (latest version: %s)", self.version, new_version)
+                RootLogger().debug("No help booklet updates available, using version %s (latest version: %s)", self.version, new_version)
                 return
         except Exception as e:  # noqa: BLE001
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
@@ -181,7 +181,7 @@ class HelpWindow(QMainWindow):
 
         # Extract the ZIP file
         with zipfile.ZipFile(help_zip_path) as zip_file:
-            get_root_logger().info("Extracting downloaded content to %s", help_path)
+            RootLogger().info("Extracting downloaded content to %s", help_path)
             zip_file.extractall(help_path)
 
         if is_frozen():

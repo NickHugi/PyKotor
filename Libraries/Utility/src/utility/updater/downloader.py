@@ -18,7 +18,7 @@ import urllib3
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
-from utility.logger_util import get_root_logger
+from utility.logger_util import RootLogger
 from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 
@@ -75,7 +75,7 @@ class FileDownloader:
         if not filename:
             raise FileDownloaderError("No filename provided", expected=True)
         self.filepath = Path.pathify(filename)
-        self.log = logger or get_root_logger()
+        self.log = logger or RootLogger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
         self.file_binary_path: Path = self.filepath.add_suffix(".part")  # Temporary file to hold large download data
@@ -251,7 +251,7 @@ class FileDownloader:
         data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
-        log = get_root_logger()
+        log = RootLogger()
         log.debug("Got content length of: %s", content_length_lookup)
         return int(content_length_lookup) if content_length_lookup else None
 
@@ -414,7 +414,7 @@ def _download_file(
             }
         }
 
-        log = get_root_logger()
+        log = RootLogger()
 
         # Call all progress hooks with status data
         log.debug(status)

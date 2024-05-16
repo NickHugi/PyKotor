@@ -28,8 +28,8 @@ if TYPE_CHECKING:
 
 
 class UTF8StreamWrapper:
-    def __init__(self, original_stream):
-        self.original_stream = original_stream
+    def __init__(self, original_stream: TextIOWrapper[str]):
+        self.original_stream: TextIOWrapper[str] = original_stream
 
     def write(self, message):
         # Ensure message is a string, encode to UTF-8 with errors replaced,
@@ -91,9 +91,8 @@ class CustomPrintToLogger:
         self.logger: logging.Logger = logger
         self.configure_logger_stream()
 
-    def isatty(self):
-        return True
-
+    def isatty(self) -> Literal[False]:
+        return False
 
     def configure_logger_stream(self):
         utf8_wrapper = UTF8StreamWrapper(self.original_out)
@@ -263,6 +262,7 @@ def dir_requires_admin(
             ...
         remove_any(dummy_filepath, ignore_errors=False, missing_ok=False)
     except OSError:
+        remove_any(dummy_filepath, ignore_errors=True, missing_ok=True)
         if ignore_errors:
             return True
         raise
@@ -277,14 +277,6 @@ def remove_any(
     missing_ok: bool = True
 ):
     path_obj = Path(path)
-    def safe_isdir(x: Path):
-        with suppress(OSError, ValueError):
-            return x.is_dir()
-        return None
-    def safe_isfile(x: Path):
-        with suppress(OSError, ValueError):
-            return x.is_file()
-        return None
     isdir_func = safe_isdir if ignore_errors else Path.is_dir
     exists_func = safe_isfile if ignore_errors else Path.exists
     if not exists_func(path_obj):
@@ -346,12 +338,12 @@ def get_log_directory(subdir: os.PathLike | str | None = None) -> Path:
             print(f"Failed to init cwd fallback '{cwd}' as log directory: {e2}\noriginal: {e}")
             return check(get_fallback_log_dir())
 
-def safe_isfile(path: Path):
+def safe_isfile(path: Path) -> bool:
     with suppress(Exception):
         return path.is_file()
     return False
 
-def safe_isdir(path: Path):
+def safe_isdir(path: Path) -> bool:
     with suppress(Exception):
         return path.is_dir()
     return False
@@ -397,7 +389,7 @@ class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler
     def baseFilename(self, value):
         ...  # Override to do nothing
 
-    def _get_timestamp_folder_name(self):
+    def _get_timestamp_folder_name(self) -> str:
         """Get the time that this sequence started at and make it a TimeTuple."""
         currentTime = int(time.time())
         dstNow = time.localtime(currentTime)[-1]
@@ -466,7 +458,7 @@ class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler
             self.stream = self._open()
 
 
-class RootLoggerWrapper:
+class RootLogger(logging.Logger):  # noqa: N801
     """Setup a logger with some standard features.
 
     The goal is to have this be callable anywhere anytime regardless of whether a logger is setup yet.
@@ -479,16 +471,16 @@ class RootLoggerWrapper:
     -------
         logging.Logger: The root logger with the specified handlers and formatters.
     """
-    _logger = None
+    _logger: logging.Logger = None  # type: ignore[arg-type]
 
-    def __init__(self, use_level=logging.DEBUG):
-        self._logger: logging.Logger = self._setup_logger(use_level) if self._logger is None else self._logger
+    def __init__(self, use_level: logging._Level = logging.DEBUG):
+        self.__class__._logger = self()  # noqa: SLF001
 
     def _setup_logger(
         self,
         use_level: logging._Level = logging.DEBUG,
     ) -> logging.Logger:
-        self._logger = logger = logging.getLogger()
+        logger = logging.getLogger()
         if not logger.handlers:
             logger.setLevel(use_level)
 
@@ -521,27 +513,27 @@ class RootLoggerWrapper:
             exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
             # Handler for everything (DEBUG and above)
-            everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20*1024*1024, backupCount=10000, delay=True, encoding="utf8")
             everything_handler.setLevel(logging.DEBUG)
             everything_handler.setFormatter(default_formatter)
             logger.addHandler(everything_handler)
 
             # Handler for INFO and WARNING
-            info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20*1024*1024, backupCount=10000, delay=True, encoding="utf8")
             info_warning_handler.setLevel(logging.INFO)
             info_warning_handler.setFormatter(default_formatter)
             info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
             logger.addHandler(info_warning_handler)
 
             # Handler for ERROR and CRITICAL
-            error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20*1024*1024, backupCount=10000, delay=True, encoding="utf8")
             error_critical_handler.setLevel(logging.ERROR)
             error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
             error_critical_handler.setFormatter(exception_formatter)
             logger.addHandler(error_critical_handler)
 
             # Handler for EXCEPTIONS ONLY (using CustomExceptionFormatter)
-            exception_handler = DirectoryRotatingFileHandler(log_dir, exception_log_file, maxBytes=20485760, backupCount=10000, delay=True, encoding="utf8")
+            exception_handler = DirectoryRotatingFileHandler(log_dir, exception_log_file, maxBytes=20*1024*1024, backupCount=10000, delay=True, encoding="utf8")
             exception_handler.setLevel(logging.ERROR)
             exception_handler.setFormatter(exception_formatter)
             exception_handler.addFilter(LogLevelFilter(logging.ERROR))  # Only log ERROR and CRITICAL levels
@@ -552,17 +544,106 @@ class RootLoggerWrapper:
     def __call__(self) -> logging.Logger:
         return self._setup_logger() if self._logger is None else self._logger
 
-    def __getattr__(self, attr):
-        return getattr(self._setup_logger() if self._logger is None else self._logger, attr)
+    @classmethod
+    def log(cls, level, msg, *args, **kwargs):
+        cls()._logger.log(level, msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def debug(cls, msg, *args, **kwargs):
+        cls()._logger.debug(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def info(cls, msg, *args, **kwargs):
+        cls()._logger.info(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def warning(cls, msg, *args, **kwargs):
+        cls()._logger.warning(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def warn(cls, msg, *args, **kwargs):
+        cls()._logger.warning(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def error(cls, msg, *args, **kwargs):
+        cls()._logger.error(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def exception(cls, msg, *args, exc_info=True, **kwargs):
+        cls()._logger.exception(msg, *args, exc_info=exc_info, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def critical(cls, msg, *args, **kwargs):
+        cls()._logger.critical(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def fatal(cls, msg, *args, **kwargs):
+        cls()._logger.fatal(msg, *args, **kwargs)  # noqa: SLF001
+
+    @classmethod
+    def setLevel(cls, level):
+        cls()._logger.setLevel(level)  # noqa: SLF001
+
+    @classmethod
+    def addHandler(cls, hdlr):
+        cls()._logger.addHandler(hdlr)  # noqa: SLF001
+
+    @classmethod
+    def removeHandler(cls, hdlr):
+        cls()._logger.removeHandler(hdlr)  # noqa: SLF001
+
+    @classmethod
+    def hasHandlers(cls):
+        return cls()._logger.hasHandlers()  # noqa: SLF001
+
+    @classmethod
+    def handle(cls, record):
+        cls()._logger.handle(record)  # noqa: SLF001
+
+    @classmethod
+    def makeRecord(cls, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):  # noqa: PLR0913
+        return cls()._logger.makeRecord(name, level, fn, lno, msg, args, exc_info, func, extra, sinfo)  # noqa: SLF001
+
+    @classmethod
+    def findCaller(cls, stack_info=False, stacklevel=1):  # noqa: FBT002
+        return cls()._logger.findCaller(stack_info, stacklevel)  # noqa: SLF001
+
+    @classmethod
+    def isEnabledFor(cls, level):
+        return cls()._logger.isEnabledFor(level)  # noqa: SLF001
+
+    @classmethod
+    def getEffectiveLevel(cls):
+        return cls()._logger.getEffectiveLevel()  # noqa: SLF001
+
+    @classmethod
+    def addFilter(cls, filt):
+        cls()._logger.addFilter(filt)  # noqa: SLF001
+
+    @classmethod
+    def removeFilter(cls, filt):
+        cls()._logger.removeFilter(filt)  # noqa: SLF001
+
+    @classmethod
+    def filter(cls, record):
+        return cls()._logger.filter(record)  # noqa: SLF001
+
+    @classmethod
+    def getChild(cls, suffix):
+        return cls()._logger.getChild(suffix)  # noqa: SLF001
+
+    @classmethod
+    def callHandlers(cls, record):
+        cls()._logger.callHandlers(record)  # noqa: SLF001
 
 
-get_root_logger = RootLoggerWrapper()
+get_root_logger = RootLogger  # deprecated, provided for backwards compatibility.
 
 
 # Example usage
 if __name__ == "__main__":
-    get_root_logger.debug("This is a debug message.")
-    logger = get_root_logger()
+    RootLogger.debug("This is a debug message.")
+    logger = RootLogger()
     logger.info("This is an info message.")
     logger.warning("This is a warning message.")
     logger.error("This is an error message.")
