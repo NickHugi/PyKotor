@@ -34,8 +34,8 @@ class ModuleDesignerWidget(SettingsWidget):
         super().__init__(parent)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.binds: list = []
-        self.colours: list = []
+        self._binds: list[tuple[SetBindWidget, str]] = []
+        self._colors: list[tuple[ColorEdit, str]] = []
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
@@ -91,7 +91,11 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
         self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
 
-        for bindEdit in [widget for widget in dir(self.ui) if "FcBindEdit" in widget]:
+        for bindEdit in [widget for widget in dir(self.ui) if "fcbind" in widget.lower()]:
+            bind = getattr(self.ui, bindEdit).bind()
+            if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
+                RobustRootLogger.error(f"invalid setting bind: '{bindEdit}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
+                bind = self._reset_and_get_default(bindEdit)
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
     def _load2dBindValues(self):
@@ -123,10 +127,18 @@ class ModuleDesignerWidget(SettingsWidget):
         self.settings.rotateCameraSensitivity2d = self.ui.rotateCameraSensitivity2dEdit.value()
         self.settings.zoomCameraSensitivity2d = self.ui.zoomCameraSensitivity2dEdit.value()
 
-        for widget, bindName in self.binds:
-            setattr(self.settings, bindName, widget.bind())
-        for widget, colourName in self.colours:
-            setattr(self.settings, colourName, widget.color().rgba_integer())
+        for bind_widget, bindName in self._binds:
+            bind = bind_widget.bind()
+            if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
+                RobustRootLogger.error(f"invalid setting bind: '{bindName}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
+                bind = self._reset_and_get_default(bindName)
+            setattr(self.settings, bindName, bind)
+        for color_widget, colourName in self.colours:
+            color_value = color_widget.color().rgba_integer()
+            if not is_int(color_value):
+                RobustRootLogger.error(f"invalid color setting: '{colourName}', expected a rgba color integer, but got {color_value!r} (type {color_value.__class__.__name__})")
+                color_value = self._reset_and_get_default(colourName)
+            setattr(self.settings, colourName, color_value)
 
     def resetControls3d(self):
         self.settings.resetControls3d()
