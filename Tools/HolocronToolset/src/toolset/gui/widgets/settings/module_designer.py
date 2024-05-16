@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import qtpy
 
 from qtpy import QtCore
@@ -9,25 +7,26 @@ from qtpy.QtCore import QEvent, QObject
 from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from pykotor.common.misc import Color
-from toolset.data.settings import Settings
+from toolset.data.settings import Settings, SettingsProperty
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 from utility.logger_util import RobustRootLogger
-from utility.misc import is_int
-
-if TYPE_CHECKING:
-    from toolset.gui.widgets.edit.color import ColorEdit
-    from toolset.gui.widgets.set_bind import SetBindWidget
-
-
 
 
 class NoScrollEventFilter(QObject):
-    def eventFilter(self, obj, event):
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Wheel:
-            if isinstance(obj, (QComboBox, QSlider, QSpinBox, QGroupBox, QAbstractSpinBox, QDoubleSpinBox)):
-                return True
-            return False
+            return isinstance(
+                obj,
+                (
+                    QComboBox,
+                    QSlider,
+                    QSpinBox,
+                    QGroupBox,
+                    QAbstractSpinBox,
+                    QDoubleSpinBox,
+                ),
+            )
         return super().eventFilter(obj, event)
 
 
@@ -53,8 +52,6 @@ class ModuleDesignerWidget(SettingsWidget):
         super().__init__(parent)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self._binds: list[tuple[SetBindWidget, str]] = []
-        self._colors: list[tuple[ColorEdit, str]] = []
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
@@ -121,7 +118,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
         self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
 
-        for bindEdit in [widget for widget in dir(self.ui) if "fcbind" in widget.lower()]:
+        for bindEdit in [widget for widget in dir(self.ui) if "fcbindedit" in widget.lower()]:
             bind = getattr(self.ui, bindEdit).bind()
             if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
                 RobustRootLogger.error(f"invalid setting bind: '{bindEdit}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
@@ -148,6 +145,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self._loadColourValues()
 
     def save(self):
+        super().save()
         self.settings.fieldOfView = self.ui.fovSpin.value()
         self.settings.moveCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
         self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
@@ -156,19 +154,6 @@ class ModuleDesignerWidget(SettingsWidget):
         self.settings.moveCameraSensitivity2d = self.ui.moveCameraSensitivity2dEdit.value()
         self.settings.rotateCameraSensitivity2d = self.ui.rotateCameraSensitivity2dEdit.value()
         self.settings.zoomCameraSensitivity2d = self.ui.zoomCameraSensitivity2dEdit.value()
-
-        for bind_widget, bindName in self._binds:
-            bind = bind_widget.bind()
-            if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
-                RobustRootLogger.error(f"invalid setting bind: '{bindName}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
-                bind = self._reset_and_get_default(bindName)
-            setattr(self.settings, bindName, bind)
-        for color_widget, colourName in self.colours:
-            color_value = color_widget.color().rgba_integer()
-            if not is_int(color_value):
-                RobustRootLogger.error(f"invalid color setting: '{colourName}', expected a rgba color integer, but got {color_value!r} (type {color_value.__class__.__name__})")
-                color_value = self._reset_and_get_default(colourName)
-            setattr(self.settings, colourName, color_value)
 
     def resetControls3d(self):
         self.settings.resetControls3d()
@@ -193,24 +178,36 @@ class ModuleDesignerSettings(Settings):
 
     def resetControls3d(self):
         for setting in dir(self):
-            if setting.endswith("3d"):
-                self.settings.remove(setting)
-        self.settings.remove("toggleLockInstancesBind")
+            if not setting.endswith("3d"):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
+        self.get_property("toggleLockInstancesBind").reset_to_default(self)
 
     def resetControlsFc(self):
         for setting in dir(self):
-            if setting.endswith("Fc"):
-                self.settings.remove(setting)
+            if not setting.endswith("FC"):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
 
     def resetControls2d(self):
         for setting in dir(self):
-            if setting.endswith("2d"):
-                self.settings.remove(setting)
+            if not setting.endswith("2d"):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
 
     def resetMaterialColors(self):
         for setting in dir(self):
-            if setting.endswith("Colour"):
-                self.settings.remove(setting)
+            if not setting.endswith("Colour"):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
 
     # region Ints/Binds (Controls - 3D)
     moveCameraSensitivity3d = Settings.addSetting(

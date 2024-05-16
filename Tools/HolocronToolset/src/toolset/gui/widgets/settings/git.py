@@ -35,7 +35,7 @@ class GITWidget(SettingsWidget):
         """
         super().__init__(parent)
 
-        self.settings = GITSettings()
+        self.settings: GITSettings = GITSettings()
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.widgets.settings.git import Ui_Form  # noqa: PLC0415  # pylint: disable=C0415
@@ -88,12 +88,6 @@ class GITWidget(SettingsWidget):
     def setupValues(self):
         self._setupColourValues()
         self._setupBindValues()
-
-    def save(self):
-        for widget, bindName in self.binds:
-            setattr(self.settings, bindName, widget.bind())
-        for widget, colourName in self.colours:
-            setattr(self.settings, colourName, widget.color().rgba_integer())
 
     def resetColours(self):
         self.settings.resetMaterialColors()
