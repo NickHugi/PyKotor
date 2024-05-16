@@ -5,13 +5,32 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
+from qtpy.QtCore import QEvent, QObject
+from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
+from pykotor.common.misc import Color
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
+from utility.logger_util import RobustRootLogger
+from utility.misc import is_int
 
 if TYPE_CHECKING:
-    from qtpy.QtWidgets import QWidget
+    from toolset.gui.widgets.edit.color import ColorEdit
+    from toolset.gui.widgets.set_bind import SetBindWidget
+
+
+
+
+class NoScrollEventFilter(QObject):
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Wheel:
+            if isinstance(obj, (QComboBox, QSlider, QSpinBox, QGroupBox, QAbstractSpinBox, QDoubleSpinBox)):
+                return True
+            return False
+        return super().eventFilter(obj, event)
+
+
 
 
 class ModuleDesignerWidget(SettingsWidget):
@@ -78,6 +97,17 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.coloursResetButton.clicked.connect(self.resetColours)
 
         self.setupValues()
+
+        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
+
+        # Install the event filter on all child widgets
+        self.installEventFilters(self)
+
+    def installEventFilters(self, parent_widget: QWidget):
+        """Recursively install event filters on all child widgets."""
+        for widget in parent_widget.findChildren(QWidget):
+            widget.installEventFilter(self.noScrollEventFilter)
+            self.installEventFilters(widget)
 
     def _load3dBindValues(self):
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
