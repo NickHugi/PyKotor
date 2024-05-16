@@ -57,7 +57,7 @@ class SetBindWidget(QWidget):
         self.ui.mouseCombo.setItemData(0, {QtCore.Qt.MouseButton.LeftButton})
         self.ui.mouseCombo.setItemData(1, {QtCore.Qt.MouseButton.MiddleButton})
         self.ui.mouseCombo.setItemData(2, {QtCore.Qt.MouseButton.RightButton})
-        self.ui.mouseCombo.setItemData(3, {})
+        self.ui.mouseCombo.setItemData(3, set())
         self.ui.mouseCombo.setItemData(4, None)
 
     def startRecording(self):
