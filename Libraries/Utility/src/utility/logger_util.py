@@ -83,10 +83,10 @@ class CustomPrintToLogger:
     def __init__(
         self,
         logger: logging.Logger,
-        original: TextIOWrapper,
+        original: TextIOWrapper[str],
         log_type: Literal["stdout", "stderr"],
     ):
-        self.original_out: TextIOWrapper = original
+        self.original_out: TextIOWrapper[str] = original
         self.log_type: Literal["stdout", "stderr"] = log_type
         self.logger: logging.Logger = logger
         self.configure_logger_stream()
@@ -262,12 +262,13 @@ def dir_requires_admin(
             ...
         remove_any(dummy_filepath, ignore_errors=False, missing_ok=False)
     except OSError:
-        remove_any(dummy_filepath, ignore_errors=True, missing_ok=True)
         if ignore_errors:
             return True
         raise
     else:
         return False
+    finally:
+        remove_any(dummy_filepath, ignore_errors=True, missing_ok=True)
 
 
 def remove_any(
@@ -278,8 +279,8 @@ def remove_any(
 ):
     path_obj = Path(path)
     isdir_func = safe_isdir if ignore_errors else Path.is_dir
-    exists_func = safe_isfile if ignore_errors else Path.exists
-    if not exists_func(path_obj):
+    isfile_func = safe_isfile if ignore_errors else Path.exists
+    if not isfile_func(path_obj):
         if missing_ok:
             return
         import errno
@@ -302,7 +303,7 @@ def remove_any(
                     raise
                 time.sleep(0.01)
             else:
-                if not exists_func(path_obj):
+                if not isfile_func(path_obj):
                     return
                 print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)
         if not ignore_errors:  # should raise at this point.

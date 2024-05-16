@@ -217,8 +217,8 @@ def terminate_main_process(
         else:
             import signal
             os.kill(actual_self_pid, signal.SIGKILL)
-    except Exception:
-        RootLogger().exception("Exception occurred while stopping main process")
+    except Exception:  # noqa: BLE001
+        RootLogger().exception("Exception occurred while shutting down the main process")
     finally:
         os._exit(0 if result1 and result2 else 1)
 
@@ -282,12 +282,13 @@ def dir_requires_admin(
             ...
         remove_any(dummy_filepath, ignore_errors=False, missing_ok=False)
     except OSError:
-        remove_any(dummy_filepath, ignore_errors=True, missing_ok=True)
         if ignore_errors:
             return True
         raise
     else:
         return False
+    finally:
+        remove_any(dummy_filepath, ignore_errors=True, missing_ok=True)
 
 
 def remove_any(
@@ -298,8 +299,8 @@ def remove_any(
 ):
     path_obj = Path.pathify(path)
     isdir_func = Path.safe_isdir if ignore_errors else Path.is_dir
-    exists_func = Path.safe_exists if ignore_errors else Path.exists
-    if not exists_func(path_obj):
+    isfile_func = Path.safe_exists if ignore_errors else Path.exists
+    if not isfile_func(path_obj):
         if missing_ok:
             return
         import errno
@@ -312,7 +313,15 @@ def remove_any(
             x.unlink(missing_ok=missing_ok)
 
     if sys.platform != "win32":
-        _remove_any(path_obj)
+        try:
+            _remove_any(path_obj)
+        except Exception:  # noqa: BLE001
+            if not ignore_errors:
+                raise
+        else:
+            if not isfile_func(path_obj):
+                return
+            print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)  # DO NOT IMPORT GET_ROOT_LOGGER HERE
     else:
         for i in range(100):
             try:
@@ -322,7 +331,7 @@ def remove_any(
                     raise
                 time.sleep(0.01)
             else:
-                if not exists_func(path_obj):
+                if not isfile_func(path_obj):
                     return
                 print(f"File/folder {path_obj} still exists after {i} iterations! (remove_any)", file=sys.stderr)  # DO NOT IMPORT GET_ROOT_LOGGER HERE
         if not ignore_errors:  # should raise at this point.
