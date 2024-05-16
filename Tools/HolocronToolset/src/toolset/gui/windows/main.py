@@ -15,7 +15,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QCoreApplication, QFile, QMetaObject, QSize, QTextStream, Qt
-from qtpy.QtGui import QColor, QIcon, QMouseEvent, QPalette, QPixmap, QStandardItem
+from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
 from qtpy.QtWidgets import (
     QAction,
     QApplication,
@@ -28,7 +28,6 @@ from qtpy.QtWidgets import (
     QStyle,
     QStyledItemDelegate,
     QVBoxLayout,
-    QWidget,
 )
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -82,7 +81,7 @@ from utility.error_handling import (
     format_exception_with_variables,
     universal_simplify_exception,
 )
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate
@@ -94,7 +93,10 @@ if TYPE_CHECKING:
     from typing import NoReturn
 
     from qtpy import QtGui
-    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtGui import QCloseEvent, QMouseEvent
+    from qtpy.QtWidgets import (
+        QWidget,
+    )
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
@@ -134,7 +136,7 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
-        self.log: Logger = RootLogger()
+        self.log: Logger = RobustRootLogger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
@@ -440,7 +442,7 @@ class ToolWindow(QMainWindow):
             self.onModuleRefresh()
         else:
             if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
-                RootLogger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
+                RobustRootLogger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)
@@ -679,7 +681,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Icon.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-            RootLogger().exception("Error extracting capsule %s", module_name)
+            RobustRootLogger().exception("Error extracting capsule %s", module_name)
             QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
 
     def onOpenResources(

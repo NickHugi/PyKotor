@@ -28,7 +28,7 @@ def onAppCrash(
     exc: BaseException,
     tback: TracebackType | None,
 ):
-    from utility.logger_util import RootLogger
+    from utility.logger_util import RobustRootLogger
 
     if issubclass(etype, KeyboardInterrupt):
         sys.__excepthook__(etype, exc, tback)
@@ -49,7 +49,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    logger = RootLogger()
+    logger = RobustRootLogger()
     logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
 
@@ -112,9 +112,9 @@ if __name__ == "__main__":
 
     multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
     if is_frozen():
-        from utility.logger_util import RootLogger
+        from utility.logger_util import RobustRootLogger
 
-        RootLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
+        RobustRootLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
         set_qt_api()
     else:
@@ -156,9 +156,9 @@ if __name__ == "__main__":
     def qt_cleanup():
         """Cleanup so we can exit."""
         from toolset.utils.window import WINDOWS
-        from utility.logger_util import RootLogger
+        from utility.logger_util import RobustRootLogger
 
-        RootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
+        RobustRootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
         for window in WINDOWS:
             window.close()
             window.destroy()
@@ -166,15 +166,15 @@ if __name__ == "__main__":
 
     def last_resort_cleanup():
         """Prevents the toolset from running in the background after sys.exit is called..."""
-        from utility.logger_util import RootLogger
+        from utility.logger_util import RobustRootLogger
         from utility.system.os_helper import gracefully_shutdown_threads, start_shutdown_process
 
-        RootLogger().info("Fully shutting down Holocron Toolset...")
+        RobustRootLogger().info("Fully shutting down Holocron Toolset...")
         # kill_self_pid()
         gracefully_shutdown_threads()
-        RootLogger().debug("Starting new shutdown process...")
+        RobustRootLogger().debug("Starting new shutdown process...")
         start_shutdown_process()
-        RootLogger().debug("Shutdown process started...")
+        RobustRootLogger().debug("Shutdown process started...")
 
     app.aboutToQuit.connect(qt_cleanup)
     atexit.register(last_resort_cleanup)

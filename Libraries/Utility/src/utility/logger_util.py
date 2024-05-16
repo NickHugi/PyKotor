@@ -445,7 +445,7 @@ class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler
             self.stream = self._open()
 
 
-class RootLogger(logging.Logger):  # noqa: N801
+class RobustRootLogger(logging.Logger):  # noqa: N801
     """Setup a logger with some standard features.
 
     The goal is to have this be callable anywhere anytime regardless of whether a logger is setup yet.
@@ -624,13 +624,13 @@ class RootLogger(logging.Logger):  # noqa: N801
         cls()._logger.callHandlers(record)  # noqa: SLF001
 
 
-get_root_logger = RootLogger  # deprecated, provided for backwards compatibility.
+get_root_logger = RobustRootLogger  # deprecated, provided for backwards compatibility.
 
 
 # Example usage
 if __name__ == "__main__":
-    RootLogger.debug("This is a debug message.")
-    logger = RootLogger()
+    RobustRootLogger.debug("This is a debug message.")
+    logger = RobustRootLogger()
     logger.info("This is an info message.")
     logger.warning("This is a warning message.")
     logger.error("This is an error message.")

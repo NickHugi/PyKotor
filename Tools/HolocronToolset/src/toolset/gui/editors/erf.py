@@ -22,7 +22,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -301,7 +301,7 @@ class ERFEditor(Editor):
             if response == QFileDialog.Accepted:
                 filepath_str = dialog.selectedFiles()[0]
                 if not filepath_str or not filepath_str.strip():
-                    RootLogger().debug("QFileDialog was accepted but no filepath str passed.")
+                    RobustRootLogger().debug("QFileDialog was accepted but no filepath str passed.")
                     return
                 self._handle_single_file_save(Path(filepath_str), resource.data, erf_relpath, catch_exceptions=True)
             else:
@@ -311,9 +311,9 @@ class ERFEditor(Editor):
         # Handle multiple files with folder dialog
         folderpath_str = QFileDialog.getExistingDirectory(self, "Extract to folder")
         if not folderpath_str:
-            RootLogger().debug("User cancelled folderpath extraction.")
+            RobustRootLogger().debug("User cancelled folderpath extraction.")
             return
-        RootLogger().debug("Determining existing files and whether to overwrite.")
+        RobustRootLogger().debug("Determining existing files and whether to overwrite.")
         existing_files_and_folders: list[str] = []
         paths_to_write: dict[Path, bytes] = {}
         for index in selected_rows:
@@ -350,25 +350,25 @@ class ERFEditor(Editor):
 
         failed_extractions: dict[Path, Exception] = {}
         if choice == QMessageBox.StandardButton.Yes:
-            RootLogger().debug(
+            RobustRootLogger().debug(
                 "User chose to Overwrite %s files/folders in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.keys())).parent,
             )
             for path, data in paths_to_write.items():
                 is_overwrite = "overwriting existing file" if path.safe_isfile() else "saving as"
-                RootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_overwrite, path.name)
+                RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_overwrite, path.name)
                 try:
                     if path.safe_isdir():
                         shutil.rmtree(path)
                     elif path.safe_isfile():
                         path.unlink(missing_ok=True)
                 except Exception as e:  # noqa: BLE001
-                    RootLogger().exception("ERFEditor: Failed to delete file '%s' while attempting to overwrite", path)
+                    RobustRootLogger().exception("ERFEditor: Failed to delete file '%s' while attempting to overwrite", path)
                     failed_extractions[path] = e
                 self._handle_single_file_save(path, data, erf_relpath, choice)
         elif choice == QMessageBox.StandardButton.No:
-            RootLogger().debug(
+            RobustRootLogger().debug(
                 "User chose to Rename %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.keys())).parent,
@@ -381,13 +381,13 @@ class ERFEditor(Editor):
                         i += 1
                         new_path = new_path.with_stem(f"{path.stem} ({i})")
                     is_rename = "with new filename" if path.safe_isfile() else "saving as"
-                    RootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_rename, new_path.name)
+                    RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_rename, new_path.name)
                     self._handle_single_file_save(new_path, data, erf_relpath, choice)
                 except Exception as e:  # noqa: BLE001
-                    RootLogger().exception("ERFEditor: Failed to extract file '%s'", new_path)
+                    RobustRootLogger().exception("ERFEditor: Failed to extract file '%s'", new_path)
                     failed_extractions[path] = e
         else:
-            RootLogger().debug(
+            RobustRootLogger().debug(
                 "User chose to CANCEL overwrite/renaming of %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.keys())).parent,
@@ -470,7 +470,7 @@ class ERFEditor(Editor):
                             msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
                             msgBox.exec_()
                             continue
-                        RootLogger().warning("Attempted to delete file/folder at '%s' but the path doesn't even exist?", new_path)
+                        RobustRootLogger().warning("Attempted to delete file/folder at '%s' but the path doesn't even exist?", new_path)
                     check = path.safe_exists()
                     if check:
                         print("Path still exists, restart dialog.")
@@ -493,7 +493,7 @@ class ERFEditor(Editor):
                 msg = f"ERFEditor: Failed to extract {erf_relpath}"
                 if not catch_exceptions:
                     raise
-                RootLogger().exception("%s: %s", msg, simple_exc_str)
+                RobustRootLogger().exception("%s: %s", msg, simple_exc_str)
                 msgBox = QMessageBox(
                     QMessageBox.Icon.Critical,
                     "Failed to extract the file(s).",
@@ -515,7 +515,7 @@ class ERFEditor(Editor):
         for index in reversed([index for index in self.ui.tableView.selectedIndexes() if not index.column()]):
             item: QStandardItem | None = self.model.itemFromIndex(index)
             if item is None:
-                RootLogger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
+                RobustRootLogger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
                 continue
             self.model.removeRow(item.row())
 
@@ -550,7 +550,7 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(resourceSizeStr)
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
             except Exception as e:  # noqa: BLE001
-                RootLogger().exception("Failed to add resource at '%s'", c_filepath.absolute())
+                RobustRootLogger().exception("Failed to add resource at '%s'", c_filepath.absolute())
                 error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 QMessageBox(
                     QMessageBox.Icon.Critical,
@@ -592,7 +592,7 @@ class ERFEditor(Editor):
             #  if resource.restype.name in ERFType.__members__:  check if in nested erf/rim if needed
             new_filepath = self._filepath
             if resource.restype in (ResourceType.ERF, ResourceType.SAV, ResourceType.RIM, ResourceType.MOD):
-                RootLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
+                RobustRootLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
             tempPath, editor = openResourceEditor(
@@ -764,11 +764,11 @@ class ERFEditorTable(QTableView):
 
         if not tempDir.safe_isdir():
             if tempDir.safe_isfile() or tempDir.exists():
-                RootLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
+                RobustRootLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
             else:
                 tempDir.mkdir(parents=True, exist_ok=True)
             if not tempDir.safe_isdir():
-                RootLogger().error(f"Temp directory not valid: {tempDir}")
+                RobustRootLogger().error(f"Temp directory not valid: {tempDir}")
             return
 
         urls: list[QtCore.QUrl] = []

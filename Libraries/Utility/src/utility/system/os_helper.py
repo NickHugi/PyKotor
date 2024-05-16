@@ -10,7 +10,7 @@ import time
 import traceback
 import uuid
 
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 
@@ -94,12 +94,12 @@ def start_shutdown_process():
 def shutdown_main_process(main_pid: int, *, timeout: int = 3):
     """Watchdog process to monitor and shut down the main application."""
     try:
-        RootLogger().debug(f"Waiting {timeout} second(s) before starting the shutdown failsafe.")
+        RobustRootLogger().debug(f"Waiting {timeout} second(s) before starting the shutdown failsafe.")
         time.sleep(timeout)
-        RootLogger().debug("Perform the shutdown/cleanup sequence")
+        RobustRootLogger().debug("Perform the shutdown/cleanup sequence")
         terminate_main_process(timeout, main_pid)
     except Exception:  # noqa: BLE001
-        RootLogger().exception("Shutdown process encountered an exception!", exc_info=True)
+        RobustRootLogger().exception("Shutdown process encountered an exception!", exc_info=True)
 
 
 def terminate_child_processes(
@@ -112,7 +112,7 @@ def terminate_child_processes(
     """
     ignored_pids = [] if ignored_pids is None else ignored_pids
     import multiprocessing
-    log = RootLogger()
+    log = RobustRootLogger()
     log.info("Attempting to terminate child processes gracefully...")
 
     active_children = multiprocessing.active_children()
@@ -155,33 +155,33 @@ def gracefully_shutdown_threads(timeout: int = 3) -> bool:
 
     If all terminate gracefully or if there are no threads, exit normally.
     """
-    RootLogger().info("Attempting to terminate threads gracefully...")
+    RobustRootLogger().info("Attempting to terminate threads gracefully...")
     main_thread = threading.main_thread()
     other_threads = [t for t in threading.enumerate() if t is not main_thread]
     number_timeout_threads = 0
-    RootLogger().debug("%s existing threads to terminate.", len(other_threads))
+    RobustRootLogger().debug("%s existing threads to terminate.", len(other_threads))
     if not other_threads:
         return True
 
     for thread in other_threads:
         if thread.__class__.__name__ == "_DummyThread":
-            RootLogger().debug("Ignoring dummy thread '%s'", thread.getName())
+            RobustRootLogger().debug("Ignoring dummy thread '%s'", thread.getName())
             continue
         if not thread.is_alive():
-            RootLogger().debug("Ignoring dead thread '%s'", thread.getName())
+            RobustRootLogger().debug("Ignoring dead thread '%s'", thread.getName())
             continue
         try:
             thread.join(timeout)
             if thread.is_alive():
-                RootLogger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
+                RobustRootLogger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
                 number_timeout_threads += 1
         except Exception:  # noqa: BLE001
-            RootLogger().exception("Failed to stop the thread")
+            RobustRootLogger().exception("Failed to stop the thread")
 
     if number_timeout_threads:
-        RootLogger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
+        RobustRootLogger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
     else:
-        RootLogger().debug("All threads terminated gracefully; exiting normally.")
+        RobustRootLogger().debug("All threads terminated gracefully; exiting normally.")
     return bool(number_timeout_threads)
 
 
@@ -206,7 +206,7 @@ def terminate_main_process(
         if result1 and result2:
             sys.exit(0)
 
-        RootLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
+        RobustRootLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
         if sys.platform == "win32":
             sys32path = win_get_system32_dir()
             subprocess.run(
@@ -218,7 +218,7 @@ def terminate_main_process(
             import signal
             os.kill(actual_self_pid, signal.SIGKILL)
     except Exception:  # noqa: BLE001
-        RootLogger().exception("Exception occurred while shutting down the main process")
+        RobustRootLogger().exception("Exception occurred while shutting down the main process")
     finally:
         os._exit(0 if result1 and result2 else 1)
 
@@ -227,11 +227,11 @@ def get_app_dir() -> Path:
     if is_frozen():
         return Path(sys.executable).resolve().parent
     main_module = sys.modules["__main__"]
-    RootLogger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
+    RobustRootLogger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
     main_script_path = getattr(main_module, "__file__", None)
     if main_script_path is not None:
         return Path(main_script_path).resolve().parent
-    RootLogger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
+    RobustRootLogger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
     return Path.cwd()
 
 
@@ -363,7 +363,7 @@ def win_get_system32_dir() -> Path:
         ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
         return Path(buffer.value)
     except Exception:  # noqa: BLE001
-        RootLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+        RobustRootLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
         buffer = ctypes.create_unicode_buffer(260)
         ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
         return Path(buffer.value).joinpath("system32")

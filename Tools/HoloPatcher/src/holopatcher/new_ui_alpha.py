@@ -20,15 +20,16 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from enum import IntEnum
 from multiprocessing import Queue
-from threading import Event, Thread
-
-import toga
-from toga.style import Pack
-from toga.style.pack import COLUMN, ROW, CENTER, LEFT, RIGHT
-from toga import Group, Selection, Button, Box, MultilineTextInput, ProgressBar
-from toga.command import Command
+from threading import Thread
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, NoReturn
+
+import toga
+
+from toga import Box, Group
+from toga.command import Command
+from toga.style import Pack
+from toga.style.pack import CENTER, COLUMN, ROW
 
 
 def is_frozen() -> bool:
@@ -65,7 +66,7 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.config import LogLevel
-from pykotor.tslpatcher.logger import LogType, PatchLogger
+from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
@@ -75,7 +76,6 @@ from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
 from utility.system.os_helper import terminate_main_process, win_get_system32_dir
 from utility.system.path import Path
-from utility.tkinter.tooltip import ToolTip
 from utility.tkinter.updater import TkProgressDialog
 
 if TYPE_CHECKING:
@@ -83,6 +83,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import timedelta
     from multiprocessing import Process
+    from threading import Event
 
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace

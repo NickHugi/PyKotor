@@ -34,7 +34,7 @@ from pykotor.resource.generics.git import (
 )
 from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import (
@@ -860,7 +860,7 @@ class WalkmeshRenderer(QWidget):
                     for point in instance.geometry:
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
-                            RootLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
+                            RobustRootLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:
@@ -872,9 +872,9 @@ class WalkmeshRenderer(QWidget):
         self._contextMenuRightMouseButtonFix(e, "mousePressEvent")
         super().mousePressEvent(e)
         button = e.button()
-        RootLogger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
+        RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
         self._mouseDown.add(button)
-        RootLogger().debug(f"mouseDown is now {self._mouseDown}")
+        RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
@@ -882,16 +882,16 @@ class WalkmeshRenderer(QWidget):
         current_buttons = e.buttons()
         rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
         if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            RootLogger().debug(f"Inferred Release ({parentFuncName}): Right Button")
+            RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): Right Button")
             self._mouseDown.discard(Qt.RightButton)
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         self._contextMenuRightMouseButtonFix(e, "mouseReleaseEvent")
         super().mouseReleaseEvent(e)
         button = e.button()
-        RootLogger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
+        RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
         self._mouseDown.discard(button)
-        RootLogger().debug(f"mouseDown is now {self._mouseDown}")
+        RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)

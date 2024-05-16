@@ -14,7 +14,7 @@ from qtpy.QtWidgets import QWidget
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 
 
 class InstallationsWidget(QWidget):
@@ -191,7 +191,7 @@ class InstallationConfig:
             installations[self._name]["path"] = value
             self._settings.setValue("installations", installations)
         except Exception:
-            log = RootLogger()
+            log = RobustRootLogger()
             log.exception("InstallationConfig.path property raised an exception.")
 
     @property

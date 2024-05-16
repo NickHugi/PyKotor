@@ -26,7 +26,7 @@ from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -84,7 +84,7 @@ class Editor(QMainWindow):
         super().__init__(parent)
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
-        self._logger = RootLogger()
+        self._logger = RobustRootLogger()
 
         self._filepath: Path | None = None
         self._resname: str | None = None
@@ -201,7 +201,7 @@ class Editor(QMainWindow):
         try:
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
-            RootLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
+            RobustRootLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             msgBox = QMessageBox(
                 QMessageBox.Icon.Critical,
@@ -279,7 +279,7 @@ class Editor(QMainWindow):
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            RootLogger().critical("Failed to write to file", exc_info=True)
+            RobustRootLogger().critical("Failed to write to file", exc_info=True)
             msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
             msgBox.setDetailedText(format_exception_with_variables(e))
             msgBox.exec_()

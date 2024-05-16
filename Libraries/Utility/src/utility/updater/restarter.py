@@ -9,7 +9,7 @@ from enum import Enum
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Callable
 
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.system.os_helper import is_frozen, requires_admin
 from utility.system.path import Path
 
@@ -40,7 +40,7 @@ class Restarter:
         exithook: Callable | None = None,
         logger: Logger | None = None,
     ):
-        self.log = logger or RootLogger()
+        self.log = logger or RobustRootLogger()
         self.current_app: Path = Path.pathify(current_app)
         self.log.debug("Current App: %s resolved to %s", current_app, self.current_app)
         if is_frozen() and not self.current_app.safe_exists():
@@ -211,7 +211,7 @@ move /Y "{self.updated_app}" "{self.current_app}"
             ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
             return Path(buffer.value)
         except Exception:  # noqa: BLE001
-            RootLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+            RobustRootLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
             buffer = ctypes.create_unicode_buffer(260)
             ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
             return Path(buffer.value).joinpath("system32")
@@ -222,6 +222,6 @@ move /Y "{self.updated_app}" "{self.current_app}"
         if taskkill_path.safe_isfile():
             subprocess.run([str(taskkill_path), "/F", "/PID", str(os.getpid())], check=True)  # noqa: S603
         else:
-            log = RootLogger()
+            log = RobustRootLogger()
             log.warning(f"taskkill.exe not found at '{taskkill_path}', could not guarantee our process is terminated.")  # noqa: G004
         os._exit(0)

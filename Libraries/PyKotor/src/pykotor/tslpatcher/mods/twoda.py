@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -568,10 +568,10 @@ class Modifications2DA(PatcherModifications):
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
                 msg = f"{universal_simplify_exception(e)} when patching the file '{self.saveas}'"
-                RootLogger().critical(str(e), exc_info=e)
+                RobustRootLogger().critical(str(e), exc_info=e)
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)
-                    RootLogger().debug(msg, exc_info=True)
+                    RobustRootLogger().debug(msg, exc_info=True)
                 else:
                     logger.add_error(msg)
                     break

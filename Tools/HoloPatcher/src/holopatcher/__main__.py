@@ -70,7 +70,7 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
 from utility.string_util import striprtf
 from utility.system.os_helper import terminate_main_process, win_get_system32_dir
@@ -177,7 +177,7 @@ class App:
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
-        self.pykotor_logger = RootLogger()
+        self.pykotor_logger = RobustRootLogger()
         self.namespaces: list[PatcherNamespace] = []
 
         self.initialize_logger()
@@ -499,7 +499,7 @@ class App:
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
         except Exception:  # noqa: BLE001
-            RootLogger().critical("Auto-update had an unexpected error", exc_info=True)
+            RobustRootLogger().critical("Auto-update had an unexpected error", exc_info=True)
         #finally:
         #    exitapp(True)
 
@@ -1550,7 +1550,7 @@ class App:
             if log.log_type.value < log_type_to_level().value:
                 return
         except OSError as e:
-            RootLogger().error(f"Failed to write the log file at '{self.log_file_path}': {e.__class__.__name__}: {e}")
+            RobustRootLogger().error(f"Failed to write the log file at '{self.log_file_path}': {e.__class__.__name__}: {e}")
 
         self.main_text.config(state=tk.NORMAL)
         self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
@@ -1579,7 +1579,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    RootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
+    RobustRootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     with suppress(Exception):
         root = tk.Tk()

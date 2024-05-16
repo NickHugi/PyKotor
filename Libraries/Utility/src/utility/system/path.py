@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Union, cast
 
 from utility.error_handling import format_exception_with_variables
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -431,7 +431,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             except StopIteration:  # noqa: PERF203
                 break  # StopIteration means there are no more files to iterate over
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                RootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+                RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
                 continue  # Ignore the file that caused an exception and move to the next
 
     # Safe iterdir operation
@@ -443,7 +443,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             except StopIteration:  # noqa: PERF203
                 break  # StopIteration means there are no more files to iterate over
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                RootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+                RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
                 continue  # Ignore the file that caused an exception and move to the next
 
     # Safe is_dir operation
@@ -452,7 +452,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_dir()
         except (OSError, ValueError):
-            RootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -463,7 +463,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_file()
         except (OSError, ValueError):
-            RootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -474,7 +474,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError):
-            RootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -907,7 +907,7 @@ class ChDir:
     ):
         self.old_dir: Path = Path.cwd()
         self.new_dir: Path = Path.pathify(path)
-        self.log = logger or RootLogger()
+        self.log = logger or RobustRootLogger()
 
     def __enter__(self):
         self.log.debug(f"Changing to Directory --> '{self.new_dir}'")  # noqa: G004

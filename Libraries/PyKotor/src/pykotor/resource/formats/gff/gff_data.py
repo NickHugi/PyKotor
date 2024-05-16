@@ -12,7 +12,7 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 
@@ -640,7 +640,7 @@ class GFFStruct:
                     for i, (target_item, source_item) in enumerate(zip(target_list, value)):
                         target_item._add_missing(target_item, source_item, relpath.joinpath(label, str(i)))
             else:
-                RootLogger().debug(f"Adding {field_type!r} '{relpath.joinpath(label)}' to target.")
+                RobustRootLogger().debug(f"Adding {field_type!r} '{relpath.joinpath(label)}' to target.")
                 if field_type == GFFFieldType.UInt8:
                     target.set_uint8(label, deepcopy(value))
                 elif field_type == GFFFieldType.UInt16:

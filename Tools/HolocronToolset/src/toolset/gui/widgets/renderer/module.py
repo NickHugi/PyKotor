@@ -16,7 +16,7 @@ from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from glm import vec3
@@ -107,7 +107,7 @@ class ModuleRenderer(QOpenGLWidget):
         return bool(self._module and self._installation)
 
     def initializeRenderer(self, installation: HTInstallation, module: Module):
-        RootLogger().debug("Initialize ModuleRenderer")
+        RobustRootLogger().debug("Initialize ModuleRenderer")
         self.shutdownRenderer()
         self.show()
         QApplication.processEvents()  # Force the application to process all pending events
@@ -115,12 +115,12 @@ class ModuleRenderer(QOpenGLWidget):
 
         # Check if the widget and its top-level window are visible
         if not self.isVisible() or (self.window() and not self.window().isVisible()):
-            RootLogger().error("Widget or its window is not visible; OpenGL context may not be initialized.")
+            RobustRootLogger().error("Widget or its window is not visible; OpenGL context may not be initialized.")
             raise RuntimeError("The OpenGL context is not available because the widget or its parent window is not visible.")
 
         # After ensuring visibility, finally check if a context is available.
         if not self.context():
-            RootLogger().error("initializeGL was not called or did not complete successfully.")
+            RobustRootLogger().error("initializeGL was not called or did not complete successfully.")
             raise RuntimeError("Failed to initialize OpenGL context. Ensure that the widget is visible and properly integrated into the application's window.")
 
         self._installation = installation
@@ -133,26 +133,26 @@ class ModuleRenderer(QOpenGLWidget):
         self.resumeRenderLoop()
 
     def initializeGL(self):
-        RootLogger().debug("ModuleRenderer.initializeGL called.")
+        RobustRootLogger().debug("ModuleRenderer.initializeGL called.")
         super().initializeGL()
-        RootLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
+        RobustRootLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
 
     def resizeEvent(self, e: QResizeEvent):
-        RootLogger().debug("ModuleRenderer resizeEvent called.")
+        RobustRootLogger().debug("ModuleRenderer resizeEvent called.")
         super().resizeEvent(e)
 
     def resizeGL(self, width: int, height: int):
-        RootLogger().debug("ModuleRenderer resizeGL called.")
+        RobustRootLogger().debug("ModuleRenderer resizeGL called.")
         super().resizeGL(width, height)
         if not self._scene:
-            RootLogger().debug("ignoring scene camera width/height updates in ModuleRenderer resizeGL - the scene is not initialized yet.")
+            RobustRootLogger().debug("ignoring scene camera width/height updates in ModuleRenderer resizeGL - the scene is not initialized yet.")
             return
         self.scene.camera.width = width
         self.scene.camera.height = height
 
     def resumeRenderLoop(self):
         """Resumes the rendering loop by starting the timer."""
-        RootLogger().debug("ModuleRenderer - resumeRenderLoop called.")
+        RobustRootLogger().debug("ModuleRenderer - resumeRenderLoop called.")
         if not self.loopTimer.isActive():
             self.loopTimer.start(self.loopInterval)
         self.scene.camera.width = self.width()
@@ -160,13 +160,13 @@ class ModuleRenderer(QOpenGLWidget):
 
     def pauseRenderLoop(self):
         """Pauses the rendering loop by stopping the timer."""
-        RootLogger().debug("ModuleRenderer - pauseRenderLoop called.")
+        RobustRootLogger().debug("ModuleRenderer - pauseRenderLoop called.")
         if self.loopTimer.isActive():
             self.loopTimer.stop()
 
     def shutdownRenderer(self):
         """Stops the rendering loop, unloads the module and installation, and attempts to destroy the OpenGL context."""
-        RootLogger().debug("ModuleRenderer - shutdownRenderer called.")
+        RobustRootLogger().debug("ModuleRenderer - shutdownRenderer called.")
         self.pauseRenderLoop()
         self._module = None
         self._installation = None
@@ -195,10 +195,10 @@ class ModuleRenderer(QOpenGLWidget):
             - Records render time.
         """
         if not self.loopTimer.isActive():
-            RootLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
+            RobustRootLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
             return
         if not self.isReady():
-            RootLogger().warning("ModuleDesigner.paintGL - not initialized.")
+            RobustRootLogger().warning("ModuleDesigner.paintGL - not initialized.")
             return  # Do nothing if not initialized
         #get_root_logger().debug("ModuleDesigner.paintGL called.")
         super().paintGL()

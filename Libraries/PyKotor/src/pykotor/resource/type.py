@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.string_util import WrappedStr
 
 if TYPE_CHECKING:
@@ -409,7 +409,7 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
             msg = "Tried to load an unsupported or corrupted file."
-            RootLogger().exception(msg)
+            RobustRootLogger().exception(msg)
             raise ValueError(msg) from e
         finally:
             if auto_close:

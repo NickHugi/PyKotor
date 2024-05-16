@@ -29,7 +29,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -878,13 +878,13 @@ class ItemBuilderWorker(QThread):
         )
         for identifier, resource_result in results.items():
             if resource_result is None:
-                RootLogger().warning("Could not find UTI resource '%s'", identifier)
+                RobustRootLogger().warning("Could not find UTI resource '%s'", identifier)
                 continue
             uti: UTI | None = None
             try:  # FIXME(th3w1zard1): this section seems to crash often.
                 uti = read_uti(resource_result.data)
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                RootLogger().exception("Error reading UTI resource while building items.")
+                RobustRootLogger().exception("Error reading UTI resource while building items.")
             else:
                 self.utiLoaded.emit(uti, resource_result)
         self.finished.emit()

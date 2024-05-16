@@ -16,7 +16,7 @@ from qtpy.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayo
 
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
-from utility.logger_util import RootLogger
+from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import terminate_child_processes
 from utility.updater.github import GithubRelease
@@ -141,7 +141,7 @@ class UpdateDialog(QDialog):
                 fork_full_name = f"{fork_owner_login}/{fork['name']}"
                 self.forksCache[fork_full_name] = self.fetch_fork_releases(fork_full_name, include_all=True)
         except requests.HTTPError as e:
-            RootLogger().exception(f"Failed to fetch forks: {e}")
+            RobustRootLogger().exception(f"Failed to fetch forks: {e}")
 
 
     def fetch_fork_releases(self, fork_full_name: str, *, include_all: bool = False) -> list[GithubRelease]:
@@ -157,7 +157,7 @@ class UpdateDialog(QDialog):
                 if not r["draft"] and (self.include_prerelease() or not r["prerelease"])
             ]
         except requests.HTTPError as e:
-            RootLogger().exception(f"Failed to fetch releases for {fork_full_name}: {e}")
+            RobustRootLogger().exception(f"Failed to fetch releases for {fork_full_name}: {e}")
             return []
 
     def populate_fork_combo_box(self):
@@ -270,7 +270,7 @@ class UpdateDialog(QDialog):
             gc.collect()
             for obj in gc.get_objects():
                 if isinstance(obj, QThread) and obj.isRunning():
-                    RootLogger().debug(f"Terminating QThread: {obj}")
+                    RobustRootLogger().debug(f"Terminating QThread: {obj}")
                     obj.terminate()
                     obj.wait()
             terminate_child_processes()
@@ -300,6 +300,6 @@ class UpdateDialog(QDialog):
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
         except Exception:
-            RootLogger().exception("Error occurred while downloading/installing the toolset.")
+            RobustRootLogger().exception("Error occurred while downloading/installing the toolset.")
         finally:
             exitapp(kill_self_here=True)
