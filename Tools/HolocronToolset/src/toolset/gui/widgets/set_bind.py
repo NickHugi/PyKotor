@@ -73,12 +73,17 @@ class SetBindWidget(QWidget):
     def keyPressed(self, a0: QKeyEvent):
         if self.recordBind:
             self.keybind.add(a0.key())
+            assert isinstance(self.keybind, (set, type(None))), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a set"
             self.updateKeybindText()
 
     def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
 
     def setBind(self, bind: Bind):
+        assert isinstance(bind, tuple), f"{bind} ({bind.__class__.__name__}) is not a tuple"
+        assert len(bind) == 2, f"{len(bind)} != 2"
+        assert isinstance(bind[0], (set, type(None))), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
+        assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
         if bind[1] == {QtCore.Qt.MouseButton.LeftButton}:
             self.ui.mouseCombo.setCurrentIndex(0)
         if bind[1] == {QtCore.Qt.MouseButton.MiddleButton}:
@@ -95,6 +100,7 @@ class SetBindWidget(QWidget):
 
     def bind(self) -> Bind:
         mousebind: set[int] = self.ui.mouseCombo.currentData()
+        assert isinstance(self.keybind, (set, type(None))), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a set"
         return self.keybind, mousebind
 
     def updateKeybindText(self):

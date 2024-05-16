@@ -46,7 +46,7 @@ class SettingsDialog(QDialog):
         self.ui.setupUi(self)
         self._setupSignals()
 
-        self.pageDict = {
+        self.pageDict: dict[str, QWidget] = {
             "Installations": self.ui.installationsPage,
             "GIT Editor": self.ui.gitEditorPage,
             "Misc": self.ui.miscPage,
