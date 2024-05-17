@@ -32,7 +32,7 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
-from toolset.utils.misc import clamp
+from toolset.utils.misc import MODIFIER_KEYS, clamp
 from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import RobustRootLogger
 
@@ -835,6 +835,7 @@ class WalkmeshRenderer(QWidget):
             - Finds instances and geometry points under mouse.
         """
         super().mouseMoveEvent(e)
+        self._contextMenuRightMouseButtonFix(e, "mouseMoveEvent")
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
         self._mousePrev = coords
@@ -897,13 +898,24 @@ class WalkmeshRenderer(QWidget):
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
 
     def keyPressEvent(self, e: QKeyEvent):
+        self._modifierKeyFix(e, "keyPressEvent")
         self._keysDown.add(e.key())
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent):
+        self._modifierKeyFix(e, "keyReleaseEvent")
         self._keysDown.discard(e.key())
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
+
+    def _modifierKeyFix(self, e: QKeyEvent, parentFuncName: str):
+        current_modifiers = e.modifiers()
+
+        for key in MODIFIER_KEYS:
+            bitcheck = int(current_modifiers & key)  # Explicitly convert to int for clarity in logs
+            if bitcheck == 0 and key in self._keysDown:
+                RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): {key} Key")
+                self._keysDown.discard(key)
 
     # endregion
