@@ -47,6 +47,7 @@ from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, R
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.utils.window import addWindow, openResourceEditor
 from utility.logger_util import RobustRootLogger
 
@@ -1536,8 +1537,20 @@ class GITControlScheme:
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldPanCamera or shouldRotateCamera:
             if shouldPanCamera:
-                self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
+                moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
+                RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+                self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
             if shouldRotateCamera:
+                delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
+                if abs(screenDelta.x) >= abs(screenDelta.y):
+                    direction = -1 if screenDelta.x < 0 else 1
+                else:
+                    direction = -1 if screenDelta.y < 0 else 1
+                rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
+                rotateAmount = delta_magnitude * rotateSens
+                rotateAmount *= direction
+                RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+                self.editor.rotateCamera(rotateAmount)
             return
 
         if self.moveSelected.satisfied(buttons, keys):
