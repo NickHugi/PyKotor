@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from typing import Any
+import uuid
 
 import qtpy
 
@@ -14,7 +15,8 @@ from qtpy.QtWidgets import QWidget
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
-from utility.logger_util import RobustRootLogger
+from utility.logger_util import RobustRootLogger, get_log_directory
+from utility.system.path import Path
 
 
 class InstallationsWidget(QWidget):
@@ -223,47 +225,52 @@ class GlobalSettings(Settings):
         -------
             dict: A dictionary of InstallationConfig objects keyed by installation name
 
-        Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
-        Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
-        Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
-        The installations dictionary is then saved back to the user settings.
         """
         installations: dict[str, dict[str, Any]] = self.settings.value("installations")
         if installations is None:
             installations = {}
 
         if self.firstTime:
-            self.firstTime = False
-            RobustRootLogger.info("First time user, attempt auto-detection of currently installed KOTOR paths.")
-            counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
-            # Create a set of existing paths
-            existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
-
-            for game, paths in find_kotor_paths_from_default().items():
-                for path in filter(CaseAwarePath.safe_isdir, paths):
-                    RobustRootLogger.info(f"Autodetected game {game!r} path {path}")
-                    if path in existing_paths:  # If the path is already recorded, skip to the next one
-                        continue
-
-                    game_name = "KotOR" if game.is_k1() else "TSL"
-                    base_game_name = game_name  # Save the base name for potential duplicates
-
-                    # Increment the counter if the game name already exists, indicating a duplicate
-                    while game_name in installations:
-                        counters[game] += 1
-                        game_name = f"{base_game_name} ({counters[game]})"
-
-                    # Add the new installation under the unique game_name
-                    installations[game_name] = {
-                        "name": game_name,
-                        "path": str(path),
-                        "tsl": game.is_k2(),
-                    }
-                    existing_paths.add(path)  # Add the new path to the set of existing paths
-
+            self._handle_firsttime_user(installations)
         self.settings.setValue("installations", installations)
 
         return {name: InstallationConfig(name) for name in installations}
+
+    def _handle_firsttime_user(self, installations: dict[str, dict[str, Any]]):
+        """Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
+
+        Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
+        Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
+        The installations dictionary is then saved back to the user settings.
+        """
+        RobustRootLogger.info("First time user, attempt auto-detection of currently installed KOTOR paths.")
+        self.extractPath = str(get_log_directory(f"{uuid.uuid4()}_extract"))
+        counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
+        # Create a set of existing paths
+        existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
+
+        for game, paths in find_kotor_paths_from_default().items():
+            for path in filter(CaseAwarePath.safe_isdir, paths):
+                RobustRootLogger.info(f"Autodetected game {game!r} path {path}")
+                if path in existing_paths:  # If the path is already recorded, skip to the next one
+                    continue
+
+                game_name = "KotOR" if game.is_k1() else "TSL"
+                base_game_name = game_name  # Save the base name for potential duplicates
+
+                # Increment the counter if the game name already exists, indicating a duplicate
+                while game_name in installations:
+                    counters[game] += 1
+                    game_name = f"{base_game_name} ({counters[game]})"
+
+                # Add the new installation under the unique game_name
+                installations[game_name] = {
+                    "name": game_name,
+                    "path": str(path),
+                    "tsl": game.is_k2(),
+                }
+                existing_paths.add(path)  # Add the new path to the set of existing paths
+        self.firstTime = False
 
     # region Strings
     extractPath = Settings.addSetting(
@@ -280,7 +287,7 @@ class GlobalSettings(Settings):
     )
     selectedTheme = Settings.addSetting(
         "selectedTheme",
-        "Fusion (Dark)",  # Default theme
+        "Default (Light)",  # Default theme
     )
     moduleSortOption = Settings.addSetting(
         "moduleSortOption",
