@@ -22,7 +22,9 @@ from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.git import GITSettings
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -400,16 +402,59 @@ class PTHControlScheme:
         self.editor: PTHEditor = editor
         self.settings: GITSettings = GITSettings()
 
-        self.panCamera: ControlItem = ControlItem(self.settings.moveCameraBind)
-        self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCameraBind)
-        self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCameraBind)
-        self.moveSelected: ControlItem = ControlItem(self.settings.moveSelectedBind)
-        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
-        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
+    # Use @property decorators to allow Users to change their settings without restarting the editor.
+    @property
+    def panCamera(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraBind)
+
+    @panCamera.setter
+    def panCamera(self, value):
+        ...
+
+    @property
+    def rotateCamera(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraBind)
+
+    @rotateCamera.setter
+    def rotateCamera(self, value):
+        ...
+
+    @property
+    def zoomCamera(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraBind)
+
+    @zoomCamera.setter
+    def zoomCamera(self, value):
+        ...
+
+    @property
+    def moveSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveSelectedBind)
+
+    @moveSelected.setter
+    def moveSelected(self, value):
+        ...
+
+    @property
+    def selectUnderneath(self) -> ControlItem:
+        return ControlItem(self.settings.selectUnderneathBind)
+
+    @selectUnderneath.setter
+    def selectUnderneath(self, value):
+        ...
+
+    @property
+    def deleteSelected(self) -> ControlItem:
+        return ControlItem(self.settings.deleteSelectedBind)
+
+    @deleteSelected.setter
+    def deleteSelected(self, value):
+        ...
 
     @status_bar_decorator
     def mouseMoveEvent(self, event: QMouseEvent):
-        self.editor.stdout.mouse_pos = Vector2(*event.pos())
+        point: QPoint = event.pos()
+        self.editor.stdout.mouse_pos = Vector2(point.x(), point.y())
 
     @status_bar_decorator
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
