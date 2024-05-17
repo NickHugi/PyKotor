@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qtpy.QtCore import QEvent, QObject
+from qtpy.QtCore import QEvent, QObject, Qt
 from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from pykotor.common.misc import Color
@@ -17,8 +17,28 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.set_bind import SetBindWidget
 
 
+class HoverEventFilter(QObject):
+    def __init__(self):
+        super().__init__()
+        self.current_widget = None
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.HoverEnter:
+            self.current_widget = obj
+        elif event.type() == QEvent.HoverLeave:
+            if self.current_widget == obj:
+                self.current_widget = None
+        elif event.type() == QEvent.KeyPress and event.key() == Qt.Key_Pause:
+            if self.current_widget:
+                RobustRootLogger.info(f"Hovered control: {self.current_widget.__class__.__name__} ({self.current_widget.objectName()})")
+            else:
+                RobustRootLogger.info("No control is currently hovered.")
+        return super().eventFilter(obj, event)
+
+
 class NoScrollEventFilter(QObject):
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        RobustRootLogger.debug(f"Scrolling on {obj.__class__.__name__} ({obj.objectName()})")
         if event.type() == QEvent.Wheel:
             if isinstance(obj, QWidget):
                 RobustRootLogger.debug(f"Blocking scroll on {obj.__class__.__name__} ({obj.objectName()})")
@@ -38,7 +58,9 @@ class SettingsWidget(QWidget):
 
         # Install the event filter on all child widgets
         self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
+        self.hoverEventFilter = HoverEventFilter()
         self.installEventFilters(self, self.noScrollEventFilter)
+        #self.installEventFilters(self, self.hoverEventFilter, include_types=[QWidget])
 
     def installEventFilters(
         self,

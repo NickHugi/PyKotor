@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import qtpy
 
 from qtpy import QtCore
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.misc import Color
 from toolset.data.settings import Settings, SettingsProperty
-from toolset.gui.widgets.settings.base import NoScrollEventFilter, SettingsWidget
+from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 from utility.logger_util import RobustRootLogger
-
-if TYPE_CHECKING:
-    from qtpy.QtWidgets import QWidget
 
 
 class ModuleDesignerWidget(SettingsWidget):
@@ -80,8 +76,8 @@ class ModuleDesignerWidget(SettingsWidget):
         self.setupValues()
 
         # Install the event filter on all child widgets
-        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
         self.installEventFilters(self, self.noScrollEventFilter)
+        #self.installEventFilters(self, self.hoverEventFilter, include_types=[QWidget])
 
     def _load3dBindValues(self):
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
