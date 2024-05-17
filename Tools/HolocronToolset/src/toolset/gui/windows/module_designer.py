@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from logging import Logger
 import math
 
 from copy import deepcopy
@@ -13,6 +12,7 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QIcon, QPixmap
 from qtpy.QtWidgets import QAction, QApplication, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
+from pykotor.gl.scene import Camera
 from pykotor.tools.misc import is_mod_file
 from utility.misc import is_debug_mode
 
@@ -50,7 +50,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, openInstanceDialog
+from toolset.gui.editors.git import DuplicateCommand, MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, _SpawnMode, openInstanceDialog
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
@@ -60,6 +60,8 @@ from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
+
+    from logging import Logger
 
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
@@ -99,6 +101,7 @@ class ModuleDesigner(QMainWindow):
             - Sets window title and loads module on next frame.
         """
         super().__init__(parent)
+        self.setWindowTitle("Module Designer")
 
         self._installation: HTInstallation = installation
         self._module: Module | None = None
@@ -107,11 +110,11 @@ class ModuleDesigner(QMainWindow):
 
         self.initialPositions: dict[GITInstance, Vector3] = {}
         self.initialRotations: dict[GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint, Vector4 | float] = {}
-        self.undoStack = QUndoStack(self)
+        self.undoStack: QUndoStack = QUndoStack(self)
 
         self.selectedInstances: list[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.log: Logger = RootLogger()
+        self.log: Logger = RobustRootLogger()
 
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
@@ -190,7 +193,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.hideWalkmeshEdges = True
         self.ui.flatRenderer.highlightBoundaries = False
 
-        self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControls3d(self, self.ui.mainRenderer)
+        # self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControls3d(self, self.ui.mainRenderer)
+        self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)
         self._controls2d: ModuleDesignerControls2d = ModuleDesignerControls2d(self, self.ui.flatRenderer)
 
         if mod_filepath is None:  # Use singleShot timer so the ui window opens while the loading is happening.
@@ -375,7 +379,6 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.setWalkmeshes(walkmeshes)
         self.ui.flatRenderer.centerCamera()
         self.show()
-        self.activateWindow()
         # Inherently calls On3dSceneInitialized when done.
 
     def unloadModule(self):
@@ -829,10 +832,7 @@ class ModuleDesigner(QMainWindow):
         instance.orientation = new_orientation
 
     def snapViewToGITInstance(self, instance: GITInstance):
-        scene = self.ui.mainRenderer.scene
-        assert scene is not None
-
-        camera: Camera = scene.camera
+        camera: Camera = self._getSceneCamera()
         yaw = instance.yaw()
         camera.yaw = camera.yaw if yaw is None else yaw
         camera.x, camera.y, camera.z = instance.position
@@ -841,10 +841,7 @@ class ModuleDesigner(QMainWindow):
         camera.distance = 0
 
     def snapViewToGITCamera(self, instance: GITCamera):
-        scene = self.ui.mainRenderer.scene
-        assert scene is not None
-
-        camera: Camera = scene.camera
+        camera: Camera = self._getSceneCamera()
         euler: Vector3 = instance.orientation.to_euler()
         camera.pitch = math.pi - euler.z - math.radians(instance.pitch)
         camera.yaw = math.pi / 2 - euler.x
@@ -852,6 +849,12 @@ class ModuleDesigner(QMainWindow):
         camera.y = instance.position.y
         camera.z = instance.position.z + instance.height
         camera.distance = 0
+
+    def _getSceneCamera(self) -> Camera:
+        scene = self.ui.mainRenderer.scene
+        assert scene is not None
+        result: Camera = scene.camera
+        return result
 
     def snapCameraToEntryLocation(self):
         scene = self.ui.mainRenderer.scene
@@ -1025,15 +1028,15 @@ class ModuleDesigner(QMainWindow):
         self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
         # HACK:
         self._controls2d._mode.deleteSelected = self.deleteSelected
-        self._controls2d._mode.duplicateSelected = self._controls3d._duplicateSelectedInstance
+        self._controls2d._mode.duplicateSelected = ModuleDesignerControls3d(self, self.ui.mainRenderer)._duplicateSelectedInstance
         self._controls2d._mode.editSelectedInstance = self.editInstance
 
     def enterGeometryMode(self):
         self._controls2d._mode = _GeometryMode(self, self._installation, self.git(), hideOthers=False)
 
     def enterSpawnMode(self):
-        ...
         # TODO
+        self._controls2d._mode = _SpawnMode(self, self._installation, self.git())
 
     def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
@@ -1195,6 +1198,7 @@ class ModuleDesigner(QMainWindow):
     def on3dRendererInitialized(self):
         self.log.debug("ModuleDesigner on3dRendererInitialized")
         self.show()
+        self.activateWindow()
 
     def on3dSceneInitialized(self):
         self.log.debug("ModuleDesigner on3dSceneInitialized")
@@ -1202,6 +1206,7 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
         self._refreshWindowTitle()
         self.updateToggles()
+        self.show()
         self.activateWindow()
 
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
@@ -1534,7 +1539,6 @@ class ModuleDesignerControlsFreeCam:
         self.moveCameraLeft: ControlItem = ControlItem(self.settings.moveCameraLeftFcBind)
         self.moveCameraRight: ControlItem = ControlItem(self.settings.moveCameraRightFcBind)
 
-        self.renderer.scene.show_cursor = False
         self.renderer.freeCam = True
         self.renderer.setCursor(QtCore.Qt.CursorShape.BlankCursor)
         self.renderer._keysDown.clear()
@@ -1547,6 +1551,8 @@ class ModuleDesignerControlsFreeCam:
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
+        if self.renderer._scene and self.renderer.scene.show_cursor:  # HACK(th3w1zard1): fix later.
+            self.renderer.scene.show_cursor = False
         rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
         mouseX: int = rendererPos.x() + self.renderer.width() // 2
         mouseY: int = rendererPos.y() + self.renderer.height() // 2
@@ -1607,7 +1613,7 @@ class ModuleDesignerControls2d:
         self.editor: ModuleDesigner = editor
         self.renderer: WalkmeshRenderer = renderer
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self._mode: _InstanceMode | _GeometryMode
+        self._mode: _InstanceMode | _GeometryMode | _SpawnMode
 
         self.moveCamera: ControlItem = ControlItem(self.settings.moveCamera2dBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera2dBind)
@@ -1638,8 +1644,9 @@ class ModuleDesignerControls2d:
         """
         self.editor.log.debug("onMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
         if self.zoomCamera.satisfied(buttons, keys):
-            zoomInFactor = 1.1
-            zoomOutFactor = 0.90
+            strength = self.editor.settings.zoomCameraSensitivity2d / 100 / 50
+            zoomInFactor = 1.1 + strength
+            zoomOutFactor = 0.90 - strength
 
             zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
             self.renderer.camera.nudgeZoom(zoomFactor)
@@ -1739,6 +1746,7 @@ class ModuleDesignerControls2d:
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
 
     def _duplicate_instance(self):
+        self.editor.undoStack.push(DuplicateCommand(self.editor.git(), self.editor.selectedInstances, self.editor))  # noqa: SLF001
         instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
         result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
         instance.position = self.renderer.toWorldCoords(result.x(), result.y())
@@ -1763,10 +1771,8 @@ class ModuleDesignerControls2d:
         if self.deleteSelected.satisfied(buttons, keys):
             RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             if isinstance(self._mode, _GeometryMode):
-                get_root_logger().debug("_GeometryMode: moduleDesignerControls2d deleteSelected satisfied ")
                 self._mode.deleteSelected()
                 return
-            get_root_logger().debug(f"{self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             self.editor.deleteSelected()
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
