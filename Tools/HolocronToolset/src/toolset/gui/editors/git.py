@@ -1291,13 +1291,25 @@ class _InstanceMode(_Mode):
             instance.rotate(angle, 0, 0)
 
     def rotateSelectedToPoint(self, x: float, y: float):
+        rotation_threshold = 0.05  # Threshold for rotation changes, adjust as needed
         for instance in self.walkmeshRenderer.instanceSelection.all():
-            rotation: float = -math.atan2(x - instance.position.x, y - instance.position.y)
+            current_angle = -math.atan2(x - instance.position.x, y - instance.position.y)
+            current_angle = (current_angle + math.pi) % (2 * math.pi) - math.pi  # Normalize to -π to π
+
             yaw = instance.yaw() or 0.01
+            yaw = (yaw + math.pi) % (2 * math.pi) - math.pi  # Normalize to -π to π
+
+            rotation_difference = yaw - current_angle
+            # Normalize the rotation difference
+            rotation_difference = (rotation_difference + math.pi) % (2 * math.pi) - math.pi
+
+            if abs(rotation_difference) < rotation_threshold:
+                continue  # Skip if the rotation change is too small
+
             if isinstance(instance, GITCamera):
-                instance.rotate(yaw - rotation, 0, 0)
+                instance.rotate(yaw - current_angle, 0, 0)
             else:
-                instance.rotate(-yaw + rotation, 0, 0)
+                instance.rotate(-yaw + current_angle, 0, 0)
 
     # endregion
 
@@ -1412,6 +1424,13 @@ class _GeometryMode(_Mode):
 class _SpawnMode(_Mode): ...
 
 
+def calculate_zoom_strength(delta_y: float, sensSetting: int) -> float:
+    m = 0.00202
+    b = 1
+    factor_in = (m * sensSetting + b)
+    return 1 / abs(factor_in) if delta_y < 0 else abs(factor_in)
+
+
 class GITControlScheme:
     def __init__(self, editor: GITEditor):
         self.editor: GITEditor = editor
@@ -1500,10 +1519,11 @@ class GITControlScheme:
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
-            # A smaller zoom_step will provide finer control over the zoom level.
             if not delta.y:
                 return  # sometimes it'll be zero when holding middlemouse-down.
-            zoom_factor = 1.1 if delta.y > 0 else 0.9
+            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
+            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     def onMouseMoved(
@@ -1533,6 +1553,7 @@ class GITControlScheme:
             - Checks if move selected condition is satisfied and moves selected object
             - Checks if rotate selected to point condition is satisfied and rotates selected object to point.
         """
+        # sourcery skip: extract-duplicate-method, remove-redundant-if, split-or-ifs
         shouldPanCamera = self.panCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldPanCamera or shouldRotateCamera:
@@ -1541,16 +1562,7 @@ class GITControlScheme:
                 RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
                 self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
             if shouldRotateCamera:
-                delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
-                if abs(screenDelta.x) >= abs(screenDelta.y):
-                    direction = -1 if screenDelta.x < 0 else 1
-                else:
-                    direction = -1 if screenDelta.y < 0 else 1
-                rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
-                rotateAmount = delta_magnitude * rotateSens
-                rotateAmount *= direction
-                RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
-                self.editor.rotateCamera(rotateAmount)
+                self._handleCameraRotation(screenDelta)
             return
 
         if self.moveSelected.satisfied(buttons, keys):
@@ -1575,6 +1587,18 @@ class GITControlScheme:
                 self.log.debug("GITControlScheme rotate set isDragRotating")
                 self.isDragRotating = True
             self.editor.rotateSelectedToPoint(world.x, world.y)
+
+    def _handleCameraRotation(self, screenDelta: Vector2):
+        delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
+        if abs(screenDelta.x) >= abs(screenDelta.y):
+            direction = -1 if screenDelta.x < 0 else 1
+        else:
+            direction = -1 if screenDelta.y < 0 else 1
+        rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
+        rotateAmount = delta_magnitude * rotateSens
+        rotateAmount *= direction
+        RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+        self.editor.rotateCamera(rotateAmount)
 
     def handleUndoRedoFromLongActionFinished(self):
         # Check if we were dragging
