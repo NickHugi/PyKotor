@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Set, Tuple, Union
 
-from utility.logger_util import RobustRootLogger
-
 Bind = Tuple[Set[int], Union[Set[int], None]]
 
 
@@ -23,7 +21,7 @@ class ControlItem:
 
     def satisfied(
         self,
-        buttons: set[int],
+        buttons: set[int],  # Do NOT send None here!
         keys: set[int],
         *,
         exactKeys: bool = True,
@@ -40,7 +38,7 @@ class ControlItem:
         -------
             bool: Whether the input is satisfied.
         """
-        mouseSatisfied = self.anyButtons() or self.mouse == buttons
+        mouseSatisfied = self.anyButtons() or self.mouse == buttons or (not self.mouse and self.noButtons())
         keysSatisfied = self.anyKeys() or (self.keys == keys if exactKeys else self.keys.issubset(keys))
 
         if mouseSatisfied and keysSatisfied:
