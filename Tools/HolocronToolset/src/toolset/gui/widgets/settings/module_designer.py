@@ -423,83 +423,83 @@ class ModuleDesignerSettings(Settings):
     # region Ints (Material Colours)
     undefinedMaterialColour = Settings.addSetting(
         "undefinedMaterialColour",
-        671088895,
+        Color(0.400, 0.400, 0.400).rgb_integer(),
     )
     dirtMaterialColour = Settings.addSetting(
         "dirtMaterialColour",
-        4281084972,
+        Color(0.610, 0.235, 0.050).rgb_integer(),
     )
     obscuringMaterialColour = Settings.addSetting(
         "obscuringMaterialColour",
-        671088895,
+        Color(0.100, 0.100, 0.100).rgb_integer(),
     )
     grassMaterialColour = Settings.addSetting(
         "grassMaterialColour",
-        4281084972,
+        Color(0.000, 0.600, 0.000).rgb_integer(),
     )
     stoneMaterialColour = Settings.addSetting(
         "stoneMaterialColour",
-        4281084972,
+        Color(0.162, 0.216, 0.279).rgb_integer(),
     )
     woodMaterialColour = Settings.addSetting(
         "woodMaterialColour",
-        4281084972,
+        Color(0.258, 0.059, 0.007).rgb_integer(),
     )
     waterMaterialColour = Settings.addSetting(
         "waterMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 1.000).rgba_integer(),
     )
     nonWalkMaterialColour = Settings.addSetting(
         "nonWalkMaterialColour",
-        671088895,
+        Color(1.000, 0.000, 0.000).rgb_integer(),
     )
     transparentMaterialColour = Settings.addSetting(
         "transparentMaterialColour",
-        671088895,
+        Color(1.000, 1.000, 1.000).rgba_integer(),
     )
     carpetMaterialColour = Settings.addSetting(
         "carpetMaterialColour",
-        4281084972,
+        Color(1.000, 0.000, 1.000).rgb_integer(),
     )
     metalMaterialColour = Settings.addSetting(
         "metalMaterialColour",
-        4281084972,
+        Color(0.434, 0.552, 0.730).rgb_integer(),
     )
     puddlesMaterialColour = Settings.addSetting(
         "puddlesMaterialColour",
-        4281084972,
+        Color(0.509, 0.474, 0.147).rgba_integer(),
     )
     swampMaterialColour = Settings.addSetting(
         "swampMaterialColour",
-        4281084972,
+        Color(0.216, 0.216, 0.000).rgba_integer(),
     )
     mudMaterialColour = Settings.addSetting(
         "mudMaterialColour",
-        4281084972,
+        Color(0.091, 0.147, 0.028).rgba_integer(),
     )
     leavesMaterialColour = Settings.addSetting(
         "leavesMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 0.216).rgba_integer(),
     )
     doorMaterialColour = Settings.addSetting(
         "doorMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 0.000).rgb_integer(),
     )
     lavaMaterialColour = Settings.addSetting(
         "lavaMaterialColour",
-        671088895,
+        Color(0.300, 0.000, 0.000).rgb_integer(),
     )
     bottomlessPitMaterialColour = Settings.addSetting(
         "bottomlessPitMaterialColour",
-        671088895,
+        Color(0.000, 0.000, 0.000).rgba_integer(),
     )
     deepWaterMaterialColour = Settings.addSetting(
         "deepWaterMaterialColour",
-        671088895,
+        Color(0.000, 0.000, 0.216).rgb_integer(),
     )
     nonWalkGrassMaterialColour = Settings.addSetting(
         "nonWalkGrassMaterialColour",
-        671088895,
+        Color(0.000, 0.600, 0.000).rgba_integer(),
     )
     # endregion
 
