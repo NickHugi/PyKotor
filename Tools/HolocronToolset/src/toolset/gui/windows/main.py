@@ -1448,6 +1448,8 @@ class ToolWindow(QMainWindow):
                 f"Failed to initialize the installation {name}<br><br>{e}",
             ).exec_()
             self.unsetInstallation()
+        self.show()
+        self.activateWindow()
 
     def _extractResource(
         self,
