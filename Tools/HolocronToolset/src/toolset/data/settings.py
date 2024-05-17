@@ -107,7 +107,7 @@ class SettingsProperty(property, Generic[T]):
 
 class Settings:
     def __init__(self, scope: str):
-        self.settings: QSettings = QSettings("HolocronToolset", scope)
+        self.settings: QSettings = QSettings("HolocronToolsetV3", scope)
 
     @staticmethod
     def addSetting(name: str, default: T) -> SettingsProperty[T]:  # noqa: C901
