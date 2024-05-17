@@ -1,35 +1,19 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QEvent, QObject
-from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from pykotor.common.misc import Color
 from toolset.data.settings import Settings, SettingsProperty
-from toolset.gui.widgets.settings.base import SettingsWidget
+from toolset.gui.widgets.settings.base import NoScrollEventFilter, SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 from utility.logger_util import RobustRootLogger
 
-
-class NoScrollEventFilter(QObject):
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.Wheel:
-            return isinstance(
-                obj,
-                (
-                    QComboBox,
-                    QSlider,
-                    QSpinBox,
-                    QGroupBox,
-                    QAbstractSpinBox,
-                    QDoubleSpinBox,
-                ),
-            )
-        return super().eventFilter(obj, event)
-
-
+if TYPE_CHECKING:
+    from qtpy.QtWidgets import QWidget
 
 
 class ModuleDesignerWidget(SettingsWidget):
@@ -95,16 +79,9 @@ class ModuleDesignerWidget(SettingsWidget):
 
         self.setupValues()
 
-        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
-
         # Install the event filter on all child widgets
-        self.installEventFilters(self)
-
-    def installEventFilters(self, parent_widget: QWidget):
-        """Recursively install event filters on all child widgets."""
-        for widget in parent_widget.findChildren(QWidget):
-            widget.installEventFilter(self.noScrollEventFilter)
-            self.installEventFilters(widget)
+        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
+        self.installEventFilters(self, self.noScrollEventFilter)
 
     def _load3dBindValues(self):
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
