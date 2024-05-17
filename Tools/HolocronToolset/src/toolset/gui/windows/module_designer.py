@@ -1269,6 +1269,7 @@ class ModuleDesignerControls3d:
         self.editor: ModuleDesigner = editor
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
+        self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)  # Show the cursor
 
         self.moveXYCamera: ControlItem = ControlItem(self.settings.moveCameraXY3dBind)
         self.moveZCamera: ControlItem = ControlItem(self.settings.moveCameraZ3dBind)
