@@ -59,7 +59,7 @@ class SettingsWidget(QWidget):
                 widget.setObjectName(widget.__class__.__name__)
                 widget_path = path / widget.objectName()
             if isinstance(widget, tuple(include_types)):
-                RobustRootLogger.debug(f"Installing event filter on: {widget_path} (type: {widget.__class__.__name__})")
+                #RobustRootLogger.debug(f"Installing event filter on: {widget_path} (type: {widget.__class__.__name__})")
                 widget.installEventFilter(event_filter)
             #else:
             #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget_path}' due to instance check {widget.__class__.__name__}.")
