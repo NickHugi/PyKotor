@@ -38,7 +38,11 @@ class Ui_Form(object):
 
         self.editButton = QPushButton(Form)
         self.editButton.setObjectName(u"editButton")
-        self.editButton.setMaximumSize(QSize(26, 23))
+        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.editButton.sizePolicy().hasHeightForWidth())
+        self.editButton.setSizePolicy(sizePolicy)
 
         self.horizontalLayout.addWidget(self.editButton)
 
@@ -51,6 +55,6 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.colorLabel.setText("")
-        self.editButton.setText(QCoreApplication.translate("Form", u"...", None))
+        self.editButton.setText(QCoreApplication.translate("Form", u"Open ColorPicker", None))
     # retranslateUi
 
