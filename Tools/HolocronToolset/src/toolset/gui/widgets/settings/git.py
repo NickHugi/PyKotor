@@ -250,7 +250,7 @@ class GITSettings(Settings):
     )
     zoomCameraBind = Settings.addSetting(
         "zoomCameraBind",
-        ({QtKey.Key_Control}, None),
+        ({QtKey.Key_Control}, set()),
     )
     rotateSelectedToPointBind = Settings.addSetting(
         "rotateSelectedToPointBind",
