@@ -9,7 +9,7 @@ import qtpy
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QStatusBar, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -20,6 +20,7 @@ from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
+from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.git import GITSettings
 from utility.error_handling import universal_simplify_exception
 
@@ -140,7 +141,7 @@ class PTHEditor(Editor):
         self.settings = GITSettings()
 
         def intColorToQColor(num_color: int) -> QColor:
-            color = Color.from_rgba_integer(num_color)
+            color: Color = Color.from_rgba_integer(num_color)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
         self.materialColors: dict[SurfaceMaterial, QColor] = {
@@ -226,7 +227,9 @@ class PTHEditor(Editor):
             self.rightLabel.setText(right_status)
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        self.stdout.mouse_pos = Vector2(*event.pos())
+        super().mouseMoveEvent(event)
+        point: QPoint = event.pos()
+        self.stdout.mouse_pos = Vector2(point.x(), point.y())
         self.stdout.updateStatusBar()
 
     def _setupSignals(self):
@@ -244,6 +247,8 @@ class PTHEditor(Editor):
         result: ResourceResult | None = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
             self.loadLayout(read_lyt(result.data))
+        else:
+            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt for this {resref}.{restype} but it could not be found.", icon=QMessageBox.Icon.Critical).exec_()
 
         pth: PTH = read_pth(data)
         self._loadPTH(pth)
@@ -426,10 +431,14 @@ class PTHControlScheme:
         keys: set[int],
     ):
         self.editor.stdout.mouse_pos = screen
-        if self.panCamera.satisfied(buttons, keys):
-            self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
-        if self.rotateCamera.satisfied(buttons, keys):
-            self.editor.rotateCamera(screenDelta.y)
+        shouldPanCamera = self.panCamera.satisfied(buttons, keys)
+        shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
+        if shouldPanCamera or shouldRotateCamera:
+            if shouldPanCamera:
+                self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
+            if shouldRotateCamera:
+                self.editor.rotateCamera(screenDelta.y)
+            return
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)
 
