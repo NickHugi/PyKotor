@@ -425,83 +425,83 @@ class ModuleDesignerSettings(Settings):
     # region Ints (Material Colours)
     undefinedMaterialColour = Settings.addSetting(
         "undefinedMaterialColour",
-        Color(0.400, 0.400, 0.400).rgba_integer(),
+        Color(0.400, 0.400, 0.400, 0.5).rgba_integer(),
     )
     dirtMaterialColour = Settings.addSetting(
         "dirtMaterialColour",
-        Color(0.610, 0.235, 0.050).rgba_integer(),
+        Color(0.610, 0.235, 0.050, 0.5).rgba_integer(),
     )
     obscuringMaterialColour = Settings.addSetting(
         "obscuringMaterialColour",
-        Color(0.100, 0.100, 0.100).rgba_integer(),
+        Color(0.100, 0.100, 0.100, 0.5).rgba_integer(),
     )
     grassMaterialColour = Settings.addSetting(
         "grassMaterialColour",
-        Color(0.000, 0.600, 0.000).rgba_integer(),
+        Color(0.000, 0.600, 0.000, 0.5).rgba_integer(),
     )
     stoneMaterialColour = Settings.addSetting(
         "stoneMaterialColour",
-        Color(0.162, 0.216, 0.279).rgba_integer(),
+        Color(0.162, 0.216, 0.279, 0.5).rgba_integer(),
     )
     woodMaterialColour = Settings.addSetting(
         "woodMaterialColour",
-        Color(0.258, 0.059, 0.007).rgba_integer(),
+        Color(0.258, 0.059, 0.007, 0.5).rgba_integer(),
     )
     waterMaterialColour = Settings.addSetting(
         "waterMaterialColour",
-        Color(0.000, 0.000, 1.000).rgba_integer(),
+        Color(0.000, 0.000, 1.000, 0.5).rgba_integer(),
     )
     nonWalkMaterialColour = Settings.addSetting(
         "nonWalkMaterialColour",
-        Color(1.000, 0.000, 0.000).rgba_integer(),
+        Color(1.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     transparentMaterialColour = Settings.addSetting(
         "transparentMaterialColour",
-        Color(1.000, 1.000, 1.000).rgba_integer(),
+        Color(1.000, 1.000, 1.000, 0.5).rgba_integer(),
     )
     carpetMaterialColour = Settings.addSetting(
         "carpetMaterialColour",
-        Color(1.000, 0.000, 1.000).rgba_integer(),
+        Color(1.000, 0.000, 1.000, 0.5).rgba_integer(),
     )
     metalMaterialColour = Settings.addSetting(
         "metalMaterialColour",
-        Color(0.434, 0.552, 0.730).rgba_integer(),
+        Color(0.434, 0.552, 0.730, 0.5).rgba_integer(),
     )
     puddlesMaterialColour = Settings.addSetting(
         "puddlesMaterialColour",
-        Color(0.509, 0.474, 0.147).rgba_integer(),
+        Color(0.509, 0.474, 0.147, 0.5).rgba_integer(),
     )
     swampMaterialColour = Settings.addSetting(
         "swampMaterialColour",
-        Color(0.216, 0.216, 0.000).rgba_integer(),
+        Color(0.216, 0.216, 0.000, 0.5).rgba_integer(),
     )
     mudMaterialColour = Settings.addSetting(
         "mudMaterialColour",
-        Color(0.091, 0.147, 0.028).rgba_integer(),
+        Color(0.091, 0.147, 0.028, 0.5).rgba_integer(),
     )
     leavesMaterialColour = Settings.addSetting(
         "leavesMaterialColour",
-        Color(0.000, 0.000, 0.216).rgba_integer(),
+        Color(0.000, 0.000, 0.216, 0.5).rgba_integer(),
     )
     doorMaterialColour = Settings.addSetting(
         "doorMaterialColour",
-        Color(0.000, 0.000, 0.000).rgba_integer(),
+        Color(0.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     lavaMaterialColour = Settings.addSetting(
         "lavaMaterialColour",
-        Color(0.300, 0.000, 0.000).rgba_integer(),
+        Color(0.300, 0.000, 0.000, 0.5).rgba_integer(),
     )
     bottomlessPitMaterialColour = Settings.addSetting(
         "bottomlessPitMaterialColour",
-        Color(0.000, 0.000, 0.000).rgba_integer(),
+        Color(0.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     deepWaterMaterialColour = Settings.addSetting(
         "deepWaterMaterialColour",
-        Color(0.000, 0.000, 0.216).rgba_integer(),
+        Color(0.000, 0.000, 0.216, 0.5).rgba_integer(),
     )
     nonWalkGrassMaterialColour = Settings.addSetting(
         "nonWalkGrassMaterialColour",
-        Color(0.000, 0.600, 0.000).rgba_integer(),
+        Color(0.000, 0.600, 0.000, 0.5).rgba_integer(),
     )
     # endregion
 
