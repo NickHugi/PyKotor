@@ -822,7 +822,7 @@ class WalkmeshRenderer(QWidget):
     def wheelEvent(self, e: QWheelEvent):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent):  # TODO: something here is causing the camera to continually zoom out while middlemouse is held down.
+    def mouseMoveEvent(self, e: QMouseEvent):
         """Handles mouse move events.
 
         Args:

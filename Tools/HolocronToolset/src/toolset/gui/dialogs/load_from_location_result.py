@@ -8,6 +8,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 from collections import OrderedDict
@@ -697,13 +698,21 @@ class ResourceItems(FileItems):
             if not resource.exists():
                 missing_files.append(resource._path_ident_obj)  # noqa: SLF001
                 return
-            with TemporaryDirectory("_tmpext2", "toolset_") as tempdir:
-                tempdir_path = Path(tempdir)
-                assert tempdir_path.safe_isdir()
-                temp_file = tempdir_path / resource.filename()
-                with BinaryWriterFile.to_file(temp_file) as writer:
-                    writer.write_bytes(resource.data())
-                func(temp_file, tableItem)
+
+            # Create a temporary directory that persists until application shutdown
+            tempdir = tempfile.mkdtemp(prefix="toolset_", suffix="_tmpext2")
+
+            # Register a cleanup function to delete the temporary directory at exit
+            def cleanup_tempdir():
+                shutil.rmtree(tempdir, ignore_errors=True)
+
+            atexit.register(cleanup_tempdir)
+            tempdir_path = Path(tempdir)
+            assert tempdir_path.safe_isdir()
+            temp_file = tempdir_path / resource.filename()
+            with BinaryWriterFile.to_file(temp_file) as writer:
+                writer.write_bytes(resource.data())
+            func(temp_file, tableItem)
         else:
             func(path, tableItem)
 

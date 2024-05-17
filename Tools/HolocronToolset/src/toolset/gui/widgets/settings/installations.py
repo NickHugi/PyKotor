@@ -290,7 +290,7 @@ class GlobalSettings(Settings):
     )
     moduleSortOption = Settings.addSetting(
         "moduleSortOption",
-        1,
+        2,
     )
     # endregion
 

@@ -328,7 +328,7 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.y += upward.y + sideward.y + forward_vec.y
         self.scene.camera.z += upward.z + sideward.z + forward_vec.z
 
-    def rotateCamera(self, yaw: float, pitch: float, snapRotations: bool = True):
+    def rotateCamera(self, yaw: float, pitch: float, *, snapRotations: bool = True):
         """Rotates the camera by the angles (radians) specified.
 
         Args:
@@ -369,7 +369,7 @@ class ModuleRenderer(QOpenGLWidget):
             3. Get world position of cursor
             4. Emit signal with mouse data if time since press > threshold
         """
-        super().mouseMoveEvent(e)
+        #super().mouseMoveEvent(e)
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)

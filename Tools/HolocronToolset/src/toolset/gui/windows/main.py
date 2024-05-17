@@ -829,7 +829,12 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             QMessageBox(QMessageBox.Icon.Information, "No installation loaded.", "Load an installation before opening the Module Designer.").exec_()
             return
+        # Retrieve the icon from self (assuming it's set as window icon)
+        window_icon = self.windowIcon()
+
+        # Initialize the designer and set its window icon
         designer = ModuleDesigner(None, self.active)
+        designer.setWindowIcon(window_icon)
         addWindow(designer)
 
     def openSettingsDialog(self):
