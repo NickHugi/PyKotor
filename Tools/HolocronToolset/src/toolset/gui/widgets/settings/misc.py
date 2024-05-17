@@ -17,7 +17,6 @@ from qtpy.QtWidgets import (
 
 from toolset.gui.widgets.settings.base import NoScrollEventFilter
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.logger_util import RobustRootLogger
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:

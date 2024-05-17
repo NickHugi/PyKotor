@@ -233,12 +233,15 @@ class GlobalSettings(Settings):
             installations = {}
 
         if self.firstTime:
+            self.firstTime = False
+            RobustRootLogger.info("First time user, attempt auto-detection of currently installed KOTOR paths.")
             counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
             # Create a set of existing paths
             existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
 
             for game, paths in find_kotor_paths_from_default().items():
                 for path in filter(CaseAwarePath.safe_isdir, paths):
+                    RobustRootLogger.info(f"Autodetected game {game!r} path {path}")
                     if path in existing_paths:  # If the path is already recorded, skip to the next one
                         continue
 

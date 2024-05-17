@@ -166,7 +166,7 @@ class ToolWindow(QMainWindow):
 
         firstTime = self.settings.firstTime
         if firstTime:
-            self.settings.firstTime = False
+            RobustRootLogger.info(f"First time user, set default theme in {self.__class__.__name__}")
             self.settings.selectedTheme = "Default (Light)"
 
             # Create a directory used for dumping temp files
