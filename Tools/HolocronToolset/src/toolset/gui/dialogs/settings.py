@@ -50,6 +50,10 @@ class SettingsDialog(QDialog):
         self.ui.setupUi(self)
         self._setupSignals()
 
+        # Variable to store the original size
+        self.originalSize = None
+        self.previousPage = None
+
         self.pageDict: dict[str, QWidget] = {
             "Installations": self.ui.installationsPage,
             "GIT Editor": self.ui.gitEditorPage,
@@ -62,8 +66,18 @@ class SettingsDialog(QDialog):
         self.ui.settingsTree.itemClicked.connect(self.pageChanged)
 
     def pageChanged(self, pageTreeItem: QTreeWidgetItem):
-        newPage = self.pageDict[pageTreeItem.text(0)]
-        self.ui.settingsStack.setCurrentWidget(newPage)
+        pageItemText = pageTreeItem.text(0)
+        newPage = self.pageDict[pageItemText]
+        self.ui.settingsStack.setCurrentWidget(newPage)  # type: ignore[arg-type]
+
+        if self.previousPage not in ("GIT Editor", "Module Designer") and pageItemText in ("GIT Editor", "Module Designer"):
+            self.originalSize = self.size()
+            self.resize(800, 800)  # Adjust the size based on the image dimensions
+        elif self.previousPage in ("GIT Editor", "Module Designer") and pageItemText not in ("GIT Editor", "Module Designer"):
+            if self.originalSize:
+                self.resize(self.originalSize)
+
+        self.previousPage = pageItemText
 
     def onInstallationEdited(self):
         self.installationEdited = True

@@ -164,14 +164,6 @@ class ToolWindow(QMainWindow):
         self.reloadSettings()
         self.unsetInstallation()
 
-        firstTime = self.settings.firstTime
-        if firstTime:
-            RobustRootLogger.info(f"First time user, set default theme in {self.__class__.__name__}")
-            self.settings.selectedTheme = "Default (Light)"
-
-            # Create a directory used for dumping temp files
-            self.settings.extractPath = str(Path(tempfile.gettempdir(), f"toolset_{uuid.uuid4()}_extract"))
-
         title = f"Holocron Toolset ({qtpy.API_NAME})"
         self.setWindowTitle(title)
 
