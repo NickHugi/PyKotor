@@ -397,6 +397,13 @@ class PTHEditor(Editor):
     # endregion
 
 
+def calculate_zoom_strength(delta_y: float, sensSetting: int) -> float:
+    m = 0.00202
+    b = 1
+    factor_in = (m * sensSetting + b)
+    return 1 / abs(factor_in) if delta_y < 0 else abs(factor_in)
+
+
 class PTHControlScheme:
     def __init__(self, editor: PTHEditor):
         self.editor: PTHEditor = editor
@@ -459,10 +466,11 @@ class PTHControlScheme:
     @status_bar_decorator
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
-            # A smaller zoom_step will provide finer control over the zoom level.
             if not delta.y:
                 return  # sometimes it'll be zero when holding middlemouse-down.
-            zoom_factor = 1.1 if delta.y > 0 else 0.9
+            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
+            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     @status_bar_decorator
@@ -480,9 +488,20 @@ class PTHControlScheme:
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldPanCamera or shouldRotateCamera:
             if shouldPanCamera:
-                self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
+                moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
+                RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+                self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
             if shouldRotateCamera:
-                self.editor.rotateCamera(screenDelta.y)
+                delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
+                if abs(screenDelta.x) >= abs(screenDelta.y):
+                    direction = -1 if screenDelta.x < 0 else 1
+                else:
+                    direction = -1 if screenDelta.y < 0 else 1
+                rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
+                rotateAmount = delta_magnitude * rotateSens
+                rotateAmount *= direction
+                RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+                self.editor.rotateCamera(rotateAmount)
             return
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)
