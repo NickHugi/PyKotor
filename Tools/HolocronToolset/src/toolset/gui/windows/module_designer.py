@@ -51,7 +51,17 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import DeleteCommand, DuplicateCommand, MoveCommand, RotateCommand, _GeometryMode, _InstanceMode, _SpawnMode, calculate_zoom_strength, openInstanceDialog
+from toolset.gui.editors.git import (
+    DeleteCommand,
+    DuplicateCommand,
+    MoveCommand,
+    RotateCommand,
+    _GeometryMode,
+    _InstanceMode,
+    _SpawnMode,
+    calculate_zoom_strength,
+    openInstanceDialog,
+)
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import QtMouse
@@ -1147,7 +1157,9 @@ class ModuleDesigner(QMainWindow):
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), walkmeshSnap=True))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), walkmeshSnap=False))
         menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), walkmeshSnap=False))
-        menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), walkmeshSnap=False))
+        menu.addAction("Insert Store").triggered.connect(
+            lambda: self.addInstance(GITStore(*world), walkmeshSnap=False)
+        )
         menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), walkmeshSnap=False))
         menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), walkmeshSnap=False))
         menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), walkmeshSnap=False))
