@@ -1469,10 +1469,15 @@ class GITControlScheme:
             - Checks if move selected condition is satisfied and moves selected object
             - Checks if rotate selected to point condition is satisfied and rotates selected object to point.
         """
-        if self.panCamera.satisfied(buttons, keys):
-            self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
-        if self.rotateCamera.satisfied(buttons, keys):
-            self.editor.rotateCamera(screenDelta.y)
+        shouldPanCamera = self.panCamera.satisfied(buttons, keys)
+        shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
+        if shouldPanCamera or shouldRotateCamera:
+            if shouldPanCamera:
+                self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
+            if shouldRotateCamera:
+                self.editor.rotateCamera(screenDelta.y)
+            return
+
         if self.moveSelected.satisfied(buttons, keys):
             if not self.isDragMoving and isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
                 RobustRootLogger().debug("moveSelected instance GITControlScheme")
