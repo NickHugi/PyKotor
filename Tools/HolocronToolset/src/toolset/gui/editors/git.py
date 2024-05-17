@@ -1424,15 +1424,78 @@ class GITControlScheme:
         self.isDragMoving: bool = False
         self.isDragRotating: bool = False
 
-        self.panCamera: ControlItem = ControlItem(self.settings.moveCameraBind)
-        self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCameraBind)
-        self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCameraBind)
-        self.rotateSelectedToPoint: ControlItem = ControlItem(self.settings.rotateSelectedToPointBind)
-        self.moveSelected: ControlItem = ControlItem(self.settings.moveSelectedBind)
-        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
-        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
-        self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateSelectedBind)
-        self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
+
+    @property
+    def panCamera(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraBind)
+
+    @panCamera.setter
+    def panCamera(self, value) -> None:
+        ...
+
+    @property
+    def rotateCamera(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraBind)
+
+    @rotateCamera.setter
+    def rotateCamera(self, value) -> None -> None:
+        ...
+
+    @property
+    def zoomCamera(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraBind)
+
+    @zoomCamera.setter
+    def zoomCamera(self, value) -> None:
+        ...
+
+    @property
+    def rotateSelectedToPoint(self) -> ControlItem:
+        return ControlItem(self.settings.rotateSelectedToPointBind)
+
+    @rotateSelectedToPoint.setter
+    def rotateSelectedToPoint(self, value):
+        ...
+
+    @property
+    def moveSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveSelectedBind)
+
+    @moveSelected.setter
+    def moveSelected(self, value):
+        ...
+
+    @property
+    def selectUnderneath(self) -> ControlItem:
+        return ControlItem(self.settings.selectUnderneathBind)
+
+    @selectUnderneath.setter
+    def selectUnderneath(self, value):
+        ...
+
+    @property
+    def deleteSelected(self) -> ControlItem:
+        return ControlItem(self.settings.deleteSelectedBind)
+
+    @deleteSelected.setter
+    def deleteSelected(self, value):
+        ...
+
+    @property
+    def duplicateSelected(self) -> ControlItem:
+        return ControlItem(self.settings.duplicateSelectedBind)
+
+    @duplicateSelected.setter
+    def duplicateSelected(self, value):
+        ...
+
+    @property
+    def toggleInstanceLock(self) -> ControlItem:
+        return ControlItem(self.settings.toggleLockInstancesBind)
+
+    @toggleInstanceLock.setter
+    def toggleInstanceLock(self, value):
+        ...
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
@@ -1475,7 +1538,6 @@ class GITControlScheme:
             if shouldPanCamera:
                 self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
             if shouldRotateCamera:
-                self.editor.rotateCamera(screenDelta.y)
             return
 
         if self.moveSelected.satisfied(buttons, keys):
