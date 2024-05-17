@@ -731,7 +731,7 @@ class UTCEditor(Editor):
 
 class UTCSettings:
     def __init__(self):
-        self.settings = QSettings("HolocronToolset", "UTCEditor")
+        self.settings = QSettings("HolocronToolsetV3", "UTCEditor")
 
     @property
     def saveUnusedFields(self) -> bool:

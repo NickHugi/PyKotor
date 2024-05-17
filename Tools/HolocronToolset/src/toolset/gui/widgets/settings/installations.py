@@ -155,7 +155,7 @@ class InstallationsWidget(QWidget):
 
 class InstallationConfig:
     def __init__(self, name: str):
-        self._settings = QSettings("HolocronToolset", "Global")
+        self._settings = QSettings("HolocronToolsetV3", "Global")
         self._name: str = name
 
     @property
