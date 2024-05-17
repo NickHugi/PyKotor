@@ -17,7 +17,6 @@ from qtpy.QtWidgets import (
 
 from toolset.gui.widgets.settings.base import NoScrollEventFilter
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.system.path import PurePath
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject
@@ -54,26 +53,21 @@ class MiscWidget(QWidget):
         self,
         parent_widget: QWidget,
         event_filter: QObject,
-        path: PurePath | None = None,
         include_types: list[type[QWidget]] | None = None
     ) -> None:
         """Recursively install event filters on all child widgets."""
-        if path is None:
-            path = PurePath(self.__class__.__name__)
         if include_types is None:
             include_types = [QComboBox, QSlider, QSpinBox, QGroupBox, QAbstractSpinBox, QDoubleSpinBox]
 
         for widget in parent_widget.findChildren(QWidget):
-            widget_path = path / widget.objectName()
             if not widget.objectName():
                 widget.setObjectName(widget.__class__.__name__)
-                widget_path = path / widget.objectName()
             if isinstance(widget, tuple(include_types)):
-                #RobustRootLogger.debug(f"\nInstalling event filter on: {widget_path} (type: {widget.__class__.__name__})")
+                #RobustRootLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
                 widget.installEventFilter(event_filter)
             #else:
-            #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget_path}' due to instance check {widget.__class__.__name__}.")
-            self.installEventFilters(widget, event_filter, widget_path, include_types)
+            #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
+            self.installEventFilters(widget, event_filter, include_types)
 
     def setupValues(self):
         self.ui.alsoCheckReleaseVersion.setChecked(self.settings.alsoCheckReleaseVersion)

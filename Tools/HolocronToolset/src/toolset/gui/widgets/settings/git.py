@@ -110,12 +110,12 @@ class GITSettings(Settings):
     def resetMaterialColors(self):
         for setting in dir(self):
             if setting.endswith("Colour"):
-                self.settings.remove(setting)
+                self.reset_setting(setting)
 
     def resetControls(self):
         for setting in dir(self):
             if setting.endswith("Bind"):
-                self.settings.remove(setting)
+                self.reset_setting(setting)
 
     # region Strings (Instance Labels)
     creatureLabel = Settings.addSetting(

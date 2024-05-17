@@ -122,3 +122,7 @@ class Settings:
     def get_default(self, name: str) -> Any:
         prop: SettingsProperty = self.get_property(name)
         return prop.default
+
+    def reset_setting(self, name: str):
+        prop: SettingsProperty = self.get_property(name)
+        prop.reset_to_default(self)

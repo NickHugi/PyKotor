@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtWidgets import QWidget
 
 from pykotor.common.misc import Color
 from toolset.data.settings import Settings, SettingsProperty
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
-from utility.logger_util import RobustRootLogger
+
+if TYPE_CHECKING:
+    from qtpy.QtWidgets import QWidget
+
+    from toolset.gui.widgets.edit.color import ColorEdit
+    from toolset.gui.widgets.set_bind import SetBindWidget
 
 
 class ModuleDesignerWidget(SettingsWidget):
@@ -85,18 +91,16 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "3dBindEdit" in widget]:
-            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+            bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
+            self._registerBind(bindWidget, bindEdit[:-4])
 
     def _loadFcBindValues(self):
         self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
         self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
 
-        for bindEdit in [widget for widget in dir(self.ui) if "fcbindedit" in widget.lower()]:
-            bind = getattr(self.ui, bindEdit).bind()
-            if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
-                RobustRootLogger.error(f"invalid setting bind: '{bindEdit}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
-                bind = self._reset_and_get_default(bindEdit)
-            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+        for bindEdit in [widget for widget in dir(self.ui) if "FcBindEdit" in widget]:
+            bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
+            self._registerBind(bindWidget, bindEdit[:-4])
 
     def _load2dBindValues(self):
         self.ui.moveCameraSensitivity2dEdit.setValue(self.settings.moveCameraSensitivity2d)
@@ -104,11 +108,13 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.zoomCameraSensitivity2dEdit.setValue(self.settings.zoomCameraSensitivity2d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "2dBindEdit" in widget]:
-            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+            bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
+            self._registerBind(bindWidget, bindEdit[:-4])
 
     def _loadColourValues(self):
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
-            self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
+            colorWidget: ColorEdit = getattr(self.ui, colorEdit)
+            self._registerColour(colorWidget, colorEdit[:-4])
 
     def setupValues(self):
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
@@ -158,17 +164,17 @@ class ModuleDesignerSettings(Settings):
                 attr_value.reset_to_default(self)
         self.get_property("toggleLockInstancesBind").reset_to_default(self)
 
-    def resetControlsFc(self):
+    def resetControls2d(self):
         for setting in dir(self):
-            if not setting.endswith("FC"):
+            if not setting.endswith("2d"):
                 continue
             attr_value = getattr(self.__class__, setting)
             if isinstance(attr_value, SettingsProperty):
                 attr_value.reset_to_default(self)
 
-    def resetControls2d(self):
+    def resetControlsFc(self):
         for setting in dir(self):
-            if not setting.endswith("2d"):
+            if not setting.endswith("FC"):
                 continue
             attr_value = getattr(self.__class__, setting)
             if isinstance(attr_value, SettingsProperty):

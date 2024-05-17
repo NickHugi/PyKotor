@@ -7,6 +7,7 @@ import qtpy
 from qtpy.QtWidgets import QWidget
 
 from toolset.utils.misc import MODIFIER_KEYS, QtMouse, getStringFromKey
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent
@@ -56,8 +57,8 @@ class SetBindWidget(QWidget):
         self.ui.mouseCombo.setItemData(0, {QtMouse.LeftButton})
         self.ui.mouseCombo.setItemData(1, {QtMouse.MiddleButton})
         self.ui.mouseCombo.setItemData(2, {QtMouse.RightButton})
-        self.ui.mouseCombo.setItemData(3, set())
-        self.ui.mouseCombo.setItemData(4, None)
+        self.ui.mouseCombo.setItemData(3, set())  # Any
+        self.ui.mouseCombo.setItemData(4, None)   # None
 
     def startRecording(self):
         self.recordBind = True
@@ -73,22 +74,23 @@ class SetBindWidget(QWidget):
     def keyPressed(self, a0: QKeyEvent):
         if self.recordBind:
             self.keybind.add(a0.key())
-            assert isinstance(self.keybind, (set, type(None))), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a set"
+            assert isinstance(self.keybind, set), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a set"
             self.updateKeybindText()
 
     def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
+        RobustRootLogger.info(f"Set keybind to {self.keybind}")
 
-    def setBind(self, bind: Bind):
-        # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't important.
+    def setMouseAndKeyBinds(self, bind: Bind):
+        # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't affected there.
         assert isinstance(bind, tuple), f"{bind} ({bind.__class__.__name__}) is not a tuple"
         assert len(bind) == 2, f"{len(bind)} != 2"
-        assert isinstance(bind[0], (set, type(None))), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
+        assert isinstance(bind[0], set), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
         assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
 
         if bind[1] is None:  # none
             self.ui.mouseCombo.setCurrentIndex(4)
-        elif not bind[1]:  # empty set
+        elif not bind[1]:  # any
             self.ui.mouseCombo.setCurrentIndex(3)
         elif bind[1] == {QtMouse.LeftButton}:
             self.ui.mouseCombo.setCurrentIndex(0)
@@ -102,10 +104,10 @@ class SetBindWidget(QWidget):
         self.keybind = bind[0]
         self.updateKeybindText()
 
-    def bind(self) -> Bind:
+    def getMouseAndKeyBinds(self) -> Bind:
         mousebind: set[int] = self.ui.mouseCombo.currentData()
         assert isinstance(mousebind, (set, type(None))), f"{mousebind!r} <{mousebind}> ({mousebind.__class__.__name__}) is not a mousebind set"
-        assert isinstance(self.keybind, (set, type(None))), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a keybind set"
+        assert isinstance(self.keybind, set), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a keybind set"
         return self.keybind, mousebind
 
     def updateKeybindText(self):
