@@ -157,7 +157,7 @@ class ModuleDesignerSettings(Settings):
 
     def resetControls3d(self):
         for setting in dir(self):
-            if not setting.endswith("3d"):
+            if not setting.endswith(("3d", "3dBind")):
                 continue
             attr_value = getattr(self.__class__, setting)
             if isinstance(attr_value, SettingsProperty):
@@ -166,7 +166,7 @@ class ModuleDesignerSettings(Settings):
 
     def resetControls2d(self):
         for setting in dir(self):
-            if not setting.endswith("2d"):
+            if not setting.endswith(("2d", "2dBind")):
                 continue
             attr_value = getattr(self.__class__, setting)
             if isinstance(attr_value, SettingsProperty):
@@ -174,7 +174,7 @@ class ModuleDesignerSettings(Settings):
 
     def resetControlsFc(self):
         for setting in dir(self):
-            if not setting.endswith("FC"):
+            if not setting.endswith(("FC", "FcBind")):
                 continue
             attr_value = getattr(self.__class__, setting)
             if isinstance(attr_value, SettingsProperty):
