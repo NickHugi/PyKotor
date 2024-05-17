@@ -1439,7 +1439,7 @@ class GITControlScheme:
         return ControlItem(self.settings.rotateCameraBind)
 
     @rotateCamera.setter
-    def rotateCamera(self, value) -> None -> None:
+    def rotateCamera(self, value) -> None:
         ...
 
     @property
