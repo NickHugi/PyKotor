@@ -3,8 +3,6 @@ from __future__ import annotations
 import cProfile
 import platform
 import sys
-import tempfile
-import uuid
 
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone

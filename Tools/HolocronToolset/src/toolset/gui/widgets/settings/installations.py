@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
+import uuid
 
 from typing import Any
-import uuid
 
 import qtpy
 
@@ -16,7 +16,6 @@ from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
 from utility.logger_util import RobustRootLogger, get_log_directory
-from utility.system.path import Path
 
 
 class InstallationsWidget(QWidget):

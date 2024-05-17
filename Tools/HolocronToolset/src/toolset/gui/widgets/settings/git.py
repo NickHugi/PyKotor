@@ -8,7 +8,7 @@ from qtpy import QtCore
 
 from pykotor.common.misc import Color
 from toolset.data.settings import Settings
-from toolset.gui.widgets.settings.base import SettingsWidget
+from toolset.gui.widgets.settings.base import NoScrollEventFilter, SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 
 if TYPE_CHECKING:
@@ -77,6 +77,10 @@ class GITWidget(SettingsWidget):
         self.ui.controlsResetButton.clicked.connect(self.resetControls)
 
         self.setupValues()
+
+        # Install the event filter on all child widgets
+        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
+        self.installEventFilters(self, self.noScrollEventFilter)
 
     def _setupColourValues(self):
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
