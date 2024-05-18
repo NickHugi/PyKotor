@@ -1089,7 +1089,8 @@ if ( $findVenvExecutable -eq $true) {
 function Activate-PythonVenv {
     param (
         [Parameter(Mandatory=$true)]
-        [string]$venvPath
+        [string]$venvPath,
+        [switch]$noRecurse
     )
 
     # Check if the venvPath exists
@@ -1158,10 +1159,10 @@ deactivate nondestructive
 if [ "`$OSTYPE" = "cygwin" ] || [ "`$OSTYPE" = "msys" ] ; then
     # transform D:\path\to\venv to /d/path/to/venv on MSYS
     # and to /cygdrive/d/path/to/venv on Cygwin
-    export VIRTUAL_ENV=`$(cygpath "$venvPath")
+    export VIRTUAL_ENV=`$(cygpath "$venvScriptBinPath")
 else
     # use the path as-is
-    export VIRTUAL_ENV="$venvPath"
+    export VIRTUAL_ENV="$venvScriptBinPath"
 fi
 
 _OLD_VIRTUAL_PATH="`$PATH"
@@ -1413,7 +1414,7 @@ if (-not `$Env:VIRTUAL_ENV_DISABLE_PROMPT) {
     # Make sure _OLD_VIRTUAL_PROMPT is global
     function global:_OLD_VIRTUAL_PROMPT { "" }
     Copy-Item -Path function:prompt -Destination function:_OLD_VIRTUAL_PROMPT
-    New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value $Prompt
+    New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value `$Prompt
 
     function global:prompt {
         Write-Host -NoNewline -ForegroundColor Green "(`$_PYTHON_VENV_PROMPT_PREFIX) "
@@ -1431,8 +1432,9 @@ if (Test-Path -Path Env:PYTHONHOME) {
 Copy-Item -Path Env:PATH -Destination Env:_OLD_VIRTUAL_PATH
 `$Env:PATH = "`$VenvExecDir`$([System.IO.Path]::PathSeparator)`$Env:PATH"
 "@
-        $activateBashScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "activate"
-        $activatePwshScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "Activate.ps1"
+            $activateBashScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "activate"
+            $activatePwshScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "Activate.ps1"
+            Activate-PythonVenv $venvPath -noRecurse
         }
     }
 }
