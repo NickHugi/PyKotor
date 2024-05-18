@@ -396,8 +396,8 @@ class ModInstaller:
             *config.patches_ssf,
         ]
 
-        temp_script_folder: CaseAwarePath | None = self._prepare_compilelist(config, memory)
         finished_preprocessed_scripts: bool = False
+        temp_script_folder: CaseAwarePath = self.mod_path / "temp_nss_working_dir"
         for patch in patches_list:
             if should_cancel is not None and should_cancel.is_set():
                 print("ModInstaller.install() received termination request, cancelling...")
@@ -405,7 +405,7 @@ class ModInstaller:
 
             # Must run preprocessed scripts directly before GFFList so we don't interfere with !FieldPath assignments to 2DAMEMORY.
             if not finished_preprocessed_scripts and isinstance(patch, ModificationsNSS):
-                self._prepare_compilelist(config, memory, self.log, self.game)
+                self._prepare_compilelist(config, self.log, memory, self.game)
                 finished_preprocessed_scripts = True
 
             # if self.game.is_ios():  # TODO:
