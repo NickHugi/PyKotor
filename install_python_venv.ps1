@@ -164,7 +164,7 @@ function Set-EnvironmentVariablesFromEnvFile {
                 Write-Debug "Original value: $originalValue, Final value: $value"
 
                 # Set environment variable
-                Write-Host "Set environment variable $key from '${$env:$key}' to '$value'"
+                Write-Host "`$env:$key='$value'"
                 Set-Item -LiteralPath "env:$key" -Value $value
             }
         }
@@ -1542,14 +1542,13 @@ if ($installPipToVenvManually) {
 }
 
 $pythonInfo = Initialize-Python $pythonExePath
-Write-Host "Initialized Python Version: $($pythonInfo.Version)"
-Write-Host "Initialized Python Path: $($pythonInfo.Path)"
+Write-Host "`nInitialized Python Version: $($pythonInfo.Version)    Path: $($pythonInfo.Path)"
 $pythonVersion = $pythonInfo.Version
 $pythonExePath = $pythonInfo.Path
 
 # Set environment variables from .env file
 $dotenv_path = "$repoRootPath$pathSep.env"
-Write-Host "Loading project environment variables from '$dotenv_path'"
+Write-Host "-----------------`nLoading project environment variables from '$dotenv_path':"
 $envFileFound = Set-EnvironmentVariablesFromEnvFile "$dotenv_path"
 if ($envFileFound) {
     Write-Host ".env file has been loaded into session."
