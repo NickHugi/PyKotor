@@ -387,7 +387,7 @@ function Install-Python-Linux {
                 "fedora" {
                     Invoke-BashCommand -Command "sudo dnf update -y"
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo dnf install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo dnf install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel dnf-plugins-core -y"
                     break
                 }
                 "centos" {
@@ -451,7 +451,7 @@ function Install-Python-Linux {
                 }
                 "fedora" {
                     Invoke-BashCommand -Command 'sudo dnf groupinstall "Development Tools" -y'
-                    Invoke-BashCommand -Command 'sudo dnf install -y tk tcl tk-devel tcl-devel zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel libffi-devel'
+                    Invoke-BashCommand -Command 'sudo dnf install -y tk tcl tk-devel dnf-plugins-core tcl-devel zlib-devel bzip2-devel readline-devel sqlite-devel openssl-devel libffi-devel'
                 }
                 "almalinux" {
                     Invoke-BashCommand -Command 'sudo yum groupinstall "Development Tools" -y'
@@ -1105,43 +1105,47 @@ function Activate-PythonVenv {
         $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "bin"
     }
     $activateScriptPath = Join-Path -Path $venvScriptBinPath -ChildPath "Activate.ps1"
+    $activateScriptPath = Join-Path -Path $venvScriptBinPath -ChildPath "activate"
     try {
         & $activateScriptPath
-    } catch {  # Sometimes a system may be missing activation scripts... manually add them here.
-        $errMsg = $_.Exception.Message
-        $errStr = "Error: $errMsg`n venv activation script at '$activateScriptPath' failed, attempting to set venv manually."
-        Write-Warning $errStr
+    } catch {
+        try {
+            & $activateBashScriptPath
+        } catch {  # Sometimes a system may be missing activation scripts... manually add them here.
+            $errMsg = $_.Exception.Message
+            $errStr = "Error: $errMsg`n venv activation script at '$activateScriptPath' failed, attempting to set venv manually."
+            Write-Warning $errStr
 
-        $activateBashScriptContents = @'
+            $activateBashScriptContents = @"
 # This file must be used with "source bin/activate" *from bash*
 # You cannot run it directly
 
 deactivate () {
     # reset old environment variables
-    if [ -n "${_OLD_VIRTUAL_PATH:-}" ] ; then
-        PATH="${_OLD_VIRTUAL_PATH:-}"
+    if [ -n "`${_OLD_VIRTUAL_PATH:-}" ] ; then
+        PATH="`${_OLD_VIRTUAL_PATH:-}"
         export PATH
         unset _OLD_VIRTUAL_PATH
     fi
-    if [ -n "${_OLD_VIRTUAL_PYTHONHOME:-}" ] ; then
-        PYTHONHOME="${_OLD_VIRTUAL_PYTHONHOME:-}"
+    if [ -n "`${_OLD_VIRTUAL_PYTHONHOME:-}" ] ; then
+        PYTHONHOME="`${_OLD_VIRTUAL_PYTHONHOME:-}"
         export PYTHONHOME
         unset _OLD_VIRTUAL_PYTHONHOME
     fi
 
     # Call hash to forget past commands. Without forgetting
-    # past commands the $PATH changes we made may not be respected
+    # past commands the `$PATH changes we made may not be respected
     hash -r 2> /dev/null
 
-    if [ -n "${_OLD_VIRTUAL_PS1:-}" ] ; then
-        PS1="${_OLD_VIRTUAL_PS1:-}"
+    if [ -n "`${_OLD_VIRTUAL_PS1:-}" ] ; then
+        PS1="`${_OLD_VIRTUAL_PS1:-}"
         export PS1
         unset _OLD_VIRTUAL_PS1
     fi
 
     unset VIRTUAL_ENV
     unset VIRTUAL_ENV_PROMPT
-    if [ ! "${1:-}" = "nondestructive" ] ; then
+    if [ ! "`${1:-}" = "nondestructive" ] ; then
     # Self destruct!
         unset -f deactivate
     fi
@@ -1151,47 +1155,47 @@ deactivate () {
 deactivate nondestructive
 
 # on Windows, a path can contain colons and backslashes and has to be converted:
-if [ "$OSTYPE" = "cygwin" ] || [ "$OSTYPE" = "msys" ] ; then
+if [ "`$OSTYPE" = "cygwin" ] || [ "`$OSTYPE" = "msys" ] ; then
     # transform D:\path\to\venv to /d/path/to/venv on MSYS
     # and to /cygdrive/d/path/to/venv on Cygwin
-    export VIRTUAL_ENV=$(cygpath "/mnt/c/GitHub/PyKotor/.venv_fedora")
+    export VIRTUAL_ENV=`$(cygpath "$venvPath")
 else
     # use the path as-is
-    export VIRTUAL_ENV="/mnt/c/GitHub/PyKotor/.venv_fedora"
+    export VIRTUAL_ENV="$venvPath"
 fi
 
-_OLD_VIRTUAL_PATH="$PATH"
-PATH="$VIRTUAL_ENV/bin:$PATH"
+_OLD_VIRTUAL_PATH="`$PATH"
+PATH="`$VIRTUAL_ENV/bin:`$PATH"
 export PATH
 
 # unset PYTHONHOME if set
 # this will fail if PYTHONHOME is set to the empty string (which is bad anyway)
-# could use `if (set -u; : $PYTHONHOME) ;` in bash
-if [ -n "${PYTHONHOME:-}" ] ; then
-    _OLD_VIRTUAL_PYTHONHOME="${PYTHONHOME:-}"
+# could use `if (set -u; : `$PYTHONHOME) ;` in bash
+if [ -n "`${PYTHONHOME:-}" ] ; then
+    _OLD_VIRTUAL_PYTHONHOME="`${PYTHONHOME:-}"
     unset PYTHONHOME
 fi
 
-if [ -z "${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
-    _OLD_VIRTUAL_PS1="${PS1:-}"
-    PS1="(.venv_fedora) ${PS1:-}"
+if [ -z "`${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
+    _OLD_VIRTUAL_PS1="`${PS1:-}"
+    PS1="($venv_name) `${PS1:-}"
     export PS1
-    VIRTUAL_ENV_PROMPT="(.venv_fedora) "
+    VIRTUAL_ENV_PROMPT="($venv_name) "
     export VIRTUAL_ENV_PROMPT
 fi
 
 # Call hash to forget past commands. Without forgetting
-# past commands the $PATH changes we made may not be respected
-hash -r 2> /dev/null'@
+# past commands the `$PATH changes we made may not be respected
+hash -r 2> /dev/null"@
 
-        $activatePwshScriptContents = @'
+        $activatePwshScriptContents = @"
 <#
 .Synopsis
 Activate a Python virtual environment for the current PowerShell session.
 
 .Description
 Pushes the python executable for a virtual environment to the front of the
-$Env:PATH environment variable and sets the prompt to signify that you are
+`$Env:PATH environment variable and sets the prompt to signify that you are
 in a Python virtual environment. Makes use of the command line switches as
 well as the `pyvenv.cfg` file values present in the virtual environment.
 
@@ -1238,10 +1242,10 @@ https://go.microsoft.com/fwlink/?LinkID=135170
 Param(
     [Parameter(Mandatory = $false)]
     [String]
-    $VenvDir,
+    `$VenvDir,
     [Parameter(Mandatory = $false)]
     [String]
-    $Prompt
+    `$Prompt
 )
 
 <# Function declarations --------------------------------------------------- #>
@@ -1257,7 +1261,7 @@ If present, do not remove this function from the global namespace for the
 session.
 
 #>
-function global:deactivate ([switch]$NonDestructive) {
+function global:deactivate ([switch]`$NonDestructive) {
     # Revert to original values
 
     # The prior prompt:
@@ -1289,7 +1293,7 @@ function global:deactivate ([switch]$NonDestructive) {
     }
 
     # Leave deactivate function in the global namespace if requested:
-    if (-not $NonDestructive) {
+    if (-not `$NonDestructive) {
         Remove-Item -Path function:deactivate
     }
 }
@@ -1312,86 +1316,86 @@ Path to the directory that contains the `pyvenv.cfg` file.
 #>
 function Get-PyVenvConfig(
     [String]
-    $ConfigDir
+    `$ConfigDir
 ) {
-    Write-Verbose "Given ConfigDir=$ConfigDir, obtain values in pyvenv.cfg"
+    Write-Verbose "Given ConfigDir=`$ConfigDir, obtain values in pyvenv.cfg"
 
     # Ensure the file exists, and issue a warning if it doesn't (but still allow the function to continue).
-    $pyvenvConfigPath = Join-Path -Resolve -Path $ConfigDir -ChildPath 'pyvenv.cfg' -ErrorAction Continue
+    `$pyvenvConfigPath = Join-Path -Resolve -Path `$ConfigDir -ChildPath 'pyvenv.cfg' -ErrorAction Continue
 
     # An empty map will be returned if no config file is found.
-    $pyvenvConfig = @{ }
+    `$pyvenvConfig = @{ }
 
-    if ($pyvenvConfigPath) {
+    if (`$pyvenvConfigPath) {
 
         Write-Verbose "File exists, parse `key = value` lines"
-        $pyvenvConfigContent = Get-Content -Path $pyvenvConfigPath
+        `$pyvenvConfigContent = Get-Content -Path `$pyvenvConfigPath
 
-        $pyvenvConfigContent | ForEach-Object {
-            $keyval = $PSItem -split "\s*=\s*", 2
-            if ($keyval[0] -and $keyval[1]) {
-                $val = $keyval[1]
+        `$pyvenvConfigContent | ForEach-Object {
+            `$keyval = `$PSItem -split "\s*=\s*", 2
+            if (`$keyval[0] -and `$keyval[1]) {
+                `$val = `$keyval[1]
 
                 # Remove extraneous quotations around a string value.
-                if ("'""".Contains($val.Substring(0, 1))) {
-                    $val = $val.Substring(1, $val.Length - 2)
+                if ("'""".Contains(`$val.Substring(0, 1))) {
+                    `$val = `$val.Substring(1, `$val.Length - 2)
                 }
 
-                $pyvenvConfig[$keyval[0]] = $val
-                Write-Verbose "Adding Key: '$($keyval[0])'='$val'"
+                `$pyvenvConfig[`$keyval[0]] = `$val
+                Write-Verbose "Adding Key: '`$(`$keyval[0])'='`$val'"
             }
         }
     }
-    return $pyvenvConfig
+    return `$pyvenvConfig
 }
 
 
 <# Begin Activate script --------------------------------------------------- #>
 
 # Determine the containing directory of this script
-$VenvExecPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$VenvExecDir = Get-Item -Path $VenvExecPath
+`$VenvExecPath = Split-Path -Parent `$MyInvocation.MyCommand.Definition
+`$VenvExecDir = Get-Item -Path `$VenvExecPath
 
-Write-Verbose "Activation script is located in path: '$VenvExecPath'"
-Write-Verbose "VenvExecDir Fullname: '$($VenvExecDir.FullName)"
-Write-Verbose "VenvExecDir Name: '$($VenvExecDir.Name)"
+Write-Verbose "Activation script is located in path: '`$VenvExecPath'"
+Write-Verbose "VenvExecDir Fullname: '`$(`$VenvExecDir.FullName)"
+Write-Verbose "VenvExecDir Name: '`$(`$VenvExecDir.Name)"
 
 # Set values required in priority: CmdLine, ConfigFile, Default
 # First, get the location of the virtual environment, it might not be
 # VenvExecDir if specified on the command line.
-if ($VenvDir) {
-    Write-Verbose "VenvDir given as parameter, using '$VenvDir' to determine values"
+if (`$VenvDir) {
+    Write-Verbose "VenvDir given as parameter, using '`$VenvDir' to determine values"
 }
 else {
     Write-Verbose "VenvDir not given as a parameter, using parent directory name as VenvDir."
-    $VenvDir = $VenvExecDir.Parent.FullName.TrimEnd("\\/")
-    Write-Verbose "VenvDir=$VenvDir"
+    `$VenvDir = `$VenvExecDir.Parent.FullName.TrimEnd("\\/")
+    Write-Verbose "VenvDir=`$VenvDir"
 }
 
 # Next, read the `pyvenv.cfg` file to determine any required value such
 # as `prompt`.
-$pyvenvCfg = Get-PyVenvConfig -ConfigDir $VenvDir
+`$pyvenvCfg = Get-PyVenvConfig -ConfigDir `$VenvDir
 
 # Next, set the prompt from the command line, or the config file, or
 # just use the name of the virtual environment folder.
-if ($Prompt) {
-    Write-Verbose "Prompt specified as argument, using '$Prompt'"
+if (`$Prompt) {
+    Write-Verbose "Prompt specified as argument, using '`$Prompt'"
 }
 else {
     Write-Verbose "Prompt not specified as argument to script, checking pyvenv.cfg value"
-    if ($pyvenvCfg -and $pyvenvCfg['prompt']) {
-        Write-Verbose "  Setting based on value in pyvenv.cfg='$($pyvenvCfg['prompt'])'"
-        $Prompt = $pyvenvCfg['prompt'];
+    if (`$pyvenvCfg -and `$pyvenvCfg['prompt']) {
+        Write-Verbose "  Setting based on value in pyvenv.cfg='`$(`$pyvenvCfg['prompt'])'"
+        `$Prompt = `$pyvenvCfg['prompt'];
     }
     else {
         Write-Verbose "  Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virutal environment)"
-        Write-Verbose "  Got leaf-name of $VenvDir='$(Split-Path -Path $venvDir -Leaf)'"
-        $Prompt = Split-Path -Path $venvDir -Leaf
+        Write-Verbose "  Got leaf-name of `$VenvDir='`$(Split-Path -Path `$venvDir -Leaf)'"
+        `$Prompt = Split-Path -Path `$venvDir -Leaf
     }
 }
 
-Write-Verbose "Prompt = '$Prompt'"
-Write-Verbose "VenvDir='$VenvDir'"
+Write-Verbose "Prompt = '`$Prompt'"
+Write-Verbose "VenvDir='`$VenvDir'"
 
 # Deactivate any currently active virtual environment, but leave the
 # deactivate function in place.
@@ -1399,11 +1403,11 @@ deactivate -nondestructive
 
 # Now set the environment variable VIRTUAL_ENV, used by many tools to determine
 # that there is an activated venv.
-$env:VIRTUAL_ENV = $VenvDir
+`$env:VIRTUAL_ENV = `$VenvDir
 
-if (-not $Env:VIRTUAL_ENV_DISABLE_PROMPT) {
+if (-not `$Env:VIRTUAL_ENV_DISABLE_PROMPT) {
 
-    Write-Verbose "Setting prompt to '$Prompt'"
+    Write-Verbose "Setting prompt to '`$Prompt'"
 
     # Set the prompt to include the env name
     # Make sure _OLD_VIRTUAL_PROMPT is global
@@ -1412,7 +1416,7 @@ if (-not $Env:VIRTUAL_ENV_DISABLE_PROMPT) {
     New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value $Prompt
 
     function global:prompt {
-        Write-Host -NoNewline -ForegroundColor Green "($_PYTHON_VENV_PROMPT_PREFIX) "
+        Write-Host -NoNewline -ForegroundColor Green "(`$_PYTHON_VENV_PROMPT_PREFIX) "
         _OLD_VIRTUAL_PROMPT
     }
 }
@@ -1425,10 +1429,11 @@ if (Test-Path -Path Env:PYTHONHOME) {
 
 # Add the venv to the PATH
 Copy-Item -Path Env:PATH -Destination Env:_OLD_VIRTUAL_PATH
-$Env:PATH = "$VenvExecDir$([System.IO.Path]::PathSeparator)$Env:PATH"
-'@
-    $activateBashScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "activate"
-    $activatePwshScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "Activate.ps1"
+`$Env:PATH = "`$VenvExecDir`$([System.IO.Path]::PathSeparator)`$Env:PATH"
+"@
+        $activateBashScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "activate"
+        $activatePwshScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "Activate.ps1"
+        }
     }
 }
 
