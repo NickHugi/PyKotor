@@ -40,6 +40,35 @@ function Get-OS {
     }
 }
 
+function Handle-Error {
+    param (
+        [Parameter(Mandatory=$true)]
+        [System.Management.Automation.ErrorRecord]$ErrorRecord
+    )
+
+    Write-Host -ForegroundColor Red "Detailed Error Report:"
+    Write-Host -ForegroundColor Red "Message: $($ErrorRecord.Exception.Message)"
+            
+    # Attempt to provide a more detailed location of the error
+    if ($ErrorRecord.InvocationInfo -and $ErrorRecord.InvocationInfo.MyCommand) {
+        Write-Host -ForegroundColor Red "Command Name: $($ErrorRecord.InvocationInfo.MyCommand.Name)"
+        Write-Host -ForegroundColor Red "Script Name: $($ErrorRecord.InvocationInfo.ScriptName)"
+        Write-Host -ForegroundColor Red "Line Number: $($ErrorRecord.InvocationInfo.ScriptLineNumber)"
+        Write-Host -ForegroundColor Red "Line: $($ErrorRecord.InvocationInfo.Line)"
+    } else {
+        Write-Host -ForegroundColor Red "No invocation information available."
+    }
+
+    # Extract and display the script stack trace if available
+    if ($ErrorRecord.ScriptStackTrace) {
+        Write-Host -ForegroundColor Red "Script Stack Trace:"
+        Write-Host -ForegroundColor Red $ErrorRecord.ScriptStackTrace
+    } else {
+        Write-Host -ForegroundColor Red "No script stack trace available."
+    }
+}
+
+
 function Invoke-BashCommand {
     param (
         [string]$Command
@@ -237,7 +266,7 @@ function Install-TclTk {
             $version = New-Object System.Version $versionString.Trim()
             return $version -ge $requiredVersion
         } catch {
-            Write-Host "Error comparing with version '$requiredVersion' for $command : $_"
+            Handle-Error -ErrorRecord $_
             return $false
         }
     }
@@ -421,6 +450,7 @@ function Install-Python-Linux {
             }
         } catch {
             $errMsg = $_.Exception.Message
+            Handle-Error -ErrorRecord $_
             $errStr = "Error: $errMsg`nCould not install python from your package manager`n`nWould you like to attempt to build from source instead? (y/N)"
             if ($noprompt) {
                 Write-Host $errStr
@@ -561,11 +591,11 @@ function Install-Python-Mac {
         # Execute the installer command with sudo
         Invoke-BashCommand "sudo installer -pkg $installerPath -target /"
     } catch {
-        Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+        Handle-Error -ErrorRecord $_
         try {
             Install-PythonUnixSource -pythonVersion $pythonVersion
         } catch {
-            Write-Error "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+            Handle-Error -ErrorRecord $_
             Write-Host "Attempting to install via brew."
             brew install python@$pyVersion python-tk@$pyVersion
             return $true
@@ -872,7 +902,7 @@ function Find-Python {
                         }
                     }
                 } catch {
-                    Write-Host -ForegroundColor Red "$($_.InvocationInfo.PositionMessage)`n$($_.Exception.Message)"
+                    Handle-Error -ErrorRecord $_
                 }
             }
         }
@@ -917,7 +947,7 @@ function Find-Python {
                     Install-Python-Mac -pythonVersion $fallbackVersion
                 }
             } catch {
-                Write-Error $_
+                Handle-Error -ErrorRecord $_
                 Write-Host "The Python install either failed or has been cancelled."
                 Write-Host "A python install between versions $minVersion and $maxVersion is required for PyKotor."
                 Write-Host "Press any key to exit..."
@@ -1404,6 +1434,19 @@ Copy-Item -Path Env:PATH -Destination Env:_OLD_VIRTUAL_PATH
 `$Env:PATH = "`$VenvExecDir`$([System.IO.Path]::PathSeparator)`$Env:PATH"
 "@
 
+function Activate-Script {
+    param (
+        [string]$scriptPath
+    )
+    try {
+        & $scriptPath
+        return $true
+    } catch {
+        Handle-Error -ErrorRecord $_
+        return $false
+    }
+}
+
 function Activate-PythonVenv {
     param (
         [Parameter(Mandatory=$true)]
@@ -1423,21 +1466,37 @@ function Activate-PythonVenv {
     } else {
         $venvScriptBinPath = Join-Path -Path $venvPath -ChildPath "bin"
     }
-    $activateScriptPath = Join-Path -Path $venvScriptBinPath -ChildPath "Activate.ps1"
-    $activateScriptPath = Join-Path -Path $venvScriptBinPath -ChildPath "activate"
     try {
-        & $activateScriptPath
-    } catch {
-        try {
-            & $activateBashScriptPath
-        } catch {
-            $errMsg = $_.Exception.Message
-            $errStr = "Error: $errMsg`n venv activation script at '$activateScriptPath' failed, attempting to set venv manually."
-            Write-Warning $errStr
-            $activateBashScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "activate"
-            $activatePwshScriptContents | Out-File -FilePath Join-Path $venvScriptBinPath -ChildPath "Activate.ps1"
-            Activate-PythonVenv $venvPath -noRecurse
+        $activateScriptPathPwsh = Join-Path -Path $venvScriptBinPath -ChildPath "Activate.ps1"
+        $activateScriptPathBash = Join-Path -Path $venvScriptBinPath -ChildPath "activate"
+        if (Test-Path $activateScriptPathPwsh) {
+            if (-not (Activate-Script -scriptPath $activateScriptPathPwsh)) {
+                if (Test-Path $activateScriptPathBash) {
+                    Activate-Script -scriptPath $activateScriptPathBash
+                } else {
+                    throw "Bash script did not exist as a fallback."
+                }
+            }
+        } elseif (Test-Path $activateScriptPathBash) {
+            if (-not (Activate-Script -scriptPath $activateScriptPathBash)) {
+                if (Test-Path $activateScriptPathPwsh) {
+                    Activate-Script -scriptPath $activateScriptPathPwsh
+                } else {
+                    throw "PowerShell script did not exist as a fallback."
+                }
+            }
+        } else {
+            Write-Warning "venv activation script at '$activateScriptPath' did not exist, attempting to create activation scripts manually..."
+            $activateBashScriptContents | Out-File -FilePath $activateScriptPathBash
+            $activatePwshScriptContents | Out-File -FilePath $activateScriptPathPwsh
+            if (-not $noRecurse) {
+                Activate-PythonVenv -venvPath $venvPath -noRecurse
+            }
         }
+    } catch {
+        Handle-Error -ErrorRecord $_
+        Write-Error $_.Exception.Message
+        Write-Error "venv activation script at '$activateScriptPath' failed."
     }
 }
 
