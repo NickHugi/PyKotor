@@ -411,6 +411,7 @@ class FileItems(CustomItem):
         if os.name == "nt":
             propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
             openWindowsMenuAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
+            propertiesAction.setEnabled(file_paths_exist)
             openWindowsMenuAction.setEnabled(file_paths_exist)
 
         openAction.setEnabled(file_paths_exist)
@@ -419,7 +420,6 @@ class FileItems(CustomItem):
         renameAction.setEnabled(file_paths_exist and len(selected) == 1 and not inside_capsule and not inside_bif)
         sendToTrash.setEnabled(file_paths_exist and not inside_bif)
         deleteAction.setEnabled(file_paths_exist and not inside_bif)
-        propertiesAction.setEnabled(file_paths_exist)
 
         return menu_dict
 
