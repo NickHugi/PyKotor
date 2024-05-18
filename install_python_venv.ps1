@@ -379,27 +379,24 @@ function Install-Python-Linux {
                     break
                 }
                 "almalinux" {
-                    $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo dnf update -y"
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo dnf install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo dnf install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "fedora" {
-                    $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo dnf update -y"
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo dnf install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo dnf install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "centos" {
-                    $wildcardVersion = $pythonVersion -replace '\.', '?'
                     Invoke-BashCommand -Command "sudo yum update -y"
                     if ( $versionId -eq "7" ) {
                         Invoke-BashCommand -Command "sudo yum install epel-release -y"
                     }
                     #Invoke-BashCommand -Command "sudo dnf upgrade -y"
-                    Invoke-BashCommand -Command "sudo yum install python$wildcardVersion python$wildcardVersion-tkinter tk tcl tk-devel tcl-devel -y"
+                    Invoke-BashCommand -Command "sudo yum install python$pythonVersion python$pythonVersion tk tcl tk-devel tcl-devel -y"
                     break
                 }
                 "arch" {
