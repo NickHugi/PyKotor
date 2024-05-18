@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import platform
-import re
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
@@ -18,7 +17,6 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.tpc import TPC, read_tpc
@@ -27,7 +25,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -143,7 +141,7 @@ class Installation:
     ):
         self.use_multithreading: bool = multithread
 
-        self._log: Logger = get_root_logger()
+        self._log: Logger = RobustRootLogger()
         self._path: CaseAwarePath = CaseAwarePath.pathify(path)
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
@@ -1114,7 +1112,7 @@ class Installation:
         queries: list[ResourceIdentifier] | set[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
         *,
-        capsules: list[Capsule] | None = None,
+        capsules: Sequence[Capsule] | None = None,
         folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found.
@@ -1586,7 +1584,7 @@ class Installation:
                             if int(stripped_header) == query_stringref:
                                 return True
                         except Exception as e:
-                            get_root_logger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
+                            RobustRootLogger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
                 else:
                     try:
                         for i, cell in enumerate(valid_2da.get_column(column_name)):
@@ -1598,7 +1596,7 @@ class Installation:
                             if int(stripped_cell) == query_stringref:
                                 return True
                     except Exception as e:
-                        get_root_logger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
+                        RobustRootLogger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
             return False
 
         def recurse_gff_lists(gff_list: GFFList) -> bool:
@@ -1922,15 +1920,11 @@ class Installation:
 
     @staticmethod
     @lru_cache(maxsize=1000)
-    def replace_module_extensions(module_filepath: os.PathLike | str) -> str:
-        module_filename: str = PurePath(module_filepath).name
-        result = re.sub(r"\.rim$", "", module_filename, flags=re.IGNORECASE)
-        for erftype_name in ERFType.__members__:
-            result = re.sub(rf"\.{erftype_name}$", "", result, flags=re.IGNORECASE)
-        lowercase = result.lower()
-        result = result[:-2] if lowercase.endswith("_s") else result
-        result = result[:-4] if lowercase.endswith("_dlg") else result
-        return result  # noqa: RET504
+    def get_module_root(module_filepath: os.PathLike | str) -> str:
+        root: str = PurePath(module_filepath).stem.lower()
+        root = root[:-2] if root.endswith("_s") else root
+        root = root[:-4] if root.endswith("_dlg") else root
+        return root  # noqa: RET504
 
     def module_names(self, *, use_hardcoded: bool = True) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the name of the area.
@@ -1946,7 +1940,7 @@ class Installation:
 
         for module in self._modules:
             lower_module = module.lower()
-            root = self.replace_module_extensions(lower_module)
+            root = self.get_module_root(lower_module)
             lower_root = root.lower()
             qualifier = lower_module[len(root):]
 
@@ -1988,7 +1982,7 @@ class Installation:
 
         for module in self._modules:
             lower_module = module.lower()
-            root = self.replace_module_extensions(lower_module)
+            root = self.get_module_root(lower_module)
             lower_root = root.lower()
             qualifier = lower_module[len(root):]
 
@@ -2037,7 +2031,7 @@ class Installation:
         -------
             The name of the area for the module.
         """
-        root: str = self.replace_module_extensions(module_filename)
+        root: str = self.get_module_root(module_filename)
         upper_root: str = root.upper()
         if use_hardcoded and upper_root in HARDCODED_MODULE_NAMES:
             return HARDCODED_MODULE_NAMES[upper_root]
@@ -2064,7 +2058,7 @@ class Installation:
                 if are.root.exists("Name"):
                     actual_ftype = are.root.what_type("Name")
                     if actual_ftype is not GFFFieldType.LocalizedString:
-                        get_root_logger().warning(f"{area_resource.filename()} has incorrect field 'Name' type '{actual_ftype.name}', expected type 'List'")
+                        RobustRootLogger().warning(f"{area_resource.filename()} has incorrect field 'Name' type '{actual_ftype.name}', expected type 'List'")
                     locstring: LocalizedString = are.root.get_locstring("Name")
                     if locstring.stringref == -1:
                         return locstring.get(Language.ENGLISH, Gender.MALE)
@@ -2095,7 +2089,7 @@ class Installation:
         -------
             The ID of the area for the module.
         """
-        root: str = self.replace_module_extensions(module_filename)
+        root: str = self.get_module_root(module_filename)
 
         try:
             @lru_cache(maxsize=1000)
@@ -2162,7 +2156,7 @@ class Installation:
         if ifo.root.exists("Mod_Area_List"):
             actual_ftype = ifo.root.what_type("Mod_Area_List")
             if actual_ftype is not GFFFieldType.List:
-                get_root_logger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_List' type '{actual_ftype.name}', expected 'List'")
+                RobustRootLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_List' type '{actual_ftype.name}', expected 'List'")
             else:
                 area_list = ifo.root.get_list("Mod_Area_List")
                 area_localized_name = next(
@@ -2175,7 +2169,7 @@ class Installation:
                 )
                 if area_localized_name is not None and str(area_localized_name).strip():
                     return area_localized_name
-            get_root_logger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_List. Could not get the area name.")
+            RobustRootLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_List. Could not get the area name.")
         else:
-            get_root_logger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_List.")
+            RobustRootLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_List.")
         raise ValueError(f"Failed to get the area name from module filename '{self.filename()}'")

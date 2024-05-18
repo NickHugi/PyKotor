@@ -287,7 +287,7 @@ def rim_to_mod(
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
-    module_root = Installation.replace_module_extensions(module_root or filepath)
+    module_root = Installation.get_module_root(module_root or filepath)
     r_rim_folderpath = CaseAwarePath.pathify(rim_folderpath) if rim_folderpath else r_outpath.parent
 
     filepath_rim: CaseAwarePath = r_rim_folderpath / f"{module_root}.rim"

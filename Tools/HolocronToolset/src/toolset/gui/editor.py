@@ -14,6 +14,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
@@ -25,7 +26,7 @@ from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
+    from utility.system.path import PurePath
 
 
 # TODO: Creating a child editor from this class is not intuitive, document the requirements at some point.
@@ -48,6 +50,8 @@ class Editor(QMainWindow):
     newFile = QtCore.Signal()
     savedFile = QtCore.Signal(object, object, object, object)
     loadedFile = QtCore.Signal(object, object, object, object)
+
+    CAPSULE_FILTER = "*.mod *.erf *.rim *.sav"
 
     def __init__(
         self,
@@ -80,7 +84,7 @@ class Editor(QMainWindow):
         super().__init__(parent)
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
-        self._logger = get_root_logger()
+        self._logger = RobustRootLogger()
 
         self._filepath: Path | None = None
         self._resname: str | None = None
@@ -107,22 +111,21 @@ class Editor(QMainWindow):
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += f" {capsule_types});;"
+        self._saveFilter += f" {self.CAPSULE_FILTER});;"
         for resource in writeSupported:
             self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += f"Save into module ({capsule_types})"
+        self._saveFilter += f"Save into module ({self.CAPSULE_FILTER})"
 
         self._openFilter: str = "All valid files ("
         for resource in readSupported:
             self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += f" {capsule_types});;"
+        self._openFilter += f" {self.CAPSULE_FILTER});;"
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += f"Load from module ({capsule_types})"
+        self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -167,7 +170,7 @@ class Editor(QMainWindow):
         """Refreshes the window title based on the current state of the editor."""
         installationName = "No Installation" if self._installation is None else self._installation.name
         if self._filepath is None:
-            self.setWindowTitle(f"{self._editorTitle} - {installationName}")
+            self.setWindowTitle(f"{self._editorTitle}({installationName})")
             return
 
         relpath = self._filepath.relative_to(self._filepath.parent.parent) if self._filepath.parent.parent.name else self._filepath.parent
@@ -177,7 +180,7 @@ class Editor(QMainWindow):
                 relpath /= f"{self._resname}.{self._restype.extension}"
         else:
             assert relpath.name.lower() == f"{self._resname}.{self._restype}".lower()
-        self.setWindowTitle(f"{self._editorTitle}: {relpath} - {installationName}")
+        self.setWindowTitle(f"{relpath} - {self._editorTitle}({installationName})")
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -198,7 +201,7 @@ class Editor(QMainWindow):
         try:
             identifier = ResourceIdentifier.from_path(filepath_str).validate()
         except ValueError as e:
-            get_root_logger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
+            RobustRootLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             msgBox = QMessageBox(
                 QMessageBox.Icon.Critical,
@@ -211,8 +214,7 @@ class Editor(QMainWindow):
             msgBox.exec_()
             return
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        if is_capsule_file(filepath_str) and f"Save into module ({capsule_types})" in self._saveFilter:
+        if is_capsule_file(filepath_str) and f"Save into module ({self.CAPSULE_FILTER})" in self._saveFilter:
             if self._resname is None:
                 self._resname = "new"
                 self._restype = self._writeSupported[0]
@@ -247,8 +249,21 @@ class Editor(QMainWindow):
 
         try:
             data, data_ext = self.build()
-            if data is None:  # nsseditor
+            if data is None:  # HACK: nsseditor
                 return
+            from toolset.gui.editors.gff import GFFEditor
+
+            if (
+                self._global_settings.attemptKeepOldGFFFields
+                and self._restype.is_gff()
+                and not isinstance(self, GFFEditor)
+                and self._revert is not None
+            ):
+                print("Adding deleted fields from original gff into final gff.")
+                old_gff = read_gff(self._revert)
+                new_gff = read_gff(data)
+                new_gff.root.add_missing(old_gff.root)
+                data = bytes_gff(new_gff)
             self._revert = data
 
             self.refreshWindowTitle()
@@ -264,7 +279,7 @@ class Editor(QMainWindow):
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            get_root_logger().critical("Failed to write to file", exc_info=True)
+            RobustRootLogger().critical("Failed to write to file", exc_info=True)
             msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
             msgBox.setDetailedText(format_exception_with_variables(e))
             msgBox.exec_()
@@ -357,48 +372,56 @@ class Editor(QMainWindow):
         assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
         assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
         assert self._restype is not None, assert_with_variable_trace(self._restype is not None)
-        target_identifier = ResourceIdentifier(self._resname, self._restype)
 
+        # Determine the physical file and the nested paths.
         c_filepath: CaseAwarePath = CaseAwarePath.pathify(self._filepath)
-        nested_capsule_idents: list[ResourceIdentifier] = []
+        nested_paths: list[PurePath] = []
         if is_any_erf_type_file(c_filepath) or is_rim_file(c_filepath):
-            nested_capsule_idents.append(ResourceIdentifier.from_path(c_filepath))
+            nested_paths.append(c_filepath)
 
         c_parent_filepath = c_filepath.parent
-        res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
-        while (res_parent_ident.restype.name in ERFType.__members__ or res_parent_ident.restype is ResourceType.RIM) and not c_parent_filepath.safe_isdir():
-            nested_capsule_idents.append(res_parent_ident)
+        while (  # Iterate all parents until we find a physical folder on disk.
+            ResourceType.from_extension(c_parent_filepath.suffix).name
+            in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV, ResourceType.RIM)
+        ) and not c_parent_filepath.safe_isdir():
+            nested_paths.append(c_parent_filepath)
             c_filepath = c_parent_filepath
             c_parent_filepath = c_filepath.parent
-            res_parent_ident = ResourceIdentifier.from_path(c_parent_filepath)
 
-        erf_or_rim = read_rim(c_filepath) if res_parent_ident.restype is ResourceType.RIM else read_erf(c_filepath)
-        nested_capsules: list[tuple[ResourceIdentifier, ERF | RIM]] = [(ResourceIdentifier.from_path(c_filepath), erf_or_rim)]
-        for res_ident in reversed(nested_capsule_idents[:-1]):
-            nested_erf_or_rim_data = erf_or_rim.get(res_ident.resname, res_ident.restype)
+        # At this point, c_filepath points to the physical ERF/RIM on disk
+        # and c_parent_filepath points to the physical folder containing the file.
+        erf_or_rim = read_rim(c_filepath) if ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM else read_erf(c_filepath)
+        nested_capsules: list[tuple[PurePath, ERF | RIM]] = [(c_filepath, erf_or_rim)]
+        for capsule_path in reversed(nested_paths[:-1]):
+            nested_erf_or_rim_data = erf_or_rim.get(capsule_path.stem, ResourceType.from_extension(capsule_path.suffix))
             if nested_erf_or_rim_data is None:  # TODO: loop through all windows and send hotkey ctrl+s
-                msg = f"You must save the ERFEditor window you added '{res_ident}' to before modifying its nested resources. Do so and try again."
+                msg = f"You must save the ERFEditor for '{capsule_path.relative_to(c_parent_filepath)}' to before modifying its nested resources. Do so and try again."
                 raise ValueError(msg)
 
-            erf_or_rim = read_rim(nested_erf_or_rim_data) if res_ident.restype is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
-            nested_capsules.append((res_ident, erf_or_rim))
-        for index, (res_ident, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
+            erf_or_rim = read_rim(nested_erf_or_rim_data) if ResourceType.from_extension(capsule_path.suffix) is ResourceType.RIM else read_erf(nested_erf_or_rim_data)
+            nested_capsules.append((capsule_path, erf_or_rim))
+
+        # Let's now save each erf/rim to its parent.
+        for index, (capsule_path, this_erf_or_rim) in enumerate(reversed(nested_capsules)):
+            rel_capsule_path = capsule_path.relative_to(c_parent_filepath)
             if index == 0:
                 if self._is_capsule_editor:
-                    print(f"Not saving '{self._resname}.{self._restype.extension}' to '{res_ident}', is ERF/RIM editor save.")
-                    continue
-                print(f"Saving '{self._resname}.{self._restype.extension}' to '{res_ident}'")
-                this_erf_or_rim.set_data(self._resname, self._restype, data)
+                    print(f"Not saving '{self._resname}.{self._restype.extension}' to '{rel_capsule_path}', is ERFEditor save.")
+                else:
+                    print(f"Saving non ERF/RIM '{self._resname}.{self._restype.extension}' to '{rel_capsule_path}'")
+                    this_erf_or_rim.set_data(self._resname, self._restype, data)
                 continue
             child_index = len(nested_capsules) - index
-            child_res_ident, child_erf_or_rim = nested_capsules[child_index]
-            if target_identifier == child_res_ident:
-                print(f"Found target identifier '{child_res_ident}', using argument data as new erf/rim")
+            child_capsule_path, child_erf_or_rim = nested_capsules[child_index]
+            if self._filepath == child_capsule_path and self._is_capsule_editor:
+                print(f"Found target '{child_capsule_path.relative_to(c_parent_filepath)}', using argument data for this save.")
             else:
                 data = bytearray()
-                print(f"Saving {child_res_ident} to {res_ident}")
+                print(f"Saving {child_capsule_path.relative_to(c_parent_filepath)} to {capsule_path.relative_to(c_parent_filepath)}")
                 write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
-            this_erf_or_rim.set_data(child_res_ident.resname, child_res_ident.restype, bytes(data))
+            this_erf_or_rim.set_data(child_capsule_path.stem, ResourceType.from_extension(child_capsule_path.suffix), bytes(data))
+
+        print(f"Finally saving '{c_filepath}'")
         write_erf(this_erf_or_rim, c_filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, c_filepath)
         self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
 
@@ -482,8 +505,7 @@ class Editor(QMainWindow):
             return
         r_filepath = Path(filepath_str)
 
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        if is_capsule_file(r_filepath) and f"Load from module ({capsule_types})" in self._openFilter:
+        if is_capsule_file(r_filepath) and f"Load from module ({self.CAPSULE_FILTER})" in self._openFilter:
             dialog = LoadFromModuleDialog(Capsule(r_filepath), self._readSupported)
             if dialog.exec_():
                 self._load_module_from_dialog_info(dialog, r_filepath)
@@ -528,9 +550,9 @@ class Editor(QMainWindow):
         self._restype = restype
         self._revert = data
         for action in self.menuBar().actions()[0].menu().actions():
-            if action.text() != "Revert":
-                continue
-            action.setEnabled(True)
+            if action.text() == "Revert":
+                action.setEnabled(True)
+                break
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resname, self._restype, data)
 

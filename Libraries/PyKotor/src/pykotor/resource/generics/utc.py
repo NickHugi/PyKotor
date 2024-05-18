@@ -8,7 +8,7 @@ from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, wri
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.gff.gff_data import GFFFieldType
 from pykotor.resource.type import ResourceType
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -323,10 +323,10 @@ def construct_utc(
 
     if not root.exists("SkillList") or root.what_type("SkillList") is not GFFFieldType.List:
         if root.exists("SkillList"):
-            get_root_logger().error("StartingList in UTC's must be a GFFList, recreating now...")
+            RobustRootLogger().error("StartingList in UTC's must be a GFFList, recreating now...")
             del root._fields["SkillList"]
         else:
-            get_root_logger().error("StartingList must exist in UTC's, creating now...")
+            RobustRootLogger().error("StartingList must exist in UTC's, creating now...")
         skill_list = root.set_list("SkillList", GFFList())
         skill_list.add(0).set_uint8("Rank", 0)
         skill_list.add(1).set_uint8("Rank", 0)

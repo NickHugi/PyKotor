@@ -6,12 +6,16 @@ import qtpy
 
 from qtpy import QtCore
 
-from toolset.data.settings import Settings
+from pykotor.common.misc import Color
+from toolset.data.settings import Settings, SettingsProperty
 from toolset.gui.widgets.settings.base import SettingsWidget
 from toolset.utils.misc import QtKey, QtMouse
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
+
+    from toolset.gui.widgets.edit.color import ColorEdit
+    from toolset.gui.widgets.set_bind import SetBindWidget
 
 
 class ModuleDesignerWidget(SettingsWidget):
@@ -34,8 +38,6 @@ class ModuleDesignerWidget(SettingsWidget):
         super().__init__(parent)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.binds: list = []
-        self.colours: list = []
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.widgets.settings import module_designer  # noqa: PLC0415  # pylint: disable=C0415
@@ -79,20 +81,26 @@ class ModuleDesignerWidget(SettingsWidget):
 
         self.setupValues()
 
+        # Install the event filter on all child widgets
+        self.installEventFilters(self, self.noScrollEventFilter)
+        #self.installEventFilters(self, self.hoverEventFilter, include_types=[QWidget])
+
     def _load3dBindValues(self):
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
         self.ui.rotateCameraSensitivity3dEdit.setValue(self.settings.rotateCameraSensitivity3d)
         self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "3dBindEdit" in widget]:
-            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+            bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
+            self._registerBind(bindWidget, bindEdit[:-4])
 
     def _loadFcBindValues(self):
         self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
         self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "FcBindEdit" in widget]:
-            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+            bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
+            self._registerBind(bindWidget, bindEdit[:-4])
 
     def _load2dBindValues(self):
         self.ui.moveCameraSensitivity2dEdit.setValue(self.settings.moveCameraSensitivity2d)
@@ -100,11 +108,13 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.zoomCameraSensitivity2dEdit.setValue(self.settings.zoomCameraSensitivity2d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "2dBindEdit" in widget]:
-            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+            bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
+            self._registerBind(bindWidget, bindEdit[:-4])
 
     def _loadColourValues(self):
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
-            self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
+            colorWidget: ColorEdit = getattr(self.ui, colorEdit)
+            self._registerColour(colorWidget, colorEdit[:-4])
 
     def setupValues(self):
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
@@ -114,19 +124,15 @@ class ModuleDesignerWidget(SettingsWidget):
         self._loadColourValues()
 
     def save(self):
+        super().save()
         self.settings.fieldOfView = self.ui.fovSpin.value()
-        self.settings.zoomCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
+        self.settings.moveCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
         self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
         self.settings.zoomCameraSensitivity3d = self.ui.zoomCameraSensitivity3dEdit.value()
 
-        self.settings.zoomCameraSensitivity2d = self.ui.moveCameraSensitivity2dEdit.value()
+        self.settings.moveCameraSensitivity2d = self.ui.moveCameraSensitivity2dEdit.value()
         self.settings.rotateCameraSensitivity2d = self.ui.rotateCameraSensitivity2dEdit.value()
         self.settings.zoomCameraSensitivity2d = self.ui.zoomCameraSensitivity2dEdit.value()
-
-        for widget, bindName in self.binds:
-            setattr(self.settings, bindName, widget.bind())
-        for widget, colourName in self.colours:
-            setattr(self.settings, colourName, widget.color().rgba_integer())
 
     def resetControls3d(self):
         self.settings.resetControls3d()
@@ -151,24 +157,36 @@ class ModuleDesignerSettings(Settings):
 
     def resetControls3d(self):
         for setting in dir(self):
-            if setting.endswith("3d"):
-                self.settings.remove(setting)
-        self.settings.remove("toggleLockInstancesBind")
-
-    def resetControlsFc(self):
-        for setting in dir(self):
-            if setting.endswith("Fc"):
-                self.settings.remove(setting)
+            if not setting.endswith(("3d", "3dBind")):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
+        self.get_property("toggleLockInstancesBind").reset_to_default(self)
 
     def resetControls2d(self):
         for setting in dir(self):
-            if setting.endswith("2d"):
-                self.settings.remove(setting)
+            if not setting.endswith(("2d", "2dBind")):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
+
+    def resetControlsFc(self):
+        for setting in dir(self):
+            if not setting.endswith(("FC", "FcBind")):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
 
     def resetMaterialColors(self):
         for setting in dir(self):
-            if setting.endswith("Colour"):
-                self.settings.remove(setting)
+            if not setting.endswith("Colour"):
+                continue
+            attr_value = getattr(self.__class__, setting)
+            if isinstance(attr_value, SettingsProperty):
+                attr_value.reset_to_default(self)
 
     # region Ints/Binds (Controls - 3D)
     moveCameraSensitivity3d = Settings.addSetting(
@@ -407,83 +425,83 @@ class ModuleDesignerSettings(Settings):
     # region Ints (Material Colours)
     undefinedMaterialColour = Settings.addSetting(
         "undefinedMaterialColour",
-        671088895,
+        Color(0.400, 0.400, 0.400, 0.5).rgba_integer(),
     )
     dirtMaterialColour = Settings.addSetting(
         "dirtMaterialColour",
-        4281084972,
+        Color(0.610, 0.235, 0.050, 0.5).rgba_integer(),
     )
     obscuringMaterialColour = Settings.addSetting(
         "obscuringMaterialColour",
-        671088895,
+        Color(0.100, 0.100, 0.100, 0.5).rgba_integer(),
     )
     grassMaterialColour = Settings.addSetting(
         "grassMaterialColour",
-        4281084972,
+        Color(0.000, 0.600, 0.000, 0.5).rgba_integer(),
     )
     stoneMaterialColour = Settings.addSetting(
         "stoneMaterialColour",
-        4281084972,
+        Color(0.162, 0.216, 0.279, 0.5).rgba_integer(),
     )
     woodMaterialColour = Settings.addSetting(
         "woodMaterialColour",
-        4281084972,
+        Color(0.258, 0.059, 0.007, 0.5).rgba_integer(),
     )
     waterMaterialColour = Settings.addSetting(
         "waterMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 1.000, 0.5).rgba_integer(),
     )
     nonWalkMaterialColour = Settings.addSetting(
         "nonWalkMaterialColour",
-        671088895,
+        Color(1.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     transparentMaterialColour = Settings.addSetting(
         "transparentMaterialColour",
-        671088895,
+        Color(1.000, 1.000, 1.000, 0.5).rgba_integer(),
     )
     carpetMaterialColour = Settings.addSetting(
         "carpetMaterialColour",
-        4281084972,
+        Color(1.000, 0.000, 1.000, 0.5).rgba_integer(),
     )
     metalMaterialColour = Settings.addSetting(
         "metalMaterialColour",
-        4281084972,
+        Color(0.434, 0.552, 0.730, 0.5).rgba_integer(),
     )
     puddlesMaterialColour = Settings.addSetting(
         "puddlesMaterialColour",
-        4281084972,
+        Color(0.509, 0.474, 0.147, 0.5).rgba_integer(),
     )
     swampMaterialColour = Settings.addSetting(
         "swampMaterialColour",
-        4281084972,
+        Color(0.216, 0.216, 0.000, 0.5).rgba_integer(),
     )
     mudMaterialColour = Settings.addSetting(
         "mudMaterialColour",
-        4281084972,
+        Color(0.091, 0.147, 0.028, 0.5).rgba_integer(),
     )
     leavesMaterialColour = Settings.addSetting(
         "leavesMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 0.216, 0.5).rgba_integer(),
     )
     doorMaterialColour = Settings.addSetting(
         "doorMaterialColour",
-        4281084972,
+        Color(0.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     lavaMaterialColour = Settings.addSetting(
         "lavaMaterialColour",
-        671088895,
+        Color(0.300, 0.000, 0.000, 0.5).rgba_integer(),
     )
     bottomlessPitMaterialColour = Settings.addSetting(
         "bottomlessPitMaterialColour",
-        671088895,
+        Color(0.000, 0.000, 0.000, 0.5).rgba_integer(),
     )
     deepWaterMaterialColour = Settings.addSetting(
         "deepWaterMaterialColour",
-        671088895,
+        Color(0.000, 0.000, 0.216, 0.5).rgba_integer(),
     )
     nonWalkGrassMaterialColour = Settings.addSetting(
         "nonWalkGrassMaterialColour",
-        671088895,
+        Color(0.000, 0.600, 0.000, 0.5).rgba_integer(),
     )
     # endregion
 

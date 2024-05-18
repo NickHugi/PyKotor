@@ -58,9 +58,9 @@ class GFFEditor(Editor):
         self._setupMenus()
         self._setupSignals()
 
-        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
 
-        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        self.ui.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)  # type: ignore[arg-type]
         self.ui.treeView.setSortingEnabled(True)
 
         # Make the right panel take as little space possible
@@ -150,7 +150,7 @@ class GFFEditor(Editor):
 
         sourceIndex = self.model.indexFromItem(rootNode)
         proxyIndex = self.proxyModel.mapFromSource(sourceIndex)
-        self.ui.treeView.expand(proxyIndex)
+        self.ui.treeView.expand(proxyIndex)  # type: ignore[arg-type]
 
     def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct):
         """Loads a GFFStruct into a QStandardItem node.
@@ -224,17 +224,6 @@ class GFFEditor(Editor):
         """
         gff_content = self._gff_content or GFFContent.from_res(self._resname or "")
         gff_type = ResourceType.GFF
-
-        exts = gff_type.extension.split(".")
-        test_content = gff_type.name.upper()
-        if len(exts) > 1 and exts[-1].lower() == "xml":
-            gff_type = ResourceType.GFF_XML
-            test_content = exts[-2].upper()
-        if test_content in GFFContent.__members__:
-            # gff_content = GFFContent.__members__[test_content]
-            gff_content = GFFContent.GFF
-        if not gff_content:
-            gff_content = GFFContent.GFF
 
         gff = GFF(gff_content)
         self._build_struct(self.model.item(0, 0), gff.root)

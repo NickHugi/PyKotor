@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -46,6 +47,10 @@ class ERFBinaryReader(ResourceReader):
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
+        if file_version != "V1.0":
+            msg = f"ERF version '{file_version}' is unsupported."
+            raise ValueError(msg)
+
         erf_type = next(
             (x for x in ERFType if x.value == file_type),
             None,
@@ -56,15 +61,16 @@ class ERFBinaryReader(ResourceReader):
 
         self._erf = ERF(erf_type)
 
-        if file_version != "V1.0":
-            msg = f"ERF version '{file_version}' is unsupported."
-            raise ValueError(msg)
-
         self._reader.skip(8)
         entry_count = self._reader.read_uint32()
         self._reader.skip(4)
         offset_to_keys = self._reader.read_uint32()
         offset_to_resources = self._reader.read_uint32()
+        self._reader.skip(8)
+        description_strref = self._reader.read_uint32()
+        if description_strref == 0 and file_type == ERFType.MOD.value:
+            RobustRootLogger().debug("Assuming this is a SAV file")
+            self._erf.is_save_erf = True
 
         resrefs: list[str] = []
         resids: list[int] = []
@@ -112,18 +118,32 @@ class ERFBinaryWriter(ResourceWriter):
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
+        offset_to_localized_strings = 0x0
+        description_strref_dword_value = 0xFFFFFFFF
+        if self.erf.is_save_erf:
+            # might matter.
+            offset_to_localized_strings = 0xA0
+            description_strref_dword_value = 0x00000000
+        elif self.erf.erf_type is ERFType.ERF:
+            # default, also doesn't matter
+            offset_to_localized_strings = 0x69
+            description_strref_dword_value = 0xCDCDCDCD
+        elif self.erf.erf_type is ERFType.MOD:
+            # mod's aren't in the vanilla game, doesn't matter
+            offset_to_localized_strings = 0x0
+            description_strref_dword_value = 0xFFFFFFFF
 
         self._writer.write_string(self.erf.erf_type.value)
         self._writer.write_string("V1.0")
         self._writer.write_uint32(0)
         self._writer.write_uint32(0)
         self._writer.write_uint32(entry_count)
-        self._writer.write_uint32(0)
+        self._writer.write_uint32(offset_to_localized_strings)
         self._writer.write_uint32(offset_to_keys)
         self._writer.write_uint32(offset_to_resources)
         self._writer.write_uint32(0)
         self._writer.write_uint32(0)
-        self._writer.write_uint32(0xFFFFFFFF)
+        self._writer.write_uint32(description_strref_dword_value)
         self._writer.write_bytes(b"\0" * 116)
 
         for resid, resource in enumerate(self.erf):

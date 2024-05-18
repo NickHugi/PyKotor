@@ -94,6 +94,9 @@ class ResRef:
             return NotImplemented
         return other_value == self._value.lower()
 
+    def __hash__(self):
+        return hash(self._value.lower())
+
     def __repr__(
         self,
     ):
@@ -210,6 +213,9 @@ class Game(IntEnum):
     K2_IOS = 6
     K1_ANDROID = 7
     K2_ANDROID = 8
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}.{self.name}"
 
     def is_xbox(self) -> bool:
         return self in {Game.K1_XBOX, Game.K2_XBOX}

@@ -9,7 +9,7 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct, bytes_gff
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -494,7 +494,7 @@ class ModifyFieldGFF(ModifyGFF):
                 f"The field {field_type.name} did not exist at {self.path} in INI section [{self.identifier}]. Use AddField if you need to create fields/structs."
                 "\nDue to the above error, no value will be set here."
             )
-            get_root_logger().exception(msg)
+            RobustRootLogger().exception(msg)
             logger.add_error(msg)
             return
 

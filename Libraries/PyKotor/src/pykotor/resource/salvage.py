@@ -62,7 +62,7 @@ from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc, read_tpc
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.resource.formats.vis.vis_auto import bytes_vis, read_vis
 from pykotor.resource.type import BASE_SOURCE_TYPES, ResourceType
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -102,7 +102,7 @@ def validate_capsule(
     new_container: ERF | RIM = ERF(container.erf_type) if isinstance(container, ERF) else RIM()
     try:
         for resource in container:
-            get_root_logger().info(f"Validating '{resource.resref}.{resource.restype}'")
+            RobustRootLogger().info(f"Validating '{resource.resref}.{resource.restype}'")
             if resource.restype is ResourceType.NCS:  # FIXME(th3w1zard1): This is a workaround for a current read_ncs bug.
                 new_container.set_data(str(resource.resref), resource.restype, resource.data)
                 continue
@@ -113,16 +113,16 @@ def validate_capsule(
                 # The data may not match what was loaded, use strict arg to determine which one to use.
                 new_data = new_data if strict else resource.data
                 if new_data is None:  # unrecognized resource
-                    get_root_logger().info(f"Not packaging unknown resource '{resource.resref}.{resource.restype}'")
+                    RobustRootLogger().info(f"Not packaging unknown resource '{resource.resref}.{resource.restype}'")
                     continue
 
                 # Set the data to the new container
                 new_container.set_data(str(resource.resref), resource.restype, new_data)
             except (OSError, ValueError):  # noqa: PERF203
-                get_root_logger().error(f" - Corrupted resource: '{resource.resref}.{resource.restype.extension}'")
+                RobustRootLogger().error(f" - Corrupted resource: '{resource.resref}.{resource.restype.extension}'")
     except (OSError, ValueError):
-        get_root_logger().error(f"Corrupted ERF/RIM, could not salvage: '{capsule_obj}'")
-    get_root_logger().info(f"Returning salvaged ERF/RIM container with {len(new_container)} total resources in it.")
+        RobustRootLogger().error(f"Corrupted ERF/RIM, could not salvage: '{capsule_obj}'")
+    RobustRootLogger().info(f"Returning salvaged ERF/RIM container with {len(new_container)} total resources in it.")
     return new_container if new_container is not None else None
 
 def validate_resource(
@@ -191,7 +191,7 @@ def validate_resource(
     except Exception as e:
         if should_raise:
             raise
-        get_root_logger().error(f"Corrupted resource: {resource!r}", exc_info=not isinstance(e, (OSError, ValueError)))
+        RobustRootLogger().error(f"Corrupted resource: {resource!r}", exc_info=not isinstance(e, (OSError, ValueError)))
         return None
 
 def validate_gff(gff: GFF, restype: ResourceType) -> bytes:
@@ -233,7 +233,7 @@ def validate_gff(gff: GFF, restype: ResourceType) -> bytes:
     if restype is ResourceType.UTW:
         return bytes_utw(construct_utw(gff))
 
-    get_root_logger().warning(f"Unrecognized GFF of type '{restype}' will not be reconstructed!")
+    RobustRootLogger().warning(f"Unrecognized GFF of type '{restype}' will not be reconstructed!")
     return bytes_gff(gff)
 
 def _load_as_erf_rim(
@@ -243,7 +243,7 @@ def _load_as_erf_rim(
         try:
             return capsule_obj.as_cached()
         except Exception:
-            get_root_logger().warning(f"Corrupted {type(capsule_obj).__name__} object passed to `validate_capsule` could not be loaded into memory", exc_info=True)
+            RobustRootLogger().warning(f"Corrupted {type(capsule_obj).__name__} object passed to `validate_capsule` could not be loaded into memory", exc_info=True)
             return None
 
     if isinstance(capsule_obj, (ERF, RIM)):
@@ -254,7 +254,7 @@ def _load_as_erf_rim(
             path = Path.pathify(capsule_obj)
             return LazyCapsule(path, create_nonexisting=True).as_cached()
         except Exception:
-            get_root_logger().warning(f"Invalid path passed to `validate_capsule`: '{capsule_obj}'", exc_info=True)
+            RobustRootLogger().warning(f"Invalid path passed to `validate_capsule`: '{capsule_obj}'", exc_info=True)
             return None
 
     if isinstance(capsule_obj, BASE_SOURCE_TYPES):
@@ -262,23 +262,23 @@ def _load_as_erf_rim(
             try:
                 return read_erf(capsule_obj)
             except Exception:
-                get_root_logger().debug("Doesn't look like an ERF.", exc_info=True)
+                RobustRootLogger().debug("Doesn't look like an ERF.", exc_info=True)
                 try:
                     return read_rim(capsule_obj)
                 except Exception:
-                    get_root_logger().error("the binary data passed to `validate_capsule` could not be loaded as an ERF/RIM.", exc_info=True)
+                    RobustRootLogger().error("the binary data passed to `validate_capsule` could not be loaded as an ERF/RIM.", exc_info=True)
                     return None
         elif is_any_erf_type_file(capsule_obj):
             try:
                 return read_erf(capsule_obj)
             except Exception:
-                get_root_logger().error(f"'{capsule_obj}' is not a valid filepath to an ERF", exc_info=True)
+                RobustRootLogger().error(f"'{capsule_obj}' is not a valid filepath to an ERF", exc_info=True)
                 return None
         else:
             try:
                 return read_rim(capsule_obj)
             except Exception:
-                get_root_logger().error(f"'{capsule_obj}' is not a valid filepath to a RIM", exc_info=True)
+                RobustRootLogger().error(f"'{capsule_obj}' is not a valid filepath to a RIM", exc_info=True)
                 return None
 
     raise TypeError(f"Invalid capsule argument: '{capsule_obj}' type '{type(capsule_obj)}', expected one of ERF | RIM | LazyCapsule | SOURCE_TYPES")

@@ -20,7 +20,7 @@ from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -242,6 +242,11 @@ class GITInstance(ABC):
         self.position: Vector3 = Vector3(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
 
+    def __repr__(self):
+        if isinstance(self, GITCamera):
+            return f"{self.__class__.__name__}(camera_id={self.camera_id})"
+        return f"{self.__class__.__name__}({self.identifier()})"
+
     @abstractmethod
     def identifier(self) -> ResourceIdentifier:
         """Returns the resource identifier of the instance, or None if it doesn't have one."""
@@ -349,7 +354,7 @@ class GITCamera(GITInstance):
     ) -> str:
         return "Camera"
 
-    def yaw(  # TODO: Why is this not y...?
+    def yaw(
         self,
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
@@ -954,10 +959,10 @@ def construct_git(
                 z = geometry_struct.acquire("Z", 0.0)
                 encounter.geometry.append(Vector3(x, y, z))
             if not geometry_list:
-                get_root_logger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
+                RobustRootLogger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
                 encounter.geometry.create_triangle(origin=encounter.position)
         else:
-            get_root_logger().warning("Encounter geometry list missing! Creating a default triangle at its position.")
+            RobustRootLogger().warning("Encounter geometry list missing! Creating a default triangle at its position.")
             encounter.geometry.create_triangle(origin=encounter.position)
 
         for spawn_struct in encounter_struct.get_list("SpawnPointList"):
@@ -1028,10 +1033,10 @@ def construct_git(
                 z = geometry_struct.acquire("PointZ", 0.0)
                 trigger.geometry.append(Vector3(x, y, z))
             if not geometry_list:
-                get_root_logger().warning("Trigger geometry list is empty! Creating a default triangle at its position.")
+                RobustRootLogger().warning("Trigger geometry list is empty! Creating a default triangle at its position.")
                 trigger.geometry.create_triangle(origin=trigger.position)
         else:
-            get_root_logger().warning("Trigger geometry list missing! Creating a default triangle at its position.")
+            RobustRootLogger().warning("Trigger geometry list missing! Creating a default triangle at its position.")
             trigger.geometry.create_triangle(origin=trigger.position)
 
     for waypoint_struct in gff.root.get_list("WaypointList"):
@@ -1133,7 +1138,7 @@ def dismantle_git(
         encounter_struct.set_single("ZPosition", encounter.position.z)
 
         if not encounter.geometry:
-            get_root_logger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
+            RobustRootLogger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
             encounter.geometry.create_triangle(origin=encounter.position)
 
         geometry_list = encounter_struct.set_list("Geometry", GFFList())
@@ -1206,7 +1211,7 @@ def dismantle_git(
         trigger_struct.set_locstring("TransitionDestin", trigger.transition_destination)
 
         if not trigger.geometry:
-            get_root_logger().warning("Missing trigger geometry for '%s', creating a default triangle at its position...", trigger.resref)
+            RobustRootLogger().warning("Missing trigger geometry for '%s', creating a default triangle at its position...", trigger.resref)
             trigger.geometry.create_triangle(origin=trigger.position)
 
         geometry_list = trigger_struct.set_list("Geometry", GFFList())

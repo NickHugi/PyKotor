@@ -9,7 +9,7 @@ import qtpy
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QStatusBar, QWidget
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QStatusBar, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -20,8 +20,11 @@ from pykotor.resource.generics.pth import PTH, bytes_pth, read_pth
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
+from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.git import GITSettings
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -140,7 +143,7 @@ class PTHEditor(Editor):
         self.settings = GITSettings()
 
         def intColorToQColor(num_color: int) -> QColor:
-            color = Color.from_rgba_integer(num_color)
+            color: Color = Color.from_rgba_integer(num_color)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
         self.materialColors: dict[SurfaceMaterial, QColor] = {
@@ -226,7 +229,9 @@ class PTHEditor(Editor):
             self.rightLabel.setText(right_status)
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        self.stdout.mouse_pos = Vector2(*event.pos())
+        super().mouseMoveEvent(event)
+        point: QPoint = event.pos()
+        self.stdout.mouse_pos = Vector2(point.x(), point.y())
         self.stdout.updateStatusBar()
 
     def _setupSignals(self):
@@ -244,6 +249,8 @@ class PTHEditor(Editor):
         result: ResourceResult | None = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
             self.loadLayout(read_lyt(result.data))
+        else:
+            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt for this {resref}.{restype} but it could not be found.", icon=QMessageBox.Icon.Critical).exec_()
 
         pth: PTH = read_pth(data)
         self._loadPTH(pth)
@@ -390,29 +397,80 @@ class PTHEditor(Editor):
     # endregion
 
 
+def calculate_zoom_strength(delta_y: float, sensSetting: int) -> float:
+    m = 0.00202
+    b = 1
+    factor_in = (m * sensSetting + b)
+    return 1 / abs(factor_in) if delta_y < 0 else abs(factor_in)
+
+
 class PTHControlScheme:
     def __init__(self, editor: PTHEditor):
         self.editor: PTHEditor = editor
         self.settings: GITSettings = GITSettings()
 
-        self.panCamera: ControlItem = ControlItem(self.settings.moveCameraBind)
-        self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCameraBind)
-        self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCameraBind)
-        self.moveSelected: ControlItem = ControlItem(self.settings.moveSelectedBind)
-        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
-        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
+    # Use @property decorators to allow Users to change their settings without restarting the editor.
+    @property
+    def panCamera(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraBind)
+
+    @panCamera.setter
+    def panCamera(self, value):
+        ...
+
+    @property
+    def rotateCamera(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraBind)
+
+    @rotateCamera.setter
+    def rotateCamera(self, value):
+        ...
+
+    @property
+    def zoomCamera(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraBind)
+
+    @zoomCamera.setter
+    def zoomCamera(self, value):
+        ...
+
+    @property
+    def moveSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveSelectedBind)
+
+    @moveSelected.setter
+    def moveSelected(self, value):
+        ...
+
+    @property
+    def selectUnderneath(self) -> ControlItem:
+        return ControlItem(self.settings.selectUnderneathBind)
+
+    @selectUnderneath.setter
+    def selectUnderneath(self, value):
+        ...
+
+    @property
+    def deleteSelected(self) -> ControlItem:
+        return ControlItem(self.settings.deleteSelectedBind)
+
+    @deleteSelected.setter
+    def deleteSelected(self, value):
+        ...
 
     @status_bar_decorator
     def mouseMoveEvent(self, event: QMouseEvent):
-        self.editor.stdout.mouse_pos = Vector2(*event.pos())
+        point: QPoint = event.pos()
+        self.editor.stdout.mouse_pos = Vector2(point.x(), point.y())
 
     @status_bar_decorator
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
-            # A smaller zoom_step will provide finer control over the zoom level.
             if not delta.y:
                 return  # sometimes it'll be zero when holding middlemouse-down.
-            zoom_factor = 1.1 if delta.y > 0 else 0.9
+            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
+            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     @status_bar_decorator
@@ -426,10 +484,25 @@ class PTHControlScheme:
         keys: set[int],
     ):
         self.editor.stdout.mouse_pos = screen
-        if self.panCamera.satisfied(buttons, keys):
-            self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
-        if self.rotateCamera.satisfied(buttons, keys):
-            self.editor.rotateCamera(screenDelta.y)
+        shouldPanCamera = self.panCamera.satisfied(buttons, keys)
+        shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
+        if shouldPanCamera or shouldRotateCamera:
+            if shouldPanCamera:
+                moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
+                RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+                self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
+            if shouldRotateCamera:
+                delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
+                if abs(screenDelta.x) >= abs(screenDelta.y):
+                    direction = -1 if screenDelta.x < 0 else 1
+                else:
+                    direction = -1 if screenDelta.y < 0 else 1
+                rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
+                rotateAmount = delta_magnitude * rotateSens
+                rotateAmount *= direction
+                RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+                self.editor.rotateCamera(rotateAmount)
+            return
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)
 

@@ -86,7 +86,7 @@
             <item>
             <widget class="QPushButton" name="specialActionButton">
               <property name="text">
-              <string>Open in Module Designer</string>
+              <string>Designer</string>
               </property>
             </widget>
             </item>

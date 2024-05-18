@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from pykotor.common.language import LocalizedString
@@ -9,6 +10,7 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 ARMOR_BASE_ITEMS = {
@@ -91,6 +93,14 @@ class UTIProperty:
         self.subtype: int = 0
         self.chance_appear: int = 100
         self.upgrade_type: int | None = None
+
+
+def construct_uti_from_struct(
+    struct: GFFStruct,
+) -> UTI:
+    new_gff = GFF(GFFContent.UTI)
+    new_gff.root = deepcopy(struct)
+    return construct_uti(new_gff)
 
 
 def construct_uti(

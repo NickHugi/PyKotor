@@ -15,6 +15,10 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(838, 648)
+        self.actionUndo = QtWidgets.QAction(MainWindow)
+        self.actionUndo.setObjectName("actionUndo")
+        self.actionRedo = QtWidgets.QAction(MainWindow)
+        self.actionRedo.setObjectName("actionRedo")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -476,6 +480,9 @@ class Ui_MainWindow(object):
         self.menuNew.addAction(self.actionSave_As)
         self.menuNew.addAction(self.actionRevert)
         self.menuNew.addSeparator()
+        self.menuNew.addAction(self.actionUndo)
+        self.menuNew.addAction(self.actionRedo)
+        self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionExit)
         self.menuWaypointLabels.addAction(self.actionUseWaypointResRef)
         self.menuWaypointLabels.addAction(self.actionUseWaypointName)
@@ -522,6 +529,11 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.actionUndo.setText(_translate("MainWindow", "Undo"))
+        self.actionUndo.setShortcut(_translate("MainWindow", "Ctrl+Z"))
+        self.actionRedo.setText(_translate("MainWindow", "Redo"))
+        self.actionRedo.setShortcut(_translate("MainWindow", "Ctrl+Y"))
+        self.actionRedo.setShortcut(_translate("MainWindow", "Ctrl+Shift+Z"))
         self.filterEdit.setPlaceholderText(_translate("MainWindow", "filter..."))
         self.lockInstancesCheck.setToolTip(_translate("MainWindow", "Lock all instances in place"))
         self.label.setText(_translate("MainWindow", "|"))

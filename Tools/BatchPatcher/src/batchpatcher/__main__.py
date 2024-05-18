@@ -85,7 +85,7 @@ from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path, PurePath
 from utility.tkinter.updater import human_readable_size
 
@@ -431,7 +431,7 @@ def convert_gff_game(
         else:
             log_output(f"Unsupported gff: {resource.identifier()}")
     except (OSError, ValueError):
-        get_root_logger().error(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...", exc_info=False)
+        RobustRootLogger().error(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...", exc_info=False)
         if not resource.inside_capsule:
             log_output(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...")
             return
@@ -483,7 +483,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
-                    get_root_logger().exception(f"tlk strref {strref} generated an exception")
+                    RobustRootLogger().exception(f"tlk strref {strref} generated an exception")
                     log_output(f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}")
                     log_output(traceback.format_exc())
 
@@ -493,7 +493,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
         except Exception:  # pylint: disable=W0718  # noqa: BLE001
-            get_root_logger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
+            RobustRootLogger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
             log_output(traceback.format_exc())
             return None
 
@@ -564,7 +564,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             log_output(f"[Error] cannot load corrupted GFF '{resource._path_ident_obj}'!")
             if not isinstance(e, (OSError, ValueError)):
-                get_root_logger().exception(f"[Error] loading GFF '{resource._path_ident_obj}'!")
+                RobustRootLogger().exception(f"[Error] loading GFF '{resource._path_ident_obj}'!")
                 log_output(traceback.format_exc())
             # raise
             return None
@@ -626,7 +626,7 @@ def patch_capsule_file(c_file: Path):
     try:
         file_capsule = Capsule(c_file)
     except ValueError as e:
-        get_root_logger().exception(f"Could not load '{c_file}'")
+        RobustRootLogger().exception(f"Could not load '{c_file}'")
         log_output(f"Could not load '{c_file}'. Reason: {universal_simplify_exception(e)}")
         return
 
@@ -709,10 +709,10 @@ def patch_erf_or_rim(
             try:
                 erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
             except (OSError, ValueError):
-                get_root_logger().error(f"Corrupted resource: {resource!r}, skipping...", exc_info=True)
+                RobustRootLogger().error(f"Corrupted resource: {resource!r}, skipping...", exc_info=True)
                 log_output(f"Corrupted resource: {resource!r}, skipping...")
             except Exception:
-                get_root_logger().exception(f"Unexpected exception occurred for resource {resource!r}")
+                RobustRootLogger().exception(f"Unexpected exception occurred for resource {resource!r}")
     return new_filename
 
 
@@ -768,7 +768,7 @@ def get_active_layouts(k_install: Installation) -> dict[FileResource, LYT]:
             try:
                 layout_resources[resource] = read_lyt(resource.data())
             except (OSError, ValueError):
-                get_root_logger().exception(f"Corrupted resource: {resource!r}, skipping...")
+                RobustRootLogger().exception(f"Corrupted resource: {resource!r}, skipping...")
                 log_output(f"File '{layout_display_path}' is unreadable or possible corrupted.")
                 continue
         if mod_filename in lower_module_filenames:
@@ -776,7 +776,7 @@ def get_active_layouts(k_install: Installation) -> dict[FileResource, LYT]:
             try:
                 layout_resources[resource] = read_lyt(resource.data())
             except (OSError, ValueError):
-                get_root_logger().exception(f"Corrupted resource: {resource!r}, skipping...")
+                RobustRootLogger().exception(f"Corrupted resource: {resource!r}, skipping...")
                 log_output(f"File '{layout_display_path}' is unreadable or possible corrupted.")
                 continue
     return layout_resources
@@ -817,7 +817,7 @@ def determine_if_model_utilized(
     for filename in model_2da_resref_info:
         result_2da = locations_2da.get(ResourceIdentifier.from_path(filename))
         if not result_2da:
-            get_root_logger().warning(f"No locations found for '{filename}'")
+            RobustRootLogger().warning(f"No locations found for '{filename}'")
             log_output(f"No locations found for '{filename}'")
             continue
 
@@ -826,7 +826,7 @@ def determine_if_model_utilized(
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
-            get_root_logger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
+            RobustRootLogger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
             log_output(f"Corrupted/unreadable file: '{display_path_2da}'")
             continue
         filename_2da = resource2da.filename().lower()
@@ -847,7 +847,7 @@ def determine_if_model_utilized(
                             print(f"model '{model_resource.filename()}' is used by the game.")
                             return True
                     except Exception:  # noqa: PERF203
-                        get_root_logger().exception("Error parsing '%s' header '%s'", filename_2da, header)
+                        RobustRootLogger().exception("Error parsing '%s' header '%s'", filename_2da, header)
                         log_output(f"Error parsing '{filename_2da}' header '{header}'")
                         log_output(traceback.format_exc())
             else:
@@ -868,7 +868,7 @@ def determine_if_model_utilized(
                             )
                             return True
                 except Exception:
-                    get_root_logger().exception("Error parsing '%s' column '%s'", filename_2da, column_name)
+                    RobustRootLogger().exception("Error parsing '%s' column '%s'", filename_2da, column_name)
                     log_output(f"Error parsing '{filename_2da}' column '{column_name}'")
                     log_output(traceback.format_exc())
     log_output("Nope")
@@ -889,7 +889,7 @@ def find_missing_model_textures_lightmaps(
         for lmtex_name in gen_func(model_resource.data()):
             texture_names.append(lmtex_name)
     except Exception as e:
-        get_root_logger().exception(f"Error listing {lightmap_or_texture}s in '{model_display_path}'")
+        RobustRootLogger().exception(f"Error listing {lightmap_or_texture}s in '{model_display_path}'")
         log_output(f"Error listing {lightmap_or_texture}s in '{model_display_path}': {e}")
         return None
     else:
@@ -999,7 +999,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
     for filename in rel_2da_info:
         result_2da = locations_2da.get(ResourceIdentifier.from_path(filename))
         if not result_2da:
-            get_root_logger().warning(f"No locations found for '{filename}'")
+            RobustRootLogger().warning(f"No locations found for '{filename}'")
             log_output(f"No locations found for '{filename}'")
             continue
 
@@ -1008,7 +1008,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
-            get_root_logger().exception(f"Corrupted resource: {resource2da!r}, skipping...")
+            RobustRootLogger().exception(f"Corrupted resource: {resource2da!r}, skipping...")
             log_output(f"Corrupted/unreadable file: '{display_path_2da}'")
             log_output(traceback.format_exc())
             continue
@@ -1029,7 +1029,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
                             else:
                                 print(f"Missing texture '{stripped_header}' (referenced by header at row {header_row_index} of '{filename_2da}')")
                     except Exception:
-                        get_root_logger().error("Error parsing '%s' headers", filename_2da, exc_info=True)
+                        RobustRootLogger().error("Error parsing '%s' headers", filename_2da, exc_info=True)
                         log_output(f"Error parsing '{filename_2da}' headers")
                         log_output(traceback.format_exc())
                 else:
@@ -1045,7 +1045,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
                             else:
                                 print(f"Missing texture '{stripped_cell}' (referenced by column '{column_name}' at row {colnum_row_index} of '{filename_2da}')")
                     except Exception:
-                        get_root_logger().error("Error parsing '%s' column '%s'", filename_2da, column_name, exc_info=True)
+                        RobustRootLogger().error("Error parsing '%s' column '%s'", filename_2da, column_name, exc_info=True)
                         log_output(f"Error parsing '{filename_2da}' column {column_name}")
                         log_output(traceback.format_exc())
 
@@ -1134,8 +1134,10 @@ def patch_install(install_path: os.PathLike | str):
                 log_output(f"Saving rim {new_rim_filename}")
                 write_rim(new_rim, filepath.parent / new_rim_filename, res_ident.restype)
 
-            elif res_ident.restype.name in ERFType.__members__:
-                new_erf = ERF(ERFType.__members__[res_ident.restype.name])
+            elif res_ident.restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
+                new_erf = ERF(ERFType.from_extension(filepath.suffix))
+                if res_ident.restype is ResourceType.SAV:
+                    new_erf.is_save_erf = True
                 new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
                 log_output(f"Saving erf {new_erf_filename}")
                 write_erf(new_erf, filepath.parent / new_erf_filename, res_ident.restype)
@@ -1205,7 +1207,7 @@ def execute_patchloop_thread() -> str | None:
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
     except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-        get_root_logger().exception("Unhandled exception during the patching process.")
+        RobustRootLogger().exception("Unhandled exception during the patching process.")
         log_output(traceback.format_exc())
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{universal_simplify_exception(e)}")
@@ -1705,7 +1707,7 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            get_root_logger().exception("Unhandled exception during the patching process.")
+            RobustRootLogger().exception("Unhandled exception during the patching process.")
             messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e) + "\n" + traceback.format_exc()))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
@@ -1727,6 +1729,6 @@ if __name__ == "__main__":
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
     except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
-        get_root_logger().exception("Unhandled main exception")
+        RobustRootLogger().exception("Unhandled main exception")
         log_output(traceback.format_exc())
         raise

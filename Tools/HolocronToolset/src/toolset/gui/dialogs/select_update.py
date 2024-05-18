@@ -16,7 +16,7 @@ from qtpy.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayo
 
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import terminate_child_processes
 from utility.updater.github import GithubRelease
@@ -68,7 +68,7 @@ class UpdateDialog(QDialog):
         # Fork Selection Layout
         self.forkComboBox = QComboBox()
         self.forkComboBox.setFixedWidth(300)
-        self.forkComboBox.addItem("NickHugi/PyKotor")  # Default repository
+        #self.forkComboBox.addItem("NickHugi/PyKotor")  # Default repository
         self.forkComboBox.currentIndexChanged.connect(self.on_fork_changed)
         formLayout.addRow("Select Fork:", self.forkComboBox)
 
@@ -136,12 +136,10 @@ class UpdateDialog(QDialog):
             forks_json = forks_response.json()
             for fork in forks_json:
                 fork_owner_login = fork["owner"]["login"]
-                if fork_owner_login not in ("NickHugi", "th3w1zard1"):
-                    continue
                 fork_full_name = f"{fork_owner_login}/{fork['name']}"
                 self.forksCache[fork_full_name] = self.fetch_fork_releases(fork_full_name, include_all=True)
         except requests.HTTPError as e:
-            get_root_logger().exception(f"Failed to fetch forks: {e}")
+            RobustRootLogger().exception(f"Failed to fetch forks: {e}")
 
 
     def fetch_fork_releases(self, fork_full_name: str, *, include_all: bool = False) -> list[GithubRelease]:
@@ -157,7 +155,7 @@ class UpdateDialog(QDialog):
                 if not r["draft"] and (self.include_prerelease() or not r["prerelease"])
             ]
         except requests.HTTPError as e:
-            get_root_logger().exception(f"Failed to fetch releases for {fork_full_name}: {e}")
+            RobustRootLogger().exception(f"Failed to fetch releases for {fork_full_name}: {e}")
             return []
 
     def populate_fork_combo_box(self):
@@ -176,7 +174,7 @@ class UpdateDialog(QDialog):
                 release for release in self.forksCache[selected_fork]
                 if not release.draft
                 and "toolset" in release.tag_name.lower()
-                and release.prerelease == self.include_prerelease()
+                and (self.include_prerelease() or not release.prerelease)
             ]
         else:
             self.releases = []
@@ -259,7 +257,11 @@ class UpdateDialog(QDialog):
         progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
         progress_process.start()
         self.hide()
-        def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
+
+        def download_progress_hook(
+            data: dict[str, Any],
+            progress_queue: Queue = progress_queue,
+        ):
             #get_root_logger().debug("progress data: %s", data)
             progress_queue.put(data)
 
@@ -270,7 +272,7 @@ class UpdateDialog(QDialog):
             gc.collect()
             for obj in gc.get_objects():
                 if isinstance(obj, QThread) and obj.isRunning():
-                    get_root_logger().debug(f"Terminating QThread: {obj}")
+                    RobustRootLogger().debug(f"Terminating QThread: {obj}")
                     obj.terminate()
                     obj.wait()
             terminate_child_processes()
@@ -299,7 +301,7 @@ class UpdateDialog(QDialog):
             updater.extract_restart()
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
-        except Exception:
-            get_root_logger().exception("Error occurred while downloading/installing the toolset.")
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Error occurred while downloading/installing the toolset.")
         finally:
             exitapp(kill_self_here=True)

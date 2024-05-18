@@ -1,18 +1,27 @@
 from __future__ import annotations
 
-from typing import Set, Tuple
+from typing import Set, Tuple, Union
 
-Bind = Tuple[Set[int], Set[int]]
+Bind = Tuple[Set[int], Union[Set[int], None]]
 
 
 class ControlItem:
     def __init__(self, bind: Bind):
         self.keys: set[int] = bind[0]
-        self.mouse: set[int] = bind[1]
+        self.mouse: set[int] | None = bind[1]
+
+    def noButtons(self) -> bool:
+        return self.mouse is None
+
+    def anyButtons(self) -> bool:
+        return not self.mouse and not self.noButtons()
+
+    def anyKeys(self) -> bool:
+        return not self.keys
 
     def satisfied(
         self,
-        buttons: set[int],
+        buttons: set[int],  # Do NOT send None here!
         keys: set[int],
         *,
         exactKeys: bool = True,
@@ -28,13 +37,14 @@ class ControlItem:
         Returns:
         -------
             bool: Whether the input is satisfied.
-
-        Processing Logic:
-        ----------------
-            - Check if exactKeys is True
-            - If True, check if buttons and keys are equal sets or if one is None
-            - If False, check if buttons are equal sets or one is None, and keys is a superset.
         """
-        if exactKeys:
-            return (self.mouse == buttons or not self.mouse) and (self.keys == keys or not self.keys)
-        return (self.mouse == buttons or not self.mouse) and (self.keys.issubset(keys))
+        mouseSatisfied = self.anyButtons() or self.mouse == buttons or (not self.mouse and self.noButtons())
+        keysSatisfied = self.anyKeys() or (self.keys == keys if exactKeys else self.keys.issubset(keys))
+
+        if mouseSatisfied and keysSatisfied:
+            return True
+
+        #RobustRootLogger.debug(f"Needed mouse: {self.mouse!r}, user pressing {buttons!r}. Satisfied? {mouseSatisfied} no_buttons? {self.noButtons()} any_buttons? {self.anyButtons()}")
+        #RobustRootLogger.debug(f"Needed keys: {self.keys!r}, user pressing {keys!r} Satisfied? {keysSatisfied} any_keys? {self.keys} exactKeys? {exactKeys}")
+        return False
+

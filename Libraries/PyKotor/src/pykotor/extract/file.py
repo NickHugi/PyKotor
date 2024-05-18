@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Iterator
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import generate_hash
 from utility.system.path import Path, PurePath
 
@@ -189,7 +189,7 @@ class FileResource:
                 return bool(Capsule(self._filepath).info(self._resname, self._restype, reload=reload))
             return self.inside_bif or bool(self._filepath.safe_isfile())
         except Exception:
-            get_root_logger().exception("Failed to check existence of FileResource.")
+            RobustRootLogger().exception("Failed to check existence of FileResource.")
             return False
 
     def data(

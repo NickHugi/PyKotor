@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-import tempfile
-import uuid
-
-try:
-    import cProfile
-except ImportError:
-    cProfile = None
+import cProfile
 import platform
 import sys
 
@@ -18,9 +12,21 @@ from typing import TYPE_CHECKING, Any
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QCoreApplication, QFile, QMetaObject, QTextStream, Qt
+from qtpy.QtCore import QCoreApplication, QFile, QMetaObject, QSize, QTextStream, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
-from qtpy.QtWidgets import QAction, QApplication, QDialog, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QStyle, QVBoxLayout, QWidget
+from qtpy.QtWidgets import (
+    QAction,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QHBoxLayout,
+    QMainWindow,
+    QMessageBox,
+    QSizePolicy,
+    QStyle,
+    QStyledItemDelegate,
+    QVBoxLayout,
+)
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -73,7 +79,7 @@ from utility.error_handling import (
     format_exception_with_variables,
     universal_simplify_exception,
 )
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate
@@ -81,124 +87,21 @@ from utility.updater.update import AppUpdate
 if TYPE_CHECKING:
     import os
 
+    from logging import Logger
     from typing import NoReturn
 
     from qtpy import QtGui
-    from qtpy.QtGui import QCloseEvent
+    from qtpy.QtGui import QCloseEvent, QMouseEvent
+    from qtpy.QtWidgets import (
+        QWidget,
+    )
+    from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
-
-class CustomTitleBar(QWidget):
-    def __init__(self, parent: QMainWindow):
-        super().__init__(parent)
-        self.setAutoFillBackground(True)
-        self.setMinimumHeight(30)
-        self.setParent(parent)
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
-        self.setWindowFlags(
-            Qt.WindowType.Window
-            | Qt.WindowType.WindowCloseButtonHint
-            | Qt.WindowType.WindowMinimizeButtonHint
-            | Qt.WindowType.WindowMaximizeButtonHint
-        )
-
-        # Create a label for the window title
-        title = f"Holocron Toolset ({qtpy.API_NAME})"
-        self.titleLabel = QLabel(title, self)
-        self.titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # Create system buttons
-        self.minimizeButton = QPushButton("-", self)
-        self.maximizeButton = QPushButton("O", self)
-        self.closeButton = QPushButton("X", self)
-
-        # Remove the title bar and add custom buttons
-        self.layout().addWidget(self.titleLabel, 1)  # type: ignore[reportCallIssue]
-        self.layout().addWidget(self.minimizeButton)
-        self.layout().addWidget(self.maximizeButton)
-        self.layout().addWidget(self.closeButton)
-
-        # Configure button functionality
-        self.minimizeButton.clicked.connect(parent.showMinimized)
-        self.maximizeButton.clicked.connect(self.onMaximizeRestoreClicked)
-        self.closeButton.clicked.connect(parent.close)
-
-        # Style the title bar and buttons for a more native appearance
-        self.setStyleSheet("""
-            CustomTitleBar {
-                background-color: #ececec;
-                color: black;
-            }
-            QLabel {
-                text-align: left;
-            }
-            QPushButton {
-                background-color: #ececec;
-                border: none;
-                border-radius: 0;
-            }
-            QPushButton:hover {
-                background-color: #dcdcdc;
-            }
-            QPushButton:pressed {
-                background-color: #cacaca;
-            }
-        """)
-
-        self.setStyle(self.style())  # Refresh style
-
-    # Overriding mouse event handlers to enable dragging of the window
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._mousePressPos = event.globalPos()  # global position at mouse press
-            self._mouseDragPos = event.globalPos()  # global position for ongoing drag
-
-    def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            # Calculate how much the mouse has been moved
-            globalPos = event.globalPos()
-            if globalPos is None or self._mouseDragPos is None:
-                return
-            diff = globalPos - self._mouseDragPos
-            newPos = self.window().frameGeometry().topLeft() + diff
-
-            # Move the window
-            self.window().move(newPos)
-
-            # Update the position for the next move
-            self._mouseDragPos = globalPos
-
-    def mouseReleaseEvent(self, event):
-        self._mousePressPos = None
-        self._mouseDragPos = None
-
-    # Button click event handlers
-    def onMinimizedClicked(self):
-        self.parent().showMinimized()
-
-    def onMaximizeRestoreClicked(self):
-        if self.parent().isMaximized():
-            self.parent().showNormal()
-            self.maximizeButton.setText("O")
-        else:
-            self.parent().showMaximized()
-            self.maximizeButton.setText("❐")
-
-    def onCloseClicked(self):
-        self.parent().close()
-
-    def setWindowTitle(self, title):
-        self.titleLabel.setText(title)
-
-    def updateStyle(self, backgroundColor):
-        # Update the custom title bar style based on the provided background color
-        self.setStyleSheet(f"background-color: {backgroundColor};")
 
 def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
     app = QApplication(sys.argv)
@@ -231,13 +134,13 @@ class ToolWindow(QMainWindow):
         super().__init__()
 
         self.dogObserver: BaseObserver | None = None
-        self.log = get_root_logger()
+        self.log: Logger = RobustRootLogger()
         self.dogHandler = FolderObserver(self)
         self.active: HTInstallation | None = None
         self.settings: GlobalSettings = GlobalSettings()
         self.installations: dict[str, HTInstallation] = {}
-        self.original_style = self.style().objectName()
-        self.original_palette = self.palette()
+        self.original_style: str = self.style().objectName()
+        self.original_palette: QPalette = self.palette()
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.windows.main import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
@@ -253,53 +156,90 @@ class ToolWindow(QMainWindow):
         self.ui.setupUi(self)
         self._setupSignals()
 
-        # Custom title bar setup
-        self.titleBar = CustomTitleBar(self)
-        self.titleBar.updateStyle("gray")  # Example color, change as needed
-
-        # Create a container for the custom title bar
-        titleBarContainer = QWidget()
-        titleBarLayout = QVBoxLayout(titleBarContainer)
-        titleBarLayout.setContentsMargins(0, 0, 0, 0)
-        titleBarLayout.addWidget(self.titleBar)
-
-        # Add the custom title bar container to the main window layout
-        mainLayout = QVBoxLayout()
-        mainLayout.setContentsMargins(0, 0, 0, 0)
-        mainLayout.addWidget(titleBarContainer)
-        mainLayout.addWidget(self.ui.centralwidget)
-
-        # Create a placeholder widget to apply the main layout
-        placeholderWidget = QWidget()
-        placeholderWidget.setLayout(mainLayout)
-        self.setCentralWidget(placeholderWidget)
-
         self.ui.coreWidget.hideSection()
         self.ui.coreWidget.hideReloadButton()
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
         self.reloadSettings()
         self.unsetInstallation()
 
-        firstTime = self.settings.firstTime
-        if firstTime:
-            self.settings.firstTime = False
-            self.settings.selectedTheme = "Default (Light)"
-
-            # Create a directory used for dumping temp files
-            self.settings.extractPath = str(Path(tempfile.gettempdir(), f"toolset_{uuid.uuid4()}_extract"))
-
         title = f"Holocron Toolset ({qtpy.API_NAME})"
         self.setWindowTitle(title)
 
         self.toggle_stylesheet(self.settings.selectedTheme)
 
+        # Modify the modulesTab layout
+        self.setupModulesTab()
+
+    def setupModulesTab(self):
+        modulesResourceList = self.ui.modulesWidget.ui
+        modulesSectionCombo = modulesResourceList.sectionCombo
+        refreshButton = modulesResourceList.refreshButton
+        designerButton = self.ui.specialActionButton
+
+        # Set size policies
+        modulesSectionCombo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        refreshButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        designerButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        modulesSectionCombo.setMinimumWidth(30)
+
+        modulesResourceList.horizontalLayout_2.removeWidget(modulesSectionCombo)
+        modulesResourceList.horizontalLayout_2.removeWidget(refreshButton)
+        modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)
+
+        # Create a new layout to stack Designer and Refresh buttons
+        stackButtonLayout = QVBoxLayout()
+        stackButtonLayout.addWidget(designerButton)
+        stackButtonLayout.addWidget(refreshButton)
+
+        # Create a new horizontal layout to place the combobox and buttons
+        topLayout = QHBoxLayout()
+        topLayout.addWidget(modulesSectionCombo)
+        topLayout.addLayout(stackButtonLayout)
+
+        # Insert the new top layout into the vertical layout
+        self.ui.verticalLayoutModulesTab.insertLayout(0, topLayout)
+
+        # Adjust the vertical layout to accommodate the combobox height change
+        modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)
+        existing_stylesheet = modulesSectionCombo.styleSheet()
+        merged_stylesheet = existing_stylesheet + """
+            QComboBox {
+                font-size: 14px; /* Increase text size */
+                font-family: Arial, Helvetica, sans-serif; /* Use a readable font */
+                padding: 5px; /* Add padding for spacing */
+                text-align: center; /* Center the text */
+            }
+            QComboBox::drop-down {
+                width: 30px;
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                border-left-width: 1px;
+                border-left-color: darkgray;
+                border-left-style: solid; /* Just a cosmetic line */
+                icon: url(:/icons/arrow_down.png); /* Specify the arrow icon path */
+            }
+            QComboBox QAbstractItemView {
+                font-size: 14px; /* Ensure the dropdown also has increased text size */
+                font-family: Arial, Helvetica, sans-serif; /* Use the same font */
+                padding: 10px 0; /* Add padding to separate lines */
+            }
+        """
+        modulesSectionCombo.setStyleSheet(merged_stylesheet)
+        modulesSectionCombo.setMaxVisibleItems(18)
+
+        # Set the dropdown icon using QStyle standard icon
+        dropdown_icon = self.style().standardIcon(QStyle.SP_ArrowDown)
+        modulesSectionCombo.setItemDelegate(QStyledItemDelegate(modulesSectionCombo))
+        modulesSectionCombo.setIconSize(QSize(16, 16))
+        modulesSectionCombo.setItemIcon(0, dropdown_icon)
+
     # Overriding mouse event handlers to enable dragging of the window
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             self._mousePressPos = event.globalPos()
             self._mouseMovePos = event.globalPos()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent):
         if event.buttons() == Qt.MouseButton.LeftButton:
             # Calculate how much the mouse has been moved
             currPos = self.mapToGlobal(self.pos())
@@ -315,7 +255,7 @@ class ToolWindow(QMainWindow):
             # Update the position for the next move
             self._mouseMovePos = globalPos
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             self._mousePressPos = None
             self._mouseMovePos = None
@@ -360,7 +300,7 @@ class ToolWindow(QMainWindow):
         def openModuleDesigner() -> ModuleDesigner:
             designerUi = (
                 ModuleDesigner(
-                    self,
+                    None,
                     self.active,
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )
@@ -440,10 +380,6 @@ class ToolWindow(QMainWindow):
         app = QApplication.instance()
         if app is None or not isinstance(app, QApplication):
             raise RuntimeError("No Qt Application found or not a QApplication instance.")
-        # TODO: don't use custom title bar yet, is ugly
-        #self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowType.Window)
-        #self.titleBar.show()
-        self.titleBar.hide()
 
         themeName: str = theme.text() if isinstance(theme, QAction) else theme
         self.settings.selectedTheme = themeName
@@ -453,7 +389,6 @@ class ToolWindow(QMainWindow):
             stream = QTextStream(file)
             app.setStyleSheet(stream.readAll())
             file.close()
-            # Set window flags to remove the standard frame (title bar)
             self.show()  # Re-apply the window with new flags
         elif not themeName or themeName == "Default (Light)":
             app.setStyleSheet("")  # Reset to default style
@@ -467,10 +402,7 @@ class ToolWindow(QMainWindow):
                 | Qt.WindowType.WindowMaximizeButtonHint
             )
         elif themeName == "Fusion (Dark)":
-            app.setStyleSheet("")  # Reset to default style
             app.setStyle("Fusion")
-            #
-            # # Now use a palette to switch to dark colors:
             dark_palette = QPalette()
             dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
             dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
@@ -500,7 +432,7 @@ class ToolWindow(QMainWindow):
             self.onModuleRefresh()
         else:
             if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
-                get_root_logger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
+                RobustRootLogger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
                 return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)
@@ -657,7 +589,7 @@ class ToolWindow(QMainWindow):
             - If multiple resources selected, prompt user for extract directory and extract each with original name.
         """
         if len(resources) == 1:
-            # Player saves resource with a specific name
+            # User saves resource with a specific name
             default = f"{resources[0].resname()}.{resources[0].restype().extension}"
             filepath: str = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
@@ -668,7 +600,7 @@ class ToolWindow(QMainWindow):
                 #QMessageBox(QMessageBox.Icon.Information, "Finished extracting", f"Extracted {len(resources)} resources to '{filepath}'").exec_()
 
         elif len(resources) >= 1:
-            # Player saves resources with original name to a specific directory
+            # User saves resources with original name to a specific directory
             folderpath: str = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
             if not folderpath:
                 return
@@ -739,7 +671,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Icon.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-            get_root_logger().exception("Error extracting capsule %s", module_name)
+            RobustRootLogger().exception("Error extracting capsule %s", module_name)
             QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
 
     def onOpenResources(
@@ -897,7 +829,12 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             QMessageBox(QMessageBox.Icon.Information, "No installation loaded.", "Load an installation before opening the Module Designer.").exec_()
             return
+        # Retrieve the icon from self (assuming it's set as window icon)
+        window_icon = self.windowIcon()
+
+        # Initialize the designer and set its window icon
         designer = ModuleDesigner(None, self.active)
+        designer.setWindowIcon(window_icon)
         addWindow(designer)
 
     def openSettingsDialog(self):
@@ -1219,7 +1156,9 @@ class ToolWindow(QMainWindow):
                     continue
 
             item = QStandardItem(f"{areaNames[moduleName]} [{moduleName}]")
-            item.setData(moduleName, QtCore.Qt.ItemDataRole.UserRole)
+            item.setData(moduleName, Qt.UserRole)
+            item.setData(areaNames[moduleName]+"\n"+moduleName, Qt.DisplayRole)  # Set area name
+            item.setData(moduleName, Qt.UserRole + 11)  # Set module name
 
             # Some users may choose to have items representing RIM files to have grey text.
             if self.settings.greyRIMText and lower_module_name.endswith(".rim"):
@@ -1514,6 +1453,8 @@ class ToolWindow(QMainWindow):
                 f"Failed to initialize the installation {name}<br><br>{e}",
             ).exec_()
             self.unsetInstallation()
+        self.show()
+        self.activateWindow()
 
     def _extractResource(
         self,
@@ -1635,7 +1576,7 @@ class FolderObserver(FileSystemEventHandler):
         self.window: ToolWindow = window
         self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
 
-    def on_any_event(self, event):
+    def on_any_event(self, event: FileSystemEvent):
         rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
         if rightnow - self.lastModified < timedelta(seconds=1):
             return

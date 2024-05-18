@@ -9,7 +9,7 @@ from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
@@ -677,7 +677,7 @@ def construct_dlg(
         try:
             link.node = all_entries[link.link_index]
         except IndexError:
-            get_root_logger().error(f"'Index' field value '{link.link_index}' (struct #{starting_list._structs.index(link_struct)+1} in StartingList) does not point to a valid EntryList node, omitting...")
+            RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{starting_list._structs.index(link_struct)+1} in StartingList) does not point to a valid EntryList node, omitting...")
         else:
             dlg.starters.append(link)
             construct_link(link_struct, link)
@@ -696,7 +696,7 @@ def construct_dlg(
             try:
                 link.node = all_replies[link.link_index]
             except IndexError:
-                get_root_logger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in RepliesList) does not point to a valid ReplyList node, omitting...")
+                RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in RepliesList) does not point to a valid ReplyList node, omitting...")
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
@@ -717,7 +717,7 @@ def construct_dlg(
             try:
                 link.node = all_entries[link.link_index]
             except IndexError:
-                get_root_logger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in EntriesList) does not point to a valid EntryList node, omitting...")
+                RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in EntriesList) does not point to a valid EntryList node, omitting...")
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")

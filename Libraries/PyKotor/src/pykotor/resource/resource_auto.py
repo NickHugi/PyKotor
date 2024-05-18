@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Union
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.bwm.bwm_data import BWM
-from pykotor.resource.formats.erf import ERFType, bytes_erf, read_erf
+from pykotor.resource.formats.erf import bytes_erf, read_erf
 from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.formats.gff import GFFContent, bytes_gff, read_gff
 from pykotor.resource.formats.gff.gff_data import GFF
@@ -97,7 +97,7 @@ def read_resource(
             return bytes_2da(read_2da(source))
         if resource_ext == "lip":
             return bytes_lip(read_lip(source))
-        if resource_ext.upper() in ERFType.__members__:
+        if ResourceType.from_extension(resource_ext) in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
             return bytes_erf(read_erf(source))
         if resource_ext == "rim":
             return bytes_rim(read_rim(source))

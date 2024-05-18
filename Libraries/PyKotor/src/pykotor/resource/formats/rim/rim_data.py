@@ -6,7 +6,9 @@ from copy import copy
 from typing import Any, Generator
 
 from pykotor.common.misc import ResRef
+from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.type import ResourceType
+from utility.common.more_collections import OrderedSet
 
 
 class RIM:
@@ -17,7 +19,7 @@ class RIM:
     def __init__(
         self,
     ):
-        self._resources: list[RIMResource] = []
+        self._resources: OrderedSet[RIMResource] = OrderedSet()
 
     def __iter__(
         self,
@@ -148,6 +150,12 @@ class RIM:
             erf.set_data(str(resource.resref), resource.restype, resource.data)
         return erf
 
+    def __eq__(self, other):
+        from pykotor.resource.formats.rim import RIM
+        if not isinstance(other, (ERF, RIM)):
+            return NotImplemented
+        return set(self._resources) == set(other._resources)
+
 
 class RIMResource:
     def __init__(
@@ -159,3 +167,19 @@ class RIMResource:
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
         self.data: bytes = data
+
+    def __eq__(
+        self,
+        other,
+    ):
+        from pykotor.resource.formats.erf import ERFResource
+        if not isinstance(other, (ERFResource, RIMResource)):
+            return NotImplemented
+        return (
+            self.resref == other.resref
+            and self.restype == other.restype
+            and self.data == other.data
+        )
+
+    def __hash__(self):
+        return hash((self.resref, self.restype, self.data))

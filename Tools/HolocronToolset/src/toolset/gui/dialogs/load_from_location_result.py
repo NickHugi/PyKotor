@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import faulthandler
 import os
 import pathlib
@@ -7,6 +8,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 from collections import OrderedDict
@@ -76,7 +78,7 @@ from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.installation import HTInstallation
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 from utility.system.path import Path
@@ -366,7 +368,7 @@ class FileItems(CustomItem):
         class RenameDialog(QDialog):
             def __init__(self, original_name="", parent=None):
                 super().__init__(parent)
-                self.setWindowTitle("Rename/Move File")
+                self.setWindowTitle("Rename File")
 
                 self.line_edit = QLineEdit(original_name, self)
                 ok_button = QPushButton("OK", self)
@@ -384,7 +386,7 @@ class FileItems(CustomItem):
         dialog = RenameDialog(file_path.name, None)
         result = dialog.exec_()
         new_filename = dialog.get_new_name()
-        get_root_logger().info("Renaming '%s' to '%s'", file_path, new_filename)
+        RobustRootLogger().info("Renaming '%s' to '%s'", file_path, new_filename)
         shutil.move(str(file_path), str(file_path.with_name(new_filename)))
 
     def create_context_menu_dict(
@@ -401,11 +403,15 @@ class FileItems(CustomItem):
         renameAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
         sendToTrash = self.create_action(menu_dict, "Send to Recycle Bin", lambda: self.do_file_action(self._sendToRecycleBin, "Send to Recycle Bin"))
         deleteAction = self.create_action(menu_dict, "Delete PERMANENTLY", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
-        propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
 
         file_paths_exist = all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
+
+        if os.name == "nt":
+            propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
+            openWindowsMenuAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
+            openWindowsMenuAction.setEnabled(file_paths_exist)
 
         openAction.setEnabled(file_paths_exist)
         openFolderAction.setEnabled(file_paths_exist)
@@ -470,6 +476,14 @@ class FileItems(CustomItem):
         with file_path.open("rb") as reader, savepath.open("wb") as writer:
             writer.write(reader.read())
 
+    def _open_windows_explorer_context_menu(
+        self,
+        file_path: Path,
+        tableItem: FileTableWidgetItem,
+    ):
+        from utility.system.windows_context_menu import windows_context_menu_file
+        return windows_context_menu_file(file_path)
+
     def _open_file(
         self,
         file_path: Path,
@@ -529,7 +543,7 @@ class FileItems(CustomItem):
         file_path: Path,
         tableItem: FileTableWidgetItem,
     ):
-        get_root_logger().info(f"Moving '{file_path}' to Recycle Bin")
+        RobustRootLogger().info(f"Moving '{file_path}' to Recycle Bin")
         send2trash.send2trash(file_path)
         if hasattr(self, "removeRow"):
             self.removeRow(tableItem.row())
@@ -586,7 +600,7 @@ class FileItems(CustomItem):
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to perform action '%s' filepath: '%s'", action_name, file_path)
+                RobustRootLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, file_path)
                 error_files[file_path] = e
         if missing_files:
             self._show_missing_results(missing_files)
@@ -684,13 +698,21 @@ class ResourceItems(FileItems):
             if not resource.exists():
                 missing_files.append(resource._path_ident_obj)  # noqa: SLF001
                 return
-            with TemporaryDirectory("_tmpext2", "toolset_") as tempdir:
-                tempdir_path = Path(tempdir)
-                assert tempdir_path.safe_isdir()
-                temp_file = tempdir_path / resource.filename()
-                with BinaryWriterFile.to_file(temp_file) as writer:
-                    writer.write_bytes(resource.data())
-                func(temp_file, tableItem)
+
+            # Create a temporary directory that persists until application shutdown
+            tempdir = tempfile.mkdtemp(prefix="toolset_", suffix="_tmpext2")
+
+            # Register a cleanup function to delete the temporary directory at exit
+            def cleanup_tempdir():
+                shutil.rmtree(tempdir, ignore_errors=True)
+
+            atexit.register(cleanup_tempdir)
+            tempdir_path = Path(tempdir)
+            assert tempdir_path.safe_isdir()
+            temp_file = tempdir_path / resource.filename()
+            with BinaryWriterFile.to_file(temp_file) as writer:
+                writer.write_bytes(resource.data())
+            func(temp_file, tableItem)
         else:
             func(path, tableItem)
 
@@ -724,7 +746,7 @@ class ResourceItems(FileItems):
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
+                RobustRootLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
                 error_files[filepath] = e
         if missing_files:
             self._show_missing_results(missing_files)
@@ -760,7 +782,7 @@ class ResourceItems(FileItems):
 
         executed_action_text = executed_action.text()
         if executed_action_text in ("Delete PERMANENTLY", "Send to Recycle Bin"):
-            get_root_logger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
+            RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
             total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
             if total_inside_capsules:
                 separator="-"*80
@@ -773,14 +795,14 @@ class ResourceItems(FileItems):
             for resource in resources:
                 if resource.inside_capsule and not resource.inside_bif:
                     filepath = resource.filepath()
-                    get_root_logger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
+                    RobustRootLogger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
                     if is_any_erf_type_file(filepath):
                         erf = read_erf(filepath)
                         erf.remove(resource.resname(), resource.restype())
                         write_erf(erf, filepath)
                     elif is_rim_file(filepath):
                         if GlobalSettings().disableRIMSaving:
-                            get_root_logger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
+                            RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
                         else:
                             rim = read_rim(filepath)
                             rim.remove(resource.resname(), resource.restype())
@@ -788,7 +810,7 @@ class ResourceItems(FileItems):
         return executed_action  # noqa: RET504
 
     def on_double_click(self, *args, installation: HTInstallation):
-        get_root_logger().debug(f"doubleclick args: {args} installation: {installation}")
+        RobustRootLogger().debug(f"doubleclick args: {args} installation: {installation}")
         #first_item = next(iter(self.selectedItems()))
         selected = {res.resource for res in self.selectedItems()}
         self.open_selected_resource(
@@ -803,12 +825,12 @@ class ResourceItems(FileItems):
         *,
         gff_specialized: bool | None = None,
     ):
-        get_root_logger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
+        RobustRootLogger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
         for resource in resources:
             try:
                 data: bytes = resource.data()
             except Exception:  # noqa: BLE001
-                get_root_logger().error("Exception occurred in open_selected_resource", exc_info=True)
+                RobustRootLogger().error("Exception occurred in open_selected_resource", exc_info=True)
                 QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
                 return
             openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
@@ -966,7 +988,7 @@ class FileSelectionWindow(QMainWindow):
                     else:
                         self.add_extra_file_details(i, resource.filepath(), res_stat_result, resource)
                 except Exception:  # noqa: BLE001
-                    get_root_logger().exception("Error populating detailed info for '%s'", resource.filepath())
+                    RobustRootLogger().exception("Error populating detailed info for '%s'", resource.filepath())
             else:
                 filepath_cell = self.create_table_item(str(resource.filepath().relative_to(self.installation.path().parent)), resource)
                 self.resource_table.setItem(i, self.resource_table.get_column_index("File Path"), filepath_cell)
@@ -1034,7 +1056,7 @@ class FileSelectionWindow(QMainWindow):
 
                 self.resource_table.setItem(rowIndex, column_index, self.create_table_item(value, resource))
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
+                RobustRootLogger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
                 QMessageBox.critical(self, "Stat attribute not expected format", f"Failed to parse {column_name} ({stat_attr}): {value}<br><br>{e}")
 
 

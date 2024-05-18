@@ -10,17 +10,29 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
-from qtpy.QtGui import QIcon, QImage, QPixmap, QStandardItem, QStandardItemModel, QTransform
-from qtpy.QtWidgets import QHeaderView, QMenu, QWidget
+from qtpy.QtGui import (
+    QCursor,
+    QIcon,
+    QImage,
+    QPixmap,
+    QStandardItem,
+    QStandardItemModel,
+    QTransform,
+)
+from qtpy.QtWidgets import QHeaderView, QMenu, QToolTip, QWidget
 
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 from utility.error_handling import format_exception_with_variables
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
-    from qtpy.QtGui import QResizeEvent
+    from qtpy.QtGui import (
+        QMouseEvent,
+        QResizeEvent,
+    )
 
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
@@ -79,6 +91,22 @@ class ResourceList(MainWindowList):
 
         self.sectionModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)
+        self.tooltipTimer = QTimer(self)
+        self.tooltipTimer.setSingleShot(True)
+        self.tooltipTimer.timeout.connect(self.showTooltip)
+        self.tooltipText = ""
+        self.setMouseTracking(True)
+        self.ui.resourceTree.setMouseTracking(True)
+        self.ui.resourceTree.viewport().installEventFilter(self)  # Install event filter on the viewport
+
+    def eventFilter(self, obj, event):
+        if obj is self.ui.resourceTree.viewport() and event.type() == QtCore.QEvent.MouseMove:
+            self.mouseMoveEvent(event)
+            return True
+        return super().eventFilter(obj, event)
+
+    def showTooltip(self):
+        QToolTip.showText(QCursor.pos(), self.tooltipText, self.ui.resourceTree)
 
     def setupSignals(self):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
@@ -87,6 +115,39 @@ class ResourceList(MainWindowList):
         self.ui.refreshButton.clicked.connect(self.onRefreshClicked)
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceContextMenu)
         self.ui.resourceTree.doubleClicked.connect(self.onResourceDoubleClicked)
+
+    def enterEvent(self, event):
+        self.tooltipTimer.stop()
+        QToolTip.hideText()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.tooltipTimer.stop()
+        QToolTip.hideText()
+        super().leaveEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        index = self.ui.resourceTree.indexAt(event.pos())
+        if index.isValid():
+            # Retrieve the QStandardItem from the model using the index
+            model_index = self.ui.resourceTree.model().mapToSource(index)  # Map proxy index to source index
+            item = self.ui.resourceTree.model().sourceModel().itemFromIndex(model_index)
+            if item is not None:
+                resource: FileResource | None = getattr(item, "resource", None)
+                if resource is not None:
+                    self.tooltipText = str(resource.filepath())
+                    self.tooltipPos = event.globalPos()
+                    self.tooltipTimer.start(1100)  # Set the delay to 3000ms (3 seconds)
+                else:
+                    self.tooltipTimer.stop()
+                    QToolTip.hideText()
+            else:
+                self.tooltipTimer.stop()
+                QToolTip.hideText()
+        else:
+            self.tooltipTimer.stop()
+            QToolTip.hideText()
+        super().mouseMoveEvent(event)
 
     def hideReloadButton(self):
         self.ui.reloadButton.setVisible(False)
@@ -105,6 +166,7 @@ class ResourceList(MainWindowList):
     ):
         for i in range(self.ui.sectionCombo.count()):
             if section in self.ui.sectionCombo.itemText(i):
+                RobustRootLogger().debug("changing to section '%s'", section)
                 self.ui.sectionCombo.setCurrentIndex(i)
 
     def setResources(
@@ -284,6 +346,7 @@ class ResourceModel(QStandardItemModel):
     ):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
+        #item1.setToolTip(str(resource.filepath()))
         item2 = QStandardItem(resource.restype().extension.upper())
         self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 

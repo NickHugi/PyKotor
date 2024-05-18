@@ -12,7 +12,6 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tools.module import rim_to_mod
@@ -24,7 +23,7 @@ from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.nss import ModificationsNSS, MutableString
 from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:
@@ -69,6 +68,7 @@ class ModInstaller:
         self.game_path: CaseAwarePath = CaseAwarePath.pathify(game_path)
         self.mod_path: CaseAwarePath = CaseAwarePath.pathify(mod_path)
         self.changes_ini_path: CaseAwarePath = CaseAwarePath.pathify(changes_ini_path)
+        self.tslpatchdata_path: CaseAwarePath | None = None
         self.log: PatchLogger = logger or PatchLogger()
         self.game: Game | None = Installation.determine_game(self.game_path)
         if not self.changes_ini_path.safe_isfile():  # Handle legacy syntax
@@ -101,7 +101,7 @@ class ModInstaller:
             ini_text = ini_file_bytes.decode(errors="ignore")
 
         self._config = PatcherConfig()
-        self._config.load(ini_text, self.mod_path, self.log)
+        self._config.load(ini_text, self.mod_path, self.log, self.tslpatchdata_path)
 
         if self._config.required_files:
             for i, files in enumerate(self._config.required_files):
@@ -179,7 +179,7 @@ class ModInstaller:
         capsule: Capsule | None = None
         exists: bool
         if is_capsule_file(patch.destination):
-            module_root = Installation.replace_module_extensions(output_container_path)
+            module_root = Installation.get_module_root(output_container_path)
             tslrcm_omitted_rims = ("702KOR", "401DXN")
             mod_from_rim_called = False
             if not output_container_path.safe_isfile():
@@ -264,7 +264,7 @@ class ModInstaller:
         # if not modrim_type or modrim_type == ignore
         #    return
         erfrim_path = self.game_path / patch.destination / patch.saveas
-        mod_path = erfrim_path.with_name(f"{Installation.replace_module_extensions(erfrim_path.name)}.mod")
+        mod_path = erfrim_path.with_name(f"{Installation.get_module_root(erfrim_path.name)}.mod")
         if erfrim_path != mod_path and mod_path.safe_isfile():
             self.log.add_warning(f"This mod intends to install '{patch.saveas}' into '{patch.destination}', but is overshadowed by the existing '{mod_path.name}'!")
 
@@ -443,7 +443,7 @@ class ModInstaller:
                 fmt_exc_str = f"{exc_type}: {exc_msg}"
                 msg = f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n"
                 self.log.add_error(msg)
-                get_root_logger().exception(msg)
+                RobustRootLogger().exception(msg)
             if progress_update_func is not None:
                 progress_update_func()
 

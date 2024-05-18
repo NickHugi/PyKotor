@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy import QtCore
 from qtpy.QtWidgets import QWidget
 
-from toolset.utils.misc import getStringFromKey
+from toolset.utils.misc import MODIFIER_KEYS, QtMouse, getStringFromKey
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent
@@ -54,54 +54,74 @@ class SetBindWidget(QWidget):
         self.ui.setButton.clicked.connect(self.startRecording)
         self.ui.clearButton.clicked.connect(self.clearKeybind)
 
-        self.ui.mouseCombo.setItemData(0, {QtCore.Qt.MouseButton.LeftButton})
-        self.ui.mouseCombo.setItemData(1, {QtCore.Qt.MouseButton.MiddleButton})
-        self.ui.mouseCombo.setItemData(2, {QtCore.Qt.MouseButton.RightButton})
-        self.ui.mouseCombo.setItemData(3, {})
-        self.ui.mouseCombo.setItemData(4, None)
+        self.ui.mouseCombo.setItemData(0, {QtMouse.LeftButton})
+        self.ui.mouseCombo.setItemData(1, {QtMouse.MiddleButton})
+        self.ui.mouseCombo.setItemData(2, {QtMouse.RightButton})
+        self.ui.mouseCombo.setItemData(3, set())  # Any
+        self.ui.mouseCombo.setItemData(4, None)   # None
 
     def startRecording(self):
         self.recordBind = True
         self.keybind.clear()
         self.updateKeybindText()
-        self.ui.setKeysEdit.setPlaceholderText("enter a key...")
+        self.ui.setKeysEdit.setPlaceholderText("Enter a key...")
 
     def clearKeybind(self):
         self.keybind.clear()
         self.ui.setKeysEdit.setPlaceholderText("none")
+        self.updateKeybindText()
 
     def keyPressed(self, a0: QKeyEvent):
         if self.recordBind:
             self.keybind.add(a0.key())
+            assert isinstance(self.keybind, set), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a set"
             self.updateKeybindText()
 
     def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
+        RobustRootLogger.info(f"Set keybind to {self.keybind}")
 
-    def setBind(self, bind: Bind):
-        if bind[1] == {QtCore.Qt.MouseButton.LeftButton}:
-            self.ui.mouseCombo.setCurrentIndex(0)
-        if bind[1] == {QtCore.Qt.MouseButton.MiddleButton}:
-            self.ui.mouseCombo.setCurrentIndex(1)
-        if bind[1] == {QtCore.Qt.MouseButton.RightButton}:
-            self.ui.mouseCombo.setCurrentIndex(2)
-        if bind[1] == set():
-            self.ui.mouseCombo.setCurrentIndex(3)
-        if bind[1] is None:
+    def setMouseAndKeyBinds(self, bind: Bind):
+        # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't affected there.
+        assert isinstance(bind, tuple), f"{bind} ({bind.__class__.__name__}) is not a tuple"
+        assert len(bind) == 2, f"{len(bind)} != 2"
+        assert isinstance(bind[0], set), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
+        assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
+
+        if bind[1] is None:  # none
             self.ui.mouseCombo.setCurrentIndex(4)
+        elif not bind[1]:  # any
+            self.ui.mouseCombo.setCurrentIndex(3)
+        elif bind[1] == {QtMouse.LeftButton}:
+            self.ui.mouseCombo.setCurrentIndex(0)
+        elif bind[1] == {QtMouse.MiddleButton}:
+            self.ui.mouseCombo.setCurrentIndex(1)
+        elif bind[1] == {QtMouse.RightButton}:
+            self.ui.mouseCombo.setCurrentIndex(2)
+        else:
+            raise ValueError(f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a valid mousebind")
 
         self.keybind = bind[0]
         self.updateKeybindText()
 
-    def bind(self) -> Bind:
+    def getMouseAndKeyBinds(self) -> Bind:
         mousebind: set[int] = self.ui.mouseCombo.currentData()
+        assert isinstance(mousebind, (set, type(None))), f"{mousebind!r} <{mousebind}> ({mousebind.__class__.__name__}) is not a mousebind set"
+        assert isinstance(self.keybind, set), f"{self.keybind!r} <{self.keybind}> ({self.keybind.__class__.__name__}) is not a keybind set"
         return self.keybind, mousebind
 
     def updateKeybindText(self):
-        text: str = ""
-        for i, key in enumerate(sorted(self.keybind, reverse=True)):
-            text += getStringFromKey(key)
-            if i != len(self.keybind) - 1:
-                text += "+"
+        # Separate modifier keys and other keys
+        modifiers = [key for key in self.keybind if key in MODIFIER_KEYS]
+        other_keys = [key for key in self.keybind if key not in MODIFIER_KEYS]
+
+        # Sort keys: modifiers first, then other keys
+        sorted_keys = modifiers + other_keys
+
+        # Create the keybind text
+        text = "+".join(getStringFromKey(key) for key in sorted_keys)
+
+        # Update the UI element with the keybind text
+        self.ui.setKeysEdit.setText(text.upper())
 
         self.ui.setKeysEdit.setText(text.upper())

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QShortcut
+import qtpy
+
+from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QShortcut
 
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, dismantle_jrl, read_jrl
@@ -26,7 +28,17 @@ class SAVEditor(Editor):
         super().__init__(parent, "Save Editor", "save", supported, supported, installation)
         self.resize(400, 250)
 
-        from toolset.uic.editors.sav import Ui_MainWindow  # pylint: disable=C0415
+
+        if qtpy.API_NAME == "PySide2":
+            from toolset.uic.pyside2.editors.sav import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PySide6":
+            from toolset.uic.pyside6.editors.sav import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt5":
+            from toolset.uic.pyqt5.editors.sav import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        elif qtpy.API_NAME == "PyQt6":
+            from toolset.uic.pyqt6.editors.sav import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+        else:
+            raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
