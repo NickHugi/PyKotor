@@ -189,6 +189,8 @@ class ERFResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
+        if isinstance(data, bytearray):  # FIXME: indoor map builder is passing a bytearray here somewhere.
+            data = bytes(data)
         self.data: bytes = data
 
     def __eq__(
