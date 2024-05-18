@@ -3,16 +3,16 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
-from PyQt5.QtGui import QIcon
-from qtpy import QtCore, QtWidgets
-from qtpy.QtWidgets import QMessageBox
+from qtpy import QtCore, QtGui, QtWidgets
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QIcon
+from qtpy.QtWidgets import QLabel, QMessageBox
 
 from utility.gui.base import UserCommunication
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
-    from qtpy import QtGui
-    from qtpy.QtGui import QIcon, QPixmap
+    from qtpy.QtGui import QIcon
     from qtpy.QtWidgets import QStatusBar
     from typing_extensions import Self
 
@@ -267,6 +267,7 @@ class BetterMessageBox(QtWidgets.QDialog):
         self,
         title: str,
         message: str,
+        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint,  # Adjusted default flags
         *args,
         icon: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.SP_MessageBoxInformation,
         buttons: QMessageBox.StandardButton | QMessageBox.StandardButtons = QMessageBox.Ok,
@@ -276,7 +277,9 @@ class BetterMessageBox(QtWidgets.QDialog):
     ):
         super().__init__(parent, *args, **kwargs)
         self.setWindowTitle(title)
-        self.icon: QtWidgets.QStyle.StandardPixmap = ICON_MAP.get(icon, icon)
+        self.icon_type: QtWidgets.QStyle.StandardPixmap = ICON_MAP.get(icon, icon)
+        if self.icon_type is None:
+            self.icon_type = QtWidgets.QStyle.SP_MessageBoxInformation
         self.buttons: list[QtWidgets.QPushButton] = MessageBoxButton.standardbuttons_to_qpushbuttons(buttons)
         smb_default_button: QtWidgets.QPushButton = MessageBoxButton(defaultButton).as_qpushbutton()
         if smb_default_button not in self.buttons:
@@ -286,16 +289,7 @@ class BetterMessageBox(QtWidgets.QDialog):
 
     def initUI(self, message):
         layout = QtWidgets.QVBoxLayout(self)
-
-        # Add icon
-        icon_label = QtWidgets.QLabel(self)
-        icon: QIcon = self.style().standardIcon(self.icon)
-        self.setWindowIcon(icon)
-        icon_pixmap: QPixmap = icon.pixmap(32, 32)  # Change the icon size to 32x32
-        icon_label.setPixmap(icon_pixmap)
-        icon_label.setAlignment(QtCore.Qt.AlignLeft)
-        layout.addWidget(icon_label)
-
+        self._setup_icon(layout)
         # Add spacing above the text
         layout.addSpacerItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
 
@@ -315,8 +309,22 @@ class BetterMessageBox(QtWidgets.QDialog):
         button_layout.addStretch(1)  # Add stretch to push buttons to the left
         layout.addLayout(button_layout)
 
-        self.adjustSizeToFitContent()
+        self.adjustSizeToFitContent(label)
         self.applyStylesheet()
+
+    def _setup_icon(
+        self,
+        layout: QtWidgets.QVBoxLayout | QtWidgets.QHBoxLayout | QtWidgets.QLayout,
+    ):
+        # Icon setup
+        icon = self.style().standardIcon(self.icon_type)
+        if icon:
+            icon_label = QLabel(self)
+            icon_pixmap = icon.pixmap(32, 32)  # Get pixmap from QIcon
+            icon_label.setPixmap(icon_pixmap)
+            icon_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            layout.addWidget(icon_label)
+            self.setWindowIcon(icon)
 
     def exec_(self):
         result = super().exec_()
@@ -340,10 +348,17 @@ class BetterMessageBox(QtWidgets.QDialog):
         self.result_button = sButton
         self.accept()  # Modify this as needed based on the button action
 
-    def adjustSizeToFitContent(self):
-        self.setMinimumSize(500, 300)  # Set the initial size.
-        self.adjustSize()
-        self.setMinimumSize(self.sizeHint())
+    def adjustSizeToFitContent(self, label: QLabel):
+        # Adjust width based on the longest line of text or the title
+        font_metrics = QtGui.QFontMetrics(label.font())
+        text_width = font_metrics.boundingRect(0, 0, 2000, 2000, Qt.TextWordWrap, label.text()).width()
+        title_width = QtGui.QFontMetrics(self.font()).width(self.windowTitle()) + 100
+        width = max(text_width, title_width) + 60  # Additional space for padding
+        
+        # Adjust height based on content
+        height = font_metrics.boundingRect(0, 0, width, 2000, Qt.TextWordWrap, label.text()).height()
+        self.setFixedSize(width, height + 150)  # 100 pixels extra for icon and buttons
+        self.adjustSize()  # Let Qt adjust the size optimally
 
     def applyStylesheet(self):
         self.setStyleSheet("""
