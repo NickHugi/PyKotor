@@ -24,6 +24,7 @@ from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QDialog, QMainWindow, QMessageBox, QWidget
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
 from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import os
 
     from qtpy.QtGui import QCloseEvent
-    from qtpy.QtWidgets import QMainWindow
+    from qtpy.QtWidgets import QDialog, QMainWindow
 
     from gui.editor import Editor
     from toolset.data.installation import HTInstallation
@@ -47,10 +47,7 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool=True):
     # Add the window to the global list and show it
     WINDOWS.append(window)
     if show:
-        if isinstance(window, QDialog):
-            window.exec_()
-        else:
-            window.show()
+        window.show()
 
 
 def openResourceEditor(

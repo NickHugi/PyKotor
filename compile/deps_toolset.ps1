@@ -147,7 +147,7 @@ if ((Get-OS) -eq "Mac") {
             }
             "fedora" {
                 sudo dnf groupinstall "Development Tools" -y
-                sudo dnf install binutils mesa-libGLU libnsl mesa-libGL-devel python3-pyopengl PyQt5 pulseaudio-libs-glib2 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free gstreamer1-devel -y
+                sudo dnf install binutils libnsl mesa-libGL-devel python3-pyopengl PyQt5 pulseaudio-libs-glib2 gstreamer1-plugins-base gstreamer1-plugins-good gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free gstreamer1-devel -y
                 break
             }
             "oracle" {
