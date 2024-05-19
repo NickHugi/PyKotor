@@ -153,6 +153,16 @@ class FieldValueConstant(FieldValue):
         return self.validate(self.stored, field_type)
 
 
+class FieldValueListIndex(FieldValueConstant):
+    def __init__(self, value: Any):
+        self.stored: int | Literal["listindex"] = value
+
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType):  # noqa: ANN201
+        if self.stored == "listindex":
+            return self.stored
+        return self.validate(self.stored, field_type)
+
+
 class FieldValue2DAMemory(FieldValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
@@ -242,7 +252,7 @@ class AddStructToListGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str,
-        value: FieldValue,
+        value: FieldValueListIndex,
         path: PureWindowsPath | os.PathLike | str,
         index_to_token: int | None = None,
         modifiers: list[ModifyGFF] | None = None,
@@ -258,7 +268,7 @@ class AddStructToListGFF(ModifyGFF):
             modifiers (list[ModifyGFF]): Modifiers list
         """
         self.identifier: str = identifier
-        self.value: FieldValue = value
+        self.value: FieldValueListIndex = value
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.index_to_token: int | None = index_to_token
 
@@ -300,7 +310,11 @@ class AddStructToListGFF(ModifyGFF):
             return
 
         try:
-            new_struct = self.value.value(memory, GFFFieldType.Struct)
+            lookup: GFFStruct | Literal["listindex"] = self.value.value(memory, GFFFieldType.Struct)
+            if lookup == "listindex":
+                new_struct = GFFStruct(len(list_container._structs)-1)
+            else:
+                new_struct = lookup
         except KeyError as e:
             logger.add_error(f"INI section [{self.identifier}] threw an exception: {e}")
 
@@ -316,7 +330,8 @@ class AddStructToListGFF(ModifyGFF):
 
         for add_field in self.modifiers:
             assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF, ModifyFieldGFF)), f"{type(add_field).__name__}: {add_field}"
-            newpath = self.path / str(len(list_container) - 1)
+            list_index = len(list_container) - 1
+            newpath = self.path / str(list_index)
             #logger.add_verbose(f"Resolved GFFList path of [{add_field.identifier}] from '{add_field.path}' --> '{newpath}'")
             add_field.path = newpath
             add_field.apply(root_struct, memory, logger)
