@@ -431,9 +431,6 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
-            if not changedFile or not changedFile.strip():  # FIXME(th3w1zard1): Why is the watchdog constantly sending invalid filenames? Hasn't happened in awhile actually...
-                RobustRootLogger().error(f"onModuleFileUpdated: can't reload module '{changedFile}', invalid name")
-                return
             # Reload the resource cache for the module
             self.active.reload_module(changedFile)
             # If the current module opened is the file which was updated, then we
@@ -845,10 +842,10 @@ class ToolWindow(QMainWindow):
                 QMessageBox.Icon.Question,
                 "Reload the installations?",
                 "You appear to have made changes to your installations, would you like to reload?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.Yes | QMessageBox.No,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
-            if result == QMessageBox.StandardButton.Yes:
+            if result == QMessageBox.Yes:
                 self.reloadSettings()
 
     def openActiveTalktable(self):
@@ -957,7 +954,7 @@ class ToolWindow(QMainWindow):
                     QMessageBox.Icon.Information,
                     f"Unable to fetch latest version ({etype})",
                     f"Check if you are connected to the internet.\nError: {msg}",
-                    QMessageBox.StandardButton.Ok,
+                    QMessageBox.Ok,
                     self,
                 ).exec_()
 
@@ -998,7 +995,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox.Icon.Information,
                 "Version is up to date",
                 f"You are running the latest {curVersionBetaReleaseStr}version ({CURRENT_VERSION}).",
-                QMessageBox.StandardButton.Ok | QMessageBox.Close,
+                QMessageBox.Ok | QMessageBox.Close,
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
@@ -1577,20 +1574,19 @@ class FolderObserver(FileSystemEventHandler):
         self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
 
     def on_any_event(self, event: FileSystemEvent):
+        if self.window.active is None:
+            return
         rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
         if rightnow - self.lastModified < timedelta(seconds=1):
             return
 
         self.lastModified = rightnow
         modified_path: Path = Path(event.src_path)
-        if not modified_path.is_dir():
-            return
 
         module_path: Path = self.window.active.module_path()
         override_path: Path = self.window.active.override_path()
 
         if modified_path.is_relative_to(module_path):
-            module_file: Path = modified_path.parent
-            self.window.moduleFilesUpdated.emit(str(module_file), event.event_type)
+            self.window.moduleFilesUpdated.emit(str(modified_path), event.event_type)
         elif modified_path.is_relative_to(override_path):
             self.window.overrideFilesUpdate.emit(str(modified_path), event.event_type)

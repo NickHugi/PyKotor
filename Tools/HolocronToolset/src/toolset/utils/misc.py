@@ -71,7 +71,7 @@ def clamp(value: float, minValue: float, maxValue: float) -> float:
     return max(minValue, min(value, maxValue))
 
 
-def getStringFromKey(key: int) -> str:
+def getStringFromKey(key: QtKey) -> str:
     """Returns the string for the given key code.
 
     This function will take into account edge cases (modifier keys like ctrl/alt) that QKeySequence.toString() fails to handle properly.
