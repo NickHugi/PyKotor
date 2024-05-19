@@ -480,33 +480,28 @@ class Module:  # noqa: PLR0904
             order,
             capsules=capsules_to_search
         )
-        look_for = self._handle_git_lyt_reloads(
-            main_search_results,
-            git_query,
-            GIT,
+        git_search = self._handle_git_lyt_reloads(main_search_results, git_query, GIT,
             "Git is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
         )
-        look_for = self._handle_git_lyt_reloads(
-            main_search_results,
-            lyt_query,
-            LYT,
+        lyt_search = self._handle_git_lyt_reloads(main_search_results, lyt_query, LYT,
             "Lyt is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
         )
+
         # From GIT/LYT references, find them in the installation.
         search_results: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
-            look_for,
+            {*git_search, *lyt_search},
             order,
             capsules=capsules_to_search
         )
         for identifier, locations in search_results.items():
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations))
 
-        # Third. Since we now have a known full list of resources necessary, we can now process Override and chitin in one fell swoop.
+        # Third. Since we now have a known full list of resources that make up this module, we can now process Override and chitin in one fell swoop.
         # Realistically we'll do this at the end, but right now we're interested in enumerating the models so we can find textures.
 
         # Check chitin first.
         for resource in self._installation.chitin_resources():
-            if resource.identifier() in self.resources or resource.identifier() in look_for:
+            if resource.identifier() in self.resources or resource.identifier() in git_search:
                 RobustRootLogger().info("Found chitin location '%s' for resource '%s' for module '%s'",
                                         resource.filepath(), resource.identifier(), display_name)
                 self.add_locations(resource.resname(), resource.restype(), (resource.filepath(),)).activate()
@@ -514,7 +509,7 @@ class Module:  # noqa: PLR0904
         # Prioritize Override by checking/activating last.
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
-                if resource.identifier() in self.resources or resource.identifier() in look_for:
+                if resource.identifier() in self.resources or resource.identifier() in git_search:
                     RobustRootLogger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
                     self.add_locations(resource.resname(), resource.restype(), [resource.filepath()]).activate()
 
@@ -570,6 +565,8 @@ class Module:  # noqa: PLR0904
         for identifier, locations in texture_search.items():
             if identifier == "dirt.tpc":
                 continue  # skip this constant name that sometimes appears in list_textures
+            if not locations:
+                continue
             RobustRootLogger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations)).activate()
 
