@@ -643,15 +643,22 @@ class ConfigReader:
                     modifier = self.add_field_gff(next_gff_section, next_section_dict)
 
                 elif lowercase_key.startswith("2damemory"):
-                    if value.lower() != "!fieldpath" and not value.lower().startswith("2damemory"):
+                    if value.lower() == "!fieldpath":
+                        modifier = Memory2DAModifierGFF(
+                            file,
+                            PureWindowsPath(""),
+                            dst_token_id=int(key[9:]),
+                        )
+                    elif value.lower().startswith("2damemory"):
+                        modifier = Memory2DAModifierGFF(
+                            file,
+                            PureWindowsPath(""),
+                            dst_token_id=int(key[9:]),
+                            src_token_id=int(value[9:]),
+                        )
+                    else:
                         msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath and 2DAMEMORY#=2DAMEMORY# assignments"
                         raise ValueError(msg)
-
-                    modifier = Memory2DAModifierGFF(
-                        file,
-                        int(key[9:]),
-                        PureWindowsPath(""),
-                    )
                 else:
                     modifier = self.modify_field_gff(file_section_name, key, value)
 
@@ -842,7 +849,10 @@ class ConfigReader:
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
                 elif lower_iterated_value == "!fieldpath":
-                    modifier = Memory2DAModifierGFF(identifier, int(key[9:]), path)
+                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), path=path/label)  # Assign current path to 2damemory.
+                    modifiers.insert(0, modifier)
+                elif lower_iterated_value.startswith("2damemory"):
+                    modifier = Memory2DAModifierGFF(identifier, dst_token_id=int(key[9:]), src_token_id=int(iterated_value[9:]), path=path) # Assign field at path to a value or (path to field's value)
                     modifiers.insert(0, modifier)
 
             # Handle nested AddField's and recurse
