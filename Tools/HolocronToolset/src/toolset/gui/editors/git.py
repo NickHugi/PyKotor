@@ -1523,7 +1523,7 @@ class GITControlScheme:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     def onMouseMoved(
@@ -1559,7 +1559,7 @@ class GITControlScheme:
         if shouldPanCamera or shouldRotateCamera:
             if shouldPanCamera:
                 moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-                RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+                #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
                 self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
             if shouldRotateCamera:
                 self._handleCameraRotation(screenDelta)
@@ -1567,7 +1567,7 @@ class GITControlScheme:
 
         if self.moveSelected.satisfied(buttons, keys):
             if not self.isDragMoving and isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                RobustRootLogger().debug("moveSelected instance GITControlScheme")
+                #RobustRootLogger().debug("moveSelected instance GITControlScheme")
                 selection: list[GITInstance] = self.editor._mode.walkmeshRenderer.instanceSelection.all()  # noqa: SLF001
                 self.initialPositions = {instance: Vector3(*instance.position) for instance in selection}
                 self.isDragMoving = True
@@ -1597,7 +1597,7 @@ class GITControlScheme:
         rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
         rotateAmount = delta_magnitude * rotateSens
         rotateAmount *= direction
-        RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+        #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
         self.editor.rotateCamera(rotateAmount)
 
     def handleUndoRedoFromLongActionFinished(self):

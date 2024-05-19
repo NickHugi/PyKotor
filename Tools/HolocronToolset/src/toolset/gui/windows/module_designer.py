@@ -1989,13 +1989,13 @@ class ModuleDesignerControls2d:
             - Calculates zoom strength from scroll delta and sensitivity setting
             - Nudges camera zoom by calculated amount.
         """
-        self.editor.log.debug("onMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
+        #self.editor.log.debug("onMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
         if self.zoomCamera.satisfied(buttons, keys):
             if not delta.y:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.renderer.camera.nudgeZoom(zoom_factor)
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]):
