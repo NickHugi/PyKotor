@@ -207,7 +207,7 @@ class ModInstaller:
             capsule = Capsule(output_container_path)
             if not mod_from_rim_called:
                 create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
-            exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas).unpack())
+            exists = capsule.contains(*ResourceIdentifier.from_path(patch.saveas).unpack())
         else:
             create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
             exists = output_container_path.joinpath(patch.saveas).is_file()
