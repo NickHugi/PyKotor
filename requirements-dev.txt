@@ -20,3 +20,8 @@ types-Pillow
 types-Send2Trash
 send2trash
 types-pywin32
+types-Markdown
+types-colorama
+types-docutils
+types-psutil
+types-requests

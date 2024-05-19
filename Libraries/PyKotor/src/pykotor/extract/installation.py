@@ -1015,8 +1015,11 @@ class Installation:
                     highest_scoring_game = game
 
             return highest_scoring_game
+        highest_scoring = determine_highest_scoring_game()
+        if highest_scoring is None:
+            raise ValueError
 
-        return determine_highest_scoring_game()
+        return
 
     def game(self) -> Game:
         """Determines the game (K1 or K2) for the given Installation.

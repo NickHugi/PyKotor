@@ -66,7 +66,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         if sys.version_info < (3, 12, 0):
             super().__init__()
         else:
-            super().__init__(*self.parse_args(args), **kwargs)
+            super().__init__(*self.parse_args(args))
         self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
 
     @classmethod
@@ -129,7 +129,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             raise ValueError(msg)
 
         other_slash = "\\" if slash == "/" else "/"
-        formatted_path: str = os.path.normpath(str_path.strip('"')).replace(other_slash, slash)
+        formatted_path: str = os.path.expanduser(os.path.normpath(str_path.strip('"').replace(other_slash, slash)))  # noqa: PTH111
 
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         if len(formatted_path) != 1:
@@ -452,7 +452,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_dir()
         except (OSError, ValueError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -463,7 +463,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_file()
         except (OSError, ValueError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -474,7 +474,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
