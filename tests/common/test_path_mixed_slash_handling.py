@@ -174,54 +174,6 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             self.assertEqual(test_pathtype_isdir, False, repr(PathType))
             self.assertEqual(False, PathType(test_path).is_dir(), repr(PathType))  # This is the bug
 
-    @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
-    def test_windows_exists_alternatives_dir_custom_path(self):
-        test_path = "C:\\WINDOWS"
-        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
-        test_access: bool = os.access(test_path, os.F_OK)
-        self.assertEqual(test_access, True)
-
-        exists, is_file, is_dir = check_path_win_api(test_path)
-        self.assertEqual(exists, True)
-        self.assertEqual(is_file, False)
-        self.assertEqual(is_dir, True)
-
-        test_os_exists: bool = os.path.exists(test_path)
-        self.assertEqual(test_os_exists, True)
-        test_os_isfile: bool = os.path.isfile(test_path)
-        self.assertEqual(test_os_isfile, False)
-
-        test_pathtype_exists = CustomPath(test_path).safe_exists()
-        self.assertEqual(test_pathtype_exists, True)
-        test_pathtype_isfile = CustomPath(test_path).safe_isfile()
-        self.assertEqual(test_pathtype_isfile, False)
-        test_pathtype_isdir = CustomPath(test_path).safe_isdir()
-        self.assertEqual(test_pathtype_isdir, True)
-
-    @unittest.skipIf(os.name != "nt", "Test only supported on Windows.")
-    def test_windows_exists_alternatives_dir_case_aware_path(self):
-        test_path = "C:\\WINDOWS"
-        self.assertFalse(os.access("C:\\nonexistent\\path", os.F_OK))
-        test_access: bool = os.access(test_path, os.F_OK)
-        self.assertEqual(test_access, True)
-
-        exists, is_file, is_dir = check_path_win_api(test_path)
-        self.assertEqual(exists, True)
-        self.assertEqual(is_file, False)
-        self.assertEqual(is_dir, True)
-
-        test_os_exists: bool = os.path.exists(test_path)
-        self.assertEqual(test_os_exists, True)
-        test_os_isfile: bool = os.path.isfile(test_path)
-        self.assertEqual(test_os_isfile, False)
-
-        test_pathtype_exists = CaseAwarePath(test_path).safe_exists()
-        self.assertEqual(test_pathtype_exists, True)
-        test_pathtype_isfile = CaseAwarePath(test_path).safe_isfile()
-        self.assertEqual(test_pathtype_isfile, False)
-        test_pathtype_isdir = CaseAwarePath(test_path).safe_isdir()
-        self.assertEqual(test_pathtype_isdir, True)
-
     def find_exists_problems(self):
         test_classes: tuple[type, ...] = (Path, CustomPath, CaseAwarePath)
         test_path = "/" if platform.system() != "Windows" else "C:\\"

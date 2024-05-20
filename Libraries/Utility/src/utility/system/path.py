@@ -74,9 +74,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         *args,
         **kwargs,
     ):
-        if sys.version_info < (3, 12, 0):
-            super().__init__()
-        else:
+        if sys.version_info >= (3, 12, 0):
             self._raw_paths = self.parse_args(args)
         self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[attr-defined]
 
@@ -87,7 +85,8 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         **kwargs,  # noqa: ANN003
     ) -> Self:
         instance: Self = cls.__new__(cls, *args, **kwargs)  # type: ignore[arg-type]
-        instance.__init__(*args)  # type: ignore[misc]  # noqa: PLC2801
+        if sys.version_info >= (3, 12, 0):
+            instance._raw_paths = cls.parse_args(args)
         return instance
 
     @classmethod
@@ -456,7 +455,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     def __new__(cls, *args, **kwargs) -> Self:
         if cls is Path:
             cls = WindowsPath if os.name == "nt" else PosixPath
-        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+        return super().__new__(cls, *args, **kwargs)  # type: ignore[reportReturnType]
 
     # Safe rglob operation
     def safe_rglob(
