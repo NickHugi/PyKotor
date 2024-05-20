@@ -15,13 +15,13 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "3.0.0b8",
+    "currentVersion": "3.0.0b8.1",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "3.0.0b8",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b6-toolset",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b8.1-toolset",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "A massive release has been pushed, please press 'Update' to see the details.",
+    "toolsetLatestBetaNotes": "A hotfix has been released:<br> - Fix GITEditor/Module Designer not finding locations defined in .git.<br> - Handle all logging asynchronously, so it will not lag the main thread.<br> - Fix case-insensitive pathing on linux<br> - Fix right click context menus on Linux/Mac",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
