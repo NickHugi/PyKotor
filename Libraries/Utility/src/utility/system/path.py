@@ -6,6 +6,7 @@ import re
 import shlex
 import subprocess
 import sys
+from typing_extensions import Literal
 import uuid
 
 from contextlib import suppress
@@ -66,7 +67,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         if sys.version_info < (3, 12, 0):
             super().__init__()
         else:
-            super().__init__(*self.parse_args(args), **kwargs)
+            self._raw_paths = self.parse_args(args)
         self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
 
     @classmethod
@@ -84,16 +85,31 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         cls,
         args: tuple[PathElem, ...],
     ) -> list[PathElem]:
-        args_list = list(args)
-        for i, arg in enumerate(args_list):
+        args_list: list[str] = []
+        first_arg: bool = True
+        for arg in args:
             if isinstance(arg, cls):
+                args_list.extend(arg.parts)
+                first_arg = False
                 continue  # Do nothing if already our instance type
 
             formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=cls._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
-            drive, path = os.path.splitdrive(formatted_path_str)
-            if drive and not path:
-                formatted_path_str = f"{drive}{cls._flavour.sep}"  # type: ignore[reportAttributeAccessIssue]
-            args_list[i] = formatted_path_str
+            if first_arg:  # Only check the drive for the first argument
+                drive, path = os.path.splitdrive(os.path.expanduser(formatted_path_str) if issubclass(cls, (Path, WindowsPath, PosixPath)) else formatted_path_str)  # noqa: PTH111
+                if drive:
+                    args_list.append(drive+cls._flavour.sep)
+                    if not path:
+                        first_arg = False
+                        continue  # Skip if there's only a drive letter
+                    formatted_path_str = path.lstrip(cls._flavour.sep)
+                first_arg = False
+
+                if formatted_path_str == cls._flavour.sep:
+                    args_list.append(cls._flavour.sep)
+                    continue
+
+            parts = formatted_path_str.split(cls._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+            args_list.extend(parts)
 
         return args_list
 
@@ -128,15 +144,25 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             msg = f"Invalid slash str: '{slash}'"
             raise ValueError(msg)
 
-        other_slash = "\\" if slash == "/" else "/"
-        formatted_path: str = os.path.normpath(str_path.strip('"')).replace(other_slash, slash)
+        formatted_path: str = str_path.strip('"')
+        if not formatted_path.strip():
+            return formatted_path
+
+        # For Windows paths
+        if slash == "\\":
+            formatted_path = formatted_path.replace("/", "\\")
+            formatted_path = _WINDOWS_PATH_NORMALIZE_RE.sub(r"\\\\", formatted_path)
+            formatted_path = _WINDOWS_EXTRA_SLASHES_RE.sub(r"\\", formatted_path)
+        # For Unix-like paths
+        elif slash == "/":
+            formatted_path = formatted_path.replace("\\", "/")
+            formatted_path = _UNIX_EXTRA_SLASHES_RE.sub("/", formatted_path)
+
 
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         if len(formatted_path) != 1:
-            return formatted_path.rstrip(slash)
-        if formatted_path == "\\":
-            return "."
-        return formatted_path
+            formatted_path = formatted_path.rstrip(slash)
+        return formatted_path or "."
 
     @staticmethod
     def _fspath_str(arg: object) -> str:

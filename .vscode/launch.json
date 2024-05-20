@@ -4,6 +4,12 @@
   "dependsOn": "install_requirements",
   "configurations": [
     {
+      "name": "Python Debugger: Attach using Process Id",
+      "type": "debugpy",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
       "type": "bashdb",
       "request": "launch",
       "name": "Bash-Debug (current file)",
@@ -16,7 +22,8 @@
       "type": "PowerShell",
       "request": "launch",
       "script": "${file}",
-      "cwd": "${fileDirname}"
+      "cwd": "${fileDirname}",
+      "args": ["-venv_name .venv_312", "-force_python_version 3.12"]
     },
     {
       "name": "Python: Current File",
@@ -38,23 +45,7 @@
       "purpose": [
         "debug-test"
       ],
-      "justMyCode": true,
-    },
-    {
-      "name": "Run Holocron Toolset",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "toolset",
-      "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
-      "pythonArgs": [
-        "-Xfrozen_modules=off",
-        "-Xdev"
-      ],
-      "console": "integratedTerminal",
-      "justMyCode": true,
-      "autoReload": {
-        "enable": true,
-      },
+      "justMyCode": false,
     },
     {
       "name": "Run HoloPatcher",
