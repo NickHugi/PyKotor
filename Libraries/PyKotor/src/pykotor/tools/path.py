@@ -402,6 +402,8 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "~/.local/share/steam/common/swkotor",
                 "~/.steam/debian-installation/steamapps/common/swkotor",  # verified
                 "~/.steam/root/steamapps/common/swkotor",  # executable name is `KOTOR1` no extension
+                # Flatpak
+                "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/swkotor",
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/swkotor",
                 "/mnt/C/Program Files (x86)/Steam/steamapps/common/swkotor",
@@ -419,6 +421,8 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "~/.steam/debian-installation/steamapps/common/Knights of the Old Republic II",  # guess
                 "~/.steam/debian-installation/steamapps/common/kotor2",  # guess
                 "~/.steam/root/steamapps/common/Knights of the Old Republic II",  # executable name is `KOTOR2` no extension
+                # Flatpak
+                "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Knights of the Old Republic II/steamassets",
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II",
                 "/mnt/C/Program Files (x86)/Steam/steamapps/common/Knights of the Old Republic II",
