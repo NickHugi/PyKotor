@@ -387,7 +387,7 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
             Game.K2: [
                 "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
                 "~/Library/Applications/Steam/steamapps/common/Knights of the Old Republic II/Star Wars™: Knights of the Old Republic II.app/Contents/GameData",
-                "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/KOTOR2.app/Contents/GameData/"  # Verified
+                "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/KOTOR2.app/Contents/GameData/",  # Verified
                 # The following might be from a pirated version of the game, they were provided anonymously
                 # It is also possible these are the missing app store paths.
                 "~/Applications/Knights of the Old Republic 2.app/Contents/Resources/transgaming/c_drive/Program Files/SWKotOR2/",
@@ -400,7 +400,7 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "~/.local/share/steam/common/steamapps/swkotor",
                 "~/.local/share/steam/common/steamapps/swkotor",
                 "~/.local/share/steam/common/swkotor",
-                "~/.steam/debian-installation/steamapps/common/swkotor"  # verified
+                "~/.steam/debian-installation/steamapps/common/swkotor",  # verified
                 "~/.steam/root/steamapps/common/swkotor",  # executable name is `KOTOR1` no extension
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/swkotor",
@@ -416,8 +416,8 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "~/.local/share/aspyr-media/kotor2",
                 "~/.local/share/aspyr-media/Knights of the Old Republic II",  # guess
                 "~/.local/share/Steam/common/Knights of the Old Republic II",  # ??? wrong?
-                "~/.steam/debian-installation/steamapps/common/Knights of the Old Republic II"  # guess
-                "~/.steam/debian-installation/steamapps/common/kotor2"  # guess
+                "~/.steam/debian-installation/steamapps/common/Knights of the Old Republic II",  # guess
+                "~/.steam/debian-installation/steamapps/common/kotor2",  # guess
                 "~/.steam/root/steamapps/common/Knights of the Old Republic II",  # executable name is `KOTOR2` no extension
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II",
