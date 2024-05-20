@@ -179,7 +179,7 @@ class InstallationConfig:
     def path(self) -> str:
         try:
             installation = self._settings.value("installations", {})[self._name]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
         else:
             return installation.get("path", "")

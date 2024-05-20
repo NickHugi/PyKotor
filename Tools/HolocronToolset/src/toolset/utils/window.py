@@ -13,10 +13,10 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     import os
 
-    from gui.editor import Editor
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QDialog, QMainWindow
 
+    from gui.editor import Editor
     from toolset.data.installation import HTInstallation
 
 WINDOWS: list[QWidget] = []

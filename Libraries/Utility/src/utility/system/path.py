@@ -20,14 +20,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
     from logging import Logger
 
-    from typing_extensions import Self
+    from typing_extensions import Literal, Self
 
 PathElem = Union[str, os.PathLike]
 
+_WINDOWS_SPLITDRIVE_RE = re.compile(r"^([a-zA-Z]:)\\")
 _WINDOWS_PATH_NORMALIZE_RE = re.compile(r"^\\{3,}")
 _WINDOWS_EXTRA_SLASHES_RE = re.compile(r"(?<!^)\\+")
 _UNIX_EXTRA_SLASHES_RE = re.compile(r"/{2,}")
-_UNIX_SPLITDRIVE_RE = re.compile(r"^([a-zA-Z]:)\\")
 
 
 def pathlib_to_override(cls: type) -> type:
@@ -44,7 +44,7 @@ def pathlib_to_override(cls: type) -> type:
 
 @lru_cache(maxsize=10000)
 def crossplatform_win_splitdrive(path: str) -> tuple[str, str]:
-    match = re.match(_UNIX_SPLITDRIVE_RE, path)
+    match = re.match(_WINDOWS_SPLITDRIVE_RE, path)
     return (match.group(1)+"\\", path[match.end():]) if match else ("", path)
 
 @lru_cache(maxsize=10000)
@@ -52,6 +52,7 @@ def crossplatform_linux_splitdrive(path: str) -> tuple[str, str]:
     if not path.startswith("/"):
         return ("", path)
     return ("/", "") if path == "/" else ("/", path[1:])
+
 
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
@@ -61,7 +62,13 @@ class PurePathType(type):
         return pathlib_to_override(cls) in pathlib_to_override(subclass).__mro__
 
 
+class _PartialFlavourTypeHint:
+    sep: Literal["\\", "/"]
+
+
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
+    _flavour: _PartialFlavourTypeHint
+
     # pylint: disable-all
     @lru_cache(maxsize=10000)  # type: ignore[misc]
     def __new__(cls, *args, **kwargs) -> Self:
@@ -231,7 +238,8 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             if isinstance(__value, PurePath):
                 other_compare = str(__value)
             else:
-                other_compare = self._fix_path_formatting(self._fspath_str(__value), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+                fmt_other = self._fix_path_formatting(self._fspath_str(__value), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+                other_compare = os.path.expanduser(fmt_other) if issubclass(self.__class__, (Path, WindowsPath, PosixPath)) else fmt_other
 
             if self._flavour.sep == "\\":  # type: ignore[reportAttributeAccessIssue]
                 self_compare = self_compare.lower()
@@ -287,7 +295,9 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             self: Path object
             key (path-like object or str path):
         """
-        return self._fix_path_formatting(str(self / key), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        return self._fix_path_formatting(
+            str(self / key), slash=self._flavour.sep
+        )  # type: ignore[reportAttributeAccessIssue]
 
     def __radd__(self, key: PathElem) -> str:
         """Implicitly converts the path to a str when used with the addition operator '+'.
