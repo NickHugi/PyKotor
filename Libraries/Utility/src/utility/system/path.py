@@ -6,7 +6,6 @@ import re
 import shlex
 import subprocess
 import sys
-from typing_extensions import Literal
 import uuid
 
 from contextlib import suppress
@@ -28,6 +27,7 @@ PathElem = Union[str, os.PathLike]
 _WINDOWS_PATH_NORMALIZE_RE = re.compile(r"^\\{3,}")
 _WINDOWS_EXTRA_SLASHES_RE = re.compile(r"(?<!^)\\+")
 _UNIX_EXTRA_SLASHES_RE = re.compile(r"/{2,}")
+_UNIX_SPLITDRIVE_RE = re.compile(r"^([a-zA-Z]:)\\")
 
 
 def pathlib_to_override(cls: type) -> type:
@@ -42,6 +42,16 @@ def pathlib_to_override(cls: type) -> type:
 
     return class_map.get(cls, cls)
 
+@lru_cache(maxsize=10000)
+def crossplatform_win_splitdrive(path: str) -> tuple[str, str]:
+    match = re.match(_UNIX_SPLITDRIVE_RE, path)
+    return (match.group(1)+"\\", path[match.end():]) if match else ("", path)
+
+@lru_cache(maxsize=10000)
+def crossplatform_linux_splitdrive(path: str) -> tuple[str, str]:
+    if not path.startswith("/"):
+        return ("", path)
+    return ("/", "") if path == "/" else ("/", path[1:])
 
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
@@ -53,11 +63,11 @@ class PurePathType(type):
 
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     # pylint: disable-all
-    @lru_cache(maxsize=10000)
+    @lru_cache(maxsize=10000)  # type: ignore[misc]
     def __new__(cls, *args, **kwargs) -> Self:
         if cls is PurePath:
             cls = PureWindowsPath if os.name == "nt" else PurePosixPath
-        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[reportReturnType]
+        return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[arg-type]
 
     def __init__(
         self,
@@ -68,7 +78,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             super().__init__()
         else:
             self._raw_paths = self.parse_args(args)
-        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+        self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[attr-defined]
 
     @classmethod
     def _create_instance(
@@ -76,7 +86,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         *args: PathElem,
         **kwargs,  # noqa: ANN003
     ) -> Self:
-        instance: Self = cls.__new__(cls, *args, **kwargs)
+        instance: Self = cls.__new__(cls, *args, **kwargs)  # type: ignore[arg-type]
         instance.__init__(*args)  # type: ignore[misc]  # noqa: PLC2801
         return instance
 
@@ -84,31 +94,34 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     def parse_args(
         cls,
         args: tuple[PathElem, ...],
-    ) -> list[PathElem]:
+    ) -> list[str]:
+        our_sep: str = cls._flavour.sep  # type: ignore[attr-defined]
         args_list: list[str] = []
         first_arg: bool = True
         for arg in args:
-            if isinstance(arg, cls):
+            if isinstance(arg, cls):  # Do nothing if already our instance type (faster)
                 args_list.extend(arg.parts)
                 first_arg = False
-                continue  # Do nothing if already our instance type
+                continue
 
-            formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=cls._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+            formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=our_sep)
             if first_arg:  # Only check the drive for the first argument
-                drive, path = os.path.splitdrive(os.path.expanduser(formatted_path_str) if issubclass(cls, (Path, WindowsPath, PosixPath)) else formatted_path_str)  # noqa: PTH111
-                if drive:
-                    args_list.append(drive+cls._flavour.sep)
-                    if not path:
-                        first_arg = False
-                        continue  # Skip if there's only a drive letter
-                    formatted_path_str = path.lstrip(cls._flavour.sep)
                 first_arg = False
+                exp_path = os.path.expanduser(formatted_path_str) if issubclass(cls, (Path, WindowsPath, PosixPath)) else formatted_path_str
+                drive, path = crossplatform_win_splitdrive(exp_path)  if our_sep == "\\" else crossplatform_linux_splitdrive(exp_path)
+                if drive:
+                    args_list.append(drive)
+                    if not path:
+                        continue
+                formatted_path_str = path.lstrip("\\") if our_sep == "\\" else path
 
-                if formatted_path_str == cls._flavour.sep:
-                    args_list.append(cls._flavour.sep)
+                if formatted_path_str == our_sep:
+                    args_list.append(our_sep)
                     continue
+                if formatted_path_str.startswith(our_sep):
+                    args_list.append(our_sep)
 
-            parts = formatted_path_str.split(cls._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+            parts = formatted_path_str.split(our_sep)
             args_list.extend(parts)
 
         return args_list
