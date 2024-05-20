@@ -51,7 +51,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "A hotfix has been released:<br> - Fix GITEditor/Module Designer not finding locations defined in .git.<br> - Handle all logging asynchronously, so it will not lag the main thread.<br> - Fix case-insensitive pathing on linux<br> - Fix right click context menus on Linux/Mac",
+    "toolsetLatestBetaNotes": "A hotfix has been released:<br> - Fix watchdog file reloader<br> - Fix GITEditor/Module Designer not finding locations defined in .git.<br> - Handle all logging asynchronously, so it will not lag the main thread.<br> - Fix case-insensitive pathing on linux<br> - Fix right click context menus on Linux/Mac",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},

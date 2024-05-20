@@ -495,7 +495,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_dir()
         except (OSError, ValueError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -506,7 +506,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.is_file()
         except (OSError, ValueError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
@@ -517,7 +517,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check

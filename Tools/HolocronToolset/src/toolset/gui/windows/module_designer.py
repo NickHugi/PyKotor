@@ -1238,7 +1238,7 @@ class ModuleDesigner(QMainWindow):
         self._controls2d.onKeyboardReleased(buttons, keys)
 
     def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        self.log.debug("on2dMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
+        #self.log.debug("on2dMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
         self._controls2d.onMouseScrolled(delta, buttons, keys)
 
     def on2dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
@@ -2044,6 +2044,12 @@ class ModuleDesignerControls2d:
             self.editor.moveSelected(worldDelta.x, worldDelta.y, noUndoStack=True, noZCoord=True)
 
         if self.rotateSelected.satisfied(buttons, keys) and isinstance(self._mode, _InstanceMode):
+            for instance in self.editor.selectedInstances:
+                if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                    continue  # doesn't support rotations.
+                self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
+            self.editor.log.debug("ModuleDesignerControls2d rotate set isDragRotating")
+            self.isDragRotating = True
             self._mode.rotateSelectedToPoint(world.x, world.y)
             if not self.editor.isDragRotating:
                 print("2d rotate set isDragRotating")

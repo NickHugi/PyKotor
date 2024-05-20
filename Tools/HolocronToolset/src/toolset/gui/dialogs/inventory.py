@@ -34,6 +34,8 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     import os
 
+    from typing import Sequence
+
     from qtpy.QtCore import QModelIndex, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     from qtpy.QtWidgets import QLabel, QWidget
@@ -59,7 +61,7 @@ class InventoryEditor(QDialog):
         self,
         parent: QWidget,
         installation: HTInstallation,
-        capsules: list[Capsule],
+        capsules: Sequence[Capsule],
         folders: list[str],
         inventory: list[InventoryItem],
         equipment: dict[EquipmentSlot, InventoryItem],

@@ -386,7 +386,7 @@ class ResourceIdentifier:
             - Handles exceptions during processing
         """
         try:
-            path_obj = PurePath(file_path)
+            path_obj = PurePath.pathify(file_path)
         except Exception:
             return ResourceIdentifier("", ResourceType.from_extension(""))
 

@@ -352,9 +352,9 @@ class Installation:
         elif system == "Linux":  # TODO
             xdg_data_home = os.getenv("XDG_DATA_HOME", "")
             remaining_path_parts = PurePath("aspyr-media", "kotor2", "saves")
-            if xdg_data_home.strip() and Path(xdg_data_home).safe_isdir():
-                save_paths.append(Path(xdg_data_home, remaining_path_parts))
-            save_paths.append(Path.home().joinpath(".local", "share", remaining_path_parts))
+            if xdg_data_home.strip() and CaseAwarePath(xdg_data_home).safe_isdir():
+                save_paths.append(CaseAwarePath(xdg_data_home, remaining_path_parts))
+            save_paths.append(CaseAwarePath.home().joinpath(".local", "share", remaining_path_parts))
 
         # Filter and return existing paths
         return [path for path in save_paths if path.safe_isdir()]
