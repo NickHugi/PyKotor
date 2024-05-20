@@ -605,7 +605,7 @@ class Editor(QMainWindow):
         else:
             assert self._installation is not None
             setText(self._installation.talktable().string(locstring.stringref))
-            textbox.setStyleSheet(className + " {background-color: #fffded;}")
+            textbox.setStyleSheet(className + " {background-color: #fffded;}")  # TODO(th3w1zard1): handle theme here, so text stops being invisible.
 
     def filepath(self) -> str | None:
         return str(self._filepath)
