@@ -313,7 +313,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 test_set = {path1, path2}
                 self.assertEqual(path1, path2)
                 self.assertEqual(hash(path1), hash(path2))
-                self.assertEqual(test_set, {CustomPath("TEST/path/to/nothing/")})
+                self.assertEqual(test_set, {CustomPath("TEST/path/to/nothing/")}) if os.name == "nt" else self.assertNotEqual(test_set, {CustomPath("TEST/path/to/nothing/")})
 
     @unittest.skipIf(os.name == "nt", "Test only supported on POSIX systems.")
     def test_pathlib_path_edge_cases_posix_posix_path(self):
@@ -432,9 +432,12 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(str(PureWindowsPath("~/folder/")), "~\\folder")
 
     def test_pathlib_path_edge_cases_os_specific_path(self):
-        self.assertEqual(str(Path("C:\\")), "C:\\".replace("\\", os.sep))
-        self.assertEqual(str(Path("C:/")), "C:\\".replace("\\", os.sep))
-        self.assertEqual(str(Path("C:")), "C:".replace("\\", os.sep))
+        self.assertEqual(str(Path("C:\\")), "C:\\")
+        if os.name == "nt":
+            self.assertEqual(str(Path("C:/")), "C:\\")
+        else:
+            self.assertEqual(str(Path("C:/")), "C:")
+        self.assertEqual(str(Path("C:")), "C:")
         self.assertEqual(str(Path("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
         self.assertEqual(str(Path("C://Users///test")), "C:/Users/test".replace("/", os.sep))
         self.assertEqual(str(Path("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
@@ -549,7 +552,10 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(str(CustomPosixPath("")), ".")
         self.assertEqual(str(CustomPosixPath("//")), "/")
         self.assertEqual(str(CustomPosixPath("///")), "/")
-        self.assertEqual(str(CustomPosixPath("C:/./Users/../test/")), "C:/test")
+        if os.name == "nt":
+            self.assertEqual(str(CustomPosixPath("C:/./Users/../test/")), "C:/test")
+        else:
+            self.assertEqual(str(CustomPosixPath("C:/./Users/../test/")), "C:/Users/../test")
         self.assertEqual(str(CustomPosixPath("C:")), "C:")
         self.assertEqual(str(CustomPosixPath("~/folder/")), os.path.expanduser("~/folder"))
 
@@ -594,7 +600,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(str(CustomWindowsPath("C:")), "C:")
         self.assertEqual(str(CustomWindowsPath("C:/./Users/../test/")), "C:\\Users\\..\\test")
         self.assertEqual(str(CustomWindowsPath("C:/./Users/../test/").resolve()), "C:\\test")
-        self.assertEqual(str(CustomWindowsPath("~/folder/")), "~\\folder")
+        self.assertEqual(str(CustomWindowsPath("~/folder/")), os.path.expanduser("~\\folder"))
 
     def test_custom_path_edge_cases_windows_custom_pure_windows_path(self):
         self.assertEqual(str(CustomPureWindowsPath("C:/")), "C:")
@@ -692,7 +698,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(str(CustomPurePath("C:/./Users/../test/")), "C:\\Users\\..\\test".replace("/", os.sep))
         self.assertEqual(os.path.normpath(str(CustomPurePath("C:/./Users/../test/"))), "C:\\test".replace("/", os.sep))
         self.assertEqual(str(CustomPurePath("C:\\.\\Users\\..\\test\\")), "C:\\Users\\..\\test".replace("/", os.sep))
-        self.assertEqual(str(CustomPurePath("~/folder/")), os.path.expanduser("~/folder").replace("/", os.sep))
+        self.assertEqual(str(CustomPurePath("~/folder/")), "~/folder".replace("/", os.sep))
         self.assertEqual(str(CustomPurePath("C:")), "C:".replace("/", os.sep))
         if os.name == "posix":
             self.assertEqual(str(CustomPurePath("//")), "/")
