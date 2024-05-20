@@ -105,11 +105,6 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         args_list: list[str] = []
         first_arg: bool = True
         for arg in args:
-            if isinstance(arg, cls):  # Do nothing if already our instance type (faster)
-                args_list.extend(arg.parts)
-                first_arg = False
-                continue
-
             formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=our_sep)
             if first_arg:  # Only check the drive for the first argument
                 first_arg = False

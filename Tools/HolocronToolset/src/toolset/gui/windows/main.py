@@ -538,7 +538,7 @@ class ToolWindow(QMainWindow):
         if not self.active:
             print(f"No installation loaded, cannot reload {file_or_folder}")
             return
-        file_or_folder_path = Path(self.active.override_path(), file_or_folder)
+        file_or_folder_path = self.active.override_path().joinpath(file_or_folder)
         if not file_or_folder_path.is_relative_to(self.active.override_path()):
             print(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
             return
