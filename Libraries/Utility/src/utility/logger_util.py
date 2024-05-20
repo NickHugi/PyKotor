@@ -481,7 +481,7 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
 
     def _setup_logger(
         self,
-        use_level: logging._Level = logging.DEBUG,
+        use_level: logging._Level = logging.INFO,
     ) -> logging.Logger:
         logger = logging.getLogger()
         if not logger.handlers:
