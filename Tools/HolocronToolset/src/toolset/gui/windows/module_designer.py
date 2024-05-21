@@ -383,7 +383,6 @@ class ModuleDesigner(QMainWindow):
         self._module = new_module
         self.log.debug("setGit")
         self.ui.flatRenderer.setGit(git)
-        self.enterInstanceMode()
         self.log.debug("init mainRenderer")
         self.ui.mainRenderer.initializeRenderer(self._installation, new_module)
         self.ui.mainRenderer.scene.show_cursor = self.ui.cursorCheck.isChecked()
@@ -553,7 +552,7 @@ class ModuleDesigner(QMainWindow):
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 if item is None:
-                    self.log.warning("item was somehow None in selectResourceItem index %s", j)
+                    self.log.warning(f"parent.child({j}) was somehow None in selectResourceItem")
                     continue
                 res: ModuleResource = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
                 if not isinstance(res, ModuleResource):
@@ -897,16 +896,17 @@ class ModuleDesigner(QMainWindow):
             self.ui.flatRenderer.instanceSelection.clear()
             self.selectedInstances.clear()
 
-    def deleteSelected(self):
+    def deleteSelected(self, *, noUndoStack: bool = False):
+        if not noUndoStack:
+            self.undoStack.push(DeleteCommand(self.git(), self.selectedInstances.copy(), self))  # noqa: SLF001
         for instance in self.selectedInstances:
             self._module.git().resource().remove(instance)
-        self.undoStack.push(DeleteCommand(self.git(), self.selectedInstances, self))  # noqa: SLF001
         self.selectedInstances.clear()
         self.ui.mainRenderer.scene.selection.clear()
         self.ui.flatRenderer.instanceSelection.clear()
         self.rebuildInstanceList()
 
-    def moveSelected(
+    def moveSelected(  # noqa: PLR0913
         self,
         x: float,
         y: float,
@@ -971,17 +971,17 @@ class ModuleDesigner(QMainWindow):
             for instance, old_position in self.initialPositions.items():
                 new_position = instance.position
                 if old_position and new_position != old_position:
-                    self.log.debug("3d Create the MoveCommand for undo/redo functionality")
+                    self.log.debug("Create the MoveCommand for undo/redo functionality")
                     move_command = MoveCommand(instance, old_position, new_position)
                     self.undoStack.push(move_command)
                 elif not old_position:
-                    self.log.debug("3d No old position %s", instance.resref)
+                    self.log.debug("No old position for %s", instance.resref)
                 else:
-                    self.log.debug("3d Both old and new positions are the same %s", instance.resref)
+                    self.log.debug("Both old and new positions are the same %s", instance.resref)
 
             # Reset for the next drag operation
             self.initialPositions.clear()
-            self.log.debug("No longer drag moving 3d")
+            self.log.debug("No longer drag moving")
             self.isDragMoving = False
 
         if self.isDragRotating:
@@ -997,7 +997,7 @@ class ModuleDesigner(QMainWindow):
 
             # Reset for the next drag operation
             self.initialRotations.clear()
-            self.log.debug("No longer drag rotating 3d")
+            self.log.debug("No longer drag rotating")
             self.isDragRotating = False
 
     def onInstanceListDoubleClicked(self):
@@ -1037,11 +1037,15 @@ class ModuleDesigner(QMainWindow):
         checkbox.setChecked(True)
 
     def enterInstanceMode(self):
-        self._controls2d._mode = _InstanceMode(self, self._installation, self.git())
+        self._controls2d._mode = _InstanceMode.__new__(_InstanceMode)
         # HACK:
         self._controls2d._mode.deleteSelected = self.deleteSelected
-        self._controls2d._mode.duplicateSelected = ModuleDesignerControls3d(self, self.ui.mainRenderer)._duplicateSelectedInstance
         self._controls2d._mode.editSelectedInstance = self.editInstance
+        self._controls2d._mode.buildList = self.rebuildInstanceList
+        self._controls2d._mode.updateVisibility = self.updateToggles
+        self._controls2d._mode.selectUnderneath = lambda: self.setSelection(self.ui.flatRenderer.instancesUnderMouse())
+        self._controls2d._mode.__init__(self, self._installation, self.git())
+        # self._controls2d._mode.rotateSelectedToPoint = self.rotateSelected
 
     def enterGeometryMode(self):
         self._controls2d._mode = _GeometryMode(self, self._installation, self.git(), hideOthers=False)
@@ -1093,6 +1097,14 @@ class ModuleDesigner(QMainWindow):
             if location.is_relative_to(self._installation.override_path()):
                 copyToOverrideAction.setEnabled(False)
             menu.addAction(locationAction)
+        def jump_to_instance_list_action(data=data):
+            this_ident = data.identifier()
+            instances = self.git().instances()
+            for instance in instances:
+                if instance.identifier() == this_ident:
+                    self.selectInstanceItemOnList(instance)
+                    return
+        menu.addAction("Find in Instance List").triggered.connect(jump_to_instance_list_action)
 
     def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
         self._controls3d.onMouseMoved(screen, screenDelta, world, buttons, keys)
@@ -1219,7 +1231,7 @@ class ModuleDesigner(QMainWindow):
         self.rebuildResourceTree()
         self.rebuildInstanceList()
         self._refreshWindowTitle()
-        self.updateToggles()
+        self.enterInstanceMode()
         self.show()
         self.activateWindow()
 
@@ -1608,13 +1620,13 @@ class ModuleDesignerControls3d:
 
         if self.rotateSelected.satisfied(buttons, keys):
             if not self.editor.isDragRotating and not self.editor.ui.lockInstancesCheck.isChecked():
+                self.editor.isDragRotating = True
                 self.editor.log.debug("rotateSelected instance in 3d")
                 for instance in self.editor.selectedInstances:
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
-                    self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
+                    self.editor.initialRotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
                 self.editor.log.debug("3d rotate set isDragRotating")
-                self.editor.isDragRotating = True
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
@@ -1633,7 +1645,7 @@ class ModuleDesignerControls3d:
             - Check if context menu button is pressed and open context menu at cursor position.
         """
         if self.selectUnderneath.satisfied(buttons, keys):
-            self.renderer.doSelect = True
+            self.renderer.doSelect = True  # auto-selects the instance under the mouse in the paint loop, and implicitly sets this back to False
 
         scene = self.renderer.scene
         assert scene is not None
@@ -1654,11 +1666,13 @@ class ModuleDesignerControls3d:
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         self.editor.handleUndoRedoFromLongActionFinished()
 
-    def _duplicateSelectedInstance(self):
+    def _duplicateSelectedInstance(self):  # TODO(th3w1zard1): Seems the code throughout is designed for multi-selections, yet nothing uses it. Probably disabled due to a bug or planned for later.
         instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
+        self.editor.log.info(f"Duplicating {instance!r}")
+        self.editor.undoStack.push(DuplicateCommand(self.editor.git(), [instance], self.editor))  # noqa: SLF001
         vect3 = self.renderer.scene.cursor.position()
         instance.position = Vector3(vect3.x, vect3.y, vect3.z)
-        self.editor.git().add(instance)
+        #self.editor.git().add(instance)  # Handled by the undoStack above.
         self.editor.rebuildInstanceList()
         self.editor.setSelection([instance])
 
@@ -1680,62 +1694,94 @@ class ModuleDesignerControls3d:
             - Zooms camera
             - Toggles instance locking.
         """
-        current_time = time.time()
-        if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay
-            self.editor.toggleFreeCam()
-            self.editor.last_free_cam_time = current_time  # Update the last toggle time
+        settings = ModuleDesignerSettings()
+        scene = self.renderer.scene
+        assert scene is not None
 
-        if self.moveCameraToSelected.satisfied(buttons, keys):
-            for instance in self.editor.selectedInstances:
-                self.renderer.snapCameraToPoint(instance.position)
-                break
+        if self.toggleFreeCam.satisfied(buttons, keys):
+            current_time = time.time()
+            if current_time - self.editor.last_free_cam_time > 1:  # 1 seconds delay
+                self.editor.toggleFreeCam()
+                self.editor.last_free_cam_time = current_time  # Update the last toggle time
+            return
 
-        if self.moveCameraToCursor.satisfied(buttons, keys):
-            camera = self.renderer.scene.camera
-            camera.x = self.renderer.scene.cursor.position().x
-            camera.y = self.renderer.scene.cursor.position().y
-            camera.z = self.renderer.scene.cursor.position().z
-        if self.moveCameraToEntryPoint.satisfied(buttons, keys):
-            self.editor.snapCameraToEntryLocation()
+        # Check camera movement keys
+        move_camera_keys = {
+            "selected": self.moveCameraToSelected.satisfied(buttons, keys),
+            "cursor": self.moveCameraToCursor.satisfied(buttons, keys),
+            "entry": self.moveCameraToEntryPoint.satisfied(buttons, keys)
+        }
+        if any(move_camera_keys.values()):
+            if move_camera_keys["selected"]:
+                instance = next(iter(self.editor.selectedInstances), None)
+                if instance is not None:
+                    self.renderer.snapCameraToPoint(instance.position)
+            elif move_camera_keys["cursor"]:
+                scene.camera.set_position(scene.cursor.position())
+            elif move_camera_keys["entry"]:
+                self.editor.snapCameraToEntryLocation()
+            return
+
+        # Check camera rotation and movement keys
+        rotation_keys = {
+            "left": self.rotateCameraLeft.satisfied(buttons, keys),
+            "right": self.rotateCameraRight.satisfied(buttons, keys),
+            "up": self.rotateCameraUp.satisfied(buttons, keys),
+            "down": self.rotateCameraDown.satisfied(buttons, keys)
+        }
+        movement_keys = {
+            "up": self.moveCameraUp.satisfied(buttons, keys),
+            "down": self.moveCameraDown.satisfied(buttons, keys),
+            "left": self.moveCameraLeft.satisfied(buttons, keys),
+            "right": self.moveCameraRight.satisfied(buttons, keys),
+            "forward": self.moveCameraForward.satisfied(buttons, keys),
+            "backward": self.moveCameraBackward.satisfied(buttons, keys),
+            "in": self.zoomCameraIn.satisfied(buttons, keys),
+            "out": self.zoomCameraOut.satisfied(buttons, keys)
+        }
+        if any(rotation_keys.values()) or any(movement_keys.values()):
+            # Calculate rotation and movement deltas
+            normalized_rotation_setting = settings.rotateCameraSensitivity3d / 100
+            angle_delta = (math.pi / 4) * normalized_rotation_setting
+
+            # Rotate camera based on key inputs
+            if rotation_keys["left"] and not rotation_keys["right"]:
+                self.renderer.rotateCamera(angle_delta, 0)
+            elif rotation_keys["right"] and not rotation_keys["left"]:
+                self.renderer.rotateCamera(-angle_delta, 0)
+            if rotation_keys["up"] and not rotation_keys["down"]:
+                self.renderer.rotateCamera(0, angle_delta)
+            elif rotation_keys["down"] and not rotation_keys["up"]:
+                self.renderer.rotateCamera(0, -angle_delta)
+
+            # Calculate movement delta
+            move_units_delta = settings.moveCameraSensitivity3d / 100
+
+            # Move camera based on key inputs
+            if movement_keys["up"] and not movement_keys["down"]:
+                scene.camera.z += -move_units_delta
+            elif movement_keys["down"] and not movement_keys["up"]:
+                scene.camera.z -= move_units_delta
+            if movement_keys["left"] and not movement_keys["right"]:
+                self.renderer.panCamera(0, -move_units_delta, 0)
+            elif movement_keys["right"] and not movement_keys["left"]:
+                self.renderer.panCamera(0, move_units_delta, 0)
+            if movement_keys["forward"]:
+                self.renderer.panCamera(move_units_delta, 0, 0)
+            elif movement_keys["backward"]:
+                self.renderer.panCamera(-move_units_delta, 0, 0)
+            if movement_keys["in"]:
+                self.renderer.zoomCamera(move_units_delta)
+            elif movement_keys["out"]:
+                self.renderer.zoomCamera(-move_units_delta)
+            return
 
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
-
-        if self.rotateCameraLeft.satisfied(buttons, keys):  # TODO(th3w1zard1): rotate sensitivity calcs.
-            RobustRootLogger().debug("rotateCameraLeft")
-            self.renderer.rotateCamera(math.pi / 4, 0)
-        if self.rotateCameraRight.satisfied(buttons, keys):
-            RobustRootLogger().debug("rotateCameraRight")
-            self.renderer.rotateCamera(-math.pi / 4, 0)
-        if self.rotateCameraUp.satisfied(buttons, keys):
-            RobustRootLogger().debug("rotateCameraUp")
-            self.renderer.rotateCamera(0, math.pi / 4)
-        if self.rotateCameraDown.satisfied(buttons, keys):
-            RobustRootLogger().debug("rotateCameraDown")
-            self.renderer.rotateCamera(0, -math.pi / 4)
-
-        if self.moveCameraUp.satisfied(buttons, keys):
-            scene = self.renderer.scene
-            assert scene is not None
-            scene.camera.z += 1
-        if self.moveCameraDown.satisfied(buttons, keys):
-            scene = self.renderer.scene
-            assert scene is not None
-            scene.camera.z -= 1
-        if self.moveCameraLeft.satisfied(buttons, keys):
-            self.renderer.panCamera(0, -1, 0)
-        if self.moveCameraRight.satisfied(buttons, keys):
-            self.renderer.panCamera(0, 1, 0)
-        if self.moveCameraForward.satisfied(buttons, keys):
-            self.renderer.panCamera(1, 0, 0)
-        if self.moveCameraBackward.satisfied(buttons, keys):
-            self.renderer.panCamera(-1, 0, 0)
-
-        if self.zoomCameraIn.satisfied(buttons, keys):
-            self.renderer.zoomCamera(1)
-        if self.zoomCameraOut.satisfied(buttons, keys):
-            self.renderer.zoomCamera(-1)
-
+            return
+        if self.duplicateSelected.satisfied(buttons, keys):
+            self._duplicateSelectedInstance()
+            return
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
@@ -1845,7 +1891,7 @@ class ModuleDesignerControlsFreeCam:
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         current_time = time.time()
-        if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 2):  # 2 seconds delay
+        if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 1):  # 1 seconds delay
             self.editor.toggleFreeCam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
 
@@ -2044,16 +2090,15 @@ class ModuleDesignerControls2d:
             self.editor.moveSelected(worldDelta.x, worldDelta.y, noUndoStack=True, noZCoord=True)
 
         if self.rotateSelected.satisfied(buttons, keys) and isinstance(self._mode, _InstanceMode):
-            for instance in self.editor.selectedInstances:
-                if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
-                    continue  # doesn't support rotations.
-                self.editor.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
-            self.editor.log.debug("ModuleDesignerControls2d rotate set isDragRotating")
-            self.isDragRotating = True
-            self._mode.rotateSelectedToPoint(world.x, world.y)
             if not self.editor.isDragRotating:
-                print("2d rotate set isDragRotating")
                 self.editor.isDragRotating = True
+                self.editor.log.debug("rotateSelected instance in 2d")
+                selection: list[GITInstance] = self.editor.selectedInstances  # noqa: SLF001
+                for instance in selection:
+                    if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                        continue  # doesn't support rotations.
+                    self.editor.initialRotations[instance] = Vector4(*instance.orientation) if isinstance(instance, GITCamera) else instance.bearing
+            self._mode.rotateSelectedToPoint(world.x, world.y)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         """Handle mouse press events in the editor.
@@ -2082,22 +2127,13 @@ class ModuleDesignerControls2d:
                 RobustRootLogger().debug("onMousePressed, selectUnderneath did not find any instances.")
                 self.editor.setSelection([])
 
+        world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
             RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
             if isinstance(self.editor._controls2d._mode, _InstanceMode) and self.editor.selectedInstances:
-                self._duplicate_instance()
+                self._mode.duplicateSelected(world)
         if self.openContextMenu.satisfied(buttons, keys):
-            world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
-
-    def _duplicate_instance(self):
-        self.editor.undoStack.push(DuplicateCommand(self.editor.git(), self.editor.selectedInstances, self.editor))  # noqa: SLF001
-        instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
-        result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
-        instance.position = self.renderer.toWorldCoords(result.x(), result.y())
-        self.editor.git().add(instance)
-        self.editor.rebuildInstanceList()
-        self.editor.setSelection([instance])
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         """Handle keyboard input in the editor.

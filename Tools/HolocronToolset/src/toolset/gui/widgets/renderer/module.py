@@ -313,20 +313,20 @@ class ModuleRenderer(QOpenGLWidget):
             up: Units to move upwards.
         """
         forward_vec: vec3 = forward * self.scene.camera.forward()
-        sideward = right * self.scene.camera.sideward()
+        sideways = right * self.scene.camera.sideward()
 
-        self.scene.camera.x += forward_vec.x + sideward.x
-        self.scene.camera.y += forward_vec.y + sideward.y
+        self.scene.camera.x += forward_vec.x + sideways.x
+        self.scene.camera.y += forward_vec.y + sideways.y
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float):
         forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
-        sideward = right * self.scene.camera.sideward(ignore_z=False)
+        sideways = right * self.scene.camera.sideward(ignore_z=False)
         upward = -up * self.scene.camera.upward(ignore_xy=False)
 
-        self.scene.camera.x += upward.x + sideward.x + forward_vec.x
-        self.scene.camera.y += upward.y + sideward.y + forward_vec.y
-        self.scene.camera.z += upward.z + sideward.z + forward_vec.z
+        self.scene.camera.x += upward.x + sideways.x + forward_vec.x
+        self.scene.camera.y += upward.y + sideways.y + forward_vec.y
+        self.scene.camera.z += upward.z + sideways.z + forward_vec.z
 
     def rotateCamera(self, yaw: float, pitch: float, *, snapRotations: bool = True):
         """Rotates the camera by the angles (radians) specified.

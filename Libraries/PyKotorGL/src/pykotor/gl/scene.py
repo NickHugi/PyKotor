@@ -1109,6 +1109,11 @@ class Camera:
         self.distance: float = 10.0
         self.fov: float = 90.0
 
+    def set_position(self, position: Vector3 | vec3):
+        self.x = position.x
+        self.y = position.y
+        self.z = position.z
+
     def view(self) -> mat4:
         """Returns the view matrix for the camera.
 

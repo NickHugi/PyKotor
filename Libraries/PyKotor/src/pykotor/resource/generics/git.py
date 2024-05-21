@@ -247,6 +247,9 @@ class GITInstance(ABC):
             return f"{self.__class__.__name__}(camera_id={self.camera_id})"
         return f"{self.__class__.__name__}({self.identifier()})"
 
+    def __hash__(self):
+        return hash(self.camera_id if isinstance(self, GITCamera) else self.identifier())
+
     @abstractmethod
     def identifier(self) -> ResourceIdentifier:
         """Returns the resource identifier of the instance, or None if it doesn't have one."""
