@@ -1288,7 +1288,8 @@ class _InstanceMode(_Mode):
 
     def rotateSelected(self, angle: float):
         for instance in self.walkmeshRenderer.instanceSelection.all():
-            instance.rotate(angle, 0, 0)
+            if isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                instance.rotate(angle, 0, 0)
 
     def rotateSelectedToPoint(self, x: float, y: float):
         rotation_threshold = 0.05  # Threshold for rotation changes, adjust as needed
@@ -1308,7 +1309,7 @@ class _InstanceMode(_Mode):
 
             if isinstance(instance, GITCamera):
                 instance.rotate(yaw - current_angle, 0, 0)
-            else:
+            elif isinstance(instance, (GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                 instance.rotate(-yaw + current_angle, 0, 0)
 
     # endregion
@@ -1623,7 +1624,7 @@ class GITControlScheme:
             for instance, old_rotation in self.initialRotations.items():
                 new_rotation = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
                 if old_rotation and new_rotation != old_rotation:
-                    self.log.debug("Create the RotateCommand for undo/redo functionality")
+                    self.log.debug(f"Create the RotateCommand for undo/redo functionality: {instance!r}")
                     self.undoStack.push(RotateCommand(instance, old_rotation, new_rotation))
                 elif not old_rotation:
                     self.log.debug("No old rotation for %s", instance.resref)

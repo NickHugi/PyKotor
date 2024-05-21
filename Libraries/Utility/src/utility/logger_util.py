@@ -550,7 +550,12 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
     def _start_listener(self):
         if not hasattr(self, "listener"):
             self._setup_logger()
-        self.listener.start()
+        try:
+            self.listener.start()
+        except AttributeError:
+            logging.getLogger().handlers = []
+            self._setup_logger()
+            self.listener.start()
 
     def __call__(self) -> logging.Logger:
         return self._logger
