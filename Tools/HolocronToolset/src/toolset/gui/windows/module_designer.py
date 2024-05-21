@@ -2116,6 +2116,14 @@ class ModuleDesignerControls2d:
             - Check if context menu button is pressed and open context menu.
         """
         RobustRootLogger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
+        world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
+        if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
+            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
+            if isinstance(self._mode, _InstanceMode) and self.editor.selectedInstances:
+                self._mode.duplicateSelected(world)
+        if self.openContextMenu.satisfied(buttons, keys):
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
+
         if self.selectUnderneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
                 RobustRootLogger().debug("selectUnderneathGeometry?")
@@ -2126,14 +2134,6 @@ class ModuleDesignerControls2d:
             else:
                 RobustRootLogger().debug("onMousePressed, selectUnderneath did not find any instances.")
                 self.editor.setSelection([])
-
-        world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
-        if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
-            if isinstance(self.editor._controls2d._mode, _InstanceMode) and self.editor.selectedInstances:
-                self._mode.duplicateSelected(world)
-        if self.openContextMenu.satisfied(buttons, keys):
-            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(int(screen.x), int(screen.y))), isFlatRendererCall=True)
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         """Handle keyboard input in the editor.
