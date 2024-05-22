@@ -1668,6 +1668,8 @@ class ModuleDesignerControls3d:
 
     def _duplicateSelectedInstance(self):  # TODO(th3w1zard1): Seems the code throughout is designed for multi-selections, yet nothing uses it. Probably disabled due to a bug or planned for later.
         instance: GITInstance = deepcopy(self.editor.selectedInstances[-1])
+        if isinstance(instance, GITCamera):
+            instance.camera_id = self.editor.git().next_camera_id()
         self.editor.log.info(f"Duplicating {instance!r}")
         self.editor.undoStack.push(DuplicateCommand(self.editor.git(), [instance], self.editor))  # noqa: SLF001
         vect3 = self.renderer.scene.cursor.position()
@@ -2153,8 +2155,9 @@ class ModuleDesignerControls2d:
             RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             if isinstance(self._mode, _GeometryMode):
                 self._mode.deleteSelected()
-                return
-            self.editor.deleteSelected()
+            else:
+                self.editor.deleteSelected()
+            return
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
             RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d snapToCamera satisfied ")

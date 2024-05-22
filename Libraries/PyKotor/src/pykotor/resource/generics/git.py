@@ -111,6 +111,10 @@ class GIT:
             ]
         )
 
+    def next_camera_id(self) -> int:
+        """Get a unique new camera id for this git to use with a new GITCamera."""
+        return max(camera.camera_id for camera in self.cameras) + 1
+
     def remove(
         self,
         instance: GITInstance,

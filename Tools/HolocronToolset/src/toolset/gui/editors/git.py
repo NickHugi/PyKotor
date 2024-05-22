@@ -154,7 +154,7 @@ class DuplicateCommand(QUndoCommand):
                 self.editor._mode.renderer2d.instanceSelection.select([instance])
             else:
                 self.editor.setSelection([instance])
-            self.editor.deleteSelected()
+            self.editor.deleteSelected(noUndoStack=True)
         self.rebuildInstanceList()
 
     def rebuildInstanceList(self):
@@ -189,7 +189,6 @@ class DeleteCommand(QUndoCommand):
         super().__init__()
         self.git: GIT = git
         self.instances: list[GITInstance] = instances
-        self._firstRun: bool = True
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
@@ -213,22 +212,18 @@ class DeleteCommand(QUndoCommand):
             self.editor.setSelection([])
 
     def redo(self):
-        if self._firstRun is True:
-            print("Skipping first redo of DeleteCommand.")
-            self._firstRun = False
-            return
         RobustRootLogger().debug(f"Redo delete: {[instance.identifier() for instance in self.instances]}")
         self.editor.enterInstanceMode()
         for instance in self.instances:
-            if instance in self.git.instances():
+            if instance not in self.git.instances():
                 print(f"{instance!r} not found in instances: no deletecommand to redo.")
                 continue
-            RobustRootLogger().debug(f"Undo duplicate: {instance.identifier()}")
+            RobustRootLogger().debug(f"Redo delete: {instance.identifier()}")
             if isinstance(self.editor, GITEditor):
                 self.editor._mode.renderer2d.instanceSelection.select([instance])
             else:
                 self.editor.setSelection([instance])
-            self.editor.deleteSelected()
+            self.editor.deleteSelected(noUndoStack=True)
         self.rebuildInstanceList()
 
 
@@ -712,8 +707,8 @@ class GITEditor(Editor):
     def selectUnderneath(self):
         self._mode.selectUnderneath()
 
-    def deleteSelected(self):
-        self._mode.deleteSelected()
+    def deleteSelected(self, *, noUndoStack: bool = False):
+        self._mode.deleteSelected(noUndoStack=noUndoStack)
 
     def duplicateSelected(self, position: Vector3):
         self._mode.duplicateSelected(position)
@@ -834,7 +829,7 @@ class _Mode(ABC):
     def selectUnderneath(self): ...
 
     @abstractmethod
-    def deleteSelected(self): ...
+    def deleteSelected(self, *, noUndoStack: bool = False): ...
 
     @abstractmethod
     def duplicateSelected(self, position: Vector3): ...
@@ -1281,11 +1276,13 @@ class _InstanceMode(_Mode):
 
     def duplicateSelected(self, position: Vector3, *, noUndoStack: bool = False):
         selection = self.renderer2d.instanceSelection.all()
-        if not noUndoStack:
-            undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
-            undoStack.push(DuplicateCommand(self._git, selection.copy(), self._editor))
         if selection:
             instance: GITInstance = deepcopy(selection[-1])
+            if isinstance(instance, GITCamera):
+                instance.camera_id = self._editor.git().next_camera_id()
+            if not noUndoStack:
+                undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
+                undoStack.push(DuplicateCommand(self._git, [instance], self._editor))
             instance.position = position
             self._git.add(instance)
             self.buildList()
@@ -1415,7 +1412,7 @@ class _GeometryMode(_Mode):
             return
         self.renderer2d.geometrySelection.select(underMouse or [])
 
-    def deleteSelected(self):
+    def deleteSelected(self, *, noUndoStack: bool = False):
         vertex: GeomPoint | None = self.renderer2d.geometrySelection.last()
         if vertex is None:
             RobustRootLogger().error("Could not delete last GeomPoint, there's none selected.")
@@ -1655,15 +1652,11 @@ class GITControlScheme:
             self.isDragRotating = False
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        if self.selectUnderneath.satisfied(buttons, keys):
-            self.editor.selectUnderneath()
         if self.duplicateSelected.satisfied(buttons, keys):
             position = self.editor.ui.renderArea.toWorldCoords(screen.x, screen.y)
-            if isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
-                if selection:
-                    self.undoStack.push(DuplicateCommand(self.editor._git, selection.copy(), self.editor))  # noqa: SLF001
             self.editor.duplicateSelected(position)
+        if self.selectUnderneath.satisfied(buttons, keys):
+            self.editor.selectUnderneath()
 
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self.handleUndoRedoFromLongActionFinished()
@@ -1674,7 +1667,7 @@ class GITControlScheme:
                 selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
                 if selection:
                     self.undoStack.push(DeleteCommand(self.editor._git, selection.copy(), self.editor))  # noqa: SLF001
-            self.editor.deleteSelected()
+            self.editor.deleteSelected(noUndoStack=True)
 
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
