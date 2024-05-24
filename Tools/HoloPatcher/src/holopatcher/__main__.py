@@ -884,7 +884,7 @@ class App:
             box.set(str(directory))
             if directory_str not in box["values"]:
                 box["values"] = (*box["values"], directory_str)
-            self.after(10, self.move_cursor_to_end, self.namespaces_combobox)
+            self.root.after(10, self.move_cursor_to_end, self.namespaces_combobox)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
