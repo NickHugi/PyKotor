@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
