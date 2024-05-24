@@ -331,113 +331,30 @@ class ConfigReader:
         self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination, default_sourcefolder)
 
         modifier_dict: dict[int, dict[str, str]] = {}
-        range_delims: list[str] = [":", "-", "to"]
         syntax_error_caught = False
-
-        def extract_range_parts(range_str: str) -> tuple[int, int | None]:
-            """Extracts start and end parts from a range string.
-
-            Args:
-            ----
-                range_str: String containing range in format start-end or start.
-
-            Returns:
-            -------
-                tuple[int, int | None]: tuple containing start and end parts as integers or None.
-
-            Processing Logic:
-            ----------------
-                - Splits the range string on delimiters like '-' or ':'
-                - Converts start and end parts to integers if present
-                - Returns start and end as a tuple of integers or integer and None
-            """
-            lower_range_str = range_str.lower()
-            if lower_range_str.startswith(("strref", "ignore")):
-                range_str = range_str[6:]
-
-            for delim in range_delims:
-                if delim.lower() not in range_str:
-                    continue
-
-                parts: list[str] = range_str.split(delim)
-                start: int = int(parts[0].strip()) if parts[0].strip() else 0
-                end: int | None = int(parts[1].strip()) if parts[1].strip() else None
-                return start, end
-
-            return int(range_str), None
-
-        def parse_range(range_str: str) -> range:
-            """Parses a string representing a range into a range object.
-
-            Args:
-            ----
-                range_str: String representing a range
-
-            Returns:
-            -------
-                range: Parsed range object from the string
-
-            Processing Logic:
-            ----------------
-                - Extracts the start and end parts from the range string
-                - If end is None, return a range from start to start+1 (meaning no range)
-                - Check invalid syntax i.e. if end is less than start, raise ValueError
-                - Return the range from start to end+1.
-            """
-            start, end = extract_range_parts(range_str)
-            if end is None:
-                return range(int(start), int(start) + 1)
-
-            if end < start:
-                msg = f"start of range '{start}' must be less than end of range '{end}'."
-                raise ValueError(msg)
-
-            return range(start, end + 1)
-
-        tlk_list_ignored_indices: set[int] = set()
 
         def process_tlk_entries(
             tlk_filename: str,
-            dialog_tlk_indices: range,
-            mod_tlk_indices: range,
+            dialog_tlk_index: int,
+            mod_tlk_index: int,
             *,
             is_replacement: bool,
         ):
-            """Processes the TLK entries based on the entries and creates ModifyTLK objects for use with the patchloop.
-
-            Args:
-            ----
-                tlk_data: TLK - TLK data object
-                dialog_tlk_keys - Keys for dialog entries to modify
-                modifications_tlk_keys - New values for the dialog entries
-                is_replacement: bool - Whether it is replacing or modifying text
-            """
-            for dialog_tlk_stringref, modded_tlk_stringref in zip(dialog_tlk_indices, mod_tlk_indices):
-                if dialog_tlk_stringref in tlk_list_ignored_indices:
-                    continue
-                modifier = ModifyTLK(dialog_tlk_stringref, is_replacement)
-                modifier.mod_index = modded_tlk_stringref
-                modifier.tlk_filepath = self.mod_path / self.config.patches_tlk.sourcefolder / tlk_filename
-                self.config.patches_tlk.modifiers.append(modifier)
-
-        for i in tlk_list_edits:
-            try:
-                if i.lower().startswith("ignore"): tlk_list_ignored_indices.update(parse_range(i[6:]))  # noqa: E701
-            except ValueError as e:  # noqa: PERF203
-                raise ValueError(f"Could not parse ignore index '{i}' for modifier '{i}={tlk_list_edits[i]}' in [TLKList]") from e
+            modifier = ModifyTLK(dialog_tlk_index, is_replacement)
+            modifier.mod_index = mod_tlk_index
+            modifier.tlk_filepath = self.mod_path / self.config.patches_tlk.sourcefolder / tlk_filename
+            self.config.patches_tlk.modifiers.append(modifier)
 
         for key, value in tlk_list_edits.items():
             lower_key: str = key.lower()
-            if lower_key.startswith("ignore"):
-                continue
             replace_file: bool = lower_key.startswith("replace")
             append_file: bool = lower_key.startswith("append")
             try:
                 if lower_key.startswith("strref"):
                     process_tlk_entries(
                         tlk_filename=self.config.patches_tlk.sourcefile,
-                        dialog_tlk_indices=parse_range(lower_key[6:]),
-                        mod_tlk_indices=parse_range(value),
+                        dialog_tlk_index=int(lower_key[6:]),
+                        mod_tlk_index=int(value),
                         is_replacement=False,
                     )
                 elif replace_file or append_file:
@@ -455,8 +372,8 @@ class ConfigReader:
                     ):
                         process_tlk_entries(
                             tlk_filename=value,
-                            dialog_tlk_indices=parse_range(dialog_tlk_key),
-                            mod_tlk_indices=parse_range(mod_tlk_value),
+                            dialog_tlk_index=int(dialog_tlk_key),
+                            mod_tlk_index=int(mod_tlk_value),
                             is_replacement=replace_file,
                         )
                 elif "\\" in lower_key or "/" in lower_key:
