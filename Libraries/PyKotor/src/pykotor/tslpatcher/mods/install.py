@@ -98,8 +98,7 @@ def create_backup(
 def create_uninstall_scripts(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
     with uninstall_folder.joinpath("uninstall.ps1").open("w", encoding="utf-8") as f:
         f.write(
-            rf"""
-#!/usr/bin/env pwsh
+            rf"""#!/usr/bin/env pwsh
 $backupParentFolder = Get-Item -Path "..$([System.IO.Path]::DirectorySeparatorChar)backup"
 $mostRecentBackupFolder = Get-ChildItem -LiteralPath $backupParentFolder.FullName -Directory | ForEach-Object {{
     $dirName = $_.Name

@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import mmap
 import os
+import struct
 import uuid
 
 from enum import Enum
@@ -13,14 +14,15 @@ from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.string_util import WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
-SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview, BinaryReader, STREAM_TYPES]
+BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
+SOURCE_TYPES = Union[BASE_SOURCE_TYPES, STREAM_TYPES]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
@@ -251,6 +253,10 @@ class ResourceType(Enum):
         self.is_invalid: bool = is_invalid
         self.target_member: str | None = target_member
 
+    def is_gff(self) -> bool:
+        """Returns True if this resourcetype is a gff, excluding the xml/json abstractions, False otherwise."""
+        return self.contents == "gff"
+
     def target_type(self):
         return self if self.target_member is None else self.__class__.__members__[self.target_member]
 
@@ -293,6 +299,8 @@ class ResourceType(Enum):
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
         # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
+        if self is other:
+            return True
         if isinstance(other, ResourceType):
             if self.is_invalid or other.is_invalid:
                 return self.is_invalid and other.is_invalid
@@ -399,9 +407,9 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
     def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True) -> R:  # noqa: FBT002, FBT001
         try:
             resource: R = func(self, auto_close)
-        except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
+        except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
             msg = "Tried to load an unsupported or corrupted file."
-            get_root_logger().exception(msg)
+            RobustRootLogger().exception(msg)
             raise ValueError(msg) from e
         finally:
             if auto_close:

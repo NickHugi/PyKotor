@@ -75,9 +75,7 @@ def clone_module(
     old_module = Module(root, installation)
     new_module = ERF(ERFType.MOD)
 
-    ifo: IFO | None = old_module.info().resource()
-    assert_with_variable_trace(ifo is not None, f"ifo {ifo!r} cannot be None in clone_module")
-    assert ifo is not None, f"ifo {ifo!r} cannot be None in clone_module"
+    ifo: IFO = old_module.info().resource()
 
     old_resref: ResRef = ifo.resref
     ifo.resref.set_data(identifier)
@@ -178,7 +176,6 @@ def clone_module(
             uts_res = old_module.sound(old_resname)
             assert uts_res is not None, assert_with_variable_trace(uts_res is not None, "old_module.sound() returned None in clone_module")  # noqa: S101, E501
             uts: UTS | None = uts_res.resource()
-            assert uts is not None, assert_with_variable_trace(uts is not None, "old_module.sound().resource() returned None in clone_module")  # noqa: S101, E501
 
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
@@ -290,7 +287,7 @@ def rim_to_mod(
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
-    module_root = Installation.replace_module_extensions(module_root or filepath)
+    module_root = Installation.get_module_root(module_root or filepath)
     r_rim_folderpath = CaseAwarePath.pathify(rim_folderpath) if rim_folderpath else r_outpath.parent
 
     filepath_rim: CaseAwarePath = r_rim_folderpath / f"{module_root}.rim"

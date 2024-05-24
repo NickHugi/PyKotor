@@ -6,7 +6,7 @@ from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.generics.uti import read_uti
 from pykotor.resource.type import ResourceType
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from pykotor.extract.installation import Installation
@@ -79,22 +79,22 @@ def get_body_model(
 
     modeltype = utc_appearance_row.get_string("modeltype", context=f"Fetching model type{context_base}")
     if modeltype != "B":
-        get_root_logger().debug(f"appearance.2da: utc 'modeltype' is '{modeltype}', fetching 'race' model{context_base}")
+        print(f"appearance.2da: utc 'modeltype' is '{modeltype}', fetching 'race' model{context_base}")
         body_model = utc_appearance_row.get_string("race", context=context_base)
     else:
-        get_root_logger().debug("appearance.2da: utc 'modeltype' is 'B'")
+        print("appearance.2da: utc 'modeltype' is 'B'")
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
-            get_root_logger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
+            RobustRootLogger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
             armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
             if armor_res_lookup is None:
                 raise ValueError(f"'{armor_resref}.uti' missing from installation{context_base}")
 
             armor_uti = read_uti(armor_res_lookup.data)
-            get_root_logger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
+            RobustRootLogger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
             body_row = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
             body_cell = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
-            get_root_logger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
+            RobustRootLogger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
 
             armor_variation = body_cell.lower()
             model_column = f"model{armor_variation}"
@@ -117,7 +117,7 @@ def get_body_model(
             fallback_override_texture = override_texture + tex_append
             if tex_append != "01" and installation.texture(fallback_override_texture) is None:  # e.g. g_lena.utc which uses the twi'lek stripper model (i.e. should be n_twilekfc01 not n_twilekfc05)
                 fallback_override_texture = f"{override_texture}01"
-                print(f"override texture '{fallback_override_texture}' not found, using ")
+                print(f"override texture '{fallback_override_texture}' not found, appending '01' to the end like the game itself would do.")
             override_texture = fallback_override_texture
         else:
             override_texture = None
@@ -159,13 +159,13 @@ def get_weapon_models(
     if appearance is None:
         appearance_lookup = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
-            get_root_logger().error("appearance.2da missing from installation.")
+            RobustRootLogger().error("appearance.2da missing from installation.")
             return None, None
         appearance = read_2da(appearance_lookup.data)
     if baseitems is None:
         baseitems_lookup = installation.resource("baseitems", ResourceType.TwoDA)
         if not baseitems_lookup:
-            get_root_logger().error("baseitems.2da missing from installation.")
+            RobustRootLogger().error("baseitems.2da missing from installation.")
             return None, None
         baseitems = read_2da(baseitems_lookup.data)
 
@@ -243,13 +243,13 @@ def get_head_model(
     if appearance is None:
         appearance_lookup = installation.resource("appearance", ResourceType.TwoDA)
         if not appearance_lookup:
-            get_root_logger().error("appearance.2da missing from installation.")
+            RobustRootLogger().error("appearance.2da missing from installation.")
             return None, None
         appearance = read_2da(appearance_lookup.data)
     if heads is None:
         heads_lookup = installation.resource("heads", ResourceType.TwoDA)
         if not heads_lookup:
-            get_root_logger().error("heads.2da missing from installation.")
+            RobustRootLogger().error("heads.2da missing from installation.")
             return None, None
         heads = read_2da(heads_lookup.data)
 
@@ -261,7 +261,7 @@ def get_head_model(
         try:
             head_row = heads.get_row(head_id)
         except IndexError:
-            get_root_logger().error(
+            RobustRootLogger().error(
                 "Row %s missing from heads.2da, defined in appearance.2da under the column 'normalhead' row %s",
                 head_id,
                 utc.appearance_id,
@@ -279,7 +279,7 @@ def get_head_model(
             head_column_name = "headtexe"
         elif "alttexture" in heads.get_headers():
             if not installation.game().is_k2():  # TSL only override.
-                get_root_logger().error("'alttexture' column in heads.2da should never exist in a K1 installation.")
+                RobustRootLogger().error("'alttexture' column in heads.2da should never exist in a K1 installation.")
             else:
                 head_column_name = "alttexture"
         if head_column_name is not None:
@@ -287,7 +287,7 @@ def get_head_model(
                 texture = head_row.get_string(head_column_name)
                 texture = texture if texture and texture.strip() else None
             except KeyError:
-                get_root_logger().error("Cannot find %s in heads.2da", head_column_name, exc_info=True)
+                RobustRootLogger().error("Cannot find %s in heads.2da", head_column_name, exc_info=True)
 
     return model, texture
 

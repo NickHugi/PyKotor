@@ -40,18 +40,11 @@ K1_PATH = os.environ.get("K1_PATH")
     "qtpy is required, please run pip install -r requirements.txt before running this test.",
 )
 class TXTEditorTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Make sure to configure this environment path before testing!
-        from toolset.data.installation import HTInstallation
-
-        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
-
     def setUp(self):
         from toolset.gui.editors.txt import TXTEditor
 
         self.app = QApplication([])
-        self.ui = TXTEditor(None, self.INSTALLATION)
+        self.ui = TXTEditor(None, None)
 
     def tearDown(self):
         self.app.deleteLater()

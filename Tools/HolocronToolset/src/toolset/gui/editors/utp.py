@@ -23,6 +23,7 @@ from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -37,7 +38,7 @@ class UTPEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation | None = None,
+        installation: HTInstallation = None,
         *,
         mainWindow: QWidget | QMainWindow | None = None,
     ):
@@ -374,7 +375,7 @@ class UTPEditor(Editor):
         capsules: list[Capsule] = []
 
         with suppress(Exception):
-            root = Module.get_root(self._filepath)
+            root = Module.find_root(self._filepath)
             moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             newCapsules: list[Capsule] = [Capsule(self._installation.module_path() / mod_filename) for mod_filename in moduleNames]
             capsules.extend(newCapsules)
@@ -429,6 +430,10 @@ class UTPEditor(Editor):
 
         data, _ = self.build()
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        if not modelname or not modelname.strip():
+            RobustRootLogger().warning("Placeable '%s.%s' has no model to render!", self._resname, self._restype)
+            self.ui.previewRenderer.clearModel()
+            return
         mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
         mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
         if mdl is not None and mdx is not None:

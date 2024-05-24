@@ -62,6 +62,11 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.mergeRimCheck)
 
+        self.attemptKeepOldGFFFields = QCheckBox(self.scrollAreaWidgetContents)
+        self.attemptKeepOldGFFFields.setObjectName(u"attemptKeepOldGFFFields")
+
+        self.verticalLayout.addWidget(self.attemptKeepOldGFFFields)
+
         self.moduleSortOptionComboBox = QComboBox(self.scrollAreaWidgetContents)
         self.moduleSortOptionComboBox.addItem("")
         self.moduleSortOptionComboBox.addItem("")
@@ -193,7 +198,8 @@ class Ui_Form(object):
         self.saveRimCheck.setText(QCoreApplication.translate("Form", u"Allow saving resources to RIM files.", None))
         self.useBetaChannel.setText(QCoreApplication.translate("Form", u"Check for beta updates and take me to their download link when they're available.", None))
         self.alsoCheckReleaseVersion.setText(QCoreApplication.translate("Form", u"Also check release version if it is newer than beta version.", None))
-        self.mergeRimCheck.setText(QCoreApplication.translate("Form", u"Merge RIM files in the Modules tab of the Main Window.", None))
+        self.mergeRimCheck.setText(QCoreApplication.translate("Form", u"Merge secondary ERF/RIM's in the Modules tab of the Main Window (i.e. '_s.rim' and '_dlg.erf').", None))
+        self.attemptKeepOldGFFFields.setText(QCoreApplication.translate("Form", u"Attempts to keep any pre-existing GFF fields when saving the editor. Required for save editing.", None))
         self.moduleSortOptionComboBox.setItemText(0, QCoreApplication.translate("Form", u"Sort by filename", None))
         self.moduleSortOptionComboBox.setItemText(1, QCoreApplication.translate("Form", u"Sort by humanized area name", None))
         self.moduleSortOptionComboBox.setItemText(2, QCoreApplication.translate("Form", u"Sort by area name", None))

@@ -112,9 +112,10 @@ def read_tpc(
         txi_source = CaseAwarePath.pathify(source).with_suffix(".txi")
         if not txi_source.safe_isfile():
             return loaded_tpc
-
     elif isinstance(txi_source, (os.PathLike, str)):
         txi_source = CaseAwarePath.pathify(txi_source).with_suffix(".txi")
+        if not txi_source.safe_isfile():
+            return loaded_tpc
 
     if txi_source is None:
         return loaded_tpc

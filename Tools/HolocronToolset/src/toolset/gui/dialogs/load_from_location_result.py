@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import faulthandler
 import os
 import pathlib
@@ -7,6 +8,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 from collections import OrderedDict
@@ -24,10 +26,9 @@ from qtpy.QtWidgets import (
     QApplication,
     QCheckBox,
     QDesktopWidget,
-    QDialog,
     QFileDialog,
     QHeaderView,
-    QLineEdit,
+    QInputDialog,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -76,7 +77,7 @@ from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.installation import HTInstallation
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 from utility.system.path import Path
@@ -192,6 +193,8 @@ class FileTableWidgetItem(SortableTableWidgetItem):
         self.filepath: Path = filepath
 
     def __eq__(self, other):
+        if self is other:
+            return True
         return isinstance(other, FileTableWidgetItem) and self.filepath == other.filepath
 
     def __hash__(self):
@@ -209,6 +212,8 @@ class ResourceTableWidgetItem(FileTableWidgetItem):
         self.resource: FileResource = resource
 
     def __eq__(self, other):
+        if self is other:
+            return True
         return isinstance(other, ResourceTableWidgetItem) and self.resource == other.resource
 
     def __hash__(self):
@@ -260,66 +265,23 @@ class CustomItem:
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
         return executed_action  # noqa: RET504
 
-    def copy_selection_to_clipboard(self):
-        selection = self.selectedIndexes()
-        if not selection:
-            return
-        rows = sorted(index.row() for index in selection)
-        columns = sorted(index.column() for index in selection)
-        row_count = rows[-1] - rows[0] + 1
-        column_count = columns[-1] - columns[0] + 1
-        table_text = [[""] * column_count for _ in range(row_count)]
-        for index in selection:
-            row = index.row() - rows[0]
-            column = index.column() - columns[0]
-            table_text[row][column] = index.data()
-
-        # Format table text as a tab-delimited string
-        clipboard_text = "\n".join("\t".join(row) for row in table_text)
-        QApplication.clipboard().setText(clipboard_text)
-
-    def remove_selected_result(self):
-        selected = self.selectedRanges()
-        if not selected:
-            return
-        for selection in selected:
-            for row in range(selection.bottomRow(), selection.topRow()-1, -1):
-                self.removeRow(row)
-
-    def set_all_items_editability(
-        self,
-        *,
-        editable: bool,
-    ):
-        """Set all items in the table to be either editable or read-only based on the `editable` argument.
-
-        Args:
-        ----
-            editable (bool): If True, all items will be set to editable. If False, items will be read-only.
-        """
-        for row in range(self.rowCount()):
-            for column in range(self.columnCount()):
-                item = self.item(row, column)
-                if not item:  # Check if the item exists
-                    continue
-                if editable:
-                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-                else:
-                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-
 
 class FileItems(CustomItem):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, filepaths: list[Path] | None = None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.filepaths: list[Path] = [] if filepaths is None else filepaths
         self.temp_path: Path | None = None
+
+    def selectedItems(self) -> list[FileTableWidgetItem]:
+        return [FileTableWidgetItem(value=str(path), filepath=path) for path in self.filepaths]
 
     def show_confirmation_dialog(
         self,
         icon: QMessageBox.Icon | int,
         title: str,
         text: str,
-        buttons: QMessageBox.StandardButton | int = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        default_button: QMessageBox.StandardButton | int = QMessageBox.StandardButton.No,
+        buttons: QMessageBox.StandardButton | int = QMessageBox.Yes | QMessageBox.No,
+        default_button: QMessageBox.StandardButton | int = QMessageBox.No,
         detailedMsg: str | None = None,
     ) -> int | QMessageBox.StandardButton:
         if not detailedMsg or not detailedMsg.strip():
@@ -334,10 +296,7 @@ class FileItems(CustomItem):
             title + (" "*1000),
             text + (" "*1000),
             buttons,
-            flags=Qt.WindowType.Dialog
-            | Qt.WindowType.WindowDoesNotAcceptFocus
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.WindowSystemMenuHint,
+            flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
         )
         reply.setDefaultButton(default_button)
         if detailedMsg:
@@ -350,34 +309,14 @@ class FileItems(CustomItem):
     ) -> bool:
         return all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
 
-    def _rename_file(
-        self,
-        file_path: Path,
-        tableItem: FileTableWidgetItem,
-    ):
-        class RenameDialog(QDialog):
-            def __init__(self, original_name="", parent=None):
-                super().__init__(parent)
-                self.setWindowTitle("Rename/Move File")
-
-                self.line_edit = QLineEdit(original_name, self)
-                ok_button = QPushButton("OK", self)
-                ok_button.clicked.connect(self.accept)
-                cancel_button = QPushButton("Cancel", self)
-                cancel_button.clicked.connect(self.reject)
-
-                layout = QVBoxLayout(self)
-                layout.addWidget(self.line_edit)
-                layout.addWidget(ok_button)
-                layout.addWidget(cancel_button)
-
-            def get_new_name(self) -> str:
-                return self.line_edit.text()
-        dialog = RenameDialog(file_path.name, None)
-        result = dialog.exec_()
-        new_filename = dialog.get_new_name()
-        get_root_logger().info("Renaming '%s' to '%s'", file_path, new_filename)
-        shutil.move(str(file_path), str(file_path.with_name(new_filename)))
+    def _rename_file(self, file_path: Path, tableItem: FileTableWidgetItem):
+        new_filename, ok = QInputDialog.getText(
+            None, "Rename File", "New name:", text=file_path.name
+        )
+        if ok and new_filename:
+            new_path = file_path.with_name(new_filename)
+            shutil.move(str(file_path), str(new_path))
+            RobustRootLogger().info("Renamed '%s' to '%s'", file_path, new_path)
 
     def create_context_menu_dict(
         self,
@@ -393,11 +332,16 @@ class FileItems(CustomItem):
         renameAction = self.create_action(menu_dict, "Rename", lambda: self.do_file_action(self._rename_file, "Rename file.", confirmation=True))
         sendToTrash = self.create_action(menu_dict, "Send to Recycle Bin", lambda: self.do_file_action(self._sendToRecycleBin, "Send to Recycle Bin"))
         deleteAction = self.create_action(menu_dict, "Delete PERMANENTLY", lambda: self.do_file_action(self._delete_files_permanently, "Delete PERMANENTLY", confirmation=True))
-        propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
 
         file_paths_exist = all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
         inside_bif = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_bif for item in selected)
         inside_capsule = file_paths_exist and all(isinstance(item, ResourceTableWidgetItem) and item.resource.inside_capsule for item in selected)
+
+        if os.name == "nt":
+            propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
+            openWindowsMenuAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
+            propertiesAction.setEnabled(file_paths_exist)
+            openWindowsMenuAction.setEnabled(file_paths_exist)
 
         openAction.setEnabled(file_paths_exist)
         openFolderAction.setEnabled(file_paths_exist)
@@ -405,7 +349,6 @@ class FileItems(CustomItem):
         renameAction.setEnabled(file_paths_exist and len(selected) == 1 and not inside_capsule and not inside_bif)
         sendToTrash.setEnabled(file_paths_exist and not inside_bif)
         deleteAction.setEnabled(file_paths_exist and not inside_bif)
-        propertiesAction.setEnabled(file_paths_exist)
 
         return menu_dict
 
@@ -415,27 +358,68 @@ class FileItems(CustomItem):
         tableItem: FileTableWidgetItem,
     ):
         file_path = tableItem.filepath  # Don't use arg file_path here, as it might be the tempfile if used with the ResourceWidgetTableItem.
-        if platform.system() == "Windows":
+
+        def run_subprocess(command: list[str], *, check: bool = True):
             try:
-                explorer_path = win_get_system32_dir().parent / "explorer.exe"
-                cmd: list[str] = [str(explorer_path), "/select,", str(file_path)]
-                subprocess.run(cmd, check=True)  # noqa: S603
+                subprocess.run(command, check=check)  # noqa: S603, S607
             except subprocess.CalledProcessError as e:
-                if "returned non-zero exit status 1." in str(e):  # I have no idea why this happens when the folder opens correctly?
+                if "returned non-zero exit status 1." in str(e) and platform.system() == "Windows":
                     return
                 raise
-        elif platform.system() == "Darwin":  # macOS
-            # Use AppleScript to tell Finder to reveal and select the file
-            script = f'tell application "Finder" to reveal POSIX file "{file_path}"'
-            subprocess.run(["osascript", "-e", script], check=False)  # noqa: S603, S607
-            subprocess.run(["osascript", "-e", 'tell application "Finder" to activate'], check=False)  # noqa: S603, S607
-        else:  # Linux and other Unix-like
+
+        system = platform.system()
+
+        if system == "Windows":
+            explorer_path = win_get_system32_dir().parent / "explorer.exe"
+            cmd = [str(explorer_path), "/select,", str(file_path)]
+            run_subprocess(cmd)
+
+        elif system == "Darwin":  # macOS
+            # Use AppleScript to reveal the file in Finder
+            script_reveal = f'tell application "Finder" to reveal POSIX file "{file_path}"'
+            script_activate = 'tell application "Finder" to activate'
+
             try:
-                # Use the Nautilus file manager to select the file, if available
-                subprocess.run(["nautilus", "--select", file_path], check=True)  # noqa: S603, S607
+                run_subprocess(["osascript", "-e", script_reveal], check=False)
+                run_subprocess(["osascript", "-e", script_activate], check=False)
             except subprocess.CalledProcessError:
-                # If Nautilus is not available, fall back to just opening the folder
-                subprocess.run(["xdg-open", file_path.parent], check=True)  # noqa: S603, S607
+                # Handle potential errors and provide feedback
+                print(f"Failed to reveal the file: {file_path}")
+
+        else:  # Linux and other Unix-like
+            file_managers = [
+                ["xdg-open", str(file_path.parent)],  # Generic fallback
+                ["nautilus", "--select", str(file_path)],  # GNOME
+                ["dolphin", "--select", str(file_path)],  # KDE
+                ["nemo", "--no-desktop", str(file_path)],  # Cinnamon
+                ["pcmanfm", str(file_path)],  # LXDE/LXQt
+                ["thunar", str(file_path)],  # XFCE
+                ["caja", str(file_path)],  # MATE
+                ["krusader", str(file_path)],  # KDE twin-panel
+                ["rox", str(file_path)],  # ROX desktop
+                ["doublecmd", str(file_path)],  # Dual-panel
+                ["spacefm", str(file_path)],  # Multi-panel
+                ["qtfm", str(file_path)],  # Qt-based
+                ["lffm", str(file_path)],  # Simple & fast
+                ["xplore", str(file_path)],  # Tree view
+                ["lf", str(file_path)],  # Terminal-based
+                ["nnn", str(file_path)],  # Minimalist
+                ["vifm", str(file_path)],  # Vi-like
+                ["ranger", str(file_path)],  # Vi-like
+                ["mc", str(file_path)],  # Text-mode
+            ]
+
+            for command in file_managers:
+                try:
+                    run_subprocess(command)
+                except subprocess.CalledProcessError:  # noqa: S112, PERF203
+                    RobustRootLogger.debug(f"command '{command}' not found on your operating system")
+                    continue
+                else:
+                    return
+
+            RobustRootLogger.warning("all specific file manager attempts fail, fall back to opening the parent directory")
+            run_subprocess(["xdg-open", str(file_path.parent)], check=True)
 
     def _save_files(
         self,
@@ -456,9 +440,19 @@ class FileItems(CustomItem):
                     self.temp_path = ""  # Don't ask again for this sesh
                     return
                 self.temp_path = Path(savepath_str)
+            if not self.temp_path:
+                return
             savepath = self.temp_path / file_path.name
         with file_path.open("rb") as reader, savepath.open("wb") as writer:
             writer.write(reader.read())
+
+    def _open_windows_explorer_context_menu(
+        self,
+        file_path: Path,
+        tableItem: FileTableWidgetItem,
+    ):
+        from utility.system.windows_context_menu import windows_context_menu_file
+        return windows_context_menu_file(file_path)
 
     def _open_file(
         self,
@@ -519,7 +513,7 @@ class FileItems(CustomItem):
         file_path: Path,
         tableItem: FileTableWidgetItem,
     ):
-        get_root_logger().info(f"Moving '{file_path}' to Recycle Bin")
+        RobustRootLogger().info(f"Moving '{file_path}' to Recycle Bin")
         send2trash.send2trash(file_path)
         if hasattr(self, "removeRow"):
             self.removeRow(tableItem.row())
@@ -576,7 +570,7 @@ class FileItems(CustomItem):
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to perform action '%s' filepath: '%s'", action_name, file_path)
+                RobustRootLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, file_path)
                 error_files[file_path] = e
         if missing_files:
             self._show_missing_results(missing_files)
@@ -624,10 +618,12 @@ class ResourceItems(FileItems):
         resources: Sequence[FileResource | ResourceResult | LocationResult] | None = None,
         **kwargs,
     ):
+        self.viewport: Callable
         self.resources: list[FileResource] = []
-        super().__init__(*args, **kwargs)
         if resources is not None:
             self._unify_resources(resources)
+        filepaths = [res.filepath() for res in self.resources]
+        super().__init__(*args, filepaths=filepaths, **kwargs)
 
     def _unify_resources(
         self,
@@ -672,13 +668,21 @@ class ResourceItems(FileItems):
             if not resource.exists():
                 missing_files.append(resource._path_ident_obj)  # noqa: SLF001
                 return
-            with TemporaryDirectory("_tmpext2", "toolset_") as tempdir:
-                tempdir_path = Path(tempdir)
-                assert tempdir_path.safe_isdir()
-                temp_file = tempdir_path / resource.filename()
-                with BinaryWriterFile.to_file(temp_file) as writer:
-                    writer.write_bytes(resource.data())
-                func(temp_file, tableItem)
+
+            # Create a temporary directory that persists until application shutdown
+            tempdir = tempfile.mkdtemp(prefix="toolset_", suffix="_tmpext2")
+
+            # Register a cleanup function to delete the temporary directory at exit
+            def cleanup_tempdir():
+                shutil.rmtree(tempdir, ignore_errors=True)
+
+            atexit.register(cleanup_tempdir)
+            tempdir_path = Path(tempdir)
+            assert tempdir_path.safe_isdir()
+            temp_file = tempdir_path / resource.filename()
+            with BinaryWriterFile.to_file(temp_file) as writer:
+                writer.write_bytes(resource.data())
+            func(temp_file, tableItem)
         else:
             func(path, tableItem)
 
@@ -697,7 +701,7 @@ class ResourceItems(FileItems):
             and self.show_confirmation_dialog(
                 QMessageBox.Question,
                 "Action requires confirmation",
-                f"Really perform action '{action_name}'?",
+                f"Really perform action '{action_name}'?"
             ) != QMessageBox.Yes
         ):
             return
@@ -712,7 +716,7 @@ class ResourceItems(FileItems):
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
+                RobustRootLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
                 error_files[filepath] = e
         if missing_files:
             self._show_missing_results(missing_files)
@@ -745,10 +749,10 @@ class ResourceItems(FileItems):
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
         if executed_action is None:
             return executed_action
-
+        self.handle_post_run_actions(executed_action, resources)
         executed_action_text = executed_action.text()
         if executed_action_text in ("Delete PERMANENTLY", "Send to Recycle Bin"):
-            get_root_logger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
+            RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
             total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
             if total_inside_capsules:
                 separator="-"*80
@@ -761,24 +765,67 @@ class ResourceItems(FileItems):
             for resource in resources:
                 if resource.inside_capsule and not resource.inside_bif:
                     filepath = resource.filepath()
-                    get_root_logger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
+                    RobustRootLogger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
                     if is_any_erf_type_file(filepath):
                         erf = read_erf(filepath)
                         erf.remove(resource.resname(), resource.restype())
                         write_erf(erf, filepath)
                     elif is_rim_file(filepath):
                         if GlobalSettings().disableRIMSaving:
-                            get_root_logger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
+                            RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Saving into RIMs is disabled in Settings.")
                         else:
                             rim = read_rim(filepath)
                             rim.remove(resource.resname(), resource.restype())
                             write_rim(rim, filepath)
         return executed_action  # noqa: RET504
 
+    def handle_post_run_actions(
+        self,
+        executed_action: QAction,
+        resources: set[FileResource],
+    ):
+        action_text = executed_action.text()
+        if action_text in {"Delete PERMANENTLY", "Send to Recycle Bin"}:
+            RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", action_text)
+            self.handle_delete_action(resources, executed_action)
+
+    def handle_delete_action(
+        self,
+        resources: set[FileResource],
+        executed_action: QAction,
+    ):
+        total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
+        if total_inside_capsules:
+            separator = "-" * 80
+            self.show_confirmation_dialog(
+                QMessageBox.Warning,
+                "File(s) are in a capsule",
+                f"Really delete {len(total_inside_capsules)} inside of ERF/RIMs and {len(resources) - len(total_inside_capsules)} other physical files?",
+                detailedMsg=f"\n{separator}\n".join(str(resource.filepath()) for resource in resources)
+            )
+        action_text = executed_action.text()
+        for resource in resources:
+            if resource.inside_capsule and not resource.inside_bif:
+                filepath = resource.filepath()
+                RobustRootLogger().info(f"Perform post action '{action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
+                if is_any_erf_type_file(filepath):
+                    erf = read_erf(filepath)
+                    erf.remove(resource.resname(), resource.restype())
+                    write_erf(erf, filepath)
+                elif is_rim_file(filepath):
+                    if GlobalSettings().disableRIMSaving:
+                        RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
+                    else:
+                        rim = read_rim(filepath)
+                        rim.remove(resource.resname(), resource.restype())
+                        write_rim(rim, filepath)
+
     def on_double_click(self, *args, installation: HTInstallation):
-        get_root_logger().debug(f"doubleclick args: {args} installation: {installation}")
+        RobustRootLogger().debug(f"doubleclick args: {args} installation: {installation}")
+        #first_item = next(iter(self.selectedItems()))
+        selected = {res.resource for res in self.selectedItems()}
         self.open_selected_resource(
-            {item.resource for item in self.selectedItems()},
+            selected,
             installation,
         )
 
@@ -789,18 +836,64 @@ class ResourceItems(FileItems):
         *,
         gff_specialized: bool | None = None,
     ):
-        get_root_logger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
+        RobustRootLogger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
         for resource in resources:
             try:
                 data: bytes = resource.data()
             except Exception:  # noqa: BLE001
-                get_root_logger().error("Exception occurred in open_selected_resource", exc_info=True)
+                RobustRootLogger().error("Exception occurred in open_selected_resource", exc_info=True)
                 QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
                 return
             openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
 
 
 class CustomTableWidget(CustomItem, QTableWidget):
+    def copy_selection_to_clipboard(self):
+        selection = self.selectedIndexes()
+        if not selection:
+            return
+        rows = sorted(index.row() for index in selection)
+        columns = sorted(index.column() for index in selection)
+        row_count = rows[-1] - rows[0] + 1
+        column_count = columns[-1] - columns[0] + 1
+        table_text = [[""] * column_count for _ in range(row_count)]
+        for index in selection:
+            row = index.row() - rows[0]
+            column = index.column() - columns[0]
+            table_text[row][column] = index.data()
+
+        # Format table text as a tab-delimited string
+        clipboard_text = "\n".join("\t".join(row) for row in table_text)
+        QApplication.clipboard().setText(clipboard_text)
+
+    def remove_selected_result(self):
+        selected = self.selectedRanges()
+        if not selected:
+            return
+        for selection in selected:
+            for row in range(selection.bottomRow(), selection.topRow()-1, -1):
+                self.removeRow(row)
+
+    def set_all_items_editability(
+        self,
+        *,
+        editable: bool,
+    ):
+        """Set all items in the table to be either editable or read-only based on the `editable` argument.
+
+        Args:
+        ----
+            editable (bool): If True, all items will be set to editable. If False, items will be read-only.
+        """
+        for row in range(self.rowCount()):
+            for column in range(self.columnCount()):
+                item = self.item(row, column)
+                if not item:  # Check if the item exists
+                    continue
+                if editable:
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+                else:
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
     def get_column_index(self, column_name: str) -> int:
         # This method needs to be context-aware for the type of view
         if isinstance(self, QTableWidget):
@@ -817,10 +910,13 @@ class CustomTableWidget(CustomItem, QTableWidget):
                     return i
         raise ValueError(f"Column name '{column_name}' does not exist in this view.")
 
-class FileTableWidget(FileItems, CustomTableWidget): ...
+class FileTableWidget(FileItems, CustomTableWidget):
+    def selectedItems(self) -> list[FileTableWidgetItem]:
+        return QTableWidget.selectedItems(self)
+
 class ResourceTableWidget(FileTableWidget, ResourceItems):
     def selectedItems(self) -> list[ResourceTableWidgetItem]:
-        return super().selectedItems()
+        return QTableWidget.selectedItems(self)
 
 
 class FileSelectionWindow(QMainWindow):
@@ -840,7 +936,7 @@ class FileSelectionWindow(QMainWindow):
         self.init_ui()
 
     @property
-    def installation(self):
+    def installation(self) -> HTInstallation:
         return self._installation
 
     def init_ui(self):
@@ -949,7 +1045,7 @@ class FileSelectionWindow(QMainWindow):
                     else:
                         self.add_extra_file_details(i, resource.filepath(), res_stat_result, resource)
                 except Exception:  # noqa: BLE001
-                    get_root_logger().exception("Error populating detailed info for '%s'", resource.filepath())
+                    RobustRootLogger().exception("Error populating detailed info for '%s'", resource.filepath())
             else:
                 filepath_cell = self.create_table_item(str(resource.filepath().relative_to(self.installation.path().parent)), resource)
                 self.resource_table.setItem(i, self.resource_table.get_column_index("File Path"), filepath_cell)
@@ -1017,7 +1113,7 @@ class FileSelectionWindow(QMainWindow):
 
                 self.resource_table.setItem(rowIndex, column_index, self.create_table_item(value, resource))
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
+                RobustRootLogger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
                 QMessageBox.critical(self, "Stat attribute not expected format", f"Failed to parse {column_name} ({stat_attr}): {value}<br><br>{e}")
 
 

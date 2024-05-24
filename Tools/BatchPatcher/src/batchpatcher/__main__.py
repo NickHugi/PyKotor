@@ -11,7 +11,6 @@ import traceback
 
 from contextlib import suppress
 from copy import deepcopy
-from io import StringIO
 from threading import Thread
 from tkinter import (
     colorchooser,
@@ -21,6 +20,8 @@ from tkinter import (
     ttk,
 )
 from typing import TYPE_CHECKING, Any
+
+from pykotor.resource.salvage import validate_capsule
 
 if getattr(sys, "frozen", False) is False:
 
@@ -42,23 +43,27 @@ if getattr(sys, "frozen", False) is False:
 
 
 from batchpatcher.translate.language_translator import TranslationOption, Translator
+from pykotor.common.alien_sounds import ALIEN_SOUNDS
 from pykotor.common.language import Language, LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.extract.capsule import Capsule
+from pykotor.extract.capsule import Capsule, LazyCapsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.twoda import K1Columns2DA, K2Columns2DA
 from pykotor.font.draw import write_bitmap_fonts
 from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.lyt.lyt_auto import read_lyt
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
+from pykotor.resource.formats.twoda.twoda_auto import read_2da
 from pykotor.resource.generics.are import read_are, write_are
 from pykotor.resource.generics.dlg import read_dlg, write_dlg
 from pykotor.resource.generics.git import read_git, write_git
@@ -79,12 +84,18 @@ from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path, PurePath
+from utility.tkinter.updater import human_readable_size
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from io import TextIOWrapper
 
+    from typing_extensions import Literal
+
+    from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 
@@ -113,315 +124,15 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.List: "List",
 }
 
-ALIEN_SOUNDS = {  # Same in k1 and tsl.
-    "n_genwook_grts1": {"_id": "0", "comment": "Gen_Wookiee_Greeting_Short"},
-    "n_genwook_coms1": {"_id": "1", "comment": "Gen_Wookiee_Generic_Comment_-_Short_1"},
-    "n_genwook_coms2": {"_id": "2", "comment": "Gen_Wookiee_Generic_Comment_-_Short_2"},
-    "n_genwook_comm1": {"_id": "3", "comment": "Gen_Wookiee_Generic_Comment_-_Medium_1"},
-    "n_genwook_comm2": {"_id": "4", "comment": "Gen_Wookiee_Generic_Comment_-_Medium_2"},
-    "n_genwook_angs": {"_id": "5", "comment": "Gen_Wookiee_Angry_Short"},
-    "n_genwook_angm": {"_id": "6", "comment": "Gen_Wookiee_Angry_Medium"},
-    "n_genwook_ques": {"_id": "7", "comment": "Gen_Wookiee_Question_-_Short"},
-    "n_genwook_quem": {"_id": "8", "comment": "Gen_Wookiee_Question_-_Medium"},
-    "n_genwook_scrs": {"_id": "9", "comment": "Gen_Wookiee_Scared_-_Short"},
-    "n_genwook_scrm": {"_id": "10", "comment": "Gen_Wookiee_Scared_-_Medium"},
-    "n_genwook_lghs": {"_id": "11", "comment": "Gen_Wookiee_Laughter_(mocking)_-_short"},
-    "n_genwook_lghm": {"_id": "12", "comment": "Gen_Wookiee_Laughter_(mocking)_-_medium"},
-    "n_genwook_hpys": {"_id": "13", "comment": "Gen_Wookiee_Happy_(thankful)_-_short"},
-    "n_genwook_hpym": {"_id": "14", "comment": "Gen_Wookiee_Happy_(thankful)_-_medium"},
-    "n_genwook_sads": {"_id": "15", "comment": "Gen_Wookiee_Sad_-_Short"},
-    "n_genwook_sadm": {"_id": "16", "comment": "Gen_Wookiee_Sad_-_Medium"},
-    "n_genfwook_grts1": {"_id": "17", "comment": "Female_Wookiee_Greeting_Short"},
-    "n_genfwook_coms1": {"_id": "18", "comment": "Female_Wookiee_Generic_Comment_-_Short_1"},
-    "n_genfwook_coms2": {"_id": "19", "comment": "Female_Wookiee_Generic_Comment_-_Short_2"},
-    "n_genfwook_comm1": {"_id": "20", "comment": "Female_Wookiee_Generic_Comment_-_Medium_1"},
-    "n_genfwook_comm2": {"_id": "21", "comment": "Female_Wookiee_Generic_Comment_-_Medium_2"},
-    "n_genfwook_angs": {"_id": "22", "comment": "Female_Wookiee_Angry_Short"},
-    "n_genfwook_angm": {"_id": "23", "comment": "Female_Wookiee_Angry_Medium"},
-    "n_genfwook_ques": {"_id": "24", "comment": "Female_Wookiee_Question_-_Short"},
-    "n_genfwook_quem": {"_id": "25", "comment": "Female_Wookiee_Question_-_Medium"},
-    "n_genfwook_scrs": {"_id": "26", "comment": "Female_Wookiee_Scared_-_Short"},
-    "n_genfwook_scrm": {"_id": "27", "comment": "Female_Wookiee_Scared_-_Medium"},
-    "n_genfwook_lghs": {"_id": "28", "comment": "Female_Wookiee_Laughter_(mocking)_-_short"},
-    "n_genfwook_lghm": {"_id": "29", "comment": "Female_Wookiee_Laughter_(mocking)_-_medium"},
-    "n_genfwook_hpys": {"_id": "30", "comment": "Female_Wookiee_Happy_(thankful)_-_short"},
-    "n_genfwook_hpym": {"_id": "31", "comment": "Female_Wookiee_Happy_(thankful)_-_medium"},
-    "n_genfwook_sads": {"_id": "32", "comment": "Female_Wookiee_Sad_-_Short"},
-    "n_genfwook_sadm": {"_id": "33", "comment": "Female_Wookiee_Sad_-_Medium"},
-    "n_gentwook_grts1": {"_id": "34", "comment": "Gen_Tough_Wooki_ee_Greeting_Short"},
-    "n_gentwook_coms1": {"_id": "35", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
-    "n_gentwook_coms2": {"_id": "36", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
-    "n_gentwook_comm1": {"_id": "37", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
-    "n_gentwook_comm2": {"_id": "38", "comment": "Gen_Tough_Wookiee_Generic_Comment"},
-    "n_gentwook_angs": {"_id": "39", "comment": "Gen_Tough_Wookiee_Angry_Short"},
-    "n_gentwook_angm": {"_id": "40", "comment": "Gen_Tough_Wookiee_Angry_Medium"},
-    "n_gentwook_ques": {"_id": "41", "comment": "Gen_Tough_Wookiee_Question_-_Short"},
-    "n_gentwook_quem": {"_id": "42", "comment": "Gen_Tough_Wookiee_Question_-_Medium"},
-    "n_gentwook_scrs": {"_id": "43", "comment": "Gen_Tough_Wookiee_Scared_-_Short"},
-    "n_gentwook_scrm": {"_id": "44", "comment": "Gen_Tough_Wookiee_Scared_-_Medium"},
-    "n_gentwook_lghs": {"_id": "45", "comment": "Gen_Tough_Wookiee_Laughter_(mocking)_-_short"},
-    "n_gentwook_lghm": {"_id": "46", "comment": "Gen_Tough_Wookiee_Laughter_(mocking)_-_medium"},
-    "n_gentwook_hpys": {"_id": "47", "comment": "Gen_Tough_Wookiee_Happy_(thankful)_-_short"},
-    "n_gentwook_hpym": {"_id": "48", "comment": "Gen_Tough_Wookiee_Happy_(thankful)_-_medium"},
-    "n_gentwook_sads": {"_id": "49", "comment": "Gen_Tough_Wookiee_Sad_-_Short"},
-    "n_gentwook_sadm": {"_id": "50", "comment": "Gen_Tough_Wookiee_Sad_-_Medium"},
-    "n_genwwook_grts1": {"_id": "51", "comment": "Gen_Wise_Wookiee_Greeting_Short"},
-    "n_genwwook_coms1": {"_id": "52", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Short_1"},
-    "n_genwwook_coms2": {"_id": "53", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Short_2"},
-    "n_genwwook_comm1": {"_id": "54", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Medium_1"},
-    "n_genwwook_comm2": {"_id": "55", "comment": "Gen_Wise_Wookiee_Generic_Comment_-_Medium_2"},
-    "n_genwwook_angs": {"_id": "56", "comment": "Gen_Wise_Wookiee_Angry_Short"},
-    "n_genwwook_angm": {"_id": "57", "comment": "Gen_Wise_Wookiee_Angry_Medium"},
-    "n_genwwook_ques": {"_id": "58", "comment": "Gen_Wise_Wookiee_Question_-_Short"},
-    "n_genwwook_quem": {"_id": "59", "comment": "Gen_Wise_Wookiee_Question_-_Medium"},
-    "n_genwwook_scrs": {"_id": "60", "comment": "Gen_Wise_Wookiee_Scared_-_Short"},
-    "n_genwwook_scrm": {"_id": "61", "comment": "Gen_Wise_Wookiee_Scared_-_Medium"},
-    "n_genwwook_lghs": {"_id": "62", "comment": "Gen_Wise_Wookiee_Laughter_(mocking)_-_short"},
-    "n_genwwook_lghm": {"_id": "63", "comment": "Gen_Wise_Wookiee_Laughter_(mocking)_-_medium"},
-    "n_genwwook_hpys": {"_id": "64", "comment": "Gen_Wise_Wookiee_Happy_(thankful)_-_short"},
-    "n_genwwook_hpym": {"_id": "65", "comment": "Gen_Wise_Wookiee_Happy_(thankful)_-_medium"},
-    "n_genwwook_sads": {"_id": "66", "comment": "Gen_Wise_Wookiee_Sad_-_Short"},
-    "n_genwwook_sadm": {"_id": "67", "comment": "Gen_Wise_Wookiee_Sad_-_Medium"},
-    "n_gftwilek_grts": {"_id": "68", "comment": "Female_Twilek_Greeting_Short"},
-    "n_gftwilek_grtm": {"_id": "69", "comment": "Female_Twilek_Greeting_Medium"},
-    "n_gftwilek_coms1": {"_id": "70", "comment": "Female_Twilek_Generic_Comment_-_Short_1"},
-    "n_gftwilek_coms2": {"_id": "71", "comment": "Female_Twilek_Generic_Comment_-_Short_2"},
-    "n_gftwilek_comm1": {"_id": "72", "comment": "Female_Twilek_Generic_Comment_-_Medium_1"},
-    "n_gftwilek_comm2": {"_id": "73", "comment": "Female_Twilek_Generic_Comment_-_Medium_2"},
-    "n_gftwilek_coml1": {"_id": "74", "comment": "Female_Twilek_Generic_Comment_-_Long_1"},
-    "n_gftwilek_coml2": {"_id": "75", "comment": "Female_Twilek_Generic_Comment_-_Long_2"},
-    "n_gftwilek_angs": {"_id": "76", "comment": "Female_Twilek_Angry_Short"},
-    "n_gftwilek_angm": {"_id": "77", "comment": "Female_Twilek_Angry_Medium"},
-    "n_gftwilek_angl": {"_id": "78", "comment": "Female_Twilek_Angry_Long"},
-    "n_gftwilek_ques": {"_id": "79", "comment": "Female_Twilek_Question_-_Short"},
-    "n_gftwilek_quel": {"_id": "80", "comment": "Female_Twilek_Question_-_Long"},
-    "n_gftwilek_scrs": {"_id": "81", "comment": "Female_Twilek_Scared_-_Short"},
-    "n_gftwilek_scrm": {"_id": "82", "comment": "Female_Twilek_Scared_-_Medium"},
-    "n_gftwilek_scrl": {"_id": "83", "comment": "Female_Twilek_Scared_-_Long"},
-    "n_gftwilek_ples": {"_id": "84", "comment": "Female_Twilek_Pleading_-_Short"},
-    "n_gftwilek_plem": {"_id": "85", "comment": "Female_Twilek_Pleading_-_Medium"},
-    "n_gftwilek_lghs": {"_id": "86", "comment": "Female_Twilek_Laughter_(mocking)_-_short"},
-    "n_gftwilek_lghm": {"_id": "87", "comment": "Female_Twilek_Laughter_(mocking)_-_medium"},
-    "n_gftwilek_hpys": {"_id": "88", "comment": "Female_Twilek_Happy_(thankful)_-_short"},
-    "n_gftwilek_hpym": {"_id": "89", "comment": "Female_Twilek_Happy_(thankful)_-_medium"},
-    "n_gftwilek_hpyl": {"_id": "90", "comment": "Female_Twilek_Happy_(thankful)_-_long"},
-    "n_gftwilek_sads": {"_id": "91", "comment": "Female_Twilek_Sad_-_Short"},
-    "n_gftwilek_sadm": {"_id": "92", "comment": "Female_Twilek_Sad_-_Medium"},
-    "n_gftwilek_sadl": {"_id": "93", "comment": "Female_Twilek_Sad_-_Long"},
-    "n_gftwilek_seds": {"_id": "94", "comment": "Female_Twilek_Seductive_-_Short"},
-    "n_gftwilek_sedm": {"_id": "95", "comment": "Female_Twilek_Seductive_-_Medium"},
-    "n_gftwilek_sedl": {"_id": "96", "comment": "Female_Twilek_Seductive_-_Long"},
-    "n_gmtwilek_grts": {"_id": "97", "comment": "Gen_Male_Twilek_Greeting_Short"},
-    "n_gmtwilek_grtm": {"_id": "98", "comment": "Gen_Male_Twilek_Greeting_Medium"},
-    "n_gmtwilek_coms1": {"_id": "99", "comment": "Gen_Male_Twilek_Generic_Comment_-_Short_1"},
-    "n_gmtwilek_coms2": {"_id": "100", "comment": "Gen_Male_Twilek_Generic_Comment_-_Short_2"},
-    "n_gmtwilek_comm1": {"_id": "101", "comment": "Gen_Male_Twilek_Generic_Comment_-_Medium_1"},
-    "n_gmtwilek_comm2": {"_id": "102", "comment": "Gen_Male_Twilek_Generic_Comment_-_Medium_2"},
-    "n_gmtwilek_coml1": {"_id": "103", "comment": "Gen_Male_Twilek_Generic_Comment_-_Long_1"},
-    "n_gmtwilek_coml2": {"_id": "104", "comment": "Gen_Male_Twilek_Generic_Comment_-_Long_2"},
-    "n_gmtwilek_angs": {"_id": "105", "comment": "Gen_Male_Twilek_Angry_Short"},
-    "n_gmtwilek_angm": {"_id": "106", "comment": "Gen_Male_Twilek_Angry_Medium"},
-    "n_gmtwilek_angl": {"_id": "107", "comment": "Gen_Male_Twilek_Angry_Long"},
-    "n_gmtwilek_ques": {"_id": "108", "comment": "Gen_Male_Twilek_Question_-_Short"},
-    "n_gmtwilek_quem": {"_id": "109", "comment": "Gen_Male_Twilek_Question_-_Medium"},
-    "n_gmtwilek_quel": {"_id": "110", "comment": "Gen_Male_Twilek_Question_-_Long"},
-    "n_gmtwilek_scrs": {"_id": "111", "comment": "Gen_Male_Twilek_Scared_-_Short"},
-    "n_gmtwilek_scrm": {"_id": "112", "comment": "Gen_Male_Twilek_Scared_-_Medium"},
-    "n_gmtwilek_scrl": {"_id": "113", "comment": "Gen_Male_Twilek_Scared_-_Long"},
-    "n_gmtwilek_ples": {"_id": "114", "comment": "Gen_Male_Twilek_Pleading_-_Short"},
-    "n_gmtwilek_plem": {"_id": "115", "comment": "Gen_Male_Twilek_Pleading_-_Medium"},
-    "n_gmtwilek_lghs": {"_id": "116", "comment": "Gen_Male_Twilek_Laughter_(mocking)_-_short"},
-    "n_gmtwilek_lghm": {"_id": "117", "comment": "Gen_Male_Twilek_Laughter_(mocking)_-_medium"},
-    "n_gmtwilek_hpys": {"_id": "118", "comment": "Gen_Male_Twilek_Happy_(thankful)_-_short"},
-    "n_gmtwilek_hpym": {"_id": "119", "comment": "Gen_Male_Twilek_Happy_(thankful)_-_medium"},
-    "n_gmtwilek_hpyl": {"_id": "120", "comment": "Gen_Male_Twilek_Happy_(thankful)_-_long"},
-    "n_gmtwilek_sads": {"_id": "121", "comment": "Gen_Male_Twilek_Sad_-_Short"},
-    "n_gmtwilek_sadm": {"_id": "122", "comment": "Gen_Male_Twilek_Sad_-_Medium"},
-    "n_gmtwilek_sadl": {"_id": "123", "comment": "Gen_Male_Twilek_Sad_-_Long"},
-    "n_gmtwilek_seds": {"_id": "124", "comment": "Gen_Male_Twilek_Seductive_-_Short"},
-    "n_gmtwilek_sedm": {"_id": "125", "comment": "Gen_Male_Twilek_Seductive_-_Medium"},
-    "n_gmtwilek_sedl": {"_id": "126", "comment": "Gen_Male_Twilek_Seductive_-_Long"},
-    "n_gtmtwlek_grts": {"_id": "127", "comment": "Gen_Tough_Male_Twilek_Greeting_Short"},
-    "n_gtmtwlek_grtm": {"_id": "128", "comment": "Gen_Tough_Male_Twilek_Greeting_Medium"},
-    "n_gtmtwlek_coms1": {"_id": "129", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Short_1"},
-    "n_gtmtwlek_coms2": {"_id": "130", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Short_2"},
-    "n_gtmtwlek_comm1": {"_id": "131", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Medium_1"},
-    "n_gtmtwlek_comm2": {"_id": "132", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Medium_2"},
-    "n_gtmtwlek_coml1": {"_id": "133", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Long_1"},
-    "n_gtmtwlek_coml2": {"_id": "134", "comment": "Gen_Tough_Male_Twilek_Generic_Comment_-_Long_2"},
-    "n_gtmtwlek_angs": {"_id": "135", "comment": "Gen_Tough_Male_Twilek_Angry_Short"},
-    "n_gtmtwlek_angm": {"_id": "136", "comment": "Gen_Tough_Male_Twilek_Angry_Medium"},
-    "n_gtmtwlek_angl": {"_id": "137", "comment": "Gen_Tough_Male_Twilek_Angry_Long"},
-    "n_gtmtwlek_ques": {"_id": "138", "comment": "Gen_Tough_Male_Twilek_Question_-_Short"},
-    "n_gtmtwlek_quem": {"_id": "139", "comment": "Gen_Tough_Male_Twilek_Question_-_Medium"},
-    "n_gtmtwlek_quel": {"_id": "140", "comment": "Gen_Tough_Male_Twilek_Question_-_Long"},
-    "n_gtmtwlek_scrs": {"_id": "141", "comment": "Gen_Tough_Male_Twilek_Scared_-_Short"},
-    "n_gtmtwlek_scrm": {"_id": "142", "comment": "Gen_Tough_Male_Twilek_Scared_-_Medium"},
-    "n_gtmtwlek_scrl": {"_id": "143", "comment": "Gen_Tough_Male_Twilek_Scared_-_Long"},
-    "n_gtmtwlek_ples": {"_id": "144", "comment": "Gen_Tough_Male_Twilek_Pleading_-_Short"},
-    "n_gtmtwlek_plem": {"_id": "145", "comment": "Gen_Tough_Male_Twilek_Pleading_-_Medium"},
-    "n_gtmtwlek_lghs": {"_id": "146", "comment": "Gen_Tough_Male_Twilek_Laughter_(mocking)_-_short"},
-    "n_gtmtwlek_lghm": {"_id": "147", "comment": "Gen_Tough_Male_Twilek_Laughter_(mocking)_-_medium"},
-    "n_gtmtwlek_hpys": {"_id": "148", "comment": "Gen_Tough_Male_Twilek_Happy_(thankful)_-_short"},
-    "n_gtmtwlek_hpym": {"_id": "149", "comment": "Gen_Tough_Male_Twilek_Happy_(thankful)_-_medium"},
-    "n_gtmtwlek_hpyl": {"_id": "150", "comment": "Gen_Tough_Male_Twilek_Happy_(thankful)_-_long"},
-    "n_gtmtwlek_sads": {"_id": "151", "comment": "Gen_Tough_Male_Twilek_Sad_-_Short"},
-    "n_gtmtwlek_sadm": {"_id": "152", "comment": "Gen_Tough_Male_Twilek_Sad_-_Medium"},
-    "n_gtmtwlek_sadl": {"_id": "153", "comment": "Gen_Tough_Male_Twilek_Sad_-_Long"},
-    "n_grodian_grts": {"_id": "154", "comment": "Gen_Rodian_Greeting_Short"},
-    "n_grodian_grtm": {"_id": "155", "comment": "Gen_Rodian_Greeting_Medium"},
-    "n_grodian_coms1": {"_id": "156", "comment": "Gen_Rodian_Generic_Comment_-_Short_1"},
-    "n_grodian_coms2": {"_id": "157", "comment": "Gen_Rodian_Generic_Comment_-_Short_2"},
-    "n_grodian_comm1": {"_id": "158", "comment": "Gen_Rodian_Generic_Comment_-_Medium_1"},
-    "n_grodian_comm2": {"_id": "159", "comment": "Gen_Rodian_Generic_Comment_-_Medium_2"},
-    "n_grodian_coml1": {"_id": "160", "comment": "Gen_Rodian_Generic_Comment_-_Long_1"},
-    "n_grodian_coml2": {"_id": "161", "comment": "Gen_Rodian_Generic_Comment_-_Long_2"},
-    "n_grodian_angs": {"_id": "162", "comment": "Gen_Rodian_Angry_Short"},
-    "n_grodian_angm": {"_id": "163", "comment": "Gen_Rodian_Angry_Medium"},
-    "n_grodian_angl": {"_id": "164", "comment": "Gen_Rodian_Angry_Long"},
-    "n_grodian_ques": {"_id": "165", "comment": "Gen_Rodian_Question_-_Short"},
-    "n_grodian_quem": {"_id": "166", "comment": "Gen_Rodian_Question_-_Medium"},
-    "n_grodian_quel": {"_id": "167", "comment": "Gen_Rodian_Question_-_Long"},
-    "n_grodian_scrs": {"_id": "168", "comment": "Gen_Rodian_Scared_-_Short"},
-    "n_grodian_scrm": {"_id": "169", "comment": "Gen_Rodian_Scared_-_Medium"},
-    "n_grodian_scrl": {"_id": "170", "comment": "Gen_Rodian_Scared_-_Long"},
-    "n_grodian_ples": {"_id": "171", "comment": "Gen_Rodian_Pleading_-_Short"},
-    "n_grodian_plem": {"_id": "172", "comment": "Gen_Rodian_Pleading_-_Medium"},
-    "n_grodian_lghs": {"_id": "173", "comment": "Gen_Rodian_Laughter_(mocking)_-_short"},
-    "n_grodian_lghm": {"_id": "174", "comment": "Gen_Rodian_Laughter_(mocking)_-_medium"},
-    "n_grodian_hpys": {"_id": "175", "comment": "Gen_Rodian_Happy_(thankful)_-_short"},
-    "n_grodian_hpym": {"_id": "176", "comment": "Gen_Rodian_Happy_(thankful)_-_medium"},
-    "n_grodian_hpyl": {"_id": "177", "comment": "Gen_Rodian_Happy_(thankful)_-_long"},
-    "n_grodian_sads": {"_id": "178", "comment": "Gen_Rodian_Sad_-_Short"},
-    "n_grodian_sadm": {"_id": "179", "comment": "Gen_Rodian_Sad_-_Medium"},
-    "n_grodian_sadl": {"_id": "180", "comment": "Gen_Rodian_Sad_-_Long"},
-    "n_gtrodian_grts": {"_id": "181", "comment": "Gen_Tough_Rodian_Greeting_Short"},
-    "n_gtrodian_grtm": {"_id": "182", "comment": "Gen_Tough_Rodian_Greeting_Medium"},
-    "n_gtrodian_coms1": {"_id": "183", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Short_1"},
-    "n_gtrodian_coms2": {"_id": "184", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Short_2"},
-    "n_gtrodian_comm1": {"_id": "185", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Medium_1"},
-    "n_gtrodian_comm2": {"_id": "186", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Medium_2"},
-    "n_gtrodian_coml1": {"_id": "187", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Long_1"},
-    "n_gtrodian_coml2": {"_id": "188", "comment": "Gen_Tough_Rodian_Generic_Comment_-_Long_2"},
-    "n_gtrodian_angs": {"_id": "189", "comment": "Gen_Tough_Rodian_Angry_Short"},
-    "n_gtrodian_angm": {"_id": "190", "comment": "Gen_Tough_Rodian_Angry_Medium"},
-    "n_gtrodian_angl": {"_id": "191", "comment": "Gen_Tough_Rodian_Angry_Long"},
-    "n_gtrodian_ques": {"_id": "192", "comment": "Gen_Tough_Rodian_Question_-_Short"},
-    "n_gtrodian_quem": {"_id": "193", "comment": "Gen_Tough_Rodian_Question_-_Medium"},
-    "n_gtrodian_quel": {"_id": "194", "comment": "Gen_Tough_Rodian_Question_-_Long"},
-    "n_gtrodian_scrs": {"_id": "195", "comment": "Gen_Tough_Rodian_Scared_-_Short"},
-    "n_gtrodian_scrm": {"_id": "196", "comment": "Gen_Tough_Rodian_Scared_-_Medium"},
-    "n_gtrodian_scrl": {"_id": "197", "comment": "Gen_Tough_Rodian_Scared_-_Long"},
-    "n_gtrodian_ples": {"_id": "198", "comment": "Gen_Tough_Rodian_Pleading_-_Short"},
-    "n_gtrodian_plem": {"_id": "199", "comment": "Gen_Tough_Rodian_Pleading_-_Medium"},
-    "n_gtrodian_lghs": {"_id": "200", "comment": "Gen_Tough_Rodian_Laughter_(mocking)_-_short"},
-    "n_gtrodian_lghm": {"_id": "201", "comment": "Gen_Tough_Rodian_Laughter_(mocking)_-_medium"},
-    "n_gtrodian_hpys": {"_id": "202", "comment": "Gen_Tough_Rodian_Happy_(thankful)_-_short"},
-    "n_gtrodian_hpym": {"_id": "203", "comment": "Gen_Tough_Rodian_Happy_(thankful)_-_medium"},
-    "n_gtrodian_hpyl": {"_id": "204", "comment": "Gen_Tough_Rodian_Happy_(thankful)_-_long"},
-    "n_gtrodian_sads": {"_id": "205", "comment": "Gen_Tough_Rodian_Sad_-_Short"},
-    "n_gtrodian_sadm": {"_id": "206", "comment": "Gen_Tough_Rodian_Sad_-_Medium"},
-    "n_gtrodian_sadl": {"_id": "207", "comment": "Gen_Tough_Rodian_Sad_-_Long"},
-    "n_grakata_grts": {"_id": "208", "comment": "Gen_Rakatan_Greeting_Short"},
-    "n_grakata_grtm": {"_id": "209", "comment": "Gen_Rakatan_Greeting_Medium"},
-    "n_grakata_coms1": {"_id": "210", "comment": "Gen_Rakatan_Generic_Comment_-_Short_1"},
-    "n_grakata_coms2": {"_id": "211", "comment": "Gen_Rakatan_Generic_Comment_-_Short_2"},
-    "n_grakata_comm1": {"_id": "212", "comment": "Gen_Rakatan_Generic_Comment_-_Medium_1"},
-    "n_grakata_comm2": {"_id": "213", "comment": "Gen_Rakatan_Generic_Comment_-_Medium_2"},
-    "n_grakata_coml1": {"_id": "214", "comment": "Gen_Rakatan_Generic_Comment_-_Long_1"},
-    "n_grakata_coml2": {"_id": "215", "comment": "Gen_Rakatan_Generic_Comment_-_Long_2"},
-    "n_grakata_angs": {"_id": "216", "comment": "Gen_Rakatan_Angry_Short"},
-    "n_grakata_angm": {"_id": "217", "comment": "Gen_Rakatan_Angry_Medium"},
-    "n_grakata_angl": {"_id": "218", "comment": "Gen_Rakatan_Angry_Long"},
-    "n_grakata_ques": {"_id": "219", "comment": "Gen_Rakatan_Question_-_Short"},
-    "n_grakata_quem": {"_id": "220", "comment": "Gen_Rakatan_Question_-_Medium"},
-    "n_grakata_quel": {"_id": "221", "comment": "Gen_Rakatan_Question_-_Long"},
-    "n_grakata_scrs": {"_id": "222", "comment": "Gen_Rakatan_Scared_-_Short"},
-    "n_grakata_scrm": {"_id": "223", "comment": "Gen_Rakatan_Scared_-_Medium"},
-    "n_grakata_scrl": {"_id": "224", "comment": "Gen_Rakatan_Scared_-_Long"},
-    "n_grakata_ples": {"_id": "225", "comment": "Gen_Rakatan_Pleading_-_Short"},
-    "n_grakata_plem": {"_id": "226", "comment": "Gen_Rakatan_Pleading_-_Medium"},
-    "n_grakata_lghs": {"_id": "227", "comment": "Gen_Rakatan_Laughter_(mocking)_-_short"},
-    "n_grakata_lghm": {"_id": "228", "comment": "Gen_Rakatan_Laughter_(mocking)_-_medium"},
-    "n_grakata_hpys": {"_id": "229", "comment": "Gen_Rakatan_Happy_(thankful)_-_short"},
-    "n_grakata_hpym": {"_id": "230", "comment": "Gen_Rakatan_Happy_(thankful)_-_medium"},
-    "n_grakata_hpyl": {"_id": "231", "comment": "Gen_Rakatan_Happy_(thankful)_-_long"},
-    "n_grakata_sads": {"_id": "232", "comment": "Gen_Rakatan_Sad_-_Short"},
-    "n_grakata_sadm": {"_id": "233", "comment": "Gen_Rakatan_Sad_-_Medium"},
-    "n_grakata_sadl": {"_id": "234", "comment": "Gen_Rakatan_Sad_-_Long"},
-    "n_genwrakata_grts": {"_id": "235", "comment": "Gen_Wise_Rakatan_Greeting_Short"},
-    "n_genwrakata_grtm": {"_id": "236", "comment": "Gen_Wise_Rakatan_Greeting_Medium"},
-    "n_genwrakata_coms1": {"_id": "237", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Short_1"},
-    "n_genwrakata_coms2": {"_id": "238", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Short_2"},
-    "n_genwrakata_comm1": {"_id": "239", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Medium_1"},
-    "n_genwrakata_comm2": {"_id": "240", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Medium_2"},
-    "n_genwrakata_coml1": {"_id": "241", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Long_1"},
-    "n_genwrakata_coml2": {"_id": "242", "comment": "Gen_Wise_Rakatan_Generic_Comment_-_Long_2"},
-    "n_genwrakata_angs": {"_id": "243", "comment": "Gen_Wise_Rakatan_Angry_Short"},
-    "n_genwrakata_angm": {"_id": "244", "comment": "Gen_Wise_Rakatan_Angry_Medium"},
-    "n_genwrakata_angl": {"_id": "245", "comment": "Gen_Wise_Rakatan_Angry_Long"},
-    "n_genwrakata_ques": {"_id": "246", "comment": "Gen_Wise_Rakatan_Question_-_Short"},
-    "n_genwrakata_quem": {"_id": "247", "comment": "Gen_Wise_Rakatan_Question_-_Medium"},
-    "n_genwrakata_quel": {"_id": "248", "comment": "Gen_Wise_Rakatan_Question_-_Long"},
-    "n_genwrakata_scrs": {"_id": "249", "comment": "Gen_Wise_Rakatan_Scared_-_Short"},
-    "n_genwrakata_scrm": {"_id": "250", "comment": "Gen_Wise_Rakatan_Scared_-_Medium"},
-    "n_genwrakata_scrl": {"_id": "251", "comment": "Gen_Wise_Rakatan_Scared_-_Long"},
-    "n_genwrakata_ples": {"_id": "252", "comment": "Gen_Wise_Rakatan_Pleading_-_Short"},
-    "n_genwrakata_plem": {"_id": "253", "comment": "Gen_Wise_Rakatan_Pleading_-_Medium"},
-    "n_genwrakata_lghs": {"_id": "254", "comment": "Gen_Wise_Rakatan_Laughter_(mocking)_-_short"},
-    "n_genwrakata_lghm": {"_id": "255", "comment": "Gen_Wise_Rakatan_Laughter_(mocking)_-_medium"},
-    "n_genwrakata_hpys": {"_id": "256", "comment": "Gen_Wise_Rakatan_Happy_(thankful)_-_short"},
-    "n_genwrakata_hpym": {"_id": "257", "comment": "Gen_Wise_Rakatan_Happy_(thankful)_-_medium"},
-    "n_genwrakata_hpyl": {"_id": "258", "comment": "Gen_Wise_Rakatan_Happy_(thankful)_-_long"},
-    "n_genwrakata_sads": {"_id": "259", "comment": "Gen_Wise_Rakatan_Sad_-_Short"},
-    "n_genwrakata_sadm": {"_id": "260", "comment": "Gen_Wise_Rakatan_Sad_-_Medium"},
-    "n_genwrakata_sadl": {"_id": "261", "comment": "Gen_Wise_Rakatan_Sad_-_Long"},
-    "n_genjawa_grts1": {"_id": "262", "comment": "Gen_Jawa_Greeting_Short_1"},
-    "n_genjawa_grts2": {"_id": "263", "comment": "Gen_Jawa_Greeting_Short_2"},
-    "n_genjawa_coms1": {"_id": "264", "comment": "Gen_Jawa_Generic_Comment_-_Short_1"},
-    "n_genjawa_coms2": {"_id": "265", "comment": "Gen_Jawa_Generic_Comment_-_Short_2"},
-    "n_genjawa_comm1": {"_id": "266", "comment": "Gen_Jawa_Generic_Comment_-_Medium_1"},
-    "n_genjawa_comm2": {"_id": "267", "comment": "Gen_Jawa_Generic_Comment_-_Medium_2"},
-    "n_genjawa_ques": {"_id": "268", "comment": "Gen_Jawa_Question_-_Short"},
-    "n_genjawa_quem": {"_id": "269", "comment": "Gen_Jawa_Question_-_Medium"},
-    "n_genhutt_grts": {"_id": "270", "comment": "Gen_Hutt_Greeting_Short"},
-    "n_genhutt_coms1": {"_id": "271", "comment": "Gen_Hutt_Generic_Comment_-_Short_1"},
-    "n_genhutt_coms2": {"_id": "272", "comment": "Gen_Hutt_Generic_Comment_-_Short_2"},
-    "n_genhutt_comm1": {"_id": "273", "comment": "Gen_Hutt_Generic_Comment_-_Medium_1"},
-    "n_genhutt_comm2": {"_id": "274", "comment": "Gen_Hutt_Generic_Comment_-_Medium_2"},
-    "n_genhutt_coml1": {"_id": "275", "comment": "Gen_Hutt_Generic_Comment_-_Long_1"},
-    "n_genhutt_coml2": {"_id": "276", "comment": "Gen_Hutt_Generic_Comment_-_Long_2"},
-    "n_genhutt_angm": {"_id": "277", "comment": "Gen_Hutt_Angry_Medium"},
-    "n_genhutt_angl": {"_id": "278", "comment": "Gen_Hutt_Angry_Long"},
-    "n_genhutt_ques": {"_id": "279", "comment": "Gen_Hutt_Question_-_Short"},
-    "n_genhutt_quem": {"_id": "280", "comment": "Gen_Hutt_Question_-_Medium"},
-    "n_genhutt_quel": {"_id": "281", "comment": "Gen_Hutt_Question_-_Long"},
-    "n_genhutt_scrs": {"_id": "282", "comment": "Gen_Hutt_Scared_-_Short"},
-    "n_genhutt_scrm": {"_id": "283", "comment": "Gen_Hutt_Scared_-_Medium"},
-    "n_genhutt_lghs": {"_id": "284", "comment": "Gen_Hutt_Laughter_(mocking)_-_short"},
-    "n_genhutt_lghm": {"_id": "285", "comment": "Gen_Hutt_Laughter_(mocking)_-_medium"},
-    "n_genhutt_hpys": {"_id": "286", "comment": "Gen_Hutt_Happy_(thankful)_-_short"},
-    "n_genhutt_hpyl": {"_id": "287", "comment": "Gen_Hutt_Happy_(thankful)_-_long"},
-    "n_genduros_grt": {"_id": "288", "comment": "Duros_Greeting_Short"},
-    "n_genduros_coms1": {"_id": "289", "comment": "Duros_Generic_Comment_-_Short_1"},
-    "n_genduros_coms2": {"_id": "290", "comment": "Duros_Generic_Comment_-_Short_2"},
-    "n_genduros_comm1": {"_id": "291", "comment": "Duros_Generic_Comment_-_Medium_1"},
-    "n_genduros_comm2": {"_id": "292", "comment": "Duros_Generic_Comment_-_Medium_2"},
-    "n_genduros_coml1": {"_id": "293", "comment": "Duros_Generic_Comment_-_Long_1"},
-    "n_genduros_coml2": {"_id": "294", "comment": "Duros_Generic_Comment_-_Long_2"},
-    "n_genbith_grt": {"_id": "295", "comment": "Bith_Greeting_Short"},
-    "n_genbith_coms1": {"_id": "296", "comment": "Bith_Generic_Comment_-_Short_1"},
-    "n_genbith_comm1": {"_id": "297", "comment": "Bith_Generic_Comment_-_Medium_1"},
-    "n_genbith_coml1": {"_id": "298", "comment": "Bith_Generic_Comment_-_Long_1"},
-}
-
 
 class Globals:
     def __init__(self):
+        self.always_backup: bool = True
         self.chosen_languages: list[Language] = []
         self.create_fonts: bool = False
         self.check_textures: bool = False
         self.convert_tga: bool = False
+        self.find_unused_textures: bool = False
         self.k1_convert_gffs: bool = False
         self.tsl_convert_gffs: bool = False
         self.custom_scaling: float = 1.0
@@ -449,14 +160,7 @@ class Globals:
         return self.__dict__.get(key, None)
 
     def is_patching(self):
-        return (
-            self.translate
-            or self.set_unskippable
-            or self.convert_tga
-            or self.fix_dialog_skipping
-            or self.k1_convert_gffs
-            or self.tsl_convert_gffs
-        )
+        return self.translate or self.set_unskippable or self.convert_tga or self.fix_dialog_skipping or self.k1_convert_gffs or self.tsl_convert_gffs
 
 
 SCRIPT_GLOBALS = Globals()
@@ -522,16 +226,16 @@ def relative_path_from_to(
 
 def log_output(*args, **kwargs):
     # Create an in-memory text stream
-    buffer = StringIO()
+    # buffer = StringIO()
 
     # Print to the in-memory stream
-    print(*args, file=buffer, **kwargs)
+    # print(*args, **kwargs, file=buffer)
 
     # Retrieve the printed content
-    msg: str = buffer.getvalue()
+    # msg: str = buffer.getvalue()
 
     # Write the captured output to the file
-    #with Path("log_batch_patcher.log").open("a", encoding="utf-8", errors="ignore") as f:
+    # with Path("log_batch_patcher.log").open("a", encoding="utf-8", errors="ignore") as f:
     #    f.write(msg)
 
     # Print the captured output to console
@@ -541,7 +245,7 @@ def log_output(*args, **kwargs):
 
 def visual_length(
     s: str,
-    tab_length=8,
+    tab_length: int = 8,
 ) -> int:
     if "\t" not in s:
         return len(s)
@@ -574,7 +278,7 @@ def patch_nested_gff(
     gff: GFF,
     current_path: PurePath | Path = None,  # type: ignore[pylance, assignment]
     made_change: bool = False,
-    alien_vo_count=-1,
+    alien_vo_count: int = -1,
 ) -> tuple[bool, int]:
     if gff_content != GFFContent.DLG and not SCRIPT_GLOBALS.translate:
         # print(f"Skipping file at '{current_path}', translate not set.")
@@ -633,7 +337,7 @@ def recurse_through_list(
     gff: GFF,
     current_path: PurePath | Path = None,  # type: ignore[pylance, assignment]
     made_change: bool = False,
-    alien_vo_count=-1,
+    alien_vo_count: int = -1,
 ) -> tuple[bool, int]:
     current_path = PurePath.pathify(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
@@ -645,75 +349,110 @@ def recurse_through_list(
 def fix_encoding(text: str, encoding: str) -> str:
     return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore").strip()
 
+
 def convert_gff_game(
     from_game: Game,
     resource: FileResource,
 ):
     to_game = Game.K2 if from_game.is_k1() else Game.K1
-    converted_filepath: Path = resource.filepath().with_name(f"{resource.resname()}_{to_game.name!s}.{resource.restype()!s}")
-    log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name} and saving as {converted_filepath.name}")
-    generic: Any
-
-    if resource.restype() == ResourceType.ARE:
-        generic = read_are(resource.data(), offset=0, size=resource.size())
-        write_are(generic, converted_filepath, to_game)
-
-    elif resource.restype() == ResourceType.DLG:
-        generic = read_dlg(resource.data(), offset=0, size=resource.size())
-        write_dlg(generic, converted_filepath, to_game)
-
-    elif resource.restype() == ResourceType.GIT:
-        generic = read_git(resource.data(), offset=0, size=resource.size())
-        write_git(generic, converted_filepath, to_game)
-
-    elif resource.restype() == ResourceType.JRL:
-        generic = read_jrl(resource.data(), offset=0, size=resource.size())
-        write_jrl(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.PTH:
-        generic = read_pth(resource.data(), offset=0, size=resource.size())
-        write_pth(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTC:
-        generic = read_utc(resource.data(), offset=0, size=resource.size())
-        write_utc(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTD:
-        generic = read_utd(resource.data(), offset=0, size=resource.size())
-        write_utd(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTE:
-        generic = read_ute(resource.data(), offset=0, size=resource.size())
-        write_ute(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTI:
-        generic = read_uti(resource.data(), offset=0, size=resource.size())
-        write_uti(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTM:
-        generic = read_utm(resource.data(), offset=0, size=resource.size())
-        write_utm(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTP:
-        generic = read_utp(resource.data(), offset=0, size=resource.size())
-        write_utp(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTS:
-        generic = read_uts(resource.data(), offset=0, size=resource.size())
-        write_uts(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTT:
-        generic = read_utt(resource.data(), offset=0, size=resource.size())
-        write_utt(generic, converted_filepath, game=to_game)
-
-    elif resource.restype() == ResourceType.UTW:
-        generic = read_utw(resource.data(), offset=0, size=resource.size())
-        write_utw(generic, converted_filepath, game=to_game)
-
+    new_name = resource.filename()
+    converted_data: Path | bytearray = bytearray()
+    if not resource.inside_capsule:
+        new_name = f"{resource.resname()}_{to_game.name!s}.{resource.restype()!s}" if SCRIPT_GLOBALS.always_backup else resource.filename()
+        converted_data = resource.filepath().with_name(new_name)
+        savepath = converted_data
     else:
-        log_output(
-            f"Unsupported gff: {resource.identifier()}"
-        )
+        # TODO(th3w1zard1): define this up the stack
+        #savepath = (
+        #    resource.filepath().with_name(f"{resource.filepath().stem}_{to_game.name!s}{resource.filepath().suffix}")
+        #    if SCRIPT_GLOBALS.always_backup
+        #    else resource.filepath()
+        #)
+        savepath = resource.filepath()
+    log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name}")
+    generic: Any
+    try:
+        if resource.restype() is ResourceType.ARE:
+            generic = read_are(resource.data(), offset=0, size=resource.size())
+            write_are(generic, converted_data, to_game)
+
+        elif resource.restype() is ResourceType.DLG:
+            generic = read_dlg(resource.data(), offset=0, size=resource.size())
+            write_dlg(generic, converted_data, to_game)
+
+        elif resource.restype() is ResourceType.GIT:
+            generic = read_git(resource.data(), offset=0, size=resource.size())
+            write_git(generic, converted_data, to_game)
+
+        elif resource.restype() is ResourceType.JRL:
+            generic = read_jrl(resource.data(), offset=0, size=resource.size())
+            write_jrl(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.PTH:
+            generic = read_pth(resource.data(), offset=0, size=resource.size())
+            write_pth(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTC:
+            generic = read_utc(resource.data(), offset=0, size=resource.size())
+            write_utc(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTD:
+            generic = read_utd(resource.data(), offset=0, size=resource.size())
+            write_utd(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTE:
+            generic = read_ute(resource.data(), offset=0, size=resource.size())
+            write_ute(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTI:
+            generic = read_uti(resource.data(), offset=0, size=resource.size())
+            write_uti(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTM:
+            generic = read_utm(resource.data(), offset=0, size=resource.size())
+            write_utm(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTP:
+            generic = read_utp(resource.data(), offset=0, size=resource.size())
+            write_utp(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTS:
+            generic = read_uts(resource.data(), offset=0, size=resource.size())
+            write_uts(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTT:
+            generic = read_utt(resource.data(), offset=0, size=resource.size())
+            write_utt(generic, converted_data, game=to_game)
+
+        elif resource.restype() is ResourceType.UTW:
+            generic = read_utw(resource.data(), offset=0, size=resource.size())
+            write_utw(generic, converted_data, game=to_game)
+
+        else:
+            log_output(f"Unsupported gff: {resource.identifier()}")
+    except (OSError, ValueError):
+        RobustRootLogger().error(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...", exc_info=False)
+        if not resource.inside_capsule:
+            log_output(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...")
+            return
+        log_output(f"Corrupted GFF: '{resource._path_ident_obj}', will start validation process of '{resource.filepath().name}'...")
+        new_erfrim = validate_capsule(resource.filepath(), strict=True, game=to_game)
+        if isinstance(new_erfrim, ERF):
+            log_output(f"Saving salvaged ERF to '{savepath}'")
+            write_erf(new_erfrim, savepath)
+            return
+        if isinstance(new_erfrim, RIM):
+            log_output(f"Saving salvaged RIM to '{savepath}'")
+            write_rim(new_erfrim, savepath)
+            return
+        log_output(f"Whole erf/rim is corrupt: {resource!r}")
+        return
+
+    if isinstance(converted_data, bytearray):
+        log_output(f"Saving conversions in ERF/RIM at '{savepath}'")
+        lazy_capsule = LazyCapsule(savepath, create_nonexisting=True)
+        lazy_capsule.delete(resource.resname(), resource.restype())
+        lazy_capsule.add(resource.resname(), resource.restype(), converted_data)
 
 
 def patch_resource(resource: FileResource) -> GFF | TPC | None:
@@ -727,7 +466,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
             return text, text
         return text, SCRIPT_GLOBALS.pytranslator.translate(text, from_lang=from_lang)
 
-    def process_translations(tlk: TLK, from_lang):
+    def process_translations(tlk: TLK, from_lang: Language):
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCRIPT_GLOBALS.max_threads) as executor:
             # Create a future for each translation task
             future_to_strref: dict[concurrent.futures.Future[tuple[str, str]], int] = {
@@ -744,17 +483,18 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                         tlk.replace(strref, translated_text)
                         log_output(f"#{strref} Translated {original_text} --> {translated_text}")
                 except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
-                    log_output(format_exception_with_variables(e, message=f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}"))
-                    print(format_exception_with_variables(exc))
+                    RobustRootLogger().exception(f"tlk strref {strref} generated an exception")
+                    log_output(f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}")
+                    log_output(traceback.format_exc())
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
         try:
             log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            log_output(format_exception_with_variables(e, message=f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!"))
-            print(format_exception_with_variables(e))
+        except Exception:  # pylint: disable=W0718  # noqa: BLE001
+            RobustRootLogger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
+            log_output(traceback.format_exc())
             return None
 
         if not tlk:
@@ -775,16 +515,16 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         return TPCTGAReader(resource.data()).load()
 
     if resource.restype().name.upper() in {x.name for x in GFFContent}:
-        if SCRIPT_GLOBALS.k1_convert_gffs:
+        if SCRIPT_GLOBALS.k1_convert_gffs and not resource.inside_capsule:
             convert_gff_game(Game.K2, resource)
-        if SCRIPT_GLOBALS.tsl_convert_gffs:
+        if SCRIPT_GLOBALS.tsl_convert_gffs and not resource.inside_capsule:
             convert_gff_game(Game.K1, resource)
         gff: GFF | None = None
         try:
             # log_output(f"Loading {resource.resname()}.{resource.restype().extension} from '{resource.filepath().name}'")
             gff = read_gff(resource.data())
             alien_owner: str | None = None
-            if gff.content == GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
+            if gff.content is GFFContent.DLG and SCRIPT_GLOBALS.set_unskippable:
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
@@ -802,19 +542,30 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 and alien_owner in {0, "0", None}
                 and alien_vo_count != -1
                 and alien_vo_count < 3
-                and gff.content == GFFContent.DLG
+                and gff.content is GFFContent.DLG
             ):
                 skippable = gff.root.acquire("Skippable", None)
                 if skippable not in {0, "0"}:
                     conversationtype = gff.root.acquire("ConversationType", None)
                     if conversationtype not in {"1", 1}:
-                        log_output("Skippable", skippable, "alien_vo_count", alien_vo_count, "ConversationType", conversationtype, f"Setting dialog as unskippable in {resource._path_ident_obj}")
+                        log_output(
+                            "Skippable",
+                            skippable,
+                            "alien_vo_count",
+                            alien_vo_count,
+                            "ConversationType",
+                            conversationtype,
+                            f"Setting dialog as unskippable in {resource._path_ident_obj}",
+                        )
                         made_change = True
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
                 return gff
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            log_output(format_exception_with_variables(e, message=f"[Error] loading GFF '{resource._path_ident_obj}'!"))
+            log_output(f"[Error] cannot load corrupted GFF '{resource._path_ident_obj}'!")
+            if not isinstance(e, (OSError, ValueError)):
+                RobustRootLogger().exception(f"[Error] loading GFF '{resource._path_ident_obj}'!")
+                log_output(traceback.format_exc())
             # raise
             return None
 
@@ -875,6 +626,7 @@ def patch_capsule_file(c_file: Path):
     try:
         file_capsule = Capsule(c_file)
     except ValueError as e:
+        RobustRootLogger().exception(f"Could not load '{c_file}'")
         log_output(f"Could not load '{c_file}'. Reason: {universal_simplify_exception(e)}")
         return
 
@@ -907,11 +659,7 @@ def patch_capsule_file(c_file: Path):
             check_model(resource, None)
 
     if SCRIPT_GLOBALS.is_patching():
-        erf_or_rim: ERF | RIM = (
-            ERF(ERFType.from_extension(new_filepath))
-            if is_any_erf_type_file(c_file)
-            else RIM()
-        )
+        erf_or_rim: ERF | RIM = ERF(ERFType.from_extension(new_filepath)) if is_any_erf_type_file(c_file) else RIM()
         for resource in file_capsule:
             if resource.identifier() not in omitted_resources:
                 erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
@@ -946,11 +694,7 @@ def patch_erf_or_rim(
         elif isinstance(patched_data, TPC):
             log_output(f"Adding patched TPC resource '{resource.resname()}' to {new_filename}")
             txi_resource: FileResource | None = next(
-                (
-                    res
-                    for res in resources
-                    if res.resname() == resource.resname() and res.restype() == ResourceType.TXI
-                ),
+                (res for res in resources if res.resname() == resource.resname() and res.restype() is ResourceType.TXI),
                 None,
             )
             if txi_resource:
@@ -962,7 +706,13 @@ def patch_erf_or_rim(
             omitted_resources.append(resource.identifier())
     for resource in resources:
         if resource.identifier() not in omitted_resources:
-            erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
+            try:
+                erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
+            except (OSError, ValueError):
+                RobustRootLogger().error(f"Corrupted resource: {resource!r}, skipping...", exc_info=True)
+                log_output(f"Corrupted resource: {resource!r}, skipping...")
+            except Exception:
+                RobustRootLogger().exception(f"Unexpected exception occurred for resource {resource!r}")
     return new_filename
 
 
@@ -989,8 +739,7 @@ def patch_file(file: os.PathLike | str):
         if SCRIPT_GLOBALS.is_patching():
             patch_and_save_noncapsule(fileres)
         if (
-            SCRIPT_GLOBALS.check_textures
-            and fileres.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
+            SCRIPT_GLOBALS.check_textures and fileres.restype().extension.lower() in ("mdl")
         ):
             check_model(fileres, None)
 
@@ -1001,12 +750,203 @@ def patch_folder(folder_path: os.PathLike | str):
     for file_path in c_folderpath.safe_rglob("*"):
         patch_file(file_path)
 
+
+def get_active_layouts(k_install: Installation) -> dict[FileResource, LYT]:
+    layout_resources: dict[FileResource, LYT] = {}
+    module_filenames = k_install.module_names()
+    lower_module_filenames = [filename.lower() for filename in module_filenames]
+    for resource in k_install:
+        if resource.restype() is not ResourceType.LYT:
+            continue
+
+        # Determine if the game is using it.
+        layout_display_path = resource._path_ident_obj.relative_to(k_install.path().parent)
+        rim_filename = f"{resource.resname().lower()}.rim"
+        mod_filename = f"{resource.resname().lower()}.mod"
+        if rim_filename in lower_module_filenames:
+            print(f"Found layout '{resource.filename()}' used by 'Modules/{rim_filename}'")
+            try:
+                layout_resources[resource] = read_lyt(resource.data())
+            except (OSError, ValueError):
+                RobustRootLogger().exception(f"Corrupted resource: {resource!r}, skipping...")
+                log_output(f"File '{layout_display_path}' is unreadable or possible corrupted.")
+                continue
+        if mod_filename in lower_module_filenames:
+            print(f"Found layout '{resource.filename()}' used by 'Modules/{mod_filename}'")
+            try:
+                layout_resources[resource] = read_lyt(resource.data())
+            except (OSError, ValueError):
+                RobustRootLogger().exception(f"Corrupted resource: {resource!r}, skipping...")
+                log_output(f"File '{layout_display_path}' is unreadable or possible corrupted.")
+                continue
+    return layout_resources
+
+
+def determine_if_model_utilized(
+    model_resource: FileResource,
+    layout_resources: dict[FileResource, LYT],
+    k_install: Installation,
+    lightmap_or_texture: Literal["texture", "lightmap"] = "texture",
+    lmtex_name: str | None = None,
+    missing_writer: TextIOWrapper | None = None,
+):
+    model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+    log_output(f"Determining if '{model_display_path}' is used by the game...")
+    for layout_resource, lyt in layout_resources.items():
+        layout_display_path = layout_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        if layout_resource.restype() is not ResourceType.LYT:
+            continue
+        for index, room in enumerate(lyt.rooms):
+            if room.model.lower() == model_resource.resname().lower():
+                if lmtex_name is not None:
+                    log_output(
+                        f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {layout_display_path}, room index {index}, position {room.position})"
+                    )
+                    needed_module = f"{layout_resource.resname()}.rim"
+                    log_output_with_separator(f"Missing texture is needed by Modules/{needed_module}")
+                    if missing_writer is not None:
+                        missing_writer.write(
+                            f"Module={layout_resource.resname()}, Texture={lmtex_name}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}"
+                        )
+                print(f"model '{model_resource.filename()}' is used by the game.")
+                return True
+
+    model_2da_resref_info = K2Columns2DA.ResRefs.Models.as_dict() if k_install.game().is_k2() else K1Columns2DA.ResRefs.Models.as_dict()
+    queries_2da: list[ResourceIdentifier] = [ResourceIdentifier.from_path(filename_2da) for filename_2da in model_2da_resref_info]
+    locations_2da = k_install.resources(queries_2da)
+    for filename in model_2da_resref_info:
+        result_2da = locations_2da.get(ResourceIdentifier.from_path(filename))
+        if not result_2da:
+            RobustRootLogger().warning(f"No locations found for '{filename}'")
+            log_output(f"No locations found for '{filename}'")
+            continue
+
+        resource2da = result_2da.as_file_resource()
+        display_path_2da = resource2da._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        try:
+            valid_2da = read_2da(result_2da.data)
+        except (OSError, ValueError):
+            RobustRootLogger().error(f"Corrupted/unreadable file: '{display_path_2da}'")
+            log_output(f"Corrupted/unreadable file: '{display_path_2da}'")
+            continue
+        filename_2da = resource2da.filename().lower()
+        for column_name in model_2da_resref_info[filename_2da]:
+            if column_name == ">>##HEADER##<<":
+                for header_row_index, header in enumerate(valid_2da.get_headers()):
+                    try:
+                        stripped_header = header.strip()
+                        if stripped_header.lower() == model_resource.resname().lower():
+                            if lmtex_name is not None:
+                                log_output(
+                                    f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {model_display_path})"
+                                )  # noqa: E501, SLF001
+                                log_output_with_separator(f"Model is referenced by '{display_path_2da}' header, row '{header_row_index}'")  # noqa: E501, SLF001
+                            if missing_writer is not None:
+                                missing_writer.write(f"Module={layout_resource.resname()}, Texture={lmtex_name}\n, 2DA={filename_2da}, Path={resource2da.filepath()}")  # noqa: E501
+
+                            print(f"model '{model_resource.filename()}' is used by the game.")
+                            return True
+                    except Exception:  # noqa: PERF203
+                        RobustRootLogger().exception("Error parsing '%s' header '%s'", filename_2da, header)
+                        log_output(f"Error parsing '{filename_2da}' header '{header}'")
+                        log_output(traceback.format_exc())
+            else:
+                try:
+                    for colenum_row_index, cell in enumerate(valid_2da.get_column(column_name)):
+                        stripped_cell = cell.strip()
+                        if stripped_cell.lower() == model_resource.resname().lower():
+                            if lmtex_name is not None:
+                                log_output(
+                                    f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}' (found in {model_display_path})"
+                                )  # noqa: E501, SLF001
+                                log_output_with_separator(f"Model is referenced by '{display_path_2da}', column '{column_name}', row '{colenum_row_index}'")  # noqa: E501, SLF001
+                            if missing_writer is not None:
+                                missing_writer.write(f"Module={layout_resource.resname()}, Texture={lmtex_name}\n, 2DA={filename_2da}, Path={resource2da.filepath()}")  # noqa: E501, SLF001
+
+                            print(
+                                f"model '{model_resource.filename()}' is used by the game, referenced by '{display_path_2da}', column '{column_name}', row '{colenum_row_index}'"
+                            )
+                            return True
+                except Exception:
+                    RobustRootLogger().exception("Error parsing '%s' column '%s'", filename_2da, column_name)
+                    log_output(f"Error parsing '{filename_2da}' column '{column_name}'")
+                    log_output(traceback.format_exc())
+    log_output("Nope")
+    return False
+
+
+def find_missing_model_textures_lightmaps(
+    model_resource: FileResource,
+    lightmap_or_texture: Literal["lightmap", "texture"],
+    order: list[SearchLocation],
+    k_install: Installation | None = None,
+    layout_resources: dict[FileResource, LYT] | None = None,
+) -> None | bool:
+    model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+    try:
+        texture_names: list[str] = []
+        gen_func = list_textures if lightmap_or_texture == "texture" else list_lightmaps
+        for lmtex_name in gen_func(model_resource.data()):
+            texture_names.append(lmtex_name)
+    except Exception as e:
+        RobustRootLogger().exception(f"Error listing {lightmap_or_texture}s in '{model_display_path}'")
+        log_output(f"Error listing {lightmap_or_texture}s in '{model_display_path}': {e}")
+        return None
+    else:
+        if not texture_names:
+            print(f"Model '{model_display_path}' has no {lightmap_or_texture}s.")
+            return True
+        mdl_tex_outpath = _write_all_found_in_mdl(
+            texture_names,
+            f" {lightmap_or_texture}s found in model '",
+            model_resource,
+            "out_model_textures",
+        )
+        # Find missing
+        if k_install is None:
+            return None
+
+        assert layout_resources is not None
+        mdl_missing_tex_outpath = mdl_tex_outpath.parent.joinpath("missing", mdl_tex_outpath.name)
+        mdl_missing_tex_outpath.parent.mkdir(exist_ok=True)
+        missing_writer = mdl_missing_tex_outpath.open("a", encoding="utf-8")
+        found_missing_texture = False
+        try:
+            for lmtex_name in texture_names:
+                if lmtex_name == "dirt" and lightmap_or_texture == "texture":
+                    continue
+                texture_tga = ResourceIdentifier(lmtex_name, ResourceType.TGA)
+                texture_tpc = ResourceIdentifier(lmtex_name, ResourceType.TPC)
+                resource_results = k_install.locations([texture_tga, texture_tpc], order)
+                # if resource_results.get(texture_tga):
+                # log_output(f"Found texture '{texture_tga}' in the following locations:")
+                # for location_list in resource_results.values():
+                #    for location in location_list:
+                #        log_output(f"    {location.filepath}")
+                # if resource_results.get(texture_tpc):
+                # log_output(f"Found texture '{texture_tpc}' in the following locations:")
+                # for location_list in resource_results.values():
+                #    for location in location_list:
+                #        log_output(f"    {location.filepath}")
+                if resource_results.get(texture_tga) or resource_results.get(texture_tpc):
+                    return True
+
+                if not resource_results.get(texture_tga) and not resource_results.get(texture_tpc):
+                    return determine_if_model_utilized(model_resource, layout_resources, k_install, lightmap_or_texture, lmtex_name, missing_writer)
+        finally:
+            missing_writer.close()
+            if not found_missing_texture:
+                mdl_missing_tex_outpath.unlink(missing_ok=True)
+    return None
+
+
 def check_model(
     model_resource: FileResource,
     k_install: Installation | None,
+    all_layouts: dict[FileResource, LYT] | None = None,
 ):
     if model_resource._path_ident_obj.parent.safe_isdir():
-        #log_output(f"Will include override for model {resource._path_ident_obj}")
+        # log_output(f"Will include override for model {resource._path_ident_obj}")
         order = [
             SearchLocation.OVERRIDE,
             SearchLocation.TEXTURES_TPC,
@@ -1019,141 +959,12 @@ def check_model(
             SearchLocation.TEXTURES_GUI,
             SearchLocation.CHITIN,
         ]
-    try:
-        texture_names = list_textures(model_resource.data())
-    except Exception as e:
-        log_output(f"Error listing textures in '{model_resource._path_ident_obj}': {e}")
-        return
-    else:
-        if texture_names:
-            mdl_tex_outpath = _write_all_found_in_mdl(
-                texture_names,
-                " textures found in model '",
-                model_resource,
-                "out_model_textures",
-            )
-            # Find missing textures
-            if k_install is not None:
-                mdl_missing_tex_outpath = mdl_tex_outpath.parent.joinpath("missing", mdl_tex_outpath.name)
-                mdl_missing_tex_outpath.parent.mkdir(exist_ok=True)
-                missing_writer = mdl_missing_tex_outpath.open("a", encoding="utf-8")
-                found_missing_texture = False
-                try:
-                    for texture in texture_names:
-                        if texture == "dirt":
-                            continue
-                        texture_tga = ResourceIdentifier(texture, ResourceType.TGA)
-                        texture_tpc = ResourceIdentifier(texture, ResourceType.TPC)
-                        resource_results = k_install.locations([texture_tga, texture_tpc], order)
-                        #if resource_results.get(texture_tga):
-                            #log_output(f"Found texture '{texture_tga}' in the following locations:")
-                            #for location_list in resource_results.values():
-                            #    for location in location_list:
-                            #        log_output(f"    {location.filepath}")
-                        #if resource_results.get(texture_tpc):
-                            #log_output(f"Found texture '{texture_tpc}' in the following locations:")
-                            #for location_list in resource_results.values():
-                            #    for location in location_list:
-                            #        log_output(f"    {location.filepath}")
-                        if not resource_results.get(texture_tga) and not resource_results.get(texture_tpc):
-                            for layout_resource in k_install.chitin_resources():
-                                if layout_resource.restype() is not ResourceType.LYT:
-                                    continue
-                                lyt_content = layout_resource.data().decode(encoding="ascii", errors="ignore")
-                                if model_resource.resname().lower() in lyt_content.lower():
-                                    log_output(f"{model_resource.resname()}: Missing texture for model {model_resource.filename()}: '{texture}' (found in {layout_resource.filepath()}/{layout_resource.filename()})")
-                                    needed_module = f"{layout_resource.resname()}.rim"
-                                    log_output_with_separator(f"Missing texture is needed by Modules/{needed_module}")
-                                    missing_writer.write(f"Module={layout_resource.resname()}, Texture={texture}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}")
-                                    found_missing_texture = True
-                                    break
-                            if not found_missing_texture:
-                                for capsule_name, resources in k_install._modules.items():
-                                    if not capsule_name.lower().endswith(".mod"):
-                                        continue
-                                    for capsule_resource in resources:
-                                        if capsule_resource.restype() is not ResourceType.LYT:
-                                            continue
-                                        lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
-                                        if model_resource.resname().lower() in lyt_content.lower():
-                                            log_output(f"{model_resource.resname()}: Missing texture: '{texture}'")
-                                            log_output_with_separator(f"missing texture is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
-                                            missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Texture={texture}\n")
-                                            found_missing_texture = True
-                                            break
-                finally:
-                    missing_writer.close()
-                    if not found_missing_texture:
-                        mdl_missing_tex_outpath.unlink(missing_ok=True)
-
-    try:
-        lightmap_names = list_lightmaps(model_resource.data())
-    except Exception as e:
-        log_output(f"Error listing lightmaps in '{model_resource._path_ident_obj}': {e}")
-        return
-    else:
-        if lightmap_names:
-            mdl_lmp_outpath = _write_all_found_in_mdl(
-                lightmap_names,
-                " lightmaps found in model '",
-                model_resource,
-                "out_model_lightmaps",
-            )
-            # Find missing lightmaps
-            if k_install is not None:
-                mdl_missing_lmp_outpath = mdl_lmp_outpath.parent.joinpath("missing", mdl_lmp_outpath.name)
-                mdl_missing_lmp_outpath.parent.mkdir(exist_ok=True)
-                missing_writer = mdl_missing_lmp_outpath.open("a", encoding="utf-8")
-                found_missing_lightmap = False
-                try:
-                    for lightmap in lightmap_names:
-                        lightmap_tga = ResourceIdentifier(lightmap, ResourceType.TGA)
-                        lightmap_tpc = ResourceIdentifier(lightmap, ResourceType.TPC)
-                        resource_results = k_install.locations([lightmap_tga, lightmap_tpc], order)
-                        #if resource_results.get(lightmap_tga):
-                            #log_output(f"Found lightmap '{lightmap_tga}' in the following locations:")
-                            #for location_list in resource_results.values():
-                                #for location in location_list:
-                                    #log_output(f"    {location.filepath}")
-                        #if resource_results.get(lightmap_tpc):
-                            #log_output(f"Found lightmap '{lightmap_tpc}' in the following locations:")
-                            #for location_list in resource_results.values():
-                                #for location in location_list:
-                                    #log_output(f"    {location.filepath}")
-                        if not resource_results.get(lightmap_tga) and not resource_results.get(lightmap_tpc):
-                            for layout_resource in k_install.chitin_resources():
-                                if layout_resource.restype() is not ResourceType.LYT:
-                                    continue
-                                lyt_content = layout_resource.data().decode(encoding="ascii", errors="ignore")
-                                if model_resource.resname().lower() in lyt_content.lower():
-                                    log_output(f"{model_resource.resname()}: Missing lightmap for model {model_resource.filename()}: '{lightmap}' (found in {layout_resource.filepath()}/{layout_resource.filename()})")
-                                    needed_module = f"{layout_resource.resname()}.rim"
-                                    log_output_with_separator(f"Missing lightmap is needed by Modules/{needed_module}")
-                                    missing_writer.write(f"Module={layout_resource.resname()}, Lightmap={lightmap}\n, Layout={layout_resource.filename()}, Path={layout_resource.filepath()}")
-                                    found_missing_lightmap = True
-                                    break
-                            if not found_missing_lightmap:
-                                for capsule_name, resources in k_install._modules.items():
-                                    if not capsule_name.lower().endswith(".mod"):
-                                        continue
-                                    for capsule_resource in resources:
-                                        if capsule_resource.restype() is not ResourceType.LYT:
-                                            continue
-                                        lyt_content = capsule_resource.data().decode(encoding="ascii", errors="ignore")
-                                        if model_resource.resname().lower() in lyt_content.lower():
-                                            log_output(f"{model_resource.resname()}: Missing lightmap: '{lightmap}'")
-                                            log_output_with_separator(f"Missing lightmap is needed by Modules/{capsule_name}/{capsule_resource.filename()}")
-                                            missing_writer.write(f"Module={k_install.module_name(capsule_name)}, Lightmap={lightmap}\n")
-                                            found_missing_lightmap = True
-                                            break
-                finally:
-                    missing_writer.close()
-                    if not found_missing_lightmap:
-                        mdl_missing_lmp_outpath.unlink(missing_ok=True)
+    result_tex = find_missing_model_textures_lightmaps(model_resource, "texture", order, k_install, all_layouts)
+    result_lmp = find_missing_model_textures_lightmaps(model_resource, "lightmap", order, k_install, all_layouts)
 
 
 def _write_all_found_in_mdl(
-    tex_or_lmp_names: list[str],
+    tex_or_lmp_names: list[str] | set[str],
     num_found_msg: str,
     resource: FileResource,
     out_filestem: str,
@@ -1171,15 +982,145 @@ def _write_all_found_in_mdl(
 
     return result
 
+
+def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource, LYT]):
+    log_output(f"Finding unused textures at '{k_install.path()}'")
+    # Define all textures found in the installation.
+    all_found_textures = {
+        res.resname().lower(): res for res in k_install if res.restype() in (ResourceType.TGA, ResourceType.TPC) and not res.inside_bif and not res.inside_capsule
+    }
+    log_output(f"Found total of '{len(all_found_textures)}' texture files in the installation to check.")
+
+    # Check 2da
+    rel_2da_info = (K1Columns2DA if k_install.game().is_k1() else K2Columns2DA).ResRefs.Textures.as_dict()
+    queries_2da: list[ResourceIdentifier] = [ResourceIdentifier.from_path(filename_2da) for filename_2da in rel_2da_info]
+    log_output(f"Checking a total of {len(queries_2da)} 2da files for texture references...")
+    locations_2da = k_install.resources(queries_2da)
+    for filename in rel_2da_info:
+        result_2da = locations_2da.get(ResourceIdentifier.from_path(filename))
+        if not result_2da:
+            RobustRootLogger().warning(f"No locations found for '{filename}'")
+            log_output(f"No locations found for '{filename}'")
+            continue
+
+        resource2da = result_2da.as_file_resource()
+        display_path_2da = resource2da._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        try:
+            valid_2da = read_2da(result_2da.data)
+        except (OSError, ValueError):
+            RobustRootLogger().exception(f"Corrupted resource: {resource2da!r}, skipping...")
+            log_output(f"Corrupted/unreadable file: '{display_path_2da}'")
+            log_output(traceback.format_exc())
+            continue
+        filename_2da = resource2da.filename().lower()
+        tex_appends = ("", "01") if filename_2da == "appearance.2da" else ("",)
+        for tex_append in tex_appends:
+            for column_name in rel_2da_info[filename_2da]:
+                if column_name == ">>##HEADER##<<":
+                    try:
+                        for header_row_index, header in enumerate(valid_2da.get_headers()):
+                            stripped_header = header.strip()
+                            if not stripped_header:
+                                continue
+                            parsed_lower_header = stripped_header.lower() + tex_append
+                            if parsed_lower_header in all_found_textures:
+                                print(f"Found texture '{stripped_header}' at header row index {header_row_index} of '{filename_2da}'")
+                                del all_found_textures[parsed_lower_header]
+                            else:
+                                print(f"Missing texture '{stripped_header}' (referenced by header at row {header_row_index} of '{filename_2da}')")
+                    except Exception:
+                        RobustRootLogger().error("Error parsing '%s' headers", filename_2da, exc_info=True)
+                        log_output(f"Error parsing '{filename_2da}' headers")
+                        log_output(traceback.format_exc())
+                else:
+                    try:
+                        for colnum_row_index, cell in enumerate(valid_2da.get_column(column_name)):
+                            stripped_cell = cell.strip()
+                            if not stripped_cell:
+                                continue
+                            parsed_lower_cell = stripped_cell.lower() + tex_append
+                            if parsed_lower_cell in all_found_textures:
+                                print(f"Found texture '{stripped_cell}', column '{column_name}' row index {colnum_row_index} of '{filename_2da}'")
+                                del all_found_textures[parsed_lower_cell]
+                            else:
+                                print(f"Missing texture '{stripped_cell}' (referenced by column '{column_name}' at row {colnum_row_index} of '{filename_2da}')")
+                    except Exception:
+                        RobustRootLogger().error("Error parsing '%s' column '%s'", filename_2da, column_name, exc_info=True)
+                        log_output(f"Error parsing '{filename_2da}' column {column_name}")
+                        log_output(traceback.format_exc())
+
+    # Check mdl
+    log_output("Checking mdl's for any texture references... this may take a while.")
+    all_used_models = [res for res in k_install if res.restype() is ResourceType.MDL]
+    log_output(f"Found {len(all_used_models)} total models to check for texture references.")
+    texture_lookups: dict[FileResource, list[str]] = {}
+    for model_resource in all_used_models:
+        model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        print(f"Finding textures in '{model_display_path}'")
+        texture_names: list[str] = []
+        try:
+            for texture_name in list_textures(model_resource.data()):
+                texture_names.append(texture_name)
+        except Exception as e:
+            log_output(f"Error listing textures in '{model_display_path}': {type(e).__name__}: {e}")
+        print(f"Finding lightmaps in '{model_display_path}'")
+        try:
+            for lightmap_name in list_lightmaps(model_resource.data()):
+                texture_names.append(lightmap_name)
+        except Exception as e:
+            log_output(f"Error listing lightmaps in '{model_display_path}': {type(e).__name__}: {e}")
+        texture_lookups[model_resource] = texture_names
+        print(f"Found {len(texture_names)} textures: {texture_names!r}")
+    for model_resource, texture_list in texture_lookups.items():
+        print(f"Second pass of '{model_display_path}'")
+        for texture_name in texture_list:
+            if not texture_name:
+                continue
+            parsed_texname = texture_name.strip().lower()
+            if not parsed_texname:
+                continue
+            if parsed_texname in all_found_textures:
+                print(f"Found texture '{parsed_texname}' (referenced by model at {model_display_path})")
+                del all_found_textures[parsed_texname]
+
+    # Finally output results.
+    total_size = 0
+    for unused_texture_resource in all_found_textures.values():
+        log_output(unused_texture_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent))  # noqa: SLF001
+        total_size += unused_texture_resource.size()
+
+    log_output(f"Found {len(all_found_textures)} total unused textures.")
+    log_output_with_separator(f"Total wasted space: {human_readable_size(total_size)}")
+
+
 def patch_install(install_path: os.PathLike | str):
     log_output()
-    log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
+    log_output_with_separator(f"Using install dir for operations:\t{install_path}", above=True)
+    log_output("Note: Logging to this UI is extremely slow, this app will mostly use the .log files instead. Don't panic if there's no output on screen.")
     log_output()
 
     k_install = Installation(install_path)
-    #k_install.reload_all()
-    log_output_with_separator("Patching modules...")
+    all_layouts: list[FileResource] | None = None
+    if SCRIPT_GLOBALS.find_unused_textures or SCRIPT_GLOBALS.check_textures:
+        all_layouts = get_active_layouts(k_install)
+    if SCRIPT_GLOBALS.find_unused_textures:
+        find_unused_textures(k_install, all_layouts)
+    # k_install.reload_all()
     if SCRIPT_GLOBALS.is_patching():
+        log_output_with_separator("Patching modules...")
+        if SCRIPT_GLOBALS.k1_convert_gffs or SCRIPT_GLOBALS.tsl_convert_gffs:
+            for module_name in k_install._modules:
+                log_output(f"Validating ERF/RIM in the Modules folder: '{module_name}'")
+                module_path = k_install.module_path().joinpath(module_name)
+                to_game = Game.K2 if SCRIPT_GLOBALS.tsl_convert_gffs else Game.K1
+                erf_or_rim = validate_capsule(module_path, strict=True, game=to_game)
+                if isinstance(erf_or_rim, ERF):
+                    write_erf(erf_or_rim, module_path)
+                elif isinstance(erf_or_rim, RIM):
+                    write_rim(erf_or_rim, module_path)
+                else:
+                    log_output(f"Unknown ERF/RIM: '{module_path.relative_to(k_install.path().parent)}'")
+        k_install.load_modules()
         for module_name, resources in k_install._modules.items():  # noqa: SLF001
             res_ident = ResourceIdentifier.from_path(module_name)
             filename = str(res_ident)
@@ -1193,8 +1134,10 @@ def patch_install(install_path: os.PathLike | str):
                 log_output(f"Saving rim {new_rim_filename}")
                 write_rim(new_rim, filepath.parent / new_rim_filename, res_ident.restype)
 
-            elif res_ident.restype.name in ERFType.__members__:
-                new_erf = ERF(ERFType.__members__[res_ident.restype.name])
+            elif res_ident.restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
+                new_erf = ERF(ERFType.from_extension(filepath.suffix))
+                if res_ident.restype is ResourceType.SAV:
+                    new_erf.is_save_erf = True
                 new_erf_filename = patch_erf_or_rim(resources, module_name, new_erf)
                 log_output(f"Saving erf {new_erf_filename}")
                 write_erf(new_erf, filepath.parent / new_erf_filename, res_ident.restype)
@@ -1213,32 +1156,24 @@ def patch_install(install_path: os.PathLike | str):
     #    log_output(f"Patching {new_rim_filename} in the 'rims' folder ")
     #    write_rim(new_rim, filepath.parent / new_rim_filename)
 
-    log_output_with_separator("Patching Override...")
+    if SCRIPT_GLOBALS.is_patching():
+        log_output_with_separator("Patching Override...")
     override_path = k_install.override_path()
     override_path.mkdir(exist_ok=True, parents=True)
     for folder in k_install.override_list():
         for resource in k_install.override_resources(folder):
             if SCRIPT_GLOBALS.is_patching():
                 patch_and_save_noncapsule(resource)
-            if (
-                SCRIPT_GLOBALS.check_textures
-                and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
-            ):
-                check_model(resource, k_install)
+            if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):
+                check_model(resource, k_install, all_layouts)
 
-    log_output_with_separator("Extract and patch BIF data, saving to Override")
+    if SCRIPT_GLOBALS.is_patching():
+        log_output_with_separator("Extract and patch BIF data, saving to Override (will not overwrite)")
     for resource in k_install.chitin_resources():
-        if (
-            SCRIPT_GLOBALS.fix_dialog_skipping
-            or SCRIPT_GLOBALS.translate
-            or SCRIPT_GLOBALS.set_unskippable
-        ):
+        if SCRIPT_GLOBALS.fix_dialog_skipping or SCRIPT_GLOBALS.translate or SCRIPT_GLOBALS.set_unskippable:
             patch_and_save_noncapsule(resource, savedir=override_path)
-        if (
-            SCRIPT_GLOBALS.check_textures
-            and resource.restype().extension.lower() in ("mdl")  # TODO(th3w1zard1): determine if we need to check mdx?
-        ):
-            check_model(resource, k_install)
+        if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):
+            check_model(resource, k_install, all_layouts)
 
     patch_file(k_install.path().joinpath("dialog.tlk"))
 
@@ -1251,8 +1186,9 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
 def determine_input_path(path: Path) -> None:
     # sourcery skip: assign-if-exp, reintroduce-else
     if not path.safe_exists() or path.resolve() == Path.cwd().resolve():
-        msg = "Path does not exist"
-        raise FileNotFoundError(msg)
+        import errno
+
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(path))
 
     if is_kotor_install_dir(path):
         return patch_install(path)
@@ -1271,9 +1207,10 @@ def execute_patchloop_thread() -> str | None:
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
     except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-        log_output(format_exception_with_variables(e, message="Unhandled exception during the patching process."))
+        RobustRootLogger().exception("Unhandled exception during the patching process.")
+        log_output(traceback.format_exc())
         SCRIPT_GLOBALS.install_running = False
-        return messagebox.showerror("Error", f"An error occurred during patching\n{e!r}")
+        return messagebox.showerror("Error", f"An error occurred during patching\n{universal_simplify_exception(e)}")
 
 
 def do_main_patchloop() -> str:
@@ -1283,10 +1220,7 @@ def do_main_patchloop() -> str:
             return messagebox.showwarning("No language chosen", "Select a language first if you want to translate")
         if SCRIPT_GLOBALS.create_fonts:
             return messagebox.showwarning("No language chosen", "Select a language first to create fonts.")
-    if SCRIPT_GLOBALS.create_fonts and (
-        not Path(SCRIPT_GLOBALS.font_path).name
-        or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()
-    ):
+    if SCRIPT_GLOBALS.create_fonts and (not Path(SCRIPT_GLOBALS.font_path).name or not Path(SCRIPT_GLOBALS.font_path).safe_isfile()):
         return messagebox.showwarning(f"Font path not found {SCRIPT_GLOBALS.font_path}", "Please set your font path to a valid TTF font file.")
     if SCRIPT_GLOBALS.translate and not SCRIPT_GLOBALS.translation_applied:
         return messagebox.showwarning(
@@ -1304,7 +1238,12 @@ def do_main_patchloop() -> str:
         has_action = True
         for lang in SCRIPT_GLOBALS.chosen_languages:
             main_translate_loop(lang)
-    if SCRIPT_GLOBALS.is_patching() or SCRIPT_GLOBALS.check_textures:
+    if SCRIPT_GLOBALS.find_unused_textures:
+        if not is_kotor_install_dir(Path(SCRIPT_GLOBALS.path)):
+            return messagebox.showwarning("Requires an installation", "The 'find unused textures' feature requires an installation. Choose one in the top combobox.")
+        determine_input_path(Path(SCRIPT_GLOBALS.path))
+        has_action = True
+    elif SCRIPT_GLOBALS.is_patching() or SCRIPT_GLOBALS.check_textures:
         determine_input_path(Path(SCRIPT_GLOBALS.path))
         has_action = True
     if not has_action:
@@ -1361,6 +1300,7 @@ class KOTORPatchingToolUI:
         self.translate = tk.BooleanVar(value=SCRIPT_GLOBALS.translate)
         self.create_fonts = tk.BooleanVar(value=SCRIPT_GLOBALS.create_fonts)
         self.check_textures = tk.BooleanVar(value=SCRIPT_GLOBALS.check_textures)
+        self.find_unused_textures = tk.BooleanVar(value=SCRIPT_GLOBALS.find_unused_textures)
         self.font_path = tk.StringVar()
         self.resolution = tk.IntVar(value=SCRIPT_GLOBALS.resolution)
         self.custom_scaling = tk.DoubleVar(value=SCRIPT_GLOBALS.custom_scaling)
@@ -1440,11 +1380,7 @@ class KOTORPatchingToolUI:
         # Gamepaths Combobox
         self.gamepaths = ttk.Combobox(self.root, textvariable=self.path)
         self.gamepaths.grid(row=row, column=1, columnspan=2, sticky="ew")
-        self.gamepaths["values"] = [
-            str(path)
-            for game in find_kotor_paths_from_default().values()
-            for path in game
-        ]
+        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
 
         # Browse button
@@ -1452,7 +1388,7 @@ class KOTORPatchingToolUI:
         browse_folder_button.grid(row=row, column=3, padx=2)  # Stick to both sides within its cell
         browse_folder_button.config(width=15)
         browse_file_button = ttk.Button(self.root, text="Browse File", command=self.browse_source_file)
-        browse_file_button.grid(row=row, column=4, padx=2)  # Stick to both sides within its cell
+        browse_file_button.grid(row=row+1, column=3, padx=2)  # Stick to both sides within its cell
         browse_file_button.config(width=15)
         row += 1
 
@@ -1462,9 +1398,9 @@ class KOTORPatchingToolUI:
         row += 1
 
         # Fix skippable dialog bug
-        #ttk.Label(self.root, text="(experimental) Fix TSL engine dialog skipping bug:").grid(row=row, column=0)
-        #ttk.Checkbutton(self.root, text="Yes", variable=self.fix_dialog_skipping).grid(row=row, column=1)
-        #row += 1
+        # ttk.Label(self.root, text="(experimental) Fix TSL engine dialog skipping bug:").grid(row=row, column=0)
+        # ttk.Checkbutton(self.root, text="Yes", variable=self.fix_dialog_skipping).grid(row=row, column=1)
+        # row += 1
 
         # TGA -> TPC
         ttk.Label(self.root, text="Convert TGAs to TPCs:").grid(row=row, column=0)
@@ -1513,6 +1449,11 @@ class KOTORPatchingToolUI:
         ttk.Checkbutton(self.root, text="Yes", variable=self.check_textures).grid(row=row, column=1)
         row += 1
 
+        # Find missing textures
+        ttk.Label(self.root, text="Find unused textures").grid(row=row, column=0)
+        ttk.Checkbutton(self.root, text="Yes", variable=self.find_unused_textures).grid(row=row, column=1)
+        row += 1
+
         # Convert GFFs to K1
         ttk.Label(self.root, text="Convert GFFs to K1").grid(row=row, column=0)
         ttk.Checkbutton(self.root, text="Yes", variable=self.k1_convert_gffs).grid(row=row, column=1)
@@ -1529,6 +1470,7 @@ class KOTORPatchingToolUI:
 
         # Calculate the pixel width of the longest string in the list
         from tkinter.font import Font
+
         font = Font(family="TkDefaultFont")  # Use the default font and size used by ttk.Combobox
         max_width = max(font.measure(path) for path in font_paths)
 
@@ -1687,8 +1629,7 @@ class KOTORPatchingToolUI:
                 self.language_frame,
                 text=lang.name,
                 variable=lang_var,
-                command=lambda lang=lang,
-                lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
+                command=lambda lang=lang, lang_var=lang_var: self.update_chosen_languages(lang, lang_var),
             ).grid(row=row, column=column, sticky="w")
 
             # Alternate between columns
@@ -1766,15 +1707,18 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
             SCRIPT_GLOBALS.install_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e)))
+            RobustRootLogger().exception("Unhandled exception during the patching process.")
+            messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e) + "\n" + traceback.format_exc()))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
         return None
+
 
 def is_running_from_temp() -> bool:
     app_path = Path(sys.executable)
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
+
 
 if __name__ == "__main__":
     if is_running_from_temp():
@@ -1785,5 +1729,6 @@ if __name__ == "__main__":
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
     except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
+        RobustRootLogger().exception("Unhandled main exception")
         log_output(traceback.format_exc())
         raise

@@ -22,7 +22,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -62,7 +62,7 @@ class ERFEditor(Editor):
             - Disable saving/loading to modules
             - Create new empty ERF.
         """
-        supported: list[ResourceType] = [ResourceType.__members__[name] for name in ERFType.__members__]
+        supported: list[ResourceType] = [ResourceType.RIM, ResourceType.ERF, ResourceType.MOD, ResourceType.SAV]
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
@@ -82,15 +82,15 @@ class ERFEditor(Editor):
         self._setupMenus()
         self._setupSignals()
         self._is_capsule_editor = True
+        self._has_changes = False
 
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
 
         # Disable saving file into module
-        capsule_types = " ".join(f"*.{e.name.lower()}" for e in ERFType) + " *.rim"
-        self._saveFilter = self._saveFilter.replace(f";;Save into module ({capsule_types})", "")
-        self._openFilter = self._openFilter.replace(f";;Load from module ({capsule_types})", "")
+        self._saveFilter = self._saveFilter.replace(f";;Save into module ({self.CAPSULE_FILTER})", "")
+        self._openFilter = self._openFilter.replace(f";;Load from module ({self.CAPSULE_FILTER})", "")
 
         self.new()
 
@@ -118,6 +118,16 @@ class ERFEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.removeSelected)
 
+    def promptConfirm(self) -> bool:
+        result = QMessageBox.question(
+            None,
+            "Changes detected.",
+            "The action you attempted would discard your changes. Continue?",
+            buttons=QMessageBox.Yes | QMessageBox.No,
+            defaultButton=QMessageBox.No,
+        )
+        return result == QMessageBox.Yes
+
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load resource file.
 
@@ -141,6 +151,9 @@ class ERFEditor(Editor):
                 - Add each resource as row to model
             - Else show error message file type not supported.
         """
+        if self._has_changes and not self.promptConfirm():
+            return
+        self._has_changes = False
         super().load(filepath, resref, restype, data)
 
         self.model.clear()
@@ -148,7 +161,7 @@ class ERFEditor(Editor):
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
         self.ui.refreshButton.setEnabled(True)
 
-        if restype.name in ERFType.__members__:
+        if restype.name in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):
             erf: ERF = read_erf(data)
             for resource in erf:
                 resrefItem = QStandardItem(str(resource.resref))
@@ -200,17 +213,24 @@ class ERFEditor(Editor):
                 rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
 
-        elif self._restype.name in ERFType.__members__:  # sourcery skip: split-or-ifs
-            erf = ERF(ERFType.__members__[self._restype.name])
+        elif self._restype in (ResourceType.ERF, ResourceType.MOD, ResourceType.SAV):  # sourcery skip: split-or-ifs
+            erf = ERF(ERFType.from_extension(self._restype.extension))
+            if self._restype is ResourceType.SAV:
+                erf.is_save_erf = True
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
                 erf.set_data(str(resource.resref), resource.restype, resource.data)
             write_erf(erf, data)
+        else:
+            raise ValueError(f"Invalid restype for ERFEditor: {self._restype!r}")
 
         return data, b""
 
     def new(self):
+        if self._has_changes and not self.promptConfirm():
+            return
+        self._has_changes = False
         super().new()
         self.model.clear()
         self.model.setColumnCount(3)
@@ -228,6 +248,7 @@ class ERFEditor(Editor):
             - Opens the file path in write byte mode
             - Writes the data to the file.
         """
+        self._has_changes = False
         # Must override the method as the superclass method breaks due to filepath always ending in .rim/mod/erf
         if self._filepath is None:
             self.saveAs()
@@ -238,10 +259,18 @@ class ERFEditor(Editor):
         data: tuple[bytes, bytes] = self.build()
         self._revert = data[0]
         if is_capsule_file(self._filepath.parent) and not self._filepath.safe_isfile():
-            self.saveAs()
-            # saveNested currently broken.
-            return
-            self._saveNestedCapsule(*data)
+            try:
+                self._saveNestedCapsule(*data)
+            except ValueError as e:
+                msg = str(e)
+                if msg.startswith("You must save the ERFEditor"):  # HACK(th3w1zard1): fix later.
+                    QMessageBox(
+                        QMessageBox.Icon.Information,
+                        "New resource added to parent ERF/RIM",
+                        "You've added a new ERF/RIM and tried to save inside that new ERF/RIM's editor. You must save the ERFEditor you added the nested to first. Do so and try again."
+                    ).exec_()
+                else:
+                    raise
         else:
             with self._filepath.open("wb") as file:
                 file.write(data[0])
@@ -265,19 +294,26 @@ class ERFEditor(Editor):
         if len(selected_rows) == 1:
             # Handle single file with file dialog
             resource: ERFResource = self.model.itemFromIndex(selected_rows[0]).data()
-            filepath_str, _ = QFileDialog.getSaveFileName(self, "Save File", f"{resource.resref}.{resource.restype.extension}", f"Files (*.{resource.restype.extension})")
-            if not filepath_str and not filepath_str.strip():
-                get_root_logger().debug("User cancelled single file saving.")
-                return
-            self._handle_single_file_save(Path(filepath_str), resource.data, catch_exceptions=True)
+            dialog = QFileDialog(self, "Save File", f"{resource.resref}.{resource.restype.extension}", f"Files (*.{resource.restype.extension})")
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+            dialog.setOption(QFileDialog.DontConfirmOverwrite)  # Disable default overwrite confirmation
+            response = dialog.exec_()
+            if response == QFileDialog.Accepted:
+                filepath_str = dialog.selectedFiles()[0]
+                if not filepath_str or not filepath_str.strip():
+                    RobustRootLogger().debug("QFileDialog was accepted but no filepath str passed.")
+                    return
+                self._handle_single_file_save(Path(filepath_str), resource.data, erf_relpath, catch_exceptions=True)
+            else:
+                print(f"User cancelled selecting a save filepath, response {response}")
             return
 
         # Handle multiple files with folder dialog
         folderpath_str = QFileDialog.getExistingDirectory(self, "Extract to folder")
         if not folderpath_str:
-            get_root_logger().debug("User cancelled folderpath extraction.")
+            RobustRootLogger().debug("User cancelled folderpath extraction.")
             return
-        get_root_logger().debug("Determining existing files and whether to overwrite.")
+        RobustRootLogger().debug("Determining existing files and whether to overwrite.")
         existing_files_and_folders: list[str] = []
         paths_to_write: dict[Path, bytes] = {}
         for index in selected_rows:
@@ -314,25 +350,25 @@ class ERFEditor(Editor):
 
         failed_extractions: dict[Path, Exception] = {}
         if choice == QMessageBox.StandardButton.Yes:
-            get_root_logger().debug(
+            RobustRootLogger().debug(
                 "User chose to Overwrite %s files/folders in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.keys())).parent,
             )
             for path, data in paths_to_write.items():
                 is_overwrite = "overwriting existing file" if path.safe_isfile() else "saving as"
-                get_root_logger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_overwrite, path.name)
+                RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_overwrite, path.name)
                 try:
                     if path.safe_isdir():
                         shutil.rmtree(path)
                     elif path.safe_isfile():
                         path.unlink(missing_ok=True)
                 except Exception as e:  # noqa: BLE001
-                    get_root_logger().exception("ERFEditor: Failed to delete file '%s' while attempting to overwrite", path)
+                    RobustRootLogger().exception("ERFEditor: Failed to delete file '%s' while attempting to overwrite", path)
                     failed_extractions[path] = e
                 self._handle_single_file_save(path, data, erf_relpath, choice)
         elif choice == QMessageBox.StandardButton.No:
-            get_root_logger().debug(
+            RobustRootLogger().debug(
                 "User chose to Rename %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.keys())).parent,
@@ -343,15 +379,15 @@ class ERFEditor(Editor):
                     i = 1
                     while new_path.safe_exists():
                         i += 1
-                        new_path = new_path.with_stem(f"{new_path.stem if i == 2 else new_path.stem[:-4]} ({i})")
+                        new_path = new_path.with_stem(f"{path.stem} ({i})")
                     is_rename = "with new filename" if path.safe_isfile() else "saving as"
-                    get_root_logger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_rename, new_path.name)
+                    RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_rename, new_path.name)
                     self._handle_single_file_save(new_path, data, erf_relpath, choice)
                 except Exception as e:  # noqa: BLE001
-                    get_root_logger().exception("ERFEditor: Failed to extract file '%s'", new_path)
+                    RobustRootLogger().exception("ERFEditor: Failed to extract file '%s'", new_path)
                     failed_extractions[path] = e
         else:
-            get_root_logger().debug(
+            RobustRootLogger().debug(
                 "User chose to CANCEL overwrite/renaming of %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.keys())).parent,
@@ -359,7 +395,7 @@ class ERFEditor(Editor):
         if failed_extractions:
             self._handle_failed_extractions(failed_extractions)
 
-    def _handle_failed_extractions(self, failed_extractions):
+    def _handle_failed_extractions(self, failed_extractions: dict[Path, Exception]):
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Icon.Critical)
         msgBox.setWindowTitle("Failed to extract files to disk.")
@@ -387,12 +423,12 @@ class ERFEditor(Editor):
         while first_run or check:
             first_run = False
             try:
-                if arg_choice is None:
+                if arg_choice is None and check:
                     msgBox = QMessageBox()
                     msgBox.setIcon(QMessageBox.Warning)
                     msgBox.setWindowTitle(f"Overwrite {'File' if new_path.safe_isfile() else 'Folder'}?")
                     msgBox.setText(f"The following {'file' if new_path.safe_isfile() else 'folder'} exists with the same name as one of the resources you are trying to extract. How would you like to handle this problem?")
-                    msgBox.setDetailedText(str(path.parent))
+                    msgBox.setDetailedText(str(path))
                     msgBox.setStandardButtons(
                         QMessageBox.StandardButton.Yes
                         | QMessageBox.StandardButton.No
@@ -410,6 +446,9 @@ class ERFEditor(Editor):
                     choice = arg_choice
                 if choice == QMessageBox.StandardButton.Abort:
                     return
+                if choice == QMessageBox.StandardButton.Retry:
+                    check = new_path.safe_exists()
+                    continue
                 if choice == QMessageBox.StandardButton.Yes:
                     try:
                         if path.safe_isdir():
@@ -431,20 +470,30 @@ class ERFEditor(Editor):
                             msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
                             msgBox.exec_()
                             continue
-                        get_root_logger().warning("Attempted to delete file/folder at '%s' but the path doesn't even exist?", new_path)
+                        RobustRootLogger().warning("Attempted to delete file/folder at '%s' but the path doesn't even exist?", new_path)
+                    check = path.safe_exists()
+                    if check:
+                        print("Path still exists, restart dialog.")
+                        continue
+                    print(f"Overwriting file at '{path}'")
                 elif choice == QMessageBox.StandardButton.No:
                     i = 1
+                    stem = new_path.stem
                     while new_path.safe_exists():
                         i += 1
-                        new_path = new_path.with_stem(f"{new_path.stem} ({i})")
+                        new_path = new_path.with_stem(f"{stem} ({i})")
+                    if path.name != new_path.name:
+                        print(f"Changed save filename '{path.name}' to '{new_path.name}'")
+                    check = False
+                print(f"Saving to '{new_path}'")
                 with new_path.open("wb") as file:
                     file.write(data)
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203, BLE001
                 simple_exc_str = str(universal_simplify_exception(e))
                 msg = f"ERFEditor: Failed to extract {erf_relpath}"
                 if not catch_exceptions:
                     raise
-                get_root_logger().exception("%s: %s", msg, simple_exc_str)
+                RobustRootLogger().exception("%s: %s", msg, simple_exc_str)
                 msgBox = QMessageBox(
                     QMessageBox.Icon.Critical,
                     "Failed to extract the file(s).",
@@ -462,10 +511,11 @@ class ERFEditor(Editor):
             - Reversing the list to remove from last to first
             - Removing the row from model using row number.
         """
+        self._has_changes = True
         for index in reversed([index for index in self.ui.tableView.selectedIndexes() if not index.column()]):
             item: QStandardItem | None = self.model.itemFromIndex(index)
             if item is None:
-                get_root_logger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
+                RobustRootLogger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
                 continue
             self.model.removeRow(item.row())
 
@@ -485,6 +535,7 @@ class ERFEditor(Editor):
             - Adds rows to the model displaying the resref, restype and size
             - Catches any exceptions and displays an error message.
         """
+        self._has_changes = True
         for filepath in filepaths:
             c_filepath = Path(filepath)
             try:
@@ -499,7 +550,7 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(resourceSizeStr)
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
             except Exception as e:  # noqa: BLE001
-                get_root_logger().exception("Failed to add resource at '%s'", c_filepath.absolute())
+                RobustRootLogger().exception("Failed to add resource at '%s'", c_filepath.absolute())
                 error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 QMessageBox(
                     QMessageBox.Icon.Critical,
@@ -538,17 +589,10 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             resource: ERFResource = item.data()
 
-            if resource.restype.name in ERFType.__members__:
-                QMessageBox(
-                    QMessageBox.Icon.Warning,
-                    "Nested ERF/RIM files is mostly unsupported.",
-                    "You are attempting to open a nested ERF/RIM. Any action besides extracting from them will not work. You've been warned.",
-                    QMessageBox.StandardButton.Ok,
-                    self,
-                    flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint
-                ).exec_()
+            #  if resource.restype.name in ERFType.__members__:  check if in nested erf/rim if needed
             new_filepath = self._filepath
-            if resource.restype.name in ERFType.__members__ or resource.restype is ResourceType.RIM:
+            if resource.restype in (ResourceType.ERF, ResourceType.SAV, ResourceType.RIM, ResourceType.MOD):
+                RobustRootLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
             tempPath, editor = openResourceEditor(
@@ -563,6 +607,9 @@ class ERFEditor(Editor):
                 editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self):
+        if self._has_changes and not self.promptConfirm():
+            return
+        self._has_changes = False
         data: bytes = BinaryReader.load_file(self._filepath)
         self.load(self._filepath, self._resname, self._restype, data)
 
@@ -639,6 +686,61 @@ class ERFEditorTable(QTableView):
             event.setDropAction(QtCore.Qt.DropAction.CopyAction)
             event.accept()
             links: list[str] = [str(url.toLocalFile()) for url in event.mimeData().urls()]
+            model = self.model()
+            existing_items = {
+                f"{model.item(row, 0).text()}.{model.item(row, 1).text()}".strip().lower()
+                for row in range(model.rowCount())
+            }
+            always = False
+            never = False
+            to_skip: list[str] = []
+            for link in links:
+                if link.lower() in existing_items:
+                    if always:
+                        response = QMessageBox.Yes
+                    elif never:
+                        response = QMessageBox.No
+                    else:
+                        msgBox = QMessageBox()
+                        msgBox.setIcon(QMessageBox.Warning)
+                        msgBox.setWindowTitle("Duplicate Resource dropped.")
+                        msgBox.setText(f"'{link}' already exists in the table. Do you want to overwrite?")
+                        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.YesToAll | QMessageBox.No | QMessageBox.NoToAll | QMessageBox.Abort)
+                        msgBox.button(QMessageBox.Yes).setText("Overwrite")
+                        msgBox.button(QMessageBox.YesToAll).setText("Overwrite All")
+                        msgBox.button(QMessageBox.No).setText("Skip")
+                        msgBox.button(QMessageBox.NoToAll).setText("Skip All")
+                        msgBox.setDefaultButton(QMessageBox.Abort)
+                        response = msgBox.exec_()
+                    if response == QMessageBox.Yes:
+                        for row in range(self.model().rowCount()):
+                            filename = f"{model.item(row, 0).text()}.{model.item(row, 1).text()}".strip().lower()
+                            if filename == link.lower().strip():
+                                print(f"Removing '{filename}' from the erf/rim.")
+                                self.model().removeRow(row)
+                                break
+                    elif response == QMessageBox.No:
+                        to_skip.append(link)
+                    elif response == QMessageBox.Abort:
+                        return
+                    elif response == QMessageBox.YesToAll:
+                        always = True
+                        for row in range(self.model().rowCount()):
+                            filename = f"{model.item(row, 0).text()}.{model.item(row, 1).text()}".strip().lower()
+                            if filename == link.lower().strip():
+                                print(f"Removing '{filename}' from the erf/rim.")
+                                self.model().removeRow(row)
+                                break
+                    elif response == QMessageBox.NoToAll:
+                        never = True
+                        to_skip.append(link)
+
+            for link in to_skip:
+                print(f"Skipping dropped filename '{link}'")
+                links.remove(link)
+            if not links:
+                print("Nothing dropped, or everything dropped was skipped.")
+                return
             self.resourceDropped.emit(links)
         else:
             event.ignore()
@@ -660,8 +762,13 @@ class ERFEditorTable(QTableView):
         """
         tempDir = Path(GlobalSettings().extractPath)
 
-        if not tempDir or not tempDir.safe_isdir():
-            get_root_logger().error(f"Temp directory not valid: {tempDir}")
+        if not tempDir.safe_isdir():
+            if tempDir.safe_isfile() or tempDir.exists():
+                RobustRootLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
+            else:
+                tempDir.mkdir(parents=True, exist_ok=True)
+            if not tempDir.safe_isdir():
+                RobustRootLogger().error(f"Temp directory not valid: {tempDir}")
             return
 
         urls: list[QtCore.QUrl] = []

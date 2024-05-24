@@ -9,6 +9,7 @@ from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from typing_extensions import Literal
@@ -371,7 +372,9 @@ class DLGNode:
     def __repr__(
         self,
     ) -> str:
-        return str(self.text.get(Language.ENGLISH, Gender.MALE))
+        text = self.text.get(Language.ENGLISH, Gender.MALE, use_fallback=True)
+        strref_display = f"stringref={self.text.stringref}" if text is None else f"text={text}"
+        return f"{self.__class__.__name__}({strref_display}, list_index={self.list_index}, links={self.links})"
 
 
 class DLGReply(DLGNode):
@@ -460,6 +463,9 @@ class DLGLink:
         self.active2_param4: int = 0
         self.active2_param5: int = 0
         self.active2_param6: str = ""
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(link_index={self.link_index})"#, node={self.node})"
 
 
 class DLGStunt:
@@ -668,9 +674,13 @@ def construct_dlg(
     for link_struct in starting_list:
         link = DLGLink()
         link.link_index = link_struct.acquire("Index", 0)
-        link.node = all_entries[link.link_index]
-        dlg.starters.append(link)
-        construct_link(link_struct, link)
+        try:
+            link.node = all_entries[link.link_index]
+        except IndexError:
+            RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{starting_list._structs.index(link_struct)+1} in StartingList) does not point to a valid EntryList node, omitting...")
+        else:
+            dlg.starters.append(link)
+            construct_link(link_struct, link)
 
     entry_list: GFFList = root.acquire("EntryList", GFFList())
     for i, entry_struct in enumerate(entry_list):
@@ -683,12 +693,16 @@ def construct_dlg(
         for link_struct in replies_list:
             link = DLGLink()
             link.link_index = link_struct.acquire("Index", 0)
-            link.node = all_replies[link.link_index]
-            link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", "")
+            try:
+                link.node = all_replies[link.link_index]
+            except IndexError:
+                RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in RepliesList) does not point to a valid ReplyList node, omitting...")
+            else:
+                link.is_child = bool(link_struct.acquire("IsChild", 0))
+                link.comment = link_struct.acquire("LinkComment", "")
 
-            entry.links.append(link)
-            construct_link(link_struct, link)
+                entry.links.append(link)
+                construct_link(link_struct, link)
 
     reply_list: GFFList = root.acquire("ReplyList", GFFList())
     for i, reply_struct in enumerate(reply_list):
@@ -700,12 +714,16 @@ def construct_dlg(
         for link_struct in entries_list:
             link = DLGLink()
             link.link_index = link_struct.acquire("Index", 0)
-            link.node = all_entries[link.link_index]
-            link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", "")
+            try:
+                link.node = all_entries[link.link_index]
+            except IndexError:
+                RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in EntriesList) does not point to a valid EntryList node, omitting...")
+            else:
+                link.is_child = bool(link_struct.acquire("IsChild", 0))
+                link.comment = link_struct.acquire("LinkComment", "")
 
-            reply.links.append(link)
-            construct_link(link_struct, link)
+                reply.links.append(link)
+                construct_link(link_struct, link)
 
     return dlg
 
@@ -768,6 +786,8 @@ def dismantle_dlg(
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
         gff_struct.set_resref("Active", link.active1)
+        if link.comment and link.comment.strip():
+            gff_struct.set_string("LinkComment", link.comment)
         if game.is_k2():
             gff_struct.set_resref("Active2", link.active2)
             gff_struct.set_int32("Logic", link.logic)
@@ -789,7 +809,7 @@ def dismantle_dlg(
     def dismantle_node(
         gff_struct: GFFStruct,
         node: DLGNode,
-        nodes: list,
+        nodes: list[DLGEntry] | list[DLGReply],
         list_name: Literal["EntriesList", "RepliesList"],
     ):
         """Disassembles a DLGNode into a GFFStruct.
@@ -797,9 +817,9 @@ def dismantle_dlg(
         Args:
         ----
             gff_struct: GFFStruct - The GFFStruct to populate
-            node: DLGNode - The DLGNode to disassemble
-            nodes: list - The nodes list, used for linking
-            list_name: str - the nested list's name.
+            node: DLGNode - The DLGNode to dismantle into a EntryList/ReplyList GFFStruct node.
+            nodes: list - The nodes list (abstracted EntryList/ReplyList represented as list[DLGEntry] | list[DLGReply])
+            list_name: Literal["EntriesList", "RepliesList"] - the name of the nested linked list. If nodes is list[DLGEntry], should be 'RepliesList' and vice versa.
 
         Processing Logic:
         ----------------
@@ -883,8 +903,6 @@ def dismantle_dlg(
 
     all_entries: list[DLGEntry] = dlg.all_entries()
     all_replies: list[DLGReply] = dlg.all_replies()
-    all_entries.reverse()
-    all_replies.reverse()
 
     gff = GFF(GFFContent.DLG)
 
@@ -940,6 +958,8 @@ def dismantle_dlg(
         reply_struct: GFFStruct = reply_list.add(i)
         dismantle_node(reply_struct, reply, all_entries, "EntriesList")
 
+    # This part helps preserve the original GFF if this DLG was in fact constructed from one.
+    # In scenarios where a brand new DLG is created from scratch this sort algo probably does nothing.
     def sort_entry(struct: GFFStruct) -> int:
         entry: DLGEntry = all_entries[struct.struct_id]
         struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index

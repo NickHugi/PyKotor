@@ -8,12 +8,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QListWidgetItem
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef
 from pykotor.extract.file import FileResource
-from pykotor.resource.formats.gff.gff_auto import read_gff
-from pykotor.resource.formats.gff.gff_data import GFFContent, GFFFieldType, GFFList
-from pykotor.resource.formats.twoda.twoda_auto import read_2da
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
@@ -22,7 +17,6 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.resource.formats.gff.gff_data import GFFStruct
 
 
 @dataclass
@@ -149,67 +143,15 @@ class FileSearcher(QDialog):
         searchText = query.text if query.caseSensitive else query.text.lower()
 
         def _search(resource: FileResource):
-            if resource.restype() not in query.checkTypes:
-                return
-
             resource_name: str = resource.resname()
             name_check: bool = searchText in (resource_name if query.caseSensitive else resource_name.lower())
             if name_check:
                 results.append(resource)
             if query.filenamesOnly:
                 return
-
-            if resource.restype() is ResourceType.TwoDA:
-                for row in read_2da(resource.data()):
-                    findIn0 = row.label() if query.caseSensitive else row.label().lower()
-                    if searchText in findIn0:
-                        results.append(resource)
-                        return
-                    for k, v in row._data.items():
-                        findInKey = k if query.caseSensitive else k.lower()
-                        findInValue = v if query.caseSensitive else v.lower()
-                        if searchText in findInKey or searchText in findInValue:
-                            results.append(resource)
-                            return
+            if resource.restype() not in query.checkTypes:
                 return
-            if (
-                resource.restype().extension.lower() in GFFContent.get_extensions()
-                or resource.restype().contents == "gff"
-            ):
-
-                def recurse_gff(gff_struct: GFFStruct) -> bool:
-                    for label, ftype, value in gff_struct:
-                        findIn1 = label if query.caseSensitive else label.lower()
-                        if searchText in findIn1:
-                            return True
-                        if ftype is GFFFieldType.Struct:
-                            if recurse_gff(value):
-                                return True
-                        elif ftype is GFFFieldType.List:
-                            assert isinstance(value, GFFList)
-                            for struct in value._structs:
-                                if recurse_gff(struct):
-                                    return True
-                        elif isinstance(value, (str, ResRef)):
-                            findIn2 = str(value) if query.caseSensitive else str(value).lower()
-                            if searchText in findIn2:
-                                return True
-                        elif isinstance(value, LocalizedString):
-                            for substring in value._substrings.values():
-                                findIn3 = substring if query.caseSensitive else substring.lower()
-                                if searchText in findIn3:
-                                    return True
-                    return False
-                if recurse_gff(read_gff(resource.data()).root):
-                    results.append(resource)
-                return
-            if resource.restype().contents == "plaintext":
-                ascii_text = resource.data().decode(encoding="windows-1252", errors="ignore")
-                if searchText in (ascii_text if query.caseSensitive else ascii_text.lower()):
-                    results.append(resource)
-                return
-
-            resource_data: str = resource.data().decode(encoding="windows-1252", errors="ignore")  # HACK:
+            resource_data: str = resource.data().decode(encoding="ascii", errors="ignore")  # HACK:
             if searchText in (resource_data if query.caseSensitive else resource_data.lower()):
                 results.append(resource)
 

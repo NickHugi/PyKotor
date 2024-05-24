@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
+from typing import Any
 
 
 # BCP 47 language code
@@ -132,7 +133,7 @@ class Language(IntEnum):
     JAPANESE = 131
 
     @staticmethod
-    def _missing_(value) -> IntEnum:
+    def _missing_(value: Any) -> IntEnum:
         if not isinstance(value, int):
             return NotImplemented
 
@@ -456,9 +457,11 @@ class LocalizedString:
             return text
         return "-1"
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other) -> bool:  # noqa: ANN001
+        if self is other:
+            return True
         if not isinstance(other, LocalizedString):
-            return False
+            return NotImplemented
         if other.stringref != self.stringref:
             return False
         return other._substrings == self._substrings
@@ -543,6 +546,8 @@ class LocalizedString:
         self,
         language: Language,
         gender: Gender,
+        *,
+        use_fallback: bool = False,
     ) -> str | None:
         """Gets the substring text with the corresponding language/gender pair.
 
@@ -556,7 +561,7 @@ class LocalizedString:
             The text of the substring if a matching pair is found, otherwise returns None.
         """
         substring_id: int = LocalizedString.substring_id(language, gender)
-        return self._substrings.get(substring_id, None)
+        return self._substrings.get(substring_id, next(iter(self._substrings.values()), None) if use_fallback else None)
 
     def remove(
         self,

@@ -126,7 +126,7 @@ class BWM:
         self,
         aabbs: list[BWMNodeAABB],
         faces: list[BWMFace],
-        rlevel=0,
+        rlevel: int = 0,
     ):
         """Recursively build an axis aligned bounding box tree from a list of faces.
 

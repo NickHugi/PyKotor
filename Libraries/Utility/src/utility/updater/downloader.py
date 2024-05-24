@@ -18,7 +18,7 @@ import urllib3
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 
@@ -67,7 +67,7 @@ class FileDownloader:
         headers: dict[str, Any] | None = None,
         max_download_retries: int | None = None,
         verify: bool = True,
-        http_timeout=None,
+        http_timeout: int | None = None,
         logger: Logger | None = None,
     ):
         # We'll append the filename to one of the provided urls
@@ -75,7 +75,7 @@ class FileDownloader:
         if not filename:
             raise FileDownloaderError("No filename provided", expected=True)
         self.filepath = Path.pathify(filename)
-        self.log = logger or get_root_logger()
+        self.log = logger or RobustRootLogger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
         self.file_binary_path: Path = self.filepath.add_suffix(".part")  # Temporary file to hold large download data
@@ -251,7 +251,7 @@ class FileDownloader:
         data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
-        log = get_root_logger()
+        log = RobustRootLogger()
         log.debug("Got content length of: %s", content_length_lookup)
         return int(content_length_lookup) if content_length_lookup else None
 
@@ -321,7 +321,7 @@ def _download_file(
     dest: os.PathLike | str | None = None,
     dest_filename: str | None = None,
     is_public: bool = False,
-    file=None,
+    file: dict[str, Any] | None = None,
     progress_hooks: list[Callable[[dict[str, Any]], Any]] | None = None,
 ):
     dest_path = Path.pathify(dest or Path.cwd()).absolute()
@@ -414,7 +414,7 @@ def _download_file(
             }
         }
 
-        log = get_root_logger()
+        log = RobustRootLogger()
 
         # Call all progress hooks with status data
         log.debug(status)

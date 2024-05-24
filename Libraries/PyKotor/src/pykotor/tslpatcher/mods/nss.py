@@ -6,7 +6,7 @@ import os
 import re
 
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs import (
@@ -45,6 +45,7 @@ class ModificationsNSS(PatcherModifications):
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
         self.nwnnsscomp_path: Path  # TODO: fix type. Default None or Path?
+        self.backup_nwnnsscomp_path: Path
         self.temp_script_folder: Path
         self.skip_if_not_replace = True
 
@@ -86,6 +87,7 @@ class ModificationsNSS(PatcherModifications):
         source = MutableString(decode_bytes_with_fallbacks(nss_bytes))
         self.apply(source, memory, logger, game)
         temp_script_file = self.temp_script_folder / self.sourcefile
+
         BinaryWriter.dump(temp_script_file, source.value.encode(encoding="windows-1252", errors="ignore"))
 
         # Compile with external on windows, fall back to built-in if mac/linux or if external fails.
@@ -140,10 +142,10 @@ class ModificationsNSS(PatcherModifications):
 
         Args:
         ----
-            nss_source: {MutableString object containing the string to patch}
-            memory: {PatcherMemory object containing memory references}
-            logger: {PatchLogger object for logging (optional)}
-            game: {Game object for game context (optional)}.
+            nss_source: A mutable string. This function can't return anything in order to stay compatible with the superclass so we modify it in place.
+            memory: PatcherMemory object containing StrRef and 2DAMEMORY tokens from earlier patches.
+            logger: PatchLogger object for logging.
+            game: Game enum representing the kotor game being patched. Not used here anymore, but is provided for backwards compatibility reasons.
 
         Processing Logic:
         ----------------
@@ -151,32 +153,30 @@ class ModificationsNSS(PatcherModifications):
             - Searches string for #StrRef# patterns and replaces with string reference value
             - Repeats searches until no matches remain.
         """
-        match: re.Match[str] | None
-        match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
-        while match:
-            token_id = int(nss_source.value[match.start() + 10 : match.end() - 1])
-            memory_val: str | PureWindowsPath = memory.memory_2da[token_id]
-            if memory_val is None:
-                msg = f"2DAMEMORY{token_id} was not defined before use."
-                raise KeyError(msg)
-            if isinstance(memory_val, PureWindowsPath):
-                logger.add_error(str(TypeError(f"memory_2da lookup cannot be !FieldPath for [CompileList] patches, got '2DAMEMORY{token_id}={memory_val!r}'")))
-                match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
-                continue
+        def iterate_and_replace_tokens(token_name: str, memory_dict: dict[int, Any]):
+            search_pattern = rf"#{token_name}\d+#"
+            match = re.search(search_pattern, nss_source.value)
+            while match:
+                start, end = match.start(), match.end()
+                token_id = int(nss_source.value[start + len(token_name) + 1 : end - 1])  # -3 adjusts for '#', the first digit and '#'
 
-            nss_source.value = nss_source.value[: match.start()] + memory_val + nss_source.value[match.end() :]
-            match = re.search(r"#2DAMEMORY\d+#", nss_source.value)
+                if token_id not in memory_dict:
+                    msg = f"{token_name}{token_id} was not defined before use in '{self.sourcefile}'"
+                    raise KeyError(msg)
 
-        match = re.search(r"#StrRef\d+#", nss_source.value)
-        while match:
-            token_id = int(nss_source.value[match.start() + 7 : match.end() - 1])
-            memory_strval: int | None = memory.memory_str.get(token_id, None)
-            if memory_strval is None:
-                msg = f"StrRef{token_id} was not defined before use."
-                raise KeyError(msg)
-            value: int = memory_strval
-            nss_source.value = nss_source.value[: match.start()] + str(value) + nss_source.value[match.end() :]
-            match = re.search(r"#StrRef\d+#", nss_source.value)
+                replacement_value = memory_dict[token_id]
+                if isinstance(replacement_value, PureWindowsPath):
+                    msg = str(TypeError(f"{token_name} cannot be !FieldPath for [CompileList] patches, got '{token_name}{token_id}={replacement_value!r}'"))
+                    logger.add_error(msg)
+                    match = re.search(search_pattern, nss_source.value)
+                    continue
+
+                logger.add_verbose(f"{self.sourcefile}: Replacing '#{token_name}{token_id}#' with '{replacement_value}'")
+                nss_source.value = nss_source.value[:start] + str(replacement_value) + nss_source.value[end:]
+                match = re.search(search_pattern, nss_source.value)
+
+        iterate_and_replace_tokens("2DAMEMORY", memory.memory_2da)
+        iterate_and_replace_tokens("StrRef", memory.memory_str)
 
     def _compile_with_external(
         self,
@@ -186,7 +186,7 @@ class ModificationsNSS(PatcherModifications):
         game: Game,
     ) -> bytes | Literal[True]:
         with TemporaryDirectory() as tempdir:
-            tempcompiled_filepath: Path = Path(tempdir) / "temp_script.ncs"
+            tempcompiled_filepath: Path = Path(tempdir, "temp_script.ncs")
             stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
             result: bool | bytes = "File is an include file, ignored" in stdout
             if not result:

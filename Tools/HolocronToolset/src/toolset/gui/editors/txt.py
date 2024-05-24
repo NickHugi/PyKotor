@@ -40,7 +40,7 @@ class TXTEditor(Editor):
             - Connects signals
             - Opens new empty document.
         """
-        supported: list[ResourceType] = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
+        supported: list[ResourceType] = [member for member in ResourceType if member.contents == "plaintext"]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 

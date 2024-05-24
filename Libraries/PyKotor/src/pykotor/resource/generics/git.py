@@ -4,7 +4,7 @@ import math
 
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, Generator, List, NoReturn, cast
 
 from pykotor.common.geometry import Polygon3, Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -20,7 +20,7 @@ from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -49,6 +49,44 @@ class GIT:
         self.triggers: list[GITTrigger] = []
         self.waypoints: list[GITWaypoint] = []
 
+    def __iter__(self) -> Generator[ResRef, Any, None]:
+        # Iterate over creatures
+        for creature in self.creatures:
+            yield creature.resref
+        # Iterate over doors
+        for door in self.doors:
+            yield door.resref
+        for encounter in self.encounters:
+            yield encounter.resref
+        for store in self.stores:
+            yield store.resref
+        for placeable in self.placeables:
+            yield placeable.resref
+        for sound in self.sounds:
+            yield sound.resref
+        for trigger in self.triggers:
+            yield trigger.resref
+        for waypoint in self.waypoints:
+            yield waypoint.resref
+
+    def iter_resource_identifiers(self) -> Generator[ResourceIdentifier, Any, None]:
+        for creature in self.creatures:
+            yield ResourceIdentifier(str(creature.resref), ResourceType.UTC)
+        for door in self.doors:
+            yield ResourceIdentifier(str(door.resref), ResourceType.UTD)
+        for encounter in self.encounters:
+            yield ResourceIdentifier(str(encounter.resref), ResourceType.UTE)
+        for store in self.stores:
+            yield ResourceIdentifier(str(store.resref), ResourceType.UTM)
+        for placeable in self.placeables:
+            yield ResourceIdentifier(str(placeable.resref), ResourceType.UTP)
+        for sound in self.sounds:
+            yield ResourceIdentifier(str(sound.resref), ResourceType.UTS)
+        for trigger in self.triggers:
+            yield ResourceIdentifier(str(trigger.resref), ResourceType.UTT)
+        for waypoint in self.waypoints:
+            yield ResourceIdentifier(str(waypoint.resref), ResourceType.UTW)
+
     def instances(
         self,
     ) -> list[GITInstance]:
@@ -58,19 +96,24 @@ class GIT:
         -------
             A list of all stored instances.
         """
-        instances: list[GITInstance] = []
-        # We could just add these all together rather than using the extend method, but then PyCharms would get cranky
-        # about the type hints...
-        instances.extend(self.cameras)
-        instances.extend(self.creatures)
-        instances.extend(self.doors)
-        instances.extend(self.encounters)
-        instances.extend(self.placeables)
-        instances.extend(self.sounds)
-        instances.extend(self.stores)
-        instances.extend(self.triggers)
-        instances.extend(self.waypoints)
-        return instances
+        return cast(
+            List[GITInstance],
+            [
+                *self.cameras,
+                *self.creatures,
+                *self.doors,
+                *self.encounters,
+                *self.placeables,
+                *self.sounds,
+                *self.stores,
+                *self.triggers,
+                *self.waypoints,
+            ]
+        )
+
+    def next_camera_id(self) -> int:
+        """Get a unique new camera id for this git to use with a new GITCamera."""
+        return max(camera.camera_id for camera in self.cameras) + 1
 
     def remove(
         self,
@@ -203,6 +246,14 @@ class GITInstance(ABC):
         self.position: Vector3 = Vector3(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
 
+    def __repr__(self):
+        if isinstance(self, GITCamera):
+            return f"{self.__class__.__name__}(camera_id={self.camera_id})"
+        return f"{self.__class__.__name__}({self.identifier()})"
+
+    def __hash__(self):
+        return hash(self.camera_id if isinstance(self, GITCamera) else self.identifier())
+
     @abstractmethod
     def identifier(self) -> ResourceIdentifier:
         """Returns the resource identifier of the instance, or None if it doesn't have one."""
@@ -310,7 +361,7 @@ class GITCamera(GITInstance):
     ) -> str:
         return "Camera"
 
-    def yaw(  # TODO: Why is this not y...?
+    def yaw(
         self,
     ) -> float | None:
         return math.pi - self.orientation.to_euler().x
@@ -915,10 +966,10 @@ def construct_git(
                 z = geometry_struct.acquire("Z", 0.0)
                 encounter.geometry.append(Vector3(x, y, z))
             if not geometry_list:
-                get_root_logger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
+                RobustRootLogger().warning("Encounter geometry list is empty! Creating a default triangle at its position.")
                 encounter.geometry.create_triangle(origin=encounter.position)
         else:
-            get_root_logger().warning("Encounter geometry list missing! Creating a default triangle at its position.")
+            RobustRootLogger().warning("Encounter geometry list missing! Creating a default triangle at its position.")
             encounter.geometry.create_triangle(origin=encounter.position)
 
         for spawn_struct in encounter_struct.get_list("SpawnPointList"):
@@ -989,10 +1040,10 @@ def construct_git(
                 z = geometry_struct.acquire("PointZ", 0.0)
                 trigger.geometry.append(Vector3(x, y, z))
             if not geometry_list:
-                get_root_logger().warning("Trigger geometry list is empty! Creating a default triangle at its position.")
+                RobustRootLogger().warning("Trigger geometry list is empty! Creating a default triangle at its position.")
                 trigger.geometry.create_triangle(origin=trigger.position)
         else:
-            get_root_logger().warning("Trigger geometry list missing! Creating a default triangle at its position.")
+            RobustRootLogger().warning("Trigger geometry list missing! Creating a default triangle at its position.")
             trigger.geometry.create_triangle(origin=trigger.position)
 
     for waypoint_struct in gff.root.get_list("WaypointList"):
@@ -1094,7 +1145,7 @@ def dismantle_git(
         encounter_struct.set_single("ZPosition", encounter.position.z)
 
         if not encounter.geometry:
-            get_root_logger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
+            RobustRootLogger().warning("Missing encounter geometry for '%s', creating a default triangle at its position...", encounter.resref)
             encounter.geometry.create_triangle(origin=encounter.position)
 
         geometry_list = encounter_struct.set_list("Geometry", GFFList())
@@ -1167,7 +1218,7 @@ def dismantle_git(
         trigger_struct.set_locstring("TransitionDestin", trigger.transition_destination)
 
         if not trigger.geometry:
-            get_root_logger().warning("Missing trigger geometry for '%s', creating a default triangle at its position...", trigger.resref)
+            RobustRootLogger().warning("Missing trigger geometry for '%s', creating a default triangle at its position...", trigger.resref)
             trigger.geometry.create_triangle(origin=trigger.position)
 
         geometry_list = trigger_struct.set_list("Geometry", GFFList())

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, ClassVar, Generator, NamedTuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 import qtpy
 
@@ -166,7 +166,10 @@ class NSSEditor(Editor):
         saved_connection: Any  # Specify the actual type here instead of 'any' if possible
 
     @contextmanager
-    def _snapshotResTypeContext(self, saved_file_callback=None) -> Generator[SavedContext, Any, None]:
+    def _snapshotResTypeContext(
+        self,
+        saved_file_callback: Callable | None = None,
+    ) -> Generator[SavedContext, Any, None]:
         """Snapshots the current _restype and associated state, to restore after a with statement.
 
         This saves the current _filepath, _resname and _revert data in a context object and restores it when done.
@@ -246,7 +249,7 @@ class NSSEditor(Editor):
                 self.new()  # minor TODO(th3w1zard1): should we destroy self here?
 
     def build(self) -> tuple[bytes | None, bytes]:
-        if self._restype != ResourceType.NCS:
+        if self._restype is not ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
         print("compiling script from nsseditor")

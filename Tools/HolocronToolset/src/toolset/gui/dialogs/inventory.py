@@ -29,10 +29,12 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
+
+    from typing import Sequence
 
     from qtpy.QtCore import QModelIndex, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
@@ -59,7 +61,7 @@ class InventoryEditor(QDialog):
         self,
         parent: QWidget,
         installation: HTInstallation,
-        capsules: list[Capsule],
+        capsules: Sequence[Capsule],
         folders: list[str],
         inventory: list[InventoryItem],
         equipment: dict[EquipmentSlot, InventoryItem],
@@ -878,13 +880,13 @@ class ItemBuilderWorker(QThread):
         )
         for identifier, resource_result in results.items():
             if resource_result is None:
-                get_root_logger().warning("Could not find UTI resource '%s'", identifier)
+                RobustRootLogger().warning("Could not find UTI resource '%s'", identifier)
                 continue
             uti: UTI | None = None
             try:  # FIXME(th3w1zard1): this section seems to crash often.
                 uti = read_uti(resource_result.data)
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                get_root_logger().exception("Error reading UTI resource while building items.")
+                RobustRootLogger().exception("Error reading UTI resource while building items.")
             else:
                 self.utiLoaded.emit(uti, resource_result)
         self.finished.emit()

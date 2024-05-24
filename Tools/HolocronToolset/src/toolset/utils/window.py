@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -126,7 +125,7 @@ def openResourceEditor(
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
 
-    if restype.category in {"Images", "Textures"} and restype != ResourceType.TXI:
+    if restype.category in {"Images", "Textures"} and restype is not ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
     if restype in {ResourceType.NSS, ResourceType.NCS}:
@@ -236,7 +235,7 @@ def openResourceEditor(
         if parentWindowWidget is not None:  # TODO(th3w1zard1): add a custom icon for AudioPlayer
             editor.setWindowIcon(parentWindowWidget.windowIcon())
 
-    if restype.name in ERFType.__members__ or restype is ResourceType.RIM:
+    if restype.name in (ResourceType.ERF, ResourceType.SAV, ResourceType.MOD, ResourceType.RIM):
         editor = ERFEditor(None, installation)
 
     if restype in {ResourceType.MDL, ResourceType.MDX}:

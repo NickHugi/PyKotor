@@ -170,7 +170,7 @@ class ModUninstaller:
             restore_backup(Path('backup'), {'file1.txt', 'file2.txt'}, [Path('backup/file1.txt'), Path('backup/file2.txt')])
         """
         for file_str in existing_files:
-            file_path = Path.pathify(file_str)
+            file_path = Path(file_str)
             rel_filepath: Path = file_path.relative_to(self.game_path)  # type: ignore[attr-defined]
             file_path.unlink(missing_ok=True)  # type: ignore[attr-defined]
             self.log.add_note(f"Removed {rel_filepath}...")

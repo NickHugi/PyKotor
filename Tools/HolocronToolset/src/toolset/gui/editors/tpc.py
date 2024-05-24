@@ -105,8 +105,6 @@ class TPCEditor(Editor):
         orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
             txi_filepath: CaseAwarePath | None = CaseAwarePath.pathify(filepath).with_suffix(".txi")
-            if not txi_filepath.safe_isfile():
-                txi_filepath = None
             self._tpc = read_tpc(data, txi_source=txi_filepath)
             orig_format = self._tpc.format()
             width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)

@@ -204,7 +204,7 @@ class UTMEditor(Editor):
         capsules: list[Capsule] = []
 
         try:
-            root: str = Module.get_root(self._filepath)
+            root: str = Module.find_root(self._filepath)
             case_root = root.casefold()
             module_names: CaseInsensitiveDict[str] = self._installation.module_names()
             filepath_str = str(self._filepath)

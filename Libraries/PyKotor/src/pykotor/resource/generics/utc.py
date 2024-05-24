@@ -6,7 +6,9 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.formats.gff.gff_data import GFFFieldType
 from pykotor.resource.type import ResourceType
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -225,11 +227,10 @@ class UTCClass:
         self,
         other: UTCClass | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, UTCClass):
             return self.class_id == other.class_id and self.class_level == self.class_level
-
-        msg = f"Cannot compare {self!r} with {other!r}"
-        print(msg)
         return NotImplemented
 
 
@@ -320,6 +321,21 @@ def construct_utc(
     utc.on_death = root.acquire("ScriptDeath", ResRef.from_blank())
     utc.on_user_defined = root.acquire("ScriptUserDefine", ResRef.from_blank())
 
+    if not root.exists("SkillList") or root.what_type("SkillList") is not GFFFieldType.List:
+        if root.exists("SkillList"):
+            RobustRootLogger().error("StartingList in UTC's must be a GFFList, recreating now...")
+            del root._fields["SkillList"]
+        else:
+            RobustRootLogger().error("StartingList must exist in UTC's, creating now...")
+        skill_list = root.set_list("SkillList", GFFList())
+        skill_list.add(0).set_uint8("Rank", 0)
+        skill_list.add(1).set_uint8("Rank", 0)
+        skill_list.add(2).set_uint8("Rank", 0)
+        skill_list.add(3).set_uint8("Rank", 0)
+        skill_list.add(4).set_uint8("Rank", 0)
+        skill_list.add(5).set_uint8("Rank", 0)
+        skill_list.add(6).set_uint8("Rank", 0)
+        skill_list.add(7).set_uint8("Rank", 0)
     skill_list: GFFList = root.acquire("SkillList", GFFList())
     utc.computer_use = skill_list.at(0).acquire("Rank", 0)
     utc.demolitions = skill_list.at(1).acquire("Rank", 0)

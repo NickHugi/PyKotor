@@ -5,10 +5,9 @@ from enum import IntEnum
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
-from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -570,12 +569,10 @@ class Modifications2DA(PatcherModifications):
                 row.apply(twoda, memory)
             except Exception as e:  # noqa: PERF203, BLE001
                 msg = f"{universal_simplify_exception(e)} when patching the file '{self.saveas}'"
-                detailed_msg = format_exception_with_variables(e)
-                with CaseAwarePath.cwd().joinpath("errorlog.txt").open("a", encoding="utf-8") as f:
-                    f.write(f"\n{detailed_msg}")
+                RobustRootLogger().critical(str(e), exc_info=e)
                 if isinstance(e, WarningError):
                     logger.add_warning(msg)
-                    get_root_logger().debug(msg, exc_info=True)
+                    RobustRootLogger().debug(msg, exc_info=True)
                 else:
                     logger.add_error(msg)
                     break

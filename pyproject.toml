@@ -177,6 +177,7 @@ ignore = [
 #    "D403",     # First word of the first line should be capitalized: {} -> {}
 #    "D404",     # First word of the docstring should not be "This"
     "D417",     # Missing argument description in the docstring for {definition}: {name}
+    "G004",     # Logging statement uses f'' string.
     "N802",     # Function name `screenToWorld` should be lowercase
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase

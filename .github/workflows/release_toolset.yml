@@ -278,6 +278,7 @@ jobs:
             } else {
               pip install "pyinstaller==5.13.2" --prefer-binary
             }
+            pip install pywin32 --prefer-binary -U
           } else {
             pip install pyinstaller -U --prefer-binary
           }

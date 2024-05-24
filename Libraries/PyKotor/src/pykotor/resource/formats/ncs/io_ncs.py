@@ -36,6 +36,10 @@ class NCSBinaryReader(ResourceReader):
         -------
             NCS: The loaded NCS object
 
+        Raises:
+            ValueError - Corrupt NCS.
+            OSError - some operating system issue occurred.
+
         Processing Logic:
         ----------------
             - Reads the file type and version headers
@@ -51,11 +55,11 @@ class NCSBinaryReader(ResourceReader):
 
         if file_type != "NCS ":
             msg = "The file type that was loaded is invalid."
-            raise TypeError(msg)
+            raise ValueError(msg)
 
         if file_version != "V1.0":
             msg = "The NCS version that was loaded is not supported."
-            raise TypeError(msg)
+            raise ValueError(msg)
 
         self._instructions = {}  # offset -> instruction
 

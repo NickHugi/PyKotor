@@ -85,7 +85,7 @@ class T5Translator:
         self.model = T5ForConditionalGeneration.from_pretrained("t5-small")
         self.tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
-    def translate(self, text, source, target) -> str:
+    def translate(self, text: str, source: str, target: str) -> str:
         # The model expects a task prefix that describes the task to perform
         # This is typically formatted like "translate English to German: "
         # Note that the T5 model was trained on specific language pairs,
@@ -185,9 +185,9 @@ class TranslationOption(Enum):
         return 1
 
     def validate_args(self, translator: Translator) -> str:  # type: ignore[return]
-        def check(key) -> tuple[str, Any]:
+        def check(key: str) -> tuple[str, Any]:
             attr = getattr(translator, key, None)
-            return (f"Missing {key}", None) if not attr else ("", attr)
+            return ("", attr) if attr else (f"Missing {key}", None)
 
         if self is self.TATOEBA:
             msg, attr = check("database_path")
@@ -343,7 +343,11 @@ class TranslationOption(Enum):
         return {translator for translator in TranslationOption if translator.value is not None}
 
 
-def replace_with_placeholder(match, replaced_text: list[str], counter: int) -> str:
+def replace_with_placeholder(
+    match: re.Match,
+    replaced_text: list[str],
+    counter: int,
+) -> str:
     replaced_text.append(match.group(0))  # Store the original text
     return f"__{counter}__"
 

@@ -49,7 +49,7 @@ class Ui_Form(object):
         self.horizontalLayout_4.addWidget(self.reloadButton)
         self.verticalLayout.addLayout(self.horizontalLayout_4)
         self.resourceTree = QtWidgets.QTreeView(Form)
-        self.resourceTree.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.resourceTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.resourceTree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.resourceTree.setAlternatingRowColors(True)
         self.resourceTree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)

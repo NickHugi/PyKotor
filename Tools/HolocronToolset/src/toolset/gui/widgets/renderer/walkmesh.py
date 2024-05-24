@@ -32,9 +32,9 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
-from toolset.utils.misc import clamp
+from toolset.utils.misc import MODIFIER_KEYS, clamp
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import (
@@ -407,12 +407,6 @@ class WalkmeshRenderer(QWidget):
         Returns:
         -------
             list[GITInstance]: A list of GITInstance objects under the mouse
-
-        Processing Logic:
-        ----------------
-            - Checks the mouse position against the bounding boxes of all GITInstances
-            - Returns a list of all instances whose bounding box contains the mouse position
-            - If no instances are under the mouse, an empty list is returned.
         """
         return self._instancesUnderMouse
 
@@ -440,46 +434,46 @@ class WalkmeshRenderer(QWidget):
             - Return None if type is invalid
         """
         retBool: bool | None = None
-        if isinstance(instance, GITCreature):
+        if isinstance(instance, GITCamera):
+            retBool = not self.hideCameras
+        elif isinstance(instance, GITCreature):
             retBool = not self.hideCreatures
         elif isinstance(instance, GITDoor):
             retBool = not self.hideDoors
-        elif isinstance(instance, GITPlaceable):
-            retBool = not self.hidePlaceables
-        elif isinstance(instance, GITTrigger):
-            retBool = not self.hideTriggers
-        elif isinstance(instance, GITCamera):
-            retBool = not self.hideCameras
         elif isinstance(instance, GITEncounter):
             retBool = not self.hideEncounters
+        elif isinstance(instance, GITPlaceable):
+            retBool = not self.hidePlaceables
         elif isinstance(instance, GITSound):
             retBool = not self.hideSounds
-        elif isinstance(instance, GITWaypoint):
-            retBool = not self.hideWaypoints
         elif isinstance(instance, GITStore):
             retBool = not self.hideStores
+        elif isinstance(instance, GITTrigger):
+            retBool = not self.hideTriggers
+        elif isinstance(instance, GITWaypoint):
+            retBool = not self.hideWaypoints
         return retBool
 
     def instancePixmap(self, instance: GITInstance) -> QPixmap | None:
         retPixmap: QPixmap | None = None
+        if isinstance(instance, GITCamera):
+            retPixmap = self._pixmapCamera
         if isinstance(instance, GITCreature):
             retPixmap = self._pixmapCreature
         if isinstance(instance, GITDoor):
             retPixmap = self._pixmapDoor
+        if isinstance(instance, GITEncounter):
+            retPixmap = self._pixmapEncounter
         if isinstance(instance, GITPlaceable):
             retPixmap = self._pixmapPlaceable
         if isinstance(instance, GITTrigger):
             retPixmap = self._pixmapTrigger
-        if isinstance(instance, GITCamera):
-            retPixmap = self._pixmapCamera
-        if isinstance(instance, GITEncounter):
-            retPixmap = self._pixmapEncounter
         if isinstance(instance, GITSound):
             retPixmap = self._pixmapSound
-        if isinstance(instance, GITWaypoint):
-            retPixmap = self._pixmapWaypoint
         if isinstance(instance, GITStore):
             retPixmap = self._pixmapMerchant
+        if isinstance(instance, GITWaypoint):
+            retPixmap = self._pixmapWaypoint
         return retPixmap
 
     def centerCamera(self):
@@ -828,7 +822,7 @@ class WalkmeshRenderer(QWidget):
     def wheelEvent(self, e: QWheelEvent):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent):  # TODO: something here is causing the camera to continually zoom out while middlemouse is held down.
+    def mouseMoveEvent(self, e: QMouseEvent):
         """Handles mouse move events.
 
         Args:
@@ -840,12 +834,8 @@ class WalkmeshRenderer(QWidget):
             - Emits mouseMoved signal
             - Finds instances and geometry points under mouse.
         """
-        current_buttons = e.buttons()
-        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
-        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            get_root_logger().debug("Inferred Release (mouseMoveEvent): Right Button")
-            self._mouseDown.discard(Qt.RightButton)
         super().mouseMoveEvent(e)
+        self._contextMenuRightMouseButtonFix(e, "mouseMoveEvent")
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
         self._mousePrev = coords
@@ -862,6 +852,7 @@ class WalkmeshRenderer(QWidget):
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):
+                    #get_root_logger().debug(f"Emitting Hovered/UnderMouse for instance {instance!r}")
                     self.instanceHovered.emit(instance)
                     self._instancesUnderMouse.append(instance)
 
@@ -870,6 +861,7 @@ class WalkmeshRenderer(QWidget):
                     for point in instance.geometry:
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
+                            RobustRootLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:
@@ -878,42 +870,52 @@ class WalkmeshRenderer(QWidget):
                     self._pathNodesUnderMouse.append(point)
 
     def mousePressEvent(self, e: QMouseEvent):
-        current_buttons = e.buttons()
-        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
-        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            get_root_logger().debug("Inferred Release (mousePressEvent): Right Button")
-            self._mouseDown.discard(Qt.RightButton)
+        self._contextMenuRightMouseButtonFix(e, "mousePressEvent")
         super().mousePressEvent(e)
         button = e.button()
-        get_root_logger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
+        RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
         self._mouseDown.add(button)
-        get_root_logger().debug(f"mouseDown is now {self._mouseDown}")
+        RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseReleaseEvent(self, e: QMouseEvent):
+    def _contextMenuRightMouseButtonFix(self, e: QMouseEvent, parentFuncName: str):
         current_buttons = e.buttons()
         rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
         if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            get_root_logger().debug("Inferred Release (mouseReleaseEvent): Right Button")
+            RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): Right Button")
             self._mouseDown.discard(Qt.RightButton)
+
+    def mouseReleaseEvent(self, e: QMouseEvent):
+        self._contextMenuRightMouseButtonFix(e, "mouseReleaseEvent")
         super().mouseReleaseEvent(e)
         button = e.button()
-        get_root_logger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
+        RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
         self._mouseDown.discard(button)
-        get_root_logger().debug(f"mouseDown is now {self._mouseDown}")
+        RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
 
     def keyPressEvent(self, e: QKeyEvent):
+        self._modifierKeyFix(e, "keyPressEvent")
         self._keysDown.add(e.key())
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent):
+        self._modifierKeyFix(e, "keyReleaseEvent")
         self._keysDown.discard(e.key())
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
+
+    def _modifierKeyFix(self, e: QKeyEvent, parentFuncName: str):
+        current_modifiers = e.modifiers()
+
+        for key in MODIFIER_KEYS:
+            bitcheck = int(current_modifiers & key)  # Explicitly convert to int for clarity in logs
+            if bitcheck == 0 and key in self._keysDown:
+                RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): {key} Key")
+                self._keysDown.discard(key)
 
     # endregion

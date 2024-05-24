@@ -66,3 +66,4 @@ tests/results/
 installlog.txt
 ./vendor
 powershell-bin/
+.env

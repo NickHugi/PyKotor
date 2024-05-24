@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import math
+import threading
+import traceback
 
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import glm
 
@@ -19,7 +22,6 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
     GL_DEPTH_TEST,
     GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA,
-    GL_TEXTURE_2D,
     glBlendFunc,
     glClear,
     glClearColor,
@@ -32,9 +34,11 @@ from glm import mat4, quat, vec3, vec4
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
+from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import ResourceResult
 from pykotor.extract.installation import SearchLocation
-from pykotor.gl.models.mdl import Boundary, Cube, Empty
+from pykotor.gl.models.mdl import Boundary, Cube, Empty, Model
 from pykotor.gl.models.predefined_mdl import (
     CAMERA_MDL_DATA,
     CAMERA_MDX_DATA,
@@ -69,9 +73,11 @@ from pykotor.gl.shader import (
     Texture,
 )
 from pykotor.resource.formats.lyt import LYTRoom
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.generics.git import (
+    GIT,
     GITCamera,
     GITCreature,
     GITDoor,
@@ -83,30 +89,32 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
+from pykotor.resource.generics.utd import UTD
+from pykotor.resource.generics.utp import UTP
 from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
-from utility.error_handling import format_exception_with_variables
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from typing_extensions import Literal
 
-    from pykotor.common.module import Module
-    from pykotor.extract.capsule import Capsule
+    from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.extract.installation import Installation
-    from pykotor.gl.models.mdl import Model
+    from pykotor.gl.models.mdl import Model, Node
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.generics.git import GIT
+    from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.utc import UTC
-    from pykotor.resource.generics.utd import UTD
-    from pykotor.resource.generics.utp import UTP
 
+from typing import TYPE_CHECKING
+
+T = TypeVar("T")
 SEARCH_ORDER_2DA: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
-SEARCH_ORDER: list[SearchLocation] = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+SEARCH_ORDER: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
@@ -133,21 +141,31 @@ class Scene:
             - Hides certain object types by default
             - Sets other renderer options.
         """
-        module_id_part = "" if module is None else f" from module '{module._id}'"
-        get_root_logger().info("Start initialize Scene%s", module_id_part)
-        glEnable(GL_TEXTURE_2D)
+        module_id_part = "" if module is None else f" from module '{module.root()}'"
+        RobustRootLogger().info("Start initialize Scene%s", module_id_part)
+
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
+
+        self.executor = ThreadPoolExecutor(max_workers=4)
+        self.texture_data_futures = {}
+        self.textures_data_queue: dict[str, tuple[TPC | None, bool]] = {}  # This will hold the texture data loaded in the background
+        self.textures_data_lock: threading.Lock = threading.Lock()
+        self.model_data_futures = {}
+        self.models_data_queue: dict[str, Any] = {}
+        self.models_data_lock: threading.Lock = threading.Lock()
 
         self.installation: Installation | None = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: dict[Any, RenderObject] = {}
         self.selection: list[RenderObject] = []
-        self.module: Module | None = module
+        self._module: Module | None = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
+        self.blank_texture: Texture | None = None
+        self.blank_lightmap: Texture | None = None
 
         self.textures["NULL"] = Texture.from_color()
 
@@ -184,8 +202,8 @@ class Scene:
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
         self.show_cursor: bool = True
-        module_id_part = "" if module is None else f" from module '{module._id}'"
-        get_root_logger().debug("Completed pre-initialize Scene%s", module_id_part)
+        module_id_part = "" if module is None else f" from module '{module.root()}'"
+        RobustRootLogger().debug("Completed pre-initialize Scene%s", module_id_part)
 
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -193,6 +211,7 @@ class Scene:
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+
 
     def getCreatureRenderObject(
         self,
@@ -216,9 +235,13 @@ class Scene:
             - Creates base render object and attaches head, hands and mask sub-objects
             - Catches exceptions and returns default "unknown" render object if model loading fails.
         """
+        assert self.installation is not None
         try:
             if utc is None:
-                utc = self.module.creature(str(instance.resref)).resource()
+                utc = self._resource_from_gitinstance(instance, self.module.creature)
+            if utc is None:
+                RobustRootLogger().error(f"Cannot getCreatureRenderObject of GITCreature instance '{instance.identifier()}', not found in mod/override.")
+                return RenderObject("unknown", data=instance)
 
             head_obj: RenderObject | None = None
             mask_hook = None
@@ -229,6 +252,8 @@ class Scene:
                 appearance=self.table_creatures,
                 baseitems=self.table_baseitems,
             )
+            if not body_model or not body_model.strip():
+                raise ValueError("creature.get_body_model failed to return a valid body_model resref str.")  # noqa: TRY301
             head_model, head_texture = creature.get_head_model(
                 utc,
                 self.installation,
@@ -272,19 +297,75 @@ class Scene:
                 elif head_obj is not None:
                     head_obj.children.append(mask_obj)
 
-        except Exception as e:
-            print(format_exception_with_variables(e))
+        except Exception:
+            RobustRootLogger().exception("Exception occurred getting the creature render object.")
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", data=instance)
 
         return obj
 
-    def _transform_hand(self, arg0, arg1, obj):
-        rhand_obj = RenderObject(arg0)
-        rhand_obj.set_transform(arg1.global_transform())
+    def _transform_hand(
+        self,
+        modelname: str,
+        hook: Node,
+        obj: RenderObject,
+    ):
+        rhand_obj = RenderObject(modelname)
+        rhand_obj.set_transform(hook.global_transform())
         obj.children.append(rhand_obj)
 
-    def buildCache(self, *, clear_cache: bool = False):
+    @property
+    def module(self) -> Module:
+        if not self._module:
+            raise RuntimeError("Module must be defined before a Scene can be rendered.")
+        return self._module
+
+    @module.setter
+    def module(self, value):
+        self._module = value
+
+    def _getGit(self) -> GIT:
+        module_resource_git = self.module.git()
+        return self._resource_from_module(module_resource_git, "' is missing a GIT.")
+
+    def _getLyt(self) -> LYT:
+        layout_module_resource = self.module.layout()
+        return self._resource_from_module(layout_module_resource, "' is missing a LYT.")
+
+    def _getIfo(self) -> IFO:
+        info_module_resource = self.module.info()
+        return self._resource_from_module(info_module_resource, "' is missing an IFO.")
+
+    def _resource_from_module(self, module_res: ModuleResource[T] | None, errpart: str) -> T | None:
+        if module_res is None:
+            RobustRootLogger().error(f"Cannot render a frame in Scene when this module '{self.module.root()}{errpart}")
+            return None
+        git_resource = module_res.resource()
+        if git_resource is None:
+            RobustRootLogger().error(f"No locations found for '{module_res.identifier()}', needed to render a Scene for module '{self.module.root()}'")
+            return None
+        return git_resource
+
+    def _resource_from_gitinstance(
+        self,
+        instance: GITInstance,
+        lookup_func: Callable[..., ModuleResource[T] | None],
+    ) -> T | None:
+        resource = lookup_func(str(instance.resref))
+        if resource is None:
+            RobustRootLogger().error(f"The module '{self.module.root()}' does not store '{instance.identifier()}' needed to render a Scene.")
+            return None
+        resource_data = resource.resource()
+        if resource_data is None:
+            RobustRootLogger().error(f"No locations found for '{resource.identifier()}' needed by module '{self.module.root()}'")
+            return None
+        return resource_data
+
+    def buildCache(
+        self,
+        *,
+        clear_cache: bool = False,
+    ):
         """Builds and caches game objects from the module.
 
         Args:
@@ -298,11 +379,17 @@ class Scene:
             - Retrieve/update game objects from module
             - Add/update objects in cache..
         """
-        if self.module is None:
+        if self._module is None:
             return
 
         if clear_cache:
             self.objects = {}
+
+        if self.git is None:
+            self.git = self._getGit()
+
+        if self.layout is None:
+            self.layout = self._getLyt()
 
         for identifier in self.clearCacheBuffer:
             for git_creature in copy(self.git.creatures):
@@ -321,18 +408,12 @@ class Scene:
             if identifier.restype == ResourceType.GIT:
                 for instance in self.git.instances():
                     del self.objects[instance]
-                self.git = self.module.git().resource()
+                self.git = self._getGit()
             if identifier.restype == ResourceType.LYT:
                 for room in self.layout.rooms:
                     del self.objects[room]
-                self.layout = self.module.layout().resource()
+                self.layout = self._getLyt()
         self.clearCacheBuffer = []
-
-        if self.git is None:
-            self.git = self.module.git().resource()
-
-        if self.layout is None:
-            self.layout = self.module.layout().resource()
 
         for room in self.layout.rooms:
             if room not in self.objects:
@@ -341,13 +422,15 @@ class Scene:
 
         for door in self.git.doors:
             if door not in self.objects:
+                model_name = "unknown"  # If failed to load door models, use an empty model instead
                 try:
-                    utd: UTD | None = self.module.door(str(door.resref)).resource()
-                    model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
-                except Exception as e:
-                    print(format_exception_with_variables(e))
-                    # If failed to load creature models, use an empty model instead
-                    model_name = "unknown"
+                    utd = self._resource_from_gitinstance(door, self._module.door)
+                    if utd is not None:
+                        model_name: str = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
+                except Exception:  # noqa: BLE001
+                    RobustRootLogger().exception(f"Could not get the model name from the UTD '{door.resref}.utd' and/or the appearance.2da")
+                if utd is None:
+                    utd = UTD()
 
                 self.objects[door] = RenderObject(model_name, vec3(), vec3(), data=door)
 
@@ -356,13 +439,15 @@ class Scene:
 
         for placeable in self.git.placeables:
             if placeable not in self.objects:
+                model_name = "unknown"  # If failed to load a placeable models, use an empty model instead
                 try:
-                    utp: UTP | None = self.module.placeable(str(placeable.resref)).resource()
-                    model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
-                except Exception as e:
-                    print(format_exception_with_variables(e))
-                    # If failed to load creature models, use an empty model instead
-                    model_name = "unknown"
+                    utp = self._resource_from_gitinstance(placeable, self._module.placeable)
+                    if utp is not None:
+                        model_name: str = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+                except Exception:  # noqa: BLE001
+                    RobustRootLogger().exception(f"Could not get the model name from the UTP '{placeable.resref}.utp' and/or the appearance.2da")
+                if utp is None:
+                    utp = UTP()
 
                 self.objects[placeable] = RenderObject(model_name, vec3(), vec3(), data=placeable)
 
@@ -395,18 +480,14 @@ class Scene:
         for sound in self.git.sounds:
             if sound not in self.objects:
                 try:
-                    uts: UTS = self.module.sound(str(sound.resref)).resource() or UTS()
-                except Exception as e:
-                    print(format_exception_with_variables(e))
+                    uts = self._resource_from_gitinstance(sound, self._module.sound)
+                except Exception:  # noqa: BLE001
+                    RobustRootLogger().exception(f"Could not get the sound resource '{sound.resref}.uts' and/or the appearance.2da")
+                if uts is None:
                     uts = UTS()
 
-                obj = RenderObject(
-                    "sound",
-                    vec3(),
-                    vec3(),
-                    data=sound,
-                    gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance),
-                )
+                obj = RenderObject("sound", vec3(), vec3(),
+                                    data=sound, gen_boundary=lambda uts=uts: Boundary.from_circle(self, uts.max_distance))
                 self.objects[sound] = obj
 
             self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
@@ -414,13 +495,8 @@ class Scene:
 
         for encounter in self.git.encounters:
             if encounter not in self.objects:
-                obj = RenderObject(
-                    "encounter",
-                    vec3(),
-                    vec3(),
-                    data=encounter,
-                    gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points),
-                )
+                obj = RenderObject("encounter", vec3(), vec3(),
+                                    data=encounter, gen_boundary=lambda encounter=encounter: Boundary(self, encounter.geometry.points))
                 self.objects[encounter] = obj
 
             self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
@@ -428,13 +504,8 @@ class Scene:
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-                obj = RenderObject(
-                    "trigger",
-                    vec3(),
-                    vec3(),
-                    data=trigger,
-                    gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points),
-                )
+                obj = RenderObject("trigger", vec3(), vec3(),
+                                    data=trigger, gen_boundary=lambda trigger=trigger: Boundary(self, trigger.geometry.points))
                 self.objects[trigger] = obj
 
             self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
@@ -455,27 +526,38 @@ class Scene:
 
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
-            self._del_git_objects(obj)
+            self._del_git_objects(obj, self.git, self.objects)
 
-    def _del_git_objects(self, obj):
-        if isinstance(obj, GITCreature) and obj not in self.git.creatures:
-            del self.objects[obj]
-        if isinstance(obj, GITPlaceable) and obj not in self.git.placeables:
-            del self.objects[obj]
-        if isinstance(obj, GITDoor) and obj not in self.git.doors:
-            del self.objects[obj]
-        if isinstance(obj, GITTrigger) and obj not in self.git.triggers:
-            del self.objects[obj]
-        if isinstance(obj, GITStore) and obj not in self.git.stores:
-            del self.objects[obj]
-        if isinstance(obj, GITCamera) and obj not in self.git.cameras:
-            del self.objects[obj]
-        if isinstance(obj, GITWaypoint) and obj not in self.git.waypoints:
-            del self.objects[obj]
-        if isinstance(obj, GITEncounter) and obj not in self.git.encounters:
-            del self.objects[obj]
-        if isinstance(obj, GITSound) and obj not in self.git.sounds:
-            del self.objects[obj]
+    def _fetch2da(self, resname: str, installation: Installation) -> ResourceResult:
+        result = installation.resource(resname, ResourceType.TwoDA, SEARCH_ORDER_2DA)
+        if result is None:
+            raise RuntimeError(f"Cannot find '{resname}.2da' in the installation, required to render a Scene.")
+        return result
+
+    @staticmethod
+    def _del_git_objects(
+        obj: GITInstance | LYTRoom,
+        git: GIT,
+        objects: dict[GITInstance | LYTRoom, RenderObject],
+    ):
+        if isinstance(obj, GITCreature) and obj not in git.creatures:
+            del objects[obj]
+        if isinstance(obj, GITPlaceable) and obj not in git.placeables:
+            del objects[obj]
+        if isinstance(obj, GITDoor) and obj not in git.doors:
+            del objects[obj]
+        if isinstance(obj, GITTrigger) and obj not in git.triggers:
+            del objects[obj]
+        if isinstance(obj, GITStore) and obj not in git.stores:
+            del objects[obj]
+        if isinstance(obj, GITCamera) and obj not in git.cameras:
+            del objects[obj]
+        if isinstance(obj, GITWaypoint) and obj not in git.waypoints:
+            del objects[obj]
+        if isinstance(obj, GITEncounter) and obj not in git.encounters:
+            del objects[obj]
+        if isinstance(obj, GITSound) and obj not in git.sounds:
+            del objects[obj]
 
     def render(self):
         """Renders the scene.
@@ -500,9 +582,15 @@ class Scene:
             - Render non-selected boundaries
             - Render cursor if shown.
         """
-        #module_id_part = "" if self.module is None else f" from module '{self.module._id}'"
+        if self.blank_texture is None:
+            self.blank_texture = Texture.from_color(255, 0, 255)
+        if self.blank_lightmap is None:
+            self.blank_lightmap = Texture.from_color(0,0,0)
+        #module_id_part = "" if self._module is None else f" from module '{self.module._id}'"
         #get_root_logger().debug("Refresh/build cache for scene%s", module_id_part)
         self.buildCache()
+        self.update_textures()  # Ensure newly loaded textures are created
+        #self.update_models()
 
         self._prepare_gl_and_shader()
         self.shader.set_bool("enableLightmap", self.use_lightmap)
@@ -545,6 +633,34 @@ class Scene:
         if self.show_cursor:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
+
+    def update_textures(self):
+        """Create OpenGL textures from data loaded in background."""
+        with self.textures_data_lock:
+            for name, result in list(self.textures_data_queue.items()):
+                if result is None:  # still processing...
+                    continue
+                tpc, is_lightmap = result
+                if name in self.textures:
+                    continue  # Skip if already created
+                if tpc is None:
+                    if self.blank_lightmap is None or self.blank_texture is None:
+                        return
+                    self.textures[name] = self.blank_lightmap if is_lightmap else self.blank_texture
+                else:
+                    self.textures[name] = Texture.from_tpc(tpc)
+                del self.textures_data_queue[name]
+
+    def update_models(self):
+        with self.models_data_lock:
+            for result in self.models_data_queue.copy().values():
+                if result is None:  # still processing...
+                    continue
+                name, model = result
+                if name in self.models:
+                    continue  # Skip if already created.
+                self.models[name] = model
+                del self.models_data_queue[name]
 
     def should_hide_obj(self, obj: RenderObject) -> bool:
         result = False
@@ -619,7 +735,7 @@ class Scene:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8  # type: ignore[]
         instances = list(self.objects.values())
-        return instances[pixel] if pixel != 0xFFFFFF else None
+        return instances[pixel] if pixel != 0xFFFFFF else None  # noqa: PLR2004
 
     def select(
         self,
@@ -669,39 +785,100 @@ class Scene:
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
-    def texture(
+    def loadTexture(
         self,
         name: str,
         *,
         lightmap: bool = False,
-    ) -> Texture:
+    ):
+        """Load texture data asynchronously."""
         if name in self.textures:
             return self.textures[name]
-        type_name = "lightmap" if lightmap else "texture"
-        try:
-            tpc: TPC | None = None
-            # Check the textures linked to the module first
-            if self.module is not None:
-                get_root_logger().debug(f"Locating {type_name} '{name}' in module '{self.module._root}'")
-                module_tex = self.module.texture(name)
-                if module_tex is not None:
-                    get_root_logger().debug(f"Loading {type_name} '{name}' from module '{self.module._root}'")
-                    tpc = module_tex.resource()
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return self.blank_lightmap if lightmap else self.blank_texture
+        self.executor.submit(self.fetch_texture_data, name, lightmap=lightmap)
+        return self.blank_lightmap if lightmap else self.blank_texture
 
-            # Otherwise just search through all relevant game files
-            if tpc is None and self.installation:
-                get_root_logger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
-                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
-            if tpc is None:
-                get_root_logger().warning(f"MISSING {type_name.upper()}: '%s'", name)
-        except Exception:  # noqa: BLE001
-            get_root_logger().exception("Exception thrown while loading %s.", type_name)
-            # If an error occurs during the loading process, just use a blank image.
-            tpc = TPC()
+    def loadModel(self, name: str) -> Model:
+        """Load model data asynchronously."""
+        if name in self.models:
+            return self.models[name]
+        with self.models_data_lock:
+            if name not in self.models_data_queue:
+                RobustRootLogger().debug(f"Offloading {name}.mdl")
+                self.executor.submit(self.fetch_model_data, name)
+        return gl_load_stitched_model(
+            self,
+            BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+            BinaryReader.from_bytes(EMPTY_MDX_DATA),
+        )
 
-        blank_texture = Texture.from_color(0, 0, 0) if lightmap else Texture.from_color(0xFF, 0, 0xFF)
-        self.textures[name] = blank_texture if tpc is None else Texture.from_tpc(tpc)
-        return self.textures[name]
+    def fetch_model_data(
+        self,
+        name: str,
+    ):
+        """This function runs in a background thread and handles the I/O and processing to get the model data."""
+        RobustRootLogger().debug(f"async queue {name}.mdl call")
+        mdl_data = EMPTY_MDL_DATA
+        mdx_data = EMPTY_MDX_DATA
+
+        with self.models_data_lock:
+            if name in self.models_data_queue:
+                return
+            self.models_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
+        if name == "waypoint":
+            mdl_data = WAYPOINT_MDL_DATA
+            mdx_data = WAYPOINT_MDX_DATA
+        elif name == "sound":
+            mdl_data = SOUND_MDL_DATA
+            mdx_data = SOUND_MDX_DATA
+        elif name == "store":
+            mdl_data = STORE_MDL_DATA
+            mdx_data = STORE_MDX_DATA
+        elif name == "entry":
+            mdl_data = ENTRY_MDL_DATA
+            mdx_data = ENTRY_MDX_DATA
+        elif name == "encounter":
+            mdl_data = ENCOUNTER_MDL_DATA
+            mdx_data = ENCOUNTER_MDX_DATA
+        elif name == "trigger":
+            mdl_data = TRIGGER_MDL_DATA
+            mdx_data = TRIGGER_MDX_DATA
+        elif name == "camera":
+            mdl_data = CAMERA_MDL_DATA
+            mdx_data = CAMERA_MDX_DATA
+        elif name == "empty":
+            mdl_data = EMPTY_MDL_DATA
+            mdx_data = EMPTY_MDX_DATA
+        elif name == "cursor":
+            mdl_data = CURSOR_MDL_DATA
+            mdx_data = CURSOR_MDX_DATA
+        elif name == "unknown":
+            mdl_data = UNKNOWN_MDL_DATA
+            mdx_data = UNKNOWN_MDX_DATA
+        elif self.installation is not None:
+            mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER)
+            mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER)
+            if mdl_search is not None and mdx_search is not None and mdl_search.data:
+                mdl_data: bytes = mdl_search.data
+                mdx_data: bytes = mdx_search.data
+            try:
+                print(f"update from queue: {name}.mdl")
+                mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
+                mdx_reader = BinaryReader.from_bytes(mdx_data)
+                model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
+            except Exception as e:  # noqa: BLE001, PERF203
+                RobustRootLogger().debug(traceback.format_exc())
+                model = gl_load_stitched_model(
+                    self,
+                    BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                    BinaryReader.from_bytes(EMPTY_MDX_DATA),
+                )
+
+        with self.models_data_lock:
+            RobustRootLogger().debug("async finally queue model data to load.")
+            self.models_data_queue[name] = (name, model)
 
     def model(self, name: str) -> Model:
         mdl_data = EMPTY_MDL_DATA
@@ -739,18 +916,18 @@ class Scene:
                 mdl_data = UNKNOWN_MDL_DATA
                 mdx_data = UNKNOWN_MDX_DATA
             elif self.installation is not None:
-                capsules: list[Capsule] = [] if self.module is None else self.module.capsules()
+                capsules: list[ModulePieceResource] = [] if self._module is None else self.module.capsules()
                 mdl_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
                 mdx_search: ResourceResult | None = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
                 if mdl_search is not None and mdx_search is not None:
                     mdl_data: bytes = mdl_search.data
                     mdx_data: bytes = mdx_search.data
 
-            try:
+            try:  # TODO(th3w1zard1): offload to another thread.
                 mdl_reader = BinaryReader.from_bytes(mdl_data, 12)
                 mdx_reader = BinaryReader.from_bytes(mdx_data)
                 model = gl_load_stitched_model(self, mdl_reader, mdx_reader)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 #print(format_exception_with_variables(e))
                 model = gl_load_stitched_model(
                     self,
@@ -761,8 +938,44 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
+    def fetch_texture_data(
+        self,
+        name: str,
+        *,
+        lightmap: bool = False,
+    ):
+        """This function runs in a background thread and handles the I/O and processing to get the texture data."""
+        with self.textures_data_lock:
+            if name in self.textures_data_queue:
+                return
+            self.textures_data_queue[name] = None  # Temporary store something to prevent other calls from executing while we're still here.
+        type_name = "lightmap" if lightmap else "texture"
+        try:
+            tpc: TPC | None = None
+            # Check the textures linked to the module first
+            if self._module is not None:
+                RobustRootLogger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
+                module_tex = self.module.texture(name)
+                if module_tex is not None:
+                    RobustRootLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
+                    tpc = module_tex.resource()
+
+            # Otherwise just search through all relevant game files
+            if tpc is None and self.installation:
+                RobustRootLogger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+            if tpc is None:
+                RobustRootLogger().warning(f"MISSING {type_name.upper()}: '%s'", name)
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Exception thrown while loading %s.", type_name)
+            # If an error occurs during the loading process, just use a blank image.
+            tpc = TPC()
+
+        with self.textures_data_lock:
+            self.textures_data_queue[name] = (tpc or TPC(), lightmap)  # Using a dummy TPC class
+
     def jump_to_entry_location(self):
-        if self.module is None:
+        if self._module is None:
             self.camera.x = 0
             self.camera.y = 0
             self.camera.z = 0
@@ -895,6 +1108,11 @@ class Camera:
         self.yaw: float = 0.0
         self.distance: float = 10.0
         self.fov: float = 90.0
+
+    def set_position(self, position: Vector3 | vec3):
+        self.x = position.x
+        self.y = position.y
+        self.z = position.z
 
     def view(self) -> mat4:
         """Returns the view matrix for the camera.

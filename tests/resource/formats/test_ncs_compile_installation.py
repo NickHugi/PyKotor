@@ -518,7 +518,7 @@ class TestCompileInstallation(unittest.TestCase):
             if resource.identifier() in CANNOT_COMPILE_EXT[game]:
                 cls.log_file(f"Skipping {resource.identifier()}, known incompatible...")
                 continue
-            if resource.restype() != ResourceType.NSS:
+            if resource.restype() is not ResourceType.NSS:
                 continue
 
             temp_nss_path: Path = cls.all_nss_paths[game].joinpath(str(resource.identifier()))

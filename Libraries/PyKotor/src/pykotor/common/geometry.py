@@ -47,8 +47,10 @@ class Vector2:
     def __eq__(
         self,
         other,
-    ) -> bool:
+    ):
         """Two Vector2 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector2):
             return NotImplemented
 
@@ -128,7 +130,7 @@ class Vector2:
     def __getitem__(
         self,
         item,
-    ) -> float:
+    ):
         if isinstance(item, int):
             if item == 0:
                 return self.x
@@ -383,6 +385,8 @@ class Vector3:
         other: Vector3 | object,
     ) -> bool:
         """Two Vector3 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector3):
             return NotImplemented
 
@@ -408,7 +412,7 @@ class Vector3:
     def __sub__(
         self,
         other,
-    ) -> Vector3:
+    ):
         """Subtracts the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -688,8 +692,10 @@ class Vector4:
     def __eq__(
         self,
         other,
-    ) -> bool:
+    ):
         """Two Vector4 components are equal if their components are approximately the same."""
+        if self is other:
+            return True
         if not isinstance(other, Vector4):
             return NotImplemented
 
@@ -702,7 +708,7 @@ class Vector4:
     def __add__(
         self,
         other,
-    ) -> Vector4:
+    ):
         """Adds the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -717,7 +723,7 @@ class Vector4:
     def __sub__(
         self,
         other,
-    ) -> Vector4:
+    ):
         """Subtracts the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -1469,3 +1475,17 @@ class Polygon3:
         point: Vector3,
     ) -> int:
         return self.points.index(point)
+
+def get_aurora_scale(obj):
+    """If the scale is uniform, i.e, x=y=z, we will return
+    the value. Else we'll return 1.
+    """
+    scale = obj.scale
+    if (scale[0] == scale[1] == scale[2]):
+        return scale[0]
+
+    return 1.0
+
+def get_aurora_rot_from_object(obj):
+    q = obj.rotation_quaternion
+    return [q.axis[0], q.axis[1], q.axis[2], q.angle]

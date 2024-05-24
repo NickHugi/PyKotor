@@ -86,10 +86,10 @@ def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
 
     if source_timestamp > target_timestamp or ignore_timestamp:
         rc_compiler = {
+            "pyqt5": "pyrcc5",
+            "pyqt6": "pyside6-rcc",
             "pyside2": "pyside2-rcc",
             "pyside6": "pyside6-rcc",
-            "pyqt5": "pyrcc5",
-            "pyqt6": "pyside6-rcc"
         }[qt_version]
         command = f"{rc_compiler} {qrc_source} -o {qrc_target}"
         os.system(command)  # noqa: S605

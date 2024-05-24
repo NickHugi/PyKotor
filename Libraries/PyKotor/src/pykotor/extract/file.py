@@ -8,12 +8,14 @@ from typing import TYPE_CHECKING, Iterator
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import generate_hash
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
+
+    from typing_extensions import Self
 
     from pykotor.common.misc import ResRef
 
@@ -53,17 +55,17 @@ class FileResource:
         self._internal: bool = False
         self._hash_task_running: bool = False
 
-    def __setattr__(self, __name, __value):
+    def __setattr__(self, name, value):
         if (
-            hasattr(self, __name)
-            and __name not in {"_internal", "_hash_task_running"}
-            and not self._internal
-            and not self._hash_task_running
+            hasattr(self, name)
+            and name not in {"_internal", "_hash_task_running"}
+            and not getattr(self, "_internal", True)
+            and not getattr(self, "_hash_task_running", True)
         ):
-            msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {__name!r}, {__value!r})`"
+            msg = f"Cannot modify immutable FileResource instance, attempted `setattr({self!r}, {name!r}, {value!r})`"
             raise RuntimeError(msg)
 
-        return super().__setattr__(__name, __value)
+        return super().__setattr__(name, value)
 
     def __repr__(self):
         return (
@@ -86,20 +88,23 @@ class FileResource:
         self,
         other: FileResource | ResourceIdentifier | bytes | bytearray | memoryview | object,
     ):
+        if self is other:
+            return True
         if isinstance(other, ResourceIdentifier):
             return self.identifier() == other
         if isinstance(other, FileResource):
             return True if self is other else self._path_ident_obj == other._path_ident_obj
         return NotImplemented
 
-    def as_file_resource(self):
-        """For unifying use with LocationResult and ResourceResult."""
-        return self
+    def identifier(self) -> ResourceIdentifier:
+        """Returns the ResourceIdentifier instance for this resource."""
+        return self._identifier
 
     def resname(self) -> str:
         return self._resname
 
     def resref(self) -> ResRef:
+        """Returns ResRef(self.resname())."""
         from pykotor.common.misc import ResRef
 
         return ResRef(self._resname)
@@ -114,19 +119,33 @@ class FileResource:
     ) -> int:
         return self._size
 
-    def filename(
-        self,
-    ) -> str:
+    def filename(self) -> str:
+        """Return the name of the file.
+
+        Please note that self.filepath().name will not always be the same as self.filename() or str(self.identifier()). See self.path_ident() for more information.
+        """
         return str(self._identifier)
 
-    def filepath(
-        self,
-    ) -> Path:
+    def filepath(self) -> Path:
+        """Returns the physical path to a file the data can be loaded from.
+
+        Please note that self.filepath().name will not always be the same as str(self.identifier()) or self.filename(). See self.path_ident() for more information.
+        """
         return self._filepath
 
-    def offset(
-        self,
-    ) -> int:
+    def path_ident(self) -> Path:
+        """Returns a pathlib.Path identifier for this resource.
+
+        More specifically:
+        - if inside ERF/BIF/RIM/MOD/SAV, i.e. if the check `any((self.inside_capsule, self.inside_bif))` passes:
+            return self.filepath().joinpath(self.filename())
+        - else:
+            return self.filepath()
+        """
+        return self._path_ident_obj
+
+    def offset(self) -> int:
+        """Offset to where the data is stored, at the filepath."""
         return self._offset
 
     def _index_resource(
@@ -134,6 +153,7 @@ class FileResource:
         *,
         reload: bool = False,
     ):
+        """Reload information about where the resource can be loaded from."""
         if self.inside_capsule:
             from pykotor.extract.capsule import Capsule  # Prevent circular imports
 
@@ -144,8 +164,9 @@ class FileResource:
                 self._size = self._filepath.stat().st_size
                 return
             if res is None:
-                msg = f"Resource '{self._identifier}' not found in Capsule at '{self._filepath}'"
-                raise FileNotFoundError(msg)
+                import errno
+                msg = f"Resource '{self._identifier}' not found in Capsule"
+                raise FileNotFoundError(errno.ENOENT, msg, str(self._filepath))
 
             self._offset = res.offset()
             self._size = res.size()
@@ -158,14 +179,17 @@ class FileResource:
         *,
         reload: bool = False,
     ) -> bool:
-        """Determines if the resource exists. This method is completely safe to call and will never throw."""
+        """Determines if this FileResource exists.
+
+        This method is completely safe to call.
+        """
         try:
             if self.inside_capsule:
                 from pykotor.extract.capsule import Capsule  # Prevent circular imports
                 return bool(Capsule(self._filepath).info(self._resname, self._restype, reload=reload))
             return self.inside_bif or bool(self._filepath.safe_isfile())
         except Exception:
-            get_root_logger().exception("Failed to check existence of FileResource.")
+            RobustRootLogger().exception("Failed to check existence of FileResource.")
             return False
 
     def data(
@@ -220,8 +244,9 @@ class FileResource:
             self._file_hash = generate_hash(self.data())  # Calculate the sha1 hash
         return self._file_hash
 
-    def identifier(self) -> ResourceIdentifier:
-        return self._identifier
+    def as_file_resource(self) -> Self:
+        """For unifying use with LocationResult and ResourceResult."""
+        return self
 
 @dataclass(frozen=True)
 class ResourceResult:
@@ -283,10 +308,15 @@ class ResourceIdentifier:
     resname: str
     restype: ResourceType
     _cached_filename_str: str = field(default=None, init=False, repr=False)  # type: ignore[reportArgumentType]
+    _lower_resname_str: str = field(default=None, init=False, repr=False)  # type: ignore[reportArgumentType]
 
     def __post_init__(self):
         # Workaround to initialize a field in a frozen dataclass
-        object.__setattr__(self, "_cached_filename_str", None)
+        ext: str = self.restype.extension
+        suffix: str = f".{ext}" if ext else ""
+        lower_filename_str = f"{self.resname}{suffix}".lower()
+        object.__setattr__(self, "_cached_filename_str", lower_filename_str)
+        object.__setattr__(self, "_lower_resname_str", self.resname.lower())
 
     def __hash__(
         self,
@@ -299,11 +329,6 @@ class ResourceIdentifier:
         return f"{self.__class__.__name__}(resname='{self.resname}', restype={self.restype!r})"
 
     def __str__(self) -> str:
-        if self._cached_filename_str is None:
-            ext: str = self.restype.extension
-            suffix: str = f".{ext}" if ext else ""
-            cached_str = f"{self.resname}{suffix}".lower()
-            object.__setattr__(self, "_cached_filename_str", cached_str)
         return self._cached_filename_str
 
     def __getitem__(self, key: int) -> str | ResourceType:
@@ -314,16 +339,22 @@ class ResourceIdentifier:
         msg = f"Index out of range for ResourceIdentifier. key: {key}"
         raise IndexError(msg)
 
-    def unpack(self) -> tuple[str, ResourceType]:
-        return self.resname, self.restype
-
     def __eq__(self, other: object):
         # sourcery skip: assign-if-exp, reintroduce-else
+        if self is other:
+            return True
         if isinstance(other, ResourceIdentifier):
             return str(self) == str(other)
         if isinstance(other, str):
             return str(self) == other.lower()
         return NotImplemented
+
+    @property
+    def lower_resname(self) -> str:
+        return self.resname.lower()
+
+    def unpack(self) -> tuple[str, ResourceType]:
+        return self.resname, self.restype
 
     def validate(self):
         if self.restype == ResourceType.INVALID:
@@ -355,7 +386,7 @@ class ResourceIdentifier:
             - Handles exceptions during processing
         """
         try:
-            path_obj = PurePath(file_path)
+            path_obj = PurePath.pathify(file_path)
         except Exception:
             return ResourceIdentifier("", ResourceType.from_extension(""))
 

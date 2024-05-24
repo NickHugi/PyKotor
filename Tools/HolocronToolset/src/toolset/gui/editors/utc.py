@@ -44,9 +44,9 @@ class UTCEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation | None = None,
+        installation: HTInstallation = None,
         *,
-        mainWindow: QMainWindow | None = None,
+        mainWindow: QMainWindow | QWidget | None = None,
     ):
         """Initializes the Creature Editor window.
 
@@ -623,7 +623,7 @@ class UTCEditor(Editor):
         inventoryEditor = InventoryEditor(
             self,
             self._installation,
-            Module.get_capsules(self._installation, Module.get_root(self._filepath.name)),
+            Module.find_capsules(self._installation, self._filepath.name),
             [],
             self._utc.inventory,
             self._utc.equipment,
@@ -731,7 +731,7 @@ class UTCEditor(Editor):
 
 class UTCSettings:
     def __init__(self):
-        self.settings = QSettings("HolocronToolset", "UTCEditor")
+        self.settings = QSettings("HolocronToolsetV3", "UTCEditor")
 
     @property
     def saveUnusedFields(self) -> bool:

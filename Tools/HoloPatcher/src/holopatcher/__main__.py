@@ -53,8 +53,12 @@ if not is_frozen():
         utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
+    with suppress(Exception):
+        update_sys_path(pathlib.Path(__file__).parents[1])
+
 
 from holopatcher.config import CURRENT_VERSION
+from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
@@ -66,7 +70,7 @@ from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.string_util import striprtf
 from utility.system.os_helper import terminate_main_process, win_get_system32_dir
 from utility.system.path import Path
@@ -175,8 +179,9 @@ class App:
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
-        self.pykotor_logger = get_root_logger()
+        self.pykotor_logger = RobustRootLogger()
         self.namespaces: list[PatcherNamespace] = []
+        self.one_shot: bool = False
 
         self.initialize_logger()
         self.initialize_top_menu()
@@ -427,7 +432,7 @@ class App:
             self.hide_console()
 
         self.one_shot: bool = False
-        num_cmdline_actions: int = sum([cmdline_args.install, cmdline_args.validate])
+        num_cmdline_actions: int = sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate])
         if num_cmdline_actions == 1:
             self._begin_oneshot(cmdline_args)
         elif num_cmdline_actions > 1:
@@ -1253,7 +1258,8 @@ class App:
         """
         self.pykotor_logger.debug("begin_install_thread reached")
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-        ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
+        tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
+        ini_file_path = tslpatchdata_path.joinpath(namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
         self.pykotor_logger.debug("set ui state")
@@ -1266,8 +1272,9 @@ class App:
         self.main_text.config(state=tk.DISABLED)
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths2.get(), ini_file_path, self.logger)
-            self._execute_mod_install(installer, should_cancel_thread, progress_update_func)
-        except Exception as e:  # noqa: BLE001
+            installer.tslpatchdata_path = tslpatchdata_path
+            self._execute_mod_install(installer, should_cancel_thread, update_progress_func)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_exception_during_install(e)
         finally:
             self.set_state(state=False)
@@ -1568,10 +1575,14 @@ class App:
             if this_log.log_type == LogType.VERBOSE:
                 return "DEBUG"
             return this_log.log_type.name
-        with self.log_file_path.open("a", encoding="utf-8") as log_file:
-            log_file.write(f"{log.formatted_message}\n")
-        if log.log_type.value < log_type_to_level().value:
-            return
+        try:
+            self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.log_file_path.open("a", encoding="utf-8") as log_file:
+                log_file.write(f"{log.formatted_message}\n")
+            if log.log_type.value < log_type_to_level().value:
+                return
+        except OSError as e:
+            RobustRootLogger().error(f"Failed to write the log file at '{self.log_file_path}': {e.__class__.__name__}: {e}")
 
         self.main_text.config(state=tk.NORMAL)
         self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
@@ -1600,7 +1611,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    get_root_logger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
+    RobustRootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     with suppress(Exception):
         root = tk.Tk()

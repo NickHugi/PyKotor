@@ -1,47 +1,10 @@
 from __future__ import annotations
 
-import sys
-
-from json import JSONDecodeError
-from typing import Any
-
-import jsonpickle
+from typing import Any, Generic, TypeVar
 
 from qtpy.QtCore import QSettings, Qt
 
-# Full mapping of Qt.MouseButton values to integers
-mouseButtonMap: dict[Qt.MouseButton, int] = {
-    Qt.MouseButton.NoButton: 0,
-    Qt.MouseButton.LeftButton: 1,
-    Qt.MouseButton.RightButton: 2,
-    Qt.MouseButton.MiddleButton: 4,
-    Qt.MouseButton.BackButton: 8,
-    Qt.MouseButton.ForwardButton: 16,
-    Qt.MouseButton.TaskButton: 32,
-    Qt.MouseButton.ExtraButton4: 64,
-    Qt.MouseButton.ExtraButton5: 128,
-    Qt.MouseButton.ExtraButton6: 256,
-    Qt.MouseButton.ExtraButton7: 512,
-    Qt.MouseButton.ExtraButton8: 1024,
-    Qt.MouseButton.ExtraButton9: 2048,
-    Qt.MouseButton.ExtraButton10: 4096,
-    Qt.MouseButton.ExtraButton11: 8192,
-    Qt.MouseButton.ExtraButton12: 16384,
-    Qt.MouseButton.ExtraButton13: 32768,
-    Qt.MouseButton.ExtraButton14: 65536,
-    Qt.MouseButton.ExtraButton15: 131072,
-    Qt.MouseButton.ExtraButton16: 262144,
-    Qt.MouseButton.ExtraButton17: 524288,
-    Qt.MouseButton.ExtraButton18: 1048576,
-    Qt.MouseButton.ExtraButton19: 2097152,
-    Qt.MouseButton.ExtraButton20: 4194304,
-    Qt.MouseButton.ExtraButton21: 8388608,
-    Qt.MouseButton.ExtraButton22: 16777216,
-    Qt.MouseButton.ExtraButton23: 33554432,
-    Qt.MouseButton.ExtraButton24: 67108864,
-    # Qt defines up to ExtraButton24. Add more if your version of Qt supports them.
-}
-mouseButtonMapReverse = {v: k for k, v in mouseButtonMap.items()}
+from utility.logger_util import RobustRootLogger
 
 
 class QtTypeWrapper:
@@ -50,63 +13,116 @@ class QtTypeWrapper:
         self.type_str: str = type_str
 
     def reconstruct(self):
-        if self.type_str == "Qt.Key":
-            return Qt.Key(self.value)
-        if self.type_str == "Qt.MouseButton":
-            return mouseButtonMapReverse[self.value]
-        return self.value
+        return Qt.Key(self.value) if self.type_str == "Qt.Key" else self.value
+
+T = TypeVar("T")
+KT = TypeVar("KT")
+
+class SettingsProperty(property, Generic[T]):
+    def __init__(self, name: str, default: Any):
+        self.name: str = name
+        self.default: Any = default
+        self.return_type: type[T] = type(self.default)
+        self.serialized_default: KT = self.serialize_value(default)
+        self.serialized_type: type[KT] = type(self.serialized_default)
+
+        # Asserts are removed in release versions automatically with PYTHONOPTIMIZE (-O) flag.
+        reconstructed_default = self.deserialize_value(self.serialized_default)
+        assert default == reconstructed_default, f"{self.return_type} != {reconstructed_default.__class__}, repr type({default}) != type({reconstructed_default})"
+
+        super().__init__(self.getter, self.setter, None, None)
+
+    def getter(self, instance: Settings) -> T:
+        try:
+            serialized_value: KT = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
+            constructed_value: T = self.deserialize_value(serialized_value)
+            if constructed_value.__class__ != self.default.__class__:
+                RobustRootLogger.error(f"Corrupted setting '{self.name}': {constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
+                return self._handle_corrupted_setting(instance)
+        except Exception as e:
+            RobustRootLogger.exception(f"Exception in settings getter while deserializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
+            return self._handle_corrupted_setting(instance)
+        else:
+            return constructed_value
+
+    def setter(self, instance: Settings, value: T):
+        try:
+            serialized_value: KT = self.serialize_value(value)
+        except Exception as e:  # noqa: BLE001
+            RobustRootLogger.exception(f"Exception in settings setter while serializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
+        else:
+            try:
+                instance.settings.setValue(self.name, serialized_value)
+            except Exception as e:  # noqa: BLE001
+                RobustRootLogger.exception(f"Exception in settings setter while saving serialized setting '{self.name}', value {serialized_value}: {e}")
+
+    def _handle_corrupted_setting(self, instance: Settings) -> T:
+        RobustRootLogger.warning(f"Due to the above error, will reset setting '{self.name}'")
+        self.reset_to_default(instance)
+        return self.default
+
+    def reset_to_default(self, instance: Settings):
+        RobustRootLogger.info(f"Reset setting '{self.name}' to default of {self.default!s} (repr: {self.default!r})")
+        instance.settings.setValue(self.name, self.serialized_default)
+
+        # Double check it serialized correctly.
+        serialized_value: KT = instance.settings.value(self.name, self.serialized_default, self.serialized_default.__class__)
+        constructed_value: T = self.deserialize_value(serialized_value)
+        if constructed_value.__class__ != self.default.__class__:
+            raise RuntimeError(f"{constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
+
+    def serialize_value(self, value: T) -> KT:  # noqa: PLR0911
+        """Recursively serializes values, including Qt.Key and nested structures, for serialization.
+
+        Encapsulates special Qt types in QtTypeWrapper.
+        """
+        if isinstance(value, Qt.Key):
+            return QtTypeWrapper(int(value), "Qt.Key")
+        if isinstance(value, Qt.MouseButton):
+            return QtTypeWrapper(value, "Qt.MouseButton")
+        if isinstance(value, set):
+            return {self.serialize_value(item) for item in value}  # type: ignore[reportUnhashable]
+        if isinstance(value, tuple):
+            return tuple(self.serialize_value(item) for item in value)
+        if isinstance(value, list):
+            return [self.serialize_value(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self.serialize_value(val) for key, val in value.items()}
+        return value
+
+    def deserialize_value(self, value: KT) -> T:
+        """Recursively deserializes the value from the serialized form, handling QtTypeWrapper instances."""
+        if isinstance(value, QtTypeWrapper):
+            return value.reconstruct()
+        if isinstance(value, set):
+            return {self.deserialize_value(item) for item in value}  # type: ignore[reportUnhashable]
+        if isinstance(value, tuple):
+            return tuple(self.deserialize_value(item) for item in value)
+        if isinstance(value, list):
+            return [self.deserialize_value(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self.deserialize_value(val) for key, val in value.items()}
+        return value
+
 
 class Settings:
     def __init__(self, scope: str):
-        self.settings = QSettings("HolocronToolset", scope)
+        self.settings: QSettings = QSettings("HolocronToolsetV3", scope)
 
     @staticmethod
-    def addSetting(name: str, default: Any) -> property:  # noqa: C901
-        def convert_value(value):
-            """Recursively converts values, including Qt.Key and nested structures, for serialization.
-            Encapsulates special Qt types in QtTypeWrapper.
-            """
-            if isinstance(value, Qt.Key):
-                return QtTypeWrapper(int(value), "Qt.Key")
-            if isinstance(value, Qt.MouseButton):
-                return QtTypeWrapper(mouseButtonMap[value], "Qt.MouseButton")
-            if isinstance(value, set):
-                return {convert_value(item) for item in value}  # type: ignore[reportUnhashable]
-            if isinstance(value, tuple):
-                return tuple(convert_value(item) for item in value)
-            if isinstance(value, list):
-                return [convert_value(item) for item in value]
-            if isinstance(value, dict):
-                return {key: convert_value(val) for key, val in value.items()}
-            return value
+    def addSetting(name: str, default: T) -> SettingsProperty[T]:  # noqa: C901
+        return SettingsProperty(name, default)
 
-        def reconstruct_value(value: Any):  # noqa: ANN202
-            """Reconstructs the value from the serialized form, handling QtTypeWrapper instances."""
-            if isinstance(value, QtTypeWrapper):
-                return value.reconstruct()
-            if isinstance(value, set):
-                return {reconstruct_value(item) for item in value}  # type: ignore[reportUnhashable]
-            if isinstance(value, tuple):
-                return tuple(reconstruct_value(item) for item in value)
-            if isinstance(value, list):
-                return [reconstruct_value(item) for item in value]
-            if isinstance(value, dict):
-                return {key: reconstruct_value(val) for key, val in value.items()}
-            return value
+    def get_property(self, name: str) -> SettingsProperty[T]:
+        prop = getattr(self.__class__, name, None)
+        if not isinstance(prop, SettingsProperty):
+            raise AttributeError(f"'{self.__class__.__name__}' object has no property '{name}'")  # noqa: TRY004
+        return prop
 
-        def getter(this: Settings) -> Any:
-            l_default = convert_value(default)
-            serialized_default = jsonpickle.encode(l_default)
-            try:
-                raw_value = this.settings.value(name, serialized_default, str)
-                value = jsonpickle.decode(raw_value)  # noqa: S301
-                return reconstruct_value(value)
-            except (TypeError, JSONDecodeError) as e:
-                print(f"Exception in settings getter while acquiring setting '{name}' with default of {default} ({l_default}): {e}", file=sys.stderr)
-                this.settings.setValue(name, serialized_default)
-                return this.settings.value(name, serialized_default, serialized_default.__class__)
+    def get_default(self, name: str) -> Any:
+        prop: SettingsProperty = self.get_property(name)
+        return prop.default
 
-        def setter(this: Settings, value: Any):
-            this.settings.setValue(name, jsonpickle.encode(convert_value(value)))
-
-        return property(getter, setter)
+    def reset_setting(self, name: str):
+        prop: SettingsProperty = self.get_property(name)
+        prop.reset_to_default(self)

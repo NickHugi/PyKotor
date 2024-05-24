@@ -401,7 +401,7 @@ class Stack:
             index -= 1
         return index
 
-    def _stack_index_bp(self, offset) -> int:
+    def _stack_index_bp(self, offset: int) -> int:
         if offset >= 0:
             raise ValueError
         bp_index = self._bp // 4
@@ -615,6 +615,8 @@ class StackObject:
         return f"{self.data_type.name}={self.value}"
 
     def __eq__(self, other: StackObject | object):
+        if self is other:
+            return True
         if isinstance(other, StackObject):
             return self.value == other.value
         return self.value == other

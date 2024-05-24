@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import sys
+from typing import cast
 import unittest
 
 from tempfile import NamedTemporaryFile
@@ -282,7 +283,7 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_capsule_not_exist(self):
         patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
         capsule = MagicMock()
-        capsule.path().safe_isfile.return_value = False
+        cast(Capsule, capsule).filepath().safe_isfile.return_value = False
         result = self.patcher.should_patch(patch, capsule=capsule)
         self.assertFalse(result)
 

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator
 
+from pykotor.common.misc import ResRef
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
@@ -23,6 +25,24 @@ class LYT:
         self.obstacles: list[LYTObstacle] = []
         self.doorhooks: list[LYTDoorHook] = []
 
+    def iter_resource_identifiers(self) -> Generator[ResourceIdentifier, Any, None]:
+        """Generates resources that utilize this LYT.
+
+        Does not guarantee the ResourceType exists, only the resname/resref.
+        """
+        for room in self.rooms:
+            yield ResourceIdentifier(room.model, ResourceType.MDL)
+            yield ResourceIdentifier(room.model, ResourceType.MDX)
+            yield ResourceIdentifier(room.model, ResourceType.WOK)
+
+    def all_room_models(self) -> Generator[str, Any, None]:
+        """Returns all models used by this LYT."""
+        for room in self.rooms:
+            parsed_model = room.model.strip()
+            assert parsed_model == room.model, "room model names cannot contain spaces."
+            assert ResRef.is_valid(parsed_model), f"invalid room model: '{room.model}' at room {self.rooms.index(room)}, must conform to resref restrictions."
+            yield parsed_model.lower()
+
 
 class LYTRoom:
     """An area model.
@@ -38,16 +58,18 @@ class LYTRoom:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
         self,
         other: LYTRoom,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTRoom):
             return NotImplemented
-        return self.model == other.model and self.position == other.position
+        return self.model.lower() == other.model.lower() and self.position == other.position
 
     def __hash__(
         self,
@@ -71,16 +93,18 @@ class LYTTrack:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
         self,
         other: LYTTrack,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTTrack):
             return NotImplemented
-        return self.model == other.model and self.position == other.position
+        return self.model.lower() == other.model.lower() and self.position == other.position
 
 
 class LYTObstacle:
@@ -99,16 +123,18 @@ class LYTObstacle:
         model: str,
         position: Vector3,
     ):
-        self.model: str = model  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
         self,
         other: LYTObstacle,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTObstacle):
             return NotImplemented
-        return self.model == other.model and self.position == other.position
+        return self.model.lower() == other.model.lower() and self.position == other.position
 
 
 class LYTDoorHook:
@@ -140,6 +166,8 @@ class LYTDoorHook:
         self,
         other: LYTDoorHook,
     ):
+        if self is other:
+            return True
         if not isinstance(other, LYTDoorHook):
             return NotImplemented
         return (
