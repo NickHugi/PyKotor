@@ -252,7 +252,7 @@ class AddStructToListGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str,
-        value: FieldValueListIndex,
+        value: FieldValue,
         path: PureWindowsPath | os.PathLike | str,
         index_to_token: int | None = None,
         modifiers: list[ModifyGFF] | None = None,
@@ -268,7 +268,9 @@ class AddStructToListGFF(ModifyGFF):
             modifiers (list[ModifyGFF]): Modifiers list
         """
         self.identifier: str = identifier
-        self.value: FieldValueListIndex = value
+        if not isinstance(value, (FieldValueListIndex, FieldValueConstant)):
+            raise TypeError(f"value must be FieldValueListIndex or FieldValueConstant, instead got {value.__class__.__name__}")
+        self.value: FieldValueListIndex | FieldValueConstant = value
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.index_to_token: int | None = index_to_token
 
@@ -310,11 +312,13 @@ class AddStructToListGFF(ModifyGFF):
             return
 
         try:
-            lookup: GFFStruct | Literal["listindex"] = self.value.value(memory, GFFFieldType.Struct)
+            lookup: Any = self.value.value(memory, GFFFieldType.Struct)
             if lookup == "listindex":
                 new_struct = GFFStruct(len(list_container._structs)-1)
-            else:
+            elif isinstance(lookup, GFFStruct):
                 new_struct = lookup
+            else:
+                raise ValueError(f"bad lookup: {lookup} ({lookup!r}) expected 'listindex' or GFFStruct")
         except KeyError as e:
             logger.add_error(f"INI section [{self.identifier}] threw an exception: {e}")
 

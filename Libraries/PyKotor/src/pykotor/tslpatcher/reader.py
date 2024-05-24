@@ -21,6 +21,7 @@ from pykotor.tslpatcher.mods.gff import (
     AddStructToListGFF,
     FieldValue2DAMemory,
     FieldValueConstant,
+    FieldValueListIndex,
     FieldValueTLKMemory,
     LocalizedStringDelta,
     Memory2DAModifierGFF,
@@ -366,14 +367,16 @@ class ConfigReader:
                     next_section_dict = CaseInsensitiveDict(self.ini[next_section_name])
                     self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination, default_sourcefolder)
 
-                    for dialog_tlk_key, mod_tlk_value in zip(
+                    for raw_dialog_tlk_index, raw_mod_tlk_index in zip(
                         self.ini[next_section_name].keys(),
                         self.ini[next_section_name].values(),
                     ):
+                        dialog_tlk_index = int(raw_dialog_tlk_index[6:]) if raw_dialog_tlk_index.lower().startswith("strref") else int(raw_dialog_tlk_index)
+                        mod_tlk_index = int(raw_mod_tlk_index[6:]) if raw_mod_tlk_index.lower().startswith("strref") else int(raw_mod_tlk_index)
                         process_tlk_entries(
-                            tlk_filename=value,
-                            dialog_tlk_index=int(dialog_tlk_key),
-                            mod_tlk_index=int(mod_tlk_value),
+                            tlk_filename=next_section_name,
+                            dialog_tlk_index=dialog_tlk_index,
+                            mod_tlk_index=mod_tlk_index,
                             is_replacement=replace_file,
                         )
                 elif "\\" in lower_key or "/" in lower_key:
@@ -848,7 +851,7 @@ class ConfigReader:
             raw_struct_id: str = ini_section_dict.pop("TypeId", "0").strip()  # 0 is the default struct id.
             if not is_int(raw_struct_id):
                 if raw_struct_id.lower() == "listindex":
-                    return raw_struct_id.lower()
+                    return FieldValueListIndex(raw_struct_id.lower())
                 msg = f"Invalid TypeId: expected int (or 'listindex' literal) but got '{raw_struct_id}' in [{identifier}]"
                 raise ValueError(msg)
             struct_id = int(raw_struct_id)
