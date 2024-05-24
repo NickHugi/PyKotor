@@ -8,23 +8,25 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from typing_extensions import Literal
 
+
 # Define card types
 class CardType(Enum):
     POSITIVE = "+"
     NEGATIVE = "-"
-    BOTH = "+/-"
+    POS_OR_NEG = "+/-"
     YELLOW = "Yellow"
+
 
 # Define the Pazaak side card class
 class PazaakSideCard:
     def __init__(
         self,
-        value: Literal[1, 2, 3, 4, 5, 6] | list[int],
+        value: int | list[int],
         card_type: CardType,
     ):
         if card_type == CardType.YELLOW and not isinstance(value, list):
             raise ValueError("Yellow card value must be a list of numbers.")
-        self.value: Literal[1, 2, 3, 4, 5, 6] | list[int] = value
+        self.value: int | list[int] = value
         self.card_type: CardType = card_type
 
     def __str__(self) -> str:
@@ -33,7 +35,7 @@ class PazaakSideCard:
         return f"{self.card_type.value.replace('+', f'+{self.value}').replace('-', f'-{self.value}')}"
 
     def choose_value(self) -> int:
-        if self.card_type == CardType.BOTH:
+        if self.card_type == CardType.POS_OR_NEG:
             while True:
                 choice = input(f"Do you want to use {self.value} as + or -? (+/-): ").strip()
                 if choice == "+":
@@ -47,28 +49,44 @@ class PazaakSideCard:
             return -self.value
         raise ValueError(f"Unknown card_type {self.card_type!r}")
 
-# Define the values of the cards
-MAIN_DECK_VALUES: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-SIDE_DECK = [  # For this implementation, its assumed everyone has 10 of every single side card.
-    PazaakSideCard(1, CardType.BOTH), PazaakSideCard(2, CardType.BOTH), PazaakSideCard(3, CardType.BOTH),
-    PazaakSideCard(4, CardType.BOTH), PazaakSideCard(5, CardType.BOTH), PazaakSideCard(6, CardType.BOTH),
-    PazaakSideCard(1, CardType.POSITIVE), PazaakSideCard(2, CardType.POSITIVE), PazaakSideCard(3, CardType.POSITIVE),
-    PazaakSideCard(4, CardType.POSITIVE), PazaakSideCard(5, CardType.POSITIVE), PazaakSideCard(6, CardType.POSITIVE),
-    PazaakSideCard(1, CardType.NEGATIVE), PazaakSideCard(2, CardType.NEGATIVE), PazaakSideCard(3, CardType.NEGATIVE),
-    PazaakSideCard(4, CardType.NEGATIVE), PazaakSideCard(5, CardType.NEGATIVE), PazaakSideCard(6, CardType.NEGATIVE),
-    PazaakSideCard([3, 6], CardType.YELLOW)  # TODO(th3w1zard1): add more yellow cards
+# Define the values of the cards
+MAIN_DECK_VALUES: list[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  # For this implementation, its assumed everyone has 10 of every single side card.
+SIDE_DECK = [
+    PazaakSideCard(1, CardType.POS_OR_NEG),
+    PazaakSideCard(2, CardType.POS_OR_NEG),
+    PazaakSideCard(3, CardType.POS_OR_NEG),
+    PazaakSideCard(4, CardType.POS_OR_NEG),
+    PazaakSideCard(5, CardType.POS_OR_NEG),
+    PazaakSideCard(6, CardType.POS_OR_NEG),
+    PazaakSideCard(1, CardType.POSITIVE),
+    PazaakSideCard(2, CardType.POSITIVE),
+    PazaakSideCard(3, CardType.POSITIVE),
+    PazaakSideCard(4, CardType.POSITIVE),
+    PazaakSideCard(5, CardType.POSITIVE),
+    PazaakSideCard(6, CardType.POSITIVE),
+    PazaakSideCard(1, CardType.NEGATIVE),
+    PazaakSideCard(2, CardType.NEGATIVE),
+    PazaakSideCard(3, CardType.NEGATIVE),
+    PazaakSideCard(4, CardType.NEGATIVE),
+    PazaakSideCard(5, CardType.NEGATIVE),
+    PazaakSideCard(6, CardType.NEGATIVE),
+    PazaakSideCard([3, 6], CardType.YELLOW),  # TODO(th3w1zard1): add more yellow cards
 ]
 
 MAX_HAND_VALUE: Literal[20] = 20
 
+
 # Function to create a deck of cards
-def create_deck() -> list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]:
-    deck: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]] = []
+def create_deck() -> list[int]:
+    deck: list[int] = []
     for card in MAIN_DECK_VALUES:
         deck.extend(card for _ in range(4))
     random.shuffle(deck)
     return deck
+
 
 # Function to choose side deck
 def choose_side_deck() -> list[PazaakSideCard]:
@@ -102,26 +120,22 @@ def choose_side_deck() -> list[PazaakSideCard]:
 
     return selected_cards
 
+
 # Function to get active side deck
 def get_active_side_deck(full_side_deck: list[PazaakSideCard]) -> list[PazaakSideCard]:
     return random.sample(full_side_deck, 5)
 
+
 # Function to calculate the value of a hand
-def calculate_hand_value(hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard]) -> int:
-    return sum(
-        (
-            card.choose_value()
-            if isinstance(card, PazaakSideCard)
-            else card
-        )
-        for card in hand
-    )
+def calculate_hand_value(hand: list[int | PazaakSideCard]) -> int:
+    return sum((card.choose_value() if isinstance(card, PazaakSideCard) else card) for card in hand)
+
 
 # Function to apply yellow card effect
 def apply_yellow_card_effect(
-    hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard],
+    hand: list[int | PazaakSideCard],
     yellow_card: PazaakSideCard,
-) -> list[PazaakSideCard | Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]:
+) -> list[PazaakSideCard | int]:
     for i, card in enumerate(hand):
         if isinstance(card, PazaakSideCard) and card.card_type is CardType.POSITIVE and card.value in yellow_card.value:
             hand[i] = PazaakSideCard(card.value, CardType.NEGATIVE)
@@ -129,43 +143,73 @@ def apply_yellow_card_effect(
             hand[i] = PazaakSideCard(card.value, CardType.NEGATIVE)
     return hand
 
+
 # Function to print the hand
-def print_hand(name: str, hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard]):
+def print_hand(name: str, hand: list[int | PazaakSideCard]):
     hand_values = [str(card) for card in hand]
     print(f"{name}'s hand: {', '.join(hand_values)} (total: {calculate_hand_value(hand)})")
 
+
 # Function to check if the hand is a bust
-def is_bust(hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard]) -> bool:
+def is_bust(hand: list[int | PazaakSideCard]) -> bool:
     return calculate_hand_value(hand) > MAX_HAND_VALUE
+
 
 # AI's strategy function
 def ai_strategy(
-    ai_hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard],
-    player_hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard],
+    ai_hand: list[PazaakSideCard | int],
+    player_hand: list[PazaakSideCard | int],
     ai_side_hand: list[PazaakSideCard],
 ) -> Literal["stand", "hit"]:
     ai_value = calculate_hand_value(ai_hand)
     player_value = calculate_hand_value(player_hand)
+    best_choice = None
+    min_value_diff = float("inf")
 
-    # AI will use a side card if it can help reach exactly 20
     for side_card in ai_side_hand:
         if side_card.card_type == CardType.YELLOW:
-            continue
-        potential_value = ai_value + side_card.choose_value()
-        if potential_value == MAX_HAND_VALUE:
-            ai_hand.append(side_card)
-            ai_side_hand.remove(side_card)
-            return "stand"
+            simulated_hand = apply_yellow_card_effect(ai_hand, side_card)
+            simulated_value = calculate_hand_value(simulated_hand)
+            value_diff = MAX_HAND_VALUE - simulated_value
 
-    return "stand" if ai_value >= player_value or ai_value >= 17 else "hit"
+            if simulated_value <= MAX_HAND_VALUE and value_diff < min_value_diff:
+                best_choice = (side_card, simulated_value)
+                min_value_diff = value_diff
+
+        else:
+            potential_values = [side_card.value] if side_card.card_type != CardType.POS_OR_NEG else [side_card.value, -side_card.value]
+            for value in potential_values:
+                simulated_value = ai_value + value
+                value_diff = MAX_HAND_VALUE - simulated_value
+
+                if simulated_value <= MAX_HAND_VALUE and value_diff < min_value_diff:
+                    best_choice = (side_card, simulated_value)
+                    min_value_diff = value_diff
+
+    if best_choice is None:
+        print("AI did not use a side card for this turn.")
+    else:
+        side_card, new_value = best_choice
+        if new_value == MAX_HAND_VALUE or (ai_value < player_value and new_value > ai_value):
+            ai_side_hand.remove(side_card)
+            if side_card.card_type == CardType.YELLOW:
+                ai_hand[:] = apply_yellow_card_effect(ai_hand, side_card)  # Apply yellow effect
+            else:
+                ai_hand.append(side_card)
+            print(f"AI uses {side_card} resulting in new hand value of {new_value}.")
+            return "stand" if new_value == MAX_HAND_VALUE else "hit"
+
+    stand_minimum = 17
+    return "stand" if ai_value >= stand_minimum and ai_value >= player_value else "hit"
+
 
 # Main game function
 def play_pazaak():
     deck = create_deck()
 
     # Initial hands
-    player_hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard] = []
-    ai_hand: list[Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] | PazaakSideCard] = []
+    player_hand: list[int | PazaakSideCard] = []
+    ai_hand: list[int | PazaakSideCard] = []
 
     player_side_deck: list[PazaakSideCard] = choose_side_deck()
     ai_side_deck: list[PazaakSideCard] = choose_side_deck()  # TODO(th3w1zard1): allow ai to auto-choose side deck.
@@ -242,6 +286,7 @@ def play_pazaak():
         print("AI wins!")
     else:
         print("It's a tie!")
+
 
 # Start the game
 if __name__ == "__main__":
