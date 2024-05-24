@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import shutil
-
 from typing import TYPE_CHECKING
 
 import qtpy
@@ -18,10 +16,11 @@ from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, wr
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
+from toolset.gui.dialogs.save.generic_file_saver import FileSaveHandler
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.error_handling import format_exception_with_variables, universal_simplify_exception
+from utility.error_handling import universal_simplify_exception
 from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
@@ -33,7 +32,6 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
-    from utility.system.path import PurePath
 
 
 def human_readable_size(byte_size: float) -> str:
@@ -275,7 +273,7 @@ class ERFEditor(Editor):
             with self._filepath.open("wb") as file:
                 file.write(data[0])
 
-    def extractSelected(self):  # TODO(th3w1zard1): move this logic into a util function as it's more-or-less used fairly often in this toolset.
+    def extractSelected(self):
         """Extract selected resources to a folder.
 
         Processing Logic:
@@ -288,220 +286,13 @@ class ERFEditor(Editor):
             - Write the resource data to a file in the target folder.
         """
         selected_rows = self.ui.tableView.selectionModel().selectedRows()
-        assert self._filepath is not None
-        erf_path = self._filepath.parent / f"{self._resname}.{self._restype}"
-        erf_relpath = erf_path.relative_to(erf_path.parent)
-        if len(selected_rows) == 1:
-            # Handle single file with file dialog
-            resource: ERFResource = self.model.itemFromIndex(selected_rows[0]).data()
-            dialog = QFileDialog(self, "Save File", f"{resource.resref}.{resource.restype.extension}", f"Files (*.{resource.restype.extension})")
-            dialog.setAcceptMode(QFileDialog.AcceptSave)
-            dialog.setOption(QFileDialog.DontConfirmOverwrite)  # Disable default overwrite confirmation
-            response = dialog.exec_()
-            if response == QFileDialog.Accepted:
-                filepath_str = dialog.selectedFiles()[0]
-                if not filepath_str or not filepath_str.strip():
-                    RobustRootLogger().debug("QFileDialog was accepted but no filepath str passed.")
-                    return
-                self._handle_single_file_save(Path(filepath_str), resource.data, erf_relpath, catch_exceptions=True)
-            else:
-                print(f"User cancelled selecting a save filepath, response {response}")
-            return
-
-        # Handle multiple files with folder dialog
-        folderpath_str = QFileDialog.getExistingDirectory(self, "Extract to folder")
-        if not folderpath_str:
-            RobustRootLogger().debug("User cancelled folderpath extraction.")
-            return
-        RobustRootLogger().debug("Determining existing files and whether to overwrite.")
-        existing_files_and_folders: list[str] = []
-        paths_to_write: dict[Path, bytes] = {}
-        for index in selected_rows:
-            item = self.model.itemFromIndex(index)
-            resource: ERFResource = item.data()
-            file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
-            if file_path.safe_exists():
-                file_relpath = str(file_path.relative_to(file_path.parents[1] if file_path.parent.parent.name else file_path.parent))
-                existing_files_and_folders.append(file_relpath)
-            paths_to_write[file_path] = resource.data
-
-        self._handle_multiple_existing(erf_relpath, existing_files_and_folders, paths_to_write)
-
-    def _handle_multiple_existing(  # TODO(th3w1zard1): allow subfunction to show its error messageboxes, if a user sets their toolset settings to do so.
-        self,
-        erf_relpath: PurePath,
-        existing_files_and_folders: list[str],
-        paths_to_write: dict[Path, bytes],
-    ):
-        if not existing_files_and_folders:
-            choice = QMessageBox.StandardButton.No  # Default to rename.
-        else:
-            msgBox = QMessageBox()  # sourcery skip: extract-method
-            msgBox.setIcon(QMessageBox.Icon.Warning)
-            msgBox.setWindowTitle("Existing files/folders found.")
-            msgBox.setText(f"The following {len(existing_files_and_folders)} files and folders already exist in the selected folder.<br><br>How would you like to handle this?")
-            msgBox.setDetailedText("\n".join(existing_files_and_folders))
-            msgBox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Abort)
-            msgBox.button(QMessageBox.StandardButton.Yes).setText("Overwrite")   # type: ignore[union-attr]
-            msgBox.button(QMessageBox.StandardButton.No).setText("Auto-Rename")  # type: ignore[union-attr]
-            msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
-            msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
-            choice = msgBox.exec_()
-
-        failed_extractions: dict[Path, Exception] = {}
-        if choice == QMessageBox.StandardButton.Yes:
-            RobustRootLogger().debug(
-                "User chose to Overwrite %s files/folders in the '%s' folder.",
-                len(existing_files_and_folders),
-                next(iter(paths_to_write.keys())).parent,
-            )
-            for path, data in paths_to_write.items():
-                is_overwrite = "overwriting existing file" if path.safe_isfile() else "saving as"
-                RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_overwrite, path.name)
-                try:
-                    if path.safe_isdir():
-                        shutil.rmtree(path)
-                    elif path.safe_isfile():
-                        path.unlink(missing_ok=True)
-                except Exception as e:  # noqa: BLE001
-                    RobustRootLogger().exception("ERFEditor: Failed to delete file '%s' while attempting to overwrite", path)
-                    failed_extractions[path] = e
-                self._handle_single_file_save(path, data, erf_relpath, choice)
-        elif choice == QMessageBox.StandardButton.No:
-            RobustRootLogger().debug(
-                "User chose to Rename %s files in the '%s' folder.",
-                len(existing_files_and_folders),
-                next(iter(paths_to_write.keys())).parent,
-            )
-            for path, data in paths_to_write.items():
-                new_path = path
-                try:
-                    i = 1
-                    while new_path.safe_exists():
-                        i += 1
-                        new_path = new_path.with_stem(f"{path.stem} ({i})")
-                    is_rename = "with new filename" if path.safe_isfile() else "saving as"
-                    RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", erf_relpath/path.name, path.parent, is_rename, new_path.name)
-                    self._handle_single_file_save(new_path, data, erf_relpath, choice)
-                except Exception as e:  # noqa: BLE001
-                    RobustRootLogger().exception("ERFEditor: Failed to extract file '%s'", new_path)
-                    failed_extractions[path] = e
-        else:
-            RobustRootLogger().debug(
-                "User chose to CANCEL overwrite/renaming of %s files in the '%s' folder.",
-                len(existing_files_and_folders),
-                next(iter(paths_to_write.keys())).parent,
-            )
-        if failed_extractions:
-            self._handle_failed_extractions(failed_extractions)
-
-    def _handle_failed_extractions(self, failed_extractions: dict[Path, Exception]):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Icon.Critical)
-        msgBox.setWindowTitle("Failed to extract files to disk.")
-        msgBox.setText(f"{len(failed_extractions)} files FAILED to to be saved<br><br>Press 'show details' for information.")
-        detailed_info = "\n".join(
-            f"{file}: {universal_simplify_exception(exc)}"
-            for file, exc in failed_extractions.items()
-        )
-        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
-        msgBox.setDetailedText(detailed_info)
-        msgBox.exec_()
-
-    def _handle_single_file_save(
-        self,
-        path: Path,
-        data: bytes,
-        erf_relpath: PurePath,
-        arg_choice: int | QMessageBox.StandardButton | None = None,
-        *,
-        catch_exceptions: bool = False,
-    ):
-        new_path = path
-        check = new_path.safe_exists()
-        first_run = True
-        while first_run or check:
-            first_run = False
-            try:
-                if arg_choice is None and check:
-                    msgBox = QMessageBox()
-                    msgBox.setIcon(QMessageBox.Warning)
-                    msgBox.setWindowTitle(f"Overwrite {'File' if new_path.safe_isfile() else 'Folder'}?")
-                    msgBox.setText(f"The following {'file' if new_path.safe_isfile() else 'folder'} exists with the same name as one of the resources you are trying to extract. How would you like to handle this problem?")
-                    msgBox.setDetailedText(str(path))
-                    msgBox.setStandardButtons(
-                        QMessageBox.StandardButton.Yes
-                        | QMessageBox.StandardButton.No
-                        | QMessageBox.StandardButton.Retry
-                        | QMessageBox.StandardButton.Abort
-                    )
-                    msgBox.button(QMessageBox.StandardButton.Yes).setText("Delete Folder" if new_path.safe_isdir() else "Overwrite")   # type: ignore[union-attr]
-                    msgBox.button(QMessageBox.StandardButton.No).setText("Auto-Rename File(s)")  # type: ignore[union-attr]
-                    msgBox.button(QMessageBox.StandardButton.Retry).setText("Retry")
-                    msgBox.button(QMessageBox.StandardButton.Abort).setText("Cancel")    # type: ignore[union-attr]
-                    msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
-                    msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
-                    choice = msgBox.exec_()
-                else:
-                    choice = arg_choice
-                if choice == QMessageBox.StandardButton.Abort:
-                    return
-                if choice == QMessageBox.StandardButton.Retry:
-                    check = new_path.safe_exists()
-                    continue
-                if choice == QMessageBox.StandardButton.Yes:
-                    try:
-                        if path.safe_isdir():
-                            shutil.rmtree(path)
-                        elif path.safe_exists():  # do not use is_file here.
-                            path.unlink(missing_ok=True)
-                    except Exception as e:  # noqa: BLE001
-                        check = path.safe_exists()
-                        if check:
-                            if not catch_exceptions:
-                                raise
-                            simple_exc_str = str(universal_simplify_exception(e))
-                            msgBox = QMessageBox(
-                                QMessageBox.Icon.Critical,
-                                "Failed to delete the folder.",
-                                f"An error occurred attempting to delete the folder '{path}'.<br><br>{simple_exc_str}",
-                            )
-                            msgBox.setDetailedText(format_exception_with_variables(e))
-                            msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
-                            msgBox.exec_()
-                            continue
-                        RobustRootLogger().warning("Attempted to delete file/folder at '%s' but the path doesn't even exist?", new_path)
-                    check = path.safe_exists()
-                    if check:
-                        print("Path still exists, restart dialog.")
-                        continue
-                    print(f"Overwriting file at '{path}'")
-                elif choice == QMessageBox.StandardButton.No:
-                    i = 1
-                    stem = new_path.stem
-                    while new_path.safe_exists():
-                        i += 1
-                        new_path = new_path.with_stem(f"{stem} ({i})")
-                    if path.name != new_path.name:
-                        print(f"Changed save filename '{path.name}' to '{new_path.name}'")
-                    check = False
-                print(f"Saving to '{new_path}'")
-                with new_path.open("wb") as file:
-                    file.write(data)
-            except Exception as e:  # noqa: PERF203, BLE001
-                simple_exc_str = str(universal_simplify_exception(e))
-                msg = f"ERFEditor: Failed to extract {erf_relpath}"
-                if not catch_exceptions:
-                    raise
-                RobustRootLogger().exception("%s: %s", msg, simple_exc_str)
-                msgBox = QMessageBox(
-                    QMessageBox.Icon.Critical,
-                    "Failed to extract the file(s).",
-                    f"An error occurred attempting to extract '{erf_relpath}' to '{new_path}'.<br><br>{simple_exc_str}",
-                )
-                msgBox.setDetailedText(format_exception_with_variables(e))
-                msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
-                msgBox.exec_()
+        if not selected_rows:
+            RobustRootLogger.info("ERFEditor: Nothing selected to save.")
+        selectedResources: list[ERFResource] = [self.model.itemFromIndex(rowItem).data() for rowItem in selected_rows]
+        if not selectedResources:
+            RobustRootLogger.info("ERFEditor: No selected rows have ERFResource data, ergo nothing to save.")
+        saveHandler = FileSaveHandler(selectedResources, parent=self)
+        saveHandler.save_files()
 
     def removeSelected(self):
         """Removes selected rows from table view.

@@ -14,7 +14,7 @@ class CardType(Enum):
     POSITIVE = "+"
     NEGATIVE = "-"
     POS_OR_NEG = "+/-"
-    YELLOW = "Yellow"
+    YELLOW_SPECIAL = "Yellow"
 
 
 # Define the Pazaak side card class
@@ -24,13 +24,13 @@ class PazaakSideCard:
         value: int | list[int],
         card_type: CardType,
     ):
-        if card_type == CardType.YELLOW and not isinstance(value, list):
+        if card_type == CardType.YELLOW_SPECIAL and not isinstance(value, list):
             raise ValueError("Yellow card value must be a list of numbers.")
         self.value: int | list[int] = value
         self.card_type: CardType = card_type
 
     def __str__(self) -> str:
-        if self.card_type == CardType.YELLOW:
+        if self.card_type == CardType.YELLOW_SPECIAL:
             return f"Yellow {self.value}"
         return f"{self.card_type.value.replace('+', f'+{self.value}').replace('-', f'-{self.value}')}"
 
@@ -73,7 +73,7 @@ SIDE_DECK = [
     PazaakSideCard(4, CardType.NEGATIVE),
     PazaakSideCard(5, CardType.NEGATIVE),
     PazaakSideCard(6, CardType.NEGATIVE),
-    PazaakSideCard([3, 6], CardType.YELLOW),  # TODO(th3w1zard1): add more yellow cards
+    PazaakSideCard([3, 6], CardType.YELLOW_SPECIAL),  # TODO(th3w1zard1): add more yellow cards
 ]
 
 MAX_HAND_VALUE: Literal[20] = 20
@@ -167,7 +167,7 @@ def ai_strategy(
     min_value_diff = float("inf")
 
     for side_card in ai_side_hand:
-        if side_card.card_type == CardType.YELLOW:
+        if side_card.card_type == CardType.YELLOW_SPECIAL:
             simulated_hand = apply_yellow_card_effect(ai_hand, side_card)
             simulated_value = calculate_hand_value(simulated_hand)
             value_diff = MAX_HAND_VALUE - simulated_value
@@ -192,7 +192,7 @@ def ai_strategy(
         side_card, new_value = best_choice
         if new_value == MAX_HAND_VALUE or (ai_value < player_value and new_value > ai_value):
             ai_side_hand.remove(side_card)
-            if side_card.card_type == CardType.YELLOW:
+            if side_card.card_type == CardType.YELLOW_SPECIAL:
                 ai_hand[:] = apply_yellow_card_effect(ai_hand, side_card)  # Apply yellow effect
             else:
                 ai_hand.append(side_card)
@@ -245,7 +245,7 @@ def play_pazaak():
                         side_card_index = int(input("Choose a side card to use (1-5): ")) - 1
                         if 0 <= side_card_index < len(player_active_side_hand):
                             chosen_card = player_active_side_hand.pop(side_card_index)
-                            if chosen_card.card_type == CardType.YELLOW:
+                            if chosen_card.card_type == CardType.YELLOW_SPECIAL:
                                 player_hand = apply_yellow_card_effect(player_hand, chosen_card)
                             else:
                                 player_hand.append(chosen_card)

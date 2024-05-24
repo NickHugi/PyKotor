@@ -208,3 +208,6 @@ class ERFResource:
 
     def __hash__(self):
         return hash((self.resref, self.restype, self.data))
+
+    def identifier(self) -> ResourceIdentifier:
+        return ResourceIdentifier(str(self.resref), self.restype)
