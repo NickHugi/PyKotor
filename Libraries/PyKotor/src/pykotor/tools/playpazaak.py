@@ -191,10 +191,7 @@ def play_pazaak():
                 if is_bust(player_hand):
                     print("Player busts! AI wins!")
                     return
-                if len(player_hand) == 9:
-                    print("Player fills all 9 card slots! Player wins!")
-                    return
-                action = input("Do you want to stand, or use a side card? (h/s/u): ").lower()
+                action = input("Do you want to stand, or use a side card? (s/u): ").lower()
                 if action == "s":
                     player_stands = True
                     break
