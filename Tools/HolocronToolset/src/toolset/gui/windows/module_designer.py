@@ -1761,7 +1761,7 @@ class ModuleDesignerControls3d:
 
             # Move camera based on key inputs
             if movement_keys["up"] and not movement_keys["down"]:
-                scene.camera.z += -move_units_delta
+                scene.camera.z += move_units_delta
             elif movement_keys["down"] and not movement_keys["up"]:
                 scene.camera.z -= move_units_delta
             if movement_keys["left"] and not movement_keys["right"]:
