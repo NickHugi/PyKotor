@@ -59,7 +59,7 @@ class UTDEditor(Editor):
             6. Set up menus, signals and installation.
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported: list[ResourceType] = [ResourceType.UTD]
+        supported: list[ResourceType] = [ResourceType.UTD, ResourceType.BTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()

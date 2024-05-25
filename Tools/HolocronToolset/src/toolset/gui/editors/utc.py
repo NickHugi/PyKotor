@@ -69,7 +69,7 @@ class UTCEditor(Editor):
             - Updates 3D preview
             - Creates new empty creature.
         """
-        supported: list[ResourceType] = [ResourceType.UTC]
+        supported: list[ResourceType] = [ResourceType.UTC, ResourceType.BTC, ResourceType.BIC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainWindow)
 
         self.settings: UTCSettings = UTCSettings()

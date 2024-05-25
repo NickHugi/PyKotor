@@ -149,6 +149,7 @@ class Installation:
 
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
+        self._saves: dict[Path, dict[Path, list[FileResource]]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
         self._rims: dict[str, list[FileResource]] = {}
 
@@ -574,22 +575,16 @@ class Installation:
         """Reloads the data in the 'saves' folder linked to the Installation."""
         self._saves = {}
         for save_location in self.save_locations():
-            print(f"Found an active save location at '{save_location}'")
+            self._log.debug(f"Found an active save location at '{save_location}'")
             self._saves[save_location] = {}
             for this_save_path in save_location.iterdir():
                 if not this_save_path.safe_isdir():
                     continue
-                print(f"Discovered a save bundle '{this_save_path.name}'")
+                self._log.debug(f"Discovered a save bundle '{this_save_path.name}'")
                 self._saves[save_location][this_save_path] = []
                 for file in this_save_path.iterdir():
                     res_ident = ResourceIdentifier.from_path(file)
-                    file_res = FileResource(
-                        res_ident.resname,
-                        res_ident.restype,
-                        file.stat().st_size,
-                        0,
-                        file
-                    )
+                    file_res = FileResource(res_ident.resname, res_ident.restype, file.stat().st_size, 0, file)
                     self._saves[save_location][this_save_path].append(file_res)
 
     def load_override(self, directory: str | None = None):

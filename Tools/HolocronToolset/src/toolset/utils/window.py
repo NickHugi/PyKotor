@@ -9,6 +9,7 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
+from utility.system.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -16,8 +17,8 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QDialog, QMainWindow
 
-    from gui.editor import Editor
     from toolset.data.installation import HTInstallation
+    from toolset.gui.editor import Editor
 
 WINDOWS: list[QWidget] = []
 
@@ -33,6 +34,9 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool=True):
         *args,
         **kwargs,
     ):
+        from toolset.gui.editor import Editor
+        if isinstance(window, Editor) and window._filepath is not None:  # noqa: SLF001
+            addRecentFile(window._filepath)  # noqa: SLF001
         if window in WINDOWS:
             WINDOWS.remove(window)
         # Call the original closeEvent
@@ -48,6 +52,15 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool=True):
     WINDOWS.append(window)
     if show:
         window.show()
+
+def addRecentFile(file: Path):
+    """Update the list of recent files."""
+    settings = GlobalSettings()
+    recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.safe_isfile()]
+    recentFiles.append(str(file))
+    if len(recentFiles) > 15:
+        recentFiles.pop()
+    settings.recentFiles = recentFiles
 
 
 def openResourceEditor(
@@ -152,7 +165,7 @@ def openResourceEditor(
         else:
             editor = DLGEditor(None, installation)
 
-    if restype.target_type() in {ResourceType.UTC, ResourceType.BTC}:
+    if restype.target_type() in {ResourceType.UTC, ResourceType.BTC, ResourceType.BIC}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:

@@ -70,7 +70,6 @@ class MiscWidget(QWidget):
             self.installEventFilters(widget, event_filter, include_types)
 
     def setupValues(self):
-        self.ui.alsoCheckReleaseVersion.setChecked(self.settings.alsoCheckReleaseVersion)
         self.ui.useBetaChannel.setChecked(self.settings.useBetaChannel)
         self.ui.profileToolset.setChecked(self.settings.profileToolset)
         self.ui.attemptKeepOldGFFFields.setChecked(self.settings.attemptKeepOldGFFFields)
@@ -87,7 +86,6 @@ class MiscWidget(QWidget):
         self.ui.nssCompEdit.setText(self.settings.nssCompilerPath)
 
     def save(self):
-        self.settings.alsoCheckReleaseVersion = self.ui.alsoCheckReleaseVersion.isChecked()
         self.settings.useBetaChannel = self.ui.useBetaChannel.isChecked()
         self.settings.profileToolset = self.ui.profileToolset.isChecked()
         self.settings.attemptKeepOldGFFFields = self.ui.attemptKeepOldGFFFields.isChecked()

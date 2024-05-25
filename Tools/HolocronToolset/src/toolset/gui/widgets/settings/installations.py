@@ -272,6 +272,10 @@ class GlobalSettings(Settings):
         self.firstTime = False
 
     # region Strings
+    recentFiles = Settings.addSetting(
+        "recentFiles",
+        [],
+    )
     extractPath = Settings.addSetting(
         "extractPath",
         "",
@@ -309,10 +313,6 @@ class GlobalSettings(Settings):
     )
     useBetaChannel = Settings.addSetting(
         "useBetaChannel",
-        True,
-    )
-    alsoCheckReleaseVersion = Settings.addSetting(
-        "alsoCheckReleaseVersion",
         True,
     )
     firstTime = Settings.addSetting(

@@ -45,7 +45,7 @@ class UTEEditor(Editor):
             - Initialize UTE object
             - Call new() to start with a blank trigger.
         """
-        supported: list[ResourceType] = [ResourceType.UTE]
+        supported: list[ResourceType] = [ResourceType.UTE, ResourceType.BTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         if qtpy.API_NAME == "PySide2":

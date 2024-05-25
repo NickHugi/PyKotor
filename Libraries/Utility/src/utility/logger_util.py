@@ -472,6 +472,7 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
         return cls._instance
 
     def __init__(self, use_level: logging._Level = logging.DEBUG):
+        self.listener: QueueListener
         cls = self.__class__
         if not cls._logger:
             cls._logger = self._setup_logger(use_level)
@@ -516,30 +517,30 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
             exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
             # Handler for everything (DEBUG and above)
-            everything_handler = DirectoryRotatingFileHandler(log_dir, everything_log_file, maxBytes=20*1024*1024, backupCount=10000, encoding="utf8")
+            everything_handler = RotatingFileHandler(str(log_dir / everything_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
             everything_handler.setLevel(logging.DEBUG)
             everything_handler.setFormatter(default_formatter)
             logger.addHandler(everything_handler)
 
             # Handler for INFO and WARNING
-            info_warning_handler = DirectoryRotatingFileHandler(log_dir, info_warning_log_file, maxBytes=20*1024*1024, backupCount=10000, encoding="utf8")
+            info_warning_handler = RotatingFileHandler(str(log_dir / info_warning_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
             info_warning_handler.setLevel(logging.INFO)
             info_warning_handler.setFormatter(default_formatter)
             info_warning_handler.addFilter(LogLevelFilter(logging.ERROR, reject=True))
             logger.addHandler(info_warning_handler)
 
             # Handler for ERROR and CRITICAL
-            error_critical_handler = DirectoryRotatingFileHandler(log_dir, error_critical_log_file, maxBytes=20*1024*1024, backupCount=10000, encoding="utf8")
+            error_critical_handler = RotatingFileHandler(str(log_dir / error_critical_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
             error_critical_handler.setLevel(logging.ERROR)
             error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
             error_critical_handler.setFormatter(exception_formatter)
             logger.addHandler(error_critical_handler)
 
-            # Handler for EXCEPTIONS ONLY (using CustomExceptionFormatter)
-            exception_handler = DirectoryRotatingFileHandler(log_dir, exception_log_file, maxBytes=20*1024*1024, backupCount=10000, encoding="utf8")
+            # Handler for EXCEPTIONS (using CustomExceptionFormatter)
+            exception_handler = RotatingFileHandler(str(log_dir / exception_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
             exception_handler.setLevel(logging.ERROR)
             exception_handler.setFormatter(exception_formatter)
-            exception_handler.addFilter(LogLevelFilter(logging.ERROR))  # Only log ERROR and CRITICAL levels
+            exception_handler.addFilter(LogLevelFilter(logging.ERROR))
             logger.addHandler(exception_handler)
 
             # Adding handlers to the queue listener

@@ -43,7 +43,7 @@ class UTTEditor(Editor):
             - Load data from the provided installation if given
             - Initialize an empty UTT object.
         """
-        supported = [ResourceType.UTT]
+        supported = [ResourceType.UTT, ResourceType.BTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         if qtpy.API_NAME == "PySide2":

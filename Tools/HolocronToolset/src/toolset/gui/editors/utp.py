@@ -60,7 +60,7 @@ class UTPEditor(Editor):
             6. Set up menus, signals and installation
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported = [ResourceType.UTP]
+        supported = [ResourceType.UTP, ResourceType.BTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
