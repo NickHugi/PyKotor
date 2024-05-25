@@ -538,7 +538,7 @@ class DropFrame(ItemContainer, QFrame):
             tree: QTreeView | None = event.source()  # type: ignore[]
             proxyModel: QSortFilterProxyModel = tree.model()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            model: ItemModel | None = proxyModel.sourceModel()  # FIXME(th3w1zard1): needs a .data(role) call
+            model: ItemModel | None = proxyModel.sourceModel()
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 event.accept()

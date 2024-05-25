@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore, QtGui
-from qtpy.QtCore import QMimeData, Qt
-from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView
+from qtpy.QtCore import QMimeData, QRegExp, Qt
+from qtpy.QtGui import QRegExpValidator, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QFileDialog, QInputDialog, QLineEdit, QMenu, QMessageBox, QShortcut, QTableView
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -18,6 +18,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
 from toolset.gui.dialogs.save.generic_file_saver import FileSaveHandler
 from toolset.gui.editor import Editor
+from toolset.gui.helpers.sort_proxy_filter import RobustSortFilterProxyModel
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception
@@ -40,6 +41,18 @@ def human_readable_size(byte_size: float) -> str:
             return f"{round(byte_size, 2)} {unit}"
         byte_size /= 1024
     return str(byte_size)
+
+
+class ERFSortFilterProxyModel(RobustSortFilterProxyModel):
+    def get_sort_value(self, index: QtCore.QModelIndex) -> int:
+        """Return the sort value based on the column."""
+        srcModel = self.sourceModel()
+        assert isinstance(srcModel, QStandardItemModel)
+        if index.column() == 2:  # Size column display text not suitable for sort
+            resource: ERFResource = srcModel.item(index.row(), 0).data()
+            return len(resource.data)
+        return self.sourceModel().data(index)
+
 
 class ERFEditor(Editor):
     def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
@@ -83,14 +96,45 @@ class ERFEditor(Editor):
         self._has_changes = False
 
         self.model = QStandardItemModel(self)
-        self.ui.tableView.setModel(self.model)
+        #self.ui.tableView.setModel(self.model)  # Old logic, before proxy model was added.
+
+        self._proxy_model = ERFSortFilterProxyModel(self)
+        self._proxy_model.setSourceModel(self.model)
+        self.ui.tableView.setModel(self._proxy_model)
+
+        self.ui.tableView.setSortingEnabled(False)
+        self.ui.tableView.horizontalHeader().setSectionsClickable(True)
+        self.ui.tableView.horizontalHeader().setSortIndicatorShown(True)
+        self.ui.tableView.horizontalHeader().sectionClicked.connect(self.handleHeaderClick)
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
+
+        # Ensure no sorting is applied initially
+        self._proxy_model.setSortRole(QtCore.Qt.InitialSortOrderRole)
+        self.ui.tableView.horizontalHeader().setSortIndicator(-1, QtCore.Qt.AscendingOrder)
 
         # Disable saving file into module
         self._saveFilter = self._saveFilter.replace(f";;Save into module ({self.CAPSULE_FILTER})", "")
         self._openFilter = self._openFilter.replace(f";;Load from module ({self.CAPSULE_FILTER})", "")
 
         self.new()
+
+    def handleHeaderClick(self, column: int):
+        # Enable sorting when a column is clicked
+        if not self.ui.tableView.isSortingEnabled():
+            self.ui.tableView.setSortingEnabled(True)
+
+        self._proxy_model.toggle_sort(column)
+        self.updateSortIndicator(column)
+
+    def updateSortIndicator(self, column: int):
+        sort_state = self._proxy_model._sort_states.get(column, 0)
+        header = self.ui.tableView.horizontalHeader()
+        if sort_state == 0:
+            header.setSortIndicator(-1, QtCore.Qt.AscendingOrder)
+        elif sort_state == 1:
+            header.setSortIndicator(column, QtCore.Qt.AscendingOrder)
+        elif sort_state == 2:
+            header.setSortIndicator(column, QtCore.Qt.DescendingOrder)
 
     def _setupSignals(self):
         """Setup signal connections for UI elements.
@@ -115,6 +159,10 @@ class ERFEditor(Editor):
         self.ui.tableView.doubleClicked.connect(self.openSelected)
 
         QShortcut("Del", self).activated.connect(self.removeSelected)
+
+        # Custom context menu for table view
+        self.ui.tableView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.tableView.customContextMenuRequested.connect(self.openContextMenu)
 
     def promptConfirm(self) -> bool:
         result = QMessageBox.question(
@@ -205,8 +253,9 @@ class ERFEditor(Editor):
 
         if self._restype is ResourceType.RIM:
             rim = RIM()
-            for i in range(self.model.rowCount()):
-                item = self.model.item(i, 0)
+            for i in range(self._proxy_model.rowCount()):
+                source_index = self._proxy_model.mapToSource(self._proxy_model.index(i, 0))
+                item = self.model.itemFromIndex(source_index)
                 resource = item.data()
                 rim.set_data(str(resource.resref), resource.restype, resource.data)
             write_rim(rim, data)
@@ -215,15 +264,16 @@ class ERFEditor(Editor):
             erf = ERF(ERFType.from_extension(self._restype.extension))
             if self._restype is ResourceType.SAV:
                 erf.is_save_erf = True
-            for i in range(self.model.rowCount()):
-                item = self.model.item(i, 0)
+            for i in range(self._proxy_model.rowCount()):
+                source_index = self._proxy_model.mapToSource(self._proxy_model.index(i, 0))
+                item = self.model.itemFromIndex(source_index)
                 resource = item.data()
                 erf.set_data(str(resource.resref), resource.restype, resource.data)
             write_erf(erf, data)
         else:
             raise ValueError(f"Invalid restype for ERFEditor: {self._restype!r}")
 
-        return data, b""
+        return bytes(data), b""
 
     def new(self):
         if self._has_changes and not self.promptConfirm():
@@ -273,6 +323,47 @@ class ERFEditor(Editor):
             with self._filepath.open("wb") as file:
                 file.write(data[0])
 
+    def openContextMenu(self, position):
+        selectedResources = self.getSelectedResources()
+        if not selectedResources:
+            RobustRootLogger.info("ERFEditor: Nothing selected to build context menu.")
+            return
+
+        mainMenu = QMenu(self)
+
+        extractAction = QAction("Extract to...", self)
+        extractAction.triggered.connect(self.extractSelected)
+        mainMenu.addAction(extractAction)
+
+        renameAction = QAction("Rename", self)
+        renameAction.triggered.connect(self.renameSelected)
+        mainMenu.addAction(renameAction)
+        if len(selectedResources) != 1:
+            renameAction.setEnabled(False)
+
+        if self._filepath is not None:
+            mainMenu.addSeparator()
+            if all(resource.restype.target_type().contents == "gff" for resource in selectedResources):
+                mainMenu.addAction("Open with GFF Editor").triggered.connect(
+                    lambda *args, fp=self._filepath, **kwargs: self.openResources(fp, selectedResources, self._installation, gff_specialized=False))
+                if self._installation is not None:
+                    mainMenu.addAction("Open with Specialized Editor").triggered.connect(
+                        lambda *args, fp=self._filepath, **kwargs: self.openResources(fp, selectedResources, self._installation, gff_specialized=True))
+                    mainMenu.addAction("Open with Default Editor").triggered.connect(
+                        lambda *args, fp=self._filepath, **kwargs: self.openResources(fp, selectedResources, self._installation, gff_specialized=None))
+
+            elif self._installation is not None:
+                mainMenu.addAction("Open with Editor").triggered.connect(
+                    lambda *args, fp=self._filepath, **kwargs: self.openResources(fp, selectedResources, self._installation, gff_specialized=True))
+
+        mainMenu.exec_(self.ui.tableView.viewport().mapToGlobal(position))
+
+    def getSelectedResources(self) -> list[ERFResource]:
+        selected_rows = self.ui.tableView.selectionModel().selectedRows()
+        #selectedResources: list[ERFResource] = [self.model.itemFromIndex(rowItem).data() for rowItem in selected_rows]
+        selectedResources: list[ERFResource] = [self.model.itemFromIndex(self._proxy_model.mapToSource(rowItem)).data() for rowItem in selected_rows]
+        return selectedResources
+
     def extractSelected(self):
         """Extract selected resources to a folder.
 
@@ -285,14 +376,51 @@ class ERFEditor(Editor):
             - Extract the resource data from the model
             - Write the resource data to a file in the target folder.
         """
-        selected_rows = self.ui.tableView.selectionModel().selectedRows()
-        if not selected_rows:
-            RobustRootLogger.info("ERFEditor: Nothing selected to save.")
-        selectedResources: list[ERFResource] = [self.model.itemFromIndex(rowItem).data() for rowItem in selected_rows]
+        selectedResources = self.getSelectedResources()
         if not selectedResources:
-            RobustRootLogger.info("ERFEditor: No selected rows have ERFResource data, ergo nothing to save.")
+            RobustRootLogger.info("ERFEditor: Nothing selected to save.")
         saveHandler = FileSaveHandler(selectedResources, parent=self)
         saveHandler.save_files()
+
+    def renameSelected(self):
+        indexes = self.ui.tableView.selectedIndexes()
+        if not indexes:
+            return
+
+        index = indexes[0]
+        source_index = self._proxy_model.mapToSource(index)
+        item = self.model.itemFromIndex(source_index)
+        resource: ERFResource = item.data()
+
+        erfrim_filename = "ERF/RIM" if self._resname is None or self._restype is None else f"{self._resname}.{self._restype.extension}"
+        new_resname, ok = self.getValidatedResRef(erfrim_filename, resource)
+        if ok:
+            resource.resref = ResRef(new_resname)
+            item.setText(new_resname)
+            self._has_changes = True
+
+    def getValidatedResRef(self, erfrim_name: str, resource: ERFResource) -> tuple[str, bool]:
+        dialog = QInputDialog(self)
+        dialog.setWindowTitle(f"Rename {erfrim_name} Resource ResRef")
+        dialog.setLabelText(f"Enter new ResRef ({resource.resref}):")
+        dialog.setTextValue(str(resource.resref))
+        dialog.setInputMode(QInputDialog.TextInput)
+
+        inputField = dialog.findChild(QLineEdit)
+        if inputField is None:
+            RobustRootLogger.warning("inputField could not be found in parent class QLineEdit")
+            return "", False
+        inputField.setValidator(self.resRefValidator())
+
+        while dialog.exec_() == QInputDialog.Accepted:
+            new_resname = dialog.textValue()
+            if ResRef.is_valid(new_resname):
+                return new_resname, True
+            QMessageBox.warning(self, "Invalid ResRef", f"The ResRef you entered ({new_resname}) is invalid. Please try again.")
+        return "", False
+
+    def resRefValidator(self) -> QRegExpValidator:
+        return QRegExpValidator(QRegExp(r"^[a-zA-Z0-9_]*$"))
 
     def removeSelected(self):
         """Removes selected rows from table view.
@@ -304,7 +432,8 @@ class ERFEditor(Editor):
         """
         self._has_changes = True
         for index in reversed([index for index in self.ui.tableView.selectedIndexes() if not index.column()]):
-            item: QStandardItem | None = self.model.itemFromIndex(index)
+            source_index = self._proxy_model.mapToSource(index)
+            item: QStandardItem | None = self.model.itemFromIndex(source_index)
             if item is None:
                 RobustRootLogger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
                 continue
@@ -354,7 +483,11 @@ class ERFEditor(Editor):
         filepaths: list[str] = QFileDialog.getOpenFileNames(self, "Load files into module")[:-1][0]
         self.addResources(filepaths)
 
-    def openSelected(self):
+    def openSelected(
+        self,
+        *,
+        gff_specialized: bool | None = None,
+    ):
         """Opens the selected resource in the editor.
 
         Processing Logic:
@@ -365,40 +498,66 @@ class ERFEditor(Editor):
             - Checks resource type and skips nested types
             - Opens the resource in an editor window.
         """
+        erfResources: list[ERFResource] = [self.model.itemFromIndex(self._proxy_model.mapToSource(index)).data() for index in self.ui.tableView.selectionModel().selectedRows(0)]
+        if not erfResources:
+            return
         if self._filepath is None:
             QMessageBox(
                 QMessageBox.Icon.Critical,
-                "Cannot edit resource. Filepath invalid.",
-                "Save the ERF and try again.",
+                f"Cannot edit resource {erfResources[0].identifier()}. Filepath not set.",
+                "This ERF/RIM must be saved to disk first, do so and try again.",
                 QMessageBox.StandardButton.Ok,
                 self,
                 flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint
             ).exec_()
             return
 
-        for index in self.ui.tableView.selectionModel().selectedRows(0):
-            item = self.model.itemFromIndex(index)
-            resource: ERFResource = item.data()
+        self.openResources(
+            self._filepath,
+            erfResources,
+            self._installation,
+            self.savedFile,
+            gff_specialized=gff_specialized,
+        )
 
-            #  if resource.restype.name in ERFType.__members__:  check if in nested erf/rim if needed
-            new_filepath = self._filepath
+    @staticmethod
+    def openResources(
+        filepath: Path,
+        resources: list[ERFResource],
+        installation: HTInstallation | None = None,
+        savedFileSignal: QtCore.pyqtBoundSignal | None = None,
+        *,
+        gff_specialized: bool | None = None,
+    ):
+        for resource in resources:
+            new_filepath = filepath
             if resource.restype in (ResourceType.ERF, ResourceType.SAV, ResourceType.RIM, ResourceType.MOD):
                 RobustRootLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
-            tempPath, editor = openResourceEditor(
+            _tempPath, editor = openResourceEditor(
                 new_filepath,
                 str(resource.resref),
                 resource.restype,
                 resource.data,
-                self._installation,
-                self,
+                installation,
+                gff_specialized=gff_specialized
             )
-            if isinstance(editor, Editor):
-                editor.savedFile.connect(self.resourceSaved)
+            if savedFileSignal is not None and isinstance(editor, Editor):
+                editor.savedFile.connect(savedFileSignal)
 
     def refresh(self):
         if self._has_changes and not self.promptConfirm():
+            return
+        if self._filepath is None:
+            QMessageBox(
+                QMessageBox.Icon.Critical,
+                "Nothing to refresh.",
+                "This ERFEditor was never loaded from a file, so there's nothing to refresh.",
+                QMessageBox.StandardButton.Ok,
+                self,
+                flags=Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint
+            ).exec_()
             return
         self._has_changes = False
         data: bytes = BinaryReader.load_file(self._filepath)
@@ -445,7 +604,8 @@ class ERFEditor(Editor):
             return
 
         for index in self.ui.tableView.selectionModel().selectedRows(0):
-            item: ERFResource = self.model.itemFromIndex(index).data()
+            source_index = self._proxy_model.mapToSource(index)
+            item: ERFResource = self.model.itemFromIndex(source_index).data()
             if item.resref != resname:
                 continue
             if item.restype != restype:
@@ -564,7 +724,7 @@ class ERFEditorTable(QTableView):
 
         urls: list[QtCore.QUrl] = []
         for index in (index for index in self.selectedIndexes() if not index.column()):
-            resource: ERFResource = self.model().itemData(index)[QtCore.Qt.ItemDataRole.UserRole + 1]
+            resource: ERFResource = self.model().itemData(self._proxy_model.mapToSource(index))[QtCore.Qt.ItemDataRole.UserRole + 1]
             file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath = Path(tempDir, f"{file_stem}.{file_ext}")
             with filepath.open("wb") as file:

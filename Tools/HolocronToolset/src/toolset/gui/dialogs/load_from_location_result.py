@@ -742,7 +742,7 @@ class ResourceItems(FileItems):
                 open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
                     lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
                 open_with_menu.addAction("Open with Default Editor").triggered.connect(
-                    lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=None))
         elif installation is not None:
             menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
 
