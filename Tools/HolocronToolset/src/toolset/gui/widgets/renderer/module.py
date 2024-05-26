@@ -20,7 +20,7 @@ from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from glm import vec3
-    from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
@@ -351,6 +351,12 @@ class ModuleRenderer(QOpenGLWidget):
 
     # region Events
 
+    def focusOutEvent(self, e: QFocusEvent):
+        self._mouseDown.clear()  # Clears the set when focus is lost
+        self._keysDown.clear()  # Clears the set when focus is lost
+        super().focusOutEvent(e)  # Ensures that the default handler is still executed
+        RobustRootLogger().debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+
     def wheelEvent(self, e: QWheelEvent):
         super().wheelEvent(e)
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
@@ -384,27 +390,35 @@ class ModuleRenderer(QOpenGLWidget):
     def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)
         self._mousePressTime = datetime.now(tz=timezone.utc).astimezone()
-        self._mouseDown.add(e.button())
+        button = e.button()
+        self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
+        RobustRootLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
-        self._mouseDown.discard(e.button())
+        button = e.button()
+        self._mouseDown.discard(button)
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+        RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyPressEvent(e)
-        self._keysDown.add(e.key())
+        key = e.key()
+        self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
+        RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyReleaseEvent(e)
-        self._keysDown.discard(e.key())
+        key = e.key()
+        self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
+        RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
 
     # endregion

@@ -6,10 +6,9 @@ from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
 from qtpy import QtCore
-from qtpy.QtCore import QPointF, QRect, QRectF, QTimer, Qt
+from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
 from qtpy.QtGui import (
     QColor,
-    QGuiApplication,
     QImage,
     QPainter,
     QPainterPath,
@@ -33,12 +32,13 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
-from toolset.utils.misc import MODIFIER_KEYS, clamp
+from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import (
+        QFocusEvent,
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
@@ -836,7 +836,6 @@ class WalkmeshRenderer(QWidget):
             - Finds instances and geometry points under mouse.
         """
         super().mouseMoveEvent(e)
-        self._contextMenuRightMouseButtonFix(e, "mouseMoveEvent")
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
         self._mousePrev = coords
@@ -862,7 +861,7 @@ class WalkmeshRenderer(QWidget):
                     for point in instance.geometry:
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
-                            RobustRootLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
+                            #RobustRootLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:
@@ -870,65 +869,40 @@ class WalkmeshRenderer(QWidget):
                 if point.distance(world) <= self._pathNodeSize:
                     self._pathNodesUnderMouse.append(point)
 
+    def focusOutEvent(self, e: QFocusEvent):
+        self._mouseDown.clear()  # Clears the set when focus is lost
+        self._keysDown.clear()  # Clears the set when focus is lost
+        super().focusOutEvent(e)  # Ensures that the default handler is still executed
+        RobustRootLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
+
     def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)
         button = e.button()
-        RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
         self._mouseDown.add(button)
-        self._contextMenuRightMouseButtonFix(e, "mousePressEvent")
-        RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-
-    def _contextMenuRightMouseButtonFix(self, e: QMouseEvent, parentFuncName: str):
-        current_buttons = e.buttons()
-        right_button_value = Qt.RightButton
-
-        if isinstance(current_buttons, Qt.MouseButton):
-            # PyQt6: current_buttons is a MouseButton enum, use .value to get the int representation
-            rightbitcheck = current_buttons.value & right_button_value.value
-        else:
-            # PyQt5: current_buttons is already an int
-            rightbitcheck = current_buttons & right_button_value
-        if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
-            RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): Right Button")
-            self._mouseDown.discard(Qt.RightButton)
+        RobustRootLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
         button = e.button()
-        RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
         self._mouseDown.discard(button)
-        self._contextMenuRightMouseButtonFix(e, "mouseReleaseEvent")
-        RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
-
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+        RobustRootLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent):
-        self._keysDown.add(e.key())
-        self._modifierKeyFix(e, "keyPressEvent")
+        key = e.key()
+        self._keysDown.add(key)
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
+        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
 
     def keyReleaseEvent(self, e: QKeyEvent):
-        self._keysDown.discard(e.key())
-        self._modifierKeyFix(e, "keyReleaseEvent")
+        key = e.key()
+        self._keysDown.discard(key)
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
-
-    def _modifierKeyFix(self, e: QKeyEvent, parentFuncName: str):
-        current_modifiers = QGuiApplication.queryKeyboardModifiers()
-
-        for key in MODIFIER_KEYS:
-            if isinstance(current_modifiers, Qt.KeyboardModifier):
-                # PyQt6: current_modifiers is a KeyboardModifier enum, use .value to get the int representation
-                bitcheck = current_modifiers.value & key.value
-            else:
-                # PyQt5: current_modifiers is already an int
-                bitcheck = current_modifiers & key
-            if bitcheck == 0 and key in self._keysDown:
-                RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): {key} Key")
-                self._keysDown.discard(key)
+        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
 
     # endregion

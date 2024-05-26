@@ -5,7 +5,7 @@ import math
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import QTimer, Qt
-from qtpy.QtGui import QGuiApplication
+from qtpy.QtGui import QFocusEvent, QGuiApplication
 from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2
@@ -16,6 +16,7 @@ from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from glm import vec3
@@ -257,6 +258,12 @@ class ModelRenderer(QOpenGLWidget):
             scene.camera.distance = model.radius(scene) + 2
 
     # region Events
+    def focusOutEvent(self, e: QFocusEvent):
+        self._mouseDown.clear()  # Clears the set when focus is lost
+        self._keysDown.clear()  # Clears the set when focus is lost
+        super().focusOutEvent(e)  # Ensures that the default handler is still executed
+        RobustRootLogger().debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
@@ -308,40 +315,24 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.rotate(0, -math.pi / 4)
 
         if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z += (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.z += (ModuleDesignerSettings().moveCameraSensitivity3d / 200)
         if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 200)
         if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.x += (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.x += (ModuleDesignerSettings().moveCameraSensitivity3d / 200)
         if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.x -= (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.x -= (ModuleDesignerSettings().moveCameraSensitivity3d / 200)
         if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y -= (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.y -= (ModuleDesignerSettings().moveCameraSensitivity3d / 200)
         if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y += (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.y += (ModuleDesignerSettings().moveCameraSensitivity3d / 200)
 
         if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 100)
+            self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 100)
+            self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         self._keysDown.discard(e.key())
-
-    def _updateKeyStates(self, e: QKeyEvent):
-        """Fixes stuck keys in the set. Not tested."""
-        pressed_keys = {
-            key
-            for key in range(Qt.Key_Escape, Qt.Key_MediaLast + 1)
-            if QGuiApplication.queryKeyboardModifiers() & key
-        }
-        # Update _keysDown set
-        for key in list(self._keysDown):
-            if key not in pressed_keys:
-                self._keysDown.discard(key)
-
-        for key in pressed_keys:
-            if key not in self._keysDown:
-                self._keysDown.add(key)
 
     # endregion
