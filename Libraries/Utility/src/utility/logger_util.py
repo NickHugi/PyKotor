@@ -562,40 +562,40 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
         return self._logger
 
     @classmethod
-    def log(cls, level, msg, *args, **kwargs):
-        cls()._logger.log(level, msg, *args, **kwargs)  # noqa: SLF001
+    def log(cls, level, msg: str, *args, **kwargs):
+        cls()._logger.log(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def debug(cls, msg, *args, **kwargs):
-        cls()._logger.debug(msg, *args, **kwargs)  # noqa: SLF001
+    def debug(cls, msg: str, *args, **kwargs):
+        cls()._logger.debug(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def info(cls, msg, *args, **kwargs):
-        cls()._logger.info(msg, *args, **kwargs)  # noqa: SLF001
+    def info(cls, msg: str, *args, **kwargs):
+        cls()._logger.info(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def warning(cls, msg, *args, **kwargs):
-        cls()._logger.warning(msg, *args, **kwargs)  # noqa: SLF001
+    def warning(cls, msg: str, *args, **kwargs):
+        cls()._logger.warning(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def warn(cls, msg, *args, **kwargs):
-        cls()._logger.warning(msg, *args, **kwargs)  # noqa: SLF001
+    def warn(cls, msg: str, *args, **kwargs):
+        cls()._logger.warning(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def error(cls, msg, *args, **kwargs):
-        cls()._logger.error(msg, *args, **kwargs)  # noqa: SLF001
+    def error(cls, msg: str, *args, **kwargs):
+        cls()._logger.error(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def exception(cls, msg, *args, exc_info=True, **kwargs):
-        cls()._logger.exception(msg, *args, exc_info=exc_info, **kwargs)  # noqa: SLF001
+    def exception(cls, msg: str, *args, exc_info=True, **kwargs):
+        cls()._logger.exception(msg.encode(encoding="utf-8", errors="replace").decode(), *args, exc_info=exc_info, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def critical(cls, msg, *args, **kwargs):
-        cls()._logger.critical(msg, *args, **kwargs)  # noqa: SLF001
+    def critical(cls, msg: str, *args, **kwargs):
+        cls()._logger.critical(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def fatal(cls, msg, *args, **kwargs):
-        cls()._logger.fatal(msg, *args, **kwargs)  # noqa: SLF001
+    def fatal(cls, msg: str, *args, **kwargs):
+        cls()._logger.fatal(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
     def setLevel(cls, level):
