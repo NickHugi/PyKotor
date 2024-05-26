@@ -17,6 +17,7 @@ from datetime import datetime
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Set, cast
 
+import qtpy
 import send2trash
 
 from qtpy.QtCore import QUrl, Qt
@@ -25,7 +26,6 @@ from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QCheckBox,
-    QDesktopWidget,
     QFileDialog,
     QHeaderView,
     QInputDialog,
@@ -41,6 +41,11 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    ...
+else:
+    from qtpy.QtWidgets import QDesktopWidget
 
 if __name__ == "__main__":
     with suppress(Exception):
