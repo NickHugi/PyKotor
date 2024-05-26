@@ -1185,13 +1185,35 @@ class Camera:
             - Increments yaw by yaw argument
             - Clips pitch to valid range between 0 and pi radians to avoid gimbal lock
         """
-        self.pitch += pitch
-        self.yaw += yaw
+        # Update pitch and yaw
+        self.pitch = self.pitch + pitch
+        self.yaw = self.yaw + yaw
 
-        if self.pitch > math.pi - 0.001:
-            self.pitch = math.pi - 0.001
-        elif self.pitch < 0.001:
-            self.pitch = 0.001
+        # ensure yaw doesn't get too large.
+        if self.yaw > 2 * math.pi:
+            self.yaw -= 4 * math.pi
+        elif self.yaw < -2 * math.pi:
+            self.yaw += 4 * math.pi
+        # ensure pitch doesn't get too large.
+        if self.pitch > 2 * math.pi:
+            self.pitch -= 4 * math.pi
+        elif self.pitch < -2 * math.pi:
+            self.pitch += 4 * math.pi
+
+        if pitch == 0:
+            return
+
+        # Add a small value to pitch to jump to the other side if near the limits
+        gimbal_lock_range = .05
+        pitch_limit = math.pi / 2
+        if pitch_limit - gimbal_lock_range < self.pitch < pitch_limit + gimbal_lock_range:
+            small_value = .02 if pitch > 0 else -.02
+            self.pitch += small_value
+            #RobustRootLogger.debug(f"Avoiding {'positive' if pitch > 0 else 'negative'} pitch gimbal lock. pitch: {self.pitch}, deltaPitch: {pitch}")
+        #else:
+            #RobustRootLogger.debug(f"New rotation yaw: {self.yaw}, pitch: {self.pitch}, deltaPitch: {pitch}")
+
+
 
     def forward(self, *, ignore_z: bool = True) -> vec3:
         """Calculates the forward vector from the camera's rotation.

@@ -396,7 +396,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-        RobustRootLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustRootLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
@@ -405,7 +405,7 @@ class ModuleRenderer(QOpenGLWidget):
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
-        RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyPressEvent(e)
@@ -413,8 +413,8 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
-        key_name = QKeySequence(key).toString()
-        RobustRootLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
+        #key_name = QKeySequence(key).toString()
+        #RobustRootLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyReleaseEvent(e)
@@ -422,7 +422,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
-        key_name = QKeySequence(key).toString()
-        RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #key_name = QKeySequence(key).toString()
+        #RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

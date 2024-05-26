@@ -1808,7 +1808,10 @@ class ModuleDesignerControlsFreeCam:
         self.editor: ModuleDesigner = editor
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
-        self.renderer._keysDown.clear()
+        self.renderer.keysDown().clear()
+        self.cameraUpdateTimer = QTimer()
+        self.cameraUpdateTimer.timeout.connect(self.update_camera)
+        self.cameraUpdateTimer.start(32)  # ~30 FPS
         self.renderer.setCursor(QtCore.Qt.CursorShape.BlankCursor)
         self.last_mouse_pos = QCursor.pos()
         self.renderer.scene.show_cursor = False
@@ -1898,7 +1901,11 @@ class ModuleDesignerControlsFreeCam:
         if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 1):  # 1 seconds delay
             self.editor.toggleFreeCam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
+            self.cameraUpdateTimer.stop()
 
+    def update_camera(self):
+        keys = self.renderer.keysDown()
+        buttons = self.renderer.mouseDown()
         strength = self.settings.flyCameraSpeedFC / 100
         if self.moveCameraUp.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(0, 0, strength)
