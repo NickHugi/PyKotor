@@ -79,7 +79,7 @@ class ResourceList(MainWindowList):
 
         self.tooltipText: str = ""
         self.flattened: bool = False
-        self.autoResizeEnabled: bool = False
+        self.autoResizeEnabled: bool = True
         self.expandedState: bool = False
         self.original_items: list[tuple[QStandardItem, list[list[QStandardItem]]]] = []
 
@@ -100,6 +100,8 @@ class ResourceList(MainWindowList):
         header.setSectionsClickable(True)
         header.setSortIndicatorShown(True)
         header.setContextMenuPolicy(Qt.CustomContextMenu)  # type: ignore[arg-type]
+        header.setSectionResizeMode(QHeaderView.Interactive)  # type: ignore[arg-type]
+
         header.customContextMenuRequested.connect(self.onHeaderContextMenu)
 
         # Connect expand/collapse signals to autoFitColumns if enabled
@@ -133,17 +135,15 @@ class ResourceList(MainWindowList):
         expand_collapse_action.setChecked(self.expandedState)
         expand_collapse_action.triggered.connect(self.toggleExpandCollapse)
 
-        # Reset Column Widths
-        reset_columns_action = menu.addAction("Reset Column Widths")
-        reset_columns_action.triggered.connect(self.resetColumnWidths)
-
         # Auto-fit Columns
         auto_fit_columns_action = menu.addAction("Auto-fit Columns")
-        auto_fit_columns_action.triggered.connect(self.autoFitColumns)
+        auto_fit_columns_action.setCheckable(True)
+        auto_fit_columns_action.setChecked(self.autoResizeEnabled)
+        auto_fit_columns_action.triggered.connect(self.toggleAutoFitColumns)
 
         # Toggle Row Highlighting
-        toggle_row_highlighting_action = menu.addAction("Toggle Row Highlighting")
-        toggle_row_highlighting_action.triggered.connect(self.toggleRowHighlighting)
+        #toggle_row_highlighting_action = menu.addAction("Toggle Row Highlighting")
+        #toggle_row_highlighting_action.triggered.connect(self.toggleRowHighlighting)
 
         header: QHeaderView = self.ui.resourceTree.header()
         assert header is not None
@@ -152,12 +152,14 @@ class ResourceList(MainWindowList):
     def toggleFlatten(self):
         """Toggle the flatten state of the tree view."""
         if self.flattened:
-            self.onRefreshClicked()
+            #self.onRefreshClicked()  # Use if the unflattenTree ever breaks again.
             # FIXME(th3w1zard1): unflattenTree completely broken, use onRefreshClicked instead.
-            # self.unflattenTree()
+            self.unflattenTree()
         else:
             self.flattenTree()
         self.flattened = not self.flattened
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
 
     def flattenTree(self):
         """Flatten the tree structure into a single level."""
@@ -177,30 +179,44 @@ class ResourceList(MainWindowList):
 
     def unflattenTree(self):
         """Restore the original tree structure."""
+        #resources = [
+        #    getattr(self.modulesModel.item(i, 0), "resource", None)
+        #    for i in range(self.modulesModel.rowCount())
+        #]
+        resources = []
+        for i in range(self.modulesModel.rowCount()):
+            item: QStandardItem = self.modulesModel.item(i, 0)
+            resource: FileResource | None = getattr(item, "resource", None)
+            if resource is not None:
+                resources.append(resource)
         self._clearModulesModel()
-        for category_item, resources in self.original_items:
-            for resource in resources:
-                category_item.appendRow(resource)
-            self.modulesModel.appendRow([category_item, QStandardItem("")])
-
+        self.setResources(resources, clearExisting=False)
     def _clearModulesModel(self):
         self.modulesModel.clear()
         self.modulesModel.setColumnCount(2)
         self.modulesModel.setHorizontalHeaderLabels(["ResRef", "Type"])
 
+    def collapseAll(self):
+        autoResizeEnabled = self.autoResizeEnabled
+        if autoResizeEnabled:  # Temporarily disable autoresize column logic while the collapse happens.
+            self.autoResizeEnabled = False
+        self.ui.resourceTree.collapseAll()
+        self.autoResizeEnabled = autoResizeEnabled
+
+    def expandAll(self):
+        autoResizeEnabled = self.autoResizeEnabled
+        if autoResizeEnabled:  # Temporarily disable autoresize column logic while the expand happens.
+            self.autoResizeEnabled = False
+        self.ui.resourceTree.expandAll()
+        self.autoResizeEnabled = autoResizeEnabled
+
     def toggleExpandCollapse(self):
         """Toggle between expanding and collapsing all items in the tree."""
-        if self.flattened:
+        if self.expandedState:
             self.collapseAll()
         else:
             self.expandAll()
         self.expandedState = not self.expandedState
-
-    def expandAll(self):
-        self.ui.resourceTree.expandAll()
-
-    def collapseAll(self):
-        self.ui.resourceTree.collapseAll()
 
     def resetColumnWidths(self):
         header = self.ui.resourceTree.header()
@@ -218,6 +234,8 @@ class ResourceList(MainWindowList):
         self.autoResizeEnabled = not self.autoResizeEnabled
         if self.autoResizeEnabled:
             self.autoFitColumns()
+        else:
+            self.resetColumnWidths()
 
     def onTreeItemExpanded(self, index):
         if self.autoResizeEnabled:
@@ -313,7 +331,7 @@ class ResourceList(MainWindowList):
         resources: list[FileResource],
         customCategory: str | None = None,
         *,
-        clear_existing: bool = True,
+        clearExisting: bool = True,
     ):
         """Adds and removes FileResources from the modules model.
 
@@ -329,12 +347,14 @@ class ResourceList(MainWindowList):
                 resourceItemMap[resource].resource = resource
             else:
                 self.modulesModel.addResource(resource, customCategory)
-        if clear_existing:
+        if clearExisting:
             for item in allResources:
                 if item.resource in resourceSet:
                     continue
                 item.parent().removeRow(item.row())
         self.modulesModel.removeUnusedCategories()
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
 
     def setSections(
         self,
@@ -343,6 +363,8 @@ class ResourceList(MainWindowList):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
 
     def setResourceSelection(
         self,
@@ -405,7 +427,7 @@ class ResourceList(MainWindowList):
         self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
         header: QHeaderView | None = self.ui.resourceTree.header()
         assert header is not None
-        header.setSectionResizeMode(QHeaderView.Fixed)  # type: ignore[arg-type]
+        header.setSectionResizeMode(QHeaderView.Interactive)  # type: ignore[arg-type]
 
 
 class ResourceProxyModel(QSortFilterProxyModel):
