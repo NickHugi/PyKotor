@@ -598,6 +598,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text if text != "-1" else "")
             textbox.setStyleSheet("QPlainTextEdit {background-color: white;}")
         else:
+            assert self._installation is not None
             text: str = self._installation.talktable().string(locstring.stringref)
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
@@ -753,14 +754,14 @@ class DLGEditor(Editor):
             - Call the deleteNode method to remove the item from the model.
         """
         if self.ui.dialogTree.selectedIndexes():
-            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
+            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]  # type: ignore[arg-type]
             item: QStandardItem | None = self.model.itemFromIndex(index)
             self.deleteNode(item)
 
     def expandToRoot(self, item: QStandardItem):
         parent: QStandardItem | None = item.parent()
         while parent is not None:
-            self.ui.dialogTree.expand(parent.index())
+            self.ui.dialogTree.expand(parent.index())  # type: ignore[arg-type]
             parent = parent.parent()
 
     def jumpToOriginal(self, sourceItem: QStandardItem):

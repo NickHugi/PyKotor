@@ -69,3 +69,5 @@ class Ui_Form(object):
         self.clearButton.setText(QCoreApplication.translate("Form", u"Clear", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

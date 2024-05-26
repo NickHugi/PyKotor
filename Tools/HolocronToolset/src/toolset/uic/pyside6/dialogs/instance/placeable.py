@@ -162,3 +162,5 @@ class Ui_Dialog(object):
         self.colorButton.setText(QCoreApplication.translate("Dialog", u"...", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

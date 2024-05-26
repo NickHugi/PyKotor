@@ -113,3 +113,5 @@ class Ui_Form(object):
         self.pathTslCheckbox.setText("")
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

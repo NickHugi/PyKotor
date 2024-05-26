@@ -147,3 +147,5 @@ class Ui_Form(object):
         self.gffEditorCombo.setItemText(1, _translate("Form", "Specialized Editor"))
         self.label_4.setText(_translate("Form", "NSS Compiler:"))
         self.label_10.setText(_translate("Form", "NCS Decompiler:"))
+
+from toolset.rcc import resources_rc_pyqt5

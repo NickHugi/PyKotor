@@ -38,3 +38,5 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Set 2DA Index"))
+
+from toolset.rcc import resources_rc_pyqt5

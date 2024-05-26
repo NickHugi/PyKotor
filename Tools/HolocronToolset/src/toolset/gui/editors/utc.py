@@ -19,6 +19,7 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_capsule_file
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
@@ -623,7 +624,7 @@ class UTCEditor(Editor):
         inventoryEditor = InventoryEditor(
             self,
             self._installation,
-            Module.find_capsules(self._installation, self._filepath.name),
+            Module.find_capsules(self._installation, self._filepath.name) if is_capsule_file(self._filepath) else [],
             [],
             self._utc.inventory,
             self._utc.equipment,

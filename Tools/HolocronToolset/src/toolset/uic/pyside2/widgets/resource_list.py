@@ -97,3 +97,5 @@ class Ui_Form(object):
         self.reloadButton.setText(QCoreApplication.translate("Form", u"Reload", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

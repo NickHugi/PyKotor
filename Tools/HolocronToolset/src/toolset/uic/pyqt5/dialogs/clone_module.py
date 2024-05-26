@@ -121,3 +121,5 @@ class Ui_Dialog(object):
         self.label_3.setText(_translate("Dialog", "Module filename:"))
         self.createButton.setText(_translate("Dialog", "Create"))
         self.cancelButton.setText(_translate("Dialog", "Cancel"))
+
+from toolset.rcc import resources_rc_pyqt5

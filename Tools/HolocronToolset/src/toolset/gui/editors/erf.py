@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore, QtGui
-from qtpy.QtCore import QMimeData, QRegExp, Qt
-from qtpy.QtGui import QRegExpValidator, QStandardItem, QStandardItemModel
+from qtpy.QtCore import QMimeData, Qt
+from qtpy.QtGui import QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QAction, QFileDialog, QInputDialog, QLineEdit, QMenu, QMessageBox, QShortcut, QTableView
 
 from pykotor.common.misc import ResRef
@@ -33,6 +33,13 @@ if TYPE_CHECKING:
 
     from pykotor.resource.formats.rim import RIMResource
     from toolset.data.installation import HTInstallation
+
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    from qtpy.QtCore import QRegularExpression as QRegExp
+    from qtpy.QtGui import QRegularExpressionValidator as QRegExpValidator
+else:
+    from qtpy.QtCore import QRegExp
+    from qtpy.QtGui import QRegExpValidator
 
 
 def human_readable_size(byte_size: float) -> str:

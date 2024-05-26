@@ -10,7 +10,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QCursor, QIcon, QKeySequence
-from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand, QUndoStack
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -66,6 +66,10 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.module_designer import ModuleDesigner
 
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    from qtpy.QtGui import QUndoStack
+else:
+    from qtpy.QtWidgets import QUndoStack
 
 class MoveCommand(QUndoCommand):
     def __init__(

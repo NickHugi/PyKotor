@@ -54,3 +54,5 @@ class Ui_Form(object):
         self.setKeysEdit.setPlaceholderText(_translate("Form", "none"))
         self.setButton.setText(_translate("Form", "Set"))
         self.clearButton.setText(_translate("Form", "Clear"))
+
+from toolset.rcc import resources_rc_pyqt5

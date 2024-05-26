@@ -49,3 +49,5 @@ class Ui_Dialog(object):
         self.label.setText(_translate("Dialog", "Animation:"))
         self.label_2.setText(_translate("Dialog", "Participant:"))
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+
+from toolset.rcc import resources_rc_pyqt5

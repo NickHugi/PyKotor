@@ -1357,3 +1357,5 @@ class Ui_Form(object):
         self.coloursResetButton.setText(QCoreApplication.translate("Form", u"Reset", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

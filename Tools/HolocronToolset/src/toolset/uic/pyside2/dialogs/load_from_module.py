@@ -44,3 +44,5 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"Select From Module", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

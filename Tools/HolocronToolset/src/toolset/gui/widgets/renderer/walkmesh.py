@@ -9,6 +9,7 @@ from qtpy import QtCore
 from qtpy.QtCore import QPointF, QRect, QRectF, QTimer, Qt
 from qtpy.QtGui import (
     QColor,
+    QGuiApplication,
     QImage,
     QPainter,
     QPainterPath,
@@ -870,50 +871,62 @@ class WalkmeshRenderer(QWidget):
                     self._pathNodesUnderMouse.append(point)
 
     def mousePressEvent(self, e: QMouseEvent):
-        self._contextMenuRightMouseButtonFix(e, "mousePressEvent")
         super().mousePressEvent(e)
         button = e.button()
         RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, adding button '{button}'")
         self._mouseDown.add(button)
+        self._contextMenuRightMouseButtonFix(e, "mousePressEvent")
         RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
     def _contextMenuRightMouseButtonFix(self, e: QMouseEvent, parentFuncName: str):
         current_buttons = e.buttons()
-        rightbitcheck = int(current_buttons & Qt.RightButton)  # Explicitly convert to int for clarity in logs
+        right_button_value = Qt.RightButton
+
+        if isinstance(current_buttons, Qt.MouseButton):
+            # PyQt6: current_buttons is a MouseButton enum, use .value to get the int representation
+            rightbitcheck = current_buttons.value & right_button_value.value
+        else:
+            # PyQt5: current_buttons is already an int
+            rightbitcheck = current_buttons & right_button_value
         if rightbitcheck == 0 and Qt.RightButton in self._mouseDown:
             RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): Right Button")
             self._mouseDown.discard(Qt.RightButton)
 
     def mouseReleaseEvent(self, e: QMouseEvent):
-        self._contextMenuRightMouseButtonFix(e, "mouseReleaseEvent")
         super().mouseReleaseEvent(e)
         button = e.button()
         RobustRootLogger().debug(f"mouseDown: {self._mouseDown}, discarding button '{button}'")
         self._mouseDown.discard(button)
+        self._contextMenuRightMouseButtonFix(e, "mouseReleaseEvent")
         RobustRootLogger().debug(f"mouseDown is now {self._mouseDown}")
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
 
     def keyPressEvent(self, e: QKeyEvent):
-        self._modifierKeyFix(e, "keyPressEvent")
         self._keysDown.add(e.key())
+        self._modifierKeyFix(e, "keyPressEvent")
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent):
-        self._modifierKeyFix(e, "keyReleaseEvent")
         self._keysDown.discard(e.key())
+        self._modifierKeyFix(e, "keyReleaseEvent")
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
 
     def _modifierKeyFix(self, e: QKeyEvent, parentFuncName: str):
-        current_modifiers = e.modifiers()
+        current_modifiers = QGuiApplication.queryKeyboardModifiers()
 
         for key in MODIFIER_KEYS:
-            bitcheck = int(current_modifiers & key)  # Explicitly convert to int for clarity in logs
+            if isinstance(current_modifiers, Qt.KeyboardModifier):
+                # PyQt6: current_modifiers is a KeyboardModifier enum, use .value to get the int representation
+                bitcheck = current_modifiers.value & key.value
+            else:
+                # PyQt5: current_modifiers is already an int
+                bitcheck = current_modifiers & key
             if bitcheck == 0 and key in self._keysDown:
                 RobustRootLogger().debug(f"Inferred Release ({parentFuncName}): {key} Key")
                 self._keysDown.discard(key)

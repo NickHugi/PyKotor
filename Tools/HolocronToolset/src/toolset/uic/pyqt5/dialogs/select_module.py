@@ -47,3 +47,5 @@ class Ui_Dialog(object):
         self.cancelButton.setText(_translate("Dialog", "Cancel"))
         self.browseButton.setText(_translate("Dialog", "Browse"))
         self.openButton.setText(_translate("Dialog", "Open"))
+
+from toolset.rcc import resources_rc_pyqt5

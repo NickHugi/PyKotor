@@ -112,3 +112,5 @@ class Ui_Dialog(object):
         self.resourceFilter.setPlaceholderText(QCoreApplication.translate("Dialog", u"search...", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

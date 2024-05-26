@@ -909,3 +909,5 @@ class Ui_Form(object):
         self.coloursResetButton.setText(_translate("Form", "Reset"))
 from toolset.gui.widgets.edit.color import ColorEdit
 from toolset.gui.widgets.set_bind import SetBindWidget
+
+from toolset.rcc import resources_rc_pyqt5

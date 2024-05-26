@@ -312,3 +312,5 @@ class Ui_Dialog(object):
         self.typeNCSCheck.setText(QCoreApplication.translate("Dialog", u"NCS", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

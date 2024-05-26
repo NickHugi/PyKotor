@@ -93,3 +93,5 @@ class Ui_Dialog(object):
         self.label_2.setText(QCoreApplication.translate("Dialog", u"ResRef:", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

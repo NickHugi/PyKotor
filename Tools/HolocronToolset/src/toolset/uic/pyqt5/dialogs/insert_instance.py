@@ -80,3 +80,5 @@ class Ui_Dialog(object):
         self.createResourceRadio.setText(_translate("Dialog", "Create Resource"))
         self.resourceFilter.setPlaceholderText(_translate("Dialog", "search..."))
         self.resourceList.setSortingEnabled(True)
+
+from toolset.rcc import resources_rc_pyqt5

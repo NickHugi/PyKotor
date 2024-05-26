@@ -178,3 +178,5 @@ class Ui_Dialog(object):
         self.parameterSelectButton.setText(QCoreApplication.translate("Dialog", u"Select", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

@@ -65,11 +65,14 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
             # Post-processing: Fix importing resources_rc
             with ui_target.open("r", encoding="utf-8") as file:
                 filedata = file.read()
-            filedata = re.sub(r"^import resources_rc.*\n?", f"from toolset.rcc import resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
-            filedata = re.sub(r"^from resources_rc.*\n?", f"from toolset.rcc.resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
+            new_filedata = re.sub(r"^import resources_rc.*\n?", f"from toolset.rcc import resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
+            new_filedata = re.sub(r"^from resources_rc.*\n?", f"from toolset.rcc.resources_rc_{qt_version}", new_filedata, flags=re.MULTILINE)
+            if new_filedata == filedata:
+                # If no substitutions were made, append the import statement at the end
+                new_filedata += f"\nfrom toolset.rcc import resources_rc_{qt_version}\n"
             # Write the file out again
             with ui_target.open("w", encoding="utf-8") as file:
-                file.write(filedata)
+                file.write(new_filedata)
 
 
 def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
@@ -110,6 +113,6 @@ if __name__ == "__main__":
         qt_versions_to_run = qt_versions
 
     for qt_version in qt_versions_to_run:
-        compile_ui(qt_version, ignore_timestamp=False)
-        compile_qrc(qt_version, ignore_timestamp=False)
+        compile_ui(qt_version, ignore_timestamp=True)
+        compile_qrc(qt_version, ignore_timestamp=True)
     print("All ui compilations completed")

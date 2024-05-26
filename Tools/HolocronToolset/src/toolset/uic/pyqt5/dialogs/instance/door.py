@@ -175,3 +175,5 @@ class Ui_Dialog(object):
         self.label_7.setText(_translate("Dialog", "Transition Name:"))
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.long_spinbox import LongSpinBox
+
+from toolset.rcc import resources_rc_pyqt5

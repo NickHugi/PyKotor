@@ -135,3 +135,5 @@ class Ui_Dialog(object):
         self.femaleRadio.setText(QCoreApplication.translate("Dialog", u"Female", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

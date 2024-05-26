@@ -222,3 +222,5 @@ class Ui_Dialog(object):
         self.type2DACheck.setText(_translate("Dialog", "2DA"))
         self.typeNSSCheck.setText(_translate("Dialog", "NSS"))
         self.typeNCSCheck.setText(_translate("Dialog", "NCS"))
+
+from toolset.rcc import resources_rc_pyqt5

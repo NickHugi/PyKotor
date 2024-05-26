@@ -121,3 +121,5 @@ class Ui_MainWindow(object):
         self.actionDownloadKits.setText(_translate("MainWindow", "Download Kits"))
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
 from toolset.gui.windows.indoor_builder import IndoorMapRenderer
+
+from toolset.rcc import resources_rc_pyqt5

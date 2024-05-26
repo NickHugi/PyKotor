@@ -114,3 +114,5 @@ class Ui_Dialog(object):
         self.label_4.setText(_translate("Dialog", "Tweak Color:"))
         self.colorButton.setText(_translate("Dialog", "..."))
 from toolset.gui.widgets.long_spinbox import LongSpinBox
+
+from toolset.rcc import resources_rc_pyqt5

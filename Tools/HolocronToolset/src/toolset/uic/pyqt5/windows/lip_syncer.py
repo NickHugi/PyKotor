@@ -57,3 +57,5 @@ class Ui_Dialog(object):
         self.languageSelect.setItemText(0, _translate("Dialog", "English"))
         self.AddAudioButton.setText(_translate("Dialog", "Load MP3s"))
         self.removeAudioButton.setText(_translate("Dialog", "Remove MP3"))
+
+from toolset.rcc import resources_rc_pyqt5

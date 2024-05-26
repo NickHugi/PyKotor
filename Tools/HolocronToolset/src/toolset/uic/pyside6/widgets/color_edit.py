@@ -63,3 +63,5 @@ class Ui_Form(object):
         self.editButton.setText(QCoreApplication.translate("Form", u"Open ColorPicker", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

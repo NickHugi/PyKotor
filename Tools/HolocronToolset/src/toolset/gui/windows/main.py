@@ -147,15 +147,15 @@ class ToolWindow(QMainWindow):
             - Checks for updates on first run.
         """
         super().__init__()
-        self._initUi()
-        self._setupSignals()
-        self.setWindowTitle(f"Holocron Toolset ({qtpy.API_NAME})")
 
         self.active: HTInstallation | None = None
         self.installations: dict[str, HTInstallation] = {}
 
         self.settings: GlobalSettings = GlobalSettings()
         self.log: RobustRootLogger = RobustRootLogger()
+        self._initUi()
+        self._setupSignals()
+        self.setWindowTitle(f"Holocron Toolset ({qtpy.API_NAME})")
 
         # Watchdog
         self.dogObserver: BaseObserver | None = None
@@ -195,7 +195,16 @@ class ToolWindow(QMainWindow):
 
         self.ui.coreWidget.hideSection()
         self.ui.coreWidget.hideReloadButton()
-        self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
+
+        # Standardized resource path format
+        icon_path = ":/images/icons/sith.png"
+
+        # Debugging: Check if the resource path is accessible
+        if not QPixmap(icon_path).isNull():
+            self.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
+            self.setWindowIcon(QIcon(QPixmap(icon_path)))
+        else:
+            print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
 
     def setupModulesTab(self):
@@ -1328,12 +1337,12 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             print("no installation is currently loaded, cannot refresh core list")
             return
-        self.log.debug("Loading core installation resources into UI...")
+        self.log.info("Loading core installation resources into UI...")
         all_core_resources: list[FileResource] = self.active.chitin_resources()
         if self.active.game().is_k1():
             patch_erf_path = self.active.path().joinpath("patch.erf")
             if patch_erf_path.safe_isfile():
-                self.log.debug("Game is K1 and 'patch.erf' found, loading into Core tab...")
+                self.log.info("Game is K1 and 'patch.erf' found, loading into Core tab...")
                 all_core_resources.extend(Capsule(patch_erf_path))
         self.ui.coreWidget.setResources(all_core_resources)
         self.log.debug("Remove unused Core tab categories...")

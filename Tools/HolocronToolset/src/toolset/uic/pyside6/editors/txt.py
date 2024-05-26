@@ -93,3 +93,5 @@ class Ui_MainWindow(object):
         self.menuFormat.setTitle(QCoreApplication.translate("MainWindow", u"View", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

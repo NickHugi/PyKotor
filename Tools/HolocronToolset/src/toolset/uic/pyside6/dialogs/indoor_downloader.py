@@ -43,3 +43,5 @@ class Ui_Dialog(object):
         self.groupBox.setTitle(QCoreApplication.translate("Dialog", u"Available Kits", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

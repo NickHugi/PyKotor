@@ -126,3 +126,5 @@ class Ui_MainWindow(object):
         self.actionCompile.setText(_translate("MainWindow", "Compile"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 from toolset.gui.editors.nss import CodeEditor
+
+from toolset.rcc import resources_rc_pyqt5

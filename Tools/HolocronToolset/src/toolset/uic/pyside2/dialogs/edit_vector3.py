@@ -76,3 +76,5 @@ class Ui_Dialog(object):
         self.label.setText(QCoreApplication.translate("Dialog", u"Position:", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2
