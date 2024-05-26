@@ -11,7 +11,7 @@ import uuid
 from contextlib import suppress
 from functools import lru_cache
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, OrderedDict, Union, cast
 
 from utility.error_handling import format_exception_with_variables
 from utility.logger_util import RobustRootLogger
@@ -42,17 +42,22 @@ def pathlib_to_override(cls: type) -> type:
 
     return class_map.get(cls, cls)
 
-@lru_cache(maxsize=10000)
-def crossplatform_win_splitdrive(path: str) -> tuple[str, str]:
-    match = re.match(_WINDOWS_SPLITDRIVE_RE, path)
-    return (match.group(1)+"\\", path[match.end():]) if match else ("", path)
+@lru_cache(maxsize=20000)
+def cached_normpath(path: os.PathLike | str) -> str:
+    return os.path.normpath(path)
 
-@lru_cache(maxsize=10000)
-def crossplatform_linux_splitdrive(path: str) -> tuple[str, str]:
-    if not path.startswith("/"):
-        return ("", path)
-    return ("/", "") if path == "/" else ("/", path[1:])
+@lru_cache(maxsize=20000)
+def cached_isabs(path: os.PathLike | str) -> bool:
+    return os.path.isabs(path)  # noqa: PTH117
 
+@lru_cache(maxsize=20000)
+def cached_splitdrive(path: os.PathLike | str) -> tuple[str, str]:
+    return os.path.splitdrive(path)
+
+@lru_cache(maxsize=20000)
+def cached_splitroot(path: os.PathLike | str) -> tuple[str, str]:
+    path_str = os.fspath(path)
+    return ("/", path_str[1:]) if path_str.startswith("/") else ("", path_str)
 
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
@@ -63,26 +68,43 @@ class PurePathType(type):
 
 
 class _PartialFlavourTypeHint:
+    def __new__(cls, *args, **kwargs):
+        raise RuntimeError("This class cannot be instantiated and is only used for type hinting.")
     sep: Literal["\\", "/"]
 
 
 class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     _flavour: _PartialFlavourTypeHint
 
+    # Custom FILO cache with a max size of 10000
+    _instance_cache = OrderedDict()
+    _max_cache_size = 10000
+
     # pylint: disable-all
-    @lru_cache(maxsize=10000)  # type: ignore[misc]
     def __new__(cls, *args, **kwargs) -> Self:
+        # sourcery skip: remove-unreachable-code
         if cls is PurePath:
             cls = PureWindowsPath if os.name == "nt" else PurePosixPath
+        # disable caching for now by making it unreachable, remove below line to re-enable.
         return super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[arg-type]
+        instance_id = (cls, args, tuple(kwargs.items()))
+        if instance_id in cls._instance_cache:
+            # Move the accessed item to the end to maintain order
+            instance = cls._instance_cache.pop(instance_id)
+            cls._instance_cache[instance_id] = instance
+        else:
+            instance = super().__new__(cls, *cls.parse_args(args), **kwargs)  # type: ignore[arg-type]
+            cls._instance_cache[instance_id] = instance
+            if len(cls._instance_cache) > cls._max_cache_size:
+                # Remove the first item from the cache to maintain the size limit
+                cls._instance_cache.popitem(last=False)
+        return instance
 
     def __init__(
         self,
         *args,
         **kwargs,
     ):
-        if sys.version_info >= (3, 12, 0):
-            self._raw_paths = self.parse_args(args)
         self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[attr-defined]
 
     @classmethod
@@ -101,29 +123,30 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         cls,
         args: tuple[PathElem, ...],
     ) -> list[str]:
-        our_sep: str = cls._flavour.sep  # type: ignore[attr-defined]
         args_list: list[str] = []
-        first_arg: bool = True
+
+        # Find the last absolute path index using os.path.isabs and os.path.normpath
+        # joining an absolute path with another absolute path prioritizes the last one.
+        last_absolute_index = -1
+        for i, arg in enumerate(args):
+            if cached_isabs(cached_normpath(arg)):  # noqa: PTH117
+                last_absolute_index = i
+
+        # If there is an absolute path, splice the args
+        if last_absolute_index != -1:
+            args = args[last_absolute_index:]
+
         for arg in args:
-            formatted_path_str: str = cls._fix_path_formatting(cls._fspath_str(arg), slash=our_sep)
-            if first_arg:  # Only check the drive for the first argument
-                first_arg = False
-                exp_path = os.path.expanduser(formatted_path_str) if issubclass(cls, (Path, WindowsPath, PosixPath)) else formatted_path_str
-                drive, path = crossplatform_win_splitdrive(exp_path)  if our_sep == "\\" else crossplatform_linux_splitdrive(exp_path)
-                if drive:
-                    args_list.append(drive)
-                    if not path:
-                        continue
-                formatted_path_str = path.lstrip("\\") if our_sep == "\\" else path
-
-                if formatted_path_str == our_sep:
-                    args_list.append(our_sep)
-                    continue
-                if formatted_path_str.startswith(our_sep):
-                    args_list.append(our_sep)
-
-            parts = formatted_path_str.split(our_sep)
-            args_list.extend(parts)
+            normpath_str: str = cls._fix_path_formatting(os.fspath(arg), slash=cls._flavour.sep)
+            if cached_isabs(normpath_str):
+                drive_or_root, splitpathpart = cached_splitdrive(normpath_str) if cls._flavour.sep == "\\" else cached_splitroot(normpath_str)
+                if drive_or_root:
+                    args_list.append(drive_or_root)
+                if splitpathpart and splitpathpart.strip():
+                    args_list.append(splitpathpart)
+            else:
+                parts = normpath_str.split(cls._flavour.sep)
+                args_list.extend(parts)
 
         return args_list
 
@@ -135,7 +158,9 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         *,
         slash: str = os.sep,
     ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
-        """Formats a path string.
+        """Normalizes a path string.
+        
+        This differs from os.path.normpath in various ways, e.g. it leaves '..' parts intact just like pathlib.PurePath does.
 
         Args:
         ----
@@ -145,14 +170,6 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         Returns:
         -------
             str: The formatted path string
-
-        Processing Logic:
-        ----------------
-            1. Validate the slash character
-            2. Strip quotes from the path
-            3. Format Windows paths by replacing mixed slashes and normalizing slashes
-            4. Format Unix paths by replacing mixed slashes and normalizing slashes
-            5. Strip trailing slashes from the formatted path.
         """
         if slash not in ("\\", "/"):
             msg = f"Invalid slash str: '{slash}'"
@@ -178,37 +195,6 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             formatted_path = formatted_path.rstrip(slash)
         return formatted_path or "."
 
-    @staticmethod
-    def _fspath_str(arg: object) -> str:
-        """Convert object to a file system path string.
-
-        Args:
-        ----
-            arg: Object to convert to a file system path string
-
-        Returns:
-        -------
-            str: File system path string
-
-        Processing Logic:
-        ----------------
-            - Check if arg is already a string
-            - Check if arg has a __fspath__ method and call it
-            - Check if arg somehow inherits os.PathLike despite not having __fspath__ (redundant)
-            - Raise TypeError if arg is neither string nor has __fspath__ method.
-        """
-        if isinstance(arg, str):
-            return arg
-
-        fspath_method: Callable | None = getattr(arg, "__fspath__", None)
-        if fspath_method is not None:
-            return fspath_method()
-        if isinstance(arg, os.PathLike):
-            return str(arg)
-
-        msg = f"Object '{arg!r}' must be str, or path-like object (implementing __fspath__). Instead got type '{arg.__class__}'"
-        raise TypeError(msg)
-
     def __str__(self):
         """Return the result from _fix_path_formatting that was initialized."""
         if not hasattr(self, "_cached_str"):  # Sometimes pathlib's internal instance creation mechanisms won't call our __init__
@@ -233,7 +219,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             if isinstance(__value, PurePath):
                 other_compare = str(__value)
             else:
-                fmt_other = self._fix_path_formatting(self._fspath_str(__value), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
+                fmt_other = self._fix_path_formatting(os.fspath(__value), slash=self._flavour.sep)  # type: ignore[reportAttributeAccessIssue]
                 other_compare = os.path.expanduser(fmt_other) if issubclass(self.__class__, (Path, WindowsPath, PosixPath)) else fmt_other
 
             if self._flavour.sep == "\\":  # type: ignore[reportAttributeAccessIssue]
@@ -252,7 +238,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         return os.fsencode(self)
 
     def __fspath__(self) -> str:
-        """Ensures any use of __fspath__ will call our __str__ method."""
+        """Required for path-like objects."""
         return str(self)
 
     def __truediv__(self, key: PathElem) -> Self:
@@ -374,6 +360,16 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             str: POSIX representation of the path
         """
         return self._fix_path_formatting(super().__str__(), slash="\\").lower()
+
+    def is_relative_to(self, *args, **kwargs) -> bool:
+        """Return True if the path is relative to another path or False."""
+        if not args or "other" in kwargs:
+            msg = f"{self.__class__.__name__}.is_relative_to() missing 1 required positional argument: 'other'"
+            raise TypeError(msg)
+
+        other, *_deprecated = args
+        parsed_other = self.with_segments(other, *_deprecated)
+        return parsed_other == self or parsed_other in self.parents
 
     def joinpath(self, *args: PathElem) -> Self:
         """Appends one or more path-like objects and/or relative paths to self.
@@ -521,16 +517,6 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             return None
         else:
             return check
-
-    def is_relative_to(self, *args, **kwargs) -> bool:
-        """Return True if the path is relative to another path or False."""
-        if not args or "other" in kwargs:
-            msg = f"{self.__class__.__name__}.is_relative_to() missing 1 required positional argument: 'other'"
-            raise TypeError(msg)
-
-        other, *_deprecated = args
-        parsed_other = self.with_segments(other, *_deprecated)
-        return parsed_other == self or parsed_other in self.parents
 
     def get_highest_permission(self) -> int:
         read_permission: bool = os.access(self, os.R_OK)

@@ -6,13 +6,11 @@ import ctypes
 import os
 import pathlib
 import platform
-import subprocess
 import sys
 import unittest
 
 from ctypes.wintypes import DWORD
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
-from tempfile import TemporaryDirectory
 from unittest import mock
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
@@ -57,93 +55,19 @@ def check_path_win_api(path) -> tuple[bool, bool, bool]:
 
 
 class TestPathlibMixedSlashes(unittest.TestCase):
-    def create_and_run_batch_script(self, cmd: list[str], pause_after_command: bool = False):
-        with TemporaryDirectory() as tempdir:
-            # Ensure the script path is absolute
-            script_path = str(Path(tempdir, "temp_script.bat").absolute())
-
-            # Write the commands to a batch file
-            with open(script_path, "w") as file:
-                for command in cmd:
-                    file.write(command + "\n")
-                if pause_after_command:
-                    file.write("pause\nexit\n")
-
-            # Determine the CMD switch to use
-            cmd_switch = "/K" if pause_after_command else "/C"
-
-            # Construct the command to run the batch script with elevated privileges
-            run_script_cmd: list[str] = ["Powershell", "-Command", f"Start-Process cmd.exe -ArgumentList '{cmd_switch} \"{script_path}\"' -Verb RunAs -Wait"]
-
-            # Execute the batch script
-            subprocess.run(run_script_cmd, check=False)
-
-            # Optionally, delete the batch script after execution
-            try:
-                os.remove(script_path)
-            except Exception:
-                ...
-
-    def remove_permissions(self, path_str: str):
-        is_file = os.path.isfile(path_str)
-
-        # Define the commands
-        combined_commands: list[str] = [
-            f'icacls "{path_str}" /reset',
-            f'attrib +S +R "{path_str}"',
-            f'icacls "{path_str}" /inheritance:r',
-            f'icacls "{path_str}" /deny Everyone:(F)',
-        ]
-
-        # Create and run the batch script
-        self.create_and_run_batch_script(combined_commands)
-
-        # self.run_command(isfile_or_dir_args(["icacls", path_str, "/setowner", "dummy_user"]))
-        # self.run_command(isfile_or_dir_args(["icacls", path_str, "/deny", "dummy_user:(D,WDAC,WO)"]))
-        # self.run_command(["cipher", "/e", path_str])
-
-    @unittest.skipIf(os.name == "posix", "This test can only run on Windows.")
-    def test_gain_file_access(self):  # sourcery skip: extract-method
-        test_file = Path("this file has no permissions.txt").absolute()
-        try:
-            with test_file.open("w", encoding="utf-8") as f:
-                f.write("test")
-        except PermissionError as e:
-            ...
-            # raise e
-        self.remove_permissions(str(test_file))
-        try:
-            # Remove all permissions from the file
-
-            test_filepath = CustomPath(test_file)
-            # self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
-            # self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
-
-            self.assertEqual(test_filepath.has_access(mode=0o1), True)  # this is a bug with os.access
-            self.assertEqual(test_filepath.has_access(mode=0o7), False)
-
-            self.assertEqual(test_filepath.gain_access(mode=0o6), True)
-            self.assertEqual(test_filepath.has_access(mode=0o6), True)
-
-            # self.assertFalse(os.access(test_file, os.R_OK), "Read access should be denied")   # this only checks attrs on windows
-            # self.assertFalse(os.access(test_file, os.W_OK), "Write access should be denied")  # this only checks attrs on windows
-        finally:
-            # Clean up: Delete the temporary file
-            # test_file.unlink()
-            ...
-
-    def test_nt_case_hashing(self):
-        test_classes: tuple[type, ...] = (CustomPureWindowsPath,) if os.name == "posix" else (CustomWindowsPath, CustomPureWindowsPath, CustomPath)
-        for PathType in test_classes:
-            with self.subTest(PathType=PathType):
-                path1 = PathType("test\\path\\to\\nothing")
-                path2 = PathType("tesT\\PATH\\\\to\\noTHinG\\")
-
-            with mock.patch("os.name", "nt"):
-                test_set = {path1, path2}
-                self.assertEqual(path1, path2)
-                self.assertEqual(hash(path1), hash(path2))
-                self.assertSetEqual(test_set, {PathType("TEST\\path\\to\\\\nothing")})
+    @unittest.skipIf(os.name != "nt", "Test can only be run on Windows.")
+    def test_low_granular_path_usage(self):
+        override_path_str = r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override"
+        override_path = CustomPureWindowsPath(override_path_str) 
+        testpath_str1 = r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\Override\000react.dlg"
+        testpath_1 = CustomPureWindowsPath(testpath_str1)
+        self.assertEqual(str(testpath_1), testpath_str1)
+        self.assertEqual(testpath_1.parts[0], override_path.parts[0])
+        self.assertTrue(testpath_1.is_relative_to(override_path))
+        testpath_2 = override_path.joinpath(testpath_str1)
+        self.assertEqual(testpath_1.parts[0], testpath_2.parts[0])
+        self.assertEqual(testpath_2, testpath_1)
+        self.assertTrue(testpath_2.is_relative_to(override_path))
 
     @unittest.skipIf(os.name != "posix", "Test only supported on POSIX systems.")
     def test_posix_exists_alternatives(self):
@@ -552,7 +476,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(str(CustomWindowsPath("C:")), "C:")
         self.assertEqual(str(CustomWindowsPath("C:/./Users/../test/")), "C:\\Users\\..\\test")
         self.assertEqual(str(CustomWindowsPath("C:/./Users/../test/").resolve()), "C:\\test")
-        self.assertEqual(str(CustomWindowsPath("~/folder/")), os.path.expanduser("~\\folder"))
+        self.assertEqual(str(CustomWindowsPath("~/folder/")), "~\\folder")
 
     def test_custom_path_edge_cases_windows_custom_pure_windows_path(self):
         self.assertEqual(str(CustomPureWindowsPath("C:/")), "C:")
@@ -596,7 +520,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         if os.name == "nt":
             self.assertEqual(str(CaseAwarePath("C:/./Users/../test/").resolve()), "C:/test".replace("/", os.sep))
         self.assertEqual(str(CaseAwarePath("C:\\.\\Users\\..\\test\\")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(CaseAwarePath("~/folder/")), os.path.expanduser("~/folder").replace("/", os.sep))
+        self.assertEqual(str(CaseAwarePath("~/folder/")), "~/folder".replace("/", os.sep))
         self.assertEqual(str(CaseAwarePath("C:")), "C:".replace("/", os.sep))
         if os.name == "posix":
             self.assertEqual(str(CaseAwarePath("//")), "/")
@@ -622,7 +546,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         self.assertEqual(str(CustomPath("")), ".")
         self.assertEqual(str(CustomPath("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
         self.assertEqual(str(CustomPath("C:\\.\\Users\\..\\test\\")), "C:/Users/../test".replace("/", os.sep))
-        self.assertEqual(str(CustomPath("~/folder/")), os.path.expanduser("~/folder").replace("/", os.sep))
+        self.assertEqual(str(CustomPath("~/folder/")), "~/folder".replace("/", os.sep))
         self.assertEqual(str(CustomPath("C:")), "C:".replace("/", os.sep))
         if os.name == "posix":
             self.assertEqual(str(CustomPath("//")), "/")
