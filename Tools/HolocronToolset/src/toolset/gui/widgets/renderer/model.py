@@ -273,13 +273,14 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.height = e.size().height()
 
     def wheelEvent(self, e: QWheelEvent):
-        if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
-            strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 20000
-            self.scene.camera.distance += -e.angleDelta().y() * strength
-
         if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
             strength: float = ModuleDesignerSettings().moveCameraSensitivity3d / 20000
             self.scene.camera.z -= -e.angleDelta().y() * strength
+            return
+
+        if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
+            strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 20000
+            self.scene.camera.distance += -e.angleDelta().y() * strength
 
     def mouseMoveEvent(self, e: QMouseEvent):
         screen = Vector2(e.x(), e.y())
