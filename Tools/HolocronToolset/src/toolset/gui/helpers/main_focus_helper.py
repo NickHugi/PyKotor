@@ -6,7 +6,7 @@ from qtpy.QtCore import QEvent, QObject, Qt, Signal
 from qtpy.QtGui import QKeyEvent
 from qtpy.QtWidgets import QTreeView
 
-from toolset.gui.widgets.main_widgets import ResourceList
+from toolset.gui.widgets.main_widgets import ResourceList, TextureList
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QLineEdit, QWidget
@@ -20,7 +20,8 @@ class MainFocusHandler(QObject):
     def __init__(self, mainWindow: ToolWindow):
         super().__init__(mainWindow)
         self.mainWindow: ToolWindow = mainWindow
-        self.widgets_to_focus: list[QWidget] = [
+        self.curFocusIndex: int = 0
+        self.focuseableWidgets: list[QWidget] = [
             self.mainWindow.ui.gameCombo,
             self.mainWindow.ui.coreWidget,
             self.mainWindow.ui.savesWidget,
@@ -34,7 +35,6 @@ class MainFocusHandler(QObject):
             self.mainWindow.ui.mdlDecompileCheckbox,
             self.mainWindow.ui.mdlTexturesCheckbox,
         ]
-        self.current_focus_index: int = 0
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.KeyPress:  # KeyPress event type is 51
@@ -42,7 +42,7 @@ class MainFocusHandler(QObject):
             assert isinstance(event, QKeyEvent)
             qKey: Qt.Key = Qt.Key(event.key())
             curWidget = self.mainWindow.getActiveResourceWidget()
-            searchEdit = curWidget.ui.searchEdit if isinstance(curWidget, ResourceList) else None
+            searchEdit = curWidget.ui.searchEdit if isinstance(curWidget, (ResourceList, TextureList)) else None
             if searchEdit is None:
                 return super().eventFilter(obj, event)
             #self.mainWindow.log.debug(f"MainFocusHandler: curWidget={curWidget.objectName()}, searchEdit={searchEdit.objectName()}")
@@ -61,7 +61,7 @@ class MainFocusHandler(QObject):
                 return True
 
             if qKey in [Qt.Key_Enter, Qt.Key_Return]:
-                curWidget.requestOpenResource
+                curWidget.requestOpenResource.emit(curWidget.selectedResources(), True)
 
             if isinstance(curWidget, QTreeView) and qKey in [Qt.Key_Left, Qt.Key_Right]:
                 #self.mainWindow.log.debug("MainFocusHandler: curWidget is QTreeView, left/right arrow key pressed")
@@ -71,19 +71,20 @@ class MainFocusHandler(QObject):
         return super().eventFilter(obj, event)
 
     def handleTabNavigation(self, event: QKeyEvent):
+        # TODO(th3w1zard1)
         shift_pressed = event.key() == Qt.Key_Backtab
         if shift_pressed:
             #self.mainWindow.log.debug("MainFocusHandler.handleTabNavigation: shift_pressed!")
-            self.current_focus_index -= 1
-            if self.current_focus_index < 0:
-                self.current_focus_index = len(self.widgets_to_focus) - 1
+            self.curFocusIndex -= 1
+            if self.curFocusIndex < 0:
+                self.curFocusIndex = len(self.focuseableWidgets) - 1
         else:
             #self.mainWindow.log.debug("MainFocusHandler.handleTabNavigation: NOT shift_pressed!")
-            self.current_focus_index += 1
-            if self.current_focus_index >= len(self.widgets_to_focus):
-                self.current_focus_index = 0
+            self.curFocusIndex += 1
+            if self.curFocusIndex >= len(self.focuseableWidgets):
+                self.curFocusIndex = 0
 
-        self.widgets_to_focus[self.current_focus_index].setFocus()
+        self.focuseableWidgets[self.curFocusIndex].setFocus()
         self.tabNavigated.emit()
 
     def handleSearchBoxKeyEvent(
