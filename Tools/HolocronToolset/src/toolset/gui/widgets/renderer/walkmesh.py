@@ -874,7 +874,7 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        RobustRootLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        #RobustRootLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
     def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)
@@ -882,7 +882,7 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-        RobustRootLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustRootLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
@@ -890,7 +890,7 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.discard(button)
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
-        RobustRootLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustRootLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent):
         key = e.key()
@@ -898,7 +898,7 @@ class WalkmeshRenderer(QWidget):
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
         key_name = QKeySequence(key).toString()
-        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent):
         key = e.key()
@@ -906,6 +906,6 @@ class WalkmeshRenderer(QWidget):
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
         key_name = QKeySequence(key).toString()
-        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

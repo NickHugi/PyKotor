@@ -1585,7 +1585,7 @@ class ModuleDesignerControls3d:
                 self.renderer.scene.camera.x -= (upward.x + sideward.x) * strength
             if rotateCameraSatisfied:
                 strength = self.settings.moveCameraSensitivity3d / 10000
-                self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=True)
+                self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, clampRotations=True)
                 return  # save users from motion sickness: don't process other commands during view rotations.
             if zoomCameraSatisfied:
                 strength = self.settings.zoomCameraSensitivity3d / 10000
@@ -1889,7 +1889,7 @@ class ModuleDesignerControlsFreeCam:
         # Calculate rotation strength based on sensitivity settings
         strength = self.settings.rotateCameraSensitivityFC / 10000
         # Apply the camera rotation using the calculated mouse delta
-        self.renderer.rotateCamera(-mouse_delta.x() * strength, mouse_delta.y() * strength, snapRotations=False)
+        self.renderer.rotateCamera(-mouse_delta.x() * strength, mouse_delta.y() * strength, clampRotations=False)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...

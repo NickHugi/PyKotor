@@ -329,7 +329,7 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.y += upward.y + sideways.y + forward_vec.y
         self.scene.camera.z += upward.z + sideways.z + forward_vec.z
 
-    def rotateCamera(self, yaw: float, pitch: float, *, snapRotations: bool = True):
+    def rotateCamera(self, yaw: float, pitch: float, *, clampRotations: bool = True):
         """Rotates the camera by the angles (radians) specified.
 
         Args:
@@ -338,12 +338,7 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
             snapRotations:
         """
-        self.scene.camera.rotate(yaw, pitch)
-        if snapRotations:
-            if self.scene.camera.pitch < 0:
-                self.scene.camera.pitch = 0
-            elif self.scene.camera.pitch > math.pi:
-                self.scene.camera.pitch = math.pi
+        self.scene.camera.rotate(yaw, pitch, clamp=clampRotations)
 
     def zoomCamera(self, distance: float):
         self.scene.camera.distance -= distance

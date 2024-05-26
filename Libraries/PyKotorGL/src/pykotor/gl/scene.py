@@ -1167,7 +1167,15 @@ class Camera:
         self.y += translation.y
         self.z += translation.z
 
-    def rotate(self, yaw: float, pitch: float):
+    def rotate(
+        self,
+        yaw: float,
+        pitch: float,
+        *,
+        clamp: bool = False,
+        lower_limit: float = 0,
+        upper_limit: float = math.pi,
+    ):
         """Rotates the object by yaw and pitch angles.
 
         Args:
@@ -1194,14 +1202,21 @@ class Camera:
             self.yaw -= 4 * math.pi
         elif self.yaw < -2 * math.pi:
             self.yaw += 4 * math.pi
+
+        if pitch == 0:
+            return
+
         # ensure pitch doesn't get too large.
         if self.pitch > 2 * math.pi:
             self.pitch -= 4 * math.pi
         elif self.pitch < -2 * math.pi:
             self.pitch += 4 * math.pi
 
-        if pitch == 0:
-            return
+        if clamp:
+            if self.pitch < lower_limit:
+                self.pitch = lower_limit
+            elif self.pitch > upper_limit:
+                self.pitch = upper_limit
 
         # Add a small value to pitch to jump to the other side if near the limits
         gimbal_lock_range = .05
