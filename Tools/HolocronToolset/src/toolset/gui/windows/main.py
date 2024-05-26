@@ -92,6 +92,7 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
+from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
 from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
