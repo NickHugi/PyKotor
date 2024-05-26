@@ -338,10 +338,11 @@ class ModuleRenderer(QOpenGLWidget):
             snapRotations:
         """
         self.scene.camera.rotate(yaw, pitch)
-        if self.scene.camera.pitch < math.pi / 2 and snapRotations:
-            self.scene.camera.pitch = math.pi / 2
-        if self.scene.camera.pitch > math.pi and snapRotations:
-            self.scene.camera.pitch = math.pi
+        if snapRotations:
+            if self.scene.camera.pitch < 0:
+                self.scene.camera.pitch = 0
+            elif self.scene.camera.pitch > math.pi:
+                self.scene.camera.pitch = math.pi
 
     def zoomCamera(self, distance: float):
         self.scene.camera.distance -= distance

@@ -1585,7 +1585,7 @@ class ModuleDesignerControls3d:
                 self.renderer.scene.camera.x -= (upward.x + sideward.x) * strength
             if rotateCameraSatisfied:
                 strength = self.settings.moveCameraSensitivity3d / 10000
-                self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength)
+                self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, snapRotations=True)
                 return  # save users from motion sickness: don't process other commands during view rotations.
             if zoomCameraSatisfied:
                 strength = self.settings.zoomCameraSensitivity3d / 10000
