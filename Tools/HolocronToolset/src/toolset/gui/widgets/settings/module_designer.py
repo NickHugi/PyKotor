@@ -357,8 +357,8 @@ class ModuleDesignerSettings(Settings):
         "moveCameraDownFcBind",
         ({QtKey.Key_E}, set()),
     )
-    boostCameraFcBind = Settings.addSetting(
-        "boostCameraFcBind",
+    speedBoostCameraFcBind = Settings.addSetting(
+        "speedBoostCameraFcBind",
         ({QtKey.Key_Shift}, set()),
     )
     # endregion
