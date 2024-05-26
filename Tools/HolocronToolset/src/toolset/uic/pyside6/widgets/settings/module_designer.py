@@ -844,6 +844,11 @@ class Ui_Form(object):
 
         self.formLayout_8.setWidget(5, QFormLayout.FieldRole, self.moveCameraDownFcBindEdit)
 
+        self.speedBoostCameraFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.speedBoostCameraFcBindEdit.setObjectName(u"speedBoostCameraFcBindEdit")
+
+        self.formLayout_8.setWidget(6, QFormLayout.FieldRole, self.speedBoostCameraFcBindEdit)
+
         self.label_64 = QLabel(self.tabFCControls)
         self.label_64.setObjectName(u"label_64")
         self.label_64.setMinimumSize(QSize(110, 0))

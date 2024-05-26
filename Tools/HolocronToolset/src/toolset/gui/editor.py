@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Callable
 
+import qtpy
+
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QIcon, QPixmap
@@ -25,9 +27,21 @@ from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
+
+if qtpy.API_NAME == "PySide2":
+    from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PySide6":
+    from toolset.rcc import resources_rc_pyside6  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PyQt5":
+    from toolset.rcc import resources_rc_pyqt5  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PyQt6":
+    from toolset.rcc import resources_rc_pyqt6  # noqa: PLC0415, F401  # pylint: disable=C0415
+else:
+    raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
     import os

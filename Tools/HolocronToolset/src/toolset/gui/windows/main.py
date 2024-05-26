@@ -99,6 +99,17 @@ from utility.misc import ProcessorArchitecture
 from utility.system.path import Path, PurePath
 from utility.updater.update import AppUpdate
 
+if qtpy.API_NAME == "PySide2":
+    from toolset.rcc import resources_rc_pyside2  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PySide6":
+    from toolset.rcc import resources_rc_pyside6  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PyQt5":
+    from toolset.rcc import resources_rc_pyqt5  # noqa: PLC0415, F401  # pylint: disable=C0415
+elif qtpy.API_NAME == "PyQt6":
+    from toolset.rcc import resources_rc_pyqt6  # noqa: PLC0415, F401  # pylint: disable=C0415
+else:
+    raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
+
 if TYPE_CHECKING:
     from typing import NoReturn
 
