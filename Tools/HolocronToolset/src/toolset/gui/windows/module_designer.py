@@ -1742,42 +1742,7 @@ class ModuleDesignerControls3d:
             "out": self.zoomCameraOut.satisfied(buttons, keys)
         }
         if any(rotation_keys.values()) or any(movement_keys.values()):
-            # Calculate rotation and movement deltas
-            normalized_rotation_setting = settings.rotateCameraSensitivity3d / 100
-            angle_delta = (math.pi / 4) * normalized_rotation_setting
-
-            # Rotate camera based on key inputs
-            if rotation_keys["left"] and not rotation_keys["right"]:
-                self.renderer.rotateCamera(angle_delta, 0)
-            elif rotation_keys["right"] and not rotation_keys["left"]:
-                self.renderer.rotateCamera(-angle_delta, 0)
-            if rotation_keys["up"] and not rotation_keys["down"]:
-                self.renderer.rotateCamera(0, angle_delta)
-            elif rotation_keys["down"] and not rotation_keys["up"]:
-                self.renderer.rotateCamera(0, -angle_delta)
-
-            # Calculate movement delta
-            move_units_delta = settings.moveCameraSensitivity3d / 100
-
-            # Move camera based on key inputs
-            if movement_keys["up"] and not movement_keys["down"]:
-                scene.camera.z += move_units_delta
-            elif movement_keys["down"] and not movement_keys["up"]:
-                scene.camera.z -= move_units_delta
-            if movement_keys["left"] and not movement_keys["right"]:
-                self.renderer.panCamera(0, -move_units_delta, 0)
-            elif movement_keys["right"] and not movement_keys["left"]:
-                self.renderer.panCamera(0, move_units_delta, 0)
-            if movement_keys["forward"]:
-                self.renderer.panCamera(move_units_delta, 0, 0)
-            elif movement_keys["backward"]:
-                self.renderer.panCamera(-move_units_delta, 0, 0)
-            if movement_keys["in"]:
-                self.renderer.zoomCamera(move_units_delta)
-            elif movement_keys["out"]:
-                self.renderer.zoomCamera(-move_units_delta)
-            return
-
+            self._handle_keyboard_camera_rotations_movements(settings, rotation_keys, movement_keys, scene)
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
             return
@@ -1786,6 +1751,43 @@ class ModuleDesignerControls3d:
             return
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
+
+    def _handle_keyboard_camera_rotations_movements(self, settings, rotation_keys, movement_keys, scene):
+        # Calculate rotation and movement deltas
+        normalized_rotation_setting = settings.rotateCameraSensitivity3d / 100
+        angle_delta = (math.pi / 4) * normalized_rotation_setting
+
+        # Rotate camera based on key inputs
+        if rotation_keys["left"] and not rotation_keys["right"]:
+            self.renderer.rotateCamera(angle_delta, 0)
+        elif rotation_keys["right"] and not rotation_keys["left"]:
+            self.renderer.rotateCamera(-angle_delta, 0)
+        if rotation_keys["up"] and not rotation_keys["down"]:
+            self.renderer.rotateCamera(0, angle_delta)
+        elif rotation_keys["down"] and not rotation_keys["up"]:
+            self.renderer.rotateCamera(0, -angle_delta)
+
+        # Calculate movement delta
+        move_units_delta = settings.moveCameraSensitivity3d / 100
+
+        # Move camera based on key inputs
+        if movement_keys["up"] and not movement_keys["down"]:
+            scene.camera.z += move_units_delta
+        elif movement_keys["down"] and not movement_keys["up"]:
+            scene.camera.z -= move_units_delta
+        if movement_keys["left"] and not movement_keys["right"]:
+            self.renderer.panCamera(0, -move_units_delta, 0)
+        elif movement_keys["right"] and not movement_keys["left"]:
+            self.renderer.panCamera(0, move_units_delta, 0)
+        if movement_keys["forward"]:
+            self.renderer.panCamera(move_units_delta, 0, 0)
+        elif movement_keys["backward"]:
+            self.renderer.panCamera(-move_units_delta, 0, 0)
+        if movement_keys["in"]:
+            self.renderer.zoomCamera(move_units_delta)
+        elif movement_keys["out"]:
+            self.renderer.zoomCamera(-move_units_delta)
+        return
 
 
 class ModuleDesignerControlsFreeCam:
