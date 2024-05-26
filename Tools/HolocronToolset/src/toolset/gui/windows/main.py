@@ -460,15 +460,19 @@ class ToolWindow(QMainWindow):
 
     # region Signal callbacks
     def onCoreRefresh(self):
+        self.log.debug("ToolWindow.onCoreRefresh()")
         self.refreshCoreList(reload=True)
 
     def onModuleChanged(self, newModuleFile: str):
+        self.log.debug(f"ToolWindow.onModuleChanged(newModuleFile='{newModuleFile}')")
         self.onModuleReload(newModuleFile)
 
     def onModuleRefresh(self):
+        self.log.debug("ToolWindow.onModuleRefresh()")
         self.refreshModuleList(reload=True)
 
     def onModuleReload(self, moduleFile: str):
+        self.log.debug(f"ToolWindow.onModuleReload(moduleFile='{moduleFile}')")
         assert self.active is not None
         if not moduleFile or not moduleFile.strip():
             print(f"onModuleReload: can't reload module '{moduleFile}', invalid name")
@@ -486,6 +490,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesWidget.setResources(resources)
 
     def onModuleFileUpdated(self, changedFile: str, eventType: str):
+        self.log.debug(f"ToolWindow.onModuleFileUpdated(changedFile='{changedFile}', eventType='{eventType}')")
         assert self.active is not None
         if eventType == "deleted":
             self.onModuleRefresh()
@@ -498,6 +503,7 @@ class ToolWindow(QMainWindow):
                 self.onModuleReload(changedFile)
 
     def onSavepathChanged(self, newSaveDir: str):
+        self.log.debug(f"ToolWindow.onSavepathChanged(newSaveDir='{newSaveDir}')")
         assert self.active is not None
         print("Loading save resources into UI...")
 
@@ -553,28 +559,32 @@ class ToolWindow(QMainWindow):
                     categoryItem.appendRow([item1, item2])
 
     def onSaveReload(self, saveDir: str):
-        print(f"Reloading '{saveDir}'")
+        self.log.debug(f"ToolWindow.onSaveReload(saveDir='{saveDir}')")
         self.onSavepathChanged(saveDir)
 
     def onSaveRefresh(self):
+        self.log.debug("ToolWindow.onSaveRefresh()")
         self.refreshSavesList()
 
     def onOverrideFileUpdated(self, changedFile: str, eventType: str):
+        self.log.debug(f"ToolWindow.onOverrideFileUpdated(changedFile='{changedFile}', eventType={eventType})")
         if eventType == "deleted":
             self.onOverrideRefresh()
         else:
             self.onOverrideReload(changedFile)
 
     def onOverrideChanged(self, newDirectory: str):
+        self.log.debug(f"ToolWindow.onOverrideChanged(newDirectory='{newDirectory}')")
         assert self.active is not None
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
 
     def onOverrideReload(self, file_or_folder: str):
+        self.log.debug(f"ToolWindow.onOverrideReload(file_or_folder='{file_or_folder}')")
         assert self.active is not None
-        file_or_folder_path = self.active.override_path().joinpath(file_or_folder)
+        override_path = self.active.override_path()
+        file_or_folder_path = override_path.joinpath(file_or_folder)
         if not file_or_folder_path.is_relative_to(self.active.override_path()):
-            print(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
-            return
+            raise ValueError(f"'{file_or_folder_path}' is not relative to the override folder, cannot reload")
         if file_or_folder_path.safe_isfile():
             rel_folderpath = file_or_folder_path.parent.relative_to(self.active.override_path())
             self.active.reload_override_file(file_or_folder_path)
@@ -584,11 +594,13 @@ class ToolWindow(QMainWindow):
         self.ui.overrideWidget.setResources(self.active.override_resources( str(rel_folderpath) if rel_folderpath.name else None ))
 
     def onOverrideRefresh(self):
+        self.log.debug("ToolWindow.onOverrideRefresh()")
         assert self.active is not None
         print(f"Refreshing list of override folders available at {self.active.path()}")
         self.refreshOverrideList(reload=True)
 
     def onTexturesChanged(self, texturepackName: str):
+        self.log.debug(f"ToolWindow.onTexturesChanged(texturepackName='{texturepackName}')")
         assert self.active is not None
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(texturepackName))
 
@@ -603,8 +615,9 @@ class ToolWindow(QMainWindow):
         ----
             index (int): Index of the installation in the installationCombo combobox.
         """
+        self.log.debug(f"ToolWindow.changeActiveInstallation(index={index})")
         if index < 0:  # self.ui.gameCombo.clear() will call this function with -1
-            print(f"Index out of range - ToolWindow.changeActiveInstallation({index})")
+            print(f"Index out of range - {index} (expected zero or positive)")
             return
 
         previousIndex: int = self.ui.gameCombo.currentIndex()
@@ -709,6 +722,7 @@ class ToolWindow(QMainWindow):
         self.activateWindow()
 
     def _saveCapsuleFromToolUI(self, module_name: str):
+        assert self.active is not None
         c_filepath = self.active.module_path() / module_name
 
         capsuleFilter = "Module (*.mod);;Encapsulated Resource File (*.erf);;Resource Image File (*.rim);;Save (*.sav);;All Capsule Types (*.erf; *.mod; *.rim; *.sav)"
@@ -768,6 +782,7 @@ class ToolWindow(QMainWindow):
         useSpecializedEditor: bool | None = None,
         resourceWidget: ResourceList | TextureList | None = None,
     ):
+        assert self.active is not None
         for resource in resources:
             _filepath, _editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data(reload=True),
                                                     self.active, self, gff_specialized=useSpecializedEditor)
@@ -805,6 +820,7 @@ class ToolWindow(QMainWindow):
         self,
         selection: FileResource,
     ):
+        assert self.active is not None
         # Open relevant tab then select resource in the tree
         if selection.filepath().is_relative_to(self.active.module_path()):
             self.ui.resourceTabs.setCurrentIndex(1)
@@ -1259,6 +1275,7 @@ class ToolWindow(QMainWindow):
             self.ui.modulesWidget.setResourceSelection(resource)
 
         elif tree == self.ui.overrideWidget:
+            assert self.active is not None
             self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
             subfolder: str = "."
