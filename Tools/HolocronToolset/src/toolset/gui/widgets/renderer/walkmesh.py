@@ -10,6 +10,7 @@ from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
 from qtpy.QtGui import (
     QColor,
     QImage,
+    QKeySequence,
     QPainter,
     QPainterPath,
     QPen,
@@ -896,13 +897,15 @@ class WalkmeshRenderer(QWidget):
         self._keysDown.add(key)
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
-        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
+        key_name = QKeySequence(key).toString()
+        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent):
         key = e.key()
         self._keysDown.discard(key)
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
-        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
+        key_name = QKeySequence(key).toString()
+        RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

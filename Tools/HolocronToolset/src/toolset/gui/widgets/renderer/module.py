@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from qtpy import QtCore
 from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
+from qtpy.QtGui import QKeySequence
 from qtpy.QtWidgets import QApplication, QMessageBox, QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
@@ -412,7 +413,8 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
-        RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
+        key_name = QKeySequence(key).toString()
+        RobustRootLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyReleaseEvent(e)
@@ -420,6 +422,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
-        RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key}'")
+        key_name = QKeySequence(key).toString()
+        RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

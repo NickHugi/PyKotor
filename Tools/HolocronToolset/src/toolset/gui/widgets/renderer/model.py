@@ -4,8 +4,8 @@ import math
 
 from typing import TYPE_CHECKING
 
-from qtpy.QtCore import QTimer, Qt
-from qtpy.QtGui import QFocusEvent, QGuiApplication
+from qtpy.QtCore import QTimer
+from qtpy.QtGui import QFocusEvent, QKeySequence
 from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2
@@ -15,6 +15,7 @@ from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import RobustRootLogger
 
@@ -262,7 +263,7 @@ class ModelRenderer(QOpenGLWidget):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        RobustRootLogger().debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        RobustRootLogger().debug("ModelRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
@@ -297,13 +298,18 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength)
 
     def mousePressEvent(self, e: QMouseEvent):
-        self._mouseDown.add(e.button())
+        button = e.button()
+        self._mouseDown.add(button)
+        RobustRootLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
-        self._mouseDown.discard(e.button())
+        button = e.button()
+        self._mouseDown.discard(button)
+        RobustRootLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
-        self._keysDown.add(e.key())
+        key: int = e.key()
+        self._keysDown.add(key)
 
         if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):  # TODO(th3w1zard1): ModuleDesignerSettings.rotateCameraSensitivity3d
             self.scene.camera.rotate(math.pi / 4, 0)
@@ -331,8 +337,13 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
+        key_name = QKeySequence.toString(key)
+        RobustRootLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
-        self._keysDown.discard(e.key())
+        key: int = e.key()
+        self._keysDown.discard(key)
+        key_name = QKeySequence.toString(key)
+        RobustRootLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion
