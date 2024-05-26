@@ -215,6 +215,7 @@ class ToolWindow(QMainWindow):
         if not QPixmap(icon_path).isNull():
             self.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
             self.setWindowIcon(QIcon(QPixmap(icon_path)))
+            QApplication.instance().setWindowIcon(QIcon(QPixmap(icon_path)))
         else:
             print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
@@ -328,6 +329,15 @@ class ToolWindow(QMainWindow):
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )
             )
+            # Standardized resource path format
+            icon_path = ":/images/icons/sith.png"
+
+            # Debugging: Check if the resource path is accessible
+            if not QPixmap(icon_path).isNull():
+                self.log.debug(f"Module Designer window Icon loaded successfully from {icon_path}")
+                designerUi.setWindowIcon(QIcon(QPixmap(icon_path)))
+            else:
+                print(f"Failed to load Module Designer window icon from {icon_path}")
             addWindow(designerUi, show=False)
             return designerUi
 

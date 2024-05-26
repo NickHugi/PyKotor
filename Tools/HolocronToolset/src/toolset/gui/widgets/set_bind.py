@@ -6,7 +6,7 @@ import qtpy
 
 from qtpy.QtWidgets import QWidget
 
-from toolset.utils.misc import MODIFIER_KEYS, QtMouse, getStringFromKey
+from toolset.utils.misc import MODIFIER_KEY_NAMES, QtMouse, getQtKeyStringLocalized, getQtMouseButton
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
@@ -90,8 +90,11 @@ class SetBindWidget(QWidget):
 
         # Handle Qt6
         mouseBind = next(iter(bind[1])) if bind[1] else (None if bind[1] is None else set())
-        if mouseBind is not None and hasattr(mouseBind, "value"):
-            mouseBind = getattr(mouseBind, "value", None)
+        if mouseBind is not None:
+            try:
+                mouseBind = getQtMouseButton(mouseBind)
+            except Exception:
+                mouseBind = None
 
         if mouseBind is None:  # none
             self.ui.mouseCombo.setCurrentIndex(4)
@@ -117,14 +120,14 @@ class SetBindWidget(QWidget):
 
     def updateKeybindText(self):
         # Separate modifier keys and other keys
-        modifiers = [key for key in self.keybind if key in MODIFIER_KEYS]
-        other_keys = [key for key in self.keybind if key not in MODIFIER_KEYS]
+        modifiers = [key for key in self.keybind if key in MODIFIER_KEY_NAMES]
+        other_keys = [key for key in self.keybind if key not in MODIFIER_KEY_NAMES]
 
         # Sort keys: modifiers first, then other keys
         sorted_keys = modifiers + other_keys
 
         # Create the keybind text
-        text = "+".join(getStringFromKey(key) for key in sorted_keys)
+        text = "+".join(getQtKeyStringLocalized(key) for key in sorted_keys)
 
         # Update the UI element with the keybind text
         self.ui.setKeysEdit.setText(text.upper())

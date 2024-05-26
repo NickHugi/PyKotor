@@ -11,7 +11,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
-from qtpy.QtWidgets import QAction, QApplication, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
+from qtpy.QtWidgets import QAction, QApplication, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
 
 from pykotor.gl.scene import Camera
 from pykotor.tools.misc import is_mod_file
@@ -64,7 +64,7 @@ from toolset.gui.editors.git import (
 )
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
-from toolset.utils.misc import QtMouse
+from toolset.utils.misc import BUTTON_TO_INT, QtMouse, getQtKeyString
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
 from utility.logger_util import RobustRootLogger
@@ -154,6 +154,7 @@ class ModuleDesigner(QMainWindow):
 
         self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
+        self._initUi()
         self._setupSignals()
         self.last_free_cam_time = 0  # Initialize the last toggle time
 
@@ -298,6 +299,46 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.mouseReleased.connect(self.on2dMouseReleased)
         self.ui.flatRenderer.keyReleased.connect(self.on2dKeyboardReleased)
 
+    def _initUi(self):
+        # Create status bar and labels
+        self.status_bar = self.statusBar()
+        self.mouse_pos_label = QLabel("Mouse Position: ")
+        self.keys_pressed_label = QLabel("Keys/Buttons: ")
+        self.selected_instance_label = QLabel("Selected Instance: ")
+
+        self.status_bar.addWidget(self.mouse_pos_label, 1)
+        self.status_bar.addWidget(self.selected_instance_label, 2)
+        self.status_bar.addPermanentWidget(self.keys_pressed_label, 1)
+
+        # Initial status bar update
+        #self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
+
+    def updateStatusBar(self, mouse_pos, buttons, keys, current_renderer):
+            # Update mouse position
+            if current_renderer == self.ui.mainRenderer:
+                world_pos = current_renderer.toWorldCoords(mouse_pos.x(), mouse_pos.y())
+                self.mouse_pos_label.setText(f"Mouse Position: {world_pos.x:.2f}, {world_pos.y:.2f}, {world_pos.z:.2f}")
+            else:
+                self.mouse_pos_label.setText(f"Mouse Position: {mouse_pos.x()}, {mouse_pos.y()}")
+
+            # Update keys/mouse buttons
+            buttons_str = ", ".join([QtCore.Qt.MouseButton(button).name for button in buttons])
+            keys_str = ", ".join([getQtKeyString(key) for key in keys])
+            self.keys_pressed_label.setText(f"Keys/Buttons: {keys_str} {buttons_str}")
+
+            # Update selected instance
+            if self.selectedInstances:
+                instance_name = self.selectedInstances[0].identifier().resname
+                self.selected_instance_label.setText(f"Selected Instance: {instance_name}")
+            else:
+                self.selected_instance_label.setText("Selected Instance: None")
+
+    def getCurrentRenderer(self):
+        if self.ui.mainRenderer.underMouse():
+            return self.ui.mainRenderer
+        elif self.ui.flatRenderer.underMouse():
+            return self.ui.flatRenderer
+        return None
     def _refreshWindowTitle(self):
         if self._module is None:
             title = f"No Module - {self._installation.name} - Module Designer"
@@ -1427,7 +1468,7 @@ class ModuleDesignerControls3d:
 
     @property
     def openContextMenu(self) -> ControlItem:
-        return ControlItem((set(), {int(QtMouse.RightButton.value if qtpy.API_NAME in ("PyQt6", "PySide6") else QtMouse.RightButton)}))
+        return ControlItem((set(), {BUTTON_TO_INT.get(QtMouse.RightButton)}))
 
     @openContextMenu.setter
     def openContextMenu(self, value):
@@ -1787,7 +1828,6 @@ class ModuleDesignerControls3d:
             self.renderer.zoomCamera(move_units_delta)
         elif movement_keys["out"]:
             self.renderer.zoomCamera(-move_units_delta)
-        return
 
 
 class ModuleDesignerControlsFreeCam:

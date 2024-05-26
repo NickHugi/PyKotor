@@ -5,7 +5,6 @@ import math
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import QTimer
-from qtpy.QtGui import QFocusEvent, QKeySequence
 from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2
@@ -15,13 +14,12 @@ from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
-from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from glm import vec3
-    from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.installation import Installation
@@ -339,13 +337,13 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
-        key_name = QKeySequence(key).toString()
+        #key_name = getQtKeyStringLocalized(key)
         #RobustRootLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         key: int = e.key()
         self._keysDown.discard(key)
-        key_name = QKeySequence(key).toString()
+        #key_name = getQtKeyStringLocalized(key)
         #RobustRootLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion
