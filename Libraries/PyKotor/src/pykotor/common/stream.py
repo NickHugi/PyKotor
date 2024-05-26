@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -97,6 +98,9 @@ class BinaryReader:
     ):
         self.close()
 
+    def read(self, size: int) -> bytes | None:
+        return self._stream.read(size)
+
     @classmethod
     def from_stream(
         cls,
@@ -107,11 +111,11 @@ class BinaryReader:
         if not stream.seekable():
             msg = "Stream must be seekable"
             raise ValueError(msg)
-        if isinstance(stream, io.RawIOBase):
-            return cls(io.BufferedReader(stream), offset, size)
         try:
             mmap_stream = mmap.mmap(stream.fileno(), length=0, access=mmap.ACCESS_READ)
         except (ValueError, OSError):  # ValueError means mmap cannot map to empty files
+            if isinstance(stream, io.RawIOBase):
+                return cls(io.BufferedReader(stream), offset, size)
             return cls(stream, offset, size)
         else:
             return cls(mmap_stream, offset, size)
@@ -629,7 +633,11 @@ class BinaryReader:
         """
         self.exceed_check(length)
         string_byte_data = self._stream.read(length) or b""
-        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
+        if encoding is None:
+            string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
+            RobustRootLogger.warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
+        else:
+            string = string_byte_data.decode(encoding=encoding, errors=errors)
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
             string = string.replace("\0", "")
@@ -2057,3 +2065,174 @@ class BinaryWriterBytearray(BinaryWriter):
         locstring_data: bytes = bw.data()
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
+
+if __name__ == "__main__":
+    import random
+    import time
+
+    if TYPE_CHECKING:
+        from typing_extensions import Self
+
+    # Constants
+    TEST_FILE = "test_file.bin"
+    NUM_OPERATIONS = 10000
+    NUM_INSTANTIATIONS = 10
+    FILE_SIZE = 500 * 1024 * 1024  # 500MB
+    FILE_DATA: bytes | None = None
+
+    # Function to perform the I/O operations
+    def test_io_performance(stream_class: type, mode: str = "rb") -> tuple[int, int, int]:
+        print(f"Testing {stream_class.__name__}, mode={mode}")
+        assert FILE_DATA is not None
+        instantiation_times = []
+        operation_times = []
+
+        for i in range(NUM_INSTANTIATIONS):
+            try:
+                instantiation_start_time = time.time()
+                if stream_class is BinaryReader:
+                    if mode == "file":
+                        stream = BinaryReader.from_file(TEST_FILE)
+                    elif mode == "bytes":
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader.from_bytes(FILE_DATA)
+                    elif mode == "mmap":
+                        raw_raw_stream = open(TEST_FILE, "rb")
+                        raw_stream = mmap.mmap(raw_raw_stream.fileno(), os.stat(TEST_FILE).st_size, access=mmap.ACCESS_READ)
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader(raw_stream)
+                    elif mode == "stream(io.BufferedReader)":
+                        raw_raw_stream = open(TEST_FILE, "rb")
+                        raw_stream = io.BufferedReader(raw_raw_stream)
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader.from_stream(raw_stream)
+                    elif mode == "stream(io.BufferedRandom)":
+                        raw_raw_stream = open(TEST_FILE, "r+b")
+                        raw_stream = io.BufferedRandom(raw_raw_stream)
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader.from_stream(raw_stream)
+                    elif mode == "stream(io.BytesIO)":
+                        # Special handling for BytesIO
+                        stream = io.BytesIO(FILE_DATA)
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader.from_stream(stream)
+                    elif mode == "stream(io.FileIO)":
+                        raw_stream = io.FileIO(TEST_FILE, "rb")
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader.from_stream(raw_stream)
+                    elif mode == "stream(raw)":
+                        raw_stream = open(TEST_FILE, "rb")
+                        instantiation_start_time = time.time()
+                        stream = BinaryReader.from_stream(raw_stream)
+                    else:
+                        raise ValueError(f"cannot test mode: {mode}")
+                elif stream_class is io.BytesIO:
+                    # Special handling for BytesIO
+                    stream = io.BytesIO(FILE_DATA)
+                else:
+                    raw_stream = open(TEST_FILE, mode)
+                    if stream_class is io.BufferedReader:
+                        stream = io.BufferedReader(raw_stream)
+                    elif stream_class is io.BufferedRandom:
+                        stream = io.BufferedRandom(raw_stream)
+                    else:
+                        stream = stream_class(TEST_FILE, mode)
+                instantiation_end_time = time.time()
+                instantiation_times.append(instantiation_end_time - instantiation_start_time)
+            finally:
+                if i != NUM_INSTANTIATIONS-1:
+                    stream.close()
+
+        try:
+            operation_start_time = time.time()
+            for _ in range(NUM_OPERATIONS):
+                seek_position = random.randint(0, os.path.getsize(TEST_FILE) - 1)
+                stream.seek(seek_position)
+                stream.read(1)
+            operation_end_time = time.time()
+            operation_times.append(operation_end_time - operation_start_time)
+        finally:
+            stream.close()
+
+        total_instantiation_time = sum(instantiation_times)
+        total_operation_time = sum(operation_times)
+        total_time = total_instantiation_time + total_operation_time
+
+        return total_instantiation_time, total_operation_time, total_time
+
+    # Main function to run the tests
+    def main():
+        global FILE_DATA  # noqa: PLW0603
+
+        results = []
+        # Test using different stream types
+        stream_types = [
+            (io.FileIO, "rb"),            # Raw access
+            (io.BytesIO, "rb"),           # In-memory stream (needs special handling)
+            (io.BufferedReader, "rb"),    # Buffered reading
+            (io.BufferedRandom, "r+b"),   # Buffered random access
+            (BinaryReader, "file"),
+            (BinaryReader, "mmap"),
+            (BinaryReader, "stream(io.BufferedReader)"),
+            (BinaryReader, "stream(io.BufferedRandom)"),
+            (BinaryReader, "stream(io.BytesIO)"),
+            (BinaryReader, "stream(io.FileIO)"),
+            (BinaryReader, "stream(raw)"),
+        ]
+
+        # Ensure the test file exists and is the correct size
+        if not os.path.exists(TEST_FILE) or os.path.getsize(TEST_FILE) != FILE_SIZE:
+            FILE_DATA = os.urandom(FILE_SIZE)
+            print("Creating test file...")
+            with open(TEST_FILE, "wb") as f:
+                f.write(FILE_DATA)
+        if FILE_DATA is None:
+            with open(TEST_FILE, "rb") as f:
+                FILE_DATA = f.read()
+
+        # Run the tests
+        for stream_class, mode in stream_types:
+            total_instantiation_time, total_operation_time, total_time = test_io_performance(stream_class, mode)
+            results.append([f"{stream_class.__name__}({mode})", total_instantiation_time, total_operation_time, total_time])
+
+        # Sort by total performance (fastest first)
+        results.sort(key=lambda x: x[3])
+        fastest_total_time = results[0][3]
+        fastest_instantiation_time = min(results, key=lambda x: x[1])[1]
+        fastest_operation_time = min(results, key=lambda x: x[2])[2]
+
+        for result in results:
+            for i, elem in enumerate(result):
+                if elem == 0:
+                    result[i] = 0.0001
+
+        # Print the results with additional statistics
+        print("------------------------------------------------------\n\nInstantiation Statistics (sorted by fastest to slowest):\n")
+        for result in results:
+            speed_percent = (fastest_instantiation_time / result[1]) * 100
+            print(f"{result[0]}: {result[1]:.4f} seconds ({speed_percent:.2f}% of fastest, {result[1] / NUM_INSTANTIATIONS:.2f}s per)")
+
+        print("------------------------------------------------------\n\nOperation Statistics (sorted by fastest to slowest):")
+        for result in results:
+            speed_percent = (fastest_operation_time / result[2]) * 100
+            print(f"{result[0]}: {result[2]:.4f} seconds ({speed_percent:.2f}% of fastest, {result[2] / NUM_INSTANTIATIONS:.2f}s per)")
+
+        print("------------------------------------------------------\n\nCombined Statistics (sorted by fastest to slowest):")
+        for result in results:
+            speed_percent = (fastest_total_time / result[3]) * 100
+            print(f"{result[0]}: {result[3]:.4f} seconds (Inst: {result[1]:.4f}s, Ops: {result[2]:.4f}s) ({speed_percent:.2f}% of fastest)")
+        print("------------------------------------------------------\n")
+
+        # Calculate average times
+        avg_instantiation_time = sum(r[1] for r in results) / len(results)
+        avg_operation_time = sum(r[2] for r in results) / len(results)
+        avg_total_time = sum(r[3] for r in results) / len(results)
+
+        print(f"Average Instantiation Time: {avg_instantiation_time:.4f} seconds")
+        print(f"Average Operation Time: {avg_operation_time:.4f} seconds")
+        print(f"Average Total Time: {avg_total_time:.4f} seconds")
+        print(f"Fastest Total Time: {fastest_total_time:.4f} seconds")
+        print(f"Slowest Total Time: {results[-1][3]:.4f} seconds")
+        print(f"Speed Ratio (Slowest/Fastest): {results[-1][3] / fastest_total_time:.2f}\n")
+
+    main()
