@@ -10,7 +10,6 @@ from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
 from qtpy.QtGui import (
     QColor,
     QImage,
-    QKeySequence,
     QPainter,
     QPainterPath,
     QPen,
@@ -853,7 +852,7 @@ class WalkmeshRenderer(QWidget):
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):
-                    #get_root_logger().debug(f"Emitting Hovered/UnderMouse for instance {instance!r}")
+                    RobustRootLogger().debug(f"Emitting Hovered/UnderMouse for instance {instance!r}")
                     self.instanceHovered.emit(instance)
                     self._instancesUnderMouse.append(instance)
 
@@ -897,7 +896,7 @@ class WalkmeshRenderer(QWidget):
         self._keysDown.add(key)
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
-        key_name = QKeySequence(key).toString()
+        #key_name = getQtKeyStringLocalized(key)
         #RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent):
@@ -905,7 +904,7 @@ class WalkmeshRenderer(QWidget):
         self._keysDown.discard(key)
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
-        key_name = QKeySequence(key).toString()
+        #key_name = getQtKeyStringLocalized(key)
         #RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion
