@@ -88,18 +88,23 @@ class SetBindWidget(QWidget):
         assert isinstance(bind[0], set), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
         assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
 
-        if bind[1] is None:  # none
+        # Handle Qt6
+        mouseBind = next(iter(bind[1])) if bind[1] else (None if bind[1] is None else set())
+        if mouseBind is not None and hasattr(mouseBind, "value"):
+            mouseBind = getattr(mouseBind, "value", None)
+
+        if mouseBind is None:  # none
             self.ui.mouseCombo.setCurrentIndex(4)
-        elif not bind[1]:  # any
+        elif not mouseBind:  # any
             self.ui.mouseCombo.setCurrentIndex(3)
-        elif bind[1] == {QtMouse.LeftButton}:
+        elif mouseBind == QtMouse.LeftButton:
             self.ui.mouseCombo.setCurrentIndex(0)
-        elif bind[1] == {QtMouse.MiddleButton}:
+        elif mouseBind == QtMouse.MiddleButton:
             self.ui.mouseCombo.setCurrentIndex(1)
-        elif bind[1] == {QtMouse.RightButton}:
+        elif mouseBind == QtMouse.RightButton:
             self.ui.mouseCombo.setCurrentIndex(2)
         else:
-            raise ValueError(f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a valid mousebind")
+            raise ValueError(f"{mouseBind!r} <{mouseBind}> ({mouseBind.__class__.__name__}) is not a valid mousebind")
 
         self.keybind = bind[0]
         self.updateKeybindText()
