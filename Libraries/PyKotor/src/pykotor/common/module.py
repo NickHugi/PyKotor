@@ -529,9 +529,9 @@ class Module:  # noqa: PLR0904
         # Realistically we'll do this at the end, but right now we're interested in enumerating the models so we can find textures.
 
         # Check chitin first.
-        for resource in self._installation.chitin_resources():
+        for resource in self._installation.core_resources():
             if resource.identifier() in self.resources or resource.identifier() in git_search:
-                RobustRootLogger().info("Found chitin location '%s' for resource '%s' for module '%s'",
+                RobustRootLogger().info("Found chitin/core location '%s' for resource '%s' for module '%s'",
                                         resource.filepath(), resource.identifier(), display_name)
                 self.add_locations(resource.resname(), resource.restype(), (resource.filepath(),)).activate()
 
@@ -1770,7 +1770,7 @@ class ModuleResource(Generic[T]):
         else:
             other_locations_available = len(self._locations)-1
             other_locations_available_display = f" ({other_locations_available} other locations available)" if other_locations_available else ""
-            RobustRootLogger().info("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
+            RobustRootLogger().debug("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
         return self._active
 
     def unload(self):

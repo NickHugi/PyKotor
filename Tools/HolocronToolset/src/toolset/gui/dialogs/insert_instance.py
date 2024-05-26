@@ -6,7 +6,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
+from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -22,6 +22,7 @@ from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
+from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.system.path import Path
 
@@ -83,6 +84,7 @@ class InsertInstanceDialog(QDialog):
         self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
         self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
+        self.ui.resourceList.itemSelectionChanged.connect(self.onResourceSelected)
 
     def _setupLocationSelect(self):
         self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
@@ -105,7 +107,7 @@ class InsertInstanceDialog(QDialog):
             - Loops through module capsules and nested resources, adding matching type
             - Selects first item if list is populated.
         """
-        for resource in self._installation.chitin_resources():
+        for resource in self._installation.core_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
                 item.setToolTip(str(resource.filepath()))
@@ -137,6 +139,9 @@ class InsertInstanceDialog(QDialog):
         super().accept()
 
         new = True
+        if not self.ui.resourceList.selectedItems():
+            BetterMessageBox("Choose an instance", "You must choose an instance, use the radial buttons to determine where/how to create the GIT instance.", icon=QMessageBox.Critical).exec_()
+            return
         resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
 
         if self.ui.reuseResourceRadio.isChecked():
@@ -151,21 +156,21 @@ class InsertInstanceDialog(QDialog):
         elif self.ui.createResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
             self.filepath = Path(self.ui.locationSelect.currentData())
-            if self._restype == ResourceType.UTC:
+            if self._restype is ResourceType.UTC:
                 self.data = bytes_utc(UTC())
-            elif self._restype == ResourceType.UTP:
+            elif self._restype is ResourceType.UTP:
                 self.data = bytes_utp(UTP())
-            elif self._restype == ResourceType.UTD:
+            elif self._restype is ResourceType.UTD:
                 self.data = bytes_utd(UTD())
-            elif self._restype == ResourceType.UTE:
+            elif self._restype is ResourceType.UTE:
                 self.data = bytes_ute(UTE())
-            elif self._restype == ResourceType.UTT:
+            elif self._restype is ResourceType.UTT:
                 self.data = bytes_utt(UTT())
-            elif self._restype == ResourceType.UTS:
+            elif self._restype is ResourceType.UTS:
                 self.data = bytes_uts(UTS())
-            elif self._restype == ResourceType.UTM:
+            elif self._restype is ResourceType.UTM:
                 self.data = bytes_utm(UTM())
-            elif self._restype == ResourceType.UTW:
+            elif self._restype is ResourceType.UTW:
                 self.data = bytes_utw(UTW())
             else:
                 self.data = b""
@@ -199,6 +204,35 @@ class InsertInstanceDialog(QDialog):
 
         if self.ui.createResourceRadio.isChecked():
             self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+
+    def onResourceSelected(self):
+        """Updates the dynamic text label when a resource is selected."""
+        selected_items = self.ui.resourceList.selectedItems()
+        if selected_items:
+            resource: FileResource = selected_items[0].data(QtCore.Qt.ItemDataRole.UserRole)
+            summary_text = self.generateResourceSummary(resource)
+            self.ui.dynamicTextLabel.setText(summary_text)
+            # pixmap = QPixmap("path/to/your/image.png")  # TODO
+            # self.ui.imageLabel.setPixmap(pixmap)
+
+    def generateResourceSummary(self, resource: FileResource) -> str:
+        """Generates a summary of the selected resource.
+
+        Args:
+        ----
+            resource: FileResource - The selected resource.
+
+        Returns:
+        -------
+            str: Summary text.
+        """
+        summary = [
+            f"Name: {resource.resname()}",
+            f"Type: {resource.restype().name}",
+            f"Size: {len(resource.data())} bytes",
+            f"Path: {resource.filepath().relative_to(self._installation.path())}"
+        ]
+        return "\n".join(summary)
 
     def onResRefEdited(self, text: str):
         self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(text))

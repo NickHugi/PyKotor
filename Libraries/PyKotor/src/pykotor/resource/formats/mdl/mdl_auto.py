@@ -103,7 +103,7 @@ def read_mdl(
     """
     file_format = detect_mdl(source, offset)
 
-    if file_format == ResourceType.MDL:
+    if file_format is ResourceType.MDL:
         return MDLBinaryReader(
             source,
             offset,
@@ -112,7 +112,7 @@ def read_mdl(
             offset_ext,
             size_ext,
         ).load()
-    if file_format == ResourceType.MDL_ASCII:
+    if file_format is ResourceType.MDL_ASCII:
         return MDLAsciiReader(source, offset, size or 0).load()
     msg = "Failed to determine the format of the MDL file."
     raise ValueError(msg)
@@ -139,9 +139,9 @@ def write_mdl(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.MDL:
+    if file_format is ResourceType.MDL:
         MDLBinaryWriter(mdl, target, target_ext or target).write()
-    elif file_format == ResourceType.MDL_ASCII:
+    elif file_format is ResourceType.MDL_ASCII:
         MDLAsciiWriter(mdl, target).write()
     else:
         msg = "Unsupported format specified; use MDL or MDL_ASCII."

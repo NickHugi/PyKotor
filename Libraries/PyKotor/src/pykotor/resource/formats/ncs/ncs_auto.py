@@ -61,7 +61,7 @@ def write_ncs(
     ------
         ValueError: If an unsupported file format was given.
     """
-    if file_format == ResourceType.NCS:
+    if file_format is ResourceType.NCS:
         NCSBinaryWriter(ncs, target).write()
     else:
         msg = "Unsupported format specified; use NCS."

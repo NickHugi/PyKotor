@@ -64,7 +64,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.generics.git import GITInstance
     from toolset.data.installation import HTInstallation
-    from toolset.gui.windows.module_designer import ModuleDesigner
+    from toolset.gui.windows.module_designer import ModuleDesigner  # Keep in type checking block to avoid circular imports
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     from qtpy.QtGui import QUndoStack

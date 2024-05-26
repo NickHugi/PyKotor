@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import os
-
 from typing import TYPE_CHECKING, TypeVar
-
-import qtpy
 
 from qtpy import API_NAME, QtCore
 from qtpy.QtCore import QUrl
@@ -17,6 +13,8 @@ from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
 from utility.system.path import Path
 
 if TYPE_CHECKING:
+
+    import os
 
     from pykotor.resource.formats.erf import ERF
     from pykotor.resource.formats.rim import RIM
@@ -112,7 +110,7 @@ BUTTON_TO_INT: dict[QtMouse, int] = {
     QtMouse.NoButton: int(QtMouse.NoButton) if API_NAME in ("PyQt5", "PySide2") else QtMouse.NoButton.value,
 }
 if API_NAME in ("PySide2", "PySide6"):
-    BUTTON_TO_INT[QtMouse.MouseButtonMask] = int(QtMouse.MouseButtonMask) if API_NAME in ("PyQt5", "PySide2") else QtMouse.MouseButtonMask.value
+    BUTTON_TO_INT[QtMouse.MouseButtonMask] = int(QtMouse.MouseButtonMask) if API_NAME == "PySide2" else QtMouse.MouseButtonMask.value
 INT_TO_BUTTON: dict[int, QtMouse] = {v: k for k, v in BUTTON_TO_INT.items()}
 
 
@@ -171,9 +169,7 @@ def getQtKey(obj: QtKey | T) -> QtKey | T:
 
 def getQtKeyString(key: QtKey | T) -> str:
     result = getattr(key, "name", MODIFIER_KEY_NAMES.get(key, QKeySequence(key).toString()))  # type: ignore[arg-type]
-    if isinstance(result, bytes):
-        return result.decode(errors="replace")
-    return result
+    return result.decode(errors="replace") if isinstance(result, bytes) else result
 
 def getQtKeyStringLocalized(key: QtKey | str | int | bytes):
     return MODIFIER_KEY_NAMES.get(key, getattr(key, "name", QKeySequence(key).toString())).upper().strip().replace("KEY_", "").replace("CONTROL", "CTRL")  # type: ignore[arg-type]
@@ -187,7 +183,7 @@ def getQtButtonString(button: QtMouse | int) -> str:
     if isinstance(attrButtonName, bytes):
         return attrButtonName.decode(errors="replace")
     if attrButtonName is None:
-        return MOUSE_BUTTON_NAMES.get(button, None)
+        return MOUSE_BUTTON_NAMES.get(button)
     return attrButtonName  # type: ignore[arg-type]
 
 

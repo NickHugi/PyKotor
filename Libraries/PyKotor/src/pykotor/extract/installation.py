@@ -155,6 +155,7 @@ class Installation:
 
         self._override: dict[str, list[FileResource]] = {}
 
+        self._patch_erf: list[FileResource] = []  # K1 only patch.erf file
         self._chitin: list[FileResource] = []
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
@@ -169,8 +170,11 @@ class Installation:
         self.load_lips()
         self.load_modules()
         self.load_override()
-        if self.game().is_k1():
-            self.load_rims()
+
+        # Game doesn't use these.
+        #if self.game().is_k1():
+        #    self.load_rims()
+
         self.load_streammusic()
         self.load_streamsounds()
         if self.game().is_k1():
@@ -179,6 +183,11 @@ class Installation:
             self.load_streamvoice()
         self.load_textures()
         self.load_saves()
+        if self.game().is_k1():
+            patch_erf_path = self.path().joinpath("patch.erf")
+            if patch_erf_path.safe_isfile():
+                self._log.info(f"Game is K1 and 'patch.erf' found at {patch_erf_path.relative_to(self._path.parent)}")
+                self._patch_erf.extend(Capsule(patch_erf_path))
         self._log.info("Finished loading the installation from %s", self._path)
         self._initialized = True
 
@@ -645,7 +654,7 @@ class Installation:
             self.load_override(rel_folderpath)
 
         identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
-        if identifier.restype == ResourceType.INVALID:
+        if identifier.restype is ResourceType.INVALID:
             self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
             return
         resource = FileResource(*identifier.unpack(), filepath.stat().st_size, 0, filepath)
@@ -691,6 +700,10 @@ class Installation:
             A list of FileResources.
         """
         return self._chitin[:]
+
+    def core_resources(self) -> list[FileResource]:
+        """Similar to chitin_resources, but also return the resources in `patch.erf` if exists and the installation is Game.K1."""
+        return self.chitin_resources() + self._patch_erf[:]
 
     def modules_list(self) -> list[str]:
         """Returns the list of module filenames located in the modules folder linked to the Installation.
@@ -1325,7 +1338,7 @@ class Installation:
             SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks[TexturePackNames.TPB.value]),
             SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks[TexturePackNames.TPC.value]),
             SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
-            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin) or check_list(self._patch_erf),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
             SearchLocation.VOICE: lambda: check_list(self._streamwaves),
@@ -1504,7 +1517,7 @@ class Installation:
             SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks[TexturePackNames.TPB.value]),
             SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks[TexturePackNames.TPC.value]),
             SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks[TexturePackNames.GUI.value]),
-            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin) or check_list(self._patch_erf),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
         }
@@ -1706,7 +1719,7 @@ class Installation:
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin) or check_list(self._patch_erf),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),  # type: ignore[arg-type]
         }
@@ -1811,7 +1824,7 @@ class Installation:
                             break
                     if sound_data is None:  # No sound data found in this list.
                         continue
-                    self._log.debug("Found sound at '%s'", capsule.filepath())
+                    self._log.debug("Found sound resource in capsule at '%s'", capsule.filepath())
                     case_resnames.remove(case_resname)
                     sounds[case_resname] = deobfuscate_audio(sound_data)
 
@@ -1828,7 +1841,7 @@ class Installation:
                     )
                 )
             for sound_file in queried_sound_files:
-                self._log.debug("Found sound at '%s'", sound_file)
+                self._log.debug("Found sound file resource at '%s'", sound_file)
                 case_resnames.remove(sound_file.stem.casefold())
                 sound_data: bytes = BinaryReader.load_file(sound_file)
                 sounds[sound_file.stem] = deobfuscate_audio(sound_data)
@@ -1837,7 +1850,7 @@ class Installation:
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin) or check_list(self._patch_erf),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
             SearchLocation.VOICE: lambda: check_list(self._streamwaves),

@@ -132,7 +132,7 @@ class FileSearcher(QDialog):
 
         def search_generator() -> Generator[FileResource, Any, None]:
             if query.searchCore:
-                yield from query.installation.chitin_resources()
+                yield from query.installation.core_resources()
             if query.searchModules:
                 for module in query.installation.modules_list():
                     yield from query.installation.module_resources(module)

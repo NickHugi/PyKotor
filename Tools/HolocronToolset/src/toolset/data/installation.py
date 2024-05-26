@@ -70,7 +70,7 @@ class HTInstallation(Installation):
         self,
         path: str,
         name: str,
-        mainWindow: QWidget,
+        mainWindow: QWidget | None = None,
         *,
         tsl: bool | None = None,
     ):

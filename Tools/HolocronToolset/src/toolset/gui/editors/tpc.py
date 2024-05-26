@@ -185,7 +185,7 @@ class TPCEditor(Editor):
 
         if self._restype in {ResourceType.PNG, ResourceType.BMP}:
             data = self.extract_png_bmp_bytes()
-        elif self._restype == ResourceType.JPG:
+        elif self._restype is ResourceType.JPG:
             data = self.extract_tpc_jpeg_bytes()
         return data, b""
 
@@ -204,5 +204,5 @@ class TPCEditor(Editor):
         image = ImageOps.flip(image)
 
         dataIO = io.BytesIO()
-        image.save(dataIO, "PNG" if self._restype == ResourceType.PNG else "BMP")
+        image.save(dataIO, "PNG" if self._restype is ResourceType.PNG else "BMP")
         return dataIO.getvalue()

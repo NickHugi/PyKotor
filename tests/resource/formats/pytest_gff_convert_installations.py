@@ -37,59 +37,59 @@ def test_gff_conversions(
     converted_game = Game.K2 if game.is_k1() else Game.K1
     generic: Any
 
-    if resource.restype() == ResourceType.ARE:
+    if resource.restype() is ResourceType.ARE:
         generic = read_are(resource.data(), offset=0, size=resource.size())
         write_are(generic, converted_filepath, converted_game)
 
-    elif resource.restype() == ResourceType.DLG:
+    elif resource.restype() is ResourceType.DLG:
         generic = read_dlg(resource.data(), offset=0, size=resource.size())
         write_dlg(generic, converted_filepath, converted_game)
 
-    elif resource.restype() == ResourceType.GIT:
+    elif resource.restype() is ResourceType.GIT:
         generic = read_git(resource.data(), offset=0, size=resource.size())
         write_git(generic, converted_filepath, converted_game)
 
-    elif resource.restype() == ResourceType.JRL:
+    elif resource.restype() is ResourceType.JRL:
         generic = read_jrl(resource.data(), offset=0, size=resource.size())
         write_jrl(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.PTH:
+    elif resource.restype() is ResourceType.PTH:
         generic = read_pth(resource.data(), offset=0, size=resource.size())
         write_pth(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTC:
+    elif resource.restype() is ResourceType.UTC:
         generic = read_utc(resource.data(), offset=0, size=resource.size())
         write_utc(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTD:
+    elif resource.restype() is ResourceType.UTD:
         generic = read_utd(resource.data(), offset=0, size=resource.size())
         write_utd(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTE:
+    elif resource.restype() is ResourceType.UTE:
         generic = read_ute(resource.data(), offset=0, size=resource.size())
         write_ute(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTI:
+    elif resource.restype() is ResourceType.UTI:
         generic = read_uti(resource.data(), offset=0, size=resource.size())
         write_uti(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTM:
+    elif resource.restype() is ResourceType.UTM:
         generic = read_utm(resource.data(), offset=0, size=resource.size())
         write_utm(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTP:
+    elif resource.restype() is ResourceType.UTP:
         generic = read_utp(resource.data(), offset=0, size=resource.size())
         write_utp(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTS:
+    elif resource.restype() is ResourceType.UTS:
         generic = read_uts(resource.data(), offset=0, size=resource.size())
         write_uts(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTT:
+    elif resource.restype() is ResourceType.UTT:
         generic = read_utt(resource.data(), offset=0, size=resource.size())
         write_utt(generic, converted_filepath, game=converted_game)
 
-    elif resource.restype() == ResourceType.UTW:
+    elif resource.restype() is ResourceType.UTW:
         generic = read_utw(resource.data(), offset=0, size=resource.size())
         write_utw(generic, converted_filepath, game=converted_game)
 

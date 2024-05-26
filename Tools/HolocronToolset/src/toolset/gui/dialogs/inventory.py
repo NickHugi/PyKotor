@@ -862,7 +862,7 @@ class ItemBuilderWorker(QThread):
         if self._installation.cacheCoreItems is None:
             queries.extend(
                 resource.identifier()
-                for resource in self._installation.chitin_resources() if resource.restype() is ResourceType.UTI
+                for resource in self._installation.core_resources() if resource.restype() is ResourceType.UTI
             )
         queries.extend(
             resource.identifier()

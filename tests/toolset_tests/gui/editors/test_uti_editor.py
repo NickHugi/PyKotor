@@ -97,7 +97,7 @@ class UTIEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for uti_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTI):
+        for uti_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTI):
             old = read_gff(uti_resource.data())
             self.editor.load(uti_resource.filepath(), uti_resource.resname(), uti_resource.restype(), uti_resource.data())
 
@@ -113,7 +113,7 @@ class UTIEditorTest(TestCase):
     )
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for uti_resource in (resource for resource in self.installation if resource.restype() == ResourceType.UTI):
+        for uti_resource in (resource for resource in self.installation if resource.restype() is ResourceType.UTI):
             old = read_gff(uti_resource.data())
             self.editor.load(uti_resource.filepath(), uti_resource.resname(), uti_resource.restype(), uti_resource.data())
 

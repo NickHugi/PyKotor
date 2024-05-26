@@ -55,7 +55,7 @@ def write_ltr(
     ------
         ValueError: If an unsupported file format was given.
     """
-    if file_format == ResourceType.LTR:
+    if file_format is ResourceType.LTR:
         LTRBinaryWriter(ltr, target).write()
     else:
         msg = "Unsupported format specified; use LTR."

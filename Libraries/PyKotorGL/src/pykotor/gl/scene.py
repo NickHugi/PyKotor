@@ -393,23 +393,23 @@ class Scene:
 
         for identifier in self.clearCacheBuffer:
             for git_creature in copy(self.git.creatures):
-                if identifier.resname == git_creature.resref and identifier.restype == ResourceType.UTC:
+                if identifier.resname == git_creature.resref and identifier.restype is ResourceType.UTC:
                     del self.objects[git_creature]
             for placeable in copy(self.git.placeables):
-                if identifier.resname == placeable.resref and identifier.restype == ResourceType.UTP:
+                if identifier.resname == placeable.resref and identifier.restype is ResourceType.UTP:
                     del self.objects[placeable]
             for door in copy(self.git.doors):
-                if door.resref == identifier.resname and identifier.restype == ResourceType.UTD:
+                if door.resref == identifier.resname and identifier.restype is ResourceType.UTD:
                     del self.objects[door]
             if identifier.restype in {ResourceType.TPC, ResourceType.TGA}:
                 del self.textures[identifier.resname]
             if identifier.restype in {ResourceType.MDL, ResourceType.MDX}:
                 del self.models[identifier.resname]
-            if identifier.restype == ResourceType.GIT:
+            if identifier.restype is ResourceType.GIT:
                 for instance in self.git.instances():
                     del self.objects[instance]
                 self.git = self._getGit()
-            if identifier.restype == ResourceType.LYT:
+            if identifier.restype is ResourceType.LYT:
                 for room in self.layout.rooms:
                     del self.objects[room]
                 self.layout = self._getLyt()
@@ -954,7 +954,7 @@ class Scene:
             tpc: TPC | None = None
             # Check the textures linked to the module first
             if self._module is not None:
-                RobustRootLogger().info(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
+                RobustRootLogger().debug(f"Locating {type_name} '{name}' in module '{self.module.root()}'")
                 module_tex = self.module.texture(name)
                 if module_tex is not None:
                     RobustRootLogger().debug(f"Loading {type_name} '{name}' from module '{self.module.root()}'")
@@ -962,7 +962,7 @@ class Scene:
 
             # Otherwise just search through all relevant game files
             if tpc is None and self.installation:
-                RobustRootLogger().info(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
+                RobustRootLogger().debug(f"Locating and loading {type_name} '{name}' from override/bifs/texturepacks...")
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             if tpc is None:
                 RobustRootLogger().warning(f"MISSING {type_name.upper()}: '%s'", name)

@@ -56,7 +56,7 @@ def write_bwm(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.WOK:
+    if file_format is ResourceType.WOK:
         BWMBinaryWriter(wok, target).write()
     else:
         msg = "Unsupported format specified; use WOK."

@@ -96,7 +96,7 @@ class SSFEditorTest(TestCase):
     )
     def test_ssf_reconstruct_from_k1_installation(self):
         self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for ssf_resource in (resource for resource in self.installation if resource.restype() == ResourceType.SSF):
+        for ssf_resource in (resource for resource in self.installation if resource.restype() is ResourceType.SSF):
             old = read_ssf(ssf_resource.data())
             self.editor.load(ssf_resource.filepath(), ssf_resource.resname(), ssf_resource.restype(), ssf_resource.data())
 
@@ -111,7 +111,7 @@ class SSFEditorTest(TestCase):
     )
     def test_ssf_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for bwm_resource in (resource for resource in self.installation if resource.restype() == ResourceType.SSF):
+        for bwm_resource in (resource for resource in self.installation if resource.restype() is ResourceType.SSF):
             old = read_ssf(bwm_resource.data())
             self.editor.load(bwm_resource.filepath(), bwm_resource.resname(), bwm_resource.restype(), bwm_resource.data())
 
