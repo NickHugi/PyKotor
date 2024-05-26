@@ -4,7 +4,7 @@ import math
 import time
 
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 import qtpy
 
@@ -51,7 +51,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
 from toolset.gui.dialogs.select_module import SelectModuleDialog
 from toolset.gui.editor import Editor
-from toolset.gui.editors.git import (
+from toolset.gui.editors.git import (  # This is a one directional import to avoid circular imports.
     DeleteCommand,
     DuplicateCommand,
     MoveCommand,
@@ -64,7 +64,7 @@ from toolset.gui.editors.git import (
 )
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
-from toolset.utils.misc import BUTTON_TO_INT, QtMouse, getQtKeyString
+from toolset.utils.misc import BUTTON_TO_INT, MODIFIER_KEY_NAMES, QtMouse, getQtButtonString, getQtKeyString
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
 from utility.logger_util import RobustRootLogger
@@ -77,6 +77,7 @@ if TYPE_CHECKING:
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
     from qtpy.QtWidgets import QCheckBox, QWidget
+    from typing_extensions import Literal
 
     from pykotor.gl.scene import Camera
     from pykotor.resource.formats.bwm.bwm_data import BWM
@@ -87,6 +88,7 @@ if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
     from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
+    from toolset.utils.misc import QtKey
     from utility.system.path import Path
 
 
@@ -207,7 +209,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.highlightBoundaries = False
 
         self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControls3d(self, self.ui.mainRenderer)
-        # self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)
+        # self._controls3d: ModuleDesignerControls3d | ModuleDesignerControlsFreeCam = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)  # Doesn't work when set in __init__, trigger this in onMousePressed
         self._controls2d: ModuleDesignerControls2d = ModuleDesignerControls2d(self, self.ui.flatRenderer)
 
         if mod_filepath is None:  # Use singleShot timer so the ui window opens while the loading is happening.
@@ -313,32 +315,43 @@ class ModuleDesigner(QMainWindow):
         # Initial status bar update
         #self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
 
-    def updateStatusBar(self, mouse_pos, buttons, keys, current_renderer):
-            # Update mouse position
-            if current_renderer == self.ui.mainRenderer:
-                world_pos = current_renderer.toWorldCoords(mouse_pos.x(), mouse_pos.y())
-                self.mouse_pos_label.setText(f"Mouse Position: {world_pos.x:.2f}, {world_pos.y:.2f}, {world_pos.z:.2f}")
+    def updateStatusBar(self, mouse_pos, buttons, keys, current_renderer: WalkmeshRenderer | ModuleRenderer):
+        if not isinstance(mouse_pos, Vector2):
+            mouse_pos = Vector2(mouse_pos.x(), mouse_pos.y())
+        # Update mouse position
+        if current_renderer == self.ui.mainRenderer:
+            world_pos = self.ui.mainRenderer.scene.cursor.position()
+            self.mouse_pos_label.setText(f"Mouse Position: {world_pos.x:.2f}, World Coords: {world_pos.y:.2f}, {world_pos.z:.2f}")
+        else:
+            world_pos = self.ui.flatRenderer.toWorldCoords(mouse_pos.x, mouse_pos.y)
+            self.mouse_pos_label.setText(f"Mouse Position: {world_pos.x:.2f}, World Coords: {world_pos.y:.2f}")
+
+        # Sort keys and buttons with modifiers at the beginning
+        def sort_with_modifiers(items, get_string_func: Callable[[Any], str], qtEnumType: Literal["QtKey", "QtMouse"]) -> Sequence[QtKey | QtMouse]:
+            modifiers = []
+            if qtEnumType == "QtKey":
+                modifiers = [item for item in items if item in MODIFIER_KEY_NAMES]
+                normal = [item for item in items if item not in MODIFIER_KEY_NAMES]
             else:
-                self.mouse_pos_label.setText(f"Mouse Position: {mouse_pos.x()}, {mouse_pos.y()}")
+                normal = list(items)
+            return sorted(modifiers, key=get_string_func) + sorted(normal, key=get_string_func)
 
-            # Update keys/mouse buttons
-            buttons_str = ", ".join([QtCore.Qt.MouseButton(button).name for button in buttons])
-            keys_str = ", ".join([getQtKeyString(key) for key in keys])
-            self.keys_pressed_label.setText(f"Keys/Buttons: {keys_str} {buttons_str}")
+        sorted_buttons = sort_with_modifiers(current_renderer._mouseDown, getQtButtonString, "QtMouse")
+        sorted_keys = sort_with_modifiers(current_renderer._keysDown, getQtKeyString, "QtKey")
 
-            # Update selected instance
-            if self.selectedInstances:
-                instance_name = self.selectedInstances[0].identifier().resname
-                self.selected_instance_label.setText(f"Selected Instance: {instance_name}")
-            else:
-                self.selected_instance_label.setText("Selected Instance: None")
+        # Update keys/mouse buttons
+        buttons_str = "+".join([getQtButtonString(button) for button in sorted_buttons])
+        keys_str = "+".join([getQtKeyString(key) for key in sorted_keys])
+        self.keys_pressed_label.setText(f"Keys/Buttons: {keys_str} {buttons_str}")
 
-    def getCurrentRenderer(self):
-        if self.ui.mainRenderer.underMouse():
-            return self.ui.mainRenderer
-        elif self.ui.flatRenderer.underMouse():
-            return self.ui.flatRenderer
-        return None
+        # Update selected instance
+        if self.selectedInstances:
+            instance = self.selectedInstances[0]
+            instance_name = repr(instance) if isinstance(instance, GITCamera) else instance.identifier()
+            self.selected_instance_label.setText(f"Selected Instance: {instance_name}")
+        else:
+            self.selected_instance_label.setText("Selected Instance: None")
+
     def _refreshWindowTitle(self):
         if self._module is None:
             title = f"No Module - {self._installation.name} - Module Designer"
@@ -396,6 +409,7 @@ class ModuleDesigner(QMainWindow):
             walkmeshes: list[BWM] = []
             for bwm in combined_module.resources.values():
                 if bwm.restype() is not ResourceType.WOK:
+                    assert bwm.restype().name.lower() != "wok"
                     continue
                 bwm_res: BWM | None = bwm.resource()
                 if bwm_res is None:
@@ -442,15 +456,12 @@ class ModuleDesigner(QMainWindow):
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
         window.show()
 
-    #    @with_variable_trace((Exception, OSError))
     def git(self) -> GIT:
         return self._module.git().resource()
 
-    #    @with_variable_trace(Exception)
     def are(self) -> ARE:
         return self._module.are().resource()
 
-    #    @with_variable_trace(Exception)
     def ifo(self) -> IFO:
         return self._module.info().resource()
 
@@ -622,14 +633,15 @@ class ModuleDesigner(QMainWindow):
         """
         self.log.debug("rebuildInstanceList called.")
         self.ui.instanceList.clear()
-        self.ui.instanceList.setEnabled(True)
-        self.ui.instanceList.setVisible(True)
 
         # Only build if module is loaded
         if self._module is None:
             self.ui.instanceList.setEnabled(False)
             self.ui.instanceList.setVisible(False)
             return
+
+        self.ui.instanceList.setEnabled(True)
+        self.ui.instanceList.setVisible(True)
 
         visibleMapping = {
             GITCreature: self.hideCreatures,
@@ -1144,25 +1156,32 @@ class ModuleDesigner(QMainWindow):
             for instance in instances:
                 if instance.identifier() == this_ident:
                     self.selectInstanceItemOnList(instance)
+                    self.setSelection([instance])
                     return
         menu.addAction("Find in Instance List").triggered.connect(jump_to_instance_list_action)
 
     def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
+        self.updateStatusBar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.onMouseMoved(screen, screenDelta, world, buttons, keys)
 
     def on3dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.mainRenderer)
         self._controls3d.onMouseScrolled(delta, buttons, keys)
 
     def on3dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        self.updateStatusBar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.onMousePressed(screen, buttons, keys)
 
     def on3dMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
+        self.updateStatusBar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.onMouseReleased(screen, buttons, keys)
 
     def on3dKeyboardReleased(self, buttons: set[int], keys: set[int]):
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.mainRenderer)
         self._controls3d.onKeyboardReleased(buttons, keys)
 
     def on3dKeyboardPressed(self, buttons: set[int], keys: set[int]):
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.mainRenderer)
         self._controls3d.onKeyboardPressed(buttons, keys)
 
     def on3dObjectSelected(self, instance: GITInstance):
@@ -1278,29 +1297,35 @@ class ModuleDesigner(QMainWindow):
 
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseMoved, screen: %s, delta: %s, buttons: %s, keys: %s", screen, delta, buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         worldDelta: Vector2 = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
         world: Vector3 = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
         self._controls2d.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
 
     def on2dMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseReleased, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.onMouseReleased(screen, buttons, keys)
 
+    def on2dKeyboardPressed(self, buttons: set[int], keys: set[int]):
+        #self.log.debug("on2dKeyboardPressed, buttons: %s, keys: %s", buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
+        self._controls2d.onKeyboardPressed(buttons, keys)
+
     def on2dKeyboardReleased(self, buttons: set[int], keys: set[int]):
-        self.log.debug("on2dKeyboardReleased, buttons: %s, keys: %s", buttons, keys)
+        #self.log.debug("on2dKeyboardReleased, buttons: %s, keys: %s", buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.onKeyboardReleased(buttons, keys)
 
     def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.onMouseScrolled(delta, buttons, keys)
 
     def on2dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self.log.debug("on2dMousePressed, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
+        self.updateStatusBar(screen, buttons, keys, self.ui.flatRenderer)
         self._controls2d.onMousePressed(screen, buttons, keys)
-
-    def on2dKeyboardPressed(self, buttons: set[int], keys: set[int]):
-        self.log.debug("on2dKeyboardPressed, buttons: %s, keys: %s", buttons, keys)
-        self._controls2d.onKeyboardPressed(buttons, keys)
 
     # endregion
 
@@ -1795,7 +1820,7 @@ class ModuleDesignerControls3d:
 
     def _handle_keyboard_camera_rotations_movements(self, settings, rotation_keys, movement_keys, scene):
         # Calculate rotation and movement deltas
-        normalized_rotation_setting = settings.rotateCameraSensitivity3d / 100
+        normalized_rotation_setting = settings.rotateCameraSensitivity3d / 250
         angle_delta = (math.pi / 4) * normalized_rotation_setting
 
         # Rotate camera based on key inputs
@@ -1849,6 +1874,7 @@ class ModuleDesignerControlsFreeCam:
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
         self.renderer.keysDown().clear()
+        self.renderer.scene.camera.distance = 0
         self.cameraUpdateTimer = QTimer()
         self.cameraUpdateTimer.timeout.connect(self.update_camera)
         self.cameraUpdateTimer.start(32)  # ~30 FPS
