@@ -1689,6 +1689,9 @@ class FolderObserver(FileSystemEventHandler):
         self.lastModified = rightnow
         modified_path: Path = Path(event.src_path)
 
+        if not modified_path.safe_isfile():
+            return
+
         module_path: Path = self.window.active.module_path()
         override_path: Path = self.window.active.override_path()
 
