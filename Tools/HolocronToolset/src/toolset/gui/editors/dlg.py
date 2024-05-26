@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
+from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer, QUrl
 from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QApplication, QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryWriter
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
@@ -33,7 +32,6 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
-from utility.system.path import Path
 
 if TYPE_CHECKING:
 
@@ -870,12 +868,11 @@ class DLGEditor(Editor):
             # PyQt6 and PySide6 code path
             def set_media(data: bytes | None):
                 if data:
-                    with TemporaryDirectory() as tmpdir:
-                        tmpdir_path = Path(tmpdir)
-                        tmpmediafile = (tmpdir_path / tmpdir_path.stem).with_suffix(".wav")
-                        BinaryWriter.dump(tmpmediafile, data)
-                        self.player.setSource(str(tmpmediafile))
-                        QTimer.singleShot(0, self.player.play)
+                    self.tempFile = NamedTemporaryFile(delete=False, suffix=".wav")
+                    self.tempFile.write(data)
+                    self.tempFile.close()
+                    print(f"Wrote audioplayer audio data to '{self.tempFile.name}'")
+                    self.player.setSource(QUrl.fromLocalFile(self.tempFile.name))
                 else:
                     self.blinkWindow()
         else:

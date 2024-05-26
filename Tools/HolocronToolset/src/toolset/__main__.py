@@ -95,11 +95,12 @@ def set_qt_api():
                 __import__("PySide2.QtCore")
             elif api == "PySide6":
                 __import__("PySide6.QtCore")
-            os.environ["QT_API"] = api
-            print(f"QT_API set to '{api}'.")
-            break
-        except (ImportError, ModuleNotFoundError):  # noqa: S112
+        except (ImportError, ModuleNotFoundError):  # noqa: S112, PERF203
             continue
+        else:
+            os.environ["QT_API"] = api
+            print(f"QT_API auto-resolved as '{api}'.")
+            break
 
 
 def is_running_from_temp() -> bool:
@@ -119,7 +120,17 @@ if __name__ == "__main__":
         set_qt_api()
     else:
         fix_sys_and_cwd_path()
-        if os.environ.get("QT_API") not in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+        qtpy_case_map: dict[str, str] = {
+            "pyqt5": "PyQt5",
+            "pyqt6": "PyQt6",
+            "pyside2": "PySide2",
+            "pyside6": "PySide6",
+        }
+        case_api_name = qtpy_case_map.get(os.environ.get("QT_API", "").lower().strip())
+        if case_api_name in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+            print(f"QT_API manually set by user to '{case_api_name}'.")
+            os.environ["QT_API"] = case_api_name
+        else:
             set_qt_api()
 
     if os.name == "nt":

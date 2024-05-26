@@ -899,10 +899,8 @@ class ItemModel(QStandardItemModel):
         self._categoryItems: dict[str, QStandardItem] = {}
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
-        self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setFilterCaseSensitivity(False)  # type: ignore[arg-type]
-        self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setSourceModel(self)
+        self._proxyModel.setRecursiveFilteringEnabled(True)  # type: ignore[arg-type]
+        self._proxyModel.setFilterCaseSensitivity(False if qtpy.API_NAME in ("PyQt5", "PySide2") else QtCore.Qt.CaseInsensitive)  # type: ignore[arg-type]
 
     def proxyModel(self) -> QSortFilterProxyModel:
         return self._proxyModel

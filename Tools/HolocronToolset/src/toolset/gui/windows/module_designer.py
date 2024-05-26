@@ -1427,7 +1427,7 @@ class ModuleDesignerControls3d:
 
     @property
     def openContextMenu(self) -> ControlItem:
-        return ControlItem((set(), {int(QtMouse.RightButton)}))
+        return ControlItem((set(), {int(QtMouse.RightButton.value if qtpy.API_NAME in ("PyQt6", "PySide6") else QtMouse.RightButton)}))
 
     @openContextMenu.setter
     def openContextMenu(self, value):
