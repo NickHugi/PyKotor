@@ -38,17 +38,17 @@ class MainFocusHandler(QObject):
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.KeyPress:  # KeyPress event type is 51
-            self.mainWindow.log.debug(f"MainFocusHandler: obj={obj.objectName()}, event.type()={event.type()}")
+            #self.mainWindow.log.debug(f"MainFocusHandler: obj={obj.objectName()}, event.type()={event.type()}")
             assert isinstance(event, QKeyEvent)
             qKey: Qt.Key = Qt.Key(event.key())
             curWidget = self.mainWindow.getActiveResourceWidget()
             searchEdit = curWidget.ui.searchEdit if isinstance(curWidget, ResourceList) else None
             if searchEdit is None:
                 return super().eventFilter(obj, event)
-            self.mainWindow.log.debug(f"MainFocusHandler: curWidget={curWidget.objectName()}, searchEdit={searchEdit.objectName()}")
+            #self.mainWindow.log.debug(f"MainFocusHandler: curWidget={curWidget.objectName()}, searchEdit={searchEdit.objectName()}")
 
             if qKey in [Qt.Key_Tab, Qt.Key_Backtab]:
-                self.mainWindow.log.debug(f"MainFocusHandler: qKey ({qKey}) in [Qt.Key_Tab ({Qt.Key_Tab}), Qt.KeyBacktab ({Qt.Key_Backtab})]")
+                #self.mainWindow.log.debug(f"MainFocusHandler: qKey ({qKey}) in [Qt.Key_Tab ({Qt.Key_Tab}), Qt.KeyBacktab ({Qt.Key_Backtab})]")
                 self.handleTabNavigation(event)
                 return True
 
@@ -56,7 +56,7 @@ class MainFocusHandler(QObject):
                 Qt.Key_Space <= qKey <= Qt.Key_AsciiTilde
                 or qKey in [Qt.Key_Backspace, Qt.Key_Delete, Qt.Key_Escape, Qt.Key_Left, Qt.Key_Right]
             ):
-                self.mainWindow.log.debug(f"MainFocusHandler: qKey ({qKey}) in [Qt.Key_Backspace, Qt.Key_Delete, Qt.Key_Escape, Qt.Key_Left, Qt.Key_Right]")
+                #self.mainWindow.log.debug(f"MainFocusHandler: qKey ({qKey}) in [Qt.Key_Backspace, Qt.Key_Delete, Qt.Key_Escape, Qt.Key_Left, Qt.Key_Right]")
                 self.handleSearchBoxKeyEvent(searchEdit, qKey, event)
                 return True
 
@@ -64,7 +64,7 @@ class MainFocusHandler(QObject):
                 curWidget.requestOpenResource
 
             if isinstance(curWidget, QTreeView) and qKey in [Qt.Key_Left, Qt.Key_Right]:
-                self.mainWindow.log.debug("MainFocusHandler: curWidget is QTreeView, left/right arrow key pressed")
+                #self.mainWindow.log.debug("MainFocusHandler: curWidget is QTreeView, left/right arrow key pressed")
                 self.handleTreeViewKeyEvent(curWidget, qKey)
                 return True
 
@@ -73,12 +73,12 @@ class MainFocusHandler(QObject):
     def handleTabNavigation(self, event: QKeyEvent):
         shift_pressed = event.key() == Qt.Key_Backtab
         if shift_pressed:
-            self.mainWindow.log.debug("MainFocusHandler.handleTabNavigation: shift_pressed!")
+            #self.mainWindow.log.debug("MainFocusHandler.handleTabNavigation: shift_pressed!")
             self.current_focus_index -= 1
             if self.current_focus_index < 0:
                 self.current_focus_index = len(self.widgets_to_focus) - 1
         else:
-            self.mainWindow.log.debug("MainFocusHandler.handleTabNavigation: NOT shift_pressed!")
+            #self.mainWindow.log.debug("MainFocusHandler.handleTabNavigation: NOT shift_pressed!")
             self.current_focus_index += 1
             if self.current_focus_index >= len(self.widgets_to_focus):
                 self.current_focus_index = 0
@@ -93,11 +93,11 @@ class MainFocusHandler(QObject):
         event: QKeyEvent,
     ):  # sourcery skip: extract-method
         if qKey == Qt.Key_Escape:
-            self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey == Qt.Key_Escape")
+            #self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey == Qt.Key_Escape")
             searchEdit.clear()
 
         elif qKey == Qt.Key_Backspace:
-            self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey == Qt.Key_Backspace")
+            #self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey == Qt.Key_Backspace")
             cursorPos = searchEdit.cursorPosition()
             currentText = searchEdit.text()
             if cursorPos > 0:
@@ -105,7 +105,7 @@ class MainFocusHandler(QObject):
                 searchEdit.setCursorPosition(cursorPos - 1)
 
         elif qKey == Qt.Key_Delete:
-            self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey == Qt.Key_Delete")
+            #self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey == Qt.Key_Delete")
             cursorPos = searchEdit.cursorPosition()
             currentText = searchEdit.text()
             if cursorPos < len(currentText):
@@ -113,7 +113,7 @@ class MainFocusHandler(QObject):
                 searchEdit.setCursorPosition(cursorPos)
 
         elif qKey in [Qt.Key_Left, Qt.Key_Right]:
-            self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey in [Qt.Key_Left, Qt.Key_Right]")
+            #self.mainWindow.log.debug("MainFocusHandler.handleSearchBoxKeyEvent: qKey in [Qt.Key_Left, Qt.Key_Right]")
             searchEdit.setFocus()  # Ensure the search box has focus for cursor movement
             searchEdit.event(event)  # Send the event to the search box
 
@@ -121,18 +121,18 @@ class MainFocusHandler(QObject):
             cursorPos = searchEdit.cursorPosition()
             currentText = searchEdit.text()
             eventText = event.text()
-            self.mainWindow.log.debug(f"MainFocusHandler.handleSearchBoxKeyEvent else blc: cursor_pos={cursorPos}, current_text={currentText}, appending event text: {eventText}")
+            #self.mainWindow.log.debug(f"MainFocusHandler.handleSearchBoxKeyEvent else blc: cursor_pos={cursorPos}, current_text={currentText}, appending event text: {eventText}")
             searchEdit.setText(currentText[:cursorPos] + eventText + currentText[cursorPos:])
             searchEdit.setCursorPosition(cursorPos + 1)
 
         searchEdit.textEdited.emit(None)
 
     def handleTreeViewKeyEvent(self, treeView: QTreeView, qKey: Qt.Key):
-        self.mainWindow.log.debug(f"MainFocusHandler.handleTreeViewKeyEvent qKey={qKey}")
+        #self.mainWindow.log.debug(f"MainFocusHandler.handleTreeViewKeyEvent qKey={qKey}")
         index = treeView.currentIndex()
         if qKey == Qt.Key_Left:
-            self.mainWindow.log.debug("MainFocusHandler.handleTreeViewKeyEvent qKey == Qt.Key_Left")
+            #self.mainWindow.log.debug("MainFocusHandler.handleTreeViewKeyEvent qKey == Qt.Key_Left")
             treeView.setExpanded(index, False)
         elif qKey == Qt.Key_Right:
-            self.mainWindow.log.debug("MainFocusHandler.handleTreeViewKeyEvent qKey == Qt.Key_Right")
+            #self.mainWindow.log.debug("MainFocusHandler.handleTreeViewKeyEvent qKey == Qt.Key_Right")
             treeView.setExpanded(index, True)
