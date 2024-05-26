@@ -46,6 +46,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
@@ -1328,8 +1329,14 @@ class ToolWindow(QMainWindow):
             print("no installation is currently loaded, cannot refresh core list")
             return
         self.log.debug("Loading core installation resources into UI...")
-        self.ui.coreWidget.setResources(self.active.chitin_resources())
-        self.log.debug("Remove unused categories...")
+        all_core_resources: list[FileResource] = self.active.chitin_resources()
+        if self.active.game().is_k1():
+            patch_erf_path = self.active.path().joinpath("patch.erf")
+            if patch_erf_path.safe_isfile():
+                self.log.debug("Game is K1 and 'patch.erf' found, loading into Core tab...")
+                all_core_resources.extend(Capsule(patch_erf_path))
+        self.ui.coreWidget.setResources(all_core_resources)
+        self.log.debug("Remove unused Core tab categories...")
         self.ui.coreWidget.modulesModel.removeUnusedCategories()
 
     def changeModule(self, moduleName: str):
