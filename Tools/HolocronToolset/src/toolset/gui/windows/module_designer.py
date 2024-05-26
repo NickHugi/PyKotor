@@ -1097,7 +1097,7 @@ class ModuleDesigner(QMainWindow):
             if location.is_relative_to(self._installation.override_path()):
                 copyToOverrideAction.setEnabled(False)
             menu.addAction(locationAction)
-        def jump_to_instance_list_action(data=data):
+        def jump_to_instance_list_action(*args, data=data, **kwargs):
             this_ident = data.identifier()
             instances = self.git().instances()
             for instance in instances:
@@ -1539,11 +1539,11 @@ class ModuleDesignerControls3d:
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
-            strength = self.settings.zoomCameraSensitivity3d / 2000
+            strength = self.settings.zoomCameraSensitivity3d / 10000
             self.renderer.scene.camera.distance += -delta.y * strength
 
         if self.moveZCamera.satisfied(buttons, keys):
-            strength = self.settings.moveCameraSensitivity3d / 1000
+            strength = self.settings.moveCameraSensitivity3d / 10000
             self.renderer.scene.camera.z -= -delta.y * strength
 
     def onMouseMoved(
