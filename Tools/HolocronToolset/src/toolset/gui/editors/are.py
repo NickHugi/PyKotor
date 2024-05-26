@@ -58,6 +58,7 @@ class AREEditor(Editor):
         supported: list[ResourceType] = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.resize(400, 250)
+        self.setFixedSize(400, 250)  # Lock the window size
 
         self._are: ARE = ARE()
         self._minimap = None

@@ -33,8 +33,9 @@ class SettingsProperty(property, Generic[T]):
         super().__init__(self.getter, self.setter, None, None)
 
     def getter(self, instance: Settings) -> T:
+        serialized_value: KT | None = None
         try:
-            serialized_value: KT = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
+            serialized_value = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
             constructed_value: T = self.deserialize_value(serialized_value)
             if constructed_value.__class__ != self.default.__class__:
                 RobustRootLogger.error(f"Corrupted setting '{self.name}': {constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")

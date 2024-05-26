@@ -354,7 +354,7 @@ class Module:  # noqa: PLR0904
         return self._root
 
     @classmethod
-    def find_capsules(cls, installation: Installation, filename: str) -> Sequence[Capsule]:
+    def find_capsules(cls, install_or_path: Installation | Path, filename: str) -> Sequence[Capsule]:
         root = cls.find_root(filename)
         # Build all capsules relevant to this root in the provided installation
         capsules: _CapsuleDictTypes = {
@@ -363,20 +363,21 @@ class Module:  # noqa: PLR0904
             ModuleType.K2_DLG.name: None,
             ModuleType.MOD.name: None,
         }
+        module_path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
-            mod_filepath = installation.module_path().joinpath(root + ModuleType.MOD.value)
+            mod_filepath = module_path.joinpath(root + ModuleType.MOD.value)
             if mod_filepath.safe_isfile():
                 capsules[ModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             else:
-                capsules[ModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(root + ModuleType.MAIN.value))
-                capsules[ModuleType.DATA.name] = ModuleDataPiece(installation.module_path().joinpath(root + ModuleType.DATA.value))
-                if installation.game().is_k2():
-                    capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(installation.module_path().joinpath(root + ModuleType.K2_DLG.value))
+                capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
+                capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
+                if install_or_path.game().is_k2():
+                    capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + ModuleType.K2_DLG.value))
         else:
-            capsules[ModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(root + ModuleType.MAIN.value))
-            capsules[ModuleType.DATA.name] = ModuleDataPiece(installation.module_path().joinpath(root + ModuleType.DATA.value))
-            if installation.game().is_k2():
-                capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(installation.module_path().joinpath(root + ModuleType.K2_DLG.value))
+            capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
+            capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
+            if install_or_path.game().is_k2():
+                capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + ModuleType.K2_DLG.value))
         return [capsule for capsule in capsules.values() if capsule is not None]
 
 
