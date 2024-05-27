@@ -231,6 +231,9 @@ class WalkmeshRenderer(QWidget):
         self.repaint()
         QTimer.singleShot(33, self._loop)
 
+    def resetMouseButtons(self):
+        self._mouseDown.clear()
+
     def setWalkmeshes(self, walkmeshes: list[BWM]):
         """Sets the list of walkmeshes to be rendered.
 
@@ -852,7 +855,6 @@ class WalkmeshRenderer(QWidget):
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):
-                    RobustRootLogger().debug(f"Emitting Hovered/UnderMouse for instance {instance!r}")
                     self.instanceHovered.emit(instance)
                     self._instancesUnderMouse.append(instance)
 

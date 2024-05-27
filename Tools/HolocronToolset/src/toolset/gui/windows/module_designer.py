@@ -256,6 +256,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.actionUndo.triggered.connect(lambda: print("Undo signal") or self.undoStack.undo())
         self.ui.actionRedo.triggered.connect(lambda: print("Redo signal") or self.undoStack.redo())
 
+        self.ui.resourceTree.clicked.connect(self.onResourceTreeSingleClicked)
+        self.ui.resourceTree.doubleClicked.connect(self.onResourceTreeDoubleClicked)
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceTreeContextMenu)
 
         self.ui.viewCreatureCheck.toggled.connect(self.updateToggles)
@@ -281,8 +283,9 @@ class ModuleDesigner(QMainWindow):
         self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)  # noqa: ARG005
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda a0: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)  # noqa: ARG005
 
+        self.ui.instanceList.clicked.connect(self.onInstanceListSingleClicked)
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
-        self.ui.instanceList.customContextMenuRequested.connect(self.onContextMenuSelectionExists)
+        self.ui.instanceList.customContextMenuRequested.connect(self.onInstanceListRightClicked)
 
         self.ui.mainRenderer.rendererInitialized.connect(self.on3dRendererInitialized)
         self.ui.mainRenderer.sceneInitialized.connect(self.on3dSceneInitialized)
@@ -1053,6 +1056,12 @@ class ModuleDesigner(QMainWindow):
             self.log.debug("No longer drag rotating")
             self.isDragRotating = False
 
+    def onInstanceListSingleClicked(self):
+        if self.ui.instanceList.selectedItems():
+            item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
+            instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            self.setSelection([instance])
+
     def onInstanceListDoubleClicked(self):
         if self.ui.instanceList.selectedItems():
             item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
@@ -1110,14 +1119,31 @@ class ModuleDesigner(QMainWindow):
     def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
         curItem = self.ui.resourceTree.currentItem()
-        if not curItem:
-            self.log.warning("curItem was None in onResourceTreeContextMenu")
-            return
-
         data = curItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(data, ModuleResource):
             self._active_instance_location_menu(data, menu)
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
+
+    def onResourceTreeDoubleClicked(self, point: QPoint):
+        curItem = self.ui.resourceTree.currentItem()
+        data = curItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(data, ModuleResource):
+            self.openModuleResource(data)
+
+    def onResourceTreeSingleClicked(self, point: QPoint):
+        curItem = self.ui.resourceTree.currentItem()
+        data = curItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(data, ModuleResource):
+            self.jump_to_instance_list_action(data=data)
+
+    def jump_to_instance_list_action(self, *args, data: ModuleResource, **kwargs):
+        this_ident = data.identifier()
+        instances = self.git().instances()
+        for instance in instances:
+            if instance.identifier() == this_ident:
+                self.selectInstanceItemOnList(instance)
+                #self.setSelection([instance])
+                return
 
     def _active_instance_location_menu(self, data: ModuleResource, menu: QMenu):
         """Builds an active override menu for a module resource.
@@ -1155,7 +1181,7 @@ class ModuleDesigner(QMainWindow):
             instances = self.git().instances()
             for instance in instances:
                 if instance.identifier() == this_ident:
-                    self.selectInstanceItemOnList(instance)
+                    #self.selectInstanceItemOnList(instance)
                     self.setSelection([instance])
                     return
         menu.addAction("Find in Instance List").triggered.connect(jump_to_instance_list_action)
@@ -1202,8 +1228,7 @@ class ModuleDesigner(QMainWindow):
         else:
             menu = self.onContextMenuSelectionExists(world, isFlatRendererCall=isFlatRendererCall, getMenu=True)
 
-        menu.popup(self.cursor().pos())
-        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
+        self.showFinalContextMenu(menu)
 
     def buildInsertInstanceMenu(self, world: Vector3):
         """Displays a context menu for object insertion.
@@ -1229,22 +1254,32 @@ class ModuleDesigner(QMainWindow):
         menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), walkmeshSnap=True))
         menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), walkmeshSnap=False))
         menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), walkmeshSnap=False))
-        menu.addAction("Insert Store").triggered.connect(
-            lambda: self.addInstance(GITStore(*world), walkmeshSnap=False)
-        )
+        menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), walkmeshSnap=False))
         menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), walkmeshSnap=False))
         menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), walkmeshSnap=False))
         menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), walkmeshSnap=False))
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), walkmeshSnap=False))
         return menu
 
+    def onInstanceListRightClicked(
+        self,
+        *args,
+        **kwargs,
+    ):
+        if not self.selectedInstances:
+            self.onInstanceListDoubleClicked()
+        item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
+        instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        self.onContextMenuSelectionExists(instances=[instance])
+
     def onContextMenuSelectionExists(
         self,
-        world: Vector3,
+        world: Vector3 | None = None,
         *,
         isFlatRendererCall: bool | None = None,
         getMenu: bool | None = None,
-    ) -> QMenu | None:  # sourcery skip: extract-method
+        instances: Sequence[GITInstance] | None = None,
+    ) -> QMenu | None:    # sourcery skip: extract-method
         """Checks if a context menu selection exists.
 
         Args:
@@ -1261,9 +1296,10 @@ class ModuleDesigner(QMainWindow):
         """
         print(f"onContextMenuSelectionExists(isFlatRendererCall={isFlatRendererCall}, getMenu={getMenu})")
         menu = QMenu(self)
+        instances = self.selectedInstances if instances is None else instances
 
-        if self.selectedInstances:
-            instance = self.selectedInstances[0]
+        if instances:
+            instance = instances[0]
             if isinstance(instance, GITCamera):
                 menu.addAction("Snap Camera to 3D View").triggered.connect(lambda: self.snapCameraToView(instance))
                 menu.addAction("Snap 3D View to Camera").triggered.connect(lambda: self.snapViewToGITCamera(instance))
@@ -1274,12 +1310,18 @@ class ModuleDesigner(QMainWindow):
             menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
             menu.addSeparator()
-            self._controls2d._mode._getRenderContextMenu(Vector2(world.x, world.y), menu)
+            if world is not None:
+                self._controls2d._mode._getRenderContextMenu(Vector2(world.x, world.y), menu)
         if not getMenu:
-            menu.popup(self.cursor().pos())
-            menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
+            self.showFinalContextMenu(menu)
             return None
         return menu
+
+    # TODO Rename this here and in `onContextMenu` and `onContextMenuSelectionExists`
+    def showFinalContextMenu(self, menu):
+        menu.popup(self.cursor().pos())
+        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
+        menu.aboutToHide.connect(self.ui.flatRenderer.resetMouseButtons)
 
     def on3dRendererInitialized(self):
         self.log.debug("ModuleDesigner on3dRendererInitialized")
@@ -1359,7 +1401,6 @@ class ModuleDesignerControls3d:
             - Hides cursor if setting is unchecked.
         """
         self.editor: ModuleDesigner = editor
-        self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)  # Show the cursor
 
@@ -1603,6 +1644,14 @@ class ModuleDesignerControls3d:
     def toggleInstanceLock(self, value):
         pass
 
+    @property
+    def settings(self) -> ModuleDesignerSettings:
+        return ModuleDesignerSettings()
+
+    @settings.setter
+    def settings(self, value):
+        pass
+
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
             strength = self.settings.zoomCameraSensitivity3d / 10000
@@ -1768,7 +1817,7 @@ class ModuleDesignerControls3d:
 
         if self.toggleFreeCam.satisfied(buttons, keys):
             current_time = time.time()
-            if current_time - self.editor.last_free_cam_time > 1:  # 1 seconds delay
+            if current_time - self.editor.last_free_cam_time > 0.5:  # 0.5 seconds delay, prevents spamming
                 self.editor.toggleFreeCam()
                 self.editor.last_free_cam_time = current_time  # Update the last toggle time
             return
@@ -1871,9 +1920,9 @@ class ModuleDesignerControlsFreeCam:
             - Clears any existing key presses and centers cursor in renderer view.
         """
         self.editor: ModuleDesigner = editor
-        self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
         self.renderer.keysDown().clear()
+        self.controls3d_distance = self.renderer.scene.camera.distance
         self.renderer.scene.camera.distance = 0
         self.cameraUpdateTimer = QTimer()
         self.cameraUpdateTimer.timeout.connect(self.update_camera)
@@ -1939,6 +1988,14 @@ class ModuleDesignerControlsFreeCam:
     def moveCameraRight(self, value):
         pass
 
+    @property
+    def settings(self) -> ModuleDesignerSettings:
+        return ModuleDesignerSettings()
+
+    @settings.setter
+    def settings(self, value):
+        pass
+
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
@@ -1964,7 +2021,8 @@ class ModuleDesignerControlsFreeCam:
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         current_time = time.time()
-        if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 1):  # 1 seconds delay
+        if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay, prevents spamming
+            self.renderer.scene.camera.distance = self.controls3d_distance
             self.editor.toggleFreeCam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
             self.cameraUpdateTimer.stop()

@@ -330,7 +330,7 @@ class ModuleDesignerSettings(Settings):
     )
     boostedFlyCameraSpeedFC = Settings.addSetting(
         "boostedFlyCameraSpeedFC",
-        100,
+        200,
     )
 
     moveCameraForwardFcBind = Settings.addSetting(
