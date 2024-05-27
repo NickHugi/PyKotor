@@ -316,9 +316,9 @@ class ModuleDesigner(QMainWindow):
         self.keys_pressed_label = QLabel("Keys/Buttons: ")
         self.selected_instance_label = QLabel("Selected Instance: ")
 
-        self.status_bar.addWidget(self.mouse_pos_label, 1)
+        self.status_bar.addWidget(self.mouse_pos_label, 2)
         self.status_bar.addWidget(self.selected_instance_label, 2)
-        self.status_bar.addPermanentWidget(self.keys_pressed_label, 1)
+        self.status_bar.addPermanentWidget(self.keys_pressed_label, 2)
 
         # Initial status bar update
         # self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
@@ -1438,7 +1438,7 @@ class ModuleDesigner(QMainWindow):
         keys = self.ui.mainRenderer.keysDown()
         buttons = self.ui.mainRenderer.mouseDown()
         strength = self.settings.flyCameraSpeedFC / 500
-        if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False, debugLog=True):
+        if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False):
             strength *= 2.5
         if self._controls3d.moveCameraUp.satisfied(buttons, keys, exactKeysAndButtons=False):
             self.ui.mainRenderer.moveCamera(0, 0, strength)
@@ -1763,7 +1763,7 @@ class ModuleDesignerControls3d:
         if moveXyCameraSatisfied or moveCameraPlaneSatisfied or rotateCameraSatisfied or zoomCameraSatisfied:
             moveStrength = self.settings.moveCameraSensitivity3d / 1000
             self.editor.doCursorLock(mutableScreen=screen, centerMouse=False, doRotations=False)
-            if self.speedBoostControl.satisfied(buttons, keys, debugLog=True):
+            if self.speedBoostControl.satisfied(buttons, keys):
                 moveStrength *= 2.5
             if moveXyCameraSatisfied:
                 forward = -screenDelta.y * self.renderer.scene.camera.forward()
@@ -1843,7 +1843,10 @@ class ModuleDesignerControls3d:
 
         scene = self.renderer.scene
         assert scene is not None
-        if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
+        if (
+            self.duplicateSelected.satisfied(buttons, keys)
+            and self.editor.selectedInstances
+        ):
             self._duplicateSelectedInstance()
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*scene.cursor.position())
