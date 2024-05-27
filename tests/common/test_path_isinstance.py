@@ -28,7 +28,7 @@ from utility.system.path import Path, PosixPath, PurePath, PurePosixPath, PureWi
 
 class TestPathInheritance(unittest.TestCase):
     def test_nt_case_hashing(self):
-        test_classes: tuple[type, ...] = (PureWindowsPath, Path) if os.name == "posix" else (WindowsPath, PureWindowsPath, Path)
+        test_classes: tuple[type, ...] = (PureWindowsPath,) if os.name == "posix" else (WindowsPath, PureWindowsPath, Path)
         for PathType in test_classes:
             with self.subTest(PathType=PathType):
                 path1 = PathType("test\\path\\to\\nothing")

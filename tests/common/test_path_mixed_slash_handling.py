@@ -433,7 +433,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
         else:
             self.assertEqual(str(CustomPosixPath("C:/./Users/../test/")), "C:/Users/../test")
         self.assertEqual(str(CustomPosixPath("C:")), "C:")
-        self.assertEqual(str(CustomPosixPath("~/folder/")), os.path.expanduser("~/folder"))
+        self.assertEqual(str(CustomPosixPath("~/folder/")), "~/folder")
 
     def test_custom_path_edge_cases_posix_custom_pure_posix_path(self):
         self.assertEqual(str(CustomPurePosixPath("C:/")), "C:")

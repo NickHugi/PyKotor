@@ -52,7 +52,7 @@ def cached_isabs(path: os.PathLike | str) -> bool:
 
 @lru_cache(maxsize=20000)
 def cached_splitdrive(path: os.PathLike | str) -> tuple[str, str]:
-    return os.path.splitdrive(path)
+    return os.path.splitdrive(path)  # FIXME: PureWindowsPath needs this function for POSIX systems, but splitdrive only works on windows.
 
 @lru_cache(maxsize=20000)
 def cached_splitroot(path: os.PathLike | str) -> tuple[str, str]:
@@ -105,6 +105,8 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         *args,
         **kwargs,
     ):
+        if sys.version_info >= (3, 12, 0):
+            self._raw_paths = self.parse_args(args)
         self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[attr-defined]
 
     @classmethod
