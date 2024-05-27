@@ -758,9 +758,12 @@ class ToolWindow(QMainWindow):
             if self.dogObserver is not None:
                 self.log.debug("Stopping old watchdog service...")
                 self.dogObserver.stop()
-            self.dogObserver = Observer()
-            self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
-            self.dogObserver.start()
+
+            # FIXME(th3w1zard1): Not once in my life have I seen this watchdog report modified files correctly. Not even in Cortisol's last release version.
+            # Causes a hella slowdown on Linux, something to do with internal logging since it seems to be tracking `os.stat_result` lookups or something.`
+            #self.dogObserver = Observer()
+            #self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+            #self.dogObserver.start()
             self.log.info("Loader task completed.")
             self.settings.installations()[name].path = path
             self.installations[name] = self.active
