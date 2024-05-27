@@ -726,7 +726,7 @@ class Ui_Form(object):
 
         self.line_5 = QFrame(self.tabFCControls)
         self.line_5.setObjectName(u"line_5")
-        #self.line_5.setVerticalSpacing(10)
+        self.line_5.setVerticalSpacing(10)
         self.line_5.setFrameShape(QFrame.HLine)
         self.line_5.setFrameShadow(QFrame.Sunken)
 
@@ -765,7 +765,7 @@ class Ui_Form(object):
 
         self.line_6 = QFrame(self.tabFCControls)
         self.line_6.setObjectName(u"line_6")
-        #self.line_6.setVerticalSpacing(10)
+        self.line_6.setVerticalSpacing(10)
         self.line_6.setFrameShape(QFrame.HLine)
         self.line_6.setFrameShadow(QFrame.Sunken)
 

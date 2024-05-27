@@ -377,9 +377,9 @@ class ModuleRenderer(QOpenGLWidget):
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
 
         world = self.scene.cursor.position()
-        self._mousePrev = screen
         if datetime.now(tz=timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
+        self._mousePrev = screen
 
     def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)

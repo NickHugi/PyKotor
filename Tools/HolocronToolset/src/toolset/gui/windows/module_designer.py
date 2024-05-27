@@ -129,6 +129,10 @@ class ModuleDesigner(QMainWindow):
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.log: Logger = RobustRootLogger()
 
+        self.cameraUpdateTimer = QTimer()
+        self.cameraUpdateTimer.timeout.connect(self.update_camera)
+        self.cameraUpdateTimer.start(16)  # ~60 FPS
+
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
         self.hideDoors: bool = False
@@ -142,6 +146,7 @@ class ModuleDesigner(QMainWindow):
         # used for the undo/redo events, don't create undo/redo events until the drag finishes.
         self.isDragMoving: bool = False
         self.isDragRotating: bool = False
+        self.mousePosHistory: list[Vector2] = [Vector2(0, 0), Vector2(0, 0)]
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.windows.module_designer import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
@@ -158,7 +163,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.setupUi(self)
         self._initUi()
         self._setupSignals()
-        self.last_free_cam_time = 0  # Initialize the last toggle time
+        self.last_free_cam_time: float = 0.0  # Initialize the last toggle time
 
         def intColorToQColor(intvalue: int) -> QColor:
             """Converts an integer color value to a QColor object.
@@ -316,21 +321,31 @@ class ModuleDesigner(QMainWindow):
         self.status_bar.addPermanentWidget(self.keys_pressed_label, 1)
 
         # Initial status bar update
-        #self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
+        # self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
 
-    def updateStatusBar(self, mouse_pos, buttons, keys, current_renderer: WalkmeshRenderer | ModuleRenderer):
+    def updateStatusBar(
+        self,
+        mouse_pos,
+        buttons,
+        keys,
+        current_renderer: WalkmeshRenderer | ModuleRenderer,
+    ):
         if not isinstance(mouse_pos, Vector2):
             mouse_pos = Vector2(mouse_pos.x(), mouse_pos.y())
         # Update mouse position
         if current_renderer == self.ui.mainRenderer:
             world_pos = self.ui.mainRenderer.scene.cursor.position()
-            self.mouse_pos_label.setText(f"Mouse Position: {world_pos.x:.2f}, World Coords: {world_pos.y:.2f}, {world_pos.z:.2f}")
+            self.mouse_pos_label.setText(f"World Coords: {world_pos.y:.2f}, {world_pos.z:.2f}")
         else:
             world_pos = self.ui.flatRenderer.toWorldCoords(mouse_pos.x, mouse_pos.y)
-            self.mouse_pos_label.setText(f"Mouse Position: {world_pos.x:.2f}, World Coords: {world_pos.y:.2f}")
+            self.mouse_pos_label.setText(f"World Coords: {world_pos.y:.2f}")
 
         # Sort keys and buttons with modifiers at the beginning
-        def sort_with_modifiers(items, get_string_func: Callable[[Any], str], qtEnumType: Literal["QtKey", "QtMouse"]) -> Sequence[QtKey | QtMouse]:
+        def sort_with_modifiers(
+            items,
+            get_string_func: Callable[[Any], str],
+            qtEnumType: Literal["QtKey", "QtMouse"],
+        ) -> Sequence[QtKey | QtMouse]:
             modifiers = []
             if qtEnumType == "QtKey":
                 modifiers = [item for item in items if item in MODIFIER_KEY_NAMES]
@@ -1012,6 +1027,8 @@ class ModuleDesigner(QMainWindow):
             new_yaw = x / 60
             new_pitch = (y or 1) / 60
             new_roll = 0.0
+            if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                continue  # doesn't support rotations.
             instance.rotate(new_yaw, new_pitch, new_roll)
 
     # endregion
@@ -1198,6 +1215,34 @@ class ModuleDesigner(QMainWindow):
         self.updateStatusBar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.onMousePressed(screen, buttons, keys)
 
+    def doCursorLock(self, mutableScreen: Vector2, *, centerMouse: bool = True, doRotations: bool = True):
+        """Reset the cursor to the center of the screen to prevent it from going off screen.
+
+        Used with the FreeCam and drag camera movements and drag rotations.
+        """
+        global_new_pos = QCursor.pos()
+        if centerMouse:
+            global_old_pos = self.ui.mainRenderer.mapToGlobal(self.ui.mainRenderer.rect().center())
+            QCursor.setPos(global_old_pos.x(), global_old_pos.y())
+        else:
+            global_old_pos = self.ui.mainRenderer.mapToGlobal(QPoint(int(self.ui.mainRenderer._mousePrev.x), int(self.ui.mainRenderer._mousePrev.y)))
+            QCursor.setPos(global_old_pos)
+            # update ModuleRenderer's self._mousePrev Vector2 instance so it doesn't override our lock logic here.
+            local_old_pos = self.ui.mainRenderer.mapFromGlobal(QPoint(global_old_pos.x(), global_old_pos.y()))
+            mutableScreen.x = local_old_pos.x()
+            mutableScreen.y = local_old_pos.y()
+
+        if doRotations:
+            yaw_delta = global_old_pos.x() - global_new_pos.x()
+            pitch_delta = global_old_pos.y() - global_new_pos.y()
+            if isinstance(self._controls3d, ModuleDesignerControlsFreeCam):
+                strength = self.settings.rotateCameraSensitivityFC / 10000
+                clamp=False
+            else:
+                strength = self.settings.rotateCameraSensitivity3d / 10000
+                clamp=True
+            self.ui.mainRenderer.rotateCamera(yaw_delta * strength, -pitch_delta * strength, clampRotations=clamp)
+
     def on3dMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self.updateStatusBar(screen, buttons, keys, self.ui.mainRenderer)
         self._controls3d.onMouseReleased(screen, buttons, keys)
@@ -1317,7 +1362,6 @@ class ModuleDesigner(QMainWindow):
             return None
         return menu
 
-    # TODO Rename this here and in `onContextMenu` and `onContextMenuSelectionExists`
     def showFinalContextMenu(self, menu):
         menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
@@ -1383,6 +1427,27 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.keyReleaseEvent(e)
 
     # endregion
+
+    def update_camera(self):
+        if not self.ui.mainRenderer.underMouse():
+            return
+        keys = self.ui.mainRenderer.keysDown()
+        buttons = self.ui.mainRenderer.mouseDown()
+        strength = self.settings.flyCameraSpeedFC / 500
+        if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False):
+            strength *= 1.5
+        if self._controls3d.moveCameraUp.satisfied(buttons, keys, exactKeysAndButtons=False):
+            self.ui.mainRenderer.moveCamera(0, 0, strength)
+        if self._controls3d.moveCameraDown.satisfied(buttons, keys, exactKeysAndButtons=False):
+            self.ui.mainRenderer.moveCamera(0, 0, -strength)
+        if self._controls3d.moveCameraLeft.satisfied(buttons, keys, exactKeysAndButtons=False):
+            self.ui.mainRenderer.moveCamera(0, -strength, 0)
+        if self._controls3d.moveCameraRight.satisfied(buttons, keys, exactKeysAndButtons=False):
+            self.ui.mainRenderer.moveCamera(0, strength, 0)
+        if self._controls3d.moveCameraForward.satisfied(buttons, keys, exactKeysAndButtons=False):
+            self.ui.mainRenderer.moveCamera(strength, 0, 0)
+        if self._controls3d.moveCameraBackward.satisfied(buttons, keys, exactKeysAndButtons=False):
+            self.ui.mainRenderer.moveCamera(-strength, 0, 0)
 
 
 class ModuleDesignerControls3d:
@@ -1645,6 +1710,14 @@ class ModuleDesignerControls3d:
         pass
 
     @property
+    def speedBoostControl(self) -> ControlItem:  # TODO(th3w1zar1): Create a new speed boost key specifically for ModuleDesignerControls3d to use.
+        return ControlItem(self.settings.speedBoostCameraFcBind)
+
+    @speedBoostControl.setter
+    def speedBoostControl(self, value):
+        pass
+
+    @property
     def settings(self) -> ModuleDesignerSettings:
         return ModuleDesignerSettings()
 
@@ -1656,8 +1729,7 @@ class ModuleDesignerControls3d:
         if self.zoomCamera.satisfied(buttons, keys):
             strength = self.settings.zoomCameraSensitivity3d / 10000
             self.renderer.scene.camera.distance += -delta.y * strength
-
-        if self.moveZCamera.satisfied(buttons, keys):
+        elif self.moveZCamera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity3d / 10000
             self.renderer.scene.camera.z -= -delta.y * strength
 
@@ -1680,38 +1752,39 @@ class ModuleDesignerControls3d:
             keys (set[int]): Pressed keyboard keys
         """
         # Handle movement of View
-        moveXyCameraSatisfied = self.moveXYCamera.satisfied(buttons, keys)
-        moveCameraPlaneSatisfied = self.moveCameraPlane.satisfied(buttons, keys)
-        rotateCameraSatisfied = self.rotateCamera.satisfied(buttons, keys)
-        zoomCameraSatisfied = self.zoomCameraMM.satisfied(buttons, keys)
+        moveXyCameraSatisfied = self.moveXYCamera.satisfied(buttons, keys, debugLog=True)
+        moveCameraPlaneSatisfied = self.moveCameraPlane.satisfied(buttons, keys, debugLog=True)
+        rotateCameraSatisfied = self.rotateCamera.satisfied(buttons, keys, debugLog=True)
+        zoomCameraSatisfied = self.zoomCameraMM.satisfied(buttons, keys, debugLog=True)
         if moveXyCameraSatisfied or moveCameraPlaneSatisfied or rotateCameraSatisfied or zoomCameraSatisfied:
+            moveStrength = self.settings.moveCameraSensitivity3d / 1000
+            self.editor.doCursorLock(mutableScreen=screen, centerMouse=False, doRotations=False)
+            if self.speedBoostControl.satisfied(buttons, keys):
+                moveStrength *= 1.3
             if moveXyCameraSatisfied:
                 forward = -screenDelta.y * self.renderer.scene.camera.forward()
                 sideward = screenDelta.x * self.renderer.scene.camera.sideward()
-                strength = self.settings.moveCameraSensitivity3d / 1000
-                self.renderer.scene.camera.x -= (forward.x + sideward.x) * strength
-                self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
+                self.renderer.scene.camera.x -= (forward.x + sideward.x) * moveStrength
+                self.renderer.scene.camera.y -= (forward.y + sideward.y) * moveStrength
             if moveCameraPlaneSatisfied:  # sourcery skip: extract-method
                 upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_xy=False)
                 sideward = screenDelta.x * self.renderer.scene.camera.sideward()
-                strength = self.settings.moveCameraSensitivity3d / 1000
-                self.renderer.scene.camera.z -= (upward.z + sideward.z) * strength
-                self.renderer.scene.camera.y -= (upward.y + sideward.y) * strength
-                self.renderer.scene.camera.x -= (upward.x + sideward.x) * strength
+                moveStrength = self.settings.moveCameraSensitivity3d / 1000
+                self.renderer.scene.camera.z -= (upward.z + sideward.z) * moveStrength
+                self.renderer.scene.camera.y -= (upward.y + sideward.y) * moveStrength
+                self.renderer.scene.camera.x -= (upward.x + sideward.x) * moveStrength
+            rotateStrength = self.settings.moveCameraSensitivity3d / 10000
             if rotateCameraSatisfied:
-                strength = self.settings.moveCameraSensitivity3d / 10000
-                self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength, clampRotations=True)
-                return  # save users from motion sickness: don't process other commands during view rotations.
+                self.renderer.rotateCamera(-screenDelta.x * rotateStrength, screenDelta.y * rotateStrength, clampRotations=True)
             if zoomCameraSatisfied:
-                strength = self.settings.zoomCameraSensitivity3d / 10000
-                self.renderer.scene.camera.distance -= screenDelta.y * strength
+                self.renderer.scene.camera.distance -= screenDelta.y * rotateStrength
 
-            return  # Don't process instance commands while moving the camera.
+            #return
 
         # Handle movement of selected instances.
-        if self.moveXYSelected.satisfied(buttons, keys):
-            if self.editor.ui.lockInstancesCheck.isChecked():
-                return
+        if self.editor.ui.lockInstancesCheck.isChecked():
+            return
+        if self.moveXYSelected.satisfied(buttons, keys, debugLog=True):
 
             if not self.editor.isDragMoving:
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
@@ -1726,15 +1799,19 @@ class ModuleDesignerControls3d:
                 z = instance.position.z if isinstance(instance, GITCamera) else scene.cursor.position().z
                 instance.position = Vector3(x, y, z)
 
-        if self.moveZSelected.satisfied(buttons, keys):
+        if self.moveZSelected.satisfied(buttons, keys, debugLog=True):
+            if self.editor.ui.lockInstancesCheck.isChecked():
+                return
             if not self.editor.isDragMoving:
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
             for instance in self.editor.selectedInstances:
                 instance.position.z -= screenDelta.y / 40
 
-        if self.rotateSelected.satisfied(buttons, keys):
-            if not self.editor.isDragRotating and not self.editor.ui.lockInstancesCheck.isChecked():
+        if self.rotateSelected.satisfied(buttons, keys, debugLog=True):
+            if self.editor.ui.lockInstancesCheck.isChecked():
+                return
+            if not self.editor.isDragRotating:
                 self.editor.isDragRotating = True
                 self.editor.log.debug("rotateSelected instance in 3d")
                 for instance in self.editor.selectedInstances:
@@ -1847,12 +1924,12 @@ class ModuleDesignerControls3d:
             "down": self.rotateCameraDown.satisfied(buttons, keys)
         }
         movement_keys = {
-            "up": self.moveCameraUp.satisfied(buttons, keys),
-            "down": self.moveCameraDown.satisfied(buttons, keys),
-            "left": self.moveCameraLeft.satisfied(buttons, keys),
-            "right": self.moveCameraRight.satisfied(buttons, keys),
-            "forward": self.moveCameraForward.satisfied(buttons, keys),
-            "backward": self.moveCameraBackward.satisfied(buttons, keys),
+            #"up": self.moveCameraUp.satisfied(buttons, keys),
+            #"down": self.moveCameraDown.satisfied(buttons, keys),
+            #"left": self.moveCameraLeft.satisfied(buttons, keys),
+            #"right": self.moveCameraRight.satisfied(buttons, keys),
+            #"forward": self.moveCameraForward.satisfied(buttons, keys),
+            #"backward": self.moveCameraBackward.satisfied(buttons, keys),
             "in": self.zoomCameraIn.satisfied(buttons, keys),
             "out": self.zoomCameraOut.satisfied(buttons, keys)
         }
@@ -1924,11 +2001,7 @@ class ModuleDesignerControlsFreeCam:
         self.renderer.keysDown().clear()
         self.controls3d_distance = self.renderer.scene.camera.distance
         self.renderer.scene.camera.distance = 0
-        self.cameraUpdateTimer = QTimer()
-        self.cameraUpdateTimer.timeout.connect(self.update_camera)
-        self.cameraUpdateTimer.start(32)  # ~30 FPS
         self.renderer.setCursor(QtCore.Qt.CursorShape.BlankCursor)
-        self.last_mouse_pos = QCursor.pos()
         self.renderer.scene.show_cursor = False
 
 
@@ -1989,6 +2062,14 @@ class ModuleDesignerControlsFreeCam:
         pass
 
     @property
+    def speedBoostControl(self) -> ControlItem:
+        return ControlItem(self.settings.speedBoostCameraFcBind)
+
+    @speedBoostControl.setter
+    def speedBoostControl(self, value):
+        pass
+
+    @property
     def settings(self) -> ModuleDesignerSettings:
         return ModuleDesignerSettings()
 
@@ -1998,21 +2079,8 @@ class ModuleDesignerControlsFreeCam:
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):
-        current_mouse_pos = QCursor.pos()
-        screen_center = self.renderer.mapToGlobal(self.renderer.rect().center())
-
-        # Calculate the mouse delta before resetting the cursor
-        mouse_delta = current_mouse_pos - self.last_mouse_pos
-
-        # Reset the cursor to the center of the screen to prevent it from going off screen
-        QCursor.setPos(screen_center)
-        self.last_mouse_pos = screen_center  # Immediately update last_mouse_pos to the center
-
-        # Calculate rotation strength based on sensitivity settings
-        strength = self.settings.rotateCameraSensitivityFC / 10000
-        # Apply the camera rotation using the calculated mouse delta
-        self.renderer.rotateCamera(-mouse_delta.x() * strength, mouse_delta.y() * strength, clampRotations=False)
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):  # noqa: PLR0913
+        self.editor.doCursorLock(screen)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
         ...
@@ -2022,27 +2090,9 @@ class ModuleDesignerControlsFreeCam:
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         current_time = time.time()
         if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay, prevents spamming
-            self.renderer.scene.camera.distance = self.controls3d_distance
+            #self.renderer.scene.camera.distance = self.controls3d_distance
             self.editor.toggleFreeCam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
-            self.cameraUpdateTimer.stop()
-
-    def update_camera(self):
-        keys = self.renderer.keysDown()
-        buttons = self.renderer.mouseDown()
-        strength = self.settings.flyCameraSpeedFC / 100
-        if self.moveCameraUp.satisfied(buttons, keys, exactKeys=False):
-            self.renderer.moveCamera(0, 0, strength)
-        if self.moveCameraDown.satisfied(buttons, keys, exactKeys=False):
-            self.renderer.moveCamera(0, 0, -strength)
-        if self.moveCameraLeft.satisfied(buttons, keys, exactKeys=False):
-            self.renderer.moveCamera(0, -strength, 0)
-        if self.moveCameraRight.satisfied(buttons, keys, exactKeys=False):
-            self.renderer.moveCamera(0, strength, 0)
-        if self.moveCameraForward.satisfied(buttons, keys, exactKeys=False):
-            self.renderer.moveCamera(strength, 0, 0)
-        if self.moveCameraBackward.satisfied(buttons, keys, exactKeys=False):
-            self.renderer.moveCamera(-strength, 0, 0)
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
 
@@ -2209,8 +2259,10 @@ class ModuleDesignerControls2d:
             if shouldRotateCamera:
                 strength = self.settings.rotateCameraSensitivity2d / 100 / 50
                 self.renderer.camera.nudgeRotation(screenDelta.x * strength)
-            return
+            #return
 
+        if self.editor.ui.lockInstancesCheck.isChecked():
+            return
         if self.moveSelected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
                 RobustRootLogger().debug("Move geometry point %s, %s", worldDelta.x, worldDelta.y)
