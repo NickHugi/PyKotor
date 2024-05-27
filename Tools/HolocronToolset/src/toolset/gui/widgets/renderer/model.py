@@ -185,6 +185,9 @@ class ModelRenderer(QOpenGLWidget):
             raise ValueError("Scene must be constructed before this operation.")
         return self._scene
 
+    def setInstallation(self, installation: Installation):
+        self.installation = installation
+
     def initializeGL(self):
         self._scene = Scene(installation=self.installation)
         self.scene.camera.fov = ModuleDesignerSettings().fieldOfView
@@ -277,7 +280,7 @@ class ModelRenderer(QOpenGLWidget):
             return
 
         if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
-            strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 20000
+            strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 30000
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
     def mouseMoveEvent(self, e: QMouseEvent):

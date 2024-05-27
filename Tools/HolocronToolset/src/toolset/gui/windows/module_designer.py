@@ -79,7 +79,7 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QCheckBox, QWidget
     from typing_extensions import Literal
 
-    from pykotor.gl.scene import Camera
+    from pykotor.gl.scene import Camera, Scene
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import GIT
@@ -1752,10 +1752,10 @@ class ModuleDesignerControls3d:
             keys (set[int]): Pressed keyboard keys
         """
         # Handle movement of View
-        moveXyCameraSatisfied = self.moveXYCamera.satisfied(buttons, keys, debugLog=True)
-        moveCameraPlaneSatisfied = self.moveCameraPlane.satisfied(buttons, keys, debugLog=True)
-        rotateCameraSatisfied = self.rotateCamera.satisfied(buttons, keys, debugLog=True)
-        zoomCameraSatisfied = self.zoomCameraMM.satisfied(buttons, keys, debugLog=True)
+        moveXyCameraSatisfied = self.moveXYCamera.satisfied(buttons, keys)
+        moveCameraPlaneSatisfied = self.moveCameraPlane.satisfied(buttons, keys)
+        rotateCameraSatisfied = self.rotateCamera.satisfied(buttons, keys)
+        zoomCameraSatisfied = self.zoomCameraMM.satisfied(buttons, keys)
         if moveXyCameraSatisfied or moveCameraPlaneSatisfied or rotateCameraSatisfied or zoomCameraSatisfied:
             moveStrength = self.settings.moveCameraSensitivity3d / 1000
             self.editor.doCursorLock(mutableScreen=screen, centerMouse=False, doRotations=False)
@@ -1774,17 +1774,15 @@ class ModuleDesignerControls3d:
                 self.renderer.scene.camera.y -= (upward.y + sideward.y) * moveStrength
                 self.renderer.scene.camera.x -= (upward.x + sideward.x) * moveStrength
             rotateStrength = self.settings.moveCameraSensitivity3d / 10000
-            if rotateCameraSatisfied:
-                self.renderer.rotateCamera(-screenDelta.x * rotateStrength, screenDelta.y * rotateStrength, clampRotations=True)
-            if zoomCameraSatisfied:
-                self.renderer.scene.camera.distance -= screenDelta.y * rotateStrength
-
-            #return
+        if rotateCameraSatisfied:
+            self.renderer.rotateCamera(-screenDelta.x * rotateStrength, screenDelta.y * rotateStrength, clampRotations=True)
+        if zoomCameraSatisfied:
+            self.renderer.scene.camera.distance -= screenDelta.y * rotateStrength
 
         # Handle movement of selected instances.
         if self.editor.ui.lockInstancesCheck.isChecked():
             return
-        if self.moveXYSelected.satisfied(buttons, keys, debugLog=True):
+        if self.moveXYSelected.satisfied(buttons, keys):
 
             if not self.editor.isDragMoving:
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
@@ -1799,7 +1797,7 @@ class ModuleDesignerControls3d:
                 z = instance.position.z if isinstance(instance, GITCamera) else scene.cursor.position().z
                 instance.position = Vector3(x, y, z)
 
-        if self.moveZSelected.satisfied(buttons, keys, debugLog=True):
+        if self.moveZSelected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
                 return
             if not self.editor.isDragMoving:
@@ -1808,7 +1806,7 @@ class ModuleDesignerControls3d:
             for instance in self.editor.selectedInstances:
                 instance.position.z -= screenDelta.y / 40
 
-        if self.rotateSelected.satisfied(buttons, keys, debugLog=True):
+        if self.rotateSelected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
                 return
             if not self.editor.isDragRotating:
@@ -1944,9 +1942,15 @@ class ModuleDesignerControls3d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def _handle_keyboard_camera_rotations_movements(self, settings, rotation_keys, movement_keys, scene):
+    def _handle_keyboard_camera_rotations_movements(
+        self,
+        settings: ModuleDesignerSettings,
+        rotation_keys: dict[str, ControlItem],
+        movement_keys: dict[str, ControlItem],
+        scene: Scene,
+    ):
         # Calculate rotation and movement deltas
-        normalized_rotation_setting = settings.rotateCameraSensitivity3d / 250
+        normalized_rotation_setting = settings.rotateCameraSensitivity3d / 1000
         angle_delta = (math.pi / 4) * normalized_rotation_setting
 
         # Rotate camera based on key inputs
