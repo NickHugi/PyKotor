@@ -34,7 +34,6 @@ from pykotor.resource.generics.git import (
 )
 from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import (
