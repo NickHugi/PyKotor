@@ -1924,12 +1924,12 @@ class ModuleDesignerControls3d:
             "down": self.rotateCameraDown.satisfied(buttons, keys)
         }
         movement_keys = {
-            #"up": self.moveCameraUp.satisfied(buttons, keys),
-            #"down": self.moveCameraDown.satisfied(buttons, keys),
-            #"left": self.moveCameraLeft.satisfied(buttons, keys),
-            #"right": self.moveCameraRight.satisfied(buttons, keys),
-            #"forward": self.moveCameraForward.satisfied(buttons, keys),
-            #"backward": self.moveCameraBackward.satisfied(buttons, keys),
+            "up": False,  #self.moveCameraUp.satisfied(buttons, keys),
+            "down": False,  #self.moveCameraDown.satisfied(buttons, keys),
+            "left": False,  #self.moveCameraLeft.satisfied(buttons, keys),
+            "right": False,  #self.moveCameraRight.satisfied(buttons, keys),
+            "forward": False,  #self.moveCameraForward.satisfied(buttons, keys),
+            "backward": False,  #self.moveCameraBackward.satisfied(buttons, keys),
             "in": self.zoomCameraIn.satisfied(buttons, keys),
             "out": self.zoomCameraOut.satisfied(buttons, keys)
         }
