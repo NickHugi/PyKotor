@@ -1075,17 +1075,21 @@ class ModuleDesigner(QMainWindow):
 
     def onInstanceListSingleClicked(self):
         if self.ui.instanceList.selectedItems():
-            item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
-            instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            instance = self.getGitInstanceFromHighlightedListItem()
             self.setSelection([instance])
 
     def onInstanceListDoubleClicked(self):
         if self.ui.instanceList.selectedItems():
-            item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
-            instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            instance = self.getGitInstanceFromHighlightedListItem()
             self.setSelection([instance])
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
+
+    # TODO Rename this here and in `onInstanceListSingleClicked` and `onInstanceListDoubleClicked`
+    def getGitInstanceFromHighlightedListItem(self):
+        item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
+        result: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        return result
 
     def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox):
         """Toggles visibility of a single instance type on double click.
@@ -1434,8 +1438,8 @@ class ModuleDesigner(QMainWindow):
         keys = self.ui.mainRenderer.keysDown()
         buttons = self.ui.mainRenderer.mouseDown()
         strength = self.settings.flyCameraSpeedFC / 500
-        if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False):
-            strength *= 1.5
+        if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False, debugLog=True):
+            strength *= 2.5
         if self._controls3d.moveCameraUp.satisfied(buttons, keys, exactKeysAndButtons=False):
             self.ui.mainRenderer.moveCamera(0, 0, strength)
         if self._controls3d.moveCameraDown.satisfied(buttons, keys, exactKeysAndButtons=False):
@@ -1759,8 +1763,8 @@ class ModuleDesignerControls3d:
         if moveXyCameraSatisfied or moveCameraPlaneSatisfied or rotateCameraSatisfied or zoomCameraSatisfied:
             moveStrength = self.settings.moveCameraSensitivity3d / 1000
             self.editor.doCursorLock(mutableScreen=screen, centerMouse=False, doRotations=False)
-            if self.speedBoostControl.satisfied(buttons, keys):
-                moveStrength *= 1.3
+            if self.speedBoostControl.satisfied(buttons, keys, debugLog=True):
+                moveStrength *= 2.5
             if moveXyCameraSatisfied:
                 forward = -screenDelta.y * self.renderer.scene.camera.forward()
                 sideward = screenDelta.x * self.renderer.scene.camera.sideward()
