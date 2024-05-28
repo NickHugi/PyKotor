@@ -1261,9 +1261,10 @@ class _InstanceMode(_Mode):
         if not noUndoStack:
             undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
             undoStack.push(DeleteCommand(self._git, selection.copy(), self._editor))
-        for instance in selection:
-            self._git.remove(instance)
-            self.renderer2d.instanceSelection.remove(instance)
+        else:
+            for instance in selection:
+                self._git.remove(instance)
+                self.renderer2d.instanceSelection.remove(instance)
         self.buildList()
 
     def duplicateSelected(self, position: Vector3, *, noUndoStack: bool = False):
