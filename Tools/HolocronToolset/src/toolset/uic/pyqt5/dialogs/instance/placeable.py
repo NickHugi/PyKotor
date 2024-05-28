@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '../ui/dialogs/instance/placeable.ui'
+# Form implementation generated from reading ui file '..\ui\dialogs\instance\placeable.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #

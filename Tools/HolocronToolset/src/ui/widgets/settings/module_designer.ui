@@ -99,7 +99,7 @@
                                             <item>
                                                 <layout class="QFormLayout" name="formLayout_5">
                                                     <item row="0" column="0">
-                                                        <widget class="QLabel" name="label">
+                                                        <widget class="QLabel" name="label602">
                                                             <property name="text">
                                                                 <string>Move Sensitivity</string>
                                                             </property>
@@ -1288,7 +1288,7 @@
                                                         </widget>
                                                     </item>
                                                     <item row="1" column="0">
-                                                        <widget class="QLabel" name="label_60">
+                                                        <widget class="QLabel" name="label_601">
                                                             <property name="text">
                                                                 <string>Rotate Sensitivity</string>
                                                             </property>
@@ -1310,31 +1310,11 @@
                                                     <item row="2" column="0">
                                                         <widget class="QLabel" name="label_60">
                                                             <property name="text">
-                                                                <string>Fly Sensitivity</string>
-                                                            </property>
-                                                        </widget>
-                                                    </item>
-                                                    <item row="2" column="1">
-                                                        <widget class="QSlider" name="flyCameraSensitivityFcEdit">
-                                                            <property name="minimum">
-                                                                <number>10</number>
-                                                            </property>
-                                                            <property name="maximum">
-                                                                <number>1000</number>
-                                                            </property>
-                                                            <property name="orientation">
-                                                                <enum>Qt::Horizontal</enum>
-                                                            </property>
-                                                        </widget>
-                                                    </item>
-                                                    <item row="3" column="0">
-                                                        <widget class="QLabel" name="label_60">
-                                                            <property name="text">
                                                                 <string>Boosted Fly Speed</string>
                                                             </property>
                                                         </widget>
                                                     </item>
-                                                    <item row="3" column="1">
+                                                    <item row="2" column="1">
                                                         <widget class="QSlider" name="boostedFlyCameraSpeedFCEdit">
                                                             <property name="minimum">
                                                                 <number>10</number>
@@ -1515,7 +1495,7 @@
                                                         <widget class="SetBindWidget" name="moveCameraDownFcBindEdit" native="true"/>
                                                     </item>
                                                     <item row="6" column="0">
-                                                        <widget class="QLabel" name="label_69">
+                                                        <widget class="QLabel" name="label_691">
                                                             <property name="minimumSize">
                                                                 <size>
                                                                     <width>110</width>
@@ -1540,7 +1520,7 @@
                                                         <widget class="SetBindWidget" name="speedBoostCameraFcBindEdit" native="true"/>
                                                     </item>
                                                     <item row="7" column="0">
-                                                        <widget class="QLabel" name="label_70">
+                                                        <widget class="QLabel" name="label_701">
                                                             <property name="minimumSize">
                                                                 <size>
                                                                     <width>110</width>
@@ -1565,7 +1545,7 @@
                                                         <widget class="SetBindWidget" name="rotateCameraLeftFcBindEdit" native="true"/>
                                                     </item>
                                                     <item row="8" column="0">
-                                                        <widget class="QLabel" name="label_71">
+                                                        <widget class="QLabel" name="label_711">
                                                             <property name="minimumSize">
                                                                 <size>
                                                                     <width>110</width>

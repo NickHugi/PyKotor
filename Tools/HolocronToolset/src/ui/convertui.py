@@ -123,6 +123,6 @@ if __name__ == "__main__":
         qt_versions_to_run = qt_versions
 
     for qt_version in qt_versions_to_run:
-        compile_ui(qt_version, ignore_timestamp=True)
+        compile_ui(qt_version, ignore_timestamp=False)
         compile_qrc(qt_version, ignore_timestamp=False)
     print("All ui compilations completed")

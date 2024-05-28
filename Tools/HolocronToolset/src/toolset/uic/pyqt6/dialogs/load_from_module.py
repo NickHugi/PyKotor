@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file '../ui/dialogs/load_from_module.ui'
+# Form implementation generated from reading ui file '..\ui\dialogs\load_from_module.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #

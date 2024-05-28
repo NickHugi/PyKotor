@@ -131,6 +131,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self.settings.fieldOfView = self.ui.fovSpin.value()
         self.settings.flyCameraSpeedFC = self.ui.flySpeedFcEdit.value()
         self.settings.boostedFlyCameraSpeedFC = self.ui.boostedFlyCameraSpeedFCEdit.value()
+
         self.settings.moveCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
         self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
         self.settings.zoomCameraSensitivity3d = self.ui.zoomCameraSensitivity3dEdit.value()

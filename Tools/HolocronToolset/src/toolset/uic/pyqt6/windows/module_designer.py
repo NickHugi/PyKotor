@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file '../ui/windows/module_designer.ui'
+# Form implementation generated from reading ui file '..\ui\windows\module_designer.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #
