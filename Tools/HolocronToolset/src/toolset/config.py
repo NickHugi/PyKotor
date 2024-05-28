@@ -16,7 +16,7 @@ from utility.logger_util import RobustRootLogger
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "3.0.0b8.1",
+    "currentVersion": "3.0.0b9",
     "toolsetLatestVersion": "2.1.2",
     "toolsetLatestBetaVersion": "3.0.0b8.1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
@@ -52,7 +52,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "A hotfix has been released:<br> - Fix watchdog file reloader<br> - Fix GITEditor/Module Designer not finding locations defined in .git.<br> - Handle all logging asynchronously, so it will not lag the main thread.<br> - Fix case-insensitive pathing on linux<br> - Fix right click context menus on Linux/Mac",
+    "toolsetLatestBetaNotes": "Deep-tested various editors and fixed bugs. Improve many things in the Module Designer. Fix a few bugs in the GITEditor undo/redo logic. Various other improvements/features will be noticeable.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
