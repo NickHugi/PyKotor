@@ -898,42 +898,38 @@ class ModuleDesigner(QMainWindow):
                 self.ui.mainRenderer.scene.clearCacheBuffer.append(ident)
             self.rebuildInstanceList()
 
-    def snapCameraToView(self, instance: GITCamera):
-        scene = self.ui.mainRenderer.scene
-        assert scene is not None
+    def snapCameraToView(self, gitCameraInstance: GITCamera):
+        viewCamera: Camera = self._getSceneCamera()
+        viewPosition: vec3 = viewCamera.true_position()
 
-        view: vec3 = scene.camera.true_position()
-        rot: Camera = scene.camera
-
-        new_position = Vector3(view.x, view.y, view.z-instance.height)
-        self.undoStack.push(MoveCommand(instance, instance.position, new_position))
-        instance.position = new_position
+        new_position = Vector3(viewPosition.x, viewPosition.y, viewPosition.z-gitCameraInstance.height)
+        self.undoStack.push(MoveCommand(gitCameraInstance, gitCameraInstance.position, new_position))
+        gitCameraInstance.position = new_position
 
         self.log.debug("Create RotateCommand for undo/redo functionality")
-        correction_factor = 0.09  # This value may need adjustment based on further testing
-        pitch = math.pi - (rot.pitch + (math.pi / 2)) + correction_factor
-        yaw = math.pi / 2 - rot.yaw
+        pitch = math.pi - (viewCamera.pitch + (math.pi / 2))
+        yaw = math.pi / 2 - viewCamera.yaw
         new_orientation = Vector4.from_euler(yaw, 0, pitch)
-        self.undoStack.push(RotateCommand(instance, instance.orientation, new_orientation))
-        instance.orientation = new_orientation
+        self.undoStack.push(RotateCommand(gitCameraInstance, gitCameraInstance.orientation, new_orientation))
+        gitCameraInstance.orientation = new_orientation
 
-    def snapViewToGITInstance(self, instance: GITInstance):
+    def snapViewToGITCamera(self, gitCameraInstance: GITCamera):
+        viewCamera: Camera = self._getSceneCamera()
+        euler: Vector3 = gitCameraInstance.orientation.to_euler()
+        viewCamera.pitch = math.pi - euler.z - math.radians(gitCameraInstance.pitch)
+        viewCamera.yaw = math.pi / 2 - euler.x
+        viewCamera.x = gitCameraInstance.position.x
+        viewCamera.y = gitCameraInstance.position.y
+        viewCamera.z = gitCameraInstance.position.z + gitCameraInstance.height
+        viewCamera.distance = 0
+
+    def snapViewToGITInstance(self, gitInstance: GITInstance):
         camera: Camera = self._getSceneCamera()
-        yaw = instance.yaw()
+        yaw = gitInstance.yaw()
         camera.yaw = camera.yaw if yaw is None else yaw
-        camera.x, camera.y, camera.z = instance.position
-        camera.y = instance.position.y
-        camera.z = instance.position.z+2
-        camera.distance = 0
-
-    def snapViewToGITCamera(self, instance: GITCamera):
-        camera: Camera = self._getSceneCamera()
-        euler: Vector3 = instance.orientation.to_euler()
-        camera.pitch = math.pi - euler.z - math.radians(instance.pitch)
-        camera.yaw = math.pi / 2 - euler.x
-        camera.x = instance.position.x
-        camera.y = instance.position.y
-        camera.z = instance.position.z + instance.height
+        camera.x, camera.y, camera.z = gitInstance.position
+        camera.y = gitInstance.position.y
+        camera.z = gitInstance.position.z+2
         camera.distance = 0
 
     def _getSceneCamera(self) -> Camera:
