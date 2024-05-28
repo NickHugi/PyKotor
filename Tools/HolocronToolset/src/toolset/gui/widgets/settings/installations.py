@@ -243,7 +243,7 @@ class GlobalSettings(Settings):
         The installations dictionary is then saved back to the user settings.
         """
         RobustRootLogger.info("First time user, attempt auto-detection of currently installed KOTOR paths.")
-        self.extractPath = str(get_log_directory(f"{uuid.uuid4()[:7]}_extract"))
+        self.extractPath = str(get_log_directory(f"{uuid.uuid4().hex[:7]}_extract"))
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
         # Create a set of existing paths
         existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
