@@ -168,10 +168,6 @@ class ModuleRenderer(QOpenGLWidget):
         """Stops the rendering loop, unloads the module and installation, and attempts to destroy the OpenGL context."""
         RobustRootLogger().debug("ModuleRenderer - shutdownRenderer called.")
         self.pauseRenderLoop()
-
-        if self._scene and self.scene.profiler is not True and self.scene.profiler is not False:
-            self.scene.profiler.disable()
-            self.scene.profiler.dump_stats("scene_output.pstat")
         self._module = None
         self._installation = None
 
