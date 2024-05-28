@@ -2020,7 +2020,7 @@ class ModuleDesignerControlsFreeCam:
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         current_time = time.time()
         if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay, prevents spamming
-            self.renderer.scene.camera.distance = self.controls3d_distance
+            #self.renderer.scene.camera.distance = self.controls3d_distance
             self.editor.toggleFreeCam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
 
