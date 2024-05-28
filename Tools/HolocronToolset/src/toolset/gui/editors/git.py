@@ -143,7 +143,7 @@ class DuplicateCommand(QUndoCommand):
                 continue
             RobustRootLogger().debug(f"Undo duplicate: {instance.identifier()}")
             if isinstance(self.editor, GITEditor):
-                self.editor._mode.renderer2d.instanceSelection.select([instance])
+                self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
             else:
                 self.editor.setSelection([instance])
             self.editor.deleteSelected(noUndoStack=True)
@@ -167,7 +167,7 @@ class DuplicateCommand(QUndoCommand):
             RobustRootLogger().debug(f"Redo duplicate: {instance.identifier()}")
             self.git.add(instance)
             if isinstance(self.editor, GITEditor):
-                self.editor._mode.renderer2d.instanceSelection.select([instance])
+                self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
             else:
                 self.editor.setSelection([instance])
         self.rebuildInstanceList()
@@ -199,11 +199,9 @@ class DeleteCommand(QUndoCommand):
             self.editor.enterInstanceMode()
             assert isinstance(self.editor._mode, _InstanceMode)  # noqa: SLF001
             self.editor._mode.buildList()  # noqa: SLF001
-            self.editor._mode.renderer2d.instanceSelection.select([])
         else:
             self.editor.enterInstanceMode()
             self.editor.rebuildInstanceList()
-            self.editor.setSelection([])
 
     def redo(self):
         RobustRootLogger().debug(f"Redo delete: {[repr(instance) for instance in self.instances]}")
@@ -214,7 +212,7 @@ class DeleteCommand(QUndoCommand):
                 continue
             RobustRootLogger().debug(f"Redo delete: {instance!r}")
             if isinstance(self.editor, GITEditor):
-                self.editor._mode.renderer2d.instanceSelection.select([instance])
+                self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
             else:
                 self.editor.setSelection([instance])
             self.editor.deleteSelected(noUndoStack=True)
