@@ -128,7 +128,7 @@ class ModuleDesigner(QMainWindow):
 
         self.selectedInstances: list[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.log: Logger = RobustRootLogger()
+        self.log: RobustRootLogger = RobustRootLogger()
 
         self.baseFrameRate = 60
         self.cameraUpdateTimer = QTimer()
@@ -226,6 +226,8 @@ class ModuleDesigner(QMainWindow):
             QTimer().singleShot(33, lambda: self.openModule(mod_filepath))
 
     def showEvent(self, a0: QShowEvent):
+        if self.ui.mainRenderer._scene is None:
+            return  # otherwise the gl context stuff will start prematurely.
         super().showEvent(a0)
 
     def closeEvent(self, event: QCloseEvent):
@@ -459,7 +461,8 @@ class ModuleDesigner(QMainWindow):
             if git_resource is None:
                 raise ValueError(f"This module '{mod_root}' is missing a GIT!")
 
-            git: GIT = git_resource.resource()
+            git: GIT | None = git_resource.resource()
+            assert git is not None
             walkmeshes: list[BWM] = []
             for bwm in combined_module.resources.values():
                 if bwm.restype() is not ResourceType.WOK:

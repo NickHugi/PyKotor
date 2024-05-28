@@ -1037,7 +1037,7 @@ class ToolWindow(QMainWindow):
             return
         #run_module_designer(str(self.active.path()), self.active.name, self.active.tsl)
         designer = ModuleDesigner(None, self.active)
-        addWindow(designer)
+        addWindow(designer, show=False)
 
     def openSettingsDialog(self):
         """Opens the Settings dialog and refresh installation combo list if changes."""
