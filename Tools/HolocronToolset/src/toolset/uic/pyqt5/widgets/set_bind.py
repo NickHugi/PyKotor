@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '..\ui\widgets\set_bind.ui'
+# Form implementation generated from reading ui file '../ui/widgets/set_bind.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #

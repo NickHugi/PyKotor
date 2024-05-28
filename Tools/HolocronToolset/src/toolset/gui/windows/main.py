@@ -43,7 +43,6 @@ from qtpy.QtWidgets import (
 )
 from typing_extensions import Literal
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier

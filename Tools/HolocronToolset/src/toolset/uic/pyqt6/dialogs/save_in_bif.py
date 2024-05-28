@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file '..\ui\dialogs\save_in_bif.ui'
+# Form implementation generated from reading ui file '../ui/dialogs/save_in_bif.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #

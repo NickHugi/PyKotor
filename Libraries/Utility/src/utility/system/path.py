@@ -455,10 +455,6 @@ class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
 
 
 class Path(PurePath, pathlib.Path):  # type: ignore[misc]
-    def __new__(cls, *args, **kwargs) -> Self:
-        if cls is Path:
-            cls = WindowsPath if os.name == "nt" else PosixPath
-        return super().__new__(cls, *args, **kwargs)  # type: ignore[reportReturnType]
 
     # Safe rglob operation
     def safe_rglob(

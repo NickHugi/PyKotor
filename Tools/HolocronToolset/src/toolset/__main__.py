@@ -171,9 +171,15 @@ if __name__ == "__main__":
     main_init()
 
     from qtpy.QtCore import QThread
+    from qtpy.QtGui import QSurfaceFormat
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     app = QApplication(sys.argv)
+
+    # Set up the surface format with debug context
+    fmt = QSurfaceFormat()
+    fmt.setOption(QSurfaceFormat.DebugContext)
+    QSurfaceFormat.setDefaultFormat(fmt)
 
     # font = app.font()
     # font.setPixelSize(15)

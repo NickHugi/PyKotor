@@ -11,7 +11,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
-from qtpy.QtWidgets import QAction, QApplication, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem
+from qtpy.QtWidgets import QAction, QApplication, QHBoxLayout, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QStatusBar, QTreeWidgetItem, QVBoxLayout
 
 from pykotor.gl.scene import Camera
 from pykotor.tools.misc import is_mod_file
@@ -23,6 +23,8 @@ elif qtpy.API_NAME in ("PyQt6", "PySide6"):
     from qtpy.QtGui import QUndoStack
 else:
     raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
+
+from qtpy.QtWidgets import QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -62,6 +64,7 @@ from toolset.gui.editors.git import (  # This is a one directional import to avo
     calculate_zoom_strength,
     openInstanceDialog,
 )
+from toolset.gui.widgets.renderer.module import ModuleRenderer
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import BUTTON_TO_INT, MODIFIER_KEY_NAMES, QtMouse, getQtButtonString, getQtKeyString
@@ -76,17 +79,16 @@ if TYPE_CHECKING:
 
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
-    from qtpy.QtWidgets import QCheckBox, QWidget
+    from qtpy.QtWidgets import QCheckBox
     from typing_extensions import Literal
 
-    from pykotor.gl.scene import Camera, Scene
+    from pykotor.gl.scene import Camera
     from pykotor.resource.formats.bwm.bwm_data import BWM
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.git import GIT
     from pykotor.resource.generics.ifo import IFO
     from pykotor.tools.path import CaseAwarePath
     from toolset.data.installation import HTInstallation
-    from toolset.gui.widgets.renderer.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.utils.misc import QtKey
     from utility.system.path import Path
@@ -311,42 +313,75 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.keyReleased.connect(self.on2dKeyboardReleased)
 
     def _initUi(self):
-        # Create status bar and labels
-        self.status_bar = self.statusBar()
-        self.mouse_pos_label = QLabel("Mouse Position: ")
-        self.keys_pressed_label = QLabel("Keys/Buttons: ")
-        self.selected_instance_label = QLabel("Selected Instance: ")
+        self.customStatusBar = QStatusBar(self)
+        self.setStatusBar(self.customStatusBar)
 
-        self.status_bar.addWidget(self.mouse_pos_label, 2)
-        self.status_bar.addWidget(self.selected_instance_label, 2)
-        self.status_bar.addPermanentWidget(self.keys_pressed_label, 2)
+        self.customStatusBarContainer = QWidget()
+        self.customStatusBarLayout = QVBoxLayout()
+
+        # Create labels for the status bar
+        self.mousePosLabel = QLabel("Mouse Coords: ")
+        self.buttonsKeysPressedLabel = QLabel("Keys/Buttons: ")
+        self.selectedInstanceLabel = QLabel("Selected Instance: ")
+        self.viewCameraLabel = QLabel("View: ")
+
+        # Create a horizontal layout for the first row
+        firstRow = QHBoxLayout()
+
+        # Add widgets to the first row layout with appropriate stretching
+        firstRow.addWidget(self.mousePosLabel, 1)  # Stretch factor 1 for left alignment
+        firstRow.addStretch(1)  # Adds stretch in the middle to push the labels to sides and center
+        firstRow.addWidget(self.selectedInstanceLabel, 2)  # Stretch factor 2 for center alignment
+        firstRow.addStretch(1)  # Additional stretch for better spacing
+        firstRow.addWidget(self.buttonsKeysPressedLabel, 1)  # Stretch factor 1 for right alignment
+
+        # Add the first row layout and the camera info label to the main layout
+        self.customStatusBarLayout.addLayout(firstRow)
+        self.customStatusBarLayout.addWidget(self.viewCameraLabel)
+
+        self.customStatusBarContainer.setLayout(self.customStatusBarLayout)
+        self.customStatusBar.addPermanentWidget(self.customStatusBarContainer)
 
         # Initial status bar update
         # self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
 
     def updateStatusBar(
         self,
-        mouse_pos,
-        buttons,
-        keys,
-        current_renderer: WalkmeshRenderer | ModuleRenderer,
+        mousePos: QPoint | Vector2,
+        buttons: set[int],
+        keys: set[int],
+        renderer: WalkmeshRenderer | ModuleRenderer,
     ):
-        if not isinstance(mouse_pos, Vector2):
-            mouse_pos = Vector2(mouse_pos.x(), mouse_pos.y())
-        # Update mouse position
-        if current_renderer == self.ui.mainRenderer:
-            world_pos = self.ui.mainRenderer.scene.cursor.position()
-            self.mouse_pos_label.setText(f"World Coords: {world_pos.y:.2f}, {world_pos.z:.2f}")
+        if isinstance(mousePos, QPoint):
+            normMousePos = Vector2(mousePos.x(), mousePos.y())
         else:
-            world_pos = self.ui.flatRenderer.toWorldCoords(mouse_pos.x, mouse_pos.y)
-            self.mouse_pos_label.setText(f"World Coords: {world_pos.y:.2f}")
+            normMousePos = mousePos
+        # Update mouse position
+        worldPos: Vector2 | Vector3
+        worldPos3d: Vector3 | None = None
+        if isinstance(renderer, ModuleRenderer):
+            pos = renderer.scene.cursor.position()
+            worldPos3d = Vector3(pos.x, pos.y, pos.z)
+            worldPos = worldPos3d
+            self.mousePosLabel.setText(f"Mouse Coords: {worldPos3d.y:.2f}, {worldPos3d.z:.2f}")
+
+            # Update view camera info
+            camera = renderer.scene.camera
+            self.viewCameraLabel.setText(
+                f"View: Pos ({camera.x:.2f}, {camera.y:.2f}, {camera.z:.2f}), "
+                f"Pitch: {camera.pitch:.2f}, Yaw: {camera.yaw:.2f}, "
+                f"FOV: {camera.fov:.2f}"
+            )
+        else:
+            worldPos = renderer.toWorldCoords(normMousePos.x, normMousePos.y)
+            self.mousePosLabel.setText(f"Mouse Coords: {worldPos.y:.2f}")
 
         # Sort keys and buttons with modifiers at the beginning
         def sort_with_modifiers(
-            items,
+            items: set[int],
             get_string_func: Callable[[Any], str],
             qtEnumType: Literal["QtKey", "QtMouse"],
-        ) -> Sequence[QtKey | QtMouse]:
+        ) -> Sequence[QtKey | QtMouse | int]:
             modifiers = []
             if qtEnumType == "QtKey":
                 modifiers = [item for item in items if item in MODIFIER_KEY_NAMES]
@@ -355,21 +390,21 @@ class ModuleDesigner(QMainWindow):
                 normal = list(items)
             return sorted(modifiers, key=get_string_func) + sorted(normal, key=get_string_func)
 
-        sorted_buttons = sort_with_modifiers(current_renderer._mouseDown, getQtButtonString, "QtMouse")
-        sorted_keys = sort_with_modifiers(current_renderer._keysDown, getQtKeyString, "QtKey")
+        sorted_buttons = sort_with_modifiers(buttons, getQtButtonString, "QtMouse")
+        sorted_keys = sort_with_modifiers(keys, getQtKeyString, "QtKey")
 
         # Update keys/mouse buttons
         buttons_str = "+".join([getQtButtonString(button) for button in sorted_buttons])
         keys_str = "+".join([getQtKeyString(key) for key in sorted_keys])
-        self.keys_pressed_label.setText(f"Keys/Buttons: {keys_str} {buttons_str}")
+        self.buttonsKeysPressedLabel.setText(f"Keys/Buttons: {keys_str} {buttons_str}")
 
         # Update selected instance
         if self.selectedInstances:
             instance = self.selectedInstances[0]
             instance_name = repr(instance) if isinstance(instance, GITCamera) else instance.identifier()
-            self.selected_instance_label.setText(f"Selected Instance: {instance_name}")
+            self.selectedInstanceLabel.setText(f"Selected Instance: {instance_name}")
         else:
-            self.selected_instance_label.setText("Selected Instance: None")
+            self.selectedInstanceLabel.setText("Selected Instance: None")
 
     def _refreshWindowTitle(self):
         if self._module is None:

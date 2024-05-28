@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file '..\ui\dialogs\insert_instance.ui'
+# Form implementation generated from reading ui file '../ui/dialogs/insert_instance.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #
@@ -12,8 +12,25 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(360, 447)
-        self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
+        Dialog.resize(400, 447)
+        self.horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.sidebarLayout = QtWidgets.QVBoxLayout()
+        self.sidebarLayout.setObjectName("sidebarLayout")
+        self.dynamicTextLabel = QtWidgets.QLabel(parent=Dialog)
+        self.dynamicTextLabel.setObjectName("dynamicTextLabel")
+        self.sidebarLayout.addWidget(self.dynamicTextLabel)
+        self.staticTextLabel = QtWidgets.QLabel(parent=Dialog)
+        self.staticTextLabel.setObjectName("staticTextLabel")
+        self.sidebarLayout.addWidget(self.staticTextLabel)
+        self.previewRenderer = ModelRenderer(parent=Dialog)
+        self.previewRenderer.setMinimumSize(QtCore.QSize(350, 0))
+        self.previewRenderer.setMouseTracking(True)
+        self.previewRenderer.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.previewRenderer.setObjectName("previewRenderer")
+        self.sidebarLayout.addWidget(self.previewRenderer)
+        self.horizontalLayout.addLayout(self.sidebarLayout)
+        self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
         self.formLayout = QtWidgets.QFormLayout()
         self.formLayout.setObjectName("formLayout")
@@ -62,6 +79,7 @@ class Ui_Dialog(object):
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
+        self.horizontalLayout.addLayout(self.verticalLayout)
 
         self.retranslateUi(Dialog)
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
@@ -71,6 +89,8 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Insert Instance"))
+        self.dynamicTextLabel.setText(_translate("Dialog", "Dynamic Text"))
+        self.staticTextLabel.setText(_translate("Dialog", "Selected Resource"))
         self.label.setText(_translate("Dialog", "ResRef:"))
         self.label_2.setText(_translate("Dialog", "Location:"))
         self.reuseResourceRadio.setText(_translate("Dialog", "Reuse Resource"))
@@ -78,5 +98,6 @@ class Ui_Dialog(object):
         self.createResourceRadio.setText(_translate("Dialog", "Create Resource"))
         self.resourceFilter.setPlaceholderText(_translate("Dialog", "search..."))
         self.resourceList.setSortingEnabled(True)
+from toolset.gui.widgets.renderer.model import ModelRenderer
 
 from toolset.rcc import resources_rc_pyqt6

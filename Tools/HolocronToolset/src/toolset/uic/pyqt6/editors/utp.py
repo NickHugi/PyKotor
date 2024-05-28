@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file '..\ui\editors\utp.ui'
+# Form implementation generated from reading ui file '../ui/editors/utp.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.1
 #

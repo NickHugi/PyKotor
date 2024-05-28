@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ctypes
+
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
@@ -166,6 +168,10 @@ class ModuleRenderer(QOpenGLWidget):
         """Stops the rendering loop, unloads the module and installation, and attempts to destroy the OpenGL context."""
         RobustRootLogger().debug("ModuleRenderer - shutdownRenderer called.")
         self.pauseRenderLoop()
+
+        if self._scene and self.scene.profiler is not True and self.scene.profiler is not False:
+            self.scene.profiler.disable()
+            self.scene.profiler.dump_stats("scene_output.pstat")
         self._module = None
         self._installation = None
 
@@ -407,7 +413,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.discard(button)
 
         coords = Vector2(e.x(), e.y())
-        self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+        self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
         #RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
