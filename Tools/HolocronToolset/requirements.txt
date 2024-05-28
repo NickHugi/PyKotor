@@ -9,7 +9,7 @@ Markdown>=3.3#,<3.6
 jsmin>=3
 requests>=2.27#,<2.32
 certifi==2021.10.8
-setuptools>=67.8.0  # 70.0.0 and higher breaks pyinstaller
+setuptools>=67.8.0,<70  # 70.0.0 and higher breaks pyinstaller
 Pillow>=9.5
 pycryptodome
 jsonpickle
