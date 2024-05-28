@@ -131,8 +131,6 @@ def last_resort_cleanup():
 def main_init():
     if multiprocessing.current_process() == "MainProcess":
         multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
-    else:
-        multiprocessing.freeze_support()
 
     if is_frozen():
         from utility.logger_util import RobustRootLogger
@@ -171,15 +169,9 @@ if __name__ == "__main__":
     main_init()
 
     from qtpy.QtCore import QThread
-    from qtpy.QtGui import QSurfaceFormat
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     app = QApplication(sys.argv)
-
-    # Set up the surface format with debug context
-    fmt = QSurfaceFormat()
-    fmt.setOption(QSurfaceFormat.DebugContext)
-    QSurfaceFormat.setDefaultFormat(fmt)
 
     # font = app.font()
     # font.setPixelSize(15)

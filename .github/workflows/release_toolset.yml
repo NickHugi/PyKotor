@@ -299,6 +299,7 @@ jobs:
           } else {
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
+          pip install setuptools wheel -U
         } catch {
           Write-Host -ForegroundColor Red "Detailed Error Report:"
           Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
