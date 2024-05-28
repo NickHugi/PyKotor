@@ -154,11 +154,9 @@ class DuplicateCommand(QUndoCommand):
             self.editor.enterInstanceMode()
             assert isinstance(self.editor._mode, _InstanceMode)  # noqa: SLF001
             self.editor._mode.buildList()  # noqa: SLF001
-            self.editor._mode.renderer2d.instanceSelection.select([])
         else:
             self.editor.enterInstanceMode()
             self.editor.rebuildInstanceList()
-            self.editor.setSelection([])
 
 
     def redo(self):
@@ -168,6 +166,10 @@ class DuplicateCommand(QUndoCommand):
                 continue
             RobustRootLogger().debug(f"Redo duplicate: {instance.identifier()}")
             self.git.add(instance)
+            if isinstance(self.editor, GITEditor):
+                self.editor._mode.renderer2d.instanceSelection.select([instance])
+            else:
+                self.editor.setSelection([instance])
         self.rebuildInstanceList()
 
 
@@ -184,7 +186,7 @@ class DeleteCommand(QUndoCommand):
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo delete: {[instance.identifier() for instance in self.instances]}")
+        RobustRootLogger().debug(f"Undo delete: {[repr(instance) for instance in self.instances]}")
         for instance in self.instances:
             if instance in self.git.instances():
                 print(f"{instance!r} already found in instances: no deletecommand to undo.")
@@ -204,13 +206,13 @@ class DeleteCommand(QUndoCommand):
             self.editor.setSelection([])
 
     def redo(self):
-        RobustRootLogger().debug(f"Redo delete: {[instance.identifier() for instance in self.instances]}")
+        RobustRootLogger().debug(f"Redo delete: {[repr(instance) for instance in self.instances]}")
         self.editor.enterInstanceMode()
         for instance in self.instances:
             if instance not in self.git.instances():
                 print(f"{instance!r} not found in instances: no deletecommand to redo.")
                 continue
-            RobustRootLogger().debug(f"Redo delete: {instance.identifier()}")
+            RobustRootLogger().debug(f"Redo delete: {instance!r}")
             if isinstance(self.editor, GITEditor):
                 self.editor._mode.renderer2d.instanceSelection.select([instance])
             else:
@@ -1273,13 +1275,14 @@ class _InstanceMode(_Mode):
             instance: GITInstance = deepcopy(selection[-1])
             if isinstance(instance, GITCamera):
                 instance.camera_id = self._editor.git().next_camera_id()
+            instance.position = position
             if not noUndoStack:
                 undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
                 undoStack.push(DuplicateCommand(self._git, [instance], self._editor))
-            instance.position = position
-            self._git.add(instance)
-            self.buildList()
-            self.setSelection([instance])
+            else:
+                self._git.add(instance)
+                self.buildList()
+                self.setSelection([instance])
 
     def moveSelected(
         self,
