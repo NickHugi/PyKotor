@@ -41,7 +41,6 @@ from qtpy.QtWidgets import (
     QStyledItemDelegate,
     QVBoxLayout,
 )
-from typing_extensions import Literal
 from watchdog.events import FileSystemEventHandler
 
 from pykotor.common.stream import BinaryReader
@@ -119,6 +118,7 @@ if TYPE_CHECKING:
         QMouseEvent,
     )
     from qtpy.QtWidgets import QWidget
+    from typing_extensions import Literal
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
