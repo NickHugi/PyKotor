@@ -1238,7 +1238,7 @@ class App:
     def begin_install_thread(
         self,
         should_cancel_thread: Event,
-        progress_update_func: Callable | None = None
+        update_progress_func: Callable | None = None
     ):
         """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
