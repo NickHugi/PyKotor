@@ -236,6 +236,9 @@ class ToolWindow(QMainWindow):
             print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
 
+        # Set fixed size based on the current size
+        self.setFixedSize(self.size())
+
     def setupModulesTab(self):
         modulesResourceList = self.ui.modulesWidget.ui
         modulesSectionCombo = modulesResourceList.sectionCombo
@@ -487,6 +490,7 @@ class ToolWindow(QMainWindow):
                 | Qt.WindowType.WindowMaximizeButtonHint
             )
         elif themeName == "Fusion (Dark)":
+            app.setStyleSheet("")  # Reset to default style
             app.setStyle("Fusion")
             dark_palette = QPalette()
             dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
