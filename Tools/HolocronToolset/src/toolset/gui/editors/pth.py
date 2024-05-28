@@ -485,23 +485,22 @@ class PTHControlScheme:
         self.editor.stdout.mouse_pos = screen
         shouldPanCamera = self.panCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
-        if shouldPanCamera or shouldRotateCamera:
-            if shouldPanCamera:
-                moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-                #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
-                self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
-            if shouldRotateCamera:
-                delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
-                if abs(screenDelta.x) >= abs(screenDelta.y):
-                    direction = -1 if screenDelta.x < 0 else 1
-                else:
-                    direction = -1 if screenDelta.y < 0 else 1
-                rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
-                rotateAmount = delta_magnitude * rotateSens
-                rotateAmount *= direction
-                #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
-                self.editor.rotateCamera(rotateAmount)
-            return
+        if shouldPanCamera:
+            self.editor.ui.renderArea.doCursorLock(screen)
+            moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
+            #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+            self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
+        if shouldRotateCamera:
+            delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
+            if abs(screenDelta.x) >= abs(screenDelta.y):
+                direction = -1 if screenDelta.x < 0 else 1
+            else:
+                direction = -1 if screenDelta.y < 0 else 1
+            rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
+            rotateAmount = delta_magnitude * rotateSens
+            rotateAmount *= direction
+            #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+            self.editor.rotateCamera(rotateAmount)
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)
 

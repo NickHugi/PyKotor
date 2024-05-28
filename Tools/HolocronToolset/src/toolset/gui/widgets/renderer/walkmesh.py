@@ -6,9 +6,10 @@ from copy import copy
 from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
 from qtpy import QtCore
-from qtpy.QtCore import QPointF, QRect, QRectF, QTimer
+from qtpy.QtCore import QPoint, QPointF, QRect, QRectF, QTimer
 from qtpy.QtGui import (
     QColor,
+    QCursor,
     QImage,
     QPainter,
     QPainterPath,
@@ -299,6 +300,17 @@ class WalkmeshRenderer(QWidget):
     def snapCameraToPoint(self, point: Vector2 | Vector3, zoom: int = 8):
         self.camera.setPosition(point.x, point.y)
         self.camera.setZoom(zoom)
+
+    def doCursorLock(self, mutableScreen: Vector2):
+        """Reset the cursor to the center of the screen to prevent it from going off screen.
+
+        Used with the FreeCam and drag camera movements and drag rotations.
+        """
+        global_old_pos = self.mapToGlobal(QPoint(int(self._mousePrev.x), int(self._mousePrev.y)))
+        QCursor.setPos(global_old_pos)
+        local_old_pos = self.mapFromGlobal(QPoint(global_old_pos.x(), global_old_pos.y()))
+        mutableScreen.x = local_old_pos.x()
+        mutableScreen.y = local_old_pos.y()
 
     def toRenderCoords(self, x: float, y: float) -> Vector2:
         """Returns a screen-space coordinates coverted from the specified world-space coordinates.
@@ -853,8 +865,8 @@ class WalkmeshRenderer(QWidget):
         super().mouseMoveEvent(e)
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
-        self._mousePrev = coords
         self.mouseMoved.emit(coords, coordsDelta, self._mouseDown, self._keysDown)
+        self._mousePrev = coords
 
         self._instancesUnderMouse: list[GITInstance] = []
         self._geomPointsUnderMouse: list[GeomPoint] = []

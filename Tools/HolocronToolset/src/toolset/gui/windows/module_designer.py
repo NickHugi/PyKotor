@@ -2188,6 +2188,7 @@ class ModuleDesignerControls2d:
         shouldMoveCamera = self.moveCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldMoveCamera:
+            self.renderer.doCursorLock(screen)
             strength = self.settings.moveCameraSensitivity2d / 100
             self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
 

@@ -1569,6 +1569,7 @@ class GITControlScheme:
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldPanCamera or shouldRotateCamera:
             if shouldPanCamera:
+                self.editor.ui.renderArea.doCursorLock(screen)
                 moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
                 #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
                 self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
