@@ -129,6 +129,7 @@ class UTIEditor(Editor):
 
         self.ui.baseSelect.clear()
         self.ui.baseSelect.setItems(baseitems.get_column("label"))
+        self.ui.baseSelect.setContext(baseitems, installation, HTInstallation.TwoDA_BASEITEMS)
 
         self.ui.availablePropertyList.clear()
         for i in range(itemProperties.get_height()):

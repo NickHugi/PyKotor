@@ -14,7 +14,13 @@ if TYPE_CHECKING:
 
 
 class EditAnimationDialog(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, animation: DLGAnimation = DLGAnimation()):
+    def __init__(
+        self,
+        parent: QWidget,
+        installation: HTInstallation,
+        animationArg: DLGAnimation | None = None,
+    ):
+        animation: DLGAnimation = DLGAnimation() if animationArg is None else animationArg
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":
@@ -31,10 +37,11 @@ class EditAnimationDialog(QDialog):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
-        animations_list = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
-        self.ui.animationSelect.setItems(animations_list.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
+        animList = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
+        self.ui.animationSelect.setItems(animList.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
 
         self.ui.animationSelect.setCurrentIndex(animation.animation_id)
+        self.ui.animationSelect.setContext(animList, installation, HTInstallation.TwoDA_DIALOG_ANIMS)
         self.ui.participantEdit.setText(animation.participant)
 
     def animation(self) -> DLGAnimation:

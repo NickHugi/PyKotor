@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import ctypes
-
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING

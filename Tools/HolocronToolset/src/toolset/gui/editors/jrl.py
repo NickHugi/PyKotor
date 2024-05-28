@@ -129,6 +129,7 @@ class JRLEditor(Editor):
         for row in planets:
             text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)
+        self.ui.categoryPlanetSelect.setContext(planets, self._installation, HTInstallation.TwoDA_PLANETS)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load quest data from a file.

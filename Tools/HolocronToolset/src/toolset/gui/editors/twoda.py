@@ -133,6 +133,8 @@ class TwoDAEditor(Editor):
             - Resets to a new empty state if loading fails
         """
         super().load(filepath, resref, restype, data)
+
+        # FIXME(th3w1zard1): Why set this here when it's already set in __init__...?
         self.model = QStandardItemModel(self)
         self.proxyModel = SortFilterProxyModel(self)
 
@@ -249,6 +251,25 @@ class TwoDAEditor(Editor):
 
         self.model.clear()
         self.model.setRowCount(0)
+
+    def jumpToRow(self, row: int):
+        """Jumps to the specified row in the table.
+
+        Args:
+        ----
+            row: The row index to jump to.
+        """
+        if row < 0 or row >= self.model.rowCount():
+            QMessageBox.warning(self, "Invalid Row", f"Row {row} is out of range.")
+            return
+
+        # Select the row in the table view
+        index = self.proxyModel.mapFromSource(self.model.index(row, 0))
+        self.ui.twodaTable.setCurrentIndex(index)
+        self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.EnsureVisible)
+
+        # Optionally, select the entire row
+        self.ui.twodaTable.selectRow(index.row())
 
     def doFilter(
         self,

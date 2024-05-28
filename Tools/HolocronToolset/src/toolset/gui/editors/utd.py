@@ -134,6 +134,9 @@ class UTDEditor(Editor):
         appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
         factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
 
+        self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_DOORS)
+        self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
+
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
 

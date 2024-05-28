@@ -112,6 +112,9 @@ class UTEEditor(Editor):
         factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
+        self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 

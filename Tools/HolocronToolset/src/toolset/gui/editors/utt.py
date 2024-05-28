@@ -83,6 +83,10 @@ class UTTEditor(Editor):
         factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         traps: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
 
+        self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.trapSelect.setContext(cursors, installation, HTInstallation.TwoDA_TRAPS)
+
         self.ui.cursorSelect.setItems(cursors.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.trapSelect.setItems(traps.get_column("label"))
