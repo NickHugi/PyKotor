@@ -125,13 +125,6 @@
                                                             </property>
                                                         </widget>
                                                     </item>
-                                                    <item row="2" column="0">
-                                                        <widget class="QLabel" name="label_42">
-                                                            <property name="text">
-                                                                <string>Zoom Sensitivity</string>
-                                                            </property>
-                                                        </widget>
-                                                    </item>
                                                     <item row="1" column="1">
                                                         <widget class="QSlider" name="rotateCameraSensitivity3dEdit">
                                                             <property name="minimum">
@@ -145,8 +138,35 @@
                                                             </property>
                                                         </widget>
                                                     </item>
+                                                    <item row="2" column="0">
+                                                        <widget class="QLabel" name="label_42">
+                                                            <property name="text">
+                                                                <string>Zoom Sensitivity</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
                                                     <item row="2" column="1">
                                                         <widget class="QSlider" name="zoomCameraSensitivity3dEdit">
+                                                            <property name="minimum">
+                                                                <number>10</number>
+                                                            </property>
+                                                            <property name="maximum">
+                                                                <number>1000</number>
+                                                            </property>
+                                                            <property name="orientation">
+                                                                <enum>Qt::Horizontal</enum>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="3" column="0">
+                                                        <widget class="QLabel" name="label">
+                                                            <property name="text">
+                                                                <string>Boosted Speed</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="3" column="1">
+                                                        <widget class="QSlider" name="boostedMoveCameraSensitivity3dEdit">
                                                             <property name="minimum">
                                                                 <number>10</number>
                                                             </property>
@@ -1276,6 +1296,46 @@
                                                     </item>
                                                     <item row="1" column="1">
                                                         <widget class="QSlider" name="rotateCameraSensitivityFcEdit">
+                                                            <property name="minimum">
+                                                                <number>10</number>
+                                                            </property>
+                                                            <property name="maximum">
+                                                                <number>1000</number>
+                                                            </property>
+                                                            <property name="orientation">
+                                                                <enum>Qt::Horizontal</enum>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="2" column="0">
+                                                        <widget class="QLabel" name="label_60">
+                                                            <property name="text">
+                                                                <string>Fly Sensitivity</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="2" column="1">
+                                                        <widget class="QSlider" name="flyCameraSensitivityFcEdit">
+                                                            <property name="minimum">
+                                                                <number>10</number>
+                                                            </property>
+                                                            <property name="maximum">
+                                                                <number>1000</number>
+                                                            </property>
+                                                            <property name="orientation">
+                                                                <enum>Qt::Horizontal</enum>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="3" column="0">
+                                                        <widget class="QLabel" name="label_60">
+                                                            <property name="text">
+                                                                <string>Boosted Fly Speed</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="3" column="1">
+                                                        <widget class="QSlider" name="boostedFlyCameraSpeedFCEdit">
                                                             <property name="minimum">
                                                                 <number>10</number>
                                                             </property>

@@ -90,6 +90,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
         self.ui.rotateCameraSensitivity3dEdit.setValue(self.settings.rotateCameraSensitivity3d)
         self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
+        self.ui.boostedMoveCameraSensitivity3dEdit.setValue(self.settings.boostedMoveCameraSensitivity3d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "3dBindEdit" in widget]:
             bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
@@ -98,6 +99,7 @@ class ModuleDesignerWidget(SettingsWidget):
     def _loadFcBindValues(self):
         self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
         self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
+        self.ui.boostedFlyCameraSpeedFCEdit.setValue(self.settings.boostedFlyCameraSpeedFC)
 
         for bindEdit in [widget for widget in dir(self.ui) if "FcBindEdit" in widget]:
             bindWidget: SetBindWidget = getattr(self.ui, bindEdit)
@@ -128,9 +130,11 @@ class ModuleDesignerWidget(SettingsWidget):
         super().save()
         self.settings.fieldOfView = self.ui.fovSpin.value()
         self.settings.flyCameraSpeedFC = self.ui.flySpeedFcEdit.value()
+        self.settings.boostedFlyCameraSpeedFC = self.ui.boostedFlyCameraSpeedFCEdit.value()
         self.settings.moveCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
         self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
         self.settings.zoomCameraSensitivity3d = self.ui.zoomCameraSensitivity3dEdit.value()
+        self.settings.boostedMoveCameraSensitivity3d = self.ui.boostedMoveCameraSensitivity3dEdit.value()
 
         self.settings.moveCameraSensitivity2d = self.ui.moveCameraSensitivity2dEdit.value()
         self.settings.rotateCameraSensitivity2d = self.ui.rotateCameraSensitivity2dEdit.value()
@@ -204,7 +208,7 @@ class ModuleDesignerSettings(Settings):
         100,
     )
     boostedMoveCameraSensitivity3d: SettingsProperty[int] = Settings.addSetting(
-        "boostedFlyCameraSpeed3d",
+        "boostedMoveCameraSensitivity3d",
         250,
     )
     speedBoostCamera3dBind: SettingsProperty[Bind] = Settings.addSetting(
