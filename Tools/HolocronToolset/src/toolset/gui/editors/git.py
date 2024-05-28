@@ -85,26 +85,14 @@ class MoveCommand(QUndoCommand):
         self.instance: GITInstance = instance
         self.old_position: Vector3 = old_position
         self.new_position: Vector3 = new_position
-        self.old_height: float | None = old_height
-        self.new_height: float | None = new_height
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()}")
+        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()} (NEW {self.new_position} --> {self.old_position})")
         self.instance.position = self.old_position
-        if isinstance(self.instance, GITCamera):
-            if self.old_height is None or self.new_height is None:
-                return
-            RobustRootLogger().debug("Also undo height.")
-            self.instance.height = self.old_height
 
     def redo(self):
-        RobustRootLogger().debug(f"Redo position: {self.instance.identifier()}")
+        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()} ({self.old_position} --> NEW {self.new_position})")
         self.instance.position = self.new_position
-        if isinstance(self.instance, GITCamera):
-            if self.old_height is None or self.new_height is None:
-                return
-            RobustRootLogger().debug("Also redo height.")
-            self.instance.height = self.new_height
 
 
 class RotateCommand(QUndoCommand):

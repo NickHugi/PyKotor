@@ -280,8 +280,15 @@ class ModuleRenderer(QOpenGLWidget):
         z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
-    def resetMouseButtons(self):
+    def resetButtonsDown(self):
         self._mouseDown.clear()
+
+    def resetKeysDown(self):
+        self._keysDown.clear()
+
+    def resetAllDown(self):
+        self._mouseDown.clear()
+        self._keysDown.clear()
 
     # region Accessors
     def keysDown(self) -> set[int]:
@@ -345,17 +352,19 @@ class ModuleRenderer(QOpenGLWidget):
 
     # region Events
 
-    def focusOutEvent(self, e: QFocusEvent):
+    def focusOutEvent(self, e: QFocusEvent | None):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        RobustRootLogger().debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        RobustRootLogger.debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
-    def wheelEvent(self, e: QWheelEvent):
+    def wheelEvent(self, e: QWheelEvent | None):
         super().wheelEvent(e)
+        if e is None:
+            return
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent):
+    def mouseMoveEvent(self, e: QMouseEvent | None):
         """Handles mouse move events.
 
         Args:
@@ -370,6 +379,8 @@ class ModuleRenderer(QOpenGLWidget):
             4. Emit signal with mouse data if time since press > threshold
         """
         #super().mouseMoveEvent(e)
+        if e is None:
+            return
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
@@ -399,8 +410,10 @@ class ModuleRenderer(QOpenGLWidget):
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
         #RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyPressEvent(e)
+        if e is None:
+            return
         key = e.key()
         self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
@@ -408,8 +421,10 @@ class ModuleRenderer(QOpenGLWidget):
         #key_name = getQtKeyStringLocalized(key)
         #RobustRootLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyReleaseEvent(e)
+        if e is None:
+            return
         key = e.key()
         self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:

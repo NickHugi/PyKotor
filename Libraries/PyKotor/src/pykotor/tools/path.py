@@ -455,7 +455,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     # Build hardcoded default kotor locations
     raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
     locations: dict[Game, set[CaseAwarePath]] = {
-        game: {case_path for case_path in (CaseAwarePath(path).resolve() for path in paths) if case_path.safe_isdir()} for game, paths in raw_locations.get(os_str, {}).items()
+        game: {case_path for case_path in (CaseAwarePath(path).expanduser().resolve() for path in paths) if case_path.safe_isdir()} for game, paths in raw_locations.get(os_str, {}).items()
     }
 
     # Build kotor locations by registry (if on windows)

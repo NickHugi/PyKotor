@@ -118,8 +118,7 @@ class ModuleDesigner(QMainWindow):
 
         self._installation: HTInstallation = installation
         self._module: Module | None = None
-        self._geomInstance: GITInstance | None = None  # Used to track which trigger/encounter you are editing
-        self._orig_filepath: Path | None = mod_filepath
+        self._origFilepath: Path | None = mod_filepath
 
         self.initialPositions: dict[GITInstance, Vector3] = {}
         self.initialRotations: dict[GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint, Vector4 | float] = {}
@@ -129,9 +128,11 @@ class ModuleDesigner(QMainWindow):
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.log: Logger = RobustRootLogger()
 
+        self.baseFrameRate = 60
         self.cameraUpdateTimer = QTimer()
         self.cameraUpdateTimer.timeout.connect(self.update_camera)
-        self.cameraUpdateTimer.start(16)  # ~60 FPS
+        self.cameraUpdateTimer.start(int(1000 / self.baseFrameRate))  # ~60 FPS
+        self.lastFrameTime: float = time.time()
 
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
@@ -903,13 +904,16 @@ class ModuleDesigner(QMainWindow):
 
         view: vec3 = scene.camera.true_position()
         rot: Camera = scene.camera
-        new_position = Vector3(view.x, view.y, view.z)
-        self.undoStack.push(MoveCommand(instance, instance.position, new_position, instance.height, scene.camera.height))
-        instance.height = scene.camera.height
+
+        new_position = Vector3(view.x, view.y, view.z-instance.height)
+        self.undoStack.push(MoveCommand(instance, instance.position, new_position))
         instance.position = new_position
 
         self.log.debug("Create RotateCommand for undo/redo functionality")
-        new_orientation = Vector4.from_euler(math.pi / 2 - rot.yaw, 0, math.pi - rot.pitch)
+        correction_factor = 0.09  # This value may need adjustment based on further testing
+        pitch = math.pi - (rot.pitch + (math.pi / 2)) + correction_factor
+        yaw = math.pi / 2 - rot.yaw
+        new_orientation = Vector4.from_euler(yaw, 0, pitch)
         self.undoStack.push(RotateCommand(instance, instance.orientation, new_orientation))
         instance.orientation = new_orientation
 
@@ -1085,7 +1089,6 @@ class ModuleDesigner(QMainWindow):
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
 
-    # TODO Rename this here and in `onInstanceListSingleClicked` and `onInstanceListDoubleClicked`
     def getGitInstanceFromHighlightedListItem(self):
         item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
         result: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
@@ -1315,8 +1318,6 @@ class ModuleDesigner(QMainWindow):
         *args,
         **kwargs,
     ):
-        if not self.selectedInstances:
-            self.onInstanceListDoubleClicked()
         item: QListWidgetItem = self.ui.instanceList.selectedItems()[0]
         instance: GITInstance = item.data(QtCore.Qt.ItemDataRole.UserRole)
         self.onContextMenuSelectionExists(instances=[instance])
@@ -1343,7 +1344,7 @@ class ModuleDesigner(QMainWindow):
             - Pops up the context menu at the mouse cursor position
             - Resets mouse buttons when menu closes.
         """
-        print(f"onContextMenuSelectionExists(isFlatRendererCall={isFlatRendererCall}, getMenu={getMenu})")
+        self.log.debug(f"onContextMenuSelectionExists(isFlatRendererCall={isFlatRendererCall}, getMenu={getMenu})")
         menu = QMenu(self)
         instances = self.selectedInstances if instances is None else instances
 
@@ -1366,10 +1367,10 @@ class ModuleDesigner(QMainWindow):
             return None
         return menu
 
-    def showFinalContextMenu(self, menu):
+    def showFinalContextMenu(self, menu: QMenu):
         menu.popup(self.cursor().pos())
-        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
-        menu.aboutToHide.connect(self.ui.flatRenderer.resetMouseButtons)
+        menu.aboutToHide.connect(self.ui.mainRenderer.resetAllDown)
+        menu.aboutToHide.connect(self.ui.flatRenderer.resetAllDown)
 
     def on3dRendererInitialized(self):
         self.log.debug("ModuleDesigner on3dRendererInitialized")
@@ -1387,25 +1388,25 @@ class ModuleDesigner(QMainWindow):
 
     def on2dMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseMoved, screen: %s, delta: %s, buttons: %s, keys: %s", screen, delta, buttons, keys)
-        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         worldDelta: Vector2 = self.ui.flatRenderer.toWorldDelta(delta.x, delta.y)
         world: Vector3 = self.ui.flatRenderer.toWorldCoords(screen.x, screen.y)
         self._controls2d.onMouseMoved(screen, delta, Vector2.from_vector3(world), worldDelta, buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
     def on2dMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseReleased, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
-        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.onMouseReleased(screen, buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
     def on2dKeyboardPressed(self, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dKeyboardPressed, buttons: %s, keys: %s", buttons, keys)
-        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.onKeyboardPressed(buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
     def on2dKeyboardReleased(self, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dKeyboardReleased, buttons: %s, keys: %s", buttons, keys)
-        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
         self._controls2d.onKeyboardReleased(buttons, keys)
+        self.updateStatusBar(QCursor.pos(), buttons, keys, self.ui.flatRenderer)
 
     def on2dMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         #self.log.debug("on2dMouseScrolled, delta: %s, buttons: %s, keys: %s", delta, buttons, keys)
@@ -1413,20 +1414,24 @@ class ModuleDesigner(QMainWindow):
         self._controls2d.onMouseScrolled(delta, buttons, keys)
 
     def on2dMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        self.log.debug("on2dMousePressed, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
-        self.updateStatusBar(screen, buttons, keys, self.ui.flatRenderer)
+        #self.log.debug("on2dMousePressed, screen: %s, buttons: %s, keys: %s", screen, buttons, keys)
         self._controls2d.onMousePressed(screen, buttons, keys)
+        self.updateStatusBar(screen, buttons, keys, self.ui.flatRenderer)
 
     # endregion
 
     # region Events
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):  # noqa: FBT001, FBT002
+    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):  # noqa: FBT001, FBT002
         super().keyPressEvent(e)
+        if e is None:
+            return
         self.ui.mainRenderer.keyPressEvent(e)
         self.ui.flatRenderer.keyPressEvent(e)
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):  # noqa: FBT001, FBT002
+    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):  # noqa: FBT001, FBT002
         super().keyReleaseEvent(e)
+        if e is None:
+            return
         self.ui.mainRenderer.keyReleaseEvent(e)
         self.ui.flatRenderer.keyReleaseEvent(e)
 
@@ -1435,23 +1440,106 @@ class ModuleDesigner(QMainWindow):
     def update_camera(self):
         if not self.ui.mainRenderer.underMouse():
             return
+
+        # Check camera rotation and movement keys
         keys = self.ui.mainRenderer.keysDown()
         buttons = self.ui.mainRenderer.mouseDown()
-        strength = self.settings.flyCameraSpeedFC / 500
+        rotation_keys = {
+            "left": self._controls3d.rotateCameraLeft.satisfied(buttons, keys),
+            "right": self._controls3d.rotateCameraRight.satisfied(buttons, keys),
+            "up": self._controls3d.rotateCameraUp.satisfied(buttons, keys),
+            "down": self._controls3d.rotateCameraDown.satisfied(buttons, keys)
+        }
+        movement_keys = {
+            "up": self._controls3d.moveCameraUp.satisfied(buttons, keys),
+            "down": self._controls3d.moveCameraDown.satisfied(buttons, keys),
+            "left": self._controls3d.moveCameraLeft.satisfied(buttons, keys),
+            "right": self._controls3d.moveCameraRight.satisfied(buttons, keys),
+            "forward": self._controls3d.moveCameraForward.satisfied(buttons, keys),
+            "backward": self._controls3d.moveCameraBackward.satisfied(buttons, keys),
+            "in": self._controls3d.zoomCameraIn.satisfied(buttons, keys),
+            "out": self._controls3d.zoomCameraOut.satisfied(buttons, keys)
+        }
+
+        # Determine last frame time to determine the delta modifiers
+        curTime = time.time()
+        timeSinceLastFrame = curTime - self.lastFrameTime
+        self.lastFrameTime = curTime
+
+        # Calculate rotation delta
+        normRotateUnitsSetting = self.settings.rotateCameraSensitivity3d / 1000
+        normRotateUnitsSetting *= self.baseFrameRate * timeSinceLastFrame  # apply modifier based on user's fps
+        angleUnitsDelta = (math.pi / 4) * normRotateUnitsSetting
+
+        # Rotate camera based on key inputs
+        if rotation_keys["left"]:
+            self.ui.mainRenderer.rotateCamera(angleUnitsDelta, 0)
+        elif rotation_keys["right"]:
+            self.ui.mainRenderer.rotateCamera(-angleUnitsDelta, 0)
+        if rotation_keys["up"]:
+            self.ui.mainRenderer.rotateCamera(0, angleUnitsDelta)
+        elif rotation_keys["down"]:
+            self.ui.mainRenderer.rotateCamera(0, -angleUnitsDelta)
+
+        # Calculate movement delta
+        keys = self.ui.mainRenderer.keysDown()
+        buttons = self.ui.mainRenderer.mouseDown()
         if self._controls3d.speedBoostControl.satisfied(buttons, keys, exactKeysAndButtons=False):
-            strength *= 2.5
-        if self._controls3d.moveCameraUp.satisfied(buttons, keys, exactKeysAndButtons=False):
-            self.ui.mainRenderer.moveCamera(0, 0, strength)
-        if self._controls3d.moveCameraDown.satisfied(buttons, keys, exactKeysAndButtons=False):
-            self.ui.mainRenderer.moveCamera(0, 0, -strength)
-        if self._controls3d.moveCameraLeft.satisfied(buttons, keys, exactKeysAndButtons=False):
-            self.ui.mainRenderer.moveCamera(0, -strength, 0)
-        if self._controls3d.moveCameraRight.satisfied(buttons, keys, exactKeysAndButtons=False):
-            self.ui.mainRenderer.moveCamera(0, strength, 0)
-        if self._controls3d.moveCameraForward.satisfied(buttons, keys, exactKeysAndButtons=False):
-            self.ui.mainRenderer.moveCamera(strength, 0, 0)
-        if self._controls3d.moveCameraBackward.satisfied(buttons, keys, exactKeysAndButtons=False):
-            self.ui.mainRenderer.moveCamera(-strength, 0, 0)
+            moveUnitsDelta = (
+                (self.settings.boostedFlyCameraSpeedFC)
+                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
+                else (self.settings.boostedMoveCameraSensitivity3d)
+            )
+        else:
+            moveUnitsDelta = (
+                (self.settings.flyCameraSpeedFC)
+                if isinstance(self._controls3d, ModuleDesignerControlsFreeCam)
+                else (self.settings.moveCameraSensitivity3d)
+            )
+
+
+        moveUnitsDelta /= 500  # normalize
+        moveUnitsDelta *= timeSinceLastFrame * self.baseFrameRate  # apply modifier based on user's fps
+
+        # Zoom camera based on inputs
+        if movement_keys["in"]:
+            self.ui.mainRenderer.zoomCamera(moveUnitsDelta)
+        if movement_keys["out"]:
+            self.ui.mainRenderer.zoomCamera(-moveUnitsDelta)
+
+        # Move camera based on key inputs
+        if movement_keys["up"]:
+            if isinstance(self._controls3d, ModuleDesignerControls3d):
+                self.ui.mainRenderer.scene.camera.z += moveUnitsDelta
+            else:
+                self.ui.mainRenderer.moveCamera(0, 0, moveUnitsDelta)
+        if movement_keys["down"]:
+            if isinstance(self._controls3d, ModuleDesignerControls3d):
+                self.ui.mainRenderer.scene.camera.z -= moveUnitsDelta
+            else:
+                self.ui.mainRenderer.moveCamera(0, 0, -moveUnitsDelta)
+
+        if movement_keys["left"]:
+            if isinstance(self._controls3d, ModuleDesignerControls3d):
+                self.ui.mainRenderer.panCamera(0, -moveUnitsDelta, 0)
+            else:
+                self.ui.mainRenderer.moveCamera(0, -moveUnitsDelta, 0)
+        if movement_keys["right"]:
+            if isinstance(self._controls3d, ModuleDesignerControls3d):
+                self.ui.mainRenderer.panCamera(0, moveUnitsDelta, 0)
+            else:
+                self.ui.mainRenderer.moveCamera(0, moveUnitsDelta, 0)
+
+        if movement_keys["forward"]:
+            if isinstance(self._controls3d, ModuleDesignerControls3d):
+                self.ui.mainRenderer.panCamera(moveUnitsDelta, 0, 0)
+            else:
+                self.ui.mainRenderer.moveCamera(moveUnitsDelta, 0, 0)
+        if movement_keys["backward"]:
+            if isinstance(self._controls3d, ModuleDesignerControls3d):
+                self.ui.mainRenderer.panCamera(-moveUnitsDelta, 0, 0)
+            else:
+                self.ui.mainRenderer.moveCamera(-moveUnitsDelta, 0, 0)
 
 
 class ModuleDesignerControls3d:
@@ -1472,262 +1560,6 @@ class ModuleDesignerControls3d:
         self.editor: ModuleDesigner = editor
         self.renderer: ModuleRenderer = renderer
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)  # Show the cursor
-
-    @property
-    def moveXYCamera(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraXY3dBind)
-
-    @moveXYCamera.setter
-    def moveXYCamera(self, value):
-        pass
-
-    @property
-    def moveZCamera(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraZ3dBind)
-
-    @moveZCamera.setter
-    def moveZCamera(self, value):
-        pass
-
-    @property
-    def moveCameraPlane(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraPlane3dBind)
-
-    @moveCameraPlane.setter
-    def moveCameraPlane(self, value):
-        pass
-
-    @property
-    def rotateCamera(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCamera3dBind)
-
-    @rotateCamera.setter
-    def rotateCamera(self, value):
-        pass
-
-    @property
-    def zoomCamera(self) -> ControlItem:
-        return ControlItem(self.settings.zoomCamera3dBind)
-
-    @zoomCamera.setter
-    def zoomCamera(self, value):
-        pass
-
-    @property
-    def zoomCameraMM(self) -> ControlItem:
-        return ControlItem(self.settings.zoomCameraMM3dBind)
-
-    @zoomCameraMM.setter
-    def zoomCameraMM(self, value):
-        pass
-
-    @property
-    def rotateSelected(self) -> ControlItem:
-        return ControlItem(self.settings.rotateSelected3dBind)
-
-    @rotateSelected.setter
-    def rotateSelected(self, value):
-        pass
-
-    @property
-    def moveXYSelected(self) -> ControlItem:
-        return ControlItem(self.settings.moveSelectedXY3dBind)
-
-    @moveXYSelected.setter
-    def moveXYSelected(self, value):
-        pass
-
-    @property
-    def moveZSelected(self) -> ControlItem:
-        return ControlItem(self.settings.moveSelectedZ3dBind)
-
-    @moveZSelected.setter
-    def moveZSelected(self, value):
-        pass
-
-    @property
-    def selectUnderneath(self) -> ControlItem:
-        return ControlItem(self.settings.selectObject3dBind)
-
-    @selectUnderneath.setter
-    def selectUnderneath(self, value):
-        pass
-
-    @property
-    def moveCameraToSelected(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraToSelected3dBind)
-
-    @moveCameraToSelected.setter
-    def moveCameraToSelected(self, value):
-        pass
-
-    @property
-    def moveCameraToCursor(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraToCursor3dBind)
-
-    @moveCameraToCursor.setter
-    def moveCameraToCursor(self, value):
-        pass
-
-    @property
-    def moveCameraToEntryPoint(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraToEntryPoint3dBind)
-
-    @moveCameraToEntryPoint.setter
-    def moveCameraToEntryPoint(self, value):
-        pass
-
-    @property
-    def toggleFreeCam(self) -> ControlItem:
-        return ControlItem(self.settings.toggleFreeCam3dBind)
-
-    @toggleFreeCam.setter
-    def toggleFreeCam(self, value):
-        pass
-
-    @property
-    def deleteSelected(self) -> ControlItem:
-        return ControlItem(self.settings.deleteObject3dBind)
-
-    @deleteSelected.setter
-    def deleteSelected(self, value):
-        pass
-
-    @property
-    def duplicateSelected(self) -> ControlItem:
-        return ControlItem(self.settings.duplicateObject3dBind)
-
-    @duplicateSelected.setter
-    def duplicateSelected(self, value):
-        pass
-
-    @property
-    def openContextMenu(self) -> ControlItem:
-        return ControlItem((set(), {BUTTON_TO_INT.get(QtMouse.RightButton)}))
-
-    @openContextMenu.setter
-    def openContextMenu(self, value):
-        pass
-
-    @property
-    def rotateCameraLeft(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCameraLeft3dBind)
-
-    @rotateCameraLeft.setter
-    def rotateCameraLeft(self, value):
-        pass
-
-    @property
-    def rotateCameraRight(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCameraRight3dBind)
-
-    @rotateCameraRight.setter
-    def rotateCameraRight(self, value):
-        pass
-
-    @property
-    def rotateCameraUp(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCameraUp3dBind)
-
-    @rotateCameraUp.setter
-    def rotateCameraUp(self, value):
-        pass
-
-    @property
-    def rotateCameraDown(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCameraDown3dBind)
-
-    @rotateCameraDown.setter
-    def rotateCameraDown(self, value):
-        pass
-
-    @property
-    def moveCameraUp(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraUp3dBind)
-
-    @moveCameraUp.setter
-    def moveCameraUp(self, value):
-        pass
-
-    @property
-    def moveCameraDown(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraDown3dBind)
-
-    @moveCameraDown.setter
-    def moveCameraDown(self, value):
-        pass
-
-    @property
-    def moveCameraForward(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraForward3dBind)
-
-    @moveCameraForward.setter
-    def moveCameraForward(self, value):
-        pass
-
-    @property
-    def moveCameraBackward(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraBackward3dBind)
-
-    @moveCameraBackward.setter
-    def moveCameraBackward(self, value):
-        pass
-
-    @property
-    def moveCameraLeft(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraLeft3dBind)
-
-    @moveCameraLeft.setter
-    def moveCameraLeft(self, value):
-        pass
-
-    @property
-    def moveCameraRight(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraRight3dBind)
-
-    @moveCameraRight.setter
-    def moveCameraRight(self, value):
-        pass
-
-    @property
-    def zoomCameraIn(self) -> ControlItem:
-        return ControlItem(self.settings.zoomCameraIn3dBind)
-
-    @zoomCameraIn.setter
-    def zoomCameraIn(self, value):
-        pass
-
-    @property
-    def zoomCameraOut(self) -> ControlItem:
-        return ControlItem(self.settings.zoomCameraOut3dBind)
-
-    @zoomCameraOut.setter
-    def zoomCameraOut(self, value):
-        pass
-
-    @property
-    def toggleInstanceLock(self) -> ControlItem:
-        return ControlItem(self.settings.toggleLockInstancesBind)
-
-    @toggleInstanceLock.setter
-    def toggleInstanceLock(self, value):
-        pass
-
-    @property
-    def speedBoostControl(self) -> ControlItem:  # TODO(th3w1zar1): Create a new speed boost key specifically for ModuleDesignerControls3d to use.
-        return ControlItem(self.settings.speedBoostCameraFcBind)
-
-    @speedBoostControl.setter
-    def speedBoostControl(self, value):
-        pass
-
-    @property
-    def settings(self) -> ModuleDesignerSettings:
-        return ModuleDesignerSettings()
-
-    @settings.setter
-    def settings(self, value):
-        pass
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
@@ -1755,16 +1587,14 @@ class ModuleDesignerControls3d:
             buttons (set[int]): Pressed mouse buttons
             keys (set[int]): Pressed keyboard keys
         """
-        # Handle movement of View
+        # Handle mouse-specific cursor lock and plane movement
         moveXyCameraSatisfied = self.moveXYCamera.satisfied(buttons, keys)
         moveCameraPlaneSatisfied = self.moveCameraPlane.satisfied(buttons, keys)
         rotateCameraSatisfied = self.rotateCamera.satisfied(buttons, keys)
         zoomCameraSatisfied = self.zoomCameraMM.satisfied(buttons, keys)
         if moveXyCameraSatisfied or moveCameraPlaneSatisfied or rotateCameraSatisfied or zoomCameraSatisfied:
-            moveStrength = self.settings.moveCameraSensitivity3d / 1000
             self.editor.doCursorLock(mutableScreen=screen, centerMouse=False, doRotations=False)
-            if self.speedBoostControl.satisfied(buttons, keys):
-                moveStrength *= 2.5
+            moveStrength = self.settings.moveCameraSensitivity3d / 1000
             if moveXyCameraSatisfied:
                 forward = -screenDelta.y * self.renderer.scene.camera.forward()
                 sideward = screenDelta.x * self.renderer.scene.camera.sideward()
@@ -1773,15 +1603,14 @@ class ModuleDesignerControls3d:
             if moveCameraPlaneSatisfied:  # sourcery skip: extract-method
                 upward = screenDelta.y * self.renderer.scene.camera.upward(ignore_xy=False)
                 sideward = screenDelta.x * self.renderer.scene.camera.sideward()
-                moveStrength = self.settings.moveCameraSensitivity3d / 1000
                 self.renderer.scene.camera.z -= (upward.z + sideward.z) * moveStrength
                 self.renderer.scene.camera.y -= (upward.y + sideward.y) * moveStrength
                 self.renderer.scene.camera.x -= (upward.x + sideward.x) * moveStrength
             rotateStrength = self.settings.moveCameraSensitivity3d / 10000
-        if rotateCameraSatisfied:
-            self.renderer.rotateCamera(-screenDelta.x * rotateStrength, screenDelta.y * rotateStrength, clampRotations=True)
-        if zoomCameraSatisfied:
-            self.renderer.scene.camera.distance -= screenDelta.y * rotateStrength
+            if rotateCameraSatisfied:
+                self.renderer.rotateCamera(-screenDelta.x * rotateStrength, screenDelta.y * rotateStrength, clampRotations=True)
+            if zoomCameraSatisfied:
+                self.renderer.scene.camera.distance -= screenDelta.y * rotateStrength
 
         # Handle movement of selected instances.
         if self.editor.ui.lockInstancesCheck.isChecked():
@@ -1893,7 +1722,6 @@ class ModuleDesignerControls3d:
             - Zooms camera
             - Toggles instance locking.
         """
-        settings = ModuleDesignerSettings()
         scene = self.renderer.scene
         assert scene is not None
 
@@ -1920,26 +1748,6 @@ class ModuleDesignerControls3d:
             elif move_camera_keys["entry"]:
                 self.editor.snapCameraToEntryLocation()
             return
-
-        # Check camera rotation and movement keys
-        rotation_keys = {
-            "left": self.rotateCameraLeft.satisfied(buttons, keys),
-            "right": self.rotateCameraRight.satisfied(buttons, keys),
-            "up": self.rotateCameraUp.satisfied(buttons, keys),
-            "down": self.rotateCameraDown.satisfied(buttons, keys)
-        }
-        movement_keys = {
-            "up": False,  #self.moveCameraUp.satisfied(buttons, keys),
-            "down": False,  #self.moveCameraDown.satisfied(buttons, keys),
-            "left": False,  #self.moveCameraLeft.satisfied(buttons, keys),
-            "right": False,  #self.moveCameraRight.satisfied(buttons, keys),
-            "forward": False,  #self.moveCameraForward.satisfied(buttons, keys),
-            "backward": False,  #self.moveCameraBackward.satisfied(buttons, keys),
-            "in": self.zoomCameraIn.satisfied(buttons, keys),
-            "out": self.zoomCameraOut.satisfied(buttons, keys)
-        }
-        if any(rotation_keys.values()) or any(movement_keys.values()):
-            self._handle_keyboard_camera_rotations_movements(settings, rotation_keys, movement_keys, scene)
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
             return
@@ -1949,47 +1757,199 @@ class ModuleDesignerControls3d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def _handle_keyboard_camera_rotations_movements(
-        self,
-        settings: ModuleDesignerSettings,
-        rotation_keys: dict[str, ControlItem],
-        movement_keys: dict[str, ControlItem],
-        scene: Scene,
-    ):
-        # Calculate rotation and movement deltas
-        normalized_rotation_setting = settings.rotateCameraSensitivity3d / 1000
-        angle_delta = (math.pi / 4) * normalized_rotation_setting
+    @property
+    def moveXYCamera(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraXY3dBind)
+    @moveXYCamera.setter
+    def moveXYCamera(self, value): ...
 
-        # Rotate camera based on key inputs
-        if rotation_keys["left"] and not rotation_keys["right"]:
-            self.renderer.rotateCamera(angle_delta, 0)
-        elif rotation_keys["right"] and not rotation_keys["left"]:
-            self.renderer.rotateCamera(-angle_delta, 0)
-        if rotation_keys["up"] and not rotation_keys["down"]:
-            self.renderer.rotateCamera(0, angle_delta)
-        elif rotation_keys["down"] and not rotation_keys["up"]:
-            self.renderer.rotateCamera(0, -angle_delta)
+    @property
+    def moveZCamera(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraZ3dBind)
+    @moveZCamera.setter
+    def moveZCamera(self, value): ...
 
-        # Calculate movement delta
-        move_units_delta = settings.moveCameraSensitivity3d / 100
+    @property
+    def moveCameraPlane(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraPlane3dBind)
+    @moveCameraPlane.setter
+    def moveCameraPlane(self, value): ...
 
-        # Move camera based on key inputs
-        if movement_keys["up"] and not movement_keys["down"]:
-            scene.camera.z += move_units_delta
-        elif movement_keys["down"] and not movement_keys["up"]:
-            scene.camera.z -= move_units_delta
-        if movement_keys["left"] and not movement_keys["right"]:
-            self.renderer.panCamera(0, -move_units_delta, 0)
-        elif movement_keys["right"] and not movement_keys["left"]:
-            self.renderer.panCamera(0, move_units_delta, 0)
-        if movement_keys["forward"]:
-            self.renderer.panCamera(move_units_delta, 0, 0)
-        elif movement_keys["backward"]:
-            self.renderer.panCamera(-move_units_delta, 0, 0)
-        if movement_keys["in"]:
-            self.renderer.zoomCamera(move_units_delta)
-        elif movement_keys["out"]:
-            self.renderer.zoomCamera(-move_units_delta)
+    @property
+    def rotateCamera(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCamera3dBind)
+    @rotateCamera.setter
+    def rotateCamera(self, value): ...
+
+    @property
+    def zoomCamera(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCamera3dBind)
+    @zoomCamera.setter
+    def zoomCamera(self, value): ...
+
+    @property
+    def zoomCameraMM(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraMM3dBind)
+    @zoomCameraMM.setter
+    def zoomCameraMM(self, value): ...
+
+    @property
+    def rotateSelected(self) -> ControlItem:
+        return ControlItem(self.settings.rotateSelected3dBind)
+    @rotateSelected.setter
+    def rotateSelected(self, value): ...
+
+    @property
+    def moveXYSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveSelectedXY3dBind)
+    @moveXYSelected.setter
+    def moveXYSelected(self, value): ...
+
+    @property
+    def moveZSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveSelectedZ3dBind)
+    @moveZSelected.setter
+    def moveZSelected(self, value): ...
+
+    @property
+    def selectUnderneath(self) -> ControlItem:
+        return ControlItem(self.settings.selectObject3dBind)
+    @selectUnderneath.setter
+    def selectUnderneath(self, value): ...
+
+    @property
+    def moveCameraToSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraToSelected3dBind)
+    @moveCameraToSelected.setter
+    def moveCameraToSelected(self, value): ...
+
+    @property
+    def moveCameraToCursor(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraToCursor3dBind)
+    @moveCameraToCursor.setter
+    def moveCameraToCursor(self, value): ...
+
+    @property
+    def moveCameraToEntryPoint(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraToEntryPoint3dBind)
+    @moveCameraToEntryPoint.setter
+    def moveCameraToEntryPoint(self, value): ...
+
+    @property
+    def toggleFreeCam(self) -> ControlItem:
+        return ControlItem(self.settings.toggleFreeCam3dBind)
+    @toggleFreeCam.setter
+    def toggleFreeCam(self, value): ...
+
+    @property
+    def deleteSelected(self) -> ControlItem:
+        return ControlItem(self.settings.deleteObject3dBind)
+    @deleteSelected.setter
+    def deleteSelected(self, value): ...
+
+    @property
+    def duplicateSelected(self) -> ControlItem:
+        return ControlItem(self.settings.duplicateObject3dBind)
+    @duplicateSelected.setter
+    def duplicateSelected(self, value): ...
+
+    @property
+    def openContextMenu(self) -> ControlItem:
+        return ControlItem((set(), {BUTTON_TO_INT.get(QtMouse.RightButton)}))
+    @openContextMenu.setter
+    def openContextMenu(self, value): ...
+
+    @property
+    def rotateCameraLeft(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraLeft3dBind)
+    @rotateCameraLeft.setter
+    def rotateCameraLeft(self, value): ...
+
+    @property
+    def rotateCameraRight(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraRight3dBind)
+    @rotateCameraRight.setter
+    def rotateCameraRight(self, value): ...
+
+    @property
+    def rotateCameraUp(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraUp3dBind)
+    @rotateCameraUp.setter
+    def rotateCameraUp(self, value): ...
+
+    @property
+    def rotateCameraDown(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraDown3dBind)
+    @rotateCameraDown.setter
+    def rotateCameraDown(self, value): ...
+
+    @property
+    def moveCameraUp(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraUp3dBind)
+    @moveCameraUp.setter
+    def moveCameraUp(self, value): ...
+
+    @property
+    def moveCameraDown(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraDown3dBind)
+    @moveCameraDown.setter
+    def moveCameraDown(self, value): ...
+
+    @property
+    def moveCameraForward(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraForward3dBind)
+    @moveCameraForward.setter
+    def moveCameraForward(self, value): ...
+
+    @property
+    def moveCameraBackward(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraBackward3dBind)
+
+    @moveCameraBackward.setter
+    def moveCameraBackward(self, value): ...
+    @property
+    def moveCameraLeft(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraLeft3dBind)
+
+    @moveCameraLeft.setter
+    def moveCameraLeft(self, value): ...
+
+    @property
+    def moveCameraRight(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraRight3dBind)
+    @moveCameraRight.setter
+    def moveCameraRight(self, value): ...
+
+    @property
+    def zoomCameraIn(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraIn3dBind)
+
+    @zoomCameraIn.setter
+    def zoomCameraIn(self, value): ...
+    @property
+    def zoomCameraOut(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraOut3dBind)
+
+    @zoomCameraOut.setter
+    def zoomCameraOut(self, value): ...
+
+    @property
+    def toggleInstanceLock(self) -> ControlItem:
+        return ControlItem(self.settings.toggleLockInstancesBind)
+    @toggleInstanceLock.setter
+    def toggleInstanceLock(self, value): ...
+
+    @property
+    def speedBoostControl(self) -> ControlItem:
+        return ControlItem(self.settings.speedBoostCamera3dBind)
+    @speedBoostControl.setter
+    def speedBoostControl(self, value): ...
+
+    @property
+    def settings(self) -> ModuleDesignerSettings:
+        return ModuleDesignerSettings()
+    @settings.setter
+    def settings(self, value): ...
 
 
 class ModuleDesignerControlsFreeCam:
@@ -2016,78 +1976,6 @@ class ModuleDesignerControlsFreeCam:
         self.renderer.scene.show_cursor = False
 
 
-    @property
-    def toggleFreeCam(self) -> ControlItem:
-        return ControlItem(self.settings.toggleFreeCam3dBind)
-
-    @toggleFreeCam.setter
-    def toggleFreeCam(self, value):
-        pass
-
-    @property
-    def moveCameraUp(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraUpFcBind)
-
-    @moveCameraUp.setter
-    def moveCameraUp(self, value):
-        pass
-
-    @property
-    def moveCameraDown(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraDownFcBind)
-
-    @moveCameraDown.setter
-    def moveCameraDown(self, value):
-        pass
-
-    @property
-    def moveCameraForward(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraForwardFcBind)
-
-    @moveCameraForward.setter
-    def moveCameraForward(self, value):
-        pass
-
-    @property
-    def moveCameraBackward(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraBackwardFcBind)
-
-    @moveCameraBackward.setter
-    def moveCameraBackward(self, value):
-        pass
-
-    @property
-    def moveCameraLeft(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraLeftFcBind)
-
-    @moveCameraLeft.setter
-    def moveCameraLeft(self, value):
-        pass
-
-    @property
-    def moveCameraRight(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraRightFcBind)
-
-    @moveCameraRight.setter
-    def moveCameraRight(self, value):
-        pass
-
-    @property
-    def speedBoostControl(self) -> ControlItem:
-        return ControlItem(self.settings.speedBoostCameraFcBind)
-
-    @speedBoostControl.setter
-    def speedBoostControl(self, value):
-        pass
-
-    @property
-    def settings(self) -> ModuleDesignerSettings:
-        return ModuleDesignerSettings()
-
-    @settings.setter
-    def settings(self, value):
-        pass
-
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]): ...
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]):  # noqa: PLR0913
@@ -2101,11 +1989,102 @@ class ModuleDesignerControlsFreeCam:
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         current_time = time.time()
         if self.toggleFreeCam.satisfied(buttons, keys) and (current_time - self.editor.last_free_cam_time > 0.5):  # 0.5 seconds delay, prevents spamming
-            #self.renderer.scene.camera.distance = self.controls3d_distance
+            self.renderer.scene.camera.distance = self.controls3d_distance
             self.editor.toggleFreeCam()
             self.editor.last_free_cam_time = current_time  # Update the last toggle time
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]): ...
+
+    @property
+    def toggleFreeCam(self) -> ControlItem:
+        return ControlItem(self.settings.toggleFreeCam3dBind)
+    @toggleFreeCam.setter
+    def toggleFreeCam(self, value): ...
+
+    @property
+    def moveCameraUp(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraUpFcBind)
+    @moveCameraUp.setter
+    def moveCameraUp(self, value): ...
+
+    @property
+    def moveCameraDown(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraDownFcBind)
+    @moveCameraDown.setter
+    def moveCameraDown(self, value): ...
+
+    @property
+    def moveCameraForward(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraForwardFcBind)
+    @moveCameraForward.setter
+    def moveCameraForward(self, value): ...
+
+    @property
+    def moveCameraBackward(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraBackwardFcBind)
+    @moveCameraBackward.setter
+    def moveCameraBackward(self, value): ...
+
+    @property
+    def moveCameraLeft(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraLeftFcBind)
+    @moveCameraLeft.setter
+    def moveCameraLeft(self, value): ...
+
+    @property
+    def moveCameraRight(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraRightFcBind)
+    @moveCameraRight.setter
+    def moveCameraRight(self, value): ...
+
+    @property
+    def rotateCameraLeft(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraLeftFcBind)
+    @rotateCameraLeft.setter
+    def rotateCameraLeft(self, value): ...
+
+    @property
+    def rotateCameraRight(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraRightFcBind)
+    @rotateCameraRight.setter
+    def rotateCameraRight(self, value): ...
+
+    @property
+    def rotateCameraUp(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraUpFcBind)
+    @rotateCameraUp.setter
+    def rotateCameraUp(self, value): ...
+
+    @property
+    def rotateCameraDown(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraDownFcBind)
+    @rotateCameraDown.setter
+    def rotateCameraDown(self, value): ...
+
+    @property
+    def zoomCameraIn(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraInFcBind)
+
+    @zoomCameraIn.setter
+    def zoomCameraIn(self, value): ...
+    @property
+    def zoomCameraOut(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraOutFcBind)
+
+    @zoomCameraOut.setter
+    def zoomCameraOut(self, value): ...
+
+    @property
+    def speedBoostControl(self) -> ControlItem:
+        return ControlItem(self.settings.speedBoostCameraFcBind)
+    @speedBoostControl.setter
+    def speedBoostControl(self, value): ...
+
+    @property
+    def settings(self) -> ModuleDesignerSettings:
+        return ModuleDesignerSettings()
+    @settings.setter
+    def settings(self, value): ...
 
 
 class ModuleDesignerControls2d:
@@ -2127,94 +2106,6 @@ class ModuleDesignerControls2d:
         self.renderer: WalkmeshRenderer = renderer
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._mode: _InstanceMode | _GeometryMode | _SpawnMode
-
-    @property
-    def moveCamera(self):
-        return ControlItem(self.settings.moveCamera2dBind)
-
-    @moveCamera.setter
-    def moveCamera(self, value):
-        pass
-
-    @property
-    def rotateCamera(self):
-        return ControlItem(self.settings.rotateCamera2dBind)
-
-    @rotateCamera.setter
-    def rotateCamera(self, value):
-        pass
-
-    @property
-    def zoomCamera(self):
-        return ControlItem(self.settings.zoomCamera2dBind)
-
-    @zoomCamera.setter
-    def zoomCamera(self, value):
-        pass
-
-    @property
-    def rotateSelected(self):
-        return ControlItem(self.settings.rotateObject2dBind)
-
-    @rotateSelected.setter
-    def rotateSelected(self, value):
-        pass
-
-    @property
-    def moveSelected(self):
-        return ControlItem(self.settings.moveObject2dBind)
-
-    @moveSelected.setter
-    def moveSelected(self, value):
-        pass
-
-    @property
-    def selectUnderneath(self):
-        return ControlItem(self.settings.selectObject2dBind)
-
-    @selectUnderneath.setter
-    def selectUnderneath(self, value):
-        pass
-
-    @property
-    def deleteSelected(self):
-        return ControlItem(self.settings.deleteObject2dBind)
-
-    @deleteSelected.setter
-    def deleteSelected(self, value):
-        pass
-
-    @property
-    def duplicateSelected(self):
-        return ControlItem(self.settings.duplicateObject2dBind)
-
-    @duplicateSelected.setter
-    def duplicateSelected(self, value):
-        pass
-
-    @property
-    def snapCameraToSelected(self):
-        return ControlItem(self.settings.moveCameraToSelected2dBind)
-
-    @snapCameraToSelected.setter
-    def snapCameraToSelected(self, value):
-        pass
-
-    @property
-    def openContextMenu(self):
-        return ControlItem((set(), {QtMouse.RightButton}))
-
-    @openContextMenu.setter
-    def openContextMenu(self, value):
-        pass
-
-    @property
-    def toggleInstanceLock(self):
-        return ControlItem(self.settings.toggleLockInstancesBind)
-
-    @toggleInstanceLock.setter
-    def toggleInstanceLock(self, value):
-        pass
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         """Scrolls camera zoom on mouse scroll.
@@ -2366,3 +2257,70 @@ class ModuleDesignerControls2d:
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         self.editor.handleUndoRedoFromLongActionFinished()
+
+    @property
+    def moveCamera(self):
+        return ControlItem(self.settings.moveCamera2dBind)
+
+    @moveCamera.setter
+    def moveCamera(self, value): ...
+
+    @property
+    def rotateCamera(self):
+        return ControlItem(self.settings.rotateCamera2dBind)
+    @rotateCamera.setter
+    def rotateCamera(self, value): ...
+
+    @property
+    def zoomCamera(self):
+        return ControlItem(self.settings.zoomCamera2dBind)
+    @zoomCamera.setter
+    def zoomCamera(self, value): ...
+
+    @property
+    def rotateSelected(self):
+        return ControlItem(self.settings.rotateObject2dBind)
+    @rotateSelected.setter
+    def rotateSelected(self, value): ...
+
+    @property
+    def moveSelected(self):
+        return ControlItem(self.settings.moveObject2dBind)
+    @moveSelected.setter
+    def moveSelected(self, value): ...
+
+    @property
+    def selectUnderneath(self):
+        return ControlItem(self.settings.selectObject2dBind)
+    @selectUnderneath.setter
+    def selectUnderneath(self, value): ...
+
+    @property
+    def deleteSelected(self):
+        return ControlItem(self.settings.deleteObject2dBind)
+    @deleteSelected.setter
+    def deleteSelected(self, value): ...
+
+    @property
+    def duplicateSelected(self):
+        return ControlItem(self.settings.duplicateObject2dBind)
+    @duplicateSelected.setter
+    def duplicateSelected(self, value): ...
+
+    @property
+    def snapCameraToSelected(self):
+        return ControlItem(self.settings.moveCameraToSelected2dBind)
+    @snapCameraToSelected.setter
+    def snapCameraToSelected(self, value): ...
+
+    @property
+    def openContextMenu(self):
+        return ControlItem((set(), {QtMouse.RightButton}))
+    @openContextMenu.setter
+    def openContextMenu(self, value): ...
+
+    @property
+    def toggleInstanceLock(self):
+        return ControlItem(self.settings.toggleLockInstancesBind)
+    @toggleInstanceLock.setter
+    def toggleInstanceLock(self, value): ...

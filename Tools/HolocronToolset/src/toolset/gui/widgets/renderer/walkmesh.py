@@ -230,8 +230,15 @@ class WalkmeshRenderer(QWidget):
         self.repaint()
         QTimer.singleShot(33, self._loop)
 
-    def resetMouseButtons(self):
+    def resetButtonsDown(self):
         self._mouseDown.clear()
+
+    def resetKeysDown(self):
+        self._keysDown.clear()
+
+    def resetAllDown(self):
+        self._mouseDown.clear()
+        self._keysDown.clear()
 
     def setWalkmeshes(self, walkmeshes: list[BWM]):
         """Sets the list of walkmeshes to be rendered.
