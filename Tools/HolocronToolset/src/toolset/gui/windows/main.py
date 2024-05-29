@@ -142,7 +142,7 @@ def run_module_designer(
     active_tsl: bool,
     module_path: str | None = None,
 ):
-    """Do not use this., causes things like skyboxes to overlap the main renders, backface culling breaks. I've no idea why this happens it is quite bizarre."""
+    """An alternative way to start the ModuleDesigner: run this function in a new process so the main tool window doesn't wait on the module designer."""
     from toolset.__main__ import main_init
     main_init()
     app = QApplication([])
@@ -151,7 +151,7 @@ def run_module_designer(
         HTInstallation(active_path, active_name, tsl=active_tsl),
         CaseAwarePath(module_path) if module_path is not None else None,
     )
-    designerUi.show()
+    addWindow(designerUi, show=False)
     sys.exit(app.exec_())
 
 
