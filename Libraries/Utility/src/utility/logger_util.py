@@ -466,6 +466,11 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
     _queue: Queue = Queue()
     _logger: logging.Logger = None  # type: ignore[arg-type]
 
+    def __getattr__(self, attr_name: str):
+        if attr_name not in self.__dict__:
+            return getattr(self._logger, attr_name)
+        return super().__getattr__(attr_name)
+
     def __new__(cls, *args, **kwargs) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
