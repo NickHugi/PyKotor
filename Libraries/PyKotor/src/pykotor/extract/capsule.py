@@ -437,6 +437,7 @@ class Capsule(LazyCapsule):
         path: os.PathLike | str,
         *,
         create_nonexisting: bool = False,
+        reload: bool = True,
     ):
         """Initialize a Capsule object.
 
@@ -460,7 +461,8 @@ class Capsule(LazyCapsule):
         """
         self._resources: list[FileResource] = []
         super().__init__(path, create_nonexisting=create_nonexisting)
-        self.reload()
+        if reload:
+            self.reload()
 
     def resources(
         self,

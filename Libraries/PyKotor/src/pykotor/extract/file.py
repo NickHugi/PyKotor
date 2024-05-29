@@ -271,6 +271,9 @@ class ResourceResult:
         """This method enables unpacking like tuple behavior."""
         return iter((self.resname, self.restype, self.filepath, self.data))
 
+    def __hash__(self):
+        return hash(self.identifier())
+
     def set_file_resource(self, value: FileResource) -> None:
         # Allow _resource to be set only once
         if self._resource is None:

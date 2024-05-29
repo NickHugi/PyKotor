@@ -15,6 +15,7 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtCore import (
     QCoreApplication,
+    QEvent,
     QFile,
     QSize,
     QTextStream,
@@ -31,11 +32,12 @@ from qtpy.QtGui import (
 from qtpy.QtWidgets import (
     QAction,
     QApplication,
-    QDialog,
     QFileDialog,
     QHBoxLayout,
     QMainWindow,
+    QMenu,
     QMessageBox,
+    QPushButton,
     QSizePolicy,
     QStyle,
     QStyledItemDelegate,
@@ -44,7 +46,7 @@ from qtpy.QtWidgets import (
 from watchdog.events import FileSystemEventHandler
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier
+from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
@@ -52,6 +54,7 @@ from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tpc import read_tpc, write_tpc
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
@@ -81,6 +84,7 @@ from toolset.gui.editors.utp import UTPEditor
 from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
+from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.helpers.main_focus_helper import MainFocusHandler
 from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.settings.misc import GlobalSettings
@@ -111,7 +115,7 @@ if TYPE_CHECKING:
     from typing import NoReturn
 
     from qtpy import QtGui
-    from qtpy.QtCore import QEvent, QObject
+    from qtpy.QtCore import QObject
     from qtpy.QtGui import (
         QCloseEvent,
         QKeyEvent,
@@ -122,11 +126,12 @@ if TYPE_CHECKING:
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
-    from pykotor.extract.file import ResourceResult
+    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
+    from utility.common.more_collections import CaseInsensitiveDict
 
 def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
     app = QApplication(sys.argv)
@@ -259,6 +264,9 @@ class ToolWindow(QMainWindow):
         stackButtonLayout = QVBoxLayout()
         stackButtonLayout.addWidget(designerButton)
         stackButtonLayout.addWidget(refreshButton)
+        self.moreButton = QPushButton("Collect...")
+        self.moreButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        stackButtonLayout.addWidget(self.moreButton)
 
         # Create a new horizontal layout to place the combobox and buttons
         topLayout = QHBoxLayout()
@@ -301,6 +309,29 @@ class ToolWindow(QMainWindow):
         modulesSectionCombo.setItemDelegate(QStyledItemDelegate(modulesSectionCombo))
         modulesSectionCombo.setIconSize(QSize(16, 16))
         modulesSectionCombo.setItemIcon(0, dropdown_icon)
+
+        # Expandable actions for the 'More...' button
+        def create_more_actions_menu():
+            menu = QMenu()
+            menu.addAction("Room Textures").triggered.connect(self.extractModuleRoomTextures)
+            menu.addAction("Room Models").triggered.connect(self.extractModuleRoomModels)
+            menu.addAction("Textures").triggered.connect(self.extractAllModuleTextures)
+            menu.addAction("Models").triggered.connect(self.extractAllModuleModels)
+            menu.addAction("Everything").triggered.connect(lambda: self.extractModuleEverything())
+            return menu
+
+        self.moreButton.setMenu(create_more_actions_menu())
+
+        # Show menu on hover
+        self.moreButton.setMouseTracking(True)
+        self.moreButton.installEventFilter(self)
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if obj == self.moreButton and event.type() == QEvent.HoverEnter:
+            self.moreButton.showMenu()
+        if hasattr(self, "focusHandler"):
+            return self.focusHandler.eventFilter(obj, event)
+        return super().eventFilter(obj, event)
 
     def _setupSignals(self):
         """Connects signals to slots for UI interactions.
@@ -896,9 +927,6 @@ class ToolWindow(QMainWindow):
         else:
             print("ToolWindow closed, shutting down the app.")
             instance.quit()
-
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        return self.focusHandler.eventFilter(obj, event)
 
     # Overriding mouse event handlers to enable dragging of the window
     def mouseMoveEvent(self, event: QMouseEvent):
@@ -1543,6 +1571,159 @@ class ToolWindow(QMainWindow):
     # endregion
 
     # region Extract
+    def get_multiple_directories(self, title: str = "Choose some folders."):
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.Directory)
+        dialog.setOption(QFileDialog.DontUseNativeDialog, True)
+        dialog.setOption(QFileDialog.ShowDirsOnly, True)
+        dialog.setWindowTitle(title)
+        dialog.setDirectory(self)  # Optionally set the initial directory
+
+        # Create a layout to enable multi-selection of directories
+        list_view = dialog.findChild(QListView, "listView")
+        tree_view = dialog.findChild(QTreeView)
+        if list_view:
+            list_view.setSelectionMode(QAbstractItemView.MultiSelection)
+        if tree_view:
+            tree_view.setSelectionMode(QAbstractItemView.MultiSelection)
+
+        if dialog.exec_() == QFileDialog.Accepted:
+            selected_dirs = dialog.selectedFiles()
+            return [Path(dir_path) for dir_path in selected_dirs]
+        return []
+
+    def extractModuleRoomTextures(self):
+        assert self.active is not None
+        from pykotor.common.module import Module
+        from pykotor.tools.model import list_lightmaps, list_textures
+        curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        if curModuleName not in self.active._modules:
+            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
+            return
+        thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
+        lytModuleResource = thisModule.layout()
+        if lytModuleResource is None:
+            BetterMessageBox(f"'{curModuleName}' has no LYT!", f"The module '{curModuleName}' does not store any LYT resource.").exec_()
+            return
+        lyt = lytModuleResource.resource()
+        if lyt is None:
+            BetterMessageBox(f"'{curModuleName}' has no LYT paths!", "The module did not contain any locations for the LYT. This is an internal error, as there should be one if we know it exists. Please report.").exec_()
+            return
+        optionalPaths = []
+        #customFolderPath = self.get_multiple_directories("Choose optional folders to search for models")
+        #if customFolderPath and customFolderPath.strip():
+        #    optionalPaths.append(Path(customFolderPath))
+        modelQueries = [ResourceIdentifier(mdlName, ResourceType.MDL) for mdlName in (lyt.all_room_models())]
+        modelLocationResults: dict[ResourceIdentifier, list[LocationResult]] = self.active.locations(modelQueries, folders=optionalPaths)
+        modelLocations: dict[ResourceIdentifier, FileResource] = {k: v[0].as_file_resource() for k, v in modelLocationResults.items() if v}
+        texlmNames: list[str] = []
+        for res in modelLocations.values():
+            texNames = []
+            try:
+                for texName in list_textures(res.data()):
+                    texNames.append(texName)
+            except Exception:
+                RobustRootLogger.exception(f"Failed to extract textures names from {res.identifier()}")
+            lmNames = []
+            try:
+                for lmName in list_lightmaps(res.data()):
+                    lmNames.append(lmName)
+            except Exception:
+                RobustRootLogger.exception(f"Failed to extract lightmap names from {res.identifier()}")
+            texlmNames.extend(texNames)
+            texlmNames.extend(lmNames)
+        textureData: CaseInsensitiveDict[TPC | None] = self.active.textures(texlmNames)
+        for tex, data in textureData.copy().items():
+            if data is None:
+                del textureData[tex]
+        textureResourceResults: list[ResourceResult] = [ResourceResult(tex, ResourceType.TPC, Path().joinpath(tex).with_suffix(".tpc"), bytes_tpc(data)) for tex, data in textureData.items()]
+        FileSaveHandler(textureResourceResults, self).save_files()
+
+    def extractModuleRoomModels(self):
+        assert self.active is not None
+        from pykotor.common.module import Module
+        curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        if curModuleName not in self.active._modules:
+            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
+            return
+        thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
+        lytModuleResource = thisModule.layout()
+        if lytModuleResource is None:
+            BetterMessageBox(f"'{curModuleName}' has no LYT!", f"The module '{curModuleName}' does not store any LYT resource.").exec_()
+            return
+        lyt = lytModuleResource.resource()
+        if lyt is None:
+            BetterMessageBox(f"'{curModuleName}' has no LYT paths!", "The module did not contain any locations for the LYT. This is an internal error, as there should be one if we know it exists. Please report.").exec_()
+            return
+        optionalPaths = []
+        #customFolderPath = self.get_multiple_directories("Choose optional folders to search for models")
+        #if customFolderPath and customFolderPath.strip():
+        #    optionalPaths.append(Path(customFolderPath))
+        modelQueries = [ResourceIdentifier(mdlName, ResourceType.MDL) for mdlName in (lyt.all_room_models())]
+        modelLocationResults: dict[ResourceIdentifier, list[LocationResult]] = self.active.locations(modelQueries, folders=optionalPaths)
+        modelLocations: dict[ResourceIdentifier, FileResource] = {k: v[0].as_file_resource() for k, v in modelLocationResults.items() if v}
+        FileSaveHandler(list(modelLocations.values()), self).save_files()
+
+    def extractAllModuleTextures(self):
+        assert self.active is not None
+        from pykotor.common.module import Module
+        curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        if curModuleName not in self.active._modules:
+            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            return
+        thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
+        texturesList: list[ResourceResult] = []
+        for ident, modRes in thisModule.resources.items():
+            if ident.restype not in (ResourceType.TGA, ResourceType.TPC):
+                continue
+            data = modRes.data()
+            if data is None:
+                continue
+            locations = modRes.locations()
+            if not locations:
+                continue
+            texturesList.append(ResourceResult(ident.resname, ident.restype, locations[0], data))
+        FileSaveHandler(texturesList, self).save_files()
+
+    def extractAllModuleModels(self):
+        from pykotor.common.module import Module
+        curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        if curModuleName not in self.active._modules:
+            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            return
+        thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
+        modelsList: list[ResourceResult] = []
+        for ident, modRes in thisModule.resources.items():
+            if ident.restype not in (ResourceType.MDX, ResourceType.MDL):
+                continue
+            data = modRes.data()
+            if data is None:
+                continue
+            locations = modRes.locations()
+            if not locations:
+                continue
+            modelsList.append(ResourceResult(ident.resname, ident.restype, locations[0], data))
+        FileSaveHandler(modelsList, self).save_files()
+
+    def extractModuleEverything(self):
+        from pykotor.common.module import Module
+        curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        if curModuleName not in self.active._modules:
+            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            return
+        thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
+        allModuleResources: list[ResourceResult] = []
+        for ident, modRes in thisModule.resources.items():
+            data = modRes.data()
+            if data is None:
+                continue
+            locations = modRes.locations()
+            if not locations:
+                continue
+            allModuleResources.append(ResourceResult(ident.resname, ident.restype, locations[0], data))
+        FileSaveHandler(allModuleResources, self).save_files()
 
     def onExtractResources(
         self,
