@@ -1324,20 +1324,22 @@ class ToolWindow(QMainWindow):
             self.ui.modulesWidget.setResourceSelection(resource)
 
         elif tree == self.ui.overrideWidget:
-            assert self.active is not None
-            self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
-            self.ui.overrideWidget.setResourceSelection(resource)
-            subfolder: str = "."
-            for folder_name in self.active.override_list():
-                folder_path: CaseAwarePath = self.active.override_path() / folder_name
-                if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
-                    subfolder = folder_name
-            self.changeOverrideFolder(subfolder)
-
+            self._selectOverrideResource(resource)
         elif tree == self.ui.savesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.savesTab)
             filename = resource.filepath().name
             self.onSaveReload(filename)
+
+    def _selectOverrideResource(self, resource: FileResource):
+        assert self.active is not None
+        self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
+        self.ui.overrideWidget.setResourceSelection(resource)
+        subfolder: str = "."
+        for folder_name in self.active.override_list():
+            folder_path: CaseAwarePath = self.active.override_path() / folder_name
+            if resource.filepath().is_relative_to(folder_path) and len(subfolder) < len(folder_path.name):
+                subfolder = folder_name
+        self.changeOverrideFolder(subfolder)
 
     def reloadInstallations(self):
         """Refresh the list of installations available in the combobox."""
