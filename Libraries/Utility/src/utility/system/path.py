@@ -194,6 +194,10 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
         return args_list
 
+    def __reduce__(self) -> tuple[type[Self], tuple[str]]:
+        """Helper for pickle."""
+        return (self.__class__, (self.__fspath__(),))
+
     @classmethod
     @lru_cache(maxsize=20000)
     def _fix_path_formatting(

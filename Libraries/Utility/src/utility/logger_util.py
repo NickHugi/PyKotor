@@ -466,6 +466,9 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
     _queue: Queue = Queue()
     _logger: logging.Logger = None  # type: ignore[arg-type]
 
+    def __reduce__(self) -> tuple[type[Self], tuple[()]]:
+        return self.__class__, ()
+
     def __getattr__(self, attr_name: str):
         if attr_name not in self.__dict__:
             return getattr(self._logger, attr_name)
