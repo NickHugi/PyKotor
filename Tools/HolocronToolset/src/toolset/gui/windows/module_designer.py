@@ -75,8 +75,6 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     import os
 
-    from logging import Logger
-
     from glm import vec3
     from qtpy.QtGui import QCloseEvent, QFont, QKeyEvent, QShowEvent
     from qtpy.QtWidgets import QCheckBox
