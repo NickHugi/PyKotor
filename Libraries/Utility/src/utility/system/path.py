@@ -42,22 +42,62 @@ def pathlib_to_override(cls: type) -> type:
 
     return class_map.get(cls, cls)
 
+def _handle_non_hashable(
+    cache_func: Callable,
+    direct_func: Callable,
+    path: os.PathLike | str,
+) -> Any:
+    path_str = os.fspath(path)
+    try:
+        return cache_func(path_str)
+    except TypeError:
+        return direct_func(path_str)
+
 @lru_cache(maxsize=20000)
-def cached_normpath(path: os.PathLike | str) -> str:
+def _cached_splitroot(path: str) -> tuple[str, str]:
+    return ("/", path[1:]) if path.startswith("/") else ("", path)
+
+def _direct_splitroot(path: str) -> tuple[str, str]:
+    return ("/", path[1:]) if path.startswith("/") else ("", path)
+
+@lru_cache(maxsize=20000)
+def _cached_normpath(path: str) -> str:
+    return os.path.normpath(path)
+
+def _direct_normpath(path: str) -> str:
     return os.path.normpath(path)
 
 @lru_cache(maxsize=20000)
-def cached_isabs(path: os.PathLike | str) -> bool:
+def _cached_isabs(path: str) -> bool:
+    return os.path.isabs(path)  # noqa: PTH117
+
+def _direct_isabs(path: str) -> bool:
     return os.path.isabs(path)  # noqa: PTH117
 
 @lru_cache(maxsize=20000)
-def cached_splitdrive(path: os.PathLike | str) -> tuple[str, str]:
-    return os.path.splitdrive(path)  # FIXME: PureWindowsPath needs this function for POSIX systems, but splitdrive only works on windows.
+def _cached_splitdrive(path: str) -> tuple[str, str]:
+    if os.name == "nt":
+        return os.path.splitdrive(path)
+    match = _WINDOWS_SPLITDRIVE_RE.match(path)
+    return (match.group(0), path[match.end():]) if match else ("", path)
 
-@lru_cache(maxsize=20000)
+def _direct_splitdrive(path: str) -> tuple[str, str]:
+    if os.name == "nt":
+        return os.path.splitdrive(path)
+    match = _WINDOWS_SPLITDRIVE_RE.match(path)
+    return (match.group(0), path[match.end():]) if match else ("", path)
+
 def cached_splitroot(path: os.PathLike | str) -> tuple[str, str]:
-    path_str = os.fspath(path)
-    return ("/", path_str[1:]) if path_str.startswith("/") else ("", path_str)
+    return _handle_non_hashable(_cached_splitroot, _direct_splitroot, path)
+
+def cached_normpath(path: os.PathLike | str) -> str:
+    return _handle_non_hashable(_cached_normpath, _direct_normpath, path)
+
+def cached_isabs(path: os.PathLike | str) -> bool:
+    return _handle_non_hashable(_cached_isabs, _direct_isabs, path)
+
+def cached_splitdrive(path: os.PathLike | str) -> tuple[str, str]:
+    return _handle_non_hashable(_cached_splitdrive, _direct_splitdrive, path)
 
 class PurePathType(type):
     def __instancecheck__(cls, instance: object) -> bool:  # sourcery skip: instance-method-first-arg-name
@@ -107,6 +147,8 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     ):
         if sys.version_info >= (3, 12, 0):
             self._raw_paths = self.parse_args(args)
+        elif self._drv.endswith(":") and self._flavour.sep == "\\":
+            self._drv += "\\"
         self._cached_str = self._fix_path_formatting(super().__str__(), slash=self._flavour.sep)  # type: ignore[attr-defined]
 
     @classmethod
