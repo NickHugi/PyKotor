@@ -101,15 +101,15 @@ def read_tlk(
     """
     file_format: ResourceType = detect_tlk(source, offset)
 
-    if file_format == ResourceType.INVALID:
+    if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the TLK file."
         raise ValueError(msg)
 
-    if file_format == ResourceType.TLK:
+    if file_format is ResourceType.TLK:
         return TLKBinaryReader(source, offset, size or 0, language).load()
-    if file_format == ResourceType.TLK_XML:
+    if file_format is ResourceType.TLK_XML:
         return TLKXMLReader(source, offset, size or 0).load()
-    if file_format == ResourceType.TLK_JSON:
+    if file_format is ResourceType.TLK_JSON:
         return TLKJSONReader(source, offset, size or 0).load()
     msg = "Unsupported TLK format specified."
     raise ValueError(msg)
@@ -134,11 +134,11 @@ def write_tlk(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.TLK:
+    if file_format is ResourceType.TLK:
         TLKBinaryWriter(tlk, target).write()
-    elif file_format == ResourceType.TLK_XML:
+    elif file_format is ResourceType.TLK_XML:
         TLKXMLWriter(tlk, target).write()
-    elif file_format == ResourceType.TLK_JSON:
+    elif file_format is ResourceType.TLK_JSON:
         TLKJSONWriter(tlk, target).write()
     else:
         msg = "Unsupported format specified; use TLK or TLK_XML."

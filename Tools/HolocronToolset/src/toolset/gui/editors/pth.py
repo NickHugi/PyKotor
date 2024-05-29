@@ -24,7 +24,6 @@ from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -363,33 +362,33 @@ class PTHEditor(Editor):
 
     @status_bar_decorator
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
-        print(f"onMouseScrolled(delta={delta!r})", file=self.stdout)
+        #print(f"onMouseScrolled(delta={delta!r})", file=self.stdout)
         self._controls.onMouseScrolled(delta, buttons, keys)
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        print(f"onMousePressed(screen={screen!r})", file=self.stdout)
+        #print(f"onMousePressed(screen={screen!r})", file=self.stdout)
         self._controls.onMousePressed(screen, buttons, keys)
 
     @status_bar_decorator
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        print("onMouseReleased", file=self.stdout)
+        #print("onMouseReleased", file=self.stdout)
         self._controls.onMouseReleased(Vector2(0, 0), buttons, keys)
 
     @status_bar_decorator
     def onKeyPressed(self, buttons: set[int], keys: set[int]):
-        print("onKeyPressed", file=self.stdout)
+        #print("onKeyPressed", file=self.stdout)
         self._controls.onKeyboardPressed(buttons, keys)
 
     @status_bar_decorator
     def keyPressEvent(self, e: QKeyEvent):
-        print(f"keyPressEvent(e={e!r})", file=self.stdout)
+        #print(f"keyPressEvent(e={e!r})", file=self.stdout)
         if e is None:
             return
         self.ui.renderArea.keyPressEvent(e)
 
     @status_bar_decorator
     def keyReleaseEvent(self, e: QKeyEvent):
-        print(f"keyReleaseEvent(e={e!r})", file=self.stdout)
+        #print(f"keyReleaseEvent(e={e!r})", file=self.stdout)
         if e is None:
             return
         self.ui.renderArea.keyReleaseEvent(e)
@@ -470,7 +469,7 @@ class PTHControlScheme:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     @status_bar_decorator
@@ -486,23 +485,22 @@ class PTHControlScheme:
         self.editor.stdout.mouse_pos = screen
         shouldPanCamera = self.panCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
-        if shouldPanCamera or shouldRotateCamera:
-            if shouldPanCamera:
-                moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-                RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
-                self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
-            if shouldRotateCamera:
-                delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
-                if abs(screenDelta.x) >= abs(screenDelta.y):
-                    direction = -1 if screenDelta.x < 0 else 1
-                else:
-                    direction = -1 if screenDelta.y < 0 else 1
-                rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
-                rotateAmount = delta_magnitude * rotateSens
-                rotateAmount *= direction
-                RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
-                self.editor.rotateCamera(rotateAmount)
-            return
+        if shouldPanCamera:
+            self.editor.ui.renderArea.doCursorLock(screen)
+            moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
+            #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+            self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
+        if shouldRotateCamera:
+            delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
+            if abs(screenDelta.x) >= abs(screenDelta.y):
+                direction = -1 if screenDelta.x < 0 else 1
+            else:
+                direction = -1 if screenDelta.y < 0 else 1
+            rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
+            rotateAmount = delta_magnitude * rotateSens
+            rotateAmount *= direction
+            #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+            self.editor.rotateCamera(rotateAmount)
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)
 

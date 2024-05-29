@@ -40,3 +40,5 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Search Results"))
         self.openButton.setText(_translate("Dialog", "Open"))
         self.okButton.setText(_translate("Dialog", "OK"))
+
+from toolset.rcc import resources_rc_pyqt5

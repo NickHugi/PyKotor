@@ -17,6 +17,7 @@ from datetime import datetime
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any, Set, cast
 
+import qtpy
 import send2trash
 
 from qtpy.QtCore import QUrl, Qt
@@ -25,11 +26,9 @@ from qtpy.QtWidgets import (
     QAction,
     QApplication,
     QCheckBox,
-    QDesktopWidget,
-    QDialog,
     QFileDialog,
     QHeaderView,
-    QLineEdit,
+    QInputDialog,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -42,6 +41,11 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    ...
+else:
+    from qtpy.QtWidgets import QDesktopWidget
 
 if __name__ == "__main__":
     with suppress(Exception):
@@ -266,53 +270,6 @@ class CustomItem:
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
         return executed_action  # noqa: RET504
 
-    def copy_selection_to_clipboard(self):
-        selection = self.selectedIndexes()
-        if not selection:
-            return
-        rows = sorted(index.row() for index in selection)
-        columns = sorted(index.column() for index in selection)
-        row_count = rows[-1] - rows[0] + 1
-        column_count = columns[-1] - columns[0] + 1
-        table_text = [[""] * column_count for _ in range(row_count)]
-        for index in selection:
-            row = index.row() - rows[0]
-            column = index.column() - columns[0]
-            table_text[row][column] = index.data()
-
-        # Format table text as a tab-delimited string
-        clipboard_text = "\n".join("\t".join(row) for row in table_text)
-        QApplication.clipboard().setText(clipboard_text)
-
-    def remove_selected_result(self):
-        selected = self.selectedRanges()
-        if not selected:
-            return
-        for selection in selected:
-            for row in range(selection.bottomRow(), selection.topRow()-1, -1):
-                self.removeRow(row)
-
-    def set_all_items_editability(
-        self,
-        *,
-        editable: bool,
-    ):
-        """Set all items in the table to be either editable or read-only based on the `editable` argument.
-
-        Args:
-        ----
-            editable (bool): If True, all items will be set to editable. If False, items will be read-only.
-        """
-        for row in range(self.rowCount()):
-            for column in range(self.columnCount()):
-                item = self.item(row, column)
-                if not item:  # Check if the item exists
-                    continue
-                if editable:
-                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-                else:
-                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-
 
 class FileItems(CustomItem):
     def __init__(self, *args, filepaths: list[Path] | None = None, **kwargs):
@@ -328,8 +285,8 @@ class FileItems(CustomItem):
         icon: QMessageBox.Icon | int,
         title: str,
         text: str,
-        buttons: QMessageBox.StandardButton | int = QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        default_button: QMessageBox.StandardButton | int = QMessageBox.StandardButton.No,
+        buttons: QMessageBox.StandardButton | int = QMessageBox.Yes | QMessageBox.No,
+        default_button: QMessageBox.StandardButton | int = QMessageBox.No,
         detailedMsg: str | None = None,
     ) -> int | QMessageBox.StandardButton:
         if not detailedMsg or not detailedMsg.strip():
@@ -344,10 +301,7 @@ class FileItems(CustomItem):
             title + (" "*1000),
             text + (" "*1000),
             buttons,
-            flags=Qt.WindowType.Dialog
-            | Qt.WindowType.WindowDoesNotAcceptFocus
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.WindowSystemMenuHint,
+            flags=Qt.WindowType.Dialog | Qt.WindowType.WindowDoesNotAcceptFocus | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint,
         )
         reply.setDefaultButton(default_button)
         if detailedMsg:
@@ -360,34 +314,14 @@ class FileItems(CustomItem):
     ) -> bool:
         return all(Path(tableItem.filepath).safe_exists() for tableItem in {*selected})
 
-    def _rename_file(
-        self,
-        file_path: Path,
-        tableItem: FileTableWidgetItem,
-    ):
-        class RenameDialog(QDialog):
-            def __init__(self, original_name="", parent=None):
-                super().__init__(parent)
-                self.setWindowTitle("Rename File")
-
-                self.line_edit = QLineEdit(original_name, self)
-                ok_button = QPushButton("OK", self)
-                ok_button.clicked.connect(self.accept)
-                cancel_button = QPushButton("Cancel", self)
-                cancel_button.clicked.connect(self.reject)
-
-                layout = QVBoxLayout(self)
-                layout.addWidget(self.line_edit)
-                layout.addWidget(ok_button)
-                layout.addWidget(cancel_button)
-
-            def get_new_name(self) -> str:
-                return self.line_edit.text()
-        dialog = RenameDialog(file_path.name, None)
-        result = dialog.exec_()
-        new_filename = dialog.get_new_name()
-        RobustRootLogger().info("Renaming '%s' to '%s'", file_path, new_filename)
-        shutil.move(str(file_path), str(file_path.with_name(new_filename)))
+    def _rename_file(self, file_path: Path, tableItem: FileTableWidgetItem):
+        new_filename, ok = QInputDialog.getText(
+            None, "Rename File", "New name:", text=file_path.name
+        )
+        if ok and new_filename:
+            new_path = file_path.with_name(new_filename)
+            shutil.move(str(file_path), str(new_path))
+            RobustRootLogger().info("Renamed '%s' to '%s'", file_path, new_path)
 
     def create_context_menu_dict(
         self,
@@ -411,6 +345,7 @@ class FileItems(CustomItem):
         if os.name == "nt":
             propertiesAction = self.create_action(menu_dict, "Properties", lambda: self.do_file_action(self._show_properties, "Show File Properties"))
             openWindowsMenuAction = self.create_action(menu_dict, "Open Windows Explorer Context Menu", lambda: self.do_file_action(self._open_windows_explorer_context_menu, "Open Windows Explorer Context Menu"))
+            propertiesAction.setEnabled(file_paths_exist)
             openWindowsMenuAction.setEnabled(file_paths_exist)
 
         openAction.setEnabled(file_paths_exist)
@@ -419,7 +354,6 @@ class FileItems(CustomItem):
         renameAction.setEnabled(file_paths_exist and len(selected) == 1 and not inside_capsule and not inside_bif)
         sendToTrash.setEnabled(file_paths_exist and not inside_bif)
         deleteAction.setEnabled(file_paths_exist and not inside_bif)
-        propertiesAction.setEnabled(file_paths_exist)
 
         return menu_dict
 
@@ -429,27 +363,68 @@ class FileItems(CustomItem):
         tableItem: FileTableWidgetItem,
     ):
         file_path = tableItem.filepath  # Don't use arg file_path here, as it might be the tempfile if used with the ResourceWidgetTableItem.
-        if platform.system() == "Windows":
+
+        def run_subprocess(command: list[str], *, check: bool = True):
             try:
-                explorer_path = win_get_system32_dir().parent / "explorer.exe"
-                cmd: list[str] = [str(explorer_path), "/select,", str(file_path)]
-                subprocess.run(cmd, check=True)  # noqa: S603
+                subprocess.run(command, check=check)  # noqa: S603, S607
             except subprocess.CalledProcessError as e:
-                if "returned non-zero exit status 1." in str(e):  # I have no idea why this happens when the folder opens correctly?
+                if "returned non-zero exit status 1." in str(e) and platform.system() == "Windows":
                     return
                 raise
-        elif platform.system() == "Darwin":  # macOS
-            # Use AppleScript to tell Finder to reveal and select the file
-            script = f'tell application "Finder" to reveal POSIX file "{file_path}"'
-            subprocess.run(["osascript", "-e", script], check=False)  # noqa: S603, S607
-            subprocess.run(["osascript", "-e", 'tell application "Finder" to activate'], check=False)  # noqa: S603, S607
-        else:  # Linux and other Unix-like
+
+        system = platform.system()
+
+        if system == "Windows":
+            explorer_path = win_get_system32_dir().parent / "explorer.exe"
+            cmd = [str(explorer_path), "/select,", str(file_path)]
+            run_subprocess(cmd)
+
+        elif system == "Darwin":  # macOS
+            # Use AppleScript to reveal the file in Finder
+            script_reveal = f'tell application "Finder" to reveal POSIX file "{file_path}"'
+            script_activate = 'tell application "Finder" to activate'
+
             try:
-                # Use the Nautilus file manager to select the file, if available
-                subprocess.run(["nautilus", "--select", file_path], check=True)  # noqa: S603, S607
+                run_subprocess(["osascript", "-e", script_reveal], check=False)
+                run_subprocess(["osascript", "-e", script_activate], check=False)
             except subprocess.CalledProcessError:
-                # If Nautilus is not available, fall back to just opening the folder
-                subprocess.run(["xdg-open", file_path.parent], check=True)  # noqa: S603, S607
+                # Handle potential errors and provide feedback
+                print(f"Failed to reveal the file: {file_path}")
+
+        else:  # Linux and other Unix-like
+            file_managers = [
+                ["xdg-open", str(file_path.parent)],  # Generic fallback
+                ["nautilus", "--select", str(file_path)],  # GNOME
+                ["dolphin", "--select", str(file_path)],  # KDE
+                ["nemo", "--no-desktop", str(file_path)],  # Cinnamon
+                ["pcmanfm", str(file_path)],  # LXDE/LXQt
+                ["thunar", str(file_path)],  # XFCE
+                ["caja", str(file_path)],  # MATE
+                ["krusader", str(file_path)],  # KDE twin-panel
+                ["rox", str(file_path)],  # ROX desktop
+                ["doublecmd", str(file_path)],  # Dual-panel
+                ["spacefm", str(file_path)],  # Multi-panel
+                ["qtfm", str(file_path)],  # Qt-based
+                ["lffm", str(file_path)],  # Simple & fast
+                ["xplore", str(file_path)],  # Tree view
+                ["lf", str(file_path)],  # Terminal-based
+                ["nnn", str(file_path)],  # Minimalist
+                ["vifm", str(file_path)],  # Vi-like
+                ["ranger", str(file_path)],  # Vi-like
+                ["mc", str(file_path)],  # Text-mode
+            ]
+
+            for command in file_managers:
+                try:
+                    run_subprocess(command)
+                except subprocess.CalledProcessError:  # noqa: S112, PERF203
+                    RobustRootLogger.debug(f"command '{command}' not found on your operating system")
+                    continue
+                else:
+                    return
+
+            RobustRootLogger.warning("all specific file manager attempts fail, fall back to opening the parent directory")
+            run_subprocess(["xdg-open", str(file_path.parent)], check=True)
 
     def _save_files(
         self,
@@ -731,7 +706,7 @@ class ResourceItems(FileItems):
             and self.show_confirmation_dialog(
                 QMessageBox.Question,
                 "Action requires confirmation",
-                f"Really perform action '{action_name}'?",
+                f"Really perform action '{action_name}'?"
             ) != QMessageBox.Yes
         ):
             return
@@ -772,14 +747,14 @@ class ResourceItems(FileItems):
                 open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
                     lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
                 open_with_menu.addAction("Open with Default Editor").triggered.connect(
-                    lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=None))
         elif installation is not None:
             menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
 
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
         if executed_action is None:
             return executed_action
-
+        self.handle_post_run_actions(executed_action, resources)
         executed_action_text = executed_action.text()
         if executed_action_text in ("Delete PERMANENTLY", "Send to Recycle Bin"):
             RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
@@ -802,12 +777,53 @@ class ResourceItems(FileItems):
                         write_erf(erf, filepath)
                     elif is_rim_file(filepath):
                         if GlobalSettings().disableRIMSaving:
-                            RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
+                            RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Saving into RIMs is disabled in Settings.")
                         else:
                             rim = read_rim(filepath)
                             rim.remove(resource.resname(), resource.restype())
                             write_rim(rim, filepath)
         return executed_action  # noqa: RET504
+
+    def handle_post_run_actions(
+        self,
+        executed_action: QAction,
+        resources: set[FileResource],
+    ):
+        action_text = executed_action.text()
+        if action_text in {"Delete PERMANENTLY", "Send to Recycle Bin"}:
+            RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", action_text)
+            self.handle_delete_action(resources, executed_action)
+
+    def handle_delete_action(
+        self,
+        resources: set[FileResource],
+        executed_action: QAction,
+    ):
+        total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
+        if total_inside_capsules:
+            separator = "-" * 80
+            self.show_confirmation_dialog(
+                QMessageBox.Warning,
+                "File(s) are in a capsule",
+                f"Really delete {len(total_inside_capsules)} inside of ERF/RIMs and {len(resources) - len(total_inside_capsules)} other physical files?",
+                detailedMsg=f"\n{separator}\n".join(str(resource.filepath()) for resource in resources)
+            )
+        action_text = executed_action.text()
+        for resource in resources:
+            if resource.inside_capsule and not resource.inside_bif:
+                filepath = resource.filepath()
+                RobustRootLogger().info(f"Perform post action '{action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
+                if is_any_erf_type_file(filepath):
+                    erf = read_erf(filepath)
+                    erf.remove(resource.resname(), resource.restype())
+                    write_erf(erf, filepath)
+                elif is_rim_file(filepath):
+                    if GlobalSettings().disableRIMSaving:
+                        RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
+                    else:
+                        rim = read_rim(filepath)
+                        rim.remove(resource.resname(), resource.restype())
+                        write_rim(rim, filepath)
 
     def on_double_click(self, *args, installation: HTInstallation):
         RobustRootLogger().debug(f"doubleclick args: {args} installation: {installation}")
@@ -837,6 +853,52 @@ class ResourceItems(FileItems):
 
 
 class CustomTableWidget(CustomItem, QTableWidget):
+    def copy_selection_to_clipboard(self):
+        selection = self.selectedIndexes()
+        if not selection:
+            return
+        rows = sorted(index.row() for index in selection)
+        columns = sorted(index.column() for index in selection)
+        row_count = rows[-1] - rows[0] + 1
+        column_count = columns[-1] - columns[0] + 1
+        table_text = [[""] * column_count for _ in range(row_count)]
+        for index in selection:
+            row = index.row() - rows[0]
+            column = index.column() - columns[0]
+            table_text[row][column] = index.data()
+
+        # Format table text as a tab-delimited string
+        clipboard_text = "\n".join("\t".join(row) for row in table_text)
+        QApplication.clipboard().setText(clipboard_text)
+
+    def remove_selected_result(self):
+        selected = self.selectedRanges()
+        if not selected:
+            return
+        for selection in selected:
+            for row in range(selection.bottomRow(), selection.topRow()-1, -1):
+                self.removeRow(row)
+
+    def set_all_items_editability(
+        self,
+        *,
+        editable: bool,
+    ):
+        """Set all items in the table to be either editable or read-only based on the `editable` argument.
+
+        Args:
+        ----
+            editable (bool): If True, all items will be set to editable. If False, items will be read-only.
+        """
+        for row in range(self.rowCount()):
+            for column in range(self.columnCount()):
+                item = self.item(row, column)
+                if not item:  # Check if the item exists
+                    continue
+                if editable:
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+                else:
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
     def get_column_index(self, column_name: str) -> int:
         # This method needs to be context-aware for the type of view
         if isinstance(self, QTableWidget):

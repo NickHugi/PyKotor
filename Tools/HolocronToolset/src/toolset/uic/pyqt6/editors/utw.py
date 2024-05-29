@@ -157,3 +157,5 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+
+from toolset.rcc import resources_rc_pyqt6

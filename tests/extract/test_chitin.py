@@ -7,8 +7,6 @@ import unittest
 
 from unittest import TestCase
 
-from pykotor.tools.path import CaseAwarePath
-
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "PyKotor", "src")
 UTILITY_PATH = THIS_SCRIPT_PATH.parents[2].joinpath("Libraries", "Utility", "src")
@@ -25,6 +23,8 @@ if PYKOTOR_PATH.joinpath("pykotor").exists():
 if UTILITY_PATH.joinpath("utility").exists():
     add_sys_path(UTILITY_PATH)
 
+
+from pykotor.tools.path import CaseAwarePath
 from pykotor.extract.chitin import Chitin
 
 NWN_BASE_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Neverwinter Nights"
@@ -42,14 +42,14 @@ class TestCapsule(TestCase):
         chitin = Chitin(NWN_KEY_PATH, NWN_BASE_PATH)
 
     @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+        not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").safe_isfile(),
         "K1_PATH environment variable is not set or not found on disk.",
     )
     def test_k1_chitin(self):
         chitin = Chitin(CaseAwarePath(K1_PATH, "chitin.key"))
 
     @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
+        not K2_PATH or not CaseAwarePath(K2_PATH).joinpath("chitin.key").safe_isfile(),
         "K2_PATH environment variable is not set or not found on disk.",
     )
     def test_k2_chitin(self):

@@ -469,3 +469,5 @@ class Ui_MainWindow(object):
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.renderer.model import ModelRenderer
+
+from toolset.rcc import resources_rc_pyqt5

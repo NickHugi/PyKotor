@@ -99,7 +99,7 @@
                                             <item>
                                                 <layout class="QFormLayout" name="formLayout_5">
                                                     <item row="0" column="0">
-                                                        <widget class="QLabel" name="label">
+                                                        <widget class="QLabel" name="label602">
                                                             <property name="text">
                                                                 <string>Move Sensitivity</string>
                                                             </property>
@@ -125,13 +125,6 @@
                                                             </property>
                                                         </widget>
                                                     </item>
-                                                    <item row="2" column="0">
-                                                        <widget class="QLabel" name="label_42">
-                                                            <property name="text">
-                                                                <string>Zoom Sensitivity</string>
-                                                            </property>
-                                                        </widget>
-                                                    </item>
                                                     <item row="1" column="1">
                                                         <widget class="QSlider" name="rotateCameraSensitivity3dEdit">
                                                             <property name="minimum">
@@ -145,8 +138,35 @@
                                                             </property>
                                                         </widget>
                                                     </item>
+                                                    <item row="2" column="0">
+                                                        <widget class="QLabel" name="label_42">
+                                                            <property name="text">
+                                                                <string>Zoom Sensitivity</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
                                                     <item row="2" column="1">
                                                         <widget class="QSlider" name="zoomCameraSensitivity3dEdit">
+                                                            <property name="minimum">
+                                                                <number>10</number>
+                                                            </property>
+                                                            <property name="maximum">
+                                                                <number>1000</number>
+                                                            </property>
+                                                            <property name="orientation">
+                                                                <enum>Qt::Horizontal</enum>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="3" column="0">
+                                                        <widget class="QLabel" name="label">
+                                                            <property name="text">
+                                                                <string>Boosted Speed</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="3" column="1">
+                                                        <widget class="QSlider" name="boostedMoveCameraSensitivity3dEdit">
                                                             <property name="minimum">
                                                                 <number>10</number>
                                                             </property>
@@ -1268,7 +1288,7 @@
                                                         </widget>
                                                     </item>
                                                     <item row="1" column="0">
-                                                        <widget class="QLabel" name="label_60">
+                                                        <widget class="QLabel" name="label_601">
                                                             <property name="text">
                                                                 <string>Rotate Sensitivity</string>
                                                             </property>
@@ -1276,6 +1296,26 @@
                                                     </item>
                                                     <item row="1" column="1">
                                                         <widget class="QSlider" name="rotateCameraSensitivityFcEdit">
+                                                            <property name="minimum">
+                                                                <number>10</number>
+                                                            </property>
+                                                            <property name="maximum">
+                                                                <number>1000</number>
+                                                            </property>
+                                                            <property name="orientation">
+                                                                <enum>Qt::Horizontal</enum>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="2" column="0">
+                                                        <widget class="QLabel" name="label_60">
+                                                            <property name="text">
+                                                                <string>Boosted Fly Speed</string>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="2" column="1">
+                                                        <widget class="QSlider" name="boostedFlyCameraSpeedFCEdit">
                                                             <property name="minimum">
                                                                 <number>10</number>
                                                             </property>
@@ -1329,6 +1369,31 @@
                                                     <item row="0" column="1">
                                                         <widget class="SetBindWidget" name="moveCameraForwardFcBindEdit" native="true"/>
                                                     </item>
+                                                    <item row="1" column="0">
+                                                        <widget class="QLabel" name="label_64">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Move Backwards</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="1" column="1">
+                                                        <widget class="SetBindWidget" name="moveCameraBackwardFcBindEdit" native="true"/>
+                                                    </item>
                                                     <item row="2" column="0">
                                                         <widget class="QLabel" name="label_65">
                                                             <property name="minimumSize">
@@ -1350,6 +1415,9 @@
                                                                 <set>Qt::AlignCenter</set>
                                                             </property>
                                                         </widget>
+                                                    </item>
+                                                    <item row="2" column="1">
+                                                        <widget class="SetBindWidget" name="moveCameraLeftFcBindEdit" native="true"/>
                                                     </item>
                                                     <item row="3" column="0">
                                                         <widget class="QLabel" name="label_66">
@@ -1373,6 +1441,9 @@
                                                             </property>
                                                         </widget>
                                                     </item>
+                                                    <item row="3" column="1">
+                                                        <widget class="SetBindWidget" name="moveCameraRightFcBindEdit" native="true"/>
+                                                    </item>
                                                     <item row="4" column="0">
                                                         <widget class="QLabel" name="label_67">
                                                             <property name="minimumSize">
@@ -1394,6 +1465,9 @@
                                                                 <set>Qt::AlignCenter</set>
                                                             </property>
                                                         </widget>
+                                                    </item>
+                                                    <item row="4" column="1">
+                                                        <widget class="SetBindWidget" name="moveCameraUpFcBindEdit" native="true"/>
                                                     </item>
                                                     <item row="5" column="0">
                                                         <widget class="QLabel" name="label_68">
@@ -1417,23 +1491,11 @@
                                                             </property>
                                                         </widget>
                                                     </item>
-                                                    <item row="1" column="1">
-                                                        <widget class="SetBindWidget" name="moveCameraBackwardFcBindEdit" native="true"/>
-                                                    </item>
-                                                    <item row="2" column="1">
-                                                        <widget class="SetBindWidget" name="moveCameraLeftFcBindEdit" native="true"/>
-                                                    </item>
-                                                    <item row="3" column="1">
-                                                        <widget class="SetBindWidget" name="moveCameraRightFcBindEdit" native="true"/>
-                                                    </item>
-                                                    <item row="4" column="1">
-                                                        <widget class="SetBindWidget" name="moveCameraUpFcBindEdit" native="true"/>
-                                                    </item>
                                                     <item row="5" column="1">
                                                         <widget class="SetBindWidget" name="moveCameraDownFcBindEdit" native="true"/>
                                                     </item>
-                                                    <item row="1" column="0">
-                                                        <widget class="QLabel" name="label_64">
+                                                    <item row="6" column="0">
+                                                        <widget class="QLabel" name="label_691">
                                                             <property name="minimumSize">
                                                                 <size>
                                                                     <width>110</width>
@@ -1447,12 +1509,215 @@
                                                                 <string notr="true">QLabel:hover { color: #555;}</string>
                                                             </property>
                                                             <property name="text">
-                                                                <string>Move Backwards</string>
+                                                                <string>Speed Boost</string>
                                                             </property>
                                                             <property name="alignment">
                                                                 <set>Qt::AlignCenter</set>
                                                             </property>
                                                         </widget>
+                                                    </item>
+                                                    <item row="6" column="1">
+                                                        <widget class="SetBindWidget" name="speedBoostCameraFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="7" column="0">
+                                                        <widget class="QLabel" name="label_701">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Rotate Left</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="7" column="1">
+                                                        <widget class="SetBindWidget" name="rotateCameraLeftFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="8" column="0">
+                                                        <widget class="QLabel" name="label_711">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Rotate Right</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="8" column="1">
+                                                        <widget class="SetBindWidget" name="rotateCameraRightFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="9" column="0">
+                                                        <widget class="QLabel" name="label_72">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Rotate Up</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="9" column="1">
+                                                        <widget class="SetBindWidget" name="rotateCameraUpFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="10" column="0">
+                                                        <widget class="QLabel" name="label_73">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Rotate Down</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="10" column="1">
+                                                        <widget class="SetBindWidget" name="rotateCameraDownFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="11" column="0">
+                                                        <widget class="QLabel" name="label_74">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Zoom In</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="11" column="1">
+                                                        <widget class="SetBindWidget" name="zoomCameraInFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="12" column="0">
+                                                        <widget class="QLabel" name="label_75">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Zoom Out</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="12" column="1">
+                                                        <widget class="SetBindWidget" name="zoomCameraOutFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="13" column="0">
+                                                        <widget class="QLabel" name="label_76">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Move to Entry Point</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="13" column="1">
+                                                        <widget class="SetBindWidget" name="moveCameraToEntryPointFcBindEdit" native="true"/>
+                                                    </item>
+                                                    <item row="14" column="0">
+                                                        <widget class="QLabel" name="label_77">
+                                                            <property name="minimumSize">
+                                                                <size>
+                                                                    <width>110</width>
+                                                                    <height>0</height>
+                                                                </size>
+                                                            </property>
+                                                            <property name="toolTip">
+                                                                <string>Reacts to keyboard input.</string>
+                                                            </property>
+                                                            <property name="styleSheet">
+                                                                <string notr="true">QLabel:hover { color: #555;}</string>
+                                                            </property>
+                                                            <property name="text">
+                                                                <string>Move to Cursor</string>
+                                                            </property>
+                                                            <property name="alignment">
+                                                                <set>Qt::AlignCenter</set>
+                                                            </property>
+                                                        </widget>
+                                                    </item>
+                                                    <item row="14" column="1">
+                                                        <widget class="SetBindWidget" name="moveCameraToCursorFcBindEdit" native="true"/>
                                                     </item>
                                                 </layout>
                                             </item>

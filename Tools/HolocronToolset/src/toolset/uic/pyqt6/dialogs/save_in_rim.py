@@ -43,3 +43,5 @@ class Ui_Dialog(object):
         self.cancelButton.setText(_translate("Dialog", "Cancel"))
         self.overrideSaveButton.setText(_translate("Dialog", "Save to Override"))
         self.modSaveButton.setText(_translate("Dialog", "Save to .MOD"))
+
+from toolset.rcc import resources_rc_pyqt6

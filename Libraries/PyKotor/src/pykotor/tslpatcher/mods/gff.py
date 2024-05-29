@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct, bytes_gff
+from pykotor.resource.formats.gff.gff_data import _GFFField
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.logger_util import RobustRootLogger
@@ -21,7 +22,6 @@ if TYPE_CHECKING:
 
     from pykotor.common.misc import Game
     from pykotor.resource.formats.gff import GFF
-    from pykotor.resource.formats.gff.gff_data import _GFFField
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
@@ -153,6 +153,16 @@ class FieldValueConstant(FieldValue):
         return self.validate(self.stored, field_type)
 
 
+class FieldValueListIndex(FieldValueConstant):
+    def __init__(self, value: Any):
+        self.stored: int | Literal["listindex"] = value
+
+    def value(self, memory: PatcherMemory, field_type: GFFFieldType):  # noqa: ANN201
+        if self.stored == "listindex":
+            return self.stored
+        return self.validate(self.stored, field_type)
+
+
 class FieldValue2DAMemory(FieldValue):
     def __init__(self, token_id: int):
         self.token_id: int = token_id
@@ -258,7 +268,9 @@ class AddStructToListGFF(ModifyGFF):
             modifiers (list[ModifyGFF]): Modifiers list
         """
         self.identifier: str = identifier
-        self.value: FieldValue = value
+        if not isinstance(value, (FieldValueListIndex, FieldValueConstant)):
+            raise TypeError(f"value must be FieldValueListIndex or FieldValueConstant, instead got {value.__class__.__name__}")
+        self.value: FieldValueListIndex | FieldValueConstant = value
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
         self.index_to_token: int | None = index_to_token
 
@@ -300,7 +312,13 @@ class AddStructToListGFF(ModifyGFF):
             return
 
         try:
-            new_struct = self.value.value(memory, GFFFieldType.Struct)
+            lookup: Any = self.value.value(memory, GFFFieldType.Struct)
+            if lookup == "listindex":
+                new_struct = GFFStruct(len(list_container._structs)-1)
+            elif isinstance(lookup, GFFStruct):
+                new_struct = lookup
+            else:
+                raise ValueError(f"bad lookup: {lookup} ({lookup!r}) expected 'listindex' or GFFStruct")
         except KeyError as e:
             logger.add_error(f"INI section [{self.identifier}] threw an exception: {e}")
 
@@ -316,7 +334,8 @@ class AddStructToListGFF(ModifyGFF):
 
         for add_field in self.modifiers:
             assert isinstance(add_field, (AddFieldGFF, AddStructToListGFF, Memory2DAModifierGFF, ModifyFieldGFF)), f"{type(add_field).__name__}: {add_field}"
-            newpath = self.path / str(len(list_container) - 1)
+            list_index = len(list_container) - 1
+            newpath = self.path / str(list_index)
             #logger.add_verbose(f"Resolved GFFList path of [{add_field.identifier}] from '{add_field.path}' --> '{newpath}'")
             add_field.path = newpath
             add_field.apply(root_struct, memory, logger)
@@ -410,11 +429,13 @@ class Memory2DAModifierGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str,
-        index_2damemory: int,
         path: PureWindowsPath | os.PathLike | str,
+        dst_token_id: int,
+        src_token_id: int | None = None,
     ):
         self.identifier: str = identifier
-        self.index_2damemory: int = index_2damemory
+        self.dest_token_id: int = dst_token_id
+        self.src_token_id: int | None = src_token_id
         self.path: PureWindowsPath = PureWindowsPath.pathify(path)
 
     def apply(
@@ -423,8 +444,49 @@ class Memory2DAModifierGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ):
-        memory.memory_2da[self.index_2damemory] = self.path
+        dest_field, source_field, source_value = None, None, None
+        display_dest_name = f"2DAMEMORY{self.dest_token_id}"
+        if self.src_token_id is None:  # assign the path and leave.
+            display_src_name = f"!FieldPath({self.path})"
+            logger.add_verbose(f"Assign {display_dest_name}={display_src_name}")
+            memory.memory_2da[self.dest_token_id] = self.path
+            return
 
+        display_src_name = f"2DAMEMORY{self.src_token_id}"
+        logger.add_verbose(f"GFFList ptr !fieldpath: Assign {display_dest_name}={display_src_name} initiated. iniPath: {self.path}, section: [{self.identifier}]")
+
+        ptr_to_dest: PureWindowsPath | Any = memory.memory_2da.get(self.dest_token_id, None) if self.dest_token_id is not None else self.path
+        if isinstance(ptr_to_dest, PureWindowsPath):
+            dest_field: _GFFField | None = self._navigate_to_field(root_struct, ptr_to_dest)
+            if dest_field is None:
+                raise ValueError(f"Cannot assign 2DAMEMORY{self.dest_token_id}=2DAMEMORY{self.src_token_id}: LEFT side of assignment's path '{ptr_to_dest}' does not point to a valid GFF Field!")
+            assert isinstance(dest_field, _GFFField)
+            logger.add_verbose(f"LEFT SIDE 2DAMEMORY{self.src_token_id} lookup at '{ptr_to_dest}' returned '{dest_field.value()}'")
+        elif ptr_to_dest is None:
+            logger.add_verbose(f"Left side {display_dest_name} is not defined yet.")
+        else:
+            logger.add_verbose(f"Left side {display_dest_name} value of {ptr_to_dest} will be overwritten.")
+
+        # Lookup assigning value
+        ptr_to_src: PureWindowsPath | Any = memory.memory_2da.get(self.src_token_id, None)
+        if ptr_to_src is None:
+            raise ValueError(f"Cannot assign {display_dest_name}={display_src_name} because RIGHT side of assignment is undefined.")
+
+        if isinstance(ptr_to_src, PureWindowsPath):
+            logger.add_verbose(f"Assigner {display_src_name} is a pointer !FieldPath to another field located at '{ptr_to_src}'")
+            source_field = self._navigate_to_field(root_struct, ptr_to_src)
+            assert not isinstance(source_field, PureWindowsPath)
+            assert isinstance(source_field, _GFFField)
+        else:
+            logger.add_verbose(f"Assigner {display_src_name} holds literal value '{ptr_to_src}'. other stored info debug: Path: '{self.path}' INI section: [{self.identifier}]")
+
+
+        if isinstance(dest_field, _GFFField):
+            logger.add_verbose("assign dest ptr field.")
+            assert source_field is None or dest_field.field_type() is source_field.field_type(), f"Not a _GFFField: {ptr_to_src} ({display_src_name}) OR {dest_field.field_type()} != {source_field.field_type()}"
+            dest_field._value = FieldValueConstant(ptr_to_src).value(memory, dest_field.field_type())
+        else:
+            memory.memory_2da[self.dest_token_id] = ptr_to_dest
 
 class ModifyFieldGFF(ModifyGFF):
     def __init__(

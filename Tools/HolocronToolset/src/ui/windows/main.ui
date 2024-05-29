@@ -316,8 +316,14 @@
      <addaction name="actionNewTXT"/>
      <addaction name="actionNewSSF"/>
     </widget>
+    <widget class="QMenu" name="menuRecentFiles">
+      <property name="title">
+        <string>Recent Files</string>
+      </property>
+    </widget>
     <addaction name="menuNew"/>
     <addaction name="openAction"/>
+    <addaction name="menuRecentFiles"/>
     <addaction name="separator"/>
     <addaction name="actionSettings"/>
     <addaction name="separator"/>
@@ -327,7 +333,6 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionRecent_Files"/>
     <addaction name="separator"/>
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>

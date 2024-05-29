@@ -144,3 +144,5 @@ class Ui_MainWindow(object):
         pass
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

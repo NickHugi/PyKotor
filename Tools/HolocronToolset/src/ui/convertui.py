@@ -52,6 +52,13 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
         if not ui_target.safe_isfile():
             print("mkdir", ui_target.parent)
             ui_target.parent.mkdir(exist_ok=True, parents=True)
+            temp_path = ui_target.parent
+            new_init_file = temp_path.joinpath("__init__.py")
+            while not new_init_file.safe_isfile() and temp_path.resolve() != UI_TARGET_DIR.resolve():
+                print(f"touch {new_init_file}")
+                new_init_file.touch()
+                temp_path = temp_path.parent
+                new_init_file = temp_path.joinpath("__init__.py")
 
         # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
         source_timestamp: float = ui_file.stat().st_mtime
@@ -65,11 +72,17 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
             # Post-processing: Fix importing resources_rc
             with ui_target.open("r", encoding="utf-8") as file:
                 filedata = file.read()
-            filedata = re.sub(r"^import resources_rc.*\n?", f"from toolset.rcc import resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
-            filedata = re.sub(r"^from resources_rc.*\n?", f"from toolset.rcc.resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
+            new_filedata = re.sub(r"^import resources_rc.*\n?", f"from toolset.rcc import resources_rc_{qt_version}", filedata, flags=re.MULTILINE)
+            new_filedata = re.sub(r"^from resources_rc.*\n?", f"from toolset.rcc.resources_rc_{qt_version}", new_filedata, flags=re.MULTILINE)
+            if (
+                new_filedata == filedata
+                and re.search(f"from toolset.rcc import resources_rc_{qt_version}", new_filedata) is None
+            ):
+                # If no substitutions were made, append the import statement at the end
+                new_filedata += f"\nfrom toolset.rcc import resources_rc_{qt_version}\n"
             # Write the file out again
             with ui_target.open("w", encoding="utf-8") as file:
-                file.write(filedata)
+                file.write(new_filedata)
 
 
 def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
@@ -97,7 +110,7 @@ def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
 
 
 if __name__ == "__main__":
-    qt_versions = ["pyside2", "pyside6", "pyqt5", "pyqt6"]
+    qt_versions = ["pyqt5", "pyqt6", "pyside6", "pyside2"]
     qt_versions_to_run: list[str] | None = None
     if len(sys.argv) > 1:
         qt_version = sys.argv[1]

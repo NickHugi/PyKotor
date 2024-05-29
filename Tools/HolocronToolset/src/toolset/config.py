@@ -12,16 +12,17 @@ import requests
 from qtpy.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "3.0.0b8",
+    "currentVersion": "3.0.0b9",
     "toolsetLatestVersion": "2.1.2",
-    "toolsetLatestBetaVersion": "3.0.0b8",
+    "toolsetLatestBetaVersion": "3.0.0b8.1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b6-toolset",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.0.0b8.1-toolset",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
@@ -51,7 +52,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "A massive release has been pushed, please press 'Update' to see the details.",
+    "toolsetLatestBetaNotes": "Deep-tested various editors and fixed bugs. Improve many things in the Module Designer. Fix a few bugs in the GITEditor undo/redo logic. Various other improvements/features will be noticeable.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
@@ -118,6 +119,7 @@ def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
 
         version_check = version.parse(remoteVersion) > version.parse(localVersion)
     if version_check is None:
+        RobustRootLogger.warning(f"Version string might be malformed, attempted 'packaging.version.parse({localVersion}) > packaging.version.parse({remoteVersion})'")
         with suppress(Exception):
             from distutils.version import LooseVersion
 

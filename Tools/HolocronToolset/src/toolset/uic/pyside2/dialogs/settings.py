@@ -129,3 +129,5 @@ class Ui_Dialog(object):
 
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

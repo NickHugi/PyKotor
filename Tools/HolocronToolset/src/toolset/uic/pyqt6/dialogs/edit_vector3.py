@@ -54,3 +54,5 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label.setText(_translate("Dialog", "Position:"))
+
+from toolset.rcc import resources_rc_pyqt6

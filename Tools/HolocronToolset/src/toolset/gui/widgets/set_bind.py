@@ -6,7 +6,7 @@ import qtpy
 
 from qtpy.QtWidgets import QWidget
 
-from toolset.utils.misc import MODIFIER_KEYS, QtMouse, getStringFromKey
+from toolset.utils.misc import MODIFIER_KEY_NAMES, QtMouse, getQtKeyStringLocalized, getQtMouseButton
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
@@ -88,18 +88,26 @@ class SetBindWidget(QWidget):
         assert isinstance(bind[0], set), f"{bind[0]!r} <{bind[0]}> ({bind[0].__class__.__name__}) is not a set"
         assert isinstance(bind[1], (set, type(None))), f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a set"
 
-        if bind[1] is None:  # none
+        # Handle Qt6
+        mouseBind = next(iter(bind[1])) if bind[1] else (None if bind[1] is None else set())
+        if mouseBind is not None:
+            try:
+                mouseBind = getQtMouseButton(mouseBind)
+            except Exception:
+                mouseBind = None
+
+        if mouseBind is None:  # none
             self.ui.mouseCombo.setCurrentIndex(4)
-        elif not bind[1]:  # any
+        elif not mouseBind:  # any
             self.ui.mouseCombo.setCurrentIndex(3)
-        elif bind[1] == {QtMouse.LeftButton}:
+        elif mouseBind == QtMouse.LeftButton:
             self.ui.mouseCombo.setCurrentIndex(0)
-        elif bind[1] == {QtMouse.MiddleButton}:
+        elif mouseBind == QtMouse.MiddleButton:
             self.ui.mouseCombo.setCurrentIndex(1)
-        elif bind[1] == {QtMouse.RightButton}:
+        elif mouseBind == QtMouse.RightButton:
             self.ui.mouseCombo.setCurrentIndex(2)
         else:
-            raise ValueError(f"{bind[1]!r} <{bind[1]}> ({bind[1].__class__.__name__}) is not a valid mousebind")
+            raise ValueError(f"{mouseBind!r} <{mouseBind}> ({mouseBind.__class__.__name__}) is not a valid mousebind")
 
         self.keybind = bind[0]
         self.updateKeybindText()
@@ -112,14 +120,14 @@ class SetBindWidget(QWidget):
 
     def updateKeybindText(self):
         # Separate modifier keys and other keys
-        modifiers = [key for key in self.keybind if key in MODIFIER_KEYS]
-        other_keys = [key for key in self.keybind if key not in MODIFIER_KEYS]
+        modifiers = [key for key in self.keybind if key in MODIFIER_KEY_NAMES]
+        other_keys = [key for key in self.keybind if key not in MODIFIER_KEY_NAMES]
 
         # Sort keys: modifiers first, then other keys
         sorted_keys = modifiers + other_keys
 
         # Create the keybind text
-        text = "+".join(getStringFromKey(key) for key in sorted_keys)
+        text = "+".join(getQtKeyStringLocalized(key) for key in sorted_keys)
 
         # Update the UI element with the keybind text
         self.ui.setKeysEdit.setText(text.upper())

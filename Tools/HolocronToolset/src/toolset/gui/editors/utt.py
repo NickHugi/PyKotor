@@ -43,7 +43,7 @@ class UTTEditor(Editor):
             - Load data from the provided installation if given
             - Initialize an empty UTT object.
         """
-        supported = [ResourceType.UTT]
+        supported = [ResourceType.UTT, ResourceType.BTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         if qtpy.API_NAME == "PySide2":
@@ -82,6 +82,10 @@ class UTTEditor(Editor):
         cursors: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
         factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         traps: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+
+        self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.trapSelect.setContext(cursors, installation, HTInstallation.TwoDA_TRAPS)
 
         self.ui.cursorSelect.setItems(cursors.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))

@@ -63,3 +63,5 @@ class Ui_Form(object):
         self.searchEdit.setPlaceholderText(QCoreApplication.translate("Form", u"search...", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

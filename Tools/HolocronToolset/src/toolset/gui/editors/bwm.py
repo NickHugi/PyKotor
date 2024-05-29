@@ -14,6 +14,7 @@ from pykotor.common.geometry import SurfaceMaterial
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
@@ -27,6 +28,13 @@ if TYPE_CHECKING:
 
 _TRANS_FACE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 1  # type: ignore[attr-defined]
 _TRANS_EDGE_ROLE = QtCore.Qt.ItemDataRole.UserRole + 2  # type: ignore[attr-defined]
+
+
+def calculate_zoom_strength(delta_y: float, sensSetting: int) -> float:
+    m = 0.00202
+    b = 1
+    factor_in = (m * sensSetting + b)
+    return 1 / abs(factor_in) if delta_y < 0 else abs(factor_in)
 
 
 class BWMEditor(Editor):
@@ -185,9 +193,11 @@ class BWMEditor(Editor):
         """
         world: Vector3 = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         worldData: Vector2 = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
+        assert self._bwm is not None
         face: BWMFace | None = self._bwm.faceAt(world.x, world.y)
 
         if QtCore.Qt.MouseButton.LeftButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+            self.ui.renderArea.doCursorLock(screen)
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
         elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
@@ -203,11 +213,11 @@ class BWMEditor(Editor):
         self.statusBar().showMessage(coordsText + faceText + xy)
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
+        if not delta.y:
+            return  # sometimes it'll be zero when holding middlemouse-down.
         if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
-            zoomInFactor = 1.1
-            zoomOutFactor = 0.90
-
-            zoomFactor = zoomInFactor if delta.y > 0 else zoomOutFactor
+            sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
+            zoomFactor = calculate_zoom_strength(delta.y, sensSetting)
             self.ui.renderArea.camera.nudgeZoom(zoomFactor)
             self.ui.renderArea.update()  # Trigger a re-render
 
@@ -225,7 +235,7 @@ class BWMEditor(Editor):
             - Assign the selected material to the provided face.
         """
         newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)  # type: ignore[attr-defined]
-        if face and face.material != newMaterial:
+        if face.material != newMaterial:
             face.material = newMaterial
 
     def onTransitionSelect(self):

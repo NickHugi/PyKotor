@@ -60,7 +60,7 @@ class UTPEditor(Editor):
             6. Set up menus, signals and installation
             7. Update 3D preview and call new() to initialize editor.
         """
-        supported = [ResourceType.UTP]
+        supported = [ResourceType.UTP, ResourceType.BTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainWindow)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
@@ -133,6 +133,9 @@ class UTPEditor(Editor):
 
         appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLACEABLES)
         factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+
+        self.ui.appearanceSelect.setContext(appearances, installation, HTInstallation.TwoDA_PLACEABLES)
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))

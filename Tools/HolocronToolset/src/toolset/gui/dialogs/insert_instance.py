@@ -6,22 +6,24 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem
+from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryWriter
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.generics.utc import UTC, bytes_utc
-from pykotor.resource.generics.utd import UTD, bytes_utd
+from pykotor.resource.generics.utc import UTC, bytes_utc, read_utc
+from pykotor.resource.generics.utd import UTD, bytes_utd, read_utd
 from pykotor.resource.generics.ute import UTE, bytes_ute
 from pykotor.resource.generics.utm import UTM, bytes_utm
-from pykotor.resource.generics.utp import UTP, bytes_utp
+from pykotor.resource.generics.utp import UTP, bytes_utp, read_utp
 from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_any_erf_type_file, is_rim_file
+from pykotor.tools import door, placeable
+from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
+from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.system.path import Path
 
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
-    from pykotor.extract.file import FileResource
+    from pykotor.extract.file import FileResource, ResourceResult
     from toolset.data.installation import HTInstallation
 
 
@@ -56,6 +58,7 @@ class InsertInstanceDialog(QDialog):
         self._module: Module = module
         self._restype: ResourceType = restype
 
+        self.globalSettings = GlobalSettings()
         self.resname: str = ""
         self.data: bytes = b""
         self.filepath: Path | None = None
@@ -73,9 +76,57 @@ class InsertInstanceDialog(QDialog):
 
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        self.ui.previewRenderer.installation = installation
         self._setupSignals()
         self._setupLocationSelect()
         self._setupResourceList()
+
+    def togglePreview(self):
+        #self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
+        self.update3dPreview()
+
+    def update3dPreview(self):
+        """Updates the model preview.
+
+        Processing Logic:
+        ----------------
+            - Build the data and model name from the provided data
+            - Get the MDL and MDX resources from the installation based on the model name
+            - If both resources exist, set them on the preview renderer
+            - If not, clear out any existing model from the preview.
+        """
+        #self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
+        #self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
+
+        if self.globalSettings.showPreviewUTP:
+            self._update_model()
+        else:
+            self.setFixedSize(374, 457)
+
+    def _update_model(self):
+        """Updates the model preview.
+
+        Processing Logic:
+        ----------------
+            - Build the data and model name from the provided data
+            - Get the MDL and MDX resources from the installation based on the model name
+            - If both resources exist, set them on the preview renderer
+            - If not, clear out any existing model from the preview
+        """
+        self.setFixedSize(674, 457)
+
+        data, _ = self.build()
+        modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        if not modelname or not modelname.strip():
+            RobustRootLogger().warning("Placeable '%s.%s' has no model to render!", self._resname, self._restype)
+            self.ui.previewRenderer.clearModel()
+            return
+        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl is not None and mdx is not None:
+            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+        else:
+            self.ui.previewRenderer.clearModel()
 
     def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
@@ -83,6 +134,7 @@ class InsertInstanceDialog(QDialog):
         self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
         self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
+        self.ui.resourceList.itemSelectionChanged.connect(self.onResourceSelected)
 
     def _setupLocationSelect(self):
         self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
@@ -105,7 +157,7 @@ class InsertInstanceDialog(QDialog):
             - Loops through module capsules and nested resources, adding matching type
             - Selects first item if list is populated.
         """
-        for resource in self._installation.chitin_resources():
+        for resource in self._installation.core_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
                 item.setToolTip(str(resource.filepath()))
@@ -137,6 +189,9 @@ class InsertInstanceDialog(QDialog):
         super().accept()
 
         new = True
+        if not self.ui.resourceList.selectedItems():
+            BetterMessageBox("Choose an instance", "You must choose an instance, use the radial buttons to determine where/how to create the GIT instance.", icon=QMessageBox.Critical).exec_()
+            return
         resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
 
         if self.ui.reuseResourceRadio.isChecked():
@@ -151,21 +206,21 @@ class InsertInstanceDialog(QDialog):
         elif self.ui.createResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
             self.filepath = Path(self.ui.locationSelect.currentData())
-            if self._restype == ResourceType.UTC:
+            if self._restype is ResourceType.UTC:
                 self.data = bytes_utc(UTC())
-            elif self._restype == ResourceType.UTP:
+            elif self._restype is ResourceType.UTP:
                 self.data = bytes_utp(UTP())
-            elif self._restype == ResourceType.UTD:
+            elif self._restype is ResourceType.UTD:
                 self.data = bytes_utd(UTD())
-            elif self._restype == ResourceType.UTE:
+            elif self._restype is ResourceType.UTE:
                 self.data = bytes_ute(UTE())
-            elif self._restype == ResourceType.UTT:
+            elif self._restype is ResourceType.UTT:
                 self.data = bytes_utt(UTT())
-            elif self._restype == ResourceType.UTS:
+            elif self._restype is ResourceType.UTS:
                 self.data = bytes_uts(UTS())
-            elif self._restype == ResourceType.UTM:
+            elif self._restype is ResourceType.UTM:
                 self.data = bytes_utm(UTM())
-            elif self._restype == ResourceType.UTW:
+            elif self._restype is ResourceType.UTW:
                 self.data = bytes_utw(UTW())
             else:
                 self.data = b""
@@ -199,6 +254,94 @@ class InsertInstanceDialog(QDialog):
 
         if self.ui.createResourceRadio.isChecked():
             self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+
+    def onResourceSelected(self):
+        """Updates the dynamic text label when a resource is selected."""
+        selected_items = self.ui.resourceList.selectedItems()
+        if selected_items:
+            resource: FileResource = selected_items[0].data(QtCore.Qt.ItemDataRole.UserRole)
+            summary_text = self.generateResourceSummary(resource)
+            self.ui.dynamicTextLabel.setText(summary_text)
+            if resource.restype() is ResourceType.UTC and self.globalSettings.showPreviewUTC:
+                self.ui.previewRenderer.setCreature(read_utc(resource.data()))
+            else:
+                mdl_data: bytes | None = None
+                mdx_data: bytes | None = None
+                if resource.restype() is ResourceType.UTD and self.globalSettings.showPreviewUTD:
+                    modelname: str = door.get_model(read_utd(resource.data()), self._installation)
+                    mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+                    mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+                    if mdl is not None and mdx is not None:
+                        self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+                    else:
+                        self.ui.previewRenderer.clearModel()
+
+                elif resource.restype() is ResourceType.UTP and self.globalSettings.showPreviewUTP:
+                    modelname: str = placeable.get_model(read_utp(resource.data()), self._installation)
+                    mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
+                    mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
+                    if mdl is not None and mdx is not None:
+                        self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+                    else:
+                        self.ui.previewRenderer.clearModel()
+
+                elif (
+                    resource.restype() in (ResourceType.MDL, ResourceType.MDX)
+                    and any((
+                        self.globalSettings.showPreviewUTC,
+                        self.globalSettings.showPreviewUTD,
+                        self.globalSettings.showPreviewUTP,
+                    ))
+                ):
+                    data = resource.data()
+                    if resource.restype() is ResourceType.MDL:
+                        mdl_data = data
+                        if is_any_erf_type_file(resource.filepath().name):
+                            erf = read_erf(resource.filepath())
+                            mdx_data = erf.get(resource.resname(), ResourceType.MDX)
+                        elif is_rim_file(resource.filepath().name):
+                            rim = read_rim(resource.filepath())
+                            mdx_data = rim.get(resource.resname(), ResourceType.MDX)
+                        elif is_bif_file(resource.filepath().name):
+                            mdx_data = self._installation.resource(resource.resname(), ResourceType.MDX).data
+                        else:
+                            mdx_data = BinaryReader.load_file(resource.filepath().with_suffix(".mdx"))
+                    elif resource.restype() is ResourceType.MDX:
+                        mdx_data = data
+                        if is_any_erf_type_file(resource.filepath().name):
+                            erf = read_erf(resource.filepath())
+                            mdl_data = erf.get(resource.resname(), ResourceType.MDL)
+                        elif is_rim_file(resource.filepath().name):
+                            rim = read_rim(resource.filepath())
+                            mdl_data = rim.get(resource.resname(), ResourceType.MDL)
+                        elif is_bif_file(resource.filepath().name):
+                            mdl_data = self._installation.resource(resource.resname(), ResourceType.MDL).data
+                        else:
+                            mdl_data = BinaryReader.load_file(resource.filepath().with_suffix(".mdl"))
+
+                    if mdl_data is not None and mdx_data is not None:
+                        self.ui.previewRenderer.setModel(mdl_data, mdx_data)
+                    else:
+                        self.ui.previewRenderer.clearModel()
+
+    def generateResourceSummary(self, resource: FileResource) -> str:
+        """Generates a summary of the selected resource.
+
+        Args:
+        ----
+            resource: FileResource - The selected resource.
+
+        Returns:
+        -------
+            str: Summary text.
+        """
+        summary = [
+            f"Name: {resource.resname()}",
+            f"Type: {resource.restype().name}",
+            f"Size: {len(resource.data())} bytes",
+            f"Path: {resource.filepath().relative_to(self._installation.path())}"
+        ]
+        return "\n".join(summary)
 
     def onResRefEdited(self, text: str):
         self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(text))

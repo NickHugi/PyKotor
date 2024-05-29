@@ -85,10 +85,10 @@ class Ui_Form(object):
 
         self.formLayout_5 = QFormLayout()
         self.formLayout_5.setObjectName(u"formLayout_5")
-        self.label = QLabel(self.tab3DControls)
-        self.label.setObjectName(u"label")
+        self.label602 = QLabel(self.tab3DControls)
+        self.label602.setObjectName(u"label602")
 
-        self.formLayout_5.setWidget(0, QFormLayout.LabelRole, self.label)
+        self.formLayout_5.setWidget(0, QFormLayout.LabelRole, self.label602)
 
         self.moveCameraSensitivity3dEdit = QSlider(self.tab3DControls)
         self.moveCameraSensitivity3dEdit.setObjectName(u"moveCameraSensitivity3dEdit")
@@ -103,11 +103,6 @@ class Ui_Form(object):
 
         self.formLayout_5.setWidget(1, QFormLayout.LabelRole, self.label_41)
 
-        self.label_42 = QLabel(self.tab3DControls)
-        self.label_42.setObjectName(u"label_42")
-
-        self.formLayout_5.setWidget(2, QFormLayout.LabelRole, self.label_42)
-
         self.rotateCameraSensitivity3dEdit = QSlider(self.tab3DControls)
         self.rotateCameraSensitivity3dEdit.setObjectName(u"rotateCameraSensitivity3dEdit")
         self.rotateCameraSensitivity3dEdit.setMinimum(10)
@@ -116,6 +111,11 @@ class Ui_Form(object):
 
         self.formLayout_5.setWidget(1, QFormLayout.FieldRole, self.rotateCameraSensitivity3dEdit)
 
+        self.label_42 = QLabel(self.tab3DControls)
+        self.label_42.setObjectName(u"label_42")
+
+        self.formLayout_5.setWidget(2, QFormLayout.LabelRole, self.label_42)
+
         self.zoomCameraSensitivity3dEdit = QSlider(self.tab3DControls)
         self.zoomCameraSensitivity3dEdit.setObjectName(u"zoomCameraSensitivity3dEdit")
         self.zoomCameraSensitivity3dEdit.setMinimum(10)
@@ -123,6 +123,19 @@ class Ui_Form(object):
         self.zoomCameraSensitivity3dEdit.setOrientation(Qt.Horizontal)
 
         self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.zoomCameraSensitivity3dEdit)
+
+        self.label = QLabel(self.tab3DControls)
+        self.label.setObjectName(u"label")
+
+        self.formLayout_5.setWidget(3, QFormLayout.LabelRole, self.label)
+
+        self.boostedMoveCameraSensitivity3dEdit = QSlider(self.tab3DControls)
+        self.boostedMoveCameraSensitivity3dEdit.setObjectName(u"boostedMoveCameraSensitivity3dEdit")
+        self.boostedMoveCameraSensitivity3dEdit.setMinimum(10)
+        self.boostedMoveCameraSensitivity3dEdit.setMaximum(1000)
+        self.boostedMoveCameraSensitivity3dEdit.setOrientation(Qt.Horizontal)
+
+        self.formLayout_5.setWidget(3, QFormLayout.FieldRole, self.boostedMoveCameraSensitivity3dEdit)
 
 
         self.verticalLayout_2.addLayout(self.formLayout_5)
@@ -747,10 +760,10 @@ class Ui_Form(object):
 
         self.formLayout_7.setWidget(0, QFormLayout.FieldRole, self.flySpeedFcEdit)
 
-        self.label_60 = QLabel(self.tabFCControls)
-        self.label_60.setObjectName(u"label_60")
+        self.label_601 = QLabel(self.tabFCControls)
+        self.label_601.setObjectName(u"label_601")
 
-        self.formLayout_7.setWidget(1, QFormLayout.LabelRole, self.label_60)
+        self.formLayout_7.setWidget(1, QFormLayout.LabelRole, self.label_601)
 
         self.rotateCameraSensitivityFcEdit = QSlider(self.tabFCControls)
         self.rotateCameraSensitivityFcEdit.setObjectName(u"rotateCameraSensitivityFcEdit")
@@ -759,6 +772,19 @@ class Ui_Form(object):
         self.rotateCameraSensitivityFcEdit.setOrientation(Qt.Horizontal)
 
         self.formLayout_7.setWidget(1, QFormLayout.FieldRole, self.rotateCameraSensitivityFcEdit)
+
+        self.label_60 = QLabel(self.tabFCControls)
+        self.label_60.setObjectName(u"label_60")
+
+        self.formLayout_7.setWidget(2, QFormLayout.LabelRole, self.label_60)
+
+        self.boostedFlyCameraSpeedFCEdit = QSlider(self.tabFCControls)
+        self.boostedFlyCameraSpeedFCEdit.setObjectName(u"boostedFlyCameraSpeedFCEdit")
+        self.boostedFlyCameraSpeedFCEdit.setMinimum(10)
+        self.boostedFlyCameraSpeedFCEdit.setMaximum(1000)
+        self.boostedFlyCameraSpeedFCEdit.setOrientation(Qt.Horizontal)
+
+        self.formLayout_7.setWidget(2, QFormLayout.FieldRole, self.boostedFlyCameraSpeedFCEdit)
 
 
         self.verticalLayout_4.addLayout(self.formLayout_7)
@@ -787,6 +813,19 @@ class Ui_Form(object):
 
         self.formLayout_8.setWidget(0, QFormLayout.FieldRole, self.moveCameraForwardFcBindEdit)
 
+        self.label_64 = QLabel(self.tabFCControls)
+        self.label_64.setObjectName(u"label_64")
+        self.label_64.setMinimumSize(QSize(110, 0))
+        self.label_64.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_64.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(1, QFormLayout.LabelRole, self.label_64)
+
+        self.moveCameraBackwardFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.moveCameraBackwardFcBindEdit.setObjectName(u"moveCameraBackwardFcBindEdit")
+
+        self.formLayout_8.setWidget(1, QFormLayout.FieldRole, self.moveCameraBackwardFcBindEdit)
+
         self.label_65 = QLabel(self.tabFCControls)
         self.label_65.setObjectName(u"label_65")
         self.label_65.setMinimumSize(QSize(110, 0))
@@ -794,6 +833,11 @@ class Ui_Form(object):
         self.label_65.setAlignment(Qt.AlignCenter)
 
         self.formLayout_8.setWidget(2, QFormLayout.LabelRole, self.label_65)
+
+        self.moveCameraLeftFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.moveCameraLeftFcBindEdit.setObjectName(u"moveCameraLeftFcBindEdit")
+
+        self.formLayout_8.setWidget(2, QFormLayout.FieldRole, self.moveCameraLeftFcBindEdit)
 
         self.label_66 = QLabel(self.tabFCControls)
         self.label_66.setObjectName(u"label_66")
@@ -803,6 +847,11 @@ class Ui_Form(object):
 
         self.formLayout_8.setWidget(3, QFormLayout.LabelRole, self.label_66)
 
+        self.moveCameraRightFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.moveCameraRightFcBindEdit.setObjectName(u"moveCameraRightFcBindEdit")
+
+        self.formLayout_8.setWidget(3, QFormLayout.FieldRole, self.moveCameraRightFcBindEdit)
+
         self.label_67 = QLabel(self.tabFCControls)
         self.label_67.setObjectName(u"label_67")
         self.label_67.setMinimumSize(QSize(110, 0))
@@ -810,6 +859,11 @@ class Ui_Form(object):
         self.label_67.setAlignment(Qt.AlignCenter)
 
         self.formLayout_8.setWidget(4, QFormLayout.LabelRole, self.label_67)
+
+        self.moveCameraUpFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.moveCameraUpFcBindEdit.setObjectName(u"moveCameraUpFcBindEdit")
+
+        self.formLayout_8.setWidget(4, QFormLayout.FieldRole, self.moveCameraUpFcBindEdit)
 
         self.label_68 = QLabel(self.tabFCControls)
         self.label_68.setObjectName(u"label_68")
@@ -819,38 +873,127 @@ class Ui_Form(object):
 
         self.formLayout_8.setWidget(5, QFormLayout.LabelRole, self.label_68)
 
-        self.moveCameraBackwardFcBindEdit = SetBindWidget(self.tabFCControls)
-        self.moveCameraBackwardFcBindEdit.setObjectName(u"moveCameraBackwardFcBindEdit")
-
-        self.formLayout_8.setWidget(1, QFormLayout.FieldRole, self.moveCameraBackwardFcBindEdit)
-
-        self.moveCameraLeftFcBindEdit = SetBindWidget(self.tabFCControls)
-        self.moveCameraLeftFcBindEdit.setObjectName(u"moveCameraLeftFcBindEdit")
-
-        self.formLayout_8.setWidget(2, QFormLayout.FieldRole, self.moveCameraLeftFcBindEdit)
-
-        self.moveCameraRightFcBindEdit = SetBindWidget(self.tabFCControls)
-        self.moveCameraRightFcBindEdit.setObjectName(u"moveCameraRightFcBindEdit")
-
-        self.formLayout_8.setWidget(3, QFormLayout.FieldRole, self.moveCameraRightFcBindEdit)
-
-        self.moveCameraUpFcBindEdit = SetBindWidget(self.tabFCControls)
-        self.moveCameraUpFcBindEdit.setObjectName(u"moveCameraUpFcBindEdit")
-
-        self.formLayout_8.setWidget(4, QFormLayout.FieldRole, self.moveCameraUpFcBindEdit)
-
         self.moveCameraDownFcBindEdit = SetBindWidget(self.tabFCControls)
         self.moveCameraDownFcBindEdit.setObjectName(u"moveCameraDownFcBindEdit")
 
         self.formLayout_8.setWidget(5, QFormLayout.FieldRole, self.moveCameraDownFcBindEdit)
 
-        self.label_64 = QLabel(self.tabFCControls)
-        self.label_64.setObjectName(u"label_64")
-        self.label_64.setMinimumSize(QSize(110, 0))
-        self.label_64.setStyleSheet(u"QLabel:hover { color: #555;}")
-        self.label_64.setAlignment(Qt.AlignCenter)
+        self.label_691 = QLabel(self.tabFCControls)
+        self.label_691.setObjectName(u"label_691")
+        self.label_691.setMinimumSize(QSize(110, 0))
+        self.label_691.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_691.setAlignment(Qt.AlignCenter)
 
-        self.formLayout_8.setWidget(1, QFormLayout.LabelRole, self.label_64)
+        self.formLayout_8.setWidget(6, QFormLayout.LabelRole, self.label_691)
+
+        self.speedBoostCameraFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.speedBoostCameraFcBindEdit.setObjectName(u"speedBoostCameraFcBindEdit")
+
+        self.formLayout_8.setWidget(6, QFormLayout.FieldRole, self.speedBoostCameraFcBindEdit)
+
+        self.label_701 = QLabel(self.tabFCControls)
+        self.label_701.setObjectName(u"label_701")
+        self.label_701.setMinimumSize(QSize(110, 0))
+        self.label_701.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_701.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(7, QFormLayout.LabelRole, self.label_701)
+
+        self.rotateCameraLeftFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.rotateCameraLeftFcBindEdit.setObjectName(u"rotateCameraLeftFcBindEdit")
+
+        self.formLayout_8.setWidget(7, QFormLayout.FieldRole, self.rotateCameraLeftFcBindEdit)
+
+        self.label_711 = QLabel(self.tabFCControls)
+        self.label_711.setObjectName(u"label_711")
+        self.label_711.setMinimumSize(QSize(110, 0))
+        self.label_711.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_711.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(8, QFormLayout.LabelRole, self.label_711)
+
+        self.rotateCameraRightFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.rotateCameraRightFcBindEdit.setObjectName(u"rotateCameraRightFcBindEdit")
+
+        self.formLayout_8.setWidget(8, QFormLayout.FieldRole, self.rotateCameraRightFcBindEdit)
+
+        self.label_72 = QLabel(self.tabFCControls)
+        self.label_72.setObjectName(u"label_72")
+        self.label_72.setMinimumSize(QSize(110, 0))
+        self.label_72.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_72.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(9, QFormLayout.LabelRole, self.label_72)
+
+        self.rotateCameraUpFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.rotateCameraUpFcBindEdit.setObjectName(u"rotateCameraUpFcBindEdit")
+
+        self.formLayout_8.setWidget(9, QFormLayout.FieldRole, self.rotateCameraUpFcBindEdit)
+
+        self.label_73 = QLabel(self.tabFCControls)
+        self.label_73.setObjectName(u"label_73")
+        self.label_73.setMinimumSize(QSize(110, 0))
+        self.label_73.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_73.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(10, QFormLayout.LabelRole, self.label_73)
+
+        self.rotateCameraDownFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.rotateCameraDownFcBindEdit.setObjectName(u"rotateCameraDownFcBindEdit")
+
+        self.formLayout_8.setWidget(10, QFormLayout.FieldRole, self.rotateCameraDownFcBindEdit)
+
+        self.label_74 = QLabel(self.tabFCControls)
+        self.label_74.setObjectName(u"label_74")
+        self.label_74.setMinimumSize(QSize(110, 0))
+        self.label_74.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_74.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(11, QFormLayout.LabelRole, self.label_74)
+
+        self.zoomCameraInFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.zoomCameraInFcBindEdit.setObjectName(u"zoomCameraInFcBindEdit")
+
+        self.formLayout_8.setWidget(11, QFormLayout.FieldRole, self.zoomCameraInFcBindEdit)
+
+        self.label_75 = QLabel(self.tabFCControls)
+        self.label_75.setObjectName(u"label_75")
+        self.label_75.setMinimumSize(QSize(110, 0))
+        self.label_75.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_75.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(12, QFormLayout.LabelRole, self.label_75)
+
+        self.zoomCameraOutFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.zoomCameraOutFcBindEdit.setObjectName(u"zoomCameraOutFcBindEdit")
+
+        self.formLayout_8.setWidget(12, QFormLayout.FieldRole, self.zoomCameraOutFcBindEdit)
+
+        self.label_76 = QLabel(self.tabFCControls)
+        self.label_76.setObjectName(u"label_76")
+        self.label_76.setMinimumSize(QSize(110, 0))
+        self.label_76.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_76.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(13, QFormLayout.LabelRole, self.label_76)
+
+        self.moveCameraToEntryPointFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.moveCameraToEntryPointFcBindEdit.setObjectName(u"moveCameraToEntryPointFcBindEdit")
+
+        self.formLayout_8.setWidget(13, QFormLayout.FieldRole, self.moveCameraToEntryPointFcBindEdit)
+
+        self.label_77 = QLabel(self.tabFCControls)
+        self.label_77.setObjectName(u"label_77")
+        self.label_77.setMinimumSize(QSize(110, 0))
+        self.label_77.setStyleSheet(u"QLabel:hover { color: #555;}")
+        self.label_77.setAlignment(Qt.AlignCenter)
+
+        self.formLayout_8.setWidget(14, QFormLayout.LabelRole, self.label_77)
+
+        self.moveCameraToCursorFcBindEdit = SetBindWidget(self.tabFCControls)
+        self.moveCameraToCursorFcBindEdit.setObjectName(u"moveCameraToCursorFcBindEdit")
+
+        self.formLayout_8.setWidget(14, QFormLayout.FieldRole, self.moveCameraToCursorFcBindEdit)
 
 
         self.verticalLayout_4.addLayout(self.formLayout_8)
@@ -1144,9 +1287,10 @@ class Ui_Form(object):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
         self.label_20.setText(QCoreApplication.translate("Form", u"Field of View:", None))
         self.controls3dResetButton.setText(QCoreApplication.translate("Form", u"Reset", None))
-        self.label.setText(QCoreApplication.translate("Form", u"Move Sensitivity", None))
+        self.label602.setText(QCoreApplication.translate("Form", u"Move Sensitivity", None))
         self.label_41.setText(QCoreApplication.translate("Form", u"Rotate Sensitivity", None))
         self.label_42.setText(QCoreApplication.translate("Form", u"Zoom Sensitivity", None))
+        self.label.setText(QCoreApplication.translate("Form", u"Boosted Speed", None))
 #if QT_CONFIG(tooltip)
         self.label_2.setToolTip(QCoreApplication.translate("Form", u"Reacts to mouse movement.", None))
 #endif // QT_CONFIG(tooltip)
@@ -1307,11 +1451,16 @@ class Ui_Form(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab2DControls), QCoreApplication.translate("Form", u"2D Controls", None))
         self.controlsFcResetButton.setText(QCoreApplication.translate("Form", u"Reset", None))
         self.label_18.setText(QCoreApplication.translate("Form", u"Fly Speed", None))
-        self.label_60.setText(QCoreApplication.translate("Form", u"Rotate Sensitivity", None))
+        self.label_601.setText(QCoreApplication.translate("Form", u"Rotate Sensitivity", None))
+        self.label_60.setText(QCoreApplication.translate("Form", u"Boosted Fly Speed", None))
 #if QT_CONFIG(tooltip)
         self.label_63.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
 #endif // QT_CONFIG(tooltip)
         self.label_63.setText(QCoreApplication.translate("Form", u"Move Forwards", None))
+#if QT_CONFIG(tooltip)
+        self.label_64.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_64.setText(QCoreApplication.translate("Form", u"Move Backwards", None))
 #if QT_CONFIG(tooltip)
         self.label_65.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
 #endif // QT_CONFIG(tooltip)
@@ -1329,9 +1478,41 @@ class Ui_Form(object):
 #endif // QT_CONFIG(tooltip)
         self.label_68.setText(QCoreApplication.translate("Form", u"Move Down", None))
 #if QT_CONFIG(tooltip)
-        self.label_64.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+        self.label_691.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
 #endif // QT_CONFIG(tooltip)
-        self.label_64.setText(QCoreApplication.translate("Form", u"Move Backwards", None))
+        self.label_691.setText(QCoreApplication.translate("Form", u"Speed Boost", None))
+#if QT_CONFIG(tooltip)
+        self.label_701.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_701.setText(QCoreApplication.translate("Form", u"Rotate Left", None))
+#if QT_CONFIG(tooltip)
+        self.label_711.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_711.setText(QCoreApplication.translate("Form", u"Rotate Right", None))
+#if QT_CONFIG(tooltip)
+        self.label_72.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_72.setText(QCoreApplication.translate("Form", u"Rotate Up", None))
+#if QT_CONFIG(tooltip)
+        self.label_73.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_73.setText(QCoreApplication.translate("Form", u"Rotate Down", None))
+#if QT_CONFIG(tooltip)
+        self.label_74.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_74.setText(QCoreApplication.translate("Form", u"Zoom In", None))
+#if QT_CONFIG(tooltip)
+        self.label_75.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_75.setText(QCoreApplication.translate("Form", u"Zoom Out", None))
+#if QT_CONFIG(tooltip)
+        self.label_76.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_76.setText(QCoreApplication.translate("Form", u"Move to Entry Point", None))
+#if QT_CONFIG(tooltip)
+        self.label_77.setToolTip(QCoreApplication.translate("Form", u"Reacts to keyboard input.", None))
+#endif // QT_CONFIG(tooltip)
+        self.label_77.setText(QCoreApplication.translate("Form", u"Move to Cursor", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabFCControls), QCoreApplication.translate("Form", u"FreeCam Controls", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("Form", u"Walkmesh Colours", None))
         self.label_21.setText(QCoreApplication.translate("Form", u"Undefined:", None))
@@ -1357,3 +1538,5 @@ class Ui_Form(object):
         self.coloursResetButton.setText(QCoreApplication.translate("Form", u"Reset", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

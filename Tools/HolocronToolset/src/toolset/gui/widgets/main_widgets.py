@@ -14,6 +14,7 @@ from qtpy.QtGui import (
     QCursor,
     QIcon,
     QImage,
+    QMouseEvent,
     QPixmap,
     QStandardItem,
     QStandardItemModel,
@@ -24,15 +25,11 @@ from qtpy.QtWidgets import QHeaderView, QMenu, QToolTip, QWidget
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
-from utility.error_handling import format_exception_with_variables
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QModelIndex
-    from qtpy.QtGui import (
-        QMouseEvent,
-        QResizeEvent,
-    )
+    from qtpy.QtCore import QEvent, QModelIndex, QObject
+    from qtpy.QtGui import QResizeEvent
 
     from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.extract.file import FileResource
@@ -80,27 +77,187 @@ class ResourceList(MainWindowList):
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
+        self.tooltipText: str = ""
+        self.flattened: bool = False
+        self.autoResizeEnabled: bool = True
+        self.expandedState: bool = False
+        self.original_items: list[tuple[QStandardItem, list[list[QStandardItem]]]] = []
+
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.setupSignals()
 
-        self.modulesModel = ResourceModel()
+        self.modulesModel: ResourceModel = ResourceModel()
         self.modulesModel.proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.ui.resourceTree.setModel(self.modulesModel.proxyModel())
-        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
-
+        self.ui.resourceTree.setModel(self.modulesModel.proxyModel())  # type: ignore[arg-type]
+        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)  # type: ignore[arg-type]
         self.sectionModel = QStandardItemModel()
-        self.ui.sectionCombo.setModel(self.sectionModel)
+        self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
+
+        # Connect the header context menu request signal
+        header: QHeaderView = self.ui.resourceTree.header()
+        assert header is not None
+        header.setSectionsClickable(True)
+        header.setSortIndicatorShown(True)
+        header.setContextMenuPolicy(Qt.CustomContextMenu)  # type: ignore[arg-type]
+        header.setSectionResizeMode(QHeaderView.Interactive)  # type: ignore[arg-type]
+
+        header.customContextMenuRequested.connect(self.onHeaderContextMenu)
+
+        # Connect expand/collapse signals to autoFitColumns if enabled
+        self.ui.resourceTree.expanded.connect(self.onTreeItemExpanded)
+        self.ui.resourceTree.collapsed.connect(self.onTreeItemCollapsed)
+
+        # Install event filter on the viewport
+        viewport: QWidget = self.ui.resourceTree.viewport()
+        assert viewport is not None
+        viewport.installEventFilter(self)  # type: ignore[arg-type]
+        self.setMouseTracking(True)
+        self.ui.resourceTree.setMouseTracking(True)
+
         self.tooltipTimer = QTimer(self)
         self.tooltipTimer.setSingleShot(True)
         self.tooltipTimer.timeout.connect(self.showTooltip)
-        self.tooltipText = ""
-        self.setMouseTracking(True)
-        self.ui.resourceTree.setMouseTracking(True)
-        self.ui.resourceTree.viewport().installEventFilter(self)  # Install event filter on the viewport
 
-    def eventFilter(self, obj, event):
-        if obj is self.ui.resourceTree.viewport() and event.type() == QtCore.QEvent.MouseMove:
+    def onHeaderContextMenu(self, point: QPoint):
+        """Show context menu for the header."""
+        menu = QMenu(self)
+
+        # Flatten/Unflatten
+        flatten_action = menu.addAction("Flatten")
+        flatten_action.setCheckable(True)
+        flatten_action.setChecked(self.flattened)
+        flatten_action.triggered.connect(self.toggleFlatten)
+
+        # Collapse/Expand All
+        expand_collapse_action = menu.addAction("Expand All")
+        expand_collapse_action.setCheckable(True)
+        expand_collapse_action.setChecked(self.expandedState)
+        expand_collapse_action.triggered.connect(self.toggleExpandCollapse)
+
+        # Auto-fit Columns
+        auto_fit_columns_action = menu.addAction("Auto-fit Columns")
+        auto_fit_columns_action.setCheckable(True)
+        auto_fit_columns_action.setChecked(self.autoResizeEnabled)
+        auto_fit_columns_action.triggered.connect(self.toggleAutoFitColumns)
+
+        # Toggle Row Highlighting
+        #toggle_row_highlighting_action = menu.addAction("Toggle Row Highlighting")
+        #toggle_row_highlighting_action.triggered.connect(self.toggleRowHighlighting)
+
+        header: QHeaderView = self.ui.resourceTree.header()
+        assert header is not None
+        menu.exec_(header.mapToGlobal(point))
+
+    def toggleFlatten(self):
+        """Toggle the flatten state of the tree view."""
+        if self.flattened:
+            #self.onRefreshClicked()  # Use if the unflattenTree ever breaks again.
+            # FIXME(th3w1zard1): unflattenTree completely broken, use onRefreshClicked instead.
+            self.unflattenTree()
+        else:
+            self.flattenTree()
+        self.flattened = not self.flattened
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
+
+    def flattenTree(self):
+        """Flatten the tree structure into a single level."""
+        flat_items: list[tuple[FileResource, tuple[QStandardItem, ...]]] = []
+
+        for i in range(self.modulesModel.rowCount()):
+            category_item: QStandardItem = self.modulesModel.item(i)
+            for j in range(category_item.rowCount()):
+                resource: FileResource = category_item.child(j, 0).resource
+                cloned_resource_row = tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount()))
+                flat_items.append((resource, cloned_resource_row))
+
+        self._clearModulesModel()
+        for resource, cloned_resource_row in flat_items:
+            cloned_resource_row[0].resource = resource
+            self.modulesModel.appendRow(cloned_resource_row)
+
+    def unflattenTree(self):
+        """Restore the original tree structure."""
+        #resources = [
+        #    getattr(self.modulesModel.item(i, 0), "resource", None)
+        #    for i in range(self.modulesModel.rowCount())
+        #]
+        resources = []
+        for i in range(self.modulesModel.rowCount()):
+            item: QStandardItem = self.modulesModel.item(i, 0)
+            resource: FileResource | None = getattr(item, "resource", None)
+            if resource is not None:
+                resources.append(resource)
+        self._clearModulesModel()
+        self.setResources(resources, clearExisting=False)
+    def _clearModulesModel(self):
+        self.modulesModel.clear()
+        self.modulesModel.setColumnCount(2)
+        self.modulesModel.setHorizontalHeaderLabels(["ResRef", "Type"])
+
+    def collapseAll(self):
+        autoResizeEnabled = self.autoResizeEnabled
+        if autoResizeEnabled:  # Temporarily disable autoresize column logic while the collapse happens.
+            self.autoResizeEnabled = False
+        self.ui.resourceTree.collapseAll()
+        self.autoResizeEnabled = autoResizeEnabled
+
+    def expandAll(self):
+        autoResizeEnabled = self.autoResizeEnabled
+        if autoResizeEnabled:  # Temporarily disable autoresize column logic while the expand happens.
+            self.autoResizeEnabled = False
+        self.ui.resourceTree.expandAll()
+        self.autoResizeEnabled = autoResizeEnabled
+
+    def toggleExpandCollapse(self):
+        """Toggle between expanding and collapsing all items in the tree."""
+        if self.expandedState:
+            self.collapseAll()
+        else:
+            self.expandAll()
+        self.expandedState = not self.expandedState
+
+    def resetColumnWidths(self):
+        header = self.ui.resourceTree.header()
+        assert header is not None
+        for col in range(header.count()):
+            header.resizeSection(col, header.defaultSectionSize())
+
+    def autoFitColumns(self):
+        header = self.ui.resourceTree.header()
+        assert header is not None
+        for col in range(header.count()):
+            self.ui.resourceTree.resizeColumnToContents(col)
+
+    def toggleAutoFitColumns(self):
+        self.autoResizeEnabled = not self.autoResizeEnabled
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
+        else:
+            self.resetColumnWidths()
+
+    def onTreeItemExpanded(self, index):
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
+
+    def onTreeItemCollapsed(self, index):
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
+
+    def toggleRowHighlighting(self):
+        """Toggle row highlighting in the tree view."""
+        current_palette = self.ui.resourceTree.palette()
+        if current_palette.alternateBase().color() == current_palette.base().color():
+            alternate_color = current_palette.highlight().color().lighter(150)
+            current_palette.setColor(current_palette.AlternateBase, alternate_color)
+        else:
+            current_palette.setColor(current_palette.AlternateBase, current_palette.base().color())
+        self.ui.resourceTree.setPalette(current_palette)
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if event.type() == QtCore.QEvent.MouseMove and obj is self.ui.resourceTree.viewport():
+            assert isinstance(event, QMouseEvent)
             self.mouseMoveEvent(event)
             return True
         return super().eventFilter(obj, event)
@@ -127,11 +284,11 @@ class ResourceList(MainWindowList):
         super().leaveEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        index = self.ui.resourceTree.indexAt(event.pos())
+        index = self.ui.resourceTree.indexAt(event.pos())  # type: ignore[arg-type]
         if index.isValid():
             # Retrieve the QStandardItem from the model using the index
-            model_index = self.ui.resourceTree.model().mapToSource(index)  # Map proxy index to source index
-            item = self.ui.resourceTree.model().sourceModel().itemFromIndex(model_index)
+            model_index: QModelIndex = self.ui.resourceTree.model().mapToSource(index)  # Map proxy index to source index
+            item: QStandardItem = self.ui.resourceTree.model().sourceModel().itemFromIndex(model_index)
             if item is not None:
                 resource: FileResource | None = getattr(item, "resource", None)
                 if resource is not None:
@@ -174,46 +331,30 @@ class ResourceList(MainWindowList):
         resources: list[FileResource],
         customCategory: str | None = None,
         *,
-        clear_existing: bool = True,
+        clearExisting: bool = True,
     ):
         """Adds and removes FileResources from the modules model.
 
         Args:
         ----
             resources: {list[FileResource]}: List of FileResource objects to set
-
-        Processing Logic:
-        ----------------
-            - Loops through allResources and resources to find matching resources and update references
-            - Loops through allResources to find non-matching resources and removes them
-            - Removes any unused categories from the model.
         """
         allResources: list[QStandardItem] = self.modulesModel.allResourcesItems()
-
-        # Convert the list of resources to a set for O(1) lookup times
         resourceSet: set[FileResource] = set(resources)
-
-        # Create a mapping of existing resources to their items for quick access
         resourceItemMap: dict[FileResource, QStandardItem] = {item.resource: item for item in allResources}
-
-        # Add or update resources
         for resource in resourceSet:
             if resource in resourceItemMap:
-                # Update existing resource item
                 resourceItemMap[resource].resource = resource
             else:
-                # Add new resource
                 self.modulesModel.addResource(resource, customCategory)
-
-        if clear_existing:
-            # Identify and remove non-matching resources if they are not in the updated resources set
+        if clearExisting:
             for item in allResources:
                 if item.resource in resourceSet:
                     continue
                 item.parent().removeRow(item.row())
-
-        # Remove unused categories
         self.modulesModel.removeUnusedCategories()
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
 
     def setSections(
         self,
@@ -222,24 +363,15 @@ class ResourceList(MainWindowList):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
 
     def setResourceSelection(
         self,
         resource: FileResource,
     ):
-        """Sets the selected resource in the resource tree.
-
-        Args:
-        ----
-            resource (FileResource): The resource to select
-
-        Processing Logic:
-        ----------------
-            - Loops through all resources in the model to find matching resource
-            - Expands the parent item in the tree
-            - Scrolls to and selects the matching child item.
-        """
-        model = self.ui.resourceTree.model().sourceModel()
+        model: ResourceModel = self.ui.resourceTree.model().sourceModel()  # type: ignore[attribute-access]
+        assert isinstance(model, ResourceModel)
 
         def select(parent, child):
             self.ui.resourceTree.expand(parent)
@@ -248,35 +380,31 @@ class ResourceList(MainWindowList):
 
         for item in model.allResourcesItems():
             resource_from_item: FileResource = item.resource
-            if resource_from_item.identifier() == resource.identifier():
-                _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
-                itemIndex = model.proxyModel().mapFromSource(item.index())
+            if resource_from_item == resource:
+                itemIndex: QModelIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
 
     def selectedResources(self) -> list[FileResource]:
-        return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())
+        return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())  # type: ignore[arg-type]
+
+    def _getSectionUserRoleData(self):
+        return self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+
 
     def onFilterStringUpdated(self):
-        self.modulesModel.proxyModel().setFilterFixedString(self.ui.searchEdit.text())
+        self.modulesModel.proxyModel().setFilterString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
-        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
+        self.sectionChanged.emit(self._getSectionUserRoleData())
 
     def onReloadClicked(self):
-        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
+        self.requestReload.emit(self._getSectionUserRoleData())
 
     def onRefreshClicked(self):
+        self._clearModulesModel()
         self.requestRefresh.emit()
 
     def onResourceContextMenu(self, point: QPoint):
-        """Shows context menu for selected resources.
-
-        an Installation/HTInstallation instance is not available in this code, that is emitted back to the ToolWindow.
-
-        Args:
-        ----
-            point: QPoint - Mouse position for context menu
-        """
         resources: list[FileResource] = self.selectedResources()
         if not resources:
             return
@@ -297,7 +425,38 @@ class ResourceList(MainWindowList):
         super().resizeEvent(event)
         self.ui.resourceTree.setColumnWidth(1, 10)
         self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
-        self.ui.resourceTree.header().setSectionResizeMode(QHeaderView.Fixed)
+        header: QHeaderView | None = self.ui.resourceTree.header()
+        assert header is not None
+        header.setSectionResizeMode(QHeaderView.Interactive)  # type: ignore[arg-type]
+
+
+class ResourceProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.filter_string: str = ""
+
+    def setFilterString(self, filter_string: str):
+        self.filter_string = filter_string.lower()
+        self.invalidateFilter()
+
+    def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
+        model = self.sourceModel()
+
+        resref_index = model.index(source_row, 0, source_parent)
+        item = model.itemFromIndex(resref_index)
+        resource: FileResource | None = getattr(item, "resource", None)
+
+        if resource is not None:
+            # Get the file name and resource name
+            filename = resource.filepath().name.lower()
+            resname = resource.filename().lower()
+
+            # Check if the filter string is a substring of either the filename or the resource name
+            if self.filter_string in filename or self.filter_string in resname:
+                return True
+
+        return False
 
 
 class ResourceModel(QStandardItemModel):
@@ -309,13 +468,13 @@ class ResourceModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
         self._categoryItems: dict[str, QStandardItem] = {}
-        self._proxyModel = QSortFilterProxyModel(self)
+        self._proxyModel: ResourceProxyModel = ResourceProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["ResRef", "Type"])
 
-    def proxyModel(self) -> QSortFilterProxyModel:
+    def proxyModel(self) -> ResourceProxyModel:
         return self._proxyModel
 
     def clear(self):
@@ -346,7 +505,6 @@ class ResourceModel(QStandardItemModel):
     ):
         item1 = QStandardItem(resource.resname())
         item1.resource = resource
-        #item1.setToolTip(str(resource.filepath()))
         item2 = QStandardItem(resource.restype().extension.upper())
         self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
 
@@ -390,9 +548,9 @@ class ResourceModel(QStandardItemModel):
 
 
 class TextureList(MainWindowList):
-    requestReload = QtCore.Signal(object)  # TODO:
+    requestReload = QtCore.Signal(object)
 
-    requestRefresh = QtCore.Signal()  # TODO:
+    requestRefresh = QtCore.Signal()
     iconUpdate = QtCore.Signal(object, object)
 
     def __init__(self, parent: QWidget):
@@ -416,22 +574,22 @@ class TextureList(MainWindowList):
         self._installation: HTInstallation | None = None
         self._scannedTextures: set[str] = set()
 
-        self.texturesModel = QStandardItemModel()
-        self.texturesProxyModel = QSortFilterProxyModel()
+        self.texturesModel: QStandardItemModel = QStandardItemModel()
+        self.texturesProxyModel: QSortFilterProxyModel = QSortFilterProxyModel()
         self.texturesProxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.texturesProxyModel.setSourceModel(self.texturesModel)
-        self.ui.resourceList.setModel(self.texturesProxyModel)
+        self.ui.resourceList.setModel(self.texturesProxyModel)  # type: ignore[arg-type]
 
-        self.sectionModel = QStandardItemModel()
-        self.ui.sectionCombo.setModel(self.sectionModel)
+        self.sectionModel: QStandardItemModel = QStandardItemModel()
+        self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
 
-        self._taskQueue = multiprocessing.JoinableQueue()
-        self._resultQueue = multiprocessing.Queue()
+        self._taskQueue: multiprocessing.JoinableQueue = multiprocessing.JoinableQueue()
+        self._resultQueue: multiprocessing.Queue = multiprocessing.Queue()
         self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for _ in range(multiprocessing.cpu_count())]
         for consumer in self._consumers:
             consumer.start()
 
-        self._scanner = QThread(self)
+        self._scanner: QThread = QThread(self)
         self._scanner.run = self.scan
         self._scanner.start()
 
@@ -441,7 +599,9 @@ class TextureList(MainWindowList):
         self.ui.resourceList.doubleClicked.connect(self.onResourceDoubleClicked)
         self.iconUpdate.connect(self.onIconUpdate)
 
-        self.ui.resourceList.verticalScrollBar().valueChanged.connect(self.onTextureListScrolled)
+        vertScrollBar = self.ui.resourceList.verticalScrollBar()
+        assert vertScrollBar is not None
+        vertScrollBar.valueChanged.connect(self.onTextureListScrolled)
         self.ui.searchEdit.textChanged.connect(self.onTextureListScrolled)
 
     def doTerminations(self):
@@ -490,8 +650,10 @@ class TextureList(MainWindowList):
         if self.texturesModel.rowCount() == 0:
             return []
 
-        scanWidth: int = self.parent().width()
-        scanHeight: int = self.parent().height()
+        parent: QObject = self.parent()
+        assert isinstance(parent, QWidget)
+        scanWidth: int = parent.width()
+        scanHeight: int = parent.height()
 
         proxyModel = self.texturesProxyModel
         model = self.texturesModel
@@ -501,7 +663,7 @@ class TextureList(MainWindowList):
 
         for y in range(2, 92, 2):
             for x in range(2, 92, 2):
-                proxyIndex = self.ui.resourceList.indexAt(QPoint(x, y))
+                proxyIndex = self.ui.resourceList.indexAt(QPoint(x, y))  # type: ignore[arg-type]
                 index = proxyModel.mapToSource(proxyIndex)
                 item = model.itemFromIndex(index)
                 if not firstItem and item:
@@ -512,7 +674,6 @@ class TextureList(MainWindowList):
         items: list[QStandardItem] = []
 
         if firstItem:
-            _startRow: int = firstItem.row()
             widthCount: int = scanWidth // 92
             heightCount: int = scanHeight // 92 + 2
             numVisible: int = min(proxyModel.rowCount(), widthCount * heightCount)
@@ -555,23 +716,24 @@ class TextureList(MainWindowList):
             return
         # Note: Avoid redundantly loading textures that have already been loaded
         textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text().casefold() not in self._scannedTextures],
+            [item.text() for item in self.visibleItems() if item.text().lower() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
         )
 
         # Emit signals to load textures that have not had their icons assigned
         for item in iter(self.visibleItems()):
-            if item.text().casefold() in self._scannedTextures:
+            itemText = item.text()
+            lowerItemText = itemText.lower()
+            if lowerItemText in self._scannedTextures:
                 continue
-            item_text = item.text()
 
             # Avoid trying to load the same texture multiple times.
-            self._scannedTextures.add(item_text.casefold())
+            self._scannedTextures.add(lowerItemText)
 
-            cache_tpc: TPC | None = textures.get(item_text)
+            cache_tpc: TPC | None = textures.get(itemText)
             tpc: TPC = TPC() if cache_tpc is None else cache_tpc
 
-            task = TextureListTask(item.row(), tpc, item_text)
+            task = TextureListTask(item.row(), tpc, itemText)
             self._taskQueue.put(task)
             item.setData(True, QtCore.Qt.ItemDataRole.UserRole)
 
@@ -582,8 +744,8 @@ class TextureList(MainWindowList):
     ):
         try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
-        except RuntimeError as e:
-            print(format_exception_with_variables(e, message="This exception has been suppressed."))
+        except RuntimeError:
+            RobustRootLogger.exception("Could not update TextureList icon")
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)

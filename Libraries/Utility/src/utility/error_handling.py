@@ -117,9 +117,11 @@ def safe_repr(
     indent_level: int = 0,
     max_depth: int = 3,
     _depth: int = 0,
+    *,
+    ignore_builtins: bool = True,
 ) -> str:
     """Safely generate a repr string for objects without a custom __repr__, with line wrapping and indentation."""
-    if is_builtin_class_instance(obj):
+    if ignore_builtins and is_builtin_class_instance(obj):
         try:
             obj_repr = repr(obj)
             # Truncate if necessary

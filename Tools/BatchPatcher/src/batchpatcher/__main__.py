@@ -726,7 +726,7 @@ def patch_file(file: os.PathLike | str):
 
     else:
         resname, restype = ResourceIdentifier.from_path(c_file).unpack()
-        if restype == ResourceType.INVALID:
+        if restype is ResourceType.INVALID:
             return
 
         fileres = FileResource(
@@ -1125,7 +1125,7 @@ def patch_install(install_path: os.PathLike | str):
             res_ident = ResourceIdentifier.from_path(module_name)
             filename = str(res_ident)
             filepath = k_install.path().joinpath("Modules", filename)
-            if res_ident.restype == ResourceType.RIM:
+            if res_ident.restype is ResourceType.RIM:
                 if filepath.with_suffix(".mod").safe_isfile():
                     log_output(f"Skipping {filepath}, a .mod already exists at this path.")
                     continue
@@ -1169,7 +1169,7 @@ def patch_install(install_path: os.PathLike | str):
 
     if SCRIPT_GLOBALS.is_patching():
         log_output_with_separator("Extract and patch BIF data, saving to Override (will not overwrite)")
-    for resource in k_install.chitin_resources():
+    for resource in k_install.core_resources():
         if SCRIPT_GLOBALS.fix_dialog_skipping or SCRIPT_GLOBALS.translate or SCRIPT_GLOBALS.set_unskippable:
             patch_and_save_noncapsule(resource, savedir=override_path)
         if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):

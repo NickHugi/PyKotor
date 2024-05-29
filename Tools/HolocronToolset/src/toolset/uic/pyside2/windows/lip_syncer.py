@@ -80,3 +80,5 @@ class Ui_Dialog(object):
         self.removeAudioButton.setText(QCoreApplication.translate("Dialog", u"Remove MP3", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

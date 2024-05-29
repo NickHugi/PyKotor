@@ -132,3 +132,5 @@ class Ui_MainWindow(object):
         self.actionDuplicateRow.setText(_translate("MainWindow", "Duplicate Row"))
         self.actionDuplicateRow.setShortcut(_translate("MainWindow", "Ctrl+D"))
         self.actionplaceholder.setText(_translate("MainWindow", "placeholder"))
+
+from toolset.rcc import resources_rc_pyqt5

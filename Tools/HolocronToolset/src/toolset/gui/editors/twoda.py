@@ -133,6 +133,8 @@ class TwoDAEditor(Editor):
             - Resets to a new empty state if loading fails
         """
         super().load(filepath, resref, restype, data)
+
+        # FIXME(th3w1zard1): Why set this here when it's already set in __init__...?
         self.model = QStandardItemModel(self)
         self.proxyModel = SortFilterProxyModel(self)
 
@@ -160,29 +162,44 @@ class TwoDAEditor(Editor):
             5. Sets up sorting proxy model.
         """
         twoda: TwoDA = read_2da(data)
-
-        headers: list[str] = ["", *list(twoda.get_headers())]
+        headers: list[str] = ["", *twoda.get_headers()]
         self.model.setColumnCount(len(headers))
         self.model.setHorizontalHeaderLabels(headers)
 
+        # Disconnect the model to improve performance during updates
+        self.ui.twodaTable.setModel(None)
+
+        items = []
         for i, row in enumerate(twoda):
-            self.model.insertRow(i)
-            for j, header in enumerate(headers):
-                if j == 0:
-                    self.model.setItem(i, 0, QStandardItem(str(twoda.get_label(i))))
-                    font = self.model.item(i, 0).font()
-                    font.setBold(True)
-                    self.model.item(i, 0).setFont(font)
-                    self.model.item(i, 0).setBackground(self.palette().midlight())
-                else:
-                    self.model.setItem(i, j, QStandardItem(row.get_string(header)))
+            label_item = QStandardItem(str(twoda.get_label(i)))
+            font = label_item.font()
+            font.setBold(True)
+            label_item.setFont(font)
+            label_item.setBackground(self.palette().midlight())
+            row_items = [label_item]
+            row_items.extend(
+                QStandardItem(row.get_string(header)) for header in headers[1:]
+            )
+            items.append(row_items)
+
+        for i, row_items in enumerate(items):
+            self.model.insertRow(i, row_items)
 
         self.resetVerticalHeaders()
+        self.proxyModel.setSourceModel(self.model)
         self.ui.twodaTable.setModel(self.proxyModel)
 
-        # region Menu: Set Row Header
+        # Resize columns after model is populated
+        for i in range(len(headers)):
+            self.ui.twodaTable.resizeColumnToContents(i)
+
+        # Reconstructing the row header setting menu
+        self._reconstruct_menu(headers)
+
+    def _reconstruct_menu(self, headers):
         self.ui.menuSetRowHeader.clear()
 
+        # Adding standard options with specific method connections
         action = QAction("None", self)
         action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.NONE))
         self.ui.menuSetRowHeader.addAction(action)
@@ -197,15 +214,12 @@ class TwoDAEditor(Editor):
 
         self.ui.menuSetRowHeader.addSeparator()
 
+        # Adding actions for each header with a lambda to capture the current header value
         for header in headers[1:]:
             action = QAction(header, self)
-            action.triggered.connect(lambda _=None, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
+            # Correct use of lambda to ensure 'header' is captured correctly at each iteration
+            action.triggered.connect(lambda _=None, h=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, h))
             self.ui.menuSetRowHeader.addAction(action)
-        # endregion
-
-        self.proxyModel.setSourceModel(self.model)
-        for i in range(twoda.get_height()):
-            self.ui.twodaTable.resizeColumnToContents(i)
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a 2D array from a table model.
@@ -249,6 +263,25 @@ class TwoDAEditor(Editor):
 
         self.model.clear()
         self.model.setRowCount(0)
+
+    def jumpToRow(self, row: int):
+        """Jumps to the specified row in the table.
+
+        Args:
+        ----
+            row: The row index to jump to.
+        """
+        if row < 0 or row >= self.model.rowCount():
+            QMessageBox.warning(self, "Invalid Row", f"Row {row} is out of range.")
+            return
+
+        # Select the row in the table view
+        index = self.proxyModel.mapFromSource(self.model.index(row, 0))
+        self.ui.twodaTable.setCurrentIndex(index)
+        self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.EnsureVisible)
+
+        # Optionally, select the entire row
+        self.ui.twodaTable.selectRow(index.row())
 
     def doFilter(
         self,

@@ -6,108 +6,153 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>360</width>
+    <width>400</width>
     <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Insert Instance</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
+    <layout class="QVBoxLayout" name="sidebarLayout">
+     <item>
+      <widget class="QLabel" name="dynamicTextLabel">
        <property name="text">
-        <string>ResRef:</string>
+        <string>Dynamic Text</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="resrefEdit">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maxLength">
-        <number>16</number>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
+     <item>
+      <widget class="QLabel" name="staticTextLabel">
        <property name="text">
-        <string>Location:</string>
+        <string>Selected Resource</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="locationSelect"/>
-     </item>
+   <item>
+    <widget class="ModelRenderer" name="previewRenderer">
+      <property name="minimumSize">
+       <size>
+        <width>350</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
+    </widget>
+   </item>
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QRadioButton" name="reuseResourceRadio">
-       <property name="text">
-        <string>Reuse Resource</string>
+      <layout class="QFormLayout" name="formLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>ResRef:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="resrefEdit">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="maxLength">
+          <number>16</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Location:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="locationSelect"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QRadioButton" name="reuseResourceRadio">
+         <property name="text">
+          <string>Reuse Resource</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="copyResourceRadio">
+         <property name="text">
+          <string>Copy Resource</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="createResourceRadio">
+         <property name="text">
+          <string>Create Resource</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string/>
        </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QLineEdit" name="resourceFilter">
+          <property name="placeholderText">
+           <string>search...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QListWidget" name="resourceList">
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="copyResourceRadio">
-       <property name="text">
-        <string>Copy Resource</string>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QRadioButton" name="createResourceRadio">
-       <property name="text">
-        <string>Create Resource</string>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string/>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QLineEdit" name="resourceFilter">
-        <property name="placeholderText">
-         <string>search...</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QListWidget" name="resourceList">
-        <property name="sortingEnabled">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ModelRenderer</class>
+   <extends>QOpenGLWidget</extends>
+   <header location="global">toolset.gui.widgets.renderer.model</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

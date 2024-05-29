@@ -63,3 +63,5 @@ class Ui_MainWindow(object):
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
 from toolset.gui.widgets.renderer.model import ModelRenderer
+
+from toolset.rcc import resources_rc_pyqt5

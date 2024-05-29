@@ -159,3 +159,5 @@ class Ui_MainWindow(object):
         self.menuSetRowHeader.setTitle(QCoreApplication.translate("MainWindow", u"Set Row Header", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

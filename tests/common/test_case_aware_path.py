@@ -36,6 +36,7 @@ class TestCaseAwarePath(unittest.TestCase):
             CaseAwarePath("/path/to/dir")
         except Exception as e:
             self.fail(f"Unexpected exception raised: {e}")
+        
 
     def test_hashing(self):
         path1 = CaseAwarePath("test\\path\\to\\nothing")
@@ -76,7 +77,7 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "tesT"), 3)
         self.assertEqual(CaseAwarePath.get_matching_characters_count("test", "teat"), -1)
 
-    def test_relative_to_case_sensitive(self):
+    def test_relative_to_relpath(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TesT\\Path\\")
         self.assertTrue(file_path.is_relative_to(folder_path))
@@ -84,9 +85,22 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertIsInstance(relative_path, pathlib.Path)
         self.assertEqual(relative_path, "to\\something.test")
 
-    def test_relative_to_base(self):
+    def test_relative_to_relpath_case_sensitive(self):
         file_path = CaseAwarePath("TEST\\path\\to\\something.test")
         folder_path = CaseAwarePath("TEST\\path\\")
+        self.assertTrue(file_path.is_relative_to(folder_path))
+
+    def test_relative_to_abspath(self):
+        file_path = CaseAwarePath("C:\\TEST\\path\\to\\something.test")
+        folder_path = CaseAwarePath("C:\\TesT\\Path\\")
+        self.assertTrue(file_path.is_relative_to(folder_path))
+        relative_path = file_path.relative_to(folder_path)
+        self.assertIsInstance(relative_path, pathlib.Path)
+        self.assertEqual(relative_path, "to\\something.test")
+
+    def test_relative_to_abspath_case_sensitive(self):
+        file_path = CaseAwarePath("C:\\TEST\\path\\to\\something.test")
+        folder_path = CaseAwarePath("C:\\TEST\\path\\")
         self.assertTrue(file_path.is_relative_to(folder_path))
 
     def test_fix_path_formatting(self):

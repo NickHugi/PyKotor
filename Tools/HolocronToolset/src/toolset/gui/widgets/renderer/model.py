@@ -4,8 +4,7 @@ import math
 
 from typing import TYPE_CHECKING
 
-from qtpy.QtCore import QTimer, Qt
-from qtpy.QtGui import QGuiApplication
+from qtpy.QtCore import QTimer
 from qtpy.QtWidgets import QOpenGLWidget
 
 from pykotor.common.geometry import Vector2
@@ -16,10 +15,11 @@ from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from glm import vec3
-    from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.installation import Installation
@@ -185,6 +185,9 @@ class ModelRenderer(QOpenGLWidget):
             raise ValueError("Scene must be constructed before this operation.")
         return self._scene
 
+    def setInstallation(self, installation: Installation):
+        self.installation = installation
+
     def initializeGL(self):
         self._scene = Scene(installation=self.installation)
         self.scene.camera.fov = ModuleDesignerSettings().fieldOfView
@@ -257,6 +260,12 @@ class ModelRenderer(QOpenGLWidget):
             scene.camera.distance = model.radius(scene) + 2
 
     # region Events
+    def focusOutEvent(self, e: QFocusEvent):
+        self._mouseDown.clear()  # Clears the set when focus is lost
+        self._keysDown.clear()  # Clears the set when focus is lost
+        super().focusOutEvent(e)  # Ensures that the default handler is still executed
+        RobustRootLogger().debug("ModelRenderer.focusOutEvent: clearing all keys/buttons held down.")
+
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
 
@@ -265,13 +274,14 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.height = e.size().height()
 
     def wheelEvent(self, e: QWheelEvent):
-        if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
-            strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 20000
-            self.scene.camera.distance += -e.angleDelta().y() * strength
-
         if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
             strength: float = ModuleDesignerSettings().moveCameraSensitivity3d / 20000
             self.scene.camera.z -= -e.angleDelta().y() * strength
+            return
+
+        if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
+            strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 30000
+            self.scene.camera.distance += -e.angleDelta().y() * strength
 
     def mouseMoveEvent(self, e: QMouseEvent):
         screen = Vector2(e.x(), e.y())
@@ -287,61 +297,56 @@ class ModelRenderer(QOpenGLWidget):
 
         if self.rotateCamera.satisfied(self._mouseDown, self._keysDown):
             strength = ModuleDesignerSettings().moveCameraSensitivity3d / 10000
-            self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength)
+            self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength, clamp=True)
 
     def mousePressEvent(self, e: QMouseEvent):
-        self._mouseDown.add(e.button())
+        button = e.button()
+        self._mouseDown.add(button)
+        #RobustRootLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
-        self._mouseDown.discard(e.button())
+        button = e.button()
+        self._mouseDown.discard(button)
+        #RobustRootLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
-        self._keysDown.add(e.key())
+        key: int = e.key()
+        self._keysDown.add(key)
 
+        rotateStrength = ModuleDesignerSettings().rotateCameraSensitivity3d / 1000
         if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):  # TODO(th3w1zard1): ModuleDesignerSettings.rotateCameraSensitivity3d
-            self.scene.camera.rotate(math.pi / 4, 0)
+            self.scene.camera.rotate(math.pi / 4 * rotateStrength, 0)
         if self.rotateCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(-math.pi / 4, 0)
+            self.scene.camera.rotate(-math.pi / 4 * rotateStrength, 0)
         if self.rotateCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, math.pi / 4)
+            self.scene.camera.rotate(0, math.pi / 4 * rotateStrength)
         if self.rotateCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, -math.pi / 4)
+            self.scene.camera.rotate(0, -math.pi / 4 * rotateStrength)
 
         if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z += (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.z += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
         if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
         if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.x += (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.x += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
         if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.x -= (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.x -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
         if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y -= (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.y -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
         if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y += (ModuleDesignerSettings().moveCameraSensitivity3d / 100)
+            self.scene.camera.y += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
 
         if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 100)
+            self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 100)
+            self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
+        #key_name = getQtKeyStringLocalized(key)
+        #RobustRootLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
-        self._keysDown.discard(e.key())
-
-    def _updateKeyStates(self, e: QKeyEvent):
-        """Fixes stuck keys in the set. Not tested."""
-        pressed_keys = {
-            key
-            for key in range(Qt.Key_Escape, Qt.Key_MediaLast + 1)
-            if QGuiApplication.queryKeyboardModifiers() & key
-        }
-        # Update _keysDown set
-        for key in list(self._keysDown):
-            if key not in pressed_keys:
-                self._keysDown.discard(key)
-
-        for key in pressed_keys:
-            if key not in self._keysDown:
-                self._keysDown.add(key)
+        key: int = e.key()
+        self._keysDown.discard(key)
+        #key_name = getQtKeyStringLocalized(key)
+        #RobustRootLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

@@ -56,6 +56,8 @@ class SelectModuleDialog(QDialog):
         self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.browseButton.clicked.connect(self.browse)
         self.ui.moduleList.currentRowChanged.connect(self.onRowChanged)
+        self.ui.moduleList.doubleClicked.connect(self.confirm)
+        self.ui.moduleList.itemDoubleClicked.connect(self.confirm)
         self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
 
         self._buildModuleList()

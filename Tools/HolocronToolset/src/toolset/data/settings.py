@@ -4,6 +4,7 @@ from typing import Any, Generic, TypeVar
 
 from qtpy.QtCore import QSettings, Qt
 
+from toolset.utils.misc import getQtButtonString, getQtKey, getQtKeyString, getQtMouseButton
 from utility.logger_util import RobustRootLogger
 
 
@@ -13,7 +14,7 @@ class QtTypeWrapper:
         self.type_str: str = type_str
 
     def reconstruct(self):
-        return Qt.Key(self.value) if self.type_str == "Qt.Key" else self.value
+        return getQtKey(self.value) if self.type_str == "Qt.Key" else getQtMouseButton(self.value)
 
 T = TypeVar("T")
 KT = TypeVar("KT")
@@ -33,8 +34,9 @@ class SettingsProperty(property, Generic[T]):
         super().__init__(self.getter, self.setter, None, None)
 
     def getter(self, instance: Settings) -> T:
+        serialized_value: KT | None = None
         try:
-            serialized_value: KT = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
+            serialized_value = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
             constructed_value: T = self.deserialize_value(serialized_value)
             if constructed_value.__class__ != self.default.__class__:
                 RobustRootLogger.error(f"Corrupted setting '{self.name}': {constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
@@ -72,30 +74,42 @@ class SettingsProperty(property, Generic[T]):
             raise RuntimeError(f"{constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
 
     def serialize_value(self, value: T) -> KT:  # noqa: PLR0911
-        """Recursively serializes values, including Qt.Key and nested structures, for serialization.
-
-        Encapsulates special Qt types in QtTypeWrapper.
-        """
+        """Recursively serializes values, including Qt.Key and nested structures, for serialization."""
         if isinstance(value, Qt.Key):
-            return QtTypeWrapper(int(value), "Qt.Key")
+            return ["Qt.Key", getQtKeyString(value)]
         if isinstance(value, Qt.MouseButton):
-            return QtTypeWrapper(value, "Qt.MouseButton")
+            return ["Qt.MouseButton", getQtButtonString(value)]
         if isinstance(value, set):
-            return {self.serialize_value(item) for item in value}  # type: ignore[reportUnhashable]
+            return ["set", [self.serialize_value(item) for item in value]]
         if isinstance(value, tuple):
-            return tuple(self.serialize_value(item) for item in value)
+            return ["tuple", [self.serialize_value(item) for item in value]]
         if isinstance(value, list):
-            return [self.serialize_value(item) for item in value]
+            return ["list", [self.serialize_value(item) for item in value]]
         if isinstance(value, dict):
-            return {key: self.serialize_value(val) for key, val in value.items()}
+            return ["dict", {key: self.serialize_value(val) for key, val in value.items()}]
         return value
 
     def deserialize_value(self, value: KT) -> T:
         """Recursively deserializes the value from the serialized form, handling QtTypeWrapper instances."""
+        if isinstance(value, list) and len(value) == 2:
+            if value[0] == "Qt.Key":
+                return getQtKey(value[1])
+            if value[0] == "Qt.MouseButton":
+                return getQtMouseButton(value[1])
+            if value[0] == "set":
+                return {self.deserialize_value(item) for item in value[1]}
+            if value[0] == "tuple":
+                return tuple(self.deserialize_value(item) for item in value[1])
+            if value[0] == "list":
+                return [self.deserialize_value(item) for item in value[1]]
+            if value[0] == "dict":
+                return {key: self.deserialize_value(val) for key, val in value[1].items()}
+        # Forward compatibility afterwards
+
         if isinstance(value, QtTypeWrapper):
             return value.reconstruct()
         if isinstance(value, set):
-            return {self.deserialize_value(item) for item in value}  # type: ignore[reportUnhashable]
+            return {self.deserialize_value(item) for item in value}
         if isinstance(value, tuple):
             return tuple(self.deserialize_value(item) for item in value)
         if isinstance(value, list):

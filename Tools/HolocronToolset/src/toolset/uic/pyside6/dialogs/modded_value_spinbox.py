@@ -56,3 +56,5 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"Set 2DA Index", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

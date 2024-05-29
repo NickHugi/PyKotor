@@ -66,3 +66,5 @@ class Ui_Dialog(object):
         self.modSaveButton.setText(QCoreApplication.translate("Dialog", u"Save to .MOD", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

@@ -97,3 +97,5 @@ from toolset.gui.widgets.settings.git import GITWidget
 from toolset.gui.widgets.settings.installations import InstallationsWidget
 from toolset.gui.widgets.settings.misc import MiscWidget
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerWidget
+
+from toolset.rcc import resources_rc_pyqt6

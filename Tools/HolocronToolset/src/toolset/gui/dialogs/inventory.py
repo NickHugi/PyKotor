@@ -34,6 +34,8 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     import os
 
+    from typing import Sequence
+
     from qtpy.QtCore import QModelIndex, QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     from qtpy.QtWidgets import QLabel, QWidget
@@ -59,7 +61,7 @@ class InventoryEditor(QDialog):
         self,
         parent: QWidget,
         installation: HTInstallation,
-        capsules: list[Capsule],
+        capsules: Sequence[Capsule],
         folders: list[str],
         inventory: list[InventoryItem],
         equipment: dict[EquipmentSlot, InventoryItem],
@@ -536,7 +538,7 @@ class DropFrame(ItemContainer, QFrame):
             tree: QTreeView | None = event.source()  # type: ignore[]
             proxyModel: QSortFilterProxyModel = tree.model()
             index = proxyModel.mapToSource(tree.selectedIndexes()[0])
-            model: ItemModel | None = proxyModel.sourceModel()  # FIXME(th3w1zard1): needs a .data(role) call
+            model: ItemModel | None = proxyModel.sourceModel()
             item: QStandardItem | None = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 event.accept()
@@ -860,7 +862,7 @@ class ItemBuilderWorker(QThread):
         if self._installation.cacheCoreItems is None:
             queries.extend(
                 resource.identifier()
-                for resource in self._installation.chitin_resources() if resource.restype() is ResourceType.UTI
+                for resource in self._installation.core_resources() if resource.restype() is ResourceType.UTI
             )
         queries.extend(
             resource.identifier()
@@ -897,10 +899,8 @@ class ItemModel(QStandardItemModel):
         self._categoryItems: dict[str, QStandardItem] = {}
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
-        self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setFilterCaseSensitivity(False)  # type: ignore[arg-type]
-        self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setSourceModel(self)
+        self._proxyModel.setRecursiveFilteringEnabled(True)  # type: ignore[arg-type]
+        self._proxyModel.setFilterCaseSensitivity(False if qtpy.API_NAME in ("PyQt5", "PySide2") else QtCore.Qt.CaseInsensitive)  # type: ignore[arg-type]
 
     def proxyModel(self) -> QSortFilterProxyModel:
         return self._proxyModel

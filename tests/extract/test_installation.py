@@ -28,12 +28,13 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 
 K1_PATH: str | None = os.environ.get("K1_PATH")
 
 
 @unittest.skipIf(
-    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+    not K1_PATH or not CaseAwarePath(K1_PATH).joinpath("chitin.key").safe_isfile(),
     "K1_PATH environment variable is not set or not found on disk.",
 )
 class TestInstallation(TestCase):

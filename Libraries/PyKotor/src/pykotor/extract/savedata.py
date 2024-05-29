@@ -215,10 +215,10 @@ class SaveNestedCapsule:
 
     def load_cached(self, *, reload: bool = False):
         for resource in self.nested_resources_path.resources(reload=reload):
-            if resource.restype() == ResourceType.SAV:
+            if resource.restype() is ResourceType.SAV:
                 sav = read_erf(resource.data())
                 self.cached_modules.append(sav)
-            if resource.restype() == ResourceType.UTC:
+            if resource.restype() is ResourceType.UTC:
                 utc = read_utc(resource.data())
                 self.cached_characters.append(utc)
             if resource.identifier() == self.INVENTORY_IDENTIFIER:

@@ -110,3 +110,5 @@ class Ui_Dialog(object):
         self.label_4.setText(QCoreApplication.translate("Dialog", u"Skybox:", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

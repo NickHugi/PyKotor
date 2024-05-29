@@ -104,3 +104,5 @@ class Ui_Dialog(object):
         self.languageSelect.setItemText(5, _translate("Dialog", "Polish"))
         self.maleRadio.setText(_translate("Dialog", "Male"))
         self.femaleRadio.setText(_translate("Dialog", "Female"))
+
+from toolset.rcc import resources_rc_pyqt5

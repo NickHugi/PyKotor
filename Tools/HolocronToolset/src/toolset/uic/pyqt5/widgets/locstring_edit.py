@@ -34,3 +34,5 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.editButton.setText(_translate("Form", "..."))
+
+from toolset.rcc import resources_rc_pyqt5

@@ -138,6 +138,8 @@ class Ui_MainWindow(object):
         self.menuFile.setObjectName("menuFile")
         self.menuNew = QtWidgets.QMenu(parent=self.menuFile)
         self.menuNew.setObjectName("menuNew")
+        self.menuRecentFiles = QtWidgets.QMenu(parent=self.menuFile)
+        self.menuRecentFiles.setObjectName("menuRecentFiles")
         self.menuEdit = QtWidgets.QMenu(parent=self.menubar)
         self.menuEdit.setObjectName("menuEdit")
         self.menuTheme = QtWidgets.QMenu(parent=self.menubar)
@@ -328,11 +330,11 @@ class Ui_MainWindow(object):
         self.menuNew.addAction(self.actionNewSSF)
         self.menuFile.addAction(self.menuNew.menuAction())
         self.menuFile.addAction(self.openAction)
+        self.menuFile.addAction(self.menuRecentFiles.menuAction())
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionSettings)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionExit)
-        self.menuEdit.addAction(self.actionRecent_Files)
         self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.actionEditTLK)
         self.menuEdit.addAction(self.actionEditJRL)
@@ -380,6 +382,7 @@ class Ui_MainWindow(object):
         self.mdlTexturesCheckbox.setText(_translate("MainWindow", "Extract Textures"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuNew.setTitle(_translate("MainWindow", "New"))
+        self.menuRecentFiles.setTitle(_translate("MainWindow", "Recent Files"))
         self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
         self.menuTheme.setTitle(_translate("MainWindow", "Theme"))
         self.menuTools.setTitle(_translate("MainWindow", "Tools"))
@@ -436,3 +439,5 @@ class Ui_MainWindow(object):
         self.actionDiscordDeadlyStream.setText(_translate("MainWindow", "Deadly Stream"))
         self.actionModuleDesigner.setText(_translate("MainWindow", "Module Designer"))
 from toolset.gui.widgets.main_widgets import ResourceList, TextureList
+
+from toolset.rcc import resources_rc_pyqt6

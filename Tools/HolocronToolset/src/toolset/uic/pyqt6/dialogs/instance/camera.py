@@ -154,3 +154,5 @@ class Ui_Dialog(object):
         self.label_5.setText(_translate("Dialog", "Pitch:"))
         self.label_6.setText(_translate("Dialog", "Mic Range:"))
         self.label_7.setText(_translate("Dialog", "Height:"))
+
+from toolset.rcc import resources_rc_pyqt6

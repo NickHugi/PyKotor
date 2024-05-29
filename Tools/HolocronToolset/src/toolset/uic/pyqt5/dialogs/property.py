@@ -115,3 +115,5 @@ class Ui_Dialog(object):
         self.costSelectButton.setText(_translate("Dialog", "Select"))
         self.label_6.setText(_translate("Dialog", "Parameter Values:"))
         self.parameterSelectButton.setText(_translate("Dialog", "Select"))
+
+from toolset.rcc import resources_rc_pyqt5

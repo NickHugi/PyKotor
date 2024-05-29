@@ -179,6 +179,7 @@ class App:
         self.log_level: LogLevel = LogLevel.WARNINGS
         self.pykotor_logger = RobustRootLogger()
         self.namespaces: list[PatcherNamespace] = []
+        self.one_shot: bool = False
 
         self.initialize_logger()
         self.initialize_top_menu()
@@ -529,7 +530,6 @@ class App:
         if not cmdline_args.console:
             self.hide_console()
 
-        self.one_shot: bool = False
         num_cmdline_actions: int = sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate])
         if num_cmdline_actions == 1:
             self._begin_oneshot(cmdline_args)

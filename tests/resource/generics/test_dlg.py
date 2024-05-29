@@ -111,7 +111,7 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
     )
     def test_gff_reconstruct_from_k2_installation(self):
         self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for resource in (res for res in self.installation if res.restype() == ResourceType.DLG):
+        for resource in (res for res in self.installation if res.restype() is ResourceType.DLG):
             self.log_func(f"Testing resource '{resource.identifier()}'")
             gff: GFF = read_gff(resource.data())
             reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff))

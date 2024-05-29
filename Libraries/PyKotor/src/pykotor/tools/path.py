@@ -387,7 +387,7 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
             Game.K2: [
                 "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
                 "~/Library/Applications/Steam/steamapps/common/Knights of the Old Republic II/Star Wars™: Knights of the Old Republic II.app/Contents/GameData",
-                "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/KOTOR2.app/Contents/GameData/"  # Verified
+                "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/KOTOR2.app/Contents/GameData/",  # Verified
                 # The following might be from a pirated version of the game, they were provided anonymously
                 # It is also possible these are the missing app store paths.
                 "~/Applications/Knights of the Old Republic 2.app/Contents/Resources/transgaming/c_drive/Program Files/SWKotOR2/",
@@ -400,8 +400,10 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "~/.local/share/steam/common/steamapps/swkotor",
                 "~/.local/share/steam/common/steamapps/swkotor",
                 "~/.local/share/steam/common/swkotor",
-                "~/.steam/debian-installation/steamapps/common/swkotor"  # verified
+                "~/.steam/debian-installation/steamapps/common/swkotor",  # verified
                 "~/.steam/root/steamapps/common/swkotor",  # executable name is `KOTOR1` no extension
+                # Flatpak
+                "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/swkotor",
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/swkotor",
                 "/mnt/C/Program Files (x86)/Steam/steamapps/common/swkotor",
@@ -416,9 +418,11 @@ def get_default_paths() -> dict[str, dict[Game, list[str]]]:
                 "~/.local/share/aspyr-media/kotor2",
                 "~/.local/share/aspyr-media/Knights of the Old Republic II",  # guess
                 "~/.local/share/Steam/common/Knights of the Old Republic II",  # ??? wrong?
-                "~/.steam/debian-installation/steamapps/common/Knights of the Old Republic II"  # guess
-                "~/.steam/debian-installation/steamapps/common/kotor2"  # guess
+                "~/.steam/debian-installation/steamapps/common/Knights of the Old Republic II",  # guess
+                "~/.steam/debian-installation/steamapps/common/kotor2",  # guess
                 "~/.steam/root/steamapps/common/Knights of the Old Republic II",  # executable name is `KOTOR2` no extension
+                # Flatpak
+                "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common/Knights of the Old Republic II/steamassets",
                 # wsl paths
                 "/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II",
                 "/mnt/C/Program Files (x86)/Steam/steamapps/common/Knights of the Old Republic II",
@@ -451,7 +455,7 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     # Build hardcoded default kotor locations
     raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
     locations: dict[Game, set[CaseAwarePath]] = {
-        game: {case_path for case_path in (CaseAwarePath(path).resolve() for path in paths) if case_path.safe_isdir()} for game, paths in raw_locations.get(os_str, {}).items()
+        game: {case_path for case_path in (CaseAwarePath(path).expanduser().resolve() for path in paths) if case_path.safe_isdir()} for game, paths in raw_locations.get(os_str, {}).items()
     }
 
     # Build kotor locations by registry (if on windows)

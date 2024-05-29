@@ -211,3 +211,5 @@ class Ui_Form(object):
         self.label_10.setText(QCoreApplication.translate("Form", u"NCS Decompiler:", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

@@ -6,6 +6,7 @@ from copy import copy
 from typing import Any, Generator
 
 from pykotor.common.misc import ResRef
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf.erf_data import ERF
 from pykotor.resource.type import ResourceType
 from utility.common.more_collections import OrderedSet
@@ -183,3 +184,6 @@ class RIMResource:
 
     def __hash__(self):
         return hash((self.resref, self.restype, self.data))
+
+    def identifier(self) -> ResourceIdentifier:
+        return ResourceIdentifier(str(self.resref), self.restype)

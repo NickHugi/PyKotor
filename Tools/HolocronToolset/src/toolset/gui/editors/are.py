@@ -57,7 +57,8 @@ class AREEditor(Editor):
         """
         supported: list[ResourceType] = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
-        self.resize(400, 250)
+        self.resize(400, 600)
+        self.setFixedSize(400, 600)  # Lock the window size
 
         self._are: ARE = ARE()
         self._minimap = None
@@ -130,6 +131,7 @@ class AREEditor(Editor):
         cameras: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
+        self.ui.cameraStyleSelect.setContext(cameras, self._installation, HTInstallation.TwoDA_CAMERAS)
         for label in cameras.get_column("name"):
             self.ui.cameraStyleSelect.addItem(label.title())
 

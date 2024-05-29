@@ -45,7 +45,7 @@ class UTEEditor(Editor):
             - Initialize UTE object
             - Call new() to start with a blank trigger.
         """
-        supported: list[ResourceType] = [ResourceType.UTE]
+        supported: list[ResourceType] = [ResourceType.UTE, ResourceType.BTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         if qtpy.API_NAME == "PySide2":
@@ -111,6 +111,9 @@ class UTEEditor(Editor):
 
         factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+
+        self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.setItems(difficulties.get_column("label"))

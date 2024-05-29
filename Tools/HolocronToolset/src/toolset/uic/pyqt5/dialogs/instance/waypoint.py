@@ -130,3 +130,5 @@ class Ui_Dialog(object):
         self.hasMapNoteCheck.setText(_translate("Dialog", "Has Map Note"))
         self.label_10.setText(_translate("Dialog", "Map Note:"))
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+
+from toolset.rcc import resources_rc_pyqt5

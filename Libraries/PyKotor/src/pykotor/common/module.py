@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Collection, Generic, Iterable, TypeVar, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, cast
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -48,6 +48,7 @@ from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from typing import Iterable, Sequence
 
     from typing_extensions import Self
 
@@ -352,6 +353,34 @@ class Module:  # noqa: PLR0904
     def root(self):
         return self._root
 
+    @classmethod
+    def find_capsules(cls, install_or_path: Installation | Path, filename: str) -> Sequence[Capsule]:
+        root = cls.find_root(filename)
+        # Build all capsules relevant to this root in the provided installation
+        capsules: _CapsuleDictTypes = {
+            ModuleType.MAIN.name: None,
+            ModuleType.DATA.name: None,
+            ModuleType.K2_DLG.name: None,
+            ModuleType.MOD.name: None,
+        }
+        module_path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
+        if filename.lower().endswith(".mod"):
+            mod_filepath = module_path.joinpath(root + ModuleType.MOD.value)
+            if mod_filepath.safe_isfile():
+                capsules[ModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
+            else:
+                capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
+                capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
+                if install_or_path.game().is_k2():
+                    capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + ModuleType.K2_DLG.value))
+        else:
+            capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
+            capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
+            if install_or_path.game().is_k2():
+                capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + ModuleType.K2_DLG.value))
+        return [capsule for capsule in capsules.values() if capsule is not None]
+
+
     def get_capsules(self) -> list[ModulePieceResource]:
         """Returns all relevant ERFs/RIMs for this module."""
         return list(self._capsules.values())
@@ -480,41 +509,36 @@ class Module:  # noqa: PLR0904
             order,
             capsules=capsules_to_search
         )
-        look_for = self._handle_git_lyt_reloads(
-            main_search_results,
-            git_query,
-            GIT,
+        git_search = self._handle_git_lyt_reloads(main_search_results, git_query, GIT,
             "Git is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
         )
-        look_for = self._handle_git_lyt_reloads(
-            main_search_results,
-            lyt_query,
-            LYT,
+        lyt_search = self._handle_git_lyt_reloads(main_search_results, lyt_query, LYT,
             "Lyt is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
         )
+
         # From GIT/LYT references, find them in the installation.
         search_results: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
-            look_for,
+            {*git_search, *lyt_search},
             order,
             capsules=capsules_to_search
         )
         for identifier, locations in search_results.items():
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations))
 
-        # Third. Since we now have a known full list of resources necessary, we can now process Override and chitin in one fell swoop.
+        # Third. Since we now have a known full list of resources that make up this module, we can now process Override and chitin in one fell swoop.
         # Realistically we'll do this at the end, but right now we're interested in enumerating the models so we can find textures.
 
         # Check chitin first.
-        for resource in self._installation.chitin_resources():
-            if resource.identifier() in self.resources or resource.identifier() in look_for:
-                RobustRootLogger().info("Found chitin location '%s' for resource '%s' for module '%s'",
+        for resource in self._installation.core_resources():
+            if resource.identifier() in self.resources or resource.identifier() in git_search:
+                RobustRootLogger().info("Found chitin/core location '%s' for resource '%s' for module '%s'",
                                         resource.filepath(), resource.identifier(), display_name)
                 self.add_locations(resource.resname(), resource.restype(), (resource.filepath(),)).activate()
 
         # Prioritize Override by checking/activating last.
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
-                if resource.identifier() in self.resources or resource.identifier() in look_for:
+                if resource.identifier() in self.resources or resource.identifier() in git_search:
                     RobustRootLogger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
                     self.add_locations(resource.resname(), resource.restype(), [resource.filepath()]).activate()
 
@@ -570,6 +594,8 @@ class Module:  # noqa: PLR0904
         for identifier, locations in texture_search.items():
             if identifier == "dirt.tpc":
                 continue  # skip this constant name that sometimes appears in list_textures
+            if not locations:
+                continue
             RobustRootLogger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations)).activate()
 
@@ -1744,7 +1770,7 @@ class ModuleResource(Generic[T]):
         else:
             other_locations_available = len(self._locations)-1
             other_locations_available_display = f" ({other_locations_available} other locations available)" if other_locations_available else ""
-            RobustRootLogger().info("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
+            RobustRootLogger().debug("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
         return self._active
 
     def unload(self):

@@ -186,7 +186,7 @@ class ModificationsNSS(PatcherModifications):
         game: Game,
     ) -> bytes | Literal[True]:
         with TemporaryDirectory() as tempdir:
-            tempcompiled_filepath: Path = Path(tempdir) / "temp_script.ncs"
+            tempcompiled_filepath: Path = Path(tempdir, "temp_script.ncs")
             stdout, stderr = nwnnsscompiler.compile_script(temp_script_file, tempcompiled_filepath, game)
             result: bool | bytes = "File is an include file, ignored" in stdout
             if not result:

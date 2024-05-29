@@ -48,3 +48,5 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Edit Cutscene Model"))
         self.label.setText(_translate("Dialog", "Stunt Model:"))
         self.label_2.setText(_translate("Dialog", "Participant:"))
+
+from toolset.rcc import resources_rc_pyqt5

@@ -132,3 +132,5 @@ class Ui_Dialog(object):
         self.label_6.setText(_translate("Dialog", "Link To Tag:"))
         self.label_7.setText(_translate("Dialog", "Transition Name:"))
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+
+from toolset.rcc import resources_rc_pyqt6

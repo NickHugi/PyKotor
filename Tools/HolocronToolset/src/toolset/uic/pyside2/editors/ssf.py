@@ -1213,3 +1213,5 @@ class Ui_MainWindow(object):
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

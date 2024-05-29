@@ -105,7 +105,7 @@ class ResourceType(Enum):
     ARE = ResourceTuple(2012, "are", "Module Data", "gff")
     SET = ResourceTuple(2013, "set", "Unused", "binary")
     IFO = ResourceTuple(2014, "ifo", "Module Data", "gff")
-    BIC = ResourceTuple(2015, "bic", "Creatures", "binary")
+    BIC = ResourceTuple(2015, "bic", "Creatures", "gff")
     WOK = ResourceTuple(2016, "wok", "Walkmeshes", "binary")
     TwoDA = ResourceTuple(2017, "2da", "2D Arrays", "binary")
     TLK = ResourceTuple(2018, "tlk", "Talk Tables", "binary")

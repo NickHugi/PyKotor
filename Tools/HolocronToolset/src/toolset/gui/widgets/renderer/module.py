@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import math
-
 from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
@@ -20,7 +18,7 @@ from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     from glm import vec3
-    from qtpy.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.common.module import Module
@@ -282,8 +280,15 @@ class ModuleRenderer(QOpenGLWidget):
         z: float = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
-    def resetMouseButtons(self):
+    def resetButtonsDown(self):
         self._mouseDown.clear()
+
+    def resetKeysDown(self):
+        self._keysDown.clear()
+
+    def resetAllDown(self):
+        self._mouseDown.clear()
+        self._keysDown.clear()
 
     # region Accessors
     def keysDown(self) -> set[int]:
@@ -313,22 +318,22 @@ class ModuleRenderer(QOpenGLWidget):
             up: Units to move upwards.
         """
         forward_vec: vec3 = forward * self.scene.camera.forward()
-        sideward = right * self.scene.camera.sideward()
+        sideways = right * self.scene.camera.sideward()
 
-        self.scene.camera.x += forward_vec.x + sideward.x
-        self.scene.camera.y += forward_vec.y + sideward.y
+        self.scene.camera.x += forward_vec.x + sideways.x
+        self.scene.camera.y += forward_vec.y + sideways.y
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float):
         forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
-        sideward = right * self.scene.camera.sideward(ignore_z=False)
+        sideways = right * self.scene.camera.sideward(ignore_z=False)
         upward = -up * self.scene.camera.upward(ignore_xy=False)
 
-        self.scene.camera.x += upward.x + sideward.x + forward_vec.x
-        self.scene.camera.y += upward.y + sideward.y + forward_vec.y
-        self.scene.camera.z += upward.z + sideward.z + forward_vec.z
+        self.scene.camera.x += upward.x + sideways.x + forward_vec.x
+        self.scene.camera.y += upward.y + sideways.y + forward_vec.y
+        self.scene.camera.z += upward.z + sideways.z + forward_vec.z
 
-    def rotateCamera(self, yaw: float, pitch: float, *, snapRotations: bool = True):
+    def rotateCamera(self, yaw: float, pitch: float, *, clampRotations: bool = True):
         """Rotates the camera by the angles (radians) specified.
 
         Args:
@@ -337,11 +342,7 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
             snapRotations:
         """
-        self.scene.camera.rotate(yaw, pitch)
-        if self.scene.camera.pitch < math.pi / 2 and snapRotations:
-            self.scene.camera.pitch = math.pi / 2
-        if self.scene.camera.pitch > math.pi and snapRotations:
-            self.scene.camera.pitch = math.pi
+        self.scene.camera.rotate(yaw, pitch, clamp=clampRotations)
 
     def zoomCamera(self, distance: float):
         self.scene.camera.distance -= distance
@@ -351,11 +352,19 @@ class ModuleRenderer(QOpenGLWidget):
 
     # region Events
 
-    def wheelEvent(self, e: QWheelEvent):
+    def focusOutEvent(self, e: QFocusEvent | None):
+        self._mouseDown.clear()  # Clears the set when focus is lost
+        self._keysDown.clear()  # Clears the set when focus is lost
+        super().focusOutEvent(e)  # Ensures that the default handler is still executed
+        RobustRootLogger.debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+
+    def wheelEvent(self, e: QWheelEvent | None):
         super().wheelEvent(e)
+        if e is None:
+            return
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent):
+    def mouseMoveEvent(self, e: QMouseEvent | None):
         """Handles mouse move events.
 
         Args:
@@ -370,6 +379,8 @@ class ModuleRenderer(QOpenGLWidget):
             4. Emit signal with mouse data if time since press > threshold
         """
         #super().mouseMoveEvent(e)
+        if e is None:
+            return
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
@@ -377,34 +388,48 @@ class ModuleRenderer(QOpenGLWidget):
             screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
 
         world = self.scene.cursor.position()
-        self._mousePrev = screen
         if datetime.now(tz=timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
+        self._mousePrev = screen
 
     def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)
         self._mousePressTime = datetime.now(tz=timezone.utc).astimezone()
-        self._mouseDown.add(e.button())
+        button = e.button()
+        self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
+        #RobustRootLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
-        self._mouseDown.discard(e.button())
+        button = e.button()
+        self._mouseDown.discard(button)
 
         coords = Vector2(e.x(), e.y())
-        self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+        self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
+        #RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
-    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyPressEvent(e)
-        self._keysDown.add(e.key())
+        if e is None:
+            return
+        key = e.key()
+        self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
+        #key_name = getQtKeyStringLocalized(key)
+        #RobustRootLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
+    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyReleaseEvent(e)
-        self._keysDown.discard(e.key())
+        if e is None:
+            return
+        key = e.key()
+        self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
+        # key_name = getQtKeyStringLocalized(key)
+        # RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

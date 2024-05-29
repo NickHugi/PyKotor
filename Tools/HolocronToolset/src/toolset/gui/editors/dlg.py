@@ -1,19 +1,19 @@
 from __future__ import annotations
 
+import tempfile
+
 from copy import copy, deepcopy
-from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy import QtCore
+from qtpy import QtCore, QtMultimedia
 from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QApplication, QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryWriter
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
@@ -33,7 +33,7 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
-from utility.system.path import Path
+from utility.system.os_helper import remove_any
 
 if TYPE_CHECKING:
 
@@ -200,6 +200,7 @@ class DLGEditor(Editor):
 
         # This boolean is used to prevent events firing onNodeUpdate() when values are changed programatically
         self.acceptUpdates: bool = False
+        self.tempFile: QtCore.QTemporaryFile | None = None
 
         # Make the bottom panel take as little space possible
         self.ui.splitter.setSizes([99999999, 1])
@@ -598,6 +599,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text if text != "-1" else "")
             textbox.setStyleSheet("QPlainTextEdit {background-color: white;}")
         else:
+            assert self._installation is not None
             text: str = self._installation.talktable().string(locstring.stringref)
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
@@ -753,14 +755,14 @@ class DLGEditor(Editor):
             - Call the deleteNode method to remove the item from the model.
         """
         if self.ui.dialogTree.selectedIndexes():
-            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]
+            index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]  # type: ignore[arg-type]
             item: QStandardItem | None = self.model.itemFromIndex(index)
             self.deleteNode(item)
 
     def expandToRoot(self, item: QStandardItem):
         parent: QStandardItem | None = item.parent()
         while parent is not None:
-            self.ui.dialogTree.expand(parent.index())
+            self.ui.dialogTree.expand(parent.index())  # type: ignore[arg-type]
             parent = parent.parent()
 
     def jumpToOriginal(self, sourceItem: QStandardItem):
@@ -859,7 +861,7 @@ class DLGEditor(Editor):
                 if data:
                     self.buffer = QBuffer(self)
                     self.buffer.setData(data)
-                    self.buffer.open(QIODevice.ReadOnly)
+                    self.buffer.open(QIODevice.OpenModeFlag.ReadOnly)
                     self.player.setMedia(QMediaContent(), self.buffer)
                     QtCore.QTimer.singleShot(0, self.player.play)
                 else:
@@ -869,12 +871,18 @@ class DLGEditor(Editor):
             # PyQt6 and PySide6 code path
             def set_media(data: bytes | None):
                 if data:
-                    with TemporaryDirectory() as tmpdir:
-                        tmpdir_path = Path(tmpdir)
-                        tmpmediafile = (tmpdir_path / tmpdir_path.stem).with_suffix(".wav")
-                        BinaryWriter.dump(tmpmediafile, data)
-                        self.player.setSource(str(tmpmediafile))
-                        QTimer.singleShot(0, self.player.play)
+                    tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+                    tempFile.write(data)
+                    tempFile.flush()
+                    tempFile.seek(0)
+                    tempFile.close()
+
+                    audioOutput = QtMultimedia.QAudioOutput(self)
+                    self.player.setAudioOutput(audioOutput)
+                    self.player.setSource(QtCore.QUrl.fromLocalFile(tempFile.name))
+                    audioOutput.setVolume(1)
+                    self.player.play()
+                    self.player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
                 else:
                     self.blinkWindow()
         else:
@@ -888,6 +896,18 @@ class DLGEditor(Editor):
         )
 
         set_media(data)
+
+    def removeTempAudioFile(
+        self,
+        status: QtMultimedia.QMediaPlayer.MediaStatus,
+        filePathStr: str,
+    ):
+        if status == QtMultimedia.QMediaPlayer.MediaStatus.EndOfMedia:
+            try:
+                self.player.stop()
+                QTimer.singleShot(33, lambda: remove_any(filePathStr))
+            except OSError:
+                self._logger.exception(f"Error removing temporary file {filePathStr}")
 
     def focusOnNode(self, link: DLGLink) -> QStandardItem:
         """Focuses the dialog tree on a specific link node.

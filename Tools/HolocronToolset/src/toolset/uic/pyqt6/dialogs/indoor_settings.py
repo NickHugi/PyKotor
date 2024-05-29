@@ -71,3 +71,5 @@ class Ui_Dialog(object):
         self.label_4.setText(_translate("Dialog", "Skybox:"))
 from toolset.gui.widgets.edit.color import ColorEdit
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+
+from toolset.rcc import resources_rc_pyqt6

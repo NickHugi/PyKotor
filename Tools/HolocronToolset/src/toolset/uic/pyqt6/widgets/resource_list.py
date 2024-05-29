@@ -69,3 +69,5 @@ class Ui_Form(object):
         self.searchEdit.setPlaceholderText(_translate("Form", "search..."))
         self.reloadButton.setToolTip(_translate("Form", "Reload the active module."))
         self.reloadButton.setText(_translate("Form", "Reload"))
+
+from toolset.rcc import resources_rc_pyqt6

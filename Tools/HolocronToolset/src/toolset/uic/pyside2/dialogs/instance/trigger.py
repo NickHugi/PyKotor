@@ -187,3 +187,5 @@ class Ui_Dialog(object):
         self.label_7.setText(QCoreApplication.translate("Dialog", u"Transition Name:", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

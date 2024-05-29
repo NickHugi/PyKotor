@@ -10,7 +10,7 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QCursor, QIcon, QKeySequence
-from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand, QUndoStack
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -64,8 +64,12 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.generics.git import GITInstance
     from toolset.data.installation import HTInstallation
-    from toolset.gui.windows.module_designer import ModuleDesigner
+    from toolset.gui.windows.module_designer import ModuleDesigner  # Keep in type checking block to avoid circular imports
 
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    from qtpy.QtGui import QUndoStack
+else:
+    from qtpy.QtWidgets import QUndoStack
 
 class MoveCommand(QUndoCommand):
     def __init__(
@@ -81,26 +85,14 @@ class MoveCommand(QUndoCommand):
         self.instance: GITInstance = instance
         self.old_position: Vector3 = old_position
         self.new_position: Vector3 = new_position
-        self.old_height: float | None = old_height
-        self.new_height: float | None = new_height
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()}")
+        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()} (NEW {self.new_position} --> {self.old_position})")
         self.instance.position = self.old_position
-        if isinstance(self.instance, GITCamera):
-            if self.old_height is None or self.new_height is None:
-                return
-            RobustRootLogger().debug("Also undo height.")
-            self.instance.height = self.old_height
 
     def redo(self):
-        RobustRootLogger().debug(f"Redo position: {self.instance.identifier()}")
+        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()} ({self.old_position} --> NEW {self.new_position})")
         self.instance.position = self.new_position
-        if isinstance(self.instance, GITCamera):
-            if self.old_height is None or self.new_height is None:
-                return
-            RobustRootLogger().debug("Also redo height.")
-            self.instance.height = self.new_height
 
 
 class RotateCommand(QUndoCommand):
@@ -144,29 +136,40 @@ class DuplicateCommand(QUndoCommand):
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
+        self.editor.enterInstanceMode()
         for instance in self.instances:
+            if instance not in self.git.instances():
+                print(f"{instance!r} not found in instances: no duplicate to undo.")
+                continue
             RobustRootLogger().debug(f"Undo duplicate: {instance.identifier()}")
-            self.git.remove(instance)
+            if isinstance(self.editor, GITEditor):
+                self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
+            else:
+                self.editor.setSelection([instance])
+            self.editor.deleteSelected(noUndoStack=True)
         self.rebuildInstanceList()
 
     def rebuildInstanceList(self):
         if isinstance(self.editor, GITEditor):
-            old_mode = self.editor._mode  # noqa: SLF001
             self.editor.enterInstanceMode()
             assert isinstance(self.editor._mode, _InstanceMode)  # noqa: SLF001
             self.editor._mode.buildList()  # noqa: SLF001
-            if isinstance(old_mode, _GeometryMode):
-                self.editor.enterGeometryMode()
-            elif isinstance(old_mode, _SpawnMode):
-                self.editor.enterSpawnMode()
         else:
+            self.editor.enterInstanceMode()
             self.editor.rebuildInstanceList()
 
 
     def redo(self):
         for instance in self.instances:
+            if instance in self.git.instances():
+                print(f"{instance!r} already found in instances: no duplicate to redo.")
+                continue
             RobustRootLogger().debug(f"Redo duplicate: {instance.identifier()}")
             self.git.add(instance)
+            if isinstance(self.editor, GITEditor):
+                self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
+            else:
+                self.editor.setSelection([instance])
         self.rebuildInstanceList()
 
 
@@ -180,36 +183,39 @@ class DeleteCommand(QUndoCommand):
         super().__init__()
         self.git: GIT = git
         self.instances: list[GITInstance] = instances
-        self._firstRun: bool = True
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo delete: {[instance.identifier() for instance in self.instances]}")
+        RobustRootLogger().debug(f"Undo delete: {[repr(instance) for instance in self.instances]}")
         for instance in self.instances:
+            if instance in self.git.instances():
+                print(f"{instance!r} already found in instances: no deletecommand to undo.")
+                continue
             self.git.add(instance)
         self.rebuildInstanceList()
 
     def rebuildInstanceList(self):
         if isinstance(self.editor, GITEditor):
-            old_mode = self.editor._mode  # noqa: SLF001
             self.editor.enterInstanceMode()
             assert isinstance(self.editor._mode, _InstanceMode)  # noqa: SLF001
             self.editor._mode.buildList()  # noqa: SLF001
-            if isinstance(old_mode, _GeometryMode):
-                self.editor.enterGeometryMode()
-            elif isinstance(old_mode, _SpawnMode):
-                self.editor.enterSpawnMode()
         else:
+            self.editor.enterInstanceMode()
             self.editor.rebuildInstanceList()
 
     def redo(self):
-        if self._firstRun is True:
-            print("Skipping first redo of DeleteCommand.")
-            self._firstRun = False
-            return
-        RobustRootLogger().debug(f"Redo delete: {[instance.identifier() for instance in self.instances]}")
+        RobustRootLogger().debug(f"Redo delete: {[repr(instance) for instance in self.instances]}")
+        self.editor.enterInstanceMode()
         for instance in self.instances:
-            self.git.remove(instance)
+            if instance not in self.git.instances():
+                print(f"{instance!r} not found in instances: no deletecommand to redo.")
+                continue
+            RobustRootLogger().debug(f"Redo delete: {instance!r}")
+            if isinstance(self.editor, GITEditor):
+                self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
+            else:
+                self.editor.setSelection([instance])
+            self.editor.deleteSelected(noUndoStack=True)
         self.rebuildInstanceList()
 
 
@@ -693,8 +699,8 @@ class GITEditor(Editor):
     def selectUnderneath(self):
         self._mode.selectUnderneath()
 
-    def deleteSelected(self):
-        self._mode.deleteSelected()
+    def deleteSelected(self, *, noUndoStack: bool = False):
+        self._mode.deleteSelected(noUndoStack=noUndoStack)
 
     def duplicateSelected(self, position: Vector3):
         self._mode.duplicateSelected(position)
@@ -791,7 +797,7 @@ class _Mode(ABC):
         self._git: GIT = git
 
         self._ui = editor.ui
-        self.walkmeshRenderer = editor.ui.renderArea if isinstance(editor, GITEditor) else editor.ui.flatRenderer
+        self.renderer2d = editor.ui.renderArea if isinstance(editor, GITEditor) else editor.ui.flatRenderer
 
     def listWidget(self):
         return self._ui.listWidget if isinstance(self._editor, GITEditor) else self._ui.instanceList
@@ -815,7 +821,7 @@ class _Mode(ABC):
     def selectUnderneath(self): ...
 
     @abstractmethod
-    def deleteSelected(self): ...
+    def deleteSelected(self, *, noUndoStack: bool = False): ...
 
     @abstractmethod
     def duplicateSelected(self, position: Vector3): ...
@@ -830,13 +836,13 @@ class _Mode(ABC):
     def rotateSelectedToPoint(self, x: float, y: float): ...
 
     def moveCamera(self, x: float, y: float):
-        self.walkmeshRenderer.camera.nudgePosition(x, y)
+        self.renderer2d.camera.nudgePosition(x, y)
 
     def zoomCamera(self, amount: float):
-        self.walkmeshRenderer.camera.nudgeZoom(amount)
+        self.renderer2d.camera.nudgeZoom(amount)
 
     def rotateCamera(self, angle: float):
-        self.walkmeshRenderer.camera.nudgeRotation(angle)
+        self.renderer2d.camera.nudgeRotation(angle)
 
     @abstractmethod
     def updateStatusBar(self, world: Vector2): ...
@@ -853,8 +859,8 @@ class _InstanceMode(_Mode):
     ):
         super().__init__(editor, installation, git)
         RobustRootLogger().debug("init InstanceMode")
-        self.walkmeshRenderer.hideGeomPoints = True
-        self.walkmeshRenderer.geometrySelection.clear()
+        self.renderer2d.hideGeomPoints = True
+        self.renderer2d.geometrySelection.clear()
         self.updateVisibility()
 
     def setSelection(self, instances: list[GITInstance]):
@@ -872,7 +878,7 @@ class _InstanceMode(_Mode):
             - Loop through list widget items and select matching instances
             - Unblock list widget signals.
         """
-        self.walkmeshRenderer.instanceSelection.select(instances)
+        self.renderer2d.instanceSelection.select(instances)
 
         # set the list widget selection
         self.listWidget().blockSignals(True)
@@ -900,7 +906,7 @@ class _InstanceMode(_Mode):
             - Opens an instance dialog to edit the selected instance properties
             - Rebuilds the instance list after editing.
         """
-        selection: list[GITInstance] = self.walkmeshRenderer.instanceSelection.all()
+        selection: list[GITInstance] = self.renderer2d.instanceSelection.all()
 
         if selection:
             instance: GITInstance = selection[-1]
@@ -918,7 +924,7 @@ class _InstanceMode(_Mode):
             - Checks if the path contains "override" or is in the module root
             - Opens the resource editor with the file if a path is found.
         """
-        selection: list[GITInstance] = self.walkmeshRenderer.instanceSelection.all()
+        selection: list[GITInstance] = self.renderer2d.instanceSelection.all()
 
         if not selection:
             return
@@ -959,13 +965,13 @@ class _InstanceMode(_Mode):
             )
 
     def editSelectedInstanceGeometry(self):
-        if self.walkmeshRenderer.instanceSelection.last():
-            self.walkmeshRenderer.instanceSelection.last()
+        if self.renderer2d.instanceSelection.last():
+            self.renderer2d.instanceSelection.last()
             self._editor.enterGeometryMode()
 
     def editSelectedInstanceSpawns(self):
-        if self.walkmeshRenderer.instanceSelection.last():
-            self.walkmeshRenderer.instanceSelection.last()
+        if self.renderer2d.instanceSelection.last():
+            self.renderer2d.instanceSelection.last()
             # TODO
             #self._editor.enterSpawnMode()
 
@@ -1125,7 +1131,7 @@ class _InstanceMode(_Mode):
 
     # region Interface Methods
     def onFilterEdited(self, text: str):
-        self.walkmeshRenderer.instanceFilter = text
+        self.renderer2d.instanceFilter = text
         self.buildList()
 
     def onItemSelectionChanged(self, item: QListWidgetItem):
@@ -1135,8 +1141,8 @@ class _InstanceMode(_Mode):
             self.setSelection([item.data(QtCore.Qt.ItemDataRole.UserRole)])
 
     def updateStatusBar(self, world: Vector2):
-        if self.walkmeshRenderer.instancesUnderMouse() and self.walkmeshRenderer.instancesUnderMouse()[-1] is not None:
-            instance = self.walkmeshRenderer.instancesUnderMouse()[-1]
+        if self.renderer2d.instancesUnderMouse() and self.renderer2d.instancesUnderMouse()[-1] is not None:
+            instance = self.renderer2d.instancesUnderMouse()[-1]
             resname = "" if isinstance(instance, GITCamera) else instance.identifier().resname
             self._editor.statusBar().showMessage(f"({world.x:.1f}, {world.y:.1f}) {resname}")
         else:
@@ -1172,21 +1178,21 @@ class _InstanceMode(_Mode):
         menu.popup(point)
 
     def _getRenderContextMenu(self, world: Vector2, menu: QMenu):
-        underMouse: list[GITInstance] = self.walkmeshRenderer.instancesUnderMouse()
-        if not self.walkmeshRenderer.instanceSelection.isEmpty():
-            self.addInstanceActionsToMenu(self.walkmeshRenderer.instanceSelection.last(), menu)
+        underMouse: list[GITInstance] = self.renderer2d.instancesUnderMouse()
+        if not self.renderer2d.instanceSelection.isEmpty():
+            self.addInstanceActionsToMenu(self.renderer2d.instanceSelection.last(), menu)
         else:
             self.addInsertActionsToMenu(menu, world)
         if underMouse:
             menu.addSeparator()
             for instance in underMouse:
-                icon = QIcon(self.walkmeshRenderer.instancePixmap(instance))
+                icon = QIcon(self.renderer2d.instancePixmap(instance))
                 reference = "" if instance.identifier() is None else instance.identifier().resname
                 index = self._editor.git().index(instance)
 
                 instanceAction = menu.addAction(icon, f"[{index}] {reference}")
                 instanceAction.triggered.connect(lambda _=None, inst=instance: self.setSelection([inst]))
-                instanceAction.setEnabled(instance not in self.walkmeshRenderer.instanceSelection.all())
+                instanceAction.setEnabled(instance not in self.renderer2d.instanceSelection.all())
                 menu.addAction(instanceAction)
 
     def addInsertActionsToMenu(self, menu: QMenu, world: Vector2):
@@ -1206,8 +1212,6 @@ class _InstanceMode(_Mode):
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(simpleTrigger))
 
     def buildList(self):
-        if not isinstance(self._editor, GITEditor):  # module designer check
-            return
         self.listWidget().clear()
 
         def instanceSort(inst: GITInstance) -> str:
@@ -1217,30 +1221,30 @@ class _InstanceMode(_Mode):
         instances: list[GITInstance] = sorted(self._git.instances(), key=instanceSort)
         for instance in instances:
             filterSource: str = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
-            isVisible: bool | None = self.walkmeshRenderer.isInstanceVisible(instance)
+            isVisible: bool | None = self.renderer2d.isInstanceVisible(instance)
             isFiltered: bool = self._ui.filterEdit.text().lower() in filterSource.lower()
 
             if isVisible and isFiltered:
-                icon = QIcon(self.walkmeshRenderer.instancePixmap(instance))
+                icon = QIcon(self.renderer2d.instancePixmap(instance))
                 item = QListWidgetItem(icon, "")
                 self.setListItemLabel(item, instance)
                 self.listWidget().addItem(item)
 
     def updateVisibility(self):
-        self.walkmeshRenderer.hideCreatures = not self._ui.viewCreatureCheck.isChecked()
-        self.walkmeshRenderer.hidePlaceables = not self._ui.viewPlaceableCheck.isChecked()
-        self.walkmeshRenderer.hideDoors = not self._ui.viewDoorCheck.isChecked()
-        self.walkmeshRenderer.hideTriggers = not self._ui.viewTriggerCheck.isChecked()
-        self.walkmeshRenderer.hideEncounters = not self._ui.viewEncounterCheck.isChecked()
-        self.walkmeshRenderer.hideWaypoints = not self._ui.viewWaypointCheck.isChecked()
-        self.walkmeshRenderer.hideSounds = not self._ui.viewSoundCheck.isChecked()
-        self.walkmeshRenderer.hideStores = not self._ui.viewStoreCheck.isChecked()
-        self.walkmeshRenderer.hideCameras = not self._ui.viewCameraCheck.isChecked()
+        self.renderer2d.hideCreatures = not self._ui.viewCreatureCheck.isChecked()
+        self.renderer2d.hidePlaceables = not self._ui.viewPlaceableCheck.isChecked()
+        self.renderer2d.hideDoors = not self._ui.viewDoorCheck.isChecked()
+        self.renderer2d.hideTriggers = not self._ui.viewTriggerCheck.isChecked()
+        self.renderer2d.hideEncounters = not self._ui.viewEncounterCheck.isChecked()
+        self.renderer2d.hideWaypoints = not self._ui.viewWaypointCheck.isChecked()
+        self.renderer2d.hideSounds = not self._ui.viewSoundCheck.isChecked()
+        self.renderer2d.hideStores = not self._ui.viewStoreCheck.isChecked()
+        self.renderer2d.hideCameras = not self._ui.viewCameraCheck.isChecked()
         self.buildList()
 
     def selectUnderneath(self):
-        underMouse: list[GITInstance] = self.walkmeshRenderer.instancesUnderMouse()
-        selection: list[GITInstance] = self.walkmeshRenderer.instanceSelection.all()
+        underMouse: list[GITInstance] = self.renderer2d.instancesUnderMouse()
+        selection: list[GITInstance] = self.renderer2d.instanceSelection.all()
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
@@ -1253,24 +1257,30 @@ class _InstanceMode(_Mode):
             self.setSelection([])
 
     def deleteSelected(self, *, noUndoStack: bool = False):
-        selection = self.walkmeshRenderer.instanceSelection.all()
+        selection = self.renderer2d.instanceSelection.all()
         if not noUndoStack:
-            self._editor._controls.undoStack.push(DeleteCommand(self._git, selection, self._editor))
-        for instance in selection:
-            self._git.remove(instance)
-            self.walkmeshRenderer.instanceSelection.remove(instance)
+            undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
+            undoStack.push(DeleteCommand(self._git, selection.copy(), self._editor))
+        else:
+            for instance in selection:
+                self._git.remove(instance)
+                self.renderer2d.instanceSelection.remove(instance)
         self.buildList()
 
     def duplicateSelected(self, position: Vector3, *, noUndoStack: bool = False):
-        selection = self.walkmeshRenderer.instanceSelection.all()
-        if not noUndoStack:
-            self._editor._controls.undoStack.push(DuplicateCommand(self._git, selection, self._editor))
+        selection = self.renderer2d.instanceSelection.all()
         if selection:
-            instance: GITInstance = deepcopy(self.walkmeshRenderer.instanceSelection.all()[-1])
+            instance: GITInstance = deepcopy(selection[-1])
+            if isinstance(instance, GITCamera):
+                instance.camera_id = self._editor.git().next_camera_id()
             instance.position = position
-            self._git.add(instance)
-            self.buildList()
-            self.setSelection([instance])
+            if not noUndoStack:
+                undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
+                undoStack.push(DuplicateCommand(self._git, [instance], self._editor))
+            else:
+                self._git.add(instance)
+                self.buildList()
+                self.setSelection([instance])
 
     def moveSelected(
         self,
@@ -1283,16 +1293,17 @@ class _InstanceMode(_Mode):
             RobustRootLogger().info("Ignoring moveSelected for instancemode, lockInstancesCheck is checked.")
             return
 
-        for instance in self.walkmeshRenderer.instanceSelection.all():
+        for instance in self.renderer2d.instanceSelection.all():
             instance.move(x, y, 0)
 
     def rotateSelected(self, angle: float):
-        for instance in self.walkmeshRenderer.instanceSelection.all():
-            instance.rotate(angle, 0, 0)
+        for instance in self.renderer2d.instanceSelection.all():
+            if isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
+                instance.rotate(angle, 0, 0)
 
     def rotateSelectedToPoint(self, x: float, y: float):
         rotation_threshold = 0.05  # Threshold for rotation changes, adjust as needed
-        for instance in self.walkmeshRenderer.instanceSelection.all():
+        for instance in self.renderer2d.instanceSelection.all():
             current_angle = -math.atan2(x - instance.position.x, y - instance.position.y)
             current_angle = (current_angle + math.pi) % (2 * math.pi) - math.pi  # Normalize to -π to π
 
@@ -1308,7 +1319,7 @@ class _InstanceMode(_Mode):
 
             if isinstance(instance, GITCamera):
                 instance.rotate(yaw - current_angle, 0, 0)
-            else:
+            elif isinstance(instance, (GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                 instance.rotate(-yaw + current_angle, 0, 0)
 
     # endregion
@@ -1326,30 +1337,30 @@ class _GeometryMode(_Mode):
         super().__init__(editor, installation, git)
 
         if hideOthers:
-            self.walkmeshRenderer.hideCreatures = True
-            self.walkmeshRenderer.hideDoors = True
-            self.walkmeshRenderer.hidePlaceables = True
-            self.walkmeshRenderer.hideSounds = True
-            self.walkmeshRenderer.hideStores = True
-            self.walkmeshRenderer.hideCameras = True
-            self.walkmeshRenderer.hideTriggers = True
-            self.walkmeshRenderer.hideEncounters = True
-            self.walkmeshRenderer.hideWaypoints = True
+            self.renderer2d.hideCreatures = True
+            self.renderer2d.hideDoors = True
+            self.renderer2d.hidePlaceables = True
+            self.renderer2d.hideSounds = True
+            self.renderer2d.hideStores = True
+            self.renderer2d.hideCameras = True
+            self.renderer2d.hideTriggers = True
+            self.renderer2d.hideEncounters = True
+            self.renderer2d.hideWaypoints = True
         else:
-            self.walkmeshRenderer.hideEncounters = False
-            self.walkmeshRenderer.hideTriggers = False
-        self.walkmeshRenderer.hideGeomPoints = False
+            self.renderer2d.hideEncounters = False
+            self.renderer2d.hideTriggers = False
+        self.renderer2d.hideGeomPoints = False
 
     def insertPointAtMouse(self):
-        screen: QPoint = self.walkmeshRenderer.mapFromGlobal(self._editor.cursor().pos())
-        world: Vector3 = self.walkmeshRenderer.toWorldCoords(screen.x(), screen.y())
+        screen: QPoint = self.renderer2d.mapFromGlobal(self._editor.cursor().pos())
+        world: Vector3 = self.renderer2d.toWorldCoords(screen.x(), screen.y())
 
-        instance: GITTrigger | GITEncounter = self.walkmeshRenderer.instanceSelection.get(0)
+        instance: GITTrigger | GITEncounter = self.renderer2d.instanceSelection.get(0)
         point: Vector3 = world - instance.position
         new_geom_point = GeomPoint(instance, point)
         instance.geometry.append(point)
-        self.walkmeshRenderer.geomPointsUnderMouse().append(new_geom_point)
-        self.walkmeshRenderer.geometrySelection._selection.append(new_geom_point)
+        self.renderer2d.geomPointsUnderMouse().append(new_geom_point)
+        self.renderer2d.geometrySelection._selection.append(new_geom_point)
         RobustRootLogger().debug(f"inserting a new geompoint under mouse for instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
 
     # region Interface Methods
@@ -1360,7 +1371,7 @@ class _GeometryMode(_Mode):
         pass
 
     def updateStatusBar(self, world: Vector2):
-        instance: GITInstance | None = self.walkmeshRenderer.instanceSelection.last()
+        instance: GITInstance | None = self.renderer2d.instanceSelection.last()
         if instance:
             self._editor.statusBar().showMessage(f"({world.x:.1f}, {world.y:.1f}) Editing Geometry of {instance.identifier().resname}")
 
@@ -1370,10 +1381,10 @@ class _GeometryMode(_Mode):
         menu.popup(screen)
 
     def _getRenderContextMenu(self, world: Vector2, menu: QMenu):
-        if not self.walkmeshRenderer.geometrySelection.isEmpty():
+        if not self.renderer2d.geometrySelection.isEmpty():
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
-        if self.walkmeshRenderer.geometrySelection.count() == 0:
+        if self.renderer2d.geometrySelection.count() == 0:
             menu.addAction("Insert").triggered.connect(self.insertPointAtMouse)
 
         menu.addSeparator()
@@ -1386,29 +1397,29 @@ class _GeometryMode(_Mode):
         pass
 
     def selectUnderneath(self):
-        underMouse: list[GeomPoint] = self.walkmeshRenderer.geomPointsUnderMouse()
-        selection: list[GeomPoint] = self.walkmeshRenderer.geometrySelection.all()
+        underMouse: list[GeomPoint] = self.renderer2d.geomPointsUnderMouse()
+        selection: list[GeomPoint] = self.renderer2d.geometrySelection.all()
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
             RobustRootLogger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
-        self.walkmeshRenderer.geometrySelection.select(underMouse or [])
+        self.renderer2d.geometrySelection.select(underMouse or [])
 
-    def deleteSelected(self):
-        vertex: GeomPoint | None = self.walkmeshRenderer.geometrySelection.last()
+    def deleteSelected(self, *, noUndoStack: bool = False):
+        vertex: GeomPoint | None = self.renderer2d.geometrySelection.last()
         if vertex is None:
             RobustRootLogger().error("Could not delete last GeomPoint, there's none selected.")
             return
         instance: GITInstance = vertex.instance
         RobustRootLogger().debug(f"Removing last geometry point for instance {instance.identifier()}")
-        self.walkmeshRenderer.geometrySelection.remove(GeomPoint(instance, vertex.point))
+        self.renderer2d.geometrySelection.remove(GeomPoint(instance, vertex.point))
 
     def duplicateSelected(self, position: Vector3):
         pass
 
     def moveSelected(self, x: float, y: float):
-        for vertex in self.walkmeshRenderer.geometrySelection.all():
+        for vertex in self.renderer2d.geometrySelection.all():
             vertex.point.x += x
             vertex.point.y += y
 
@@ -1523,7 +1534,7 @@ class GITControlScheme:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     def onMouseMoved(
@@ -1558,8 +1569,9 @@ class GITControlScheme:
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldPanCamera or shouldRotateCamera:
             if shouldPanCamera:
+                self.editor.ui.renderArea.doCursorLock(screen)
                 moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-                RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+                #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
                 self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
             if shouldRotateCamera:
                 self._handleCameraRotation(screenDelta)
@@ -1567,8 +1579,8 @@ class GITControlScheme:
 
         if self.moveSelected.satisfied(buttons, keys):
             if not self.isDragMoving and isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                RobustRootLogger().debug("moveSelected instance GITControlScheme")
-                selection: list[GITInstance] = self.editor._mode.walkmeshRenderer.instanceSelection.all()  # noqa: SLF001
+                #RobustRootLogger().debug("moveSelected instance GITControlScheme")
+                selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
                 self.initialPositions = {instance: Vector3(*instance.position) for instance in selection}
                 self.isDragMoving = True
             self.editor.moveSelected(worldDelta.x, worldDelta.y)
@@ -1578,14 +1590,13 @@ class GITControlScheme:
                 and not self.editor.ui.lockInstancesCheck.isChecked()
                 and isinstance(self.editor._mode, _InstanceMode)  # noqa: SLF001
             ):
+                self.isDragRotating = True
                 self.log.debug("rotateSelected instance in GITControlScheme")
-                selection: list[GITInstance] = self.editor._mode.walkmeshRenderer.instanceSelection.all()  # noqa: SLF001
+                selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
                 for instance in selection:
                     if not isinstance(instance, (GITCamera, GITCreature, GITDoor, GITPlaceable, GITStore, GITWaypoint)):
                         continue  # doesn't support rotations.
                     self.initialRotations[instance] = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
-                self.log.debug("GITControlScheme rotate set isDragRotating")
-                self.isDragRotating = True
             self.editor.rotateSelectedToPoint(world.x, world.y)
 
     def _handleCameraRotation(self, screenDelta: Vector2):
@@ -1597,7 +1608,7 @@ class GITControlScheme:
         rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
         rotateAmount = delta_magnitude * rotateSens
         rotateAmount *= direction
-        RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+        #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
         self.editor.rotateCamera(rotateAmount)
 
     def handleUndoRedoFromLongActionFinished(self):
@@ -1623,7 +1634,7 @@ class GITControlScheme:
             for instance, old_rotation in self.initialRotations.items():
                 new_rotation = instance.orientation if isinstance(instance, GITCamera) else instance.bearing
                 if old_rotation and new_rotation != old_rotation:
-                    self.log.debug("Create the RotateCommand for undo/redo functionality")
+                    self.log.debug(f"Create the RotateCommand for undo/redo functionality: {instance!r}")
                     self.undoStack.push(RotateCommand(instance, old_rotation, new_rotation))
                 elif not old_rotation:
                     self.log.debug("No old rotation for %s", instance.resref)
@@ -1636,15 +1647,11 @@ class GITControlScheme:
             self.isDragRotating = False
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]):
-        if self.selectUnderneath.satisfied(buttons, keys):
-            self.editor.selectUnderneath()
         if self.duplicateSelected.satisfied(buttons, keys):
             position = self.editor.ui.renderArea.toWorldCoords(screen.x, screen.y)
-            if isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                selection: list[GITInstance] = self.editor._mode.walkmeshRenderer.instanceSelection.all()  # noqa: SLF001
-                if selection:
-                    self.undoStack.push(DuplicateCommand(self.editor._git, selection, self.editor))  # noqa: SLF001
             self.editor.duplicateSelected(position)
+        if self.selectUnderneath.satisfied(buttons, keys):
+            self.editor.selectUnderneath()
 
     def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]):
         self.handleUndoRedoFromLongActionFinished()
@@ -1652,10 +1659,10 @@ class GITControlScheme:
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
         if self.deleteSelected.satisfied(buttons, keys):
             if isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                selection: list[GITInstance] = self.editor._mode.walkmeshRenderer.instanceSelection.all()  # noqa: SLF001
+                selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
                 if selection:
-                    self.undoStack.push(DeleteCommand(self.editor._git, selection, self.editor))  # noqa: SLF001
-            self.editor.deleteSelected()
+                    self.undoStack.push(DeleteCommand(self.editor._git, selection.copy(), self.editor))  # noqa: SLF001
+            self.editor.deleteSelected(noUndoStack=True)
 
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())

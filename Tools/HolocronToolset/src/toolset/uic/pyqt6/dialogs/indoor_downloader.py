@@ -28,3 +28,5 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Kit Downloader"))
         self.groupBox.setTitle(_translate("Dialog", "Available Kits"))
+
+from toolset.rcc import resources_rc_pyqt6

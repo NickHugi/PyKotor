@@ -896,3 +896,5 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionSetTLK.setText(_translate("MainWindow", "Set TLK"))
+
+from toolset.rcc import resources_rc_pyqt6

@@ -79,16 +79,24 @@ def start_shutdown_process():
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startupinfo.wShowWindow = subprocess.SW_HIDE
     else:
+        main_pid = os.getpid()
         os.fork()
-    creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
-    if not is_frozen():
-        subprocess.Popen(
-            [sys.executable, "-c", f"from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"],  # noqa: S603
-            creationflags=creationflags, start_new_session=True, env=env, startupinfo=startupinfo
-        )
-    else:
+        shutdown_main_process(main_pid)
+        return
+
+    if is_frozen():
         import multiprocessing
         multiprocessing.Process(target=shutdown_main_process, args=(os.getpid(),))
+    elif os.name == "nt":
+        subprocess.Popen(
+            [sys.executable, "-c", f"from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"],  # noqa: S603
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW, start_new_session=True, env=env, startupinfo=startupinfo
+        )
+    else:  # keep in case we end up needing to enable this logic later.
+        subprocess.Popen(
+            [sys.executable, "-c", f"from utility.system.os_helper import shutdown_main_process; shutdown_main_process({os.getpid()})"],  # noqa: S603
+            start_new_session=True, env=env, startupinfo=startupinfo
+        )
 
 
 def shutdown_main_process(main_pid: int, *, timeout: int = 3):

@@ -915,3 +915,5 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionReloadTree.setText(_translate("MainWindow", "Reload Tree"))
         self.actionUnfocus.setText(_translate("MainWindow", "Unfocus Tree"))
+
+from toolset.rcc import resources_rc_pyqt6

@@ -75,3 +75,5 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionLoadWalkmesh.setText(_translate("MainWindow", "Load Walkmesh"))
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
+
+from toolset.rcc import resources_rc_pyqt6

@@ -105,3 +105,5 @@ class Ui_MainWindow(object):
         self.menuTools.setTitle(_translate("MainWindow", "&Tools"))
         self.actionRebuildCachedModules.setText(_translate("MainWindow", "Rebuild cached modules"))
         self.actionFlushEventQueue.setText(_translate("MainWindow", "Flush EventQueue"))
+
+from toolset.rcc import resources_rc_pyqt6

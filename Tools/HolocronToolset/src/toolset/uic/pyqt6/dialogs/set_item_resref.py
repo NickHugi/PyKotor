@@ -32,3 +32,5 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Set Item ResRef"))
+
+from toolset.rcc import resources_rc_pyqt6

@@ -179,7 +179,7 @@ class InstallationConfig:
     def path(self) -> str:
         try:
             installation = self._settings.value("installations", {})[self._name]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
         else:
             return installation.get("path", "")
@@ -243,7 +243,7 @@ class GlobalSettings(Settings):
         The installations dictionary is then saved back to the user settings.
         """
         RobustRootLogger.info("First time user, attempt auto-detection of currently installed KOTOR paths.")
-        self.extractPath = str(get_log_directory(f"{uuid.uuid4()}_extract"))
+        self.extractPath = str(get_log_directory(f"{uuid.uuid4().hex[:7]}_extract"))
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
         # Create a set of existing paths
         existing_paths: set[CaseAwarePath] = {CaseAwarePath(inst["path"]) for inst in installations.values()}
@@ -272,6 +272,10 @@ class GlobalSettings(Settings):
         self.firstTime = False
 
     # region Strings
+    recentFiles = Settings.addSetting(
+        "recentFiles",
+        [],
+    )
     extractPath = Settings.addSetting(
         "extractPath",
         "",
@@ -309,10 +313,6 @@ class GlobalSettings(Settings):
     )
     useBetaChannel = Settings.addSetting(
         "useBetaChannel",
-        True,
-    )
-    alsoCheckReleaseVersion = Settings.addSetting(
-        "alsoCheckReleaseVersion",
         True,
     )
     firstTime = Settings.addSetting(

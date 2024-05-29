@@ -69,3 +69,5 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Edit Trigger"))
         self.label.setText(_translate("Dialog", "Position:"))
         self.label_2.setText(_translate("Dialog", "ResRef:"))
+
+from toolset.rcc import resources_rc_pyqt5

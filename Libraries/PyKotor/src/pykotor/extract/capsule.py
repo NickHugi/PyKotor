@@ -608,13 +608,20 @@ class Capsule(LazyCapsule):
         self._resources = super().resources()
         self._internal = False
 
+    def delete(
+        self,
+        resname: str,
+        restype: ResourceType,
+    ):
+        result = super().delete(resname, restype)
+        self.reload()
+        return result
+
     def add(
         self,
         resname: str,
         restype: ResourceType,
         resdata: bytes,
-        *,
-        reload: bool = True,
     ):
         """Adds a resource to the capsule and writes the updated capsule to the disk.
 
@@ -635,6 +642,6 @@ class Capsule(LazyCapsule):
             - Calls set_data to add the resource
             - Writes the container back to the file.
         """
-        if reload:
-            self.reload()
-        return super().add(resname, restype, resdata)
+        result = super().add(resname, restype, resdata)
+        self.reload()
+        return result

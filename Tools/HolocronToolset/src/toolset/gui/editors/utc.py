@@ -19,6 +19,7 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_capsule_file
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
@@ -69,7 +70,7 @@ class UTCEditor(Editor):
             - Updates 3D preview
             - Creates new empty creature.
         """
-        supported: list[ResourceType] = [ResourceType.UTC]
+        supported: list[ResourceType] = [ResourceType.UTC, ResourceType.BTC, ResourceType.BIC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainWindow)
 
         self.settings: UTCSettings = UTCSettings()
@@ -173,6 +174,18 @@ class UTCEditor(Editor):
         classes = installation.htGetCache2DA(HTInstallation.TwoDA_CLASSES)
         feats = installation.htGetCache2DA(HTInstallation.TwoDA_FEATS)
         powers = installation.htGetCache2DA(HTInstallation.TwoDA_POWERS)
+
+        self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_APPEARANCES)
+        self.ui.soundsetSelect.setContext(soundsets, self._installation, HTInstallation.TwoDA_SOUNDSETS)
+        self.ui.portraitSelect.setContext(portraits, self._installation, HTInstallation.TwoDA_PORTRAITS)
+        self.ui.subraceSelect.setContext(subraces, self._installation, HTInstallation.TwoDA_SUBRACES)
+        self.ui.speedSelect.setContext(speeds, self._installation, HTInstallation.TwoDA_SPEEDS)
+        self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
+        self.ui.genderSelect.setContext(genders, self._installation, HTInstallation.TwoDA_GENDERS)
+        self.ui.perceptionSelect.setContext(perceptions, self._installation, HTInstallation.TwoDA_PERCEPTIONS)
+        self.ui.class1Select.setContext(classes, self._installation, HTInstallation.TwoDA_CLASSES)
+        self.ui.class2Select.setContext(classes, self._installation, HTInstallation.TwoDA_CLASSES)
+        self.ui.raceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_RACES)
 
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.soundsetSelect.setItems(soundsets.get_column("label"))
@@ -623,7 +636,7 @@ class UTCEditor(Editor):
         inventoryEditor = InventoryEditor(
             self,
             self._installation,
-            Module.get_capsules(self._installation, Module.find_root(self._filepath.name)),
+            Module.find_capsules(self._installation, self._filepath.name) if is_capsule_file(self._filepath) else [],
             [],
             self._utc.inventory,
             self._utc.equipment,

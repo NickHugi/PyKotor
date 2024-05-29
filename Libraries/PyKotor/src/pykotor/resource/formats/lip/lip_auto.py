@@ -98,13 +98,13 @@ def read_lip(
     """
     file_format = detect_lip(source, offset)
 
-    if file_format == ResourceType.LIP:
+    if file_format is ResourceType.LIP:
         return LIPBinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.LIP_XML:
+    if file_format is ResourceType.LIP_XML:
         return LIPXMLReader(source, offset, size or 0).load()
-    if file_format == ResourceType.LIP_JSON:
+    if file_format is ResourceType.LIP_JSON:
         return LIPJSONReader(source, offset, size or 0).load()
-    # if file_format == ResourceType.INVALID:
+    # if file_format is ResourceType.INVALID:
     msg = "Failed to determine the format of the GFF file."
     raise ValueError(msg)
 
@@ -128,11 +128,11 @@ def write_lip(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.LIP:
+    if file_format is ResourceType.LIP:
         LIPBinaryWriter(lip, target).write()
-    elif file_format == ResourceType.LIP_XML:
+    elif file_format is ResourceType.LIP_XML:
         LIPXMLWriter(lip, target).write()
-    elif file_format == ResourceType.LIP_JSON:
+    elif file_format is ResourceType.LIP_JSON:
         LIPJSONWriter(lip, target).write()
     else:
         msg = "Unsupported format specified; use LIP or LIP_XML or LIP_JSON."

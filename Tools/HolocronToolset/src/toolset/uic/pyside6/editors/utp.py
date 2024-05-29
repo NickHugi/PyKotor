@@ -730,3 +730,5 @@ class Ui_MainWindow(object):
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"View", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside6

@@ -74,3 +74,5 @@ class Ui_Form(object):
         self.label_11.setText(_translate("Form", "Name:"))
         self.label_12.setText(_translate("Form", "Path:"))
         self.label_13.setText(_translate("Form", "TSL:"))
+
+from toolset.rcc import resources_rc_pyqt6

@@ -85,3 +85,5 @@ class Ui_Dialog(object):
         self.label.setText(_translate("Dialog", "ResRef:"))
         self.label_2.setText(_translate("Dialog", "Position:"))
         self.label_3.setText(_translate("Dialog", "Rotation:"))
+
+from toolset.rcc import resources_rc_pyqt6

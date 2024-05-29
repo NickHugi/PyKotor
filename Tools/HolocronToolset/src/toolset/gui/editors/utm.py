@@ -47,7 +47,7 @@ class UTMEditor(Editor):
             - Loads data from the provided installation if given
             - Calls new() to start with a blank merchant
         """
-        supported: list[ResourceType] = [ResourceType.UTM]
+        supported: list[ResourceType] = [ResourceType.UTM, ResourceType.BTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
         self._utm: UTM = UTM()

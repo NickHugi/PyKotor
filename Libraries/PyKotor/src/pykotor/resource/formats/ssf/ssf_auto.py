@@ -97,13 +97,13 @@ def read_ssf(
     """
     file_format: ResourceType = detect_ssf(source, offset)
 
-    if file_format == ResourceType.INVALID:
+    if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the GFF file."
         raise ValueError(msg)
 
-    if file_format == ResourceType.SSF:
+    if file_format is ResourceType.SSF:
         return SSFBinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.SSF_XML:
+    if file_format is ResourceType.SSF_XML:
         return SSFXMLReader(source, offset, size or 0).load()
     msg = "Failed to determine the format of the GFF file."
     raise ValueError(msg)
@@ -128,9 +128,9 @@ def write_ssf(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.SSF:
+    if file_format is ResourceType.SSF:
         SSFBinaryWriter(ssf, target).write()
-    elif file_format == ResourceType.SSF_XML:
+    elif file_format is ResourceType.SSF_XML:
         SSFXMLWriter(ssf, target).write()
     else:
         msg = "Unsupported format specified; use SSF or SSF_XML."

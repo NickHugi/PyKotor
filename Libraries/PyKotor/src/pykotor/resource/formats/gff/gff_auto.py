@@ -98,13 +98,13 @@ def read_gff(
     """
     file_format = detect_gff(source, offset)
 
-    if file_format == ResourceType.GFF:
+    if file_format is ResourceType.GFF:
         return GFFBinaryReader(source, offset, size or 0).load()
-    if file_format == ResourceType.GFF_XML:
+    if file_format is ResourceType.GFF_XML:
         return GFFXMLReader(source, offset, size or 0).load()
 
     msg = "Failed to determine the format of the GFF file."
-    # if file_format == ResourceType.INVALID:
+    # if file_format is ResourceType.INVALID:
     raise ValueError(msg)
 
 
@@ -127,9 +127,9 @@ def write_gff(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.GFF:
+    if file_format is ResourceType.GFF:
         GFFBinaryWriter(gff, target).write()
-    elif file_format == ResourceType.GFF_XML:
+    elif file_format is ResourceType.GFF_XML:
         GFFXMLWriter(gff, target).write()
     else:
         msg = "Unsupported format specified; use GFF or GFF_XML."

@@ -101,9 +101,9 @@ def read_tpc(
     """
     file_format: ResourceType = detect_tpc(source, offset)
 
-    if file_format == ResourceType.TPC:
+    if file_format is ResourceType.TPC:
         loaded_tpc = TPCBinaryReader(source, offset, size or 0).load()
-    elif file_format == ResourceType.TGA:
+    elif file_format is ResourceType.TGA:
         loaded_tpc = TPCTGAReader(source, offset, size or 0).load()
     else:
         msg = "Failed to determine the format of the TPC/TGA file."
@@ -143,11 +143,11 @@ def write_tpc(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.TGA:
+    if file_format is ResourceType.TGA:
         TPCTGAWriter(tpc, target).write()
-    elif file_format == ResourceType.BMP:
+    elif file_format is ResourceType.BMP:
         TPCBMPWriter(tpc, target).write()
-    elif file_format == ResourceType.TPC:
+    elif file_format is ResourceType.TPC:
         TPCBinaryWriter(tpc, target).write()
     else:
         msg = "Unsupported format specified; use TPC, TGA or BMP."

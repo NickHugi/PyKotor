@@ -12,13 +12,40 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from toolset.gui.widgets.renderer.model import ModelRenderer
+
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
-        Dialog.resize(360, 447)
-        self.verticalLayout = QVBoxLayout(Dialog)
+        Dialog.resize(400, 447)
+        self.horizontalLayout = QHBoxLayout(Dialog)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.sidebarLayout = QVBoxLayout()
+        self.sidebarLayout.setObjectName(u"sidebarLayout")
+        self.dynamicTextLabel = QLabel(Dialog)
+        self.dynamicTextLabel.setObjectName(u"dynamicTextLabel")
+
+        self.sidebarLayout.addWidget(self.dynamicTextLabel)
+
+        self.staticTextLabel = QLabel(Dialog)
+        self.staticTextLabel.setObjectName(u"staticTextLabel")
+
+        self.sidebarLayout.addWidget(self.staticTextLabel)
+
+        self.previewRenderer = ModelRenderer(Dialog)
+        self.previewRenderer.setObjectName(u"previewRenderer")
+        self.previewRenderer.setMinimumSize(QSize(350, 0))
+        self.previewRenderer.setMouseTracking(True)
+        self.previewRenderer.setFocusPolicy(Qt.StrongFocus)
+
+        self.sidebarLayout.addWidget(self.previewRenderer)
+
+
+        self.horizontalLayout.addLayout(self.sidebarLayout)
+
+        self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.formLayout = QFormLayout()
         self.formLayout.setObjectName(u"formLayout")
@@ -94,6 +121,9 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.buttonBox)
 
 
+        self.horizontalLayout.addLayout(self.verticalLayout)
+
+
         self.retranslateUi(Dialog)
         self.buttonBox.accepted.connect(Dialog.accept)
         self.buttonBox.rejected.connect(Dialog.reject)
@@ -103,6 +133,8 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"Insert Instance", None))
+        self.dynamicTextLabel.setText(QCoreApplication.translate("Dialog", u"Dynamic Text", None))
+        self.staticTextLabel.setText(QCoreApplication.translate("Dialog", u"Selected Resource", None))
         self.label.setText(QCoreApplication.translate("Dialog", u"ResRef:", None))
         self.label_2.setText(QCoreApplication.translate("Dialog", u"Location:", None))
         self.reuseResourceRadio.setText(QCoreApplication.translate("Dialog", u"Reuse Resource", None))
@@ -112,3 +144,5 @@ class Ui_Dialog(object):
         self.resourceFilter.setPlaceholderText(QCoreApplication.translate("Dialog", u"search...", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

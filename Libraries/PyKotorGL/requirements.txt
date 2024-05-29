@@ -1,5 +1,5 @@
 #PyKotor==1.5.4
-setuptools>=57.4.0
+setuptools>=57.4.0,<70  # 70.0.0 and higher breaks pyinstaller
 numpy~=1.21      # PyKotorGL ( TODO: Find out if we need exactly 1.22.2 )
 PyOpenGL~=3.1    # PyKotorGL ( might need 3.1.6 )
 PyGLM>=2.0,<2.8  # PyKotorGL ( might need 2.5.7 )

@@ -353,3 +353,5 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionSetTLK.setText(_translate("MainWindow", "Set TLK"))
 from toolset.gui.widgets.long_spinbox import LongSpinBox
+
+from toolset.rcc import resources_rc_pyqt6

@@ -179,3 +179,5 @@ class Ui_Dialog(object):
         self.cancelButton.setText(QCoreApplication.translate("Dialog", u"Cancel", None))
     # retranslateUi
 
+
+from toolset.rcc import resources_rc_pyside2

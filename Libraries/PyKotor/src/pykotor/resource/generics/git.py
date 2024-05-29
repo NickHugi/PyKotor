@@ -111,6 +111,10 @@ class GIT:
             ]
         )
 
+    def next_camera_id(self) -> int:
+        """Get a unique new camera id for this git to use with a new GITCamera."""
+        return max(camera.camera_id for camera in self.cameras) + 1
+
     def remove(
         self,
         instance: GITInstance,
@@ -246,6 +250,9 @@ class GITInstance(ABC):
         if isinstance(self, GITCamera):
             return f"{self.__class__.__name__}(camera_id={self.camera_id})"
         return f"{self.__class__.__name__}({self.identifier()})"
+
+    def __hash__(self):
+        return hash(self.camera_id if isinstance(self, GITCamera) else self.identifier())
 
     @abstractmethod
     def identifier(self) -> ResourceIdentifier:
@@ -1104,7 +1111,8 @@ def dismantle_git(
         bearing = Vector2.from_angle(creature.bearing + math.pi / 2)
 
         creature_struct = creature_list.add(GITCreature.GFF_STRUCT_ID)
-        creature_struct.set_resref("TemplateResRef", creature.resref)
+        if creature.resref:
+            creature_struct.set_resref("TemplateResRef", creature.resref)
         creature_struct.set_single("XOrientation", bearing.x)
         creature_struct.set_single("YOrientation", bearing.y)
         creature_struct.set_single("XPosition", creature.position.x)
@@ -1116,7 +1124,8 @@ def dismantle_git(
         door_struct = door_list.add(GITDoor.GFF_STRUCT_ID)
         door_struct.set_single("Bearing", door.bearing)
         door_struct.set_string("Tag", door.tag)
-        door_struct.set_resref("TemplateResRef", door.resref)
+        if door.resref:
+            door_struct.set_resref("TemplateResRef", door.resref)
         door_struct.set_string("LinkedTo", door.linked_to)
         door_struct.set_uint8("LinkedToFlags", door.linked_to_flags.value)
         door_struct.set_resref("LinkedToModule", door.linked_to_module)
@@ -1132,7 +1141,8 @@ def dismantle_git(
     encounter_list = root.set_list("Encounter List", GFFList())
     for encounter in git.encounters:
         encounter_struct = encounter_list.add(GITEncounter.GFF_STRUCT_ID)
-        encounter_struct.set_resref("TemplateResRef", encounter.resref)
+        if encounter.resref:
+            encounter_struct.set_resref("TemplateResRef", encounter.resref)
         encounter_struct.set_single("XPosition", encounter.position.x)
         encounter_struct.set_single("YPosition", encounter.position.y)
         encounter_struct.set_single("ZPosition", encounter.position.z)
@@ -1160,7 +1170,8 @@ def dismantle_git(
     for placeable in git.placeables:
         placeable_struct = placeable_list.add(GITPlaceable.GFF_STRUCT_ID)
         placeable_struct.set_single("Bearing", placeable.bearing)
-        placeable_struct.set_resref("TemplateResRef", placeable.resref)
+        if placeable.resref:
+            placeable_struct.set_resref("TemplateResRef", placeable.resref)
         placeable_struct.set_single("X", placeable.position.x)
         placeable_struct.set_single("Y", placeable.position.y)
         placeable_struct.set_single("Z", placeable.position.z)
@@ -1176,7 +1187,8 @@ def dismantle_git(
     for sound in git.sounds:
         sound_struct = sound_list.add(GITSound.GFF_STRUCT_ID)
         sound_struct.set_uint32("GeneratedType", 0)
-        sound_struct.set_resref("TemplateResRef", sound.resref)
+        if sound.resref:
+            sound_struct.set_resref("TemplateResRef", sound.resref)
         sound_struct.set_single("XPosition", sound.position.x)
         sound_struct.set_single("YPosition", sound.position.y)
         sound_struct.set_single("ZPosition", sound.position.z)
@@ -1186,7 +1198,8 @@ def dismantle_git(
         bearing = Vector2.from_angle(store.bearing + math.pi / 2)
 
         store_struct = store_list.add(GITStore.GFF_STRUCT_ID)
-        store_struct.set_resref("ResRef", store.resref)
+        if store.resref:
+            store_struct.set_resref("ResRef", store.resref)
         store_struct.set_single("XOrientation", bearing.x)
         store_struct.set_single("YOrientation", bearing.y)
         store_struct.set_single("XPosition", store.position.x)
@@ -1196,7 +1209,8 @@ def dismantle_git(
     trigger_list = root.set_list("TriggerList", GFFList())
     for trigger in git.triggers:
         trigger_struct = trigger_list.add(GITTrigger.GFF_STRUCT_ID)
-        trigger_struct.set_resref("TemplateResRef", trigger.resref)
+        if trigger.resref:
+            trigger_struct.set_resref("TemplateResRef", trigger.resref)
         trigger_struct.set_single("XPosition", trigger.position.x)
         trigger_struct.set_single("YPosition", trigger.position.y)
         trigger_struct.set_single("ZPosition", trigger.position.z)

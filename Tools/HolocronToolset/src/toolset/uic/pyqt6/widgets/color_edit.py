@@ -43,3 +43,5 @@ class Ui_Form(object):
         Form.setWindowTitle(_translate("Form", "Form"))
         self.editButton.setText(_translate("Form", "Open ColorPicker"))
 from toolset.gui.widgets.long_spinbox import LongSpinBox
+
+from toolset.rcc import resources_rc_pyqt6

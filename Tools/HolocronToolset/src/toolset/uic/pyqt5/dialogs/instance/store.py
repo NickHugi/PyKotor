@@ -76,3 +76,5 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Edit Merchant"))
         self.label.setText(_translate("Dialog", "ResRef:"))
         self.label_2.setText(_translate("Dialog", "Position:"))
+
+from toolset.rcc import resources_rc_pyqt5

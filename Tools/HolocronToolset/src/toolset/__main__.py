@@ -11,9 +11,6 @@ import tempfile
 from contextlib import suppress
 from types import TracebackType
 
-from qtpy.QtCore import QThread
-from qtpy.QtWidgets import QApplication, QMessageBox
-
 
 def is_frozen() -> bool:
     return (
@@ -95,11 +92,12 @@ def set_qt_api():
                 __import__("PySide2.QtCore")
             elif api == "PySide6":
                 __import__("PySide6.QtCore")
-            os.environ["QT_API"] = api
-            print(f"QT_API set to '{api}'.")
-            break
-        except (ImportError, ModuleNotFoundError):  # noqa: S112
+        except (ImportError, ModuleNotFoundError):  # noqa: S112, PERF203
             continue
+        else:
+            os.environ["QT_API"] = api
+            print(f"QT_API auto-resolved as '{api}'.")
+            break
 
 
 def is_running_from_temp() -> bool:
@@ -107,10 +105,33 @@ def is_running_from_temp() -> bool:
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
 
+def qt_cleanup():
+    """Cleanup so we can exit."""
+    from toolset.utils.window import WINDOWS
+    from utility.logger_util import RobustRootLogger
 
-if __name__ == "__main__":
+    RobustRootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
+    for window in WINDOWS:
+        window.close()
+        window.destroy()
+    WINDOWS.clear()
 
-    multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
+def last_resort_cleanup():
+    """Prevents the toolset from running in the background after sys.exit is called..."""
+    from utility.logger_util import RobustRootLogger
+    from utility.system.os_helper import gracefully_shutdown_threads, start_shutdown_process
+
+    RobustRootLogger().info("Fully shutting down Holocron Toolset...")
+    # kill_self_pid()
+    gracefully_shutdown_threads()
+    RobustRootLogger().debug("Starting new shutdown process...")
+    start_shutdown_process()
+    RobustRootLogger().debug("Shutdown process started...")
+
+def main_init():
+    if multiprocessing.current_process() == "MainProcess":
+        multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
+
     if is_frozen():
         from utility.logger_util import RobustRootLogger
 
@@ -119,19 +140,36 @@ if __name__ == "__main__":
         set_qt_api()
     else:
         fix_sys_and_cwd_path()
-        if os.environ.get("QT_API") not in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+        qtpy_case_map: dict[str, str] = {
+            "pyqt5": "PyQt5",
+            "pyqt6": "PyQt6",
+            "pyside2": "PySide2",
+            "pyside6": "PySide6",
+        }
+        case_api_name = qtpy_case_map.get(os.environ.get("QT_API", "").lower().strip())
+        if case_api_name in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+            print(f"QT_API manually set by user to '{case_api_name}'.")
+            os.environ["QT_API"] = case_api_name
+        else:
             set_qt_api()
 
     if os.name == "nt":
         os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
-    os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
-    os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
+
+    from utility.misc import is_debug_mode
+    if not is_debug_mode() or is_frozen():
+        os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
+        os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
 
+
+if __name__ == "__main__":
+    main_init()
+
     from qtpy.QtCore import QThread
-    from qtpy.QtWidgets import QApplication
+    from qtpy.QtWidgets import QApplication, QMessageBox
 
     app = QApplication(sys.argv)
 
@@ -152,29 +190,6 @@ if __name__ == "__main__":
         msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         msgBox.exec_()
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
-
-    def qt_cleanup():
-        """Cleanup so we can exit."""
-        from toolset.utils.window import WINDOWS
-        from utility.logger_util import RobustRootLogger
-
-        RobustRootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
-        for window in WINDOWS:
-            window.close()
-            window.destroy()
-        WINDOWS.clear()
-
-    def last_resort_cleanup():
-        """Prevents the toolset from running in the background after sys.exit is called..."""
-        from utility.logger_util import RobustRootLogger
-        from utility.system.os_helper import gracefully_shutdown_threads, start_shutdown_process
-
-        RobustRootLogger().info("Fully shutting down Holocron Toolset...")
-        # kill_self_pid()
-        gracefully_shutdown_threads()
-        RobustRootLogger().debug("Starting new shutdown process...")
-        start_shutdown_process()
-        RobustRootLogger().debug("Shutdown process started...")
 
     app.aboutToQuit.connect(qt_cleanup)
     atexit.register(last_resort_cleanup)

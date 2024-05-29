@@ -92,7 +92,7 @@ class MDLEditor(Editor):
         mdl_data: bytes | None = None
         mdx_data: bytes | None = None
 
-        if restype == ResourceType.MDL:
+        if restype is ResourceType.MDL:
             mdl_data = data
             if c_filepath.suffix.lower() == ".mdl":
                 mdx_data = BinaryReader.load_file(c_filepath.with_suffix(".mdx"))
@@ -104,7 +104,7 @@ class MDLEditor(Editor):
                 mdx_data = rim.get(resref, ResourceType.MDX)
             elif is_bif_file(c_filepath.name):
                 mdx_data = self._installation.resource(resref, ResourceType.MDX, [SearchLocation.CHITIN]).data
-        elif restype == ResourceType.MDX:
+        elif restype is ResourceType.MDX:
             mdx_data = data
             if c_filepath.suffix.lower() == ".mdx":
                 mdl_data = BinaryReader.load_file(c_filepath.with_suffix(".mdl"))

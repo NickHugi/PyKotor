@@ -70,3 +70,5 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
+
+from toolset.rcc import resources_rc_pyqt6
