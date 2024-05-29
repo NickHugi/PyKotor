@@ -194,10 +194,6 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
         return args_list
 
-    def __reduce__(self) -> tuple[type[Self], tuple[str]]:
-        """Helper for pickle."""
-        return (self.__class__, (self.__fspath__(),))
-
     @classmethod
     @lru_cache(maxsize=20000)
     def _fix_path_formatting(
@@ -207,7 +203,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         slash: str = os.sep,
     ) -> str:  # sourcery skip: assign-if-exp, reintroduce-else
         """Normalizes a path string.
-        
+
         This differs from os.path.normpath in various ways, e.g. it leaves '..' parts intact just like pathlib.PurePath does.
 
         Args:
@@ -405,7 +401,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
 
         Returns:
         -------
-            str: POSIX representation of the path
+            str: WINDOWS representation of the path as lowercase
         """
         return self._fix_path_formatting(super().__str__(), slash="\\").lower()
 
