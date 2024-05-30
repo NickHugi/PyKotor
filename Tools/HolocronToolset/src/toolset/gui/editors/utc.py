@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import qtpy
 
@@ -13,13 +13,14 @@ from qtpy.QtWidgets import QListWidgetItem, QMessageBox
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
+from pykotor.extract.capsule import Capsule, LazyCapsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, write_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, read_utc, write_utc
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_capsule_file
+from pykotor.tools.misc import is_capsule_file, is_sav_file
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
@@ -93,6 +94,7 @@ class UTCEditor(Editor):
         self._setupMenus()
         self._setupInstallation(installation)
         self._setupSignals()
+        self._installation: HTInstallation
 
         self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
         self.ui.actionAlwaysSaveK2Fields.setChecked(self.settings.alwaysSaveK2Fields)
@@ -633,10 +635,17 @@ class UTCEditor(Editor):
             - Refreshes item count and 3D preview.
         """
         droid: bool = self.ui.raceSelect.currentIndex() == 0
+        capsulesToSearch: Sequence[LazyCapsule] = []
+        if self._filepath is None:
+            ...
+        elif is_sav_file(self._filepath):
+            capsulesToSearch = [res for res in Capsule(self._filepath) if isinstance(res, LazyCapsule)]
+        elif is_capsule_file(self._filepath):
+            capsulesToSearch = Module.find_capsules(self._installation, self._filepath.name)
         inventoryEditor = InventoryEditor(
             self,
             self._installation,
-            Module.find_capsules(self._installation, self._filepath.name) if is_capsule_file(self._filepath) else [],
+            capsulesToSearch,
             [],
             self._utc.inventory,
             self._utc.equipment,

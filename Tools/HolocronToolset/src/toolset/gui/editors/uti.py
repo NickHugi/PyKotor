@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem
+from qtpy.QtGui import QCursor
+from qtpy.QtWidgets import QAction, QApplication, QDialog, QListWidgetItem, QMenu, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -14,16 +15,20 @@ from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
+from toolset.utils.window import addWindow
 from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
 
+    from qtpy.QtCore import QPoint
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
+    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
 
 
@@ -31,8 +36,7 @@ class UTIEditor(Editor):
     def __init__(
         self,
         parent: QWidget | None,
-        installation: HTInstallation
-        | None = None,
+        installation: HTInstallation = None,
     ):
         """Initializes the Item Editor window.
 
@@ -74,6 +78,7 @@ class UTIEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._installation: HTInstallation
 
         self._setupInstallation(installation)
         self.ui.descEdit.setInstallation(installation)
@@ -81,6 +86,9 @@ class UTIEditor(Editor):
         self.setMinimumSize(700, 350)
 
         QShortcut("Del", self).activated.connect(self.onDelShortcut)
+
+        self.ui.iconLabel.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.iconLabel.customContextMenuRequested.connect(self._iconLabelContextMenu)
 
         self.new()
 
@@ -367,11 +375,104 @@ class UTIEditor(Editor):
             return f"{propName}: [{costName}]"
         return f"{propName}"
 
+    def _generateIconTooltip(self, *, asHtml: bool = False) -> str:
+        """Generates a detailed tooltip for the iconLabel."""
+        baseItem = self.ui.baseSelect.currentIndex()
+        modelVariation = self.ui.modelVarSpin.value()
+        textureVariation = self.ui.textureVarSpin.value()
+
+        assert self._installation is not None
+        baseItemName = self._installation.getItemBaseName(baseItem)
+        modelVarName = self._installation.getModelVarName(modelVariation)
+        textureVarName = self._installation.getTextureVarName(textureVariation)
+        iconPath = self._installation.getItemIconPath(baseItem, modelVariation, textureVariation)
+
+        if asHtml:
+            tooltip = (
+                f"<b>Base Item:</b> {baseItemName} (ID: {baseItem})<br>"
+                f"<b>Model Variation:</b> {modelVarName} (ID: {modelVariation})<br>"
+                f"<b>Texture Variation:</b> {textureVarName} (ID: {textureVariation})<br>"
+                f"<b>Icon Name:</b> {iconPath}"
+            )
+        else:
+            tooltip = (
+                f"Base Item: {baseItemName} (ID: {baseItem})\n"
+                f"Model Variation: {modelVarName} (ID: {modelVariation})\n"
+                f"Texture Variation: {textureVarName} (ID: {textureVariation})\n"
+                f"Icon Name: {iconPath}"
+            )
+        return tooltip
+
+    def _iconLabelContextMenu(self, position):
+        contextMenu = QMenu(self)
+        copyMenu = QMenu("Copy..")
+
+        baseItem = self.ui.baseSelect.currentIndex()
+        modelVariation = self.ui.modelVarSpin.value()
+        textureVariation = self.ui.textureVarSpin.value()
+        iconPath = self._installation.getItemIconPath(baseItem, modelVariation, textureVariation)
+
+        summaryItemIconAction = QAction("Icon Summary", self)
+        summaryItemIconAction.triggered.connect(lambda: self._copyIconTooltip())
+
+        copyBaseItemAction = QAction(f"Base Item: {baseItem}", self)
+        copyBaseItemAction.triggered.connect(lambda: self._copyToClipboard(f"{baseItem}"))
+
+        copyModelVariationAction = QAction(f"Model Variation: {modelVariation}", self)
+        copyModelVariationAction.triggered.connect(lambda: self._copyToClipboard(f"{modelVariation}"))
+
+        copyTextureVariationAction = QAction(f"<br>Texture Variation:</br> {textureVariation}", self)
+        copyTextureVariationAction.triggered.connect(lambda: self._copyToClipboard(f"{textureVariation}"))
+
+        copyIconPathAction = QAction(f"<br>Icon Name:</br> '{iconPath}'", self)
+        copyIconPathAction.triggered.connect(lambda: self._copyToClipboard(f"{iconPath}"))
+
+        copyMenu.addAction(summaryItemIconAction)
+        copyMenu.addSeparator()
+        copyMenu.addAction(copyBaseItemAction)
+        copyMenu.addAction(copyModelVariationAction)
+        copyMenu.addAction(copyTextureVariationAction)
+        copyMenu.addAction(copyIconPathAction)
+
+        fileMenu = contextMenu.addMenu("File...")
+        assert fileMenu is not None
+        locations = self._installation.locations(([iconPath], [ResourceType.TGA, ResourceType.TPC]))
+        flatLocations = [item for sublist in locations.values() for item in sublist]
+        mousePos: QPoint = QCursor.pos()
+        if flatLocations:
+            for location in flatLocations:
+                displayPathStr = str(location.filepath.relative_to(self._installation.path()))
+                locMenu = fileMenu.addMenu(displayPathStr)
+                resourceMenuBuilder = ResourceItems(resources=[location])
+                resourceMenuBuilder.build_menu(mousePos, locMenu)
+
+            fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
+
+        contextMenu.addMenu(copyMenu)
+        contextMenu.exec_(self.ui.iconLabel.mapToGlobal(position))
+
+    def _openDetails(self, locations: list[LocationResult]):
+        selectionWindow = FileSelectionWindow(locations, self._installation)
+        selectionWindow.show()
+        selectionWindow.activateWindow()
+        addWindow(selectionWindow)
+
+    def _copyIconTooltip(self):
+        tooltipText = self._generateIconTooltip(asHtml=False)
+        clipboard = QApplication.clipboard()
+        clipboard.setText(tooltipText)
+
+    def _copyToClipboard(self, text: str):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+
     def onUpdateIcon(self):
         baseItem: int = self.ui.baseSelect.currentIndex()
         modelVariation: int = self.ui.modelVarSpin.value()
         textureVariation: int = self.ui.textureVarSpin.value()
         self.ui.iconLabel.setPixmap(self._installation.getItemIcon(baseItem, modelVariation, textureVariation))
+        # Update the tooltip whenever the icon changes
+        self.ui.iconLabel.setToolTip(self._generateIconTooltip(asHtml=True))
 
     def onAvaialblePropertyListDoubleClicked(self):
         for item in self.ui.availablePropertyList.selectedItems():

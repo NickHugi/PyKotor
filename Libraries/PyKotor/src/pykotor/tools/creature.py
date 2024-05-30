@@ -9,6 +9,8 @@ from pykotor.resource.type import ResourceType
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.utc import UTC
@@ -83,33 +85,40 @@ def get_body_model(
         body_model = utc_appearance_row.get_string("race", context=context_base)
     else:
         print("appearance.2da: utc 'modeltype' is 'B'")
-        if EquipmentSlot.ARMOR in utc.equipment:
-            armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
-            RobustRootLogger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
-            armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
-            if armor_res_lookup is None:
-                raise ValueError(f"'{armor_resref}.uti' missing from installation{context_base}")
 
-            armor_uti = read_uti(armor_res_lookup.data)
-            RobustRootLogger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
-            body_row = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
-            body_cell = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
-            RobustRootLogger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
-
-            armor_variation = body_cell.lower()
-            model_column = f"model{armor_variation}"
-            evil_tex_column = f"tex{armor_variation}evil"
-            tex_column = evil_tex_column if utc.alignment <= 25 and evil_tex_column in appearance.get_headers() else f"tex{armor_variation}"
-            tex_append = str(armor_uti.texture_variation).rjust(2, "0")  # Ensure one-digit numerics are proceeded by '0'. 5 -> 05, 100 -> 100.
-
-            body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
-            override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
-        else:
+        def lookupNoArmor() -> tuple[Literal["modela"], str, Literal["texaevil", "texa"], Literal["01"], str]:
             model_column = "modela"
             body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model 'modela'{context_base}")
             tex_column = "texaevil" if utc.alignment <= 25 else "texa"
             tex_append = "01"
             override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching default texture{context_base}")
+            return model_column, body_model, tex_column, tex_append, override_texture
+
+        if EquipmentSlot.ARMOR in utc.equipment and utc.equipment[EquipmentSlot.ARMOR].resref:
+            armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref
+            RobustRootLogger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
+            armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
+            if armor_res_lookup is None:
+                RobustRootLogger.error(f"'{armor_resref}.uti' missing from installation{context_base}")
+                model_column, body_model, tex_column, tex_append, override_texture = lookupNoArmor()  # fallback
+            else:
+                armor_uti = read_uti(armor_res_lookup.data)
+                RobustRootLogger().debug(f"baseitems.2da: get body row {armor_uti.base_item} for their armor")
+                body_row = baseitems.get_row(armor_uti.base_item, context=f"Fetching armor base item row{context_base}")
+                body_cell = body_row.get_string("bodyvar", context=f"Fetching 'bodyvar'{context_base}")
+                RobustRootLogger().debug(f"baseitems.2da: 'bodyvar' cell: {body_cell}")
+
+                armor_variation = body_cell.lower()
+                model_column = f"model{armor_variation}"
+                evil_tex_column = f"tex{armor_variation}evil"
+                tex_column = evil_tex_column if utc.alignment <= 25 and evil_tex_column in appearance.get_headers() else f"tex{armor_variation}"
+                tex_append = str(armor_uti.texture_variation).rjust(2, "0")  # Ensure one-digit numerics are proceeded by '0'. 5 -> 05, 100 -> 100.
+
+                body_model = utc_appearance_row.get_string(model_column, context=f"Fetching model column{context_base}")
+                override_texture = utc_appearance_row.get_string(tex_column, context=f"Fetching texture column{context_base}")
+        else:
+            model_column, body_model, tex_column, tex_append, override_texture = lookupNoArmor()
+
         print(f"appearance.2da's texture column: '{tex_column}'")
         print(f"override_texture name: '{override_texture}'")
 
@@ -175,9 +184,9 @@ def get_weapon_models(
     rhand_resname: str | None = str(utc.equipment[EquipmentSlot.RIGHT_HAND].resref) if EquipmentSlot.RIGHT_HAND in utc.equipment else None
     lhand_resname: str | None = str(utc.equipment[EquipmentSlot.LEFT_HAND].resref) if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
-    if rhand_resname is not None:
+    if rhand_resname:
         rhand_model = _load_hand_uti(installation, rhand_resname, baseitems)
-    if lhand_resname is not None:
+    if lhand_resname:
         lhand_model = _load_hand_uti(installation, lhand_resname, baseitems)
     return rhand_model, lhand_model
 
@@ -314,8 +323,11 @@ def get_mask_model(
     """
     model: str | None = None
 
-    if EquipmentSlot.HEAD in utc.equipment:
-        resref = utc.equipment[EquipmentSlot.HEAD].resref
+    headEquip = utc.equipment.get(EquipmentSlot.HEAD)
+    if headEquip is not None:
+        resref = headEquip.resref
+        if not resref:
+            return None
         uti: UTI = read_uti(installation.resource(str(resref), ResourceType.UTI).data)
         model = "I_Mask_" + str(uti.model_variation).rjust(3, "0")
 

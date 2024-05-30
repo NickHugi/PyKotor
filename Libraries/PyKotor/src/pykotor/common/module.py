@@ -354,7 +354,7 @@ class Module:  # noqa: PLR0904
         return self._root
 
     @classmethod
-    def find_capsules(cls, install_or_path: Installation | Path, filename: str) -> Sequence[Capsule]:
+    def find_capsules(cls, install_or_path: Installation | Path, filename: str, *, strict: bool = False) -> Sequence[Capsule]:
         root = cls.find_root(filename)
         # Build all capsules relevant to this root in the provided installation
         capsules: _CapsuleDictTypes = {
@@ -368,7 +368,7 @@ class Module:  # noqa: PLR0904
             mod_filepath = module_path.joinpath(root + ModuleType.MOD.value)
             if mod_filepath.safe_isfile():
                 capsules[ModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
-            else:
+            elif not strict:
                 capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
                 capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
                 if install_or_path.game().is_k2():

@@ -248,6 +248,28 @@ class HTInstallation(Installation):
                 return self._get_icon(texture)
         return pixmap
 
+    def getItemBaseName(self, baseItem: int) -> str:
+        """Get the name of the base item from its ID."""
+        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        with suppress(Exception):
+            return baseitems.get_cell(baseItem, "label")
+        return "Unknown"
+
+    def getModelVarName(self, modelVariation: int) -> str:
+        """Get the name of the model variation from its ID."""
+        return "Default" if modelVariation == 0 else f"Variation {modelVariation}"
+
+    def getTextureVarName(self, textureVariation: int) -> str:
+        """Get the name of the texture variation from its ID."""
+        # Assuming texture variations have specific names or descriptions in another table
+        return "Default" if textureVariation == 0 else f"Texture {textureVariation}"
+
+    def getItemIconPath(self, baseItem: int, modelVariation: int, textureVariation: int) -> str:
+        """Get the icon path based on base item, model variation, and texture variation."""
+        itemClass = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS).get_cell(baseItem, "itemclass")
+        variation = modelVariation if modelVariation != 0 else textureVariation
+        return f"i{itemClass}_{str(variation).rjust(3, '0')}"
+
     def getItemIcon(
         self,
         baseItem: int,
@@ -274,14 +296,10 @@ class HTInstallation(Installation):
             4. Return icon pixmap from texture if found, else return default.
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
-        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        iconPath = self.getItemIconPath(baseItem, modelVariation, textureVariation)
 
         with suppress(Exception):
-            itemClass = baseitems.get_cell(baseItem, "itemclass")
-            variation = modelVariation if modelVariation != 0 else textureVariation
-            textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
-            texture = self.htGetCacheTPC(textureResname.lower())
-
+            texture = self.htGetCacheTPC(iconPath.lower())
             if texture is not None:
                 return self._get_icon(texture)
         return pixmap

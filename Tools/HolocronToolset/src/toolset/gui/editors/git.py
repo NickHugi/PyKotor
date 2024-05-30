@@ -1025,28 +1025,26 @@ class _InstanceMode(_Mode):
         fileMenu = menu.addMenu("File Actions")
         assert fileMenu is not None
 
-        # Get the current position of the mouse cursor
-        global_position = QCursor.pos()
         if isinstance(self._editor, GITEditor):
             valid_filepaths = [self._editor._filepath]
         else:
             assert self._editor._module is not None
             valid_filepaths = [res.filepath() for res in self._editor._module.get_capsules() if res is not None]
-        override_path = self._installation.override_path() / str(instance.identifier())
-        valid_filepaths.append(override_path)
 
+        mousePos: QPoint = QCursor.pos()
+        override_path = self._installation.override_path()
         # Iterate over each location to create submenus
         for result in locations:
             # Create a submenu for each location
             if result.filepath not in valid_filepaths:
                 continue
-            if result.filepath == override_path:
-                abs_display_path = override_path
+            if result.filepath.is_relative_to(override_path):
+                displayPath = override_path
             else:
-                abs_display_path = result.filepath.joinpath(str(instance.identifier()))
-            location_menu: QMenu = fileMenu.addMenu(str(abs_display_path.relative_to(self._installation.path())))
+                displayPath = result.filepath.joinpath(str(instance.identifier()))
+            locMenu: QMenu = fileMenu.addMenu(str(displayPath.relative_to(self._installation.path())))
             resourceMenuBuilder = ResourceItems(resources=[result])
-            resourceMenuBuilder.build_menu(global_position, location_menu)
+            resourceMenuBuilder.build_menu(mousePos, locMenu)
         def moreInfo():
             selectionWindow = FileSelectionWindow(
                 locations,

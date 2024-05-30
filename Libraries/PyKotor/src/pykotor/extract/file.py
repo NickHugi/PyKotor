@@ -18,10 +18,24 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.misc import ResRef
+    from pykotor.extract.capsule import LazyCapsule
 
 
 class FileResource:
     """Stores information for a resource regarding its name, type and where the data can be loaded from."""
+    def __new__(cls, resname: str | os.PathLike, *args, **kwargs) -> Self | LazyCapsule:
+        # Check if the resource should be handled by LazyCapsule
+        if cls is FileResource and is_capsule_file(resname):
+            from pykotor.extract.capsule import LazyCapsule
+            cls = LazyCapsule
+
+        # Check if the current class's __new__ is overridden beyond FileResource's __new__
+        if cls.__new__ is not FileResource.__new__:
+            instance = super().__new__(cls, resname, *args, **kwargs)
+        else:
+            # If not, proceed with the default object creation process
+            instance = object.__new__(cls)
+        return instance
 
     def __init__(
         self,

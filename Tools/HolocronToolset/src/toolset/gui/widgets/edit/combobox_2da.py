@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qtpy import QtCore
-from qtpy.QtWidgets import QAction, QApplication, QComboBox, QMenu, QMessageBox
+from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 from utility.error_handling import universal_simplify_exception
@@ -138,8 +138,7 @@ class ComboBox2DA(QComboBox):
             and self._resname is not None
             and self._this2DA is not None
         ):
-            menu.addAction("Open in 2DAEditor").triggered.connect(self.openIn2DAEditor)
-        menu.addAction(f"Copy 2DA Row Index ({self.currentIndex()}) to clipboard").triggered.connect(lambda: QApplication.clipboard().setText(str(self.currentIndex())))
+            menu.addAction(f"Open '{self._resname}.2da' in 2DAEditor").triggered.connect(self.openIn2DAEditor)
         menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
         toggleSortAction = QAction("Toggle Sorting", self)
         toggleSortAction.setCheckable(True)

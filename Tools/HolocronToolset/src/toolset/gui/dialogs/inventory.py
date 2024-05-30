@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
     from qtpy.QtWidgets import QLabel, QWidget
 
+    from pykotor.extract.capsule import LazyCapsule
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -61,7 +62,7 @@ class InventoryEditor(QDialog):
         self,
         parent: QWidget,
         installation: HTInstallation,
-        capsules: Sequence[Capsule],
+        capsules: Sequence[LazyCapsule],
         folders: list[str],
         inventory: list[InventoryItem],
         equipment: dict[EquipmentSlot, InventoryItem],
@@ -76,7 +77,7 @@ class InventoryEditor(QDialog):
         ----
             parent (QWidget): Parent widget
             installation (HTInstallation): Homeworld installation
-            capsules (list[Capsule]): List of capsules
+            capsules (Sequence[LazyCapsule]): List of capsules
             folders (list[str]): List of folders
             inventory (list[InventoryItem]): List of inventory items
             equipment (dict[EquipmentSlot, InventoryItem]): Equipped items
