@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore, QtMultimedia
+from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QModelIndex, QTimer
 from qtpy.QtGui import QBrush, QColor, QKeyEvent, QStandardItem, QStandardItemModel
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QApplication, QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
@@ -1154,15 +1155,16 @@ class DLGEditor(Editor):
         super().keyReleaseEvent(event)
         self._logger.debug(f"DLGEditor.keyReleaseEvent: {getQtKeyString(event.key())}")
 
-    def mouseDoubleClickEvent(self, event: QMouseEvent):
-        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
-        if not selectedItem.isValid():
+    def mouseDoubleClickEvent(self, event: QMouseEvent | QModelIndex):
+        if not self.ui.dialogTree.underMouse():
             return
-        item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
-        link = item.data(_LINK_ROLE)
-        if link:
-            self.focusOnNode(link)
-        super().mouseDoubleClickEvent(event)
+        index: QModelIndex = event if isinstance(event, QModelIndex) else self.ui.dialogTree.indexAt(event.pos())
+        if index.isValid():
+            item: QStandardItem | None = self.model.itemFromIndex(index)
+            link = item.data(_LINK_ROLE)
+            if link:
+                self.focusOnNode(link)
+        #super().mouseDoubleClickEvent(event)
 
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node.
