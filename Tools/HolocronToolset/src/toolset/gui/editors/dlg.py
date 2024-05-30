@@ -963,7 +963,8 @@ class DLGEditor(Editor):
             - Loads the DLG recursively from the given link into the item/model
             - Returns it to be optionally used by the main tree
         """
-        self.ui.dialogTree.setStyleSheet("QTreeView { background: #FFFFEE; }")
+        if GlobalSettings().selectedTheme == "Default (Light)":
+            self.ui.dialogTree.setStyleSheet("QTreeView { background: #FFFFEE; }")
         self.model.clear()
         self._focused = True
 
