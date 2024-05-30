@@ -976,7 +976,7 @@ class Scene:
             tpc = TPC()
 
         with self.textures_data_lock:
-            self.textures_data_queue[name] = (tpc or TPC(), lightmap)  # Using a dummy TPC class
+            self.textures_data_queue[name] = (tpc or TPC(), lightmap)
 
     def jump_to_entry_location(self):
         if self._module is None:
