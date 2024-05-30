@@ -24,6 +24,7 @@ from qtpy.QtCore import (
 )
 from qtpy.QtGui import (
     QColor,
+    QCursor,
     QIcon,
     QPalette,
     QPixmap,
@@ -254,16 +255,19 @@ class ToolWindow(QMainWindow):
         modulesSectionCombo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)  # type: ignore[arg-type]
         refreshButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)  # type: ignore[arg-type]
         designerButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)  # type: ignore[arg-type]
-        modulesSectionCombo.setMinimumWidth(30)
+        modulesSectionCombo.setMaximumWidth(250)
+        modulesSectionCombo.setMaximumHeight(68)
 
         modulesResourceList.horizontalLayout_2.removeWidget(modulesSectionCombo)
         modulesResourceList.horizontalLayout_2.removeWidget(refreshButton)
         modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)
 
+
         # Create a new layout to stack Designer and Refresh buttons
         stackButtonLayout = QVBoxLayout()
-        stackButtonLayout.addWidget(designerButton)
+        stackButtonLayout.setSpacing(1)
         stackButtonLayout.addWidget(refreshButton)
+        stackButtonLayout.addWidget(designerButton)
         self.moreButton = QPushButton("Collect...")
         self.moreButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         stackButtonLayout.addWidget(self.moreButton)
@@ -278,39 +282,18 @@ class ToolWindow(QMainWindow):
 
         # Adjust the vertical layout to accommodate the combobox height change
         modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)
-        existing_stylesheet = modulesSectionCombo.styleSheet()
-        merged_stylesheet = existing_stylesheet + """
-            QComboBox {
+        merged_stylesheet = f"""{modulesSectionCombo.styleSheet()}
+            QComboBox {{
                 font-size: 14px; /* Increase text size */
                 font-family: Arial, Helvetica, sans-serif; /* Use a readable font */
                 padding: 5px; /* Add padding for spacing */
                 text-align: center; /* Center the text */
-            }
-            QComboBox::drop-down {
-                width: 30px;
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                border-left-width: 1px;
-                border-left-color: darkgray;
-                border-left-style: solid; /* Just a cosmetic line */
-                icon: url(:/icons/arrow_down.png); /* Specify the arrow icon path */
-            }
-            QComboBox QAbstractItemView {
-                font-size: 14px; /* Ensure the dropdown also has increased text size */
-                font-family: Arial, Helvetica, sans-serif; /* Use the same font */
-                padding: 10px 0; /* Add padding to separate lines */
-            }
+            }}
         """
         modulesSectionCombo.setStyleSheet(merged_stylesheet)
         modulesSectionCombo.setMaxVisibleItems(18)
 
-        # Set the dropdown icon using QStyle standard icon
-        dropdown_icon = self.style().standardIcon(QStyle.SP_ArrowDown)
-        modulesSectionCombo.setItemDelegate(QStyledItemDelegate(modulesSectionCombo))
-        modulesSectionCombo.setIconSize(QSize(16, 16))
-        modulesSectionCombo.setItemIcon(0, dropdown_icon)
-
-        # Expandable actions for the 'More...' button
+        # Expandable actions for the 'Collect...' button
         def create_more_actions_menu():
             menu = QMenu()
             menu.addAction("Room Textures").triggered.connect(self.extractModuleRoomTextures)
@@ -320,14 +303,23 @@ class ToolWindow(QMainWindow):
             menu.addAction("Everything").triggered.connect(lambda: self.extractModuleEverything())
             return menu
 
-        self.moreButton.setMenu(create_more_actions_menu())
+        self.moreButtonMenu = create_more_actions_menu()
+        self.moreButtonMenu.aboutToHide.connect(self.onMenuHide)
+        self.moreButtonMenu.leaveEvent = self.onMenuHide
+        self.moreButton.leaveEvent = self.onMenuHide
+        self.moreButton.setMenu(self.moreButtonMenu)
 
         # Show menu on hover
         self.moreButton.setMouseTracking(True)
         self.moreButton.installEventFilter(self)
 
+    def onMenuHide(self, *args):
+        """Custom slot to handle menu hide actions."""
+        self.moreButton.menu().hide()
+        self.moreButtonMenu.close()
+
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if obj == self.moreButton and event.type() == QEvent.HoverEnter:
+        if obj == self.moreButton and event.type() == QEvent.Type.HoverEnter:
             self.moreButton.showMenu()
         if hasattr(self, "focusHandler"):
             return self.focusHandler.eventFilter(obj, event)
