@@ -31,6 +31,7 @@ from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import QtKey
 from utility.error_handling import assert_with_variable_trace
 from utility.system.os_helper import remove_any
@@ -194,6 +195,8 @@ class DLGEditor(Editor):
         self.ui.dialogTree.customContextMenuRequested.connect(self.onTreeContextMenu)
         self.ui.dialogTree.selectionModel().selectionChanged.connect(self.onSelectionChanged)
         self.ui.textEdit.mouseDoubleClickEvent = self.editText
+        if GlobalSettings().selectedTheme != "Default (Light)":
+            self.ui.textEdit.setStyleSheet(f"{self.ui.textEdit.styleSheet()} QPlainTextEdit {{color: black;}}")
 
         self.buffer: QBuffer = QBuffer()
         self.player: QMediaPlayer = QMediaPlayer(self)

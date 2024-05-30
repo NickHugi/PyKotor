@@ -9,6 +9,7 @@ from qtpy.QtWidgets import QWidget
 
 from pykotor.common.language import LocalizedString
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
@@ -72,13 +73,22 @@ class LocalizedStringLineEdit(QWidget):
             - If not, looks up the string from the talktable and uses a yellow background
         """
         self._locstring = locstring
+        theme = GlobalSettings().selectedTheme
         if locstring.stringref == -1:
             text = str(locstring)
             self.ui.locstringText.setText(text if text != "-1" else "")
-            self.ui.locstringText.setStyleSheet("QLineEdit {background-color: white;}")
+            # Check theme condition for setting stylesheet
+            if theme == "Default (Light)":
+                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white;}}")
+            else:
+                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white; color: black;}}")
         else:
             self.ui.locstringText.setText(self._installation.talktable().string(locstring.stringref))
-            self.ui.locstringText.setStyleSheet("QLineEdit {background-color: #fffded;}")
+            # Check theme condition for setting stylesheet
+            if theme == "Default (Light)":
+                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded;}}")
+            else:
+                self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded; color: black;}}")
 
     def editLocstring(self):
         assert self._installation is not None, assert_with_variable_trace(self._installation is not None)
