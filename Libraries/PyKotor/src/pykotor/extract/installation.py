@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import os
 import platform
 
@@ -8,7 +9,7 @@ from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -1189,11 +1190,18 @@ class Installation:
 
         return results
 
+    @overload
+    def location(self, file: os.PathLike | str, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -> list[LocationResult]: ...
+    @overload
+    def location(self, query: ResourceIdentifier, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -> list[LocationResult]: ...
+    @overload
+    def location(self, resname: str, restype: ResourceType | None = None, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -> list[LocationResult]: ...
     def location(
         self,
         resname: str,
-        restype: ResourceType,
+        restype: ResourceType | None = None,
         order: list[SearchLocation] | None = None,
+        /,
         *,
         capsules: list[Capsule] | None = None,
         folders: list[Path] | None = None,
@@ -1222,8 +1230,20 @@ class Installation:
         """
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
+        query: ResourceIdentifier
 
-        query: ResourceIdentifier = ResourceIdentifier(resname, restype)
+        if isinstance(restype, list) or restype is None:
+            order = order if restype is None else restype
+            if isinstance(resname, (os.PathLike, str)):
+                query = ResourceIdentifier.from_path(resname)
+            elif isinstance(resname, ResourceIdentifier):
+                query = resname
+            else:
+                raise TypeError(f"Invalid argument at position 0. Expected filename or filepath (os.PathLike | str), got {resname} ({resname!r}) of type {resname.__class__.__name__}")
+        elif isinstance(restype, ResourceType):
+            query = ResourceIdentifier(resname, restype)
+        else:
+            raise TypeError(f"Invalid argument at position 1. Expected ResourceType, got {restype} ({restype!r}) of type {restype.__class__.__name__}")
 
         return self.locations(
             [query],
@@ -1234,7 +1254,7 @@ class Installation:
 
     def locations(
         self,
-        queries: Iterable[ResourceIdentifier],
+        queries: list[ResourceIdentifier] | tuple[Sequence[str], Sequence[ResourceType]],
         order: list[SearchLocation] | None = None,
         *,
         capsules: Sequence[Capsule] | None = None,
@@ -1261,12 +1281,20 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
-        queries = set(queries)
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
+        real_queries: set[ResourceIdentifier] = set()
+
+        if isinstance(queries, tuple):
+            resnames, restypes = queries
+            for resname, restype in itertools.product(resnames, restypes):
+                real_queries.add(ResourceIdentifier(resname, restype))
+        else:
+            real_queries.update(queries)
+
         locations: dict[ResourceIdentifier, list[LocationResult]] = {}
-        for qident in queries:
+        for qident in real_queries:
             locations[qident] = []
 
         def check_dict(resource_dict: dict[str, list[FileResource]] | CaseInsensitiveDict[list[FileResource]]):
@@ -1276,7 +1304,7 @@ class Installation:
         def check_list(resource_list: list[FileResource]):
             # Index resources by identifier
             lookup_dict = {resource.identifier(): resource for resource in resource_list}
-            for query in queries:
+            for query in real_queries:
                 resource = lookup_dict.get(query)
                 if resource is None:
                     continue
@@ -1290,7 +1318,7 @@ class Installation:
 
         def check_capsules(values: list[Capsule]):
             for capsule in values:
-                for query in queries:
+                for query in real_queries:
                     resource: FileResource | None = capsule.info(*query.unpack())
                     if resource is None:
                         continue
@@ -1309,13 +1337,13 @@ class Installation:
                     if not file.safe_isfile():
                         continue
                     identifier = ResourceIdentifier.from_path(file)
-                    if identifier not in queries:
+                    if identifier not in real_queries:
                         continue
 
                     location = LocationResult(
                         filepath=file,
                         offset=0,
-                        size=file.stat().st_size,
+                        size=file.get_stat_with_cache().st_size,
                     )
 
                     location.set_file_resource(
