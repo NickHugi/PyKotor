@@ -719,6 +719,10 @@ class DLGEditor(Editor):
         self.copyPath(node)
 
     def copyPath(self, node: DLGNode):
+        """Copies the node path to the user's clipboard.
+
+        TODO: Needs a modification to determine if it's in the StartingList
+        """
         path: str = ""
         if isinstance(node, DLGEntry):
             path = f"EntryList\\{node.list_index}"
@@ -816,7 +820,7 @@ class DLGEditor(Editor):
                 break
             items.extend([item.child(i, 0) for i in range(item.rowCount())])
         else:
-            self._logger.debug("Failed to find original")
+            self._logger.error(f"Failed to find original node: {copiedNode!r}")
 
     def refreshItem(self, item: QStandardItem):
         """Refreshes the item text and formatting based on the node data.  Refreshes the item in-place.
