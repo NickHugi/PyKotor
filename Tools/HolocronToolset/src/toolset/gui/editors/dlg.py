@@ -9,7 +9,7 @@ import qtpy
 
 from qtpy import QtCore, QtMultimedia
 from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
-from qtpy.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
+from qtpy.QtGui import QBrush, QColor, QKeyEvent, QStandardItem, QStandardItemModel
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QApplication, QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
 
@@ -32,7 +32,7 @@ from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.misc import QtKey
+from toolset.utils.misc import QtKey, getQtKeyString
 from utility.error_handling import assert_with_variable_trace
 from utility.system.os_helper import remove_any
 
@@ -40,8 +40,8 @@ if TYPE_CHECKING:
 
     import os
 
-    from qtpy.QtCore import QItemSelection, QModelIndex, QPoint
-    from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtCore import QEvent, QItemSelection, QModelIndex, QObject, QPoint
+    from qtpy.QtGui import QMouseEvent
     from qtpy.QtWidgets import QPlainTextEdit, QWidget
 
     from pykotor.common.language import LocalizedString
@@ -210,6 +210,24 @@ class DLGEditor(Editor):
         self.ui.splitter.setSizes([99999999, 1])
 
         self.new()
+        self._keysDown: set[int] = set()
+        self.installEventFilter(self)
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        #self._logger.debug(f"DLGEditor.eventFilter(obj={obj}({obj.__class__.__name__}), event={event}({event.__class__.__name__})) event.type()={event.type()}")
+        if isinstance(event, QKeyEvent):
+            assert isinstance(event, QKeyEvent)
+            if event.isAutoRepeat():
+                return True  # Ignore auto-repeat events
+            if event.key() in self._keysDown:
+                if event.text():  # Key release detection heuristic
+                    self._keysDown.remove(event.key())
+                    self.keyReleaseEvent(event)
+            else:
+                self._keysDown.add(event.key())
+                self.keyPressEvent(event)
+            return True
+        return super().eventFilter(obj, event)
 
     def _setupSignals(self):
         """Connects UI signals to update node/link on change.
@@ -557,7 +575,7 @@ class DLGEditor(Editor):
         for label in expressions.get_column("label"):
             self.ui.expressionSelect.addItem(label)
 
-    def editText(self, e):
+    def editText(self, e: QMouseEvent):
         """Edits the text of the selected dialog node.
 
         Args:
@@ -1078,18 +1096,28 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def keyPressEvent(self, event: QKeyEvent):
+        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
+        key = event.key()
         selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
         if not selectedItem.isValid():
             return
-        if event.key() in {QtKey.Key_Enter, QtKey.Key_Return}:
+        if key in {QtKey.Key_Enter, QtKey.Key_Return}:
             item: QStandardItem | None = self.model.itemFromIndex(selectedItem)
             link = item.data(_LINK_ROLE)
             if link:
                 self.focusOnNode(link)
-        if event.key() in {QtKey.Key_P}:
-            self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()))
-            self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()))
-        super().keyPressEvent(event)  # Call the base class method to ensure default behavior
+        if key in {QtKey.Key_P}:
+            if self.ui.soundEdit.text().strip():
+                self.playSound(self.ui.soundEdit.text().strip())
+            elif self.ui.voiceEdit.text().strip():
+                self.playSound(self.ui.voiceEdit.text().strip())
+            else:
+                self.blinkWindow()
+        self._logger.debug(f"DLGEditor.keyPressEvent: {getQtKeyString(key)}")
+
+    def keyReleaseEvent(self, event: QKeyEvent):
+        super().keyReleaseEvent(event)
+        self._logger.debug(f"DLGEditor.keyReleaseEvent: {getQtKeyString(event.key())}")
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
         selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
