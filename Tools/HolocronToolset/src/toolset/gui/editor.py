@@ -612,14 +612,22 @@ class Editor(QMainWindow):
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
         textbox.locstring = locstring  # type: ignore[reportAttributeAccessIssue]
+        theme = GlobalSettings().selectedTheme
         if locstring.stringref == -1:
             text = str(locstring)
             setText(text if text != "-1" else "")
-            textbox.setStyleSheet(className + " {background-color: white;}")
+            # Check theme condition for setting stylesheet
+            if theme == "Default (Light)":
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white;}}")
+            else:
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white; color: black;}}")
         else:
-            assert self._installation is not None
             setText(self._installation.talktable().string(locstring.stringref))
-            textbox.setStyleSheet(className + " {background-color: #fffded;}")  # TODO(th3w1zard1): handle theme here, so text stops being invisible.
+            # Check theme condition for setting stylesheet
+            if theme == "Default (Light)":
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded;}}")
+            else:
+                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
 
     def filepath(self) -> str | None:
         return str(self._filepath)

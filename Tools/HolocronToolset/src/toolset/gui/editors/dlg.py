@@ -371,7 +371,8 @@ class DLGEditor(Editor):
             - Clears the model
             - Loops through the starter nodes and loads them recursively into the model.
         """
-        self.ui.dialogTree.setStyleSheet("")
+        if GlobalSettings().selectedTheme == "Default (Light)":
+            self.ui.dialogTree.setStyleSheet("")
         self._focused = False
 
         self._dlg = dlg
@@ -617,15 +618,22 @@ class DLGEditor(Editor):
             locstring (LocalizedString): Localized string object
 
         """
+        theme = GlobalSettings().selectedTheme
         if locstring.stringref == -1:
             text = str(locstring)
             textbox.setPlainText(text if text != "-1" else "")
-            textbox.setStyleSheet("QPlainTextEdit {background-color: white;}")
+            # Check theme condition for setting stylesheet
+            if theme == "Default (Light)":
+                textbox.setStyleSheet(f"{textbox.styleSheet()} QPlainTextEdit {{background-color: white;}}")
+            else:
+                textbox.setStyleSheet(f"{textbox.styleSheet()} QPlainTextEdit {{background-color: white; color: black;}}")
         else:
-            assert self._installation is not None
-            text: str = self._installation.talktable().string(locstring.stringref)
-            textbox.setPlainText(text)
-            textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
+            textbox.setPlainText(self._installation.talktable().string(locstring.stringref))
+            # Check theme condition for setting stylesheet
+            if theme == "Default (Light)":
+                textbox.setStyleSheet(f"{textbox.styleSheet()} QPlainTextEdit {{background-color: #fffded;}}")
+            else:
+                textbox.setStyleSheet(f"{textbox.styleSheet()} QPlainTextEdit {{background-color: #fffded; color: black;}}")
 
     def addNode(
         self,

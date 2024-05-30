@@ -12,6 +12,7 @@ from qtpy.QtWidgets import QAction, QApplication, QMessageBox
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import assert_with_variable_trace, universal_simplify_exception
 
 if TYPE_CHECKING:
@@ -75,6 +76,57 @@ class TwoDAEditor(Editor):
         self.model.itemChanged.connect(self.resetVerticalHeaders)
 
         self.new()
+        if GlobalSettings().selectedTheme == "Fusion (Dark)":
+            self.ui.twodaTable.verticalHeader().setStyleSheet("""
+                QHeaderView::section {
+                    color: rgba(255, 255, 255, 0.0);  /* Transparent text */
+                    background-color: #333333;  /* Dark background */
+                }
+                QHeaderView::section:checked {
+                    color: #FFFFFF;  /* White text for checked sections */
+                    background-color: #444444;  /* Slightly lighter background for checked sections */
+                }
+                QHeaderView::section:hover {
+                    color: #FFFFFF;  /* White text on hover */
+                    background-color: #555555;  /* Even lighter background on hover */
+                }
+            """)
+            self.ui.twodaTable.setStyleSheet("""
+                QHeaderView::section {
+                    background-color: #444444;  /* Dark background for header */
+                    color: #FFFFFF;  /* White text for header */
+                    padding: 4px;
+                    border: 1px solid #333333;
+                }
+                QHeaderView::section:checked {
+                    background-color: #555555;  /* Slightly lighter background for checked header */
+                    color: #FFFFFF;  /* White text for checked header */
+                }
+                QHeaderView::section:hover {
+                    background-color: #555555;  /* Lighter background for hovered header */
+                    color: #FFFFFF;  /* White text for hovered header */
+                }
+                QTableView {
+                    background-color: #333333;  /* Dark background for table */
+                    alternate-background-color: #3c3c3c;  /* Slightly lighter background for alternating rows */
+                    color: #FFFFFF;  /* White text for table */
+                    gridline-color: #444444;  /* Dark grid lines */
+                    selection-background-color: #555555;  /* Slightly lighter background for selected items */
+                    selection-color: #FFFFFF;  /* White text for selected items */
+                }
+                QTableView::item {
+                    background-color: #333333;  /* Dark background for items */
+                    color: #FFFFFF;  /* White text for items */
+                }
+                QTableView::item:selected {
+                    background-color: #555555;  /* Slightly lighter background for selected items */
+                    color: #FFFFFF;  /* White text for selected items */
+                }
+                QTableCornerButton::section {
+                    background-color: #444444;  /* Dark background for corner button */
+                    border: 1px solid #333333;
+                }
+            """)
 
     def _setupSignals(self):
         """Set up signal connections for UI actions and edits.
@@ -445,7 +497,6 @@ class TwoDAEditor(Editor):
         column: str | None = None,
     ):
         self.verticalHeaderOption = option
-        assert_with_variable_trace(column is not None, "column cannot be None")
         self.verticalHeaderColumn = column or ""
         self.resetVerticalHeaders()
 
@@ -467,7 +518,8 @@ class TwoDAEditor(Editor):
             - Populate headers list with appropriate values
             - Set vertical header item for each row using headers list values
         """
-        self.ui.twodaTable.verticalHeader().setStyleSheet("")
+        if GlobalSettings().selectedTheme == "Default (Light)":
+            self.ui.twodaTable.verticalHeader().setStyleSheet("")
         headers: list[str] = []
 
         if self.verticalHeaderOption == VerticalHeaderOption.ROW_INDEX:
@@ -481,7 +533,59 @@ class TwoDAEditor(Editor):
                     columnIndex = i
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
-            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
+            if GlobalSettings().selectedTheme == "Default (Light)":
+                self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
+            elif GlobalSettings().selectedTheme == "Fusion (Dark)":
+                self.ui.twodaTable.verticalHeader().setStyleSheet("""
+                    QHeaderView::section {
+                        color: rgba(255, 255, 255, 0.0);  /* Transparent text */
+                        background-color: #333333;  /* Dark background */
+                    }
+                    QHeaderView::section:checked {
+                        color: #FFFFFF;  /* White text for checked sections */
+                        background-color: #444444;  /* Slightly lighter background for checked sections */
+                    }
+                    QHeaderView::section:hover {
+                        color: #FFFFFF;  /* White text on hover */
+                        background-color: #555555;  /* Even lighter background on hover */
+                    }
+                """)
+                self.ui.twodaTable.setStyleSheet("""
+                    QHeaderView::section {
+                        background-color: #444444;  /* Dark background for header */
+                        color: #FFFFFF;  /* White text for header */
+                        padding: 4px;
+                        border: 1px solid #333333;
+                    }
+                    QHeaderView::section:checked {
+                        background-color: #555555;  /* Slightly lighter background for checked header */
+                        color: #FFFFFF;  /* White text for checked header */
+                    }
+                    QHeaderView::section:hover {
+                        background-color: #555555;  /* Lighter background for hovered header */
+                        color: #FFFFFF;  /* White text for hovered header */
+                    }
+                    QTableView {
+                        background-color: #333333;  /* Dark background for table */
+                        alternate-background-color: #3c3c3c;  /* Slightly lighter background for alternating rows */
+                        color: #FFFFFF;  /* White text for table */
+                        gridline-color: #444444;  /* Dark grid lines */
+                        selection-background-color: #555555;  /* Slightly lighter background for selected items */
+                        selection-color: #FFFFFF;  /* White text for selected items */
+                    }
+                    QTableView::item {
+                        background-color: #333333;  /* Dark background for items */
+                        color: #FFFFFF;  /* White text for items */
+                    }
+                    QTableView::item:selected {
+                        background-color: #555555;  /* Slightly lighter background for selected items */
+                        color: #FFFFFF;  /* White text for selected items */
+                    }
+                    QTableCornerButton::section {
+                        background-color: #444444;  /* Dark background for corner button */
+                        border: 1px solid #333333;
+                    }
+                """)
             headers = ["⯈" for _ in range(self.model.rowCount())]
 
         for i in range(self.model.rowCount()):
