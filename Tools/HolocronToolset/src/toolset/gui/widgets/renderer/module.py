@@ -390,7 +390,7 @@ class ModuleRenderer(QOpenGLWidget):
         world = self.scene.cursor.position()
         if datetime.now(tz=timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
-        self._mousePrev = screen
+        self._mousePrev = screen  # Always assign mousePrev after emitting: allows signal handlers (e.g. ModuleDesigner, GITEditor) to handle cursor lock.
 
     def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)

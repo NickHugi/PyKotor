@@ -200,6 +200,7 @@ class BWMEditor(Editor):
             self.ui.renderArea.doCursorLock(screen)
             self.ui.renderArea.camera.nudgePosition(-worldData.x, -worldData.y)
         elif QtCore.Qt.MouseButton.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:  # type: ignore[attr-defined]
+            self.ui.renderArea.doCursorLock(screen)
             self.ui.renderArea.camera.nudgeRotation(delta.x / 50)
         elif QtCore.Qt.MouseButton.LeftButton in buttons and face is not None:  # face will be None if user is clicking on nothing/background.
             self.changeFaceMaterial(face)

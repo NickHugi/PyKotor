@@ -2185,14 +2185,15 @@ class ModuleDesignerControls2d:
         #self.editor.log.debug("onMouseMoved, screen: %s, screenDelta: %s, world: %s, worldDelta: %s, buttons: %s, keys: %s", screen, screenDelta, world, worldDelta, buttons, keys)
         shouldMoveCamera = self.moveCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
-        if shouldMoveCamera:
+        if shouldMoveCamera or shouldRotateCamera:
             self.renderer.doCursorLock(screen)
-            strength = self.settings.moveCameraSensitivity2d / 100
-            self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
+            if shouldMoveCamera:
+                strength = self.settings.moveCameraSensitivity2d / 100
+                self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
+            if shouldRotateCamera:
+                strength = self.settings.rotateCameraSensitivity2d / 100 / 50
+                self.renderer.camera.nudgeRotation(screenDelta.x * strength)
 
-        if shouldRotateCamera:
-            strength = self.settings.rotateCameraSensitivity2d / 100 / 50
-            self.renderer.camera.nudgeRotation(screenDelta.x * strength)
         if self.editor.ui.lockInstancesCheck.isChecked():
             return
         if self.moveSelected.satisfied(buttons, keys):

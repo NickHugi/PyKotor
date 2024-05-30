@@ -1020,13 +1020,17 @@ class _InstanceMode(_Mode):
         locations = self._installation.location(*instance.identifier().unpack())
         if not locations:
             return menu
+
         # Create the main context menu
         fileMenu = menu.addMenu("File Actions")
+        assert fileMenu is not None
+
         # Get the current position of the mouse cursor
         global_position = QCursor.pos()
         if isinstance(self._editor, GITEditor):
             valid_filepaths = [self._editor._filepath]
         else:
+            assert self._editor._module is not None
             valid_filepaths = [res.filepath() for res in self._editor._module.get_capsules() if res is not None]
         override_path = self._installation.override_path() / str(instance.identifier())
         valid_filepaths.append(override_path)
@@ -1040,7 +1044,7 @@ class _InstanceMode(_Mode):
                 abs_display_path = override_path
             else:
                 abs_display_path = result.filepath.joinpath(str(instance.identifier()))
-            location_menu = fileMenu.addMenu(str(abs_display_path.relative_to(self._installation.path())))
+            location_menu: QMenu = fileMenu.addMenu(str(abs_display_path.relative_to(self._installation.path())))
             resourceMenuBuilder = ResourceItems(resources=[result])
             resourceMenuBuilder.build_menu(global_position, location_menu)
         def moreInfo():
@@ -1258,13 +1262,13 @@ class _InstanceMode(_Mode):
 
     def deleteSelected(self, *, noUndoStack: bool = False):
         selection = self.renderer2d.instanceSelection.all()
-        if not noUndoStack:
-            undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
-            undoStack.push(DeleteCommand(self._git, selection.copy(), self._editor))
-        else:
+        if noUndoStack:
             for instance in selection:
                 self._git.remove(instance)
                 self.renderer2d.instanceSelection.remove(instance)
+        else:
+            undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
+            undoStack.push(DeleteCommand(self._git, selection.copy(), self._editor))
         self.buildList()
 
     def duplicateSelected(self, position: Vector3, *, noUndoStack: bool = False):
@@ -1274,13 +1278,13 @@ class _InstanceMode(_Mode):
             if isinstance(instance, GITCamera):
                 instance.camera_id = self._editor.git().next_camera_id()
             instance.position = position
-            if not noUndoStack:
-                undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
-                undoStack.push(DuplicateCommand(self._git, [instance], self._editor))
-            else:
+            if noUndoStack:
                 self._git.add(instance)
                 self.buildList()
                 self.setSelection([instance])
+            else:
+                undoStack = self._editor._controls.undoStack if isinstance(self._editor, GITEditor) else self._editor.undoStack
+                undoStack.push(DuplicateCommand(self._git, [instance], self._editor))
 
     def moveSelected(
         self,
@@ -1355,12 +1359,13 @@ class _GeometryMode(_Mode):
         screen: QPoint = self.renderer2d.mapFromGlobal(self._editor.cursor().pos())
         world: Vector3 = self.renderer2d.toWorldCoords(screen.x(), screen.y())
 
-        instance: GITTrigger | GITEncounter = self.renderer2d.instanceSelection.get(0)
+        instance: GITInstance = self.renderer2d.instanceSelection.get(0)
+        assert isinstance(instance, (GITEncounter, GITTrigger))
         point: Vector3 = world - instance.position
-        new_geom_point = GeomPoint(instance, point)
+        newGeomPoint = GeomPoint(instance, point)
         instance.geometry.append(point)
-        self.renderer2d.geomPointsUnderMouse().append(new_geom_point)
-        self.renderer2d.geometrySelection._selection.append(new_geom_point)
+        self.renderer2d.geomPointsUnderMouse().append(newGeomPoint)
+        self.renderer2d.geometrySelection._selection.append(newGeomPoint)
         RobustRootLogger().debug(f"inserting a new geompoint under mouse for instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
 
     # region Interface Methods
@@ -1446,87 +1451,14 @@ class GITControlScheme:
     def __init__(self, editor: GITEditor):
         self.editor: GITEditor = editor
         self.settings: GITSettings = GITSettings()
-        self.log = RobustRootLogger()
+        self.log: RobustRootLogger = RobustRootLogger()
 
         # Undo/Redo support setup.
-        self.undoStack = QUndoStack(self.editor)
+        self.undoStack: QUndoStack = QUndoStack(self.editor)
         self.initialPositions: dict[GITInstance, Vector3] = {}
         self.initialRotations: dict[GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint, Vector4 | float] = {}
         self.isDragMoving: bool = False
         self.isDragRotating: bool = False
-
-
-    @property
-    def panCamera(self) -> ControlItem:
-        return ControlItem(self.settings.moveCameraBind)
-
-    @panCamera.setter
-    def panCamera(self, value) -> None:
-        ...
-
-    @property
-    def rotateCamera(self) -> ControlItem:
-        return ControlItem(self.settings.rotateCameraBind)
-
-    @rotateCamera.setter
-    def rotateCamera(self, value) -> None:
-        ...
-
-    @property
-    def zoomCamera(self) -> ControlItem:
-        return ControlItem(self.settings.zoomCameraBind)
-
-    @zoomCamera.setter
-    def zoomCamera(self, value) -> None:
-        ...
-
-    @property
-    def rotateSelectedToPoint(self) -> ControlItem:
-        return ControlItem(self.settings.rotateSelectedToPointBind)
-
-    @rotateSelectedToPoint.setter
-    def rotateSelectedToPoint(self, value):
-        ...
-
-    @property
-    def moveSelected(self) -> ControlItem:
-        return ControlItem(self.settings.moveSelectedBind)
-
-    @moveSelected.setter
-    def moveSelected(self, value):
-        ...
-
-    @property
-    def selectUnderneath(self) -> ControlItem:
-        return ControlItem(self.settings.selectUnderneathBind)
-
-    @selectUnderneath.setter
-    def selectUnderneath(self, value):
-        ...
-
-    @property
-    def deleteSelected(self) -> ControlItem:
-        return ControlItem(self.settings.deleteSelectedBind)
-
-    @deleteSelected.setter
-    def deleteSelected(self, value):
-        ...
-
-    @property
-    def duplicateSelected(self) -> ControlItem:
-        return ControlItem(self.settings.duplicateSelectedBind)
-
-    @duplicateSelected.setter
-    def duplicateSelected(self, value):
-        ...
-
-    @property
-    def toggleInstanceLock(self) -> ControlItem:
-        return ControlItem(self.settings.toggleLockInstancesBind)
-
-    @toggleInstanceLock.setter
-    def toggleInstanceLock(self, value):
-        ...
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
@@ -1568,14 +1500,13 @@ class GITControlScheme:
         shouldPanCamera = self.panCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
         if shouldPanCamera or shouldRotateCamera:
-            if shouldPanCamera:
-                self.editor.ui.renderArea.doCursorLock(screen)
-                moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-                #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
-                self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
-            if shouldRotateCamera:
-                self._handleCameraRotation(screenDelta)
-            return
+            self.editor.ui.renderArea.doCursorLock(screen)
+        if shouldPanCamera:
+            moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
+            #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+            self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
+        if shouldRotateCamera:
+            self._handleCameraRotation(screenDelta)
 
         if self.moveSelected.satisfied(buttons, keys):
             if not self.isDragMoving and isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
@@ -1669,3 +1600,76 @@ class GITControlScheme:
 
     def onKeyboardReleased(self, buttons: set[int], keys: set[int]):
         self.handleUndoRedoFromLongActionFinished()
+
+    # Use @property decorators to allow Users to change their settings without restarting the editor.
+    @property
+    def panCamera(self) -> ControlItem:
+        return ControlItem(self.settings.moveCameraBind)
+
+    @panCamera.setter
+    def panCamera(self, value) -> None:
+        ...
+
+    @property
+    def rotateCamera(self) -> ControlItem:
+        return ControlItem(self.settings.rotateCameraBind)
+
+    @rotateCamera.setter
+    def rotateCamera(self, value) -> None:
+        ...
+
+    @property
+    def zoomCamera(self) -> ControlItem:
+        return ControlItem(self.settings.zoomCameraBind)
+
+    @zoomCamera.setter
+    def zoomCamera(self, value) -> None:
+        ...
+
+    @property
+    def rotateSelectedToPoint(self) -> ControlItem:
+        return ControlItem(self.settings.rotateSelectedToPointBind)
+
+    @rotateSelectedToPoint.setter
+    def rotateSelectedToPoint(self, value):
+        ...
+
+    @property
+    def moveSelected(self) -> ControlItem:
+        return ControlItem(self.settings.moveSelectedBind)
+
+    @moveSelected.setter
+    def moveSelected(self, value):
+        ...
+
+    @property
+    def selectUnderneath(self) -> ControlItem:
+        return ControlItem(self.settings.selectUnderneathBind)
+
+    @selectUnderneath.setter
+    def selectUnderneath(self, value):
+        ...
+
+    @property
+    def deleteSelected(self) -> ControlItem:
+        return ControlItem(self.settings.deleteSelectedBind)
+
+    @deleteSelected.setter
+    def deleteSelected(self, value):
+        ...
+
+    @property
+    def duplicateSelected(self) -> ControlItem:
+        return ControlItem(self.settings.duplicateSelectedBind)
+
+    @duplicateSelected.setter
+    def duplicateSelected(self, value):
+        ...
+
+    @property
+    def toggleInstanceLock(self) -> ControlItem:
+        return ControlItem(self.settings.toggleLockInstancesBind)
+
+    @toggleInstanceLock.setter
+    def toggleInstanceLock(self, value):
+        ...
