@@ -284,7 +284,7 @@ class ToolWindow(QMainWindow):
         modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)
         merged_stylesheet = f"""{modulesSectionCombo.styleSheet()}
             QComboBox {{
-                font-size: 14px; /* Increase text size */
+                font-size: 13px; /* Increase text size */
                 font-family: Arial, Helvetica, sans-serif; /* Use a readable font */
                 padding: 5px; /* Add padding for spacing */
                 text-align: center; /* Center the text */
