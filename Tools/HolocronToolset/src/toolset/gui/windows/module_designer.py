@@ -2185,8 +2185,10 @@ class ModuleDesignerControls2d:
         #self.editor.log.debug("onMouseMoved, screen: %s, screenDelta: %s, world: %s, worldDelta: %s, buttons: %s, keys: %s", screen, screenDelta, world, worldDelta, buttons, keys)
         shouldMoveCamera = self.moveCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
+        adjustedWorldDelta = worldDelta
         if shouldMoveCamera or shouldRotateCamera:
             self.renderer.doCursorLock(screen)
+            adjustedWorldDelta = Vector2(-worldDelta.x, -worldDelta.y)
             if shouldMoveCamera:
                 strength = self.settings.moveCameraSensitivity2d / 100
                 self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
@@ -2199,7 +2201,7 @@ class ModuleDesignerControls2d:
         if self.moveSelected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
                 RobustRootLogger().debug("Move geometry point %s, %s", worldDelta.x, worldDelta.y)
-                self._mode.moveSelected(worldDelta.x, worldDelta.y)
+                self._mode.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y)
                 return
 
             # handle undo/redo for moveSelected.
@@ -2207,7 +2209,7 @@ class ModuleDesignerControls2d:
                 RobustRootLogger().debug("moveSelected instance in 2d")
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
-            self.editor.moveSelected(worldDelta.x, worldDelta.y, noUndoStack=True, noZCoord=True)
+            self.editor.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y, noUndoStack=True, noZCoord=True)
 
         if self.rotateSelected.satisfied(buttons, keys) and isinstance(self._mode, _InstanceMode):
             if not self.editor.isDragRotating:
