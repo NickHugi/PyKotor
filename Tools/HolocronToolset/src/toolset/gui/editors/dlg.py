@@ -753,7 +753,7 @@ class DLGEditor(Editor):
         parent_item = self.findItemForNode(parent_node)
         parent_item.appendRow(new_item)
 
-    def _create_link_between_nodes(self, childNode, parentNode) -> QStandardItem:
+    def _create_link_between_nodes(self, childNode: DLGNode, parentNode: DLGNode) -> QStandardItem:
         newLink = DLGLink(childNode)
         parentNode.links.append(newLink)
         result = QStandardItem()
@@ -765,8 +765,7 @@ class DLGEditor(Editor):
         while items_to_check:
             item = items_to_check.pop(0)
             assert item is not None
-            link = item.data(_LINK_ROLE)
-            if link.node is node:
+            if self._getNodeFromLinkItem(item) is node:
                 return item
             items_to_check.extend([item.child(i, 0) for i in range(item.rowCount())])
         return None
@@ -798,9 +797,7 @@ class DLGEditor(Editor):
             - Else, get parent item and associated link/node
             - Remove link from parent's links and row from parent.
         """
-        link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode | None = link.node
-        assert node is not None
+        node = self._getNodeFromLinkItem(item)
         parent: QStandardItem | None = item.parent()
 
         if parent is None:
@@ -810,14 +807,18 @@ class DLGEditor(Editor):
             self.model.removeRow(item.row())
         else:
             parentItem: QStandardItem | None = parent
-            parentLink: DLGLink = parentItem.data(_LINK_ROLE)
-            parentNode: DLGNode | None = parentLink.node
-            assert parentNode is not None
-
+            parentNode = self._getNodeFromLinkItem(parentItem)
             for link in copy(parentNode.links):
                 if link.node is node:
                     parentNode.links.remove(link)
             parentItem.removeRow(item.row())
+
+    def _getNodeFromLinkItem(self, item: QStandardItem) -> DLGNode:
+        link: DLGLink = item.data(_LINK_ROLE)
+        result: DLGNode | None = link.node
+        assert result is not None
+
+        return result
 
     def deleteSelectedNode(self):
         """Deletes the currently selected node from the tree.
@@ -860,10 +861,7 @@ class DLGEditor(Editor):
             - If a match is found, expand the tree to that item and select it
             - If no match is found, print a failure message.
         """
-        copiedLink: DLGLink = sourceItem.data(_LINK_ROLE)
-        assert copiedLink is not None
-        copiedNode: DLGNode | None = copiedLink.node
-        assert copiedNode is not None
+        copiedNode: DLGNode = self._getNodeFromLinkItem(sourceItem)
 
         items: list[QStandardItem | None] = [self.model.item(i, 0) for i in range(self.model.rowCount())]
         while items:
@@ -893,7 +891,7 @@ class DLGEditor(Editor):
             - Sets the item foreground color based on the node and copy type
             - Blue for replies, red for entries, lighter if it is a copy.
         """
-        node: DLGNode = item.data(_LINK_ROLE).node
+        node: DLGNode = self._getNodeFromLinkItem(item)
         isCopy: bool = item.data(_COPY_ROLE)
         color: QColor | None = None
 
