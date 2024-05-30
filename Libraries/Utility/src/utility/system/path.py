@@ -502,6 +502,20 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             cls = WindowsPath if os.name == "nt" else PosixPath
         return super().__new__(cls, *args, **kwargs)  # type: ignore[reportReturnType]
 
+    def __init__(self, *args, **kwargs):
+        self._last_stat_result: os.stat_result | None = None
+        super().__init__(*args, **kwargs)
+
+    def get_stat_with_cache(self) -> os.stat_result:
+        """Returns the cached stat result if available, otherwise performs a stat call."""
+        if self._last_stat_result is None:
+            self._last_stat_result = super().stat()
+        return self._last_stat_result
+
+    def stat(self) -> os.stat_result:
+        self._last_stat_result = super().stat()
+        return self._last_stat_result
+
     # Safe rglob operation
     def safe_rglob(
         self,
