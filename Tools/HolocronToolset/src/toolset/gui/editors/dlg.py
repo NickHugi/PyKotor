@@ -848,15 +848,25 @@ class DLGEditor(Editor):
         node: DLGNode = item.data(_LINK_ROLE).node
         isCopy: bool = item.data(_COPY_ROLE)
         color: QColor | None = None
-        if isinstance(node, DLGEntry):
-            color = QColor(210, 90, 90) if isCopy else QColor(255, 0, 0)
+
+        if GlobalSettings().selectedTheme == "Default (Light)":
+            if isinstance(node, DLGEntry):
+                color = QColor(210, 90, 90) if isCopy else QColor(255, 0, 0)  # Original colors for light theme
+                prefix = "E"
+            elif isinstance(node, DLGReply):
+                color = QColor(90, 90, 210) if isCopy else QColor(0, 0, 255)
+                prefix = "R"
+            else:
+                prefix = "N"
+
+        elif isinstance(node, DLGEntry):
+            color = QColor(255, 128, 128) if isCopy else QColor(255, 64, 64)  # Brighter red
             prefix = "E"
         elif isinstance(node, DLGReply):
-            color = QColor(90, 90, 210) if isCopy else QColor(0, 0, 255)
+            color = QColor(128, 200, 255) if isCopy else QColor(64, 180, 255)  # Brighter blue
             prefix = "R"
         else:
             prefix = "N"
-
         list_prefix: str = f"{prefix}{node.list_index}: "
         if not node.links:
             item.setText(f"{list_prefix}[End Dialog]")
