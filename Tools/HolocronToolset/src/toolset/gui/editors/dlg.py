@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore, QtMultimedia
-from qtpy.QtCore import QBuffer, QIODevice, QItemSelectionModel, QTimer
 from qtpy.QtGui import QBrush, QColor, QKeyEvent, QStandardItem, QStandardItemModel
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import QApplication, QFormLayout, QListWidgetItem, QMenu, QShortcut, QSpinBox
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
 
     import os
 
-    from qtpy.QtCore import QEvent, QItemSelection, QModelIndex, QObject, QPoint
+    from qtpy.QtCore import QEvent, QItemSelection, QObject, QPoint
     from qtpy.QtGui import QMouseEvent
     from qtpy.QtWidgets import QPlainTextEdit, QWidget
 
@@ -195,6 +194,7 @@ class DLGEditor(Editor):
 
         self.ui.dialogTree.customContextMenuRequested.connect(self.onTreeContextMenu)
         self.ui.dialogTree.selectionModel().selectionChanged.connect(self.onSelectionChanged)
+        self.ui.dialogTree.doubleClicked.connect(self.mouseDoubleClickEvent)
         self.ui.textEdit.mouseDoubleClickEvent = self.editText
         if GlobalSettings().selectedTheme != "Default (Light)":
             self.ui.textEdit.setStyleSheet(f"{self.ui.textEdit.styleSheet()} QPlainTextEdit {{color: black;}}")
