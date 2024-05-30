@@ -195,7 +195,7 @@ def _load_hand_uti(
     installation: Installation,
     hand_resref: str,
     baseitems: TwoDA,
-) -> str:
+) -> str | None:
     """Loads the hand UTI model variation from the base item row.
 
     Args:
@@ -215,7 +215,8 @@ def _load_hand_uti(
     """
     hand_lookup = installation.resource(hand_resref, ResourceType.UTI)
     if not hand_lookup:
-        raise ValueError(f"{hand_resref}.uti missing from installation.")
+        RobustRootLogger.error(f"{hand_resref}.uti missing from installation.")
+        return None
     hand_uti: UTI = read_uti(hand_lookup.data)
     default_model: str = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")
     return default_model.replace(
