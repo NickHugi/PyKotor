@@ -17,14 +17,12 @@ from qtpy.QtCore import (
     QCoreApplication,
     QEvent,
     QFile,
-    QSize,
     QTextStream,
     QThread,
     Qt,
 )
 from qtpy.QtGui import (
     QColor,
-    QCursor,
     QIcon,
     QPalette,
     QPixmap,
@@ -41,7 +39,6 @@ from qtpy.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QStyle,
-    QStyledItemDelegate,
     QVBoxLayout,
 )
 from watchdog.events import FileSystemEventHandler
