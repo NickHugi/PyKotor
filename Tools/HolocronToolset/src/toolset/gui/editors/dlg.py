@@ -860,12 +860,16 @@ class DLGEditor(Editor):
         self.setWindowOpacity(0.7)
         QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
 
-    def playSound(self, resname: str):
+    def playSound(self, resname: str) -> bool:
         """Plays a sound resource.
 
         Args:
         ----
             resname: The name of the sound resource to play.
+
+        Returns:
+        -------
+            result: bool - True if the resname could be found in the installation and played, otherwise False
 
         Processing Logic:
         ----------------
@@ -888,6 +892,8 @@ class DLGEditor(Editor):
                     QtCore.QTimer.singleShot(0, self.player.play)
                 else:
                     self.blinkWindow()
+                    return False
+                return True
 
         elif qtpy.API_NAME in ["PyQt6", "PySide6"]:
             # PyQt6 and PySide6 code path
@@ -907,6 +913,8 @@ class DLGEditor(Editor):
                     self.player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
                 else:
                     self.blinkWindow()
+                    return False
+                return True
         else:
             raise ValueError(f"Unsupported QT_API value: {qtpy.API_NAME}")
 
@@ -917,7 +925,7 @@ class DLGEditor(Editor):
             [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
 
-        set_media(data)
+        return set_media(data)
 
     def removeTempAudioFile(
         self,
@@ -1092,8 +1100,31 @@ class DLGEditor(Editor):
             menu.addAction("Delete Entry").triggered.connect(lambda: self.deleteNode(item))
 
         menu.addAction("Copy GFF Path").triggered.connect(lambda: self.copyPath(node))
+        menu.addSeparator()
+        playMenu = menu.addMenu("Play")
+        playAnyAction = playMenu.addAction("Any")
+        playAnyAction.triggered.connect(lambda: self._playNodeSound(node))
+        playAnyAction.setShortcut(QtKey.Key_P)
+        playSoundAction = playMenu.addAction("Play Sound")
+        playSoundAction.triggered.connect(lambda: self.playSound(str(node.sound)) and None or None)
+        playVoiceAction = playMenu.addAction("Play Voice")
+        playVoiceAction.triggered.connect(lambda: self.playSound(str(node.vo_resref)) and None or None)
+        if not self.ui.soundEdit.text().strip():
+            playSoundAction.setEnabled(False)
+        if not self.ui.voiceEdit.text().strip():
+            playVoiceAction.setEnabled(False)
+        if not self.ui.soundEdit.text().strip() and not self.ui.voiceEdit.text().strip():
+            playAnyAction.setEnabled(False)
 
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
+
+    def _playNodeSound(self, node: DLGEntry | DLGReply):
+        if str(node.sound).strip():
+            self.playSound(str(node.sound).strip())
+        elif str(node.vo_resref).strip():
+            self.playSound(str(node.vo_resref).strip())
+        else:
+            self.blinkWindow()
 
     def keyPressEvent(self, event: QKeyEvent):
         super().keyPressEvent(event)  # Call the base class method to ensure default behavior
