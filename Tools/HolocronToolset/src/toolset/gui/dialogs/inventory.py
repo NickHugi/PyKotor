@@ -285,16 +285,22 @@ class InventoryEditor(QDialog):
         name: str = ""
         if not filepath:
             result: ResourceResult | None = self._installation.resource(resname, ResourceType.UTI)
+            if result is None:
+                raise FileNotFoundError
             uti = read_uti(result.data)
             filepath = result.filepath
             name = self._installation.string(uti.name, "[No Name]")
         elif is_capsule_file(filepath):
             uti_resource: bytes | None = Capsule(filepath).resource(resname, ResourceType.UTI)
-            assert uti_resource is not None, f"capsule resource lookup failed in `{self!r}.getItem(resname={resname!r}, filepath={filepath!r})`"
+            if uti_resource is None:
+                raise FileNotFoundError
             uti = read_uti(uti_resource)
             name = self._installation.string(uti.name, "[No Name]")
         elif is_bif_file(filepath):
-            uti = read_uti(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data)
+            bif_result = self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN])
+            if bif_result is None:
+                raise FileNotFoundError
+            uti = read_uti(bif_result.data)
             name = self._installation.string(uti.name, "[No Name]")
         else:
             uti = read_uti(BinaryReader.load_file(filepath))
@@ -330,8 +336,8 @@ class InventoryEditor(QDialog):
         if resname:
             try:
                 filepath, name, uti = self.getItem(resname, filepath)
-            except (AttributeError, Exception):
-                RobustRootLogger.exception(f"Failed to get the equipment item '{resname}' from '{filepath}'")
+            except FileNotFoundError:
+                RobustRootLogger.exception(f"Failed to get the equipment item '{resname}.uti' for the InventoryEditor")
                 return
 
             slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
