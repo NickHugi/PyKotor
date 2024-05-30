@@ -2189,12 +2189,12 @@ class ModuleDesignerControls2d:
         if shouldMoveCamera or shouldRotateCamera:
             self.renderer.doCursorLock(screen)
             adjustedWorldDelta = Vector2(-worldDelta.x, -worldDelta.y)
-            if shouldMoveCamera:
-                strength = self.settings.moveCameraSensitivity2d / 100
-                self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
-            if shouldRotateCamera:
-                strength = self.settings.rotateCameraSensitivity2d / 100 / 50
-                self.renderer.camera.nudgeRotation(screenDelta.x * strength)
+        if shouldMoveCamera:
+            strength = self.settings.moveCameraSensitivity2d / 100
+            self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
+        if shouldRotateCamera:
+            strength = self.settings.rotateCameraSensitivity2d / 100 / 50
+            self.renderer.camera.nudgeRotation(screenDelta.x * strength)
 
         if self.editor.ui.lockInstancesCheck.isChecked():
             return
