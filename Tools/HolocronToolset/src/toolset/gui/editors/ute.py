@@ -109,17 +109,15 @@ class UTEEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         difficulties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
-
-        self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
-        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
-
         self.ui.difficultySelect.clear()
         self.ui.difficultySelect.setItems(difficulties.get_column("label"))
+        self.ui.difficultySelect.setContext(difficulties, installation, HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
+        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         self.ui.factionSelect.clear()
-        self.ui.difficultySelect.setItems(factions.get_column("label"))
+        self.ui.factionSelect.setItems(factions.get_column("label"))
+        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
     def load(
         self,

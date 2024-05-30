@@ -216,19 +216,18 @@ class DLGEditor(Editor):
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         #self._logger.debug(f"DLGEditor.eventFilter(obj={obj}({obj.__class__.__name__}), event={event}({event.__class__.__name__})) event.type()={event.type()}")
-        if isinstance(event, QKeyEvent):
-            assert isinstance(event, QKeyEvent)
-            if event.isAutoRepeat():
-                return True  # Ignore auto-repeat events
-            if event.key() in self._keysDown:
-                if event.text():  # Key release detection heuristic
-                    self._keysDown.remove(event.key())
-                    self.keyReleaseEvent(event)
-            else:
-                self._keysDown.add(event.key())
-                self.keyPressEvent(event)
-            return True
-        return super().eventFilter(obj, event)
+        if not isinstance(event, QKeyEvent):
+            return super().eventFilter(obj, event)
+        if event.isAutoRepeat():
+            return True  # Ignore auto-repeat events
+        if event.key() in self._keysDown:
+            if event.text():  # Key release detection heuristic
+                self._keysDown.remove(event.key())
+                self.keyReleaseEvent(event)
+        else:
+            self._keysDown.add(event.key())
+            self.keyPressEvent(event)
+        return True
 
     def _setupSignals(self):
         """Connects UI signals to update node/link on change.
@@ -298,8 +297,8 @@ class DLGEditor(Editor):
         self.ui.fadeTypeSpin.valueChanged.connect(self.onNodeUpdate)
         self.ui.commentsEdit.textChanged.connect(self.onNodeUpdate)
 
-        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()))
-        self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()))
+        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()) and None or None)
+        self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()) and None or None)
 
         self.ui.actionReloadTree.triggered.connect(lambda: self._loadDLG(self._dlg))
 
