@@ -359,6 +359,7 @@ class ToolWindow(QMainWindow):
         self.ui.savesWidget.requestRefresh.connect(self.onSaveRefresh)
         self.ui.savesWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.savesWidget.requestOpenResource.connect(self.onOpenResources)
+        self.ui.resourceTabs.currentChanged.connect(self.onTabChanged)
 
         def openModuleDesigner() -> ModuleDesigner:
             assert self.active is not None
@@ -1324,6 +1325,9 @@ class ToolWindow(QMainWindow):
 
     def reloadSettings(self):
         self.reloadInstallations()
+
+    def onTabChanged(self):
+        self.setFixedSize(512, 471)
 
     def selectResource(self, tree: ResourceList, resource: FileResource):
         """This function seems to reload the resource after determining the ui widget containing it.
