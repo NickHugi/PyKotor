@@ -195,7 +195,7 @@ class ResRef:
                 msg = f"ResRef '{text}' cannot contain any invalid characters in [{self.INVALID_CHARACTERS}]"
                 # raise self.InvalidFormatError(msg)  # FIXME: pykotor isn't stable enough to enforce this yet.
 
-        self._value = parsed_text
+        self._value = parsed_text.strip()
 
     def get(self) -> str:
         """Returns a case-insensitive wrapped string."""
