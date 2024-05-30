@@ -678,7 +678,7 @@ class DLGEditor(Editor):
         """
         self._coreAddNode(DLGEntry(), self._dlg.starters, False, self.model)
 
-    def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
+    def addCopyLink(self, item: QStandardItem, target: DLGNode, source: DLGNode):
         self._coreAddNode(source, target.links, True, item)
 
     def _coreAddNode(
@@ -686,7 +686,7 @@ class DLGEditor(Editor):
         source: DLGNode,
         target_links: list[DLGLink],
         _copy_role_data: bool,
-        item: QStandardItem | QStandardItemModel | None,
+        item: QStandardItem | QStandardItemModel,
     ):
         newLink = DLGLink(source)
         target_links.append(newLink)
