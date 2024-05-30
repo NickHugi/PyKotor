@@ -59,6 +59,7 @@ class SSFEditor(Editor):
         self._setupSignals()
 
         self.new()
+        self.setMinimumSize(577, 437)
 
     def _setupSignals(self):
         """Connects signals to update text boxes.
