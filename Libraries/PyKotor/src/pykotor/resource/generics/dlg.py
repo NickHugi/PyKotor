@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import uuid
+
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -12,7 +14,7 @@ from pykotor.resource.type import ResourceType
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal
+    from typing_extensions import Literal, Self
 
     from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -311,6 +313,10 @@ class DLGNode:
             - Initializes lists and optional properties as empty/None
             - Sets flags and identifiers to default values
         """
+        if not isinstance(self, (DLGEntry, DLGNode)):
+            raise RuntimeError("Cannot construct base class DLGNode: use DLGEntry or DLGReply instead.")  # noqa: TRY004
+
+        self._uuid = uuid.uuid4().hex
         self.comment: str = ""
         self.links: list[DLGLink] = []
         self.list_index: int = -1
@@ -376,6 +382,109 @@ class DLGNode:
         strref_display = f"stringref={self.text.stringref}" if text is None else f"text={text}"
         return f"{self.__class__.__name__}({strref_display}, list_index={self.list_index}, links={self.links})"
 
+    def add_node(
+        self,
+        target_links: list[DLGLink],
+        source: DLGNode,
+    ):
+        newLink = DLGLink(source)
+        target_links.append(newLink)
+
+    def shift_item(
+        self,
+        links: list[DLGLink],
+        old_index: int,
+        new_index: int,
+    ):
+        if 0 <= new_index < len(links):
+            link = links.pop(old_index)
+            links.insert(new_index, link)
+        else:
+            raise IndexError(new_index)
+
+    def to_dict(self, node_map: dict[str, Any] | None = None) -> dict:
+        """Converts the DLGNode to a dictionary, handling circular references."""
+        if node_map is None:
+            node_map = {}
+
+        node_key = self.get_node_key()
+        if node_key in node_map:
+            return {"type": self.__class__.__name__, "ref": node_key}
+
+        node_dict = {
+            "type": self.__class__.__name__,
+            "key": node_key,
+            "data": {}
+        }
+        node_map[node_key] = node_dict
+
+        for key, value in self.__dict__.items():
+            if isinstance(value, bool):
+                node_dict["data"][key] = int(value)
+            elif isinstance(value, ResRef):
+                node_dict["data"][key] = str(value)
+            elif isinstance(value, Color):
+                node_dict["data"][key] = value.bgr_integer()
+            elif isinstance(value, LocalizedString):
+                node_dict["data"][key] = value.to_dict()
+            elif isinstance(value, list) and key == "links":
+                links = cast(List[DLGLink], value)
+                node_dict["data"][key] = [link.node.to_dict(node_map) for link in links if link.node]
+            elif isinstance(value, list) and all(isinstance(item, DLGAnimation) for item in value):
+                anims = cast(List[DLGAnimation], value)
+                node_dict["data"][key] = [anim.to_dict() for anim in anims]
+            else:
+                node_dict["data"][key] = value
+
+        return node_dict
+
+    def get_node_key(self) -> str:
+        """Generate a unique key for the node using UUID."""
+        if not hasattr(self, "_uuid"):
+            self._uuid = uuid.uuid4().hex
+        return self._uuid
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> DLGNode:
+        node_type: Literal["DLGEntry", "DLGReply"] | None = data.get("type")
+        node_data: dict[str, Any] = data.get("data", {})
+        links_data = node_data.pop("links", [])
+
+        if node_type == "DLGEntry":
+            node = DLGEntry()
+            node.speaker = node_data.pop("speaker", "")
+        elif node_type == "DLGReply":
+            node = DLGReply()
+        else:
+            raise ValueError(f"Unknown node type: {node_type}")
+
+        for key, value in node_data.items():
+            if value is None:
+                continue
+            if key in ["comment", "listener", "quest", "script1_param6", "script2_param6"]:
+                setattr(node, key, value)
+            elif key in ["camera_angle", "delay", "fade_type", "plot_index", "wait_flags", "script1_param1", "script2_param1",
+                         "script1_param2", "script2_param2", "script1_param3", "script2_param3", "script1_param4", "script2_param4",
+                         "script1_param5", "script2_param5", "alien_race_node", "emotion_id", "facial_id", "node_id", "post_proc_node",
+                         "record_no_vo_override", "record_vo", "vo_text_changed"]:
+                setattr(node, key, int(value))
+            elif key in ["plot_xp_percentage", "fade_delay", "fade_length", "camera_fov", "camera_height", "camera_effect", "target_height"]:
+                setattr(node, key, float(value))
+            elif key in ["script1", "sound", "vo_resref"]:
+                setattr(node, key, ResRef(value))
+            elif key == "fade_color" and value:
+                setattr(node, key, Color.from_bgr_integer(value))
+            elif key == "text":
+                node.text = LocalizedString.from_dict(value)
+            elif key == "animations":
+                node.animations = [DLGAnimation.from_dict(anim) for anim in value]
+
+        for link_data in cast(List[Dict[str, Any]], links_data):
+            child_node = DLGNode.from_dict(link_data)
+            node.links.append(DLGLink(child_node))
+
+        return node
+
 
 class DLGReply(DLGNode):
     """Replies are nodes that are responses by the player."""
@@ -404,6 +513,16 @@ class DLGAnimation:
     ):
         self.animation_id: int = 6
         self.participant: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"animation_id": self.animation_id, "participant": self.participant}
+
+    @staticmethod
+    def from_dict(data: dict) -> DLGAnimation:
+        animation = DLGAnimation()
+        animation.animation_id = data.get("animation_id", 6)
+        animation.participant = data.get("participant", "")
+        return animation
 
 
 class DLGLink:
@@ -466,6 +585,47 @@ class DLGLink:
 
     def __repr__(self):
         return f"{self.__class__.__name__}(link_index={self.link_index})"#, node={self.node})"
+
+    def to_dict(self, node_map: dict[str, Any] | None = None):
+        if node_map is None:
+            node_map = {}
+
+        node_key = self.get_node_key()
+        if node_key in node_map:
+            return {"type": self.__class__.__name__, "ref": node_key}
+
+        link_dict = {
+            "type": self.__class__.__name__,
+            "key": node_key,
+            "node": self.node.to_dict(node_map) if self.node else None
+        }
+        node_map[node_key] = link_dict
+
+        return link_dict
+
+    def get_node_key(self) -> str:
+        """Generate a unique key for the node using UUID."""
+        if not hasattr(self, "_uuid"):
+            self._uuid = uuid.uuid4().hex
+        return self._uuid
+
+    @classmethod
+    def from_dict(cls, data: dict, node_map: dict[str, Any] | None = None) -> Self:
+        if node_map is None:
+            node_map = {}
+
+        node_key = data["key"]
+        if node_key in node_map:
+            return node_map[node_key]
+
+        link = cls()
+        link._uuid = node_key  # noqa: SLF001
+        node_map[node_key] = link
+
+        if data["node"]:
+            link.node = DLGNode.from_dict(data["node"], node_map)
+
+        return link
 
 
 class DLGStunt:

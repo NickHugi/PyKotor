@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 
 from copy import copy, deepcopy
@@ -21,6 +22,7 @@ from pykotor.resource.generics.dlg import (
     DLGConversationType,
     DLGEntry,
     DLGLink,
+    DLGNode,
     DLGReply,
     read_dlg,
     write_dlg,
@@ -48,7 +50,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.dlg import (
         DLGAnimation,
-        DLGNode,
         DLGStunt,
     )
 
@@ -116,11 +117,11 @@ class GFFFieldSpinBox(QSpinBox):
         # Locate the position of the original spin box in the QFormLayout
         if isinstance(layout, QFormLayout):
             for r in range(layout.rowCount()):
-                if layout.itemAt(r, QFormLayout.FieldRole) and layout.itemAt(r, QFormLayout.FieldRole).widget() == originalSpin:
-                    row, role = r, QFormLayout.FieldRole
+                if layout.itemAt(r, QFormLayout.ItemRole.FieldRole) and layout.itemAt(r, QFormLayout.ItemRole.FieldRole).widget() == originalSpin:
+                    row, role = r, QFormLayout.ItemRole.FieldRole
                     break
-                if layout.itemAt(r, QFormLayout.LabelRole) and layout.itemAt(r, QFormLayout.LabelRole).widget() == originalSpin:
-                    row, role = r, QFormLayout.LabelRole
+                if layout.itemAt(r, QFormLayout.ItemRole.LabelRole) and layout.itemAt(r, QFormLayout.ItemRole.LabelRole).widget() == originalSpin:
+                    row, role = r, QFormLayout.ItemRole.LabelRole
                     break
 
         # Create a new instance of CustomSpinBox
@@ -142,6 +143,7 @@ class GFFFieldSpinBox(QSpinBox):
         originalSpin.deleteLater()
 
         return customSpin
+
 
 class DLGEditor(Editor):
     def __init__(
@@ -168,6 +170,7 @@ class DLGEditor(Editor):
         """
         supported: list[ResourceType] = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
+        self._installation: HTInstallation
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
@@ -655,7 +658,7 @@ class DLGEditor(Editor):
         """
         # Update DLG
         newNode: DLGNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
-        self._add_node_main(newNode, node.links, False, item)
+        self._coreAddNode(newNode, node.links, False, item)
 
     def addRootNode(self):
         """Adds a root node to the dialog graph.
@@ -673,12 +676,12 @@ class DLGEditor(Editor):
             - The item is added to the model with the link and marked as not a copy
             - The item is refreshed in the view and appended to the model row
         """
-        self._add_node_main(DLGEntry(), self._dlg.starters, False, self.model)
+        self._coreAddNode(DLGEntry(), self._dlg.starters, False, self.model)
 
     def addCopyLink(self, item: QStandardItem | None, target: DLGNode, source: DLGNode):
-        self._add_node_main(source, target.links, True, item)
+        self._coreAddNode(source, target.links, True, item)
 
-    def _add_node_main(
+    def _coreAddNode(
         self,
         source: DLGNode,
         target_links: list[DLGLink],
@@ -715,16 +718,18 @@ class DLGEditor(Editor):
             - Loads the copied node recursively into the new item.
         """
         sourceCopy: DLGNode = deepcopy(source)
-        newLink = DLGLink(sourceCopy)
-        target.links.append(newLink)
-
-        newItem = QStandardItem()
-        self._loadDLGRec(newItem, newLink, [], [])
+        newItem = self._create_link_between_nodes(sourceCopy, target)
         item.appendRow(newItem)
 
     def copyNode(self, node: DLGNode):
-        self._copy = node
-        self.copyPath(node)
+        node_dict_str = json.dumps(node.to_dict())
+        QApplication.clipboard().setText(node_dict_str)
+
+    def pasteNode(self, parent_node: DLGNode):
+        node_dict_str = QApplication.clipboard().text()
+        node_dict = json.loads(node_dict_str)
+        copied_node = DLGNode.from_dict(node_dict)
+        parent_node.links.append(DLGLink(copied_node))
 
     def copyPath(self, node: DLGNode):
         """Copies the node path to the user's clipboard.
@@ -739,7 +744,45 @@ class DLGEditor(Editor):
         if path:
             QApplication.clipboard().setText(path)
 
-    def deleteNode(self, item: QStandardItem | None):
+    def addCopyNode(
+        self,
+        parent_node: DLGNode,
+        new_node: DLGNode,
+    ):
+        new_item = self._create_link_between_nodes(new_node, parent_node)
+        parent_item = self.findItemForNode(parent_node)
+        parent_item.appendRow(new_item)
+
+    def _create_link_between_nodes(self, childNode, parentNode) -> QStandardItem:
+        newLink = DLGLink(childNode)
+        parentNode.links.append(newLink)
+        result = QStandardItem()
+        self._loadDLGRec(result, newLink, [], [])
+        return result
+
+    def findItemForNode(self, node: DLGNode) -> QStandardItem:
+        items_to_check = [self.model.item(i, 0) for i in range(self.model.rowCount())]
+        while items_to_check:
+            item = items_to_check.pop(0)
+            assert item is not None
+            link = item.data(_LINK_ROLE)
+            if link.node is node:
+                return item
+            items_to_check.extend([item.child(i, 0) for i in range(item.rowCount())])
+        return None
+
+    def _check_clipboard_for_json_node(self):
+        clipboard_text = QApplication.clipboard().text()
+        try:
+            node_data = json.loads(clipboard_text)
+            if isinstance(node_data, dict) and "type" in node_data:
+                self._copy = DLGNode.from_dict(node_data)
+        except KeyError:
+            self._logger.exception("Invalid JSON node on clipboard.")
+        except json.JSONDecodeError:
+            ...
+
+    def deleteNode(self, item: QStandardItem):
         """Deletes a node from the diagram.
 
         Args:
@@ -756,7 +799,8 @@ class DLGEditor(Editor):
             - Remove link from parent's links and row from parent.
         """
         link: DLGLink = item.data(_LINK_ROLE)
-        node: DLGNode = link.node
+        node: DLGNode | None = link.node
+        assert node is not None
         parent: QStandardItem | None = item.parent()
 
         if parent is None:
@@ -767,7 +811,8 @@ class DLGEditor(Editor):
         else:
             parentItem: QStandardItem | None = parent
             parentLink: DLGLink = parentItem.data(_LINK_ROLE)
-            parentNode: DLGNode = parentLink.node
+            parentNode: DLGNode | None = parentLink.node
+            assert parentNode is not None
 
             for link in copy(parentNode.links):
                 if link.node is node:
@@ -791,6 +836,7 @@ class DLGEditor(Editor):
         if self.ui.dialogTree.selectedIndexes():
             index: QModelIndex = self.ui.dialogTree.selectedIndexes()[0]  # type: ignore[arg-type]
             item: QStandardItem | None = self.model.itemFromIndex(index)
+            assert item is not None
             self.deleteNode(item)
 
     def expandToRoot(self, item: QStandardItem):
@@ -815,11 +861,14 @@ class DLGEditor(Editor):
             - If no match is found, print a failure message.
         """
         copiedLink: DLGLink = sourceItem.data(_LINK_ROLE)
-        copiedNode: DLGNode = copiedLink.node
+        assert copiedLink is not None
+        copiedNode: DLGNode | None = copiedLink.node
+        assert copiedNode is not None
 
         items: list[QStandardItem | None] = [self.model.item(i, 0) for i in range(self.model.rowCount())]
         while items:
             item: QStandardItem | None = items.pop()
+            assert item is not None
             link: DLGLink = item.data(_LINK_ROLE)
             isCopy: bool = item.data(_COPY_ROLE)
             if link.node is copiedNode and not isCopy:
@@ -1013,6 +1062,7 @@ class DLGEditor(Editor):
         oldRow: int = item.row()
         itemParent = item.parent()
         parent = self.model if item.parent() is None else itemParent
+        assert parent is not None
         newRow: int = oldRow + amount
         itemParentText = "" if itemParent is None else itemParent.text()
 
@@ -1089,6 +1139,7 @@ class DLGEditor(Editor):
             - Adds Copy/Delete actions if entry or reply
             - Displays menu at mouse position.
         """
+        self._check_clipboard_for_json_node()
         link: DLGLink = item.data(_LINK_ROLE)
         isCopy: bool = item.data(_COPY_ROLE)
         node: DLGNode = link.node

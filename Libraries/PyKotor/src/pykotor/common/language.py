@@ -466,6 +466,18 @@ class LocalizedString:
             return False
         return other._substrings == self._substrings
 
+    def to_dict(self) -> dict:
+        return {
+            "stringref": self.stringref,
+            "substrings": self._substrings
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> LocalizedString:
+        localized_string = LocalizedString(data["stringref"])
+        localized_string._substrings = data.get("substrings", {})
+        return localized_string
+
     @classmethod
     def from_invalid(cls):
         return cls(-1)
