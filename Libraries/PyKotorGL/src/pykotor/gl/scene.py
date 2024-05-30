@@ -652,6 +652,7 @@ class Scene:
                 del self.textures_data_queue[name]
 
     def update_models(self):
+        """Currently unused."""
         with self.models_data_lock:
             for result in self.models_data_queue.copy().values():
                 if result is None:  # still processing...
@@ -801,7 +802,7 @@ class Scene:
         return self.blank_lightmap if lightmap else self.blank_texture
 
     def loadModel(self, name: str) -> Model:
-        """Load model data asynchronously."""
+        """Load model data asynchronously. Currently unused."""
         if name in self.models:
             return self.models[name]
         with self.models_data_lock:
@@ -818,7 +819,10 @@ class Scene:
         self,
         name: str,
     ):
-        """This function runs in a background thread and handles the I/O and processing to get the model data."""
+        """This function runs in a background thread and handles the I/O and processing to get the model data.
+        
+        Currently unused.
+        """
         RobustRootLogger().debug(f"async queue {name}.mdl call")
         mdl_data = EMPTY_MDL_DATA
         mdx_data = EMPTY_MDX_DATA
