@@ -307,6 +307,7 @@ class InventoryEditor(QDialog):
         filepath: str = "",
         name: str = "",
     ):
+        # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
         """Sets equipment in a given slot.
 
         Args:
@@ -327,7 +328,11 @@ class InventoryEditor(QDialog):
         """
         slotPicture: QLabel = self._slotMap[slot].label
         if resname:
-            filepath, name, uti = self.getItem(resname, filepath)
+            try:
+                filepath, name, uti = self.getItem(resname, filepath)
+            except (AttributeError, Exception):
+                RobustRootLogger.exception(f"Failed to get the equipment item '{resname}' from '{filepath}'")
+                return
 
             slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
             slotPicture.setPixmap(self.getItemImage(uti))
