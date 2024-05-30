@@ -105,6 +105,7 @@ class GFFFieldSpinBox(QSpinBox):
         min_value: int = 0,
         max_value: int = 100,
     ) -> GFFFieldSpinBox:
+        """Is not perfect at realigning, but attempts to initialize a GFFFieldSpinBox from a pre-existing QSpinBox."""
         if not isinstance(originalSpin, QSpinBox):
             raise TypeError("The provided widget is not a QSpinBox.")
 
