@@ -1499,8 +1499,13 @@ class GITControlScheme:
         # sourcery skip: extract-duplicate-method, remove-redundant-if, split-or-ifs
         shouldPanCamera = self.panCamera.satisfied(buttons, keys)
         shouldRotateCamera = self.rotateCamera.satisfied(buttons, keys)
+
+        # Adjust worldDelta if cursor is locked
+        adjustedWorldDelta = worldDelta
         if shouldPanCamera or shouldRotateCamera:
             self.editor.ui.renderArea.doCursorLock(screen)
+            adjustedWorldDelta = Vector2(-worldDelta.x, -worldDelta.y)
+
         if shouldPanCamera:
             moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
             #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
@@ -1514,7 +1519,7 @@ class GITControlScheme:
                 selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
                 self.initialPositions = {instance: Vector3(*instance.position) for instance in selection}
                 self.isDragMoving = True
-            self.editor.moveSelected(worldDelta.x, worldDelta.y)
+            self.editor.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y)
         if self.rotateSelectedToPoint.satisfied(buttons, keys):
             if (
                 not self.isDragRotating
