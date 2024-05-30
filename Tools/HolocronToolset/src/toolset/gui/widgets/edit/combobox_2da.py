@@ -82,6 +82,8 @@ class ComboBox2DA(QComboBox):
         self.disableSort() if self._sortAlphabetically else self.enableSort()
 
     def enableSort(self):
+        # FIXME: sorting is broken.
+        return
         self._sortAlphabetically = True
         self.model().sort(0)
 
