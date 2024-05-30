@@ -421,10 +421,10 @@ class UTIEditor(Editor):
         copyModelVariationAction = QAction(f"Model Variation: {modelVariation}", self)
         copyModelVariationAction.triggered.connect(lambda: self._copyToClipboard(f"{modelVariation}"))
 
-        copyTextureVariationAction = QAction(f"<br>Texture Variation:</br> {textureVariation}", self)
+        copyTextureVariationAction = QAction(f"Texture Variation: {textureVariation}", self)
         copyTextureVariationAction.triggered.connect(lambda: self._copyToClipboard(f"{textureVariation}"))
 
-        copyIconPathAction = QAction(f"<br>Icon Name:</br> '{iconPath}'", self)
+        copyIconPathAction = QAction(f"Icon Name: '{iconPath}'", self)
         copyIconPathAction.triggered.connect(lambda: self._copyToClipboard(f"{iconPath}"))
 
         copyMenu.addAction(summaryItemIconAction)
@@ -459,8 +459,7 @@ class UTIEditor(Editor):
 
     def _copyIconTooltip(self):
         tooltipText = self._generateIconTooltip(asHtml=False)
-        clipboard = QApplication.clipboard()
-        clipboard.setText(tooltipText)
+        self._copyToClipboard(tooltipText)
 
     def _copyToClipboard(self, text: str):
         clipboard = QApplication.clipboard()
