@@ -8,7 +8,7 @@ import sys
 
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
@@ -200,7 +200,7 @@ class ToolWindow(QMainWindow):
         # Focus handler (searchbox, various keyboard actions)
         self.focusHandler: MainFocusHandler = MainFocusHandler(self)
         self.installEventFilter(self.focusHandler)
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFocus()
 
         # Finalize the init
@@ -234,40 +234,40 @@ class ToolWindow(QMainWindow):
         if not QPixmap(icon_path).isNull():
             self.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
             self.setWindowIcon(QIcon(QPixmap(icon_path)))
-            QApplication.instance().setWindowIcon(QIcon(QPixmap(icon_path)))
+            cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
         else:
             print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
 
-        # Set fixed size based on the current size
-        self.setFixedSize(self.size())
+        # Set minimum size based on the current size
+        self.setMinimumSize(self.size())
 
     def setupModulesTab(self):
         modulesResourceList = self.ui.modulesWidget.ui
         modulesSectionCombo = modulesResourceList.sectionCombo
         refreshButton = modulesResourceList.refreshButton
         designerButton = self.ui.specialActionButton
+        self.collectButton = QPushButton("Collect...")
 
-        # Set size policies
-        modulesSectionCombo.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)  # type: ignore[arg-type]
-        refreshButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)  # type: ignore[arg-type]
-        designerButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)  # type: ignore[arg-type]
-        modulesSectionCombo.setMaximumWidth(250)
-        modulesSectionCombo.setMaximumHeight(68)
-
+        # Remove from original layouts
         modulesResourceList.horizontalLayout_2.removeWidget(modulesSectionCombo)
         modulesResourceList.horizontalLayout_2.removeWidget(refreshButton)
         modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)
 
+        # Set size policies
+        modulesSectionCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        refreshButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        designerButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.collectButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        modulesSectionCombo.setMinimumWidth(250)
+        modulesSectionCombo.setMaximumHeight(68)
 
         # Create a new layout to stack Designer and Refresh buttons
         stackButtonLayout = QVBoxLayout()
         stackButtonLayout.setSpacing(1)
         stackButtonLayout.addWidget(refreshButton)
         stackButtonLayout.addWidget(designerButton)
-        self.moreButton = QPushButton("Collect...")
-        self.moreButton.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        stackButtonLayout.addWidget(self.moreButton)
+        stackButtonLayout.addWidget(self.collectButton)
 
         # Create a new horizontal layout to place the combobox and buttons
         topLayout = QHBoxLayout()
@@ -281,7 +281,7 @@ class ToolWindow(QMainWindow):
         modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)
         merged_stylesheet = f"""{modulesSectionCombo.styleSheet()}
             QComboBox {{
-                font-size: 13px; /* Increase text size */
+                font-size: 14px; /* Increase text size */
                 font-family: Arial, Helvetica, sans-serif; /* Use a readable font */
                 padding: 5px; /* Add padding for spacing */
                 text-align: center; /* Center the text */
@@ -300,24 +300,24 @@ class ToolWindow(QMainWindow):
             menu.addAction("Everything").triggered.connect(lambda: self.extractModuleEverything())
             return menu
 
-        self.moreButtonMenu = create_more_actions_menu()
-        self.moreButtonMenu.aboutToHide.connect(self.onMenuHide)
-        self.moreButtonMenu.leaveEvent = self.onMenuHide
-        self.moreButton.leaveEvent = self.onMenuHide
-        self.moreButton.setMenu(self.moreButtonMenu)
+        self.collectButtonMenu = create_more_actions_menu()
+        self.collectButtonMenu.aboutToHide.connect(self.onMenuHide)
+        self.collectButtonMenu.leaveEvent = self.onMenuHide
+        self.collectButton.leaveEvent = self.onMenuHide
+        self.collectButton.setMenu(self.collectButtonMenu)
 
         # Show menu on hover
-        self.moreButton.setMouseTracking(True)
-        self.moreButton.installEventFilter(self)
+        self.collectButton.setMouseTracking(True)
+        self.collectButton.installEventFilter(self)
 
     def onMenuHide(self, *args):
         """Custom slot to handle menu hide actions."""
-        self.moreButton.menu().hide()
-        self.moreButtonMenu.close()
+        self.collectButton.menu().hide()
+        self.collectButtonMenu.close()
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if obj == self.moreButton and event.type() == QEvent.Type.HoverEnter:
-            self.moreButton.showMenu()
+        if obj == self.collectButton and event.type() == QEvent.Type.HoverEnter:
+            self.collectButton.showMenu()
         if hasattr(self, "focusHandler"):
             return self.focusHandler.eventFilter(obj, event)
         return super().eventFilter(obj, event)
@@ -363,12 +363,14 @@ class ToolWindow(QMainWindow):
 
         def openModuleDesigner() -> ModuleDesigner:
             assert self.active is not None
-            active = self.active
-            module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
 
-            #process = multiprocessing.Process(target=run_module_designer, args=(str(active.path()), active.name, active.tsl, str(module_path)))
+            # Uncomment this block to start Module Designer in new process
+            #import multiprocessing
+            #module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
+            #process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
             #process.start()
             #BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
+            #return
 
             designerUi = (
                 ModuleDesigner(
@@ -386,7 +388,7 @@ class ToolWindow(QMainWindow):
             addWindow(designerUi, show=False)
             return designerUi
 
-        self.ui.specialActionButton.clicked.connect(openModuleDesigner)
+        self.ui.specialActionButton.clicked.connect(lambda *args: openModuleDesigner() and None or None)
 
         self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
         self.ui.overrideWidget.requestReload.connect(self.onOverrideReload)
@@ -413,7 +415,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
-        self.ui.actionExit.triggered.connect(self.close)
+        self.ui.actionExit.triggered.connect(lambda *args: self.close() and None or None)
 
         self.ui.actionNewTLK.triggered.connect(lambda: addWindow(TLKEditor(self, self.active)))
         self.ui.actionNewDLG.triggered.connect(lambda: addWindow(DLGEditor(self, self.active)))
@@ -461,7 +463,7 @@ class ToolWindow(QMainWindow):
 
     def openRecentFile(self):
         """Open a file from the Recent Files menu."""
-        objRet: QObject = self.sender()
+        objRet: QObject | None = self.sender()
         if not isinstance(objRet, QAction):
             return
         action = objRet
@@ -487,7 +489,7 @@ class ToolWindow(QMainWindow):
         self.settings.selectedTheme = themeName
         if themeName == "Breeze (Dark)":
             file = QFile(":/dark/stylesheet.qss")
-            file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
+            file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)  # type: ignore[arg-type]
             stream = QTextStream(file)
             app.setStyleSheet(stream.readAll())
             file.close()
@@ -498,7 +500,7 @@ class ToolWindow(QMainWindow):
             app.setStyle(self.original_style)
             # Reset window flags to default, which includes the title bar
             self.setWindowFlags(
-                Qt.WindowType.Window
+                Qt.WindowType.Window  # type: ignore[arg-type]
                 | Qt.WindowType.WindowCloseButtonHint
                 | Qt.WindowType.WindowMinimizeButtonHint
                 | Qt.WindowType.WindowMaximizeButtonHint
@@ -662,7 +664,7 @@ class ToolWindow(QMainWindow):
         else:
             rel_folderpath = file_or_folder_path.relative_to(self.active.override_path())
             self.active.load_override(str(rel_folderpath))
-        self.ui.overrideWidget.setResources(self.active.override_resources( str(rel_folderpath) if rel_folderpath.name else None ))
+        self.ui.overrideWidget.setResources(self.active.override_resources(str(rel_folderpath) if rel_folderpath.name else None))
 
     def onOverrideRefresh(self):
         self.log.debug("ToolWindow.onOverrideRefresh()")
@@ -1327,7 +1329,7 @@ class ToolWindow(QMainWindow):
         self.reloadInstallations()
 
     def onTabChanged(self):
-        self.setFixedSize(512, 471)
+        self.setMinimumSize(512, 471)
 
     def selectResource(self, tree: ResourceList, resource: FileResource):
         """This function seems to reload the resource after determining the ui widget containing it.
