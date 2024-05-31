@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from PyQt5.QtGui import QStandardItemModel
 from qtpy import QtCore
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
@@ -15,7 +16,10 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from toolset.data.installation import HTInstallation
 
-_REAL_2DA_TEXT_ROLE = QtCore.Qt.UserRole + 5
+
+_ROW_INDEX_DATA_ROLE = QtCore.Qt.ItemDataRole.UserRole + 4
+_REAL_2DA_TEXT_ROLE = QtCore.Qt.ItemDataRole.UserRole + 5
+
 
 class ComboBox2DA(QComboBox):
     def __init__(self, parent: QWidget):
@@ -23,16 +27,45 @@ class ComboBox2DA(QComboBox):
 
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
+        self.currentIndexChanged.connect(self.onCurrentIndexChanged)
 
         self._sortAlphabetically: bool = False
         self._this2DA: TwoDA | None = None
         self._installation: HTInstallation | None = None
         self._resname: str | None = None
 
-    def setContext(self, data: TwoDA, install: HTInstallation, resname: str):
-        self._this2DA = data
-        self._installation = install
-        self._resname = resname
+    def currentIndex(self) -> int:
+        """Returns the row index from the currently selected item: This is NOT the index into the combobox like it would be with a
+        normal QCombobox.
+
+        Returns:
+        -------
+            Row index into the 2DA file.
+        """
+        current_index = super().currentIndex()
+        if current_index == -1:
+            return 0
+        row_index = self.itemData(current_index, _ROW_INDEX_DATA_ROLE)
+        return row_index
+
+    def setCurrentIndex(self, rowIn2DA: int):
+        """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a
+        normal QCombobox. If the index cannot be found, it will create an item with the matching index.
+
+        Args:
+        ----
+            rowIn2DA: The Row index to select.
+        """
+        index = None
+        for i in range(self.count()):
+            if self.itemData(i, _ROW_INDEX_DATA_ROLE) == rowIn2DA:
+                index = i
+
+        if index is None:
+            self.addItem(f"[Modded Entry #{rowIn2DA}]", rowIn2DA)
+            index = self.count() - 1
+
+        super().setCurrentIndex(index)
 
     def addItem(
         self,
@@ -51,8 +84,45 @@ class ComboBox2DA(QComboBox):
         assert isinstance(text, str), f"text '{text}' ({text.__class__.__name__}) is not a str"
         assert isinstance(row, int), f"row '{row}' ({row.__class__.__name__}) is not an int"
         display_text = f"{text} [{row}]"
-        super().addItem(display_text, row)
-        self.setItemData(row, text, _REAL_2DA_TEXT_ROLE)
+        super().addItem(display_text)
+
+        # Do NOT pass the row here!
+        self.setItemData(self.count() - 1, row, _ROW_INDEX_DATA_ROLE)
+        self.setItemData(self.count() - 1, text, _REAL_2DA_TEXT_ROLE)
+
+    def insertItem(self, index: int, text: str):
+        """Raises NotImplementedError because inserting an item without specifying a row index is not supported."""
+        msg = "Inserting an item using insertItem is not supported. Use addItem to add a new entry to the combobox."
+        raise NotImplementedError(msg)
+
+    def addItems(self, texts: list[str]):
+        """Raises NotImplementedError because bulk adding items without specifying row indices is not supported."""
+        msg = "Bulk adding items using addItems is not supported. Use setItems to add multiple items with proper row indices."
+        raise NotImplementedError(msg)
+
+    def insertItems(self, index: int, texts: list[str]):
+        """Raises NotImplementedError because bulk inserting items without specifying row indices is not supported."""
+        msg = "Bulk inserting items using insertItems is not supported. Use setItems to insert multiple items with proper row indices."
+        raise NotImplementedError(msg)
+
+    def onCurrentIndexChanged(self, index: int):
+        self.updateToolTip()
+
+    def onContextMenu(self, point: QPoint):
+        menu = QMenu(self)
+        if (
+            self._installation is not None
+            and self._resname is not None
+            and self._this2DA is not None
+        ):
+            menu.addAction(f"Open '{self._resname}.2da' in 2DAEditor").triggered.connect(self.openIn2DAEditor)
+        menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
+        toggleSortAction = QAction("Toggle Sorting", self)
+        toggleSortAction.setCheckable(True)
+        toggleSortAction.setChecked(self._sortAlphabetically)
+        toggleSortAction.triggered.connect(self.toggleSort)
+        menu.addAction(toggleSortAction)
+        menu.popup(self.mapToGlobal(point))
 
     def setItems(
         self,
@@ -78,74 +148,41 @@ class ComboBox2DA(QComboBox):
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
 
+    def updateToolTip(self):
+        if self._resname and self._this2DA:
+            tooltip_text = (
+                f"<b>Filename:</b> {self._resname}.2da<br>"
+                f"<b>Row Index:</b> {self.currentIndex()}<br>"
+                "<br><i>Right-click for more options.</i>"
+            )
+        else:
+            tooltip_text = (
+                f"<b>Row Index:</b> {self.currentIndex()}<br>"
+                "<br><i>Right-click for more options.</i>"
+            )
+        self.setToolTip(tooltip_text)
+
+    def setContext(self, data: TwoDA, install: HTInstallation, resname: str):
+        self._this2DA = data
+        self._installation = install
+        self._resname = resname
+
     def toggleSort(self):
         self.disableSort() if self._sortAlphabetically else self.enableSort()
 
-    def enableSort(self):
-        # FIXME: sorting is broken. Causes wrong internal value to be applied. Should create a proper sort model here.
-        return
+    def enableSort(self):  # sourcery skip: class-extract-method
+        """Sorts the combobox alphabetically. This is a custom method."""
         self._sortAlphabetically = True
-        self.model().sort(0)
+        model: QStandardItemModel = self.model()
+        model.setSortRole(_REAL_2DA_TEXT_ROLE)
+        model.sort(0)
 
     def disableSort(self):
+        """Sorts the combobox by row index. This is a custom method."""
         self._sortAlphabetically = False
-        selected: int = self.currentData()
-
-        items: list[tuple[int, str]] = [
-            (self.itemData(index), self.itemData(index, _REAL_2DA_TEXT_ROLE))
-            for index in range(self.count())
-        ]
-        self.clear()
-
-        for index, text in sorted(items, key=lambda x: x[0]):
-            assert isinstance(text, str), f"text '{text}' ({text.__class__.__name__}) is not a str"
-            assert isinstance(index, int), f"index '{index}' ({index.__class__.__name__}) is not an int"
-            self.addItem(text, index)
-        self.setCurrentIndex(selected)
-
-    def setCurrentIndex(self, rowIn2DA: int):
-        """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a
-        normal QCombobox. If the index cannot be found, it will create an item with the matching index.
-
-        Args:
-        ----
-            rowIn2DA: The row index to select.
-        """
-        index = None
-        for i in range(self.count()):
-            if self.itemData(i) == rowIn2DA:
-                index = i
-
-        if index is None:
-            self.addItem(f"[Modded Entry #{rowIn2DA}]", rowIn2DA)
-            index = self.count() - 1
-
-        super().setCurrentIndex(index)
-
-    def currentIndex(self) -> int:
-        """Returns the row index from the currently selected item.
-
-        Returns:
-        -------
-            Row index into the 2DA file.
-        """
-        return 0 if self.currentData() is None else self.currentData()
-
-    def onContextMenu(self, point: QPoint):
-        menu = QMenu(self)
-        if (
-            self._installation is not None
-            and self._resname is not None
-            and self._this2DA is not None
-        ):
-            menu.addAction(f"Open '{self._resname}.2da' in 2DAEditor").triggered.connect(self.openIn2DAEditor)
-        menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
-        toggleSortAction = QAction("Toggle Sorting", self)
-        toggleSortAction.setCheckable(True)
-        toggleSortAction.setChecked(self._sortAlphabetically)
-        toggleSortAction.triggered.connect(self.toggleSort)
-        menu.addAction(toggleSortAction)
-        menu.popup(self.mapToGlobal(point))
+        model: QStandardItemModel = self.model()
+        model.setSortRole(_ROW_INDEX_DATA_ROLE)
+        model.sort(0)
 
     def openIn2DAEditor(self):
         if (
@@ -162,7 +199,7 @@ class ComboBox2DA(QComboBox):
         try:
             bytes_data = bytes_2da(self._this2DA)
             editor._load_main(bytes_data)  # noqa: SLF001
-        except ValueError as e:
+        except (ValueError, OSError) as e:
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
             QMessageBox(QMessageBox.Icon.Critical, "Failed to load file.", f"Failed to open or load file data.<br>{error_msg}").exec_()
             editor.proxyModel.setSourceModel(editor.model)
