@@ -46,7 +46,7 @@ class ComboBox2DA(QComboBox):
         if current_index == -1:
             return 0
         row_index = self.itemData(current_index, _ROW_INDEX_DATA_ROLE)
-        return row_index
+        return row_index or 0
 
     def setCurrentIndex(self, rowIn2DA: int):
         """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a
