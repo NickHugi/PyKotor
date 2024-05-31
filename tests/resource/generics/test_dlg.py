@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import os
 import pathlib
 import sys
 import unittest
 
 from unittest import TestCase
+
+from pykotor.common.language import Gender, Language, LocalizedString
 
 THIS_SCRIPT_PATH = pathlib.Path(__file__).resolve()
 PYKOTOR_PATH = THIS_SCRIPT_PATH.parents[3].resolve()
@@ -25,15 +28,16 @@ if UTILITY_PATH.joinpath("utility").exists():
 
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
+from pykotor.common.misc import Game, ResRef
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
+from pykotor.resource.generics.dlg import DLGAnimation, DLGLink, DLGNode, DLGStunt, construct_dlg, dismantle_dlg
 from pykotor.resource.type import ResourceType
+from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGReply
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
-    from pykotor.resource.generics.dlg import DLG, DLGEntry, DLGReply
+    from typing_extensions import LiteralString
 
 TEST_FILE = "tests/files/test.dlg"
 TEST_K1_FILE = "tests/files/test_k1.dlg"
@@ -78,9 +82,171 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         output = os.linesep.join(self.log_messages)
         self.assertTrue(result, output)
 
+    def test_k1_serialization(self):
+        gff: GFF = read_gff(TEST_K1_FILE)
+        dlg: DLG = construct_dlg(gff)
+        for node in dlg.all_entries():
+            reserialized_dlg_node: DLGNode = deepcopy(node)
+            differences = self.get_differences(node, reserialized_dlg_node)
+            assert differences == "", differences
+
+    def test_k2_serialization(self):
+        gff: GFF = read_gff(TEST_FILE)
+        dlg: DLG = construct_dlg(gff)
+        for node in dlg.all_entries():
+            reserialized_dlg_node: DLGNode = DLGNode.from_dict(node.to_dict())
+            differences = self.get_differences(node, reserialized_dlg_node)
+            assert differences == "", differences
+
+    def get_differences(self, node: DLGNode, reserialized_node: DLGNode) -> str:
+        attrs = [
+            "comment",
+            "links",
+            "list_index",
+            "camera_angle",
+            "delay",
+            "fade_type",
+            "listener",
+            "plot_index",
+            "plot_xp_percentage",
+            "quest",
+            "script1",
+            "sound",
+            "sound_exists",
+            "text",
+            "vo_resref",
+            "wait_flags",
+            "animations",
+            "quest_entry",
+            "fade_color",
+            "fade_delay",
+            "fade_length",
+            "camera_anim",
+            "camera_id",
+            "camera_fov",
+            "camera_height",
+            "camera_effect",
+            "target_height",
+            "script1_param1",
+            "script1_param2",
+            "script1_param3",
+            "script1_param4",
+            "script1_param5",
+            "script1_param6",
+            "script2_param1",
+            "script2",
+            "script2_param2",
+            "script2_param3",
+            "script2_param4",
+            "script2_param5",
+            "script2_param6",
+            "alien_race_node",
+            "emotion_id",
+            "facial_id",
+            "unskippable",
+            "node_id",
+            "post_proc_node",
+            "record_no_vo_override",
+            "record_vo",
+            "vo_text_changed",
+        ]
+
+        differences = []
+        for attr in attrs:
+            original_value = getattr(node, attr)
+            reserialized_value = getattr(reserialized_node, attr)
+
+            if isinstance(original_value, list) and isinstance(reserialized_value, list):
+                if len(original_value) != len(reserialized_value):
+                    differences.append(
+                        f"\nDifference found in attribute '{attr}':\n"
+                        f"Original value length: {len(original_value)}\n"
+                        f"Reserialized value length: {len(reserialized_value)}\n"
+                    )
+                    continue
+                for i, (orig_item, reserial_item) in enumerate(zip(original_value, reserialized_value)):
+                    if not self.compare_objects(orig_item, reserial_item):
+                        differences.append(f"\nDifference found in attribute '{attr}[{i}]':\n" f"Original value: {orig_item!r}\n" f"Reserialized value: {reserial_item!r}\n")
+                        if isinstance(orig_item, DLGLink):
+                            link_differences = self.get_link_differences(orig_item, reserial_item)
+                            differences.append(link_differences)
+                        elif isinstance(orig_item, DLGAnimation):
+                            anim_differences = self.get_animation_differences(orig_item, reserial_item)
+                            differences.append(anim_differences)
+            elif not self.compare_objects(original_value, reserialized_value):
+                differences.append(f"\nDifference found in attribute '{attr}':\n" f"Original value: {original_value!r}\n" f"Reserialized value: {reserialized_value!r}\n")
+
+        return "\n".join(differences)
+
+    def get_link_differences(self, link: DLGLink, reserialized_link: DLGLink) -> str:
+        link_attrs = [
+            "link_index",
+            "node",
+            "active1",
+            "comment",
+            "is_child",
+            "active2",
+            "active1_not",
+            "active2_not",
+            "logic",
+            "active1_param1",
+            "active1_param2",
+            "active1_param3",
+            "active1_param4",
+            "active1_param5",
+            "active1_param6",
+            "active2_param1",
+            "active2_param2",
+            "active2_param3",
+            "active2_param4",
+            "active2_param5",
+            "active2_param6",
+        ]
+
+        differences = []
+        for attr in link_attrs:
+            original_value = getattr(link, attr)
+            reserialized_value = getattr(reserialized_link, attr)
+
+            if not self.compare_objects(original_value, reserialized_value):
+                differences.append(f"\nDifference found in link attribute '{attr}':\n" f"Original value: {original_value!r}\n" f"Reserialized value: {reserialized_value!r}\n")
+                if attr == "node":
+                    node_differences = self.get_differences(original_value, reserialized_value)
+                    differences.append(node_differences)
+
+        return "\n".join(differences)
+
+    def get_animation_differences(self, animation: DLGAnimation, reserialized_animation: DLGAnimation) -> str:
+        anim_attrs = ["animation_id", "participant"]
+
+        differences = []
+        for attr in anim_attrs:
+            original_value = getattr(animation, attr)
+            reserialized_value = getattr(reserialized_animation, attr)
+
+            if not self.compare_objects(original_value, reserialized_value):
+                differences.append(
+                    f"\nDifference found in animation attribute '{attr}':\n" f"Original value: {original_value!r}\n" f"Reserialized value: {reserialized_value!r}\n"
+                )
+
+        return "\n".join(differences)
+
+    def compare_objects(self, obj1, obj2) -> bool:
+        """Compare two objects by comparing their attributes."""
+        if type(obj1) != type(obj2):
+            return False
+
+        if isinstance(obj1, (DLGNode, DLGLink, DLGAnimation)):
+            return all(
+                getattr(obj1, attr) == getattr(obj2, attr)
+                for attr in obj1.__dict__.keys()
+            )
+        return obj1 == obj2
+
     def test_k2_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
         reconstructed_gff: GFF = dismantle_dlg(construct_dlg(gff), Game.K2)
+        reconstructed_gff.root.get_list("EntryList").at(0).set_int32("RecordNoOverri", 1)  # HACK: there's an error in this test file
         self.assertTrue(gff.compare(reconstructed_gff, self.log_func, ignore_default_changes=True), os.linesep.join(self.log_messages))
 
     def test_k2_reconstruct_from_reconstruct(self):
@@ -210,6 +376,703 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
 
         self.assertEqual("bbb", dlg.stunts[1].participant)
         self.assertEqual("m01aa_c04_char01", dlg.stunts[1].stunt_model)
+
+
+class TestDLGEntrySerialization(unittest.TestCase):
+    def test_dlg_entry_serialization_basic(self):
+        entry = DLGEntry()
+        entry.comment = "Test Comment"
+        entry.camera_angle = 45
+
+        serialized = entry.to_dict()
+        deserialized = DLGEntry.from_dict(serialized)
+
+        self.assertEqual(entry.comment, deserialized.comment)
+        self.assertEqual(entry.camera_angle, deserialized.camera_angle)
+
+    def test_dlg_entry_serialization_with_links(self):
+        entry = DLGEntry()
+        entry.comment = "Entry with links"
+        link = DLGLink()
+        link.link_index = 1
+        entry.links.append(link)
+
+        serialized = entry.to_dict()
+        deserialized = DLGEntry.from_dict(serialized)
+
+        self.assertEqual(entry.comment, deserialized.comment)
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized.links[0].link_index, 1)
+
+    def test_dlg_entry_serialization_all_attributes(self):
+        entry = DLGEntry()
+        entry.comment = "All attributes"
+        entry.camera_angle = 30
+        entry.listener = "Listener"
+        entry.quest = "Quest"
+        entry.script1 = ResRef("script1")
+
+        serialized = entry.to_dict()
+        deserialized = DLGEntry.from_dict(serialized)
+
+        self.assertEqual(entry.comment, deserialized.comment)
+        self.assertEqual(entry.camera_angle, deserialized.camera_angle)
+        self.assertEqual(entry.listener, deserialized.listener)
+        self.assertEqual(entry.quest, deserialized.quest)
+        self.assertEqual(entry.script1, deserialized.script1)
+
+    def test_dlg_entry_with_nested_replies(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        entry1.links.append(DLGLink(node=reply1))
+        reply1.links.extend([DLGLink(node=entry2), DLGLink(node=reply2)])
+        reply2.links.append(DLGLink(node=entry1))
+        entry2.links.append(DLGLink(node=reply3))  # Reuse R249
+
+        serialized = entry1.to_dict()
+        deserialized = DLGEntry.from_dict(serialized)
+
+        self.assertEqual(entry1.comment, deserialized.comment)
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R222")
+        self.assertEqual(len(deserialized.links[0].node.links), 2)
+        self.assertEqual(deserialized.links[0].node.links[0].node.comment, "E221")
+        self.assertEqual(deserialized.links[0].node.links[1].node.text.get(Language.ENGLISH, Gender.MALE), "R223")
+        self.assertEqual(deserialized.links[0].node.links[1].node.links[0].node.comment, "E248")
+
+    def test_dlg_entry_with_circular_reference(self):
+        # Create DLGEntry and DLGReply objects
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        # Establish links between entries and replies to create circular reference
+        entry1.links.append(DLGLink(node=reply1))
+        reply1.links.append(DLGLink(node=entry2))
+        entry2.links.append(DLGLink(node=reply2))
+        reply2.links.append(DLGLink(node=entry1))  # Circular reference
+
+        # Serialize the entry1
+        serialized = entry1.to_dict()
+        # Deserialize back to object
+        deserialized = DLGEntry.from_dict(serialized)
+
+        # Assert top-level comment
+        self.assertEqual(entry1.comment, deserialized.comment)
+        
+        # Assert first level link
+        self.assertEqual(len(deserialized.links), 1)
+        deserialized_reply1 = deserialized.links[0].node
+        self.assertEqual(deserialized_reply1.text.get(Language.ENGLISH, Gender.MALE), "R222")
+
+        # Assert second level link
+        self.assertEqual(len(deserialized_reply1.links), 1)
+        deserialized_entry2 = deserialized_reply1.links[0].node
+        self.assertEqual(deserialized_entry2.comment, "E221")
+
+        # Assert third level link
+        self.assertEqual(len(deserialized_entry2.links), 1)
+        deserialized_reply2 = deserialized_entry2.links[0].node
+        self.assertEqual(deserialized_reply2.text.get(Language.ENGLISH, Gender.MALE), "R249")
+
+        # Assert circular reference back to the original entry1
+        self.assertEqual(len(deserialized_reply2.links), 1)
+        deserialized_entry1_circular = deserialized_reply2.links[0].node
+        self.assertEqual(deserialized_entry1_circular.comment, "E248")
+
+    def test_dlg_entry_with_multiple_levels(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+        entry3 = DLGEntry(comment="E250")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+        reply4 = DLGReply(text=LocalizedString.from_english("R225"))
+        reply5 = DLGReply(text=LocalizedString.from_english("R224"))
+
+        entry1.links.append(DLGLink(node=reply1))
+        reply1.links.extend([DLGLink(node=entry2), DLGLink(node=reply2)])
+        reply2.links.append(DLGLink(node=entry3))
+        entry3.links.append(DLGLink(node=reply4))
+        reply4.links.append(DLGLink(node=reply5))
+        entry2.links.append(DLGLink(node=reply3))  # Reuse R249
+
+        serialized = entry1.to_dict()
+        deserialized = DLGEntry.from_dict(serialized)
+
+        self.assertEqual(entry1.comment, deserialized.comment)
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R222")
+        self.assertEqual(len(deserialized.links[0].node.links), 2)
+        self.assertEqual(deserialized.links[0].node.links[0].node.comment, "E221")
+        self.assertEqual(deserialized.links[0].node.links[1].node.text.get(Language.ENGLISH, Gender.MALE), "R223")
+        self.assertEqual(len(deserialized.links[0].node.links[1].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[1].node.links[0].node.comment, "E250")
+        self.assertEqual(len(deserialized.links[0].node.links[1].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[1].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R225")
+        self.assertEqual(len(deserialized.links[0].node.links[1].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[1].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R224")
+
+
+class TestDLGReplySerialization(unittest.TestCase):
+    def test_dlg_reply_serialization_basic(self):
+        reply = DLGReply()
+        reply.text = LocalizedString.from_english("Hello")
+        reply.unskippable = True
+
+        serialized = reply.to_dict()
+        deserialized = DLGReply.from_dict(serialized)
+
+        self.assertEqual(reply.text, deserialized.text)
+        self.assertEqual(reply.unskippable, deserialized.unskippable)
+
+    def test_dlg_reply_serialization_with_links(self):
+        reply = DLGReply()
+        reply.text = LocalizedString.from_english("Reply with links")
+        link = DLGLink()
+        link.link_index = 2
+        reply.links.append(link)
+
+        serialized = reply.to_dict()
+        deserialized = DLGReply.from_dict(serialized)
+
+        self.assertEqual(reply.text, deserialized.text)
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized.links[0].link_index, 2)
+
+    def test_dlg_reply_serialization_all_attributes(self):
+        reply = DLGReply()
+        reply.text = LocalizedString.from_english("Reply with all attributes")
+        reply.vo_resref = ResRef("vo_resref")
+        reply.wait_flags = 5
+
+        serialized = reply.to_dict()
+        deserialized = DLGReply.from_dict(serialized)
+
+        self.assertEqual(reply.text, deserialized.text)
+        self.assertEqual(reply.vo_resref, deserialized.vo_resref)
+        self.assertEqual(reply.wait_flags, deserialized.wait_flags)
+
+    def test_dlg_reply_with_nested_entries(self):
+        # Create replies with localized text
+        reply1 = DLGReply()
+        reply1.text.set_data(Language.ENGLISH, Gender.MALE, "R222")
+        reply2 = DLGReply()
+        reply2.text.set_data(Language.ENGLISH, Gender.MALE, "R223")
+        reply3 = DLGReply()
+        reply3.text.set_data(Language.ENGLISH, Gender.MALE, "R249")
+
+        # Create entries with comments
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        # Link entries and replies together
+        reply1.links.append(DLGLink(node=entry1))
+        entry1.links.append(DLGLink(node=reply2))
+        entry2.links.append(DLGLink(node=reply3))  # Reuse R249
+
+        # Serialize and deserialize reply1
+        serialized = reply1.to_dict()
+        deserialized = DLGReply.from_dict(serialized)
+
+        # Debug prints
+        print("Serialized reply1:", serialized)
+        print("Deserialized reply1:", deserialized)
+
+        # Assertions
+        # Check the text of the first reply
+        original_text = reply1.text.get(Language.ENGLISH, Gender.MALE)
+        deserialized_text = deserialized.text.get(Language.ENGLISH, Gender.MALE)
+        self.assertEqual(original_text, deserialized_text)
+
+        # Check the first link in the deserialized reply
+        deserialized_entry1 = deserialized.links[0].node
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized_entry1.comment, "E248")
+
+        # Check the first link in the deserialized entry1
+        deserialized_reply2 = deserialized_entry1.links[0].node
+        self.assertEqual(len(deserialized_entry1.links), 1)
+        self.assertEqual(deserialized_reply2.text.get(Language.ENGLISH, Gender.MALE), "R223")
+
+        # Check the first link in the deserialized reply2
+        deserialized_entry2 = deserialized_reply2.links[0].node
+        self.assertEqual(deserialized_entry2.comment, "E221")
+        self.assertEqual(len(deserialized_entry2.links), 1)
+
+        # Check the first link in the deserialized entry2
+        deserialized_reply3 = deserialized_entry2.links[0].node
+        self.assertEqual(deserialized_reply3.text.get(Language.ENGLISH, Gender.MALE), "R249")
+
+    def test_dlg_reply_with_circular_reference(self):
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1.links.append(DLGLink(node=entry1))
+        entry1.links.append(DLGLink(node=reply2))
+        reply2.links.append(DLGLink(node=entry2))
+        entry2.links.append(DLGLink(node=reply1))  # Circular reference
+
+        serialized = reply1.to_dict()
+        deserialized = DLGReply.from_dict(serialized)
+
+        self.assertEqual(reply1.text, deserialized.text)
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized.links[0].node.comment, "E248")
+        self.assertEqual(len(deserialized.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R249")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.comment, "E221")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R222")
+
+    def test_dlg_reply_with_multiple_levels(self):
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+        reply4 = DLGReply(text=LocalizedString.from_english("R225"))
+        reply5 = DLGReply(text=LocalizedString.from_english("R224"))
+
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+        entry3 = DLGEntry(comment="E250")
+
+        reply1.links.append(DLGLink(node=entry1))
+        reply2.links.append(DLGLink(node=entry2))
+        entry1.links.append(DLGLink(node=reply2))
+        entry2.links.append(DLGLink(node=reply3))  # Reuse R249
+        reply3.links.append(DLGLink(node=entry3))
+        entry3.links.append(DLGLink(node=reply4))
+        reply4.links.append(DLGLink(node=reply5))
+
+        serialized = reply1.to_dict()
+        deserialized = DLGReply.from_dict(serialized)
+
+        self.assertEqual(reply1.text, deserialized.text)
+        self.assertEqual(len(deserialized.links), 1)
+        self.assertEqual(deserialized.links[0].node.comment, "E248")
+        self.assertEqual(len(deserialized.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R223")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.comment, "E221")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R249")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.comment, "E250")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R225")
+        self.assertEqual(len(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R224")
+
+
+class TestDLGLinkSerialization(unittest.TestCase):
+    def test_dlg_link_serialization_basic(self):
+        link = DLGLink()
+        link.link_index = 3
+
+        serialized = link.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link.link_index, deserialized.link_index)
+
+    def test_dlg_link_serialization_with_node(self):
+        link = DLGLink()
+        entry = DLGEntry()
+        entry.comment = "Linked entry"
+        link.node = entry
+
+        serialized = link.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link.node.comment, deserialized.node.comment)
+
+    def test_dlg_link_serialization_all_attributes(self):
+        link = DLGLink()
+        link.link_index = 5
+        reply = DLGReply()
+        reply.text = LocalizedString.from_english("Linked reply")
+        link.node = reply
+
+        serialized = link.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link.link_index, deserialized.link_index)
+        self.assertEqual(link.node.text, deserialized.node.text)
+
+    def test_dlg_link_with_nested_entries_and_replies(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        link1 = DLGLink(node=reply1)
+        link2 = DLGLink(node=entry2)
+        link3 = DLGLink(node=reply2)
+        link4 = DLGLink(node=reply3)
+
+        entry1.links.append(link1)
+        reply1.links.extend([link2, link3])
+        entry2.links.append(link4)  # Reuse R249
+
+        serialized = link1.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link1.node.text, deserialized.node.text)
+        self.assertEqual(len(deserialized.node.links), 2)
+        self.assertEqual(deserialized.node.links[0].node.comment, "E221")
+        self.assertEqual(deserialized.node.links[1].node.text, "R223")
+        self.assertEqual(len(deserialized.node.links[1].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.comment, "E248")
+
+    def test_dlg_link_with_circular_references(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        link1 = DLGLink(node=reply1)
+        link2 = DLGLink(node=entry2)
+        link3 = DLGLink(node=reply2)
+        link4 = DLGLink(node=entry1)  # Circular reference
+
+        entry1.links.append(link1)
+        reply1.links.append(link2)
+        entry2.links.append(link3)  # Reuse R249
+        reply2.links.append(link4)
+
+        serialized = link1.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link1.node.text, deserialized.node.text)
+        self.assertEqual(len(deserialized.node.links), 1)
+        self.assertEqual(deserialized.node.links[0].node.comment, "E221")
+        self.assertEqual(len(deserialized.node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[0].node.links[0].node.text, "R249")
+        self.assertEqual(len(deserialized.node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[0].node.links[0].node.links[0].node.comment, "E248")
+
+    def test_dlg_link_with_multiple_levels(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+        entry3 = DLGEntry(comment="E250")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+        reply4 = DLGReply(text=LocalizedString.from_english("R225"))
+        reply5 = DLGReply(text=LocalizedString.from_english("R224"))
+
+        link1 = DLGLink(node=reply1)
+        link2 = DLGLink(node=entry2)
+        link3 = DLGLink(node=reply2)
+        link4 = DLGLink(node=reply3)
+        link5 = DLGLink(node=entry3)
+        link6 = DLGLink(node=reply4)
+        link7 = DLGLink(node=reply5)
+
+        entry1.links.append(link1)
+        reply1.links.append(link3)
+        reply1.links.append(link2)
+        entry2.links.append(link4)  # Reuse R249
+        reply3.links.append(link5)
+        entry3.links.append(link6)
+        reply4.links.append(link7)
+
+        serialized = link1.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link1.node.text, deserialized.node.text)
+        self.assertEqual(len(deserialized.node.links), 2)
+        self.assertEqual(deserialized.node.links[0].node.text, "R223")
+        self.assertEqual(deserialized.node.links[1].node.comment, "E221")
+        self.assertEqual(len(deserialized.node.links[1].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.text, "R249")
+        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.comment, "E250")
+        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.text, "R225")
+        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.links[0].node.text, "R224")
+
+
+class TestDLGAnimationSerialization(unittest.TestCase):
+    def test_dlg_animation_serialization_basic(self):
+        animation = DLGAnimation()
+        animation.animation_id = 1200
+        animation.participant = "Player"
+
+        serialized = animation.to_dict()
+        deserialized = DLGAnimation.from_dict(serialized)
+
+        self.assertEqual(animation.animation_id, deserialized.animation_id)
+        self.assertEqual(animation.participant, deserialized.participant)
+
+    def test_dlg_animation_serialization_default(self):
+        animation = DLGAnimation()
+
+        serialized = animation.to_dict()
+        deserialized = DLGAnimation.from_dict(serialized)
+
+        self.assertEqual(animation.animation_id, deserialized.animation_id)
+        self.assertEqual(animation.participant, deserialized.participant)
+
+    def test_dlg_animation_serialization_with_custom_values(self):
+        animation = DLGAnimation()
+        animation.animation_id = 2400
+        animation.participant = "NPC"
+
+        serialized = animation.to_dict()
+        deserialized = DLGAnimation.from_dict(serialized)
+
+        self.assertEqual(animation.animation_id, deserialized.animation_id)
+        self.assertEqual(animation.participant, deserialized.participant)
+
+
+class TestDLGStuntSerialization(unittest.TestCase):
+    def test_dlg_stunt_serialization_basic(self):
+        stunt = DLGStunt()
+        stunt.participant = "Player"
+        stunt.stunt_model = ResRef("model")
+
+        serialized = stunt.to_dict()
+        deserialized = DLGStunt.from_dict(serialized)
+
+        self.assertEqual(stunt.participant, deserialized.participant)
+        self.assertEqual(stunt.stunt_model, deserialized.stunt_model)
+
+    def test_dlg_stunt_serialization_default(self):
+        stunt = DLGStunt()
+
+        serialized = stunt.to_dict()
+        deserialized = DLGStunt.from_dict(serialized)
+
+        self.assertEqual(stunt.participant, deserialized.participant)
+        self.assertEqual(stunt.stunt_model, deserialized.stunt_model)
+
+    def test_dlg_stunt_serialization_with_custom_values(self):
+        stunt = DLGStunt()
+        stunt.participant = "NPC"
+        stunt.stunt_model = ResRef("npc_model")
+
+        serialized = stunt.to_dict()
+        deserialized = DLGStunt.from_dict(serialized)
+
+        self.assertEqual(stunt.participant, deserialized.participant)
+        self.assertEqual(stunt.stunt_model, deserialized.stunt_model)
+
+
+class TestDLGLinkSerialization(unittest.TestCase):
+    def test_dlg_link_serialization_basic(self):
+        link = DLGLink()
+        link.link_index = 3
+
+        serialized = link.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link.link_index, deserialized.link_index)
+
+    def test_dlg_link_serialization_with_node(self):
+        link = DLGLink()
+        entry = DLGEntry()
+        entry.comment = "Linked entry"
+        link.node = entry
+
+        serialized = link.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link.node.comment, deserialized.node.comment)
+
+    def test_dlg_link_serialization_all_attributes(self):
+        link = DLGLink()
+        link.link_index = 5
+        reply = DLGReply()
+        reply.text = "Linked reply"
+        link.node = reply
+
+        serialized = link.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link.link_index, deserialized.link_index)
+        self.assertEqual(link.node.text, deserialized.node.text)
+
+    def test_dlg_link_with_nested_entries_and_replies(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        link1 = DLGLink(node=reply1)
+        link2 = DLGLink(node=entry2)
+        link3 = DLGLink(node=reply2)
+        link4 = DLGLink(node=reply3)
+
+        entry1.links.append(link1)
+        reply1.links.extend([link2, link3])
+        entry2.links.append(link4)  # Reuse R249
+
+        serialized = link1.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link1.node.text, deserialized.node.text)
+        self.assertEqual(len(deserialized.node.links), 2)
+        self.assertEqual(deserialized.node.links[0].node.comment, "E221")
+        self.assertEqual(deserialized.node.links[1].node.text.get(Language.ENGLISH, Gender.MALE), "R223")
+        self.assertEqual(len(deserialized.node.links[1].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.comment, "E248")
+
+    def test_dlg_link_with_circular_references(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R249"))
+
+        link1 = DLGLink(node=reply1)
+        link2 = DLGLink(node=entry2)
+        link3 = DLGLink(node=reply2)
+        link4 = DLGLink(node=entry1)  # Circular reference
+
+        entry1.links.append(link1)
+        reply1.links.append(link2)
+        entry2.links.append(link3)  # Reuse R249
+        reply2.links.append(link4)
+
+        serialized = link1.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link1.node.text, deserialized.node.text)
+        self.assertEqual(len(deserialized.node.links), 1)
+        self.assertEqual(deserialized.node.links[0].node.comment, "E221")
+        self.assertEqual(len(deserialized.node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R249")
+        self.assertEqual(len(deserialized.node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[0].node.links[0].node.links[0].node.comment, "E248")
+
+    def test_dlg_link_with_multiple_levels(self):
+        entry1 = DLGEntry(comment="E248")
+        entry2 = DLGEntry(comment="E221")
+        entry3 = DLGEntry(comment="E250")
+
+        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
+        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
+        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
+        reply4 = DLGReply(text=LocalizedString.from_english("R225"))
+        reply5 = DLGReply(text=LocalizedString.from_english("R224"))
+
+        link1 = DLGLink(node=reply1)
+        link2 = DLGLink(node=entry2)
+        link3 = DLGLink(node=reply2)
+        link4 = DLGLink(node=reply3)
+        link5 = DLGLink(node=entry3)
+        link6 = DLGLink(node=reply4)
+        link7 = DLGLink(node=reply5)
+
+        entry1.links.append(link1)
+        reply1.links.append(link3)
+        reply1.links.append(link2)
+        entry2.links.append(link4)  # Reuse R249
+        reply3.links.append(link5)
+        entry3.links.append(link6)
+        reply4.links.append(link7)
+
+        serialized = link1.to_dict()
+        deserialized = DLGLink.from_dict(serialized)
+
+        self.assertEqual(link1.node.text, deserialized.node.text)
+        self.assertEqual(len(deserialized.node.links), 2)
+        self.assertEqual(deserialized.node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R223")
+        self.assertEqual(deserialized.node.links[1].node.comment, "E221")
+        self.assertEqual(len(deserialized.node.links[1].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R249")
+        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.comment, "E250")
+        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R225")
+        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.links), 1)
+        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R224")
+
+
+
+class TestDLGAnimationSerialization(unittest.TestCase):
+    def test_dlg_animation_serialization_basic(self):
+        animation = DLGAnimation()
+        animation.animation_id = 1200
+        animation.participant = "Player"
+
+        serialized = animation.to_dict()
+        deserialized = DLGAnimation.from_dict(serialized)
+
+        self.assertEqual(animation.animation_id, deserialized.animation_id)
+        self.assertEqual(animation.participant, deserialized.participant)
+
+    def test_dlg_animation_serialization_default(self):
+        animation = DLGAnimation()
+
+        serialized = animation.to_dict()
+        deserialized = DLGAnimation.from_dict(serialized)
+
+        self.assertEqual(animation.animation_id, deserialized.animation_id)
+        self.assertEqual(animation.participant, deserialized.participant)
+
+    def test_dlg_animation_serialization_with_custom_values(self):
+        animation = DLGAnimation()
+        animation.animation_id = 2400
+        animation.participant = "NPC"
+
+        serialized = animation.to_dict()
+        deserialized = DLGAnimation.from_dict(serialized)
+
+        self.assertEqual(animation.animation_id, deserialized.animation_id)
+        self.assertEqual(animation.participant, deserialized.participant)
+
+
+class TestDLGStuntSerialization(unittest.TestCase):
+    def test_dlg_stunt_serialization_basic(self):
+        stunt = DLGStunt()
+        stunt.participant = "Player"
+        stunt.stunt_model = ResRef("model")
+
+        serialized = stunt.to_dict()
+        deserialized = DLGStunt.from_dict(serialized)
+
+        self.assertEqual(stunt.participant, deserialized.participant)
+        self.assertEqual(stunt.stunt_model, deserialized.stunt_model)
+
+    def test_dlg_stunt_serialization_default(self):
+        stunt = DLGStunt()
+
+        serialized = stunt.to_dict()
+        deserialized = DLGStunt.from_dict(serialized)
+
+        self.assertEqual(stunt.participant, deserialized.participant)
+        self.assertEqual(stunt.stunt_model, deserialized.stunt_model)
+
+    def test_dlg_stunt_serialization_with_custom_values(self):
+        stunt = DLGStunt()
+        stunt.participant = "NPC"
+        stunt.stunt_model = ResRef("npc_model")
+
+        serialized = stunt.to_dict()
+        deserialized = DLGStunt.from_dict(serialized)
+
+        self.assertEqual(stunt.participant, deserialized.participant)
+        self.assertEqual(stunt.stunt_model, deserialized.stunt_model)
 
 
 if __name__ == "__main__":

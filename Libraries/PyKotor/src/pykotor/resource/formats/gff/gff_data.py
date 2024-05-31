@@ -602,6 +602,8 @@ class GFFStruct:
 #           and isinstance(self[label], object_type)  # TODO: uncomment this and assert type after fixing all the call typings
         ):
             value = self[label]
+        if object_type is bool and value.__class__ is int:
+            value = bool(value)
         return value
 
     def value(

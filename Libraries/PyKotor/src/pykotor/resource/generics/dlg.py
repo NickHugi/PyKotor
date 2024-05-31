@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import uuid
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -101,6 +102,73 @@ class DLG:
         # Deprecated:
         self.delay_entry: int = 0
         self.delay_reply: int = 0
+
+    def __copy__(self) -> Self:
+        return self.__class__.from_dict(self.to_dict())
+
+    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
+        if id(self) in memo:
+            return memo[id(self)]
+        copied_obj = self.__class__.from_dict(self.to_dict())
+        memo[id(self)] = copied_obj
+        return copied_obj
+
+    def to_dict(self) -> dict:
+        node_map = {}
+        data = {
+            "ambient_track": str(self.ambient_track),
+            "animated_cut": self.animated_cut,
+            "camera_model": str(self.camera_model),
+            "computer_type": self.computer_type.value,
+            "conversation_type": self.conversation_type.value,
+            "on_abort": str(self.on_abort),
+            "on_end": str(self.on_end),
+            "word_count": self.word_count,
+            "old_hit_check": self.old_hit_check,
+            "skippable": self.skippable,
+            "unequip_items": self.unequip_items,
+            "unequip_hands": self.unequip_hands,
+            "vo_id": self.vo_id,
+            "alien_race_owner": self.alien_race_owner,
+            "next_node_id": self.next_node_id,
+            "post_proc_owner": self.post_proc_owner,
+            "record_no_vo": self.record_no_vo,
+            "delay_entry": self.delay_entry,
+            "delay_reply": self.delay_reply,
+            "starters": [link.to_dict(node_map) for link in self.starters],
+            "stunts": [stunt.to_dict() for stunt in self.stunts],
+        }
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        dlg = cls(blank_node=False)
+        node_map = {}
+
+        dlg.ambient_track = ResRef(data["ambient_track"])
+        dlg.animated_cut = data["animated_cut"]
+        dlg.camera_model = ResRef(data["camera_model"])
+        dlg.computer_type = DLGComputerType(data["computer_type"])
+        dlg.conversation_type = DLGConversationType(data["conversation_type"])
+        dlg.on_abort = ResRef(data["on_abort"])
+        dlg.on_end = ResRef(data["on_end"])
+        dlg.word_count = data["word_count"]
+        dlg.old_hit_check = data["old_hit_check"]
+        dlg.skippable = data["skippable"]
+        dlg.unequip_items = data["unequip_items"]
+        dlg.unequip_hands = data["unequip_hands"]
+        dlg.vo_id = data["vo_id"]
+        dlg.alien_race_owner = data["alien_race_owner"]
+        dlg.next_node_id = data["next_node_id"]
+        dlg.post_proc_owner = data["post_proc_owner"]
+        dlg.record_no_vo = data["record_no_vo"]
+        dlg.delay_entry = data["delay_entry"]
+        dlg.delay_reply = data["delay_reply"]
+
+        dlg.starters = [DLGLink.from_dict(link_data, node_map) for link_data in data["starters"]]
+        dlg.stunts = [DLGStunt.from_dict(stunt_data) for stunt_data in data["stunts"]]
+
+        return dlg
 
     def print_tree(
         self,
@@ -247,61 +315,6 @@ class DLGConversationType(IntEnum):
 
 
 class DLGNode:
-    """Represents a node in the dialog tree.
-
-    Attributes:
-    ----------
-        text: "Text" field.
-        listener: "Listener" field.
-        vo_resref: "VO_ResRef" field.
-        script1: "Script" field.
-        delay: "Delay" field.
-        comment: "Comment" field.
-        sound: "Sound" field.
-        quest: "Quest" field.
-        plot_index: "PlotIndex" field.
-        plot_xp_percentage: "PlotXPPercentage" field.
-        wait_flags: "WaitFlags" field.
-        camera_angle: "CameraAngle" field.
-        fade_type: "FadeType" field.
-        sound_exists: "SoundExists" field.
-        vo_text_changed: "Changed" field.
-
-        quest_entry: "QuestEntry" field.
-        fade_delay: "FadeDelay" field.
-        fade_length: "FadeLength" field.
-        camera_anim: "CameraAnimation" field.
-        camera_id: "CameraID" field.
-        camera_fov: "CamFieldOfView" field.
-        camera_height: "CamHeightOffset" field.
-        camera_effect: "CamVidEffect" field.
-        target_height: "TarHeightOffset" field.
-        fade_color: "FadeColor" field.
-
-        script1_param1: "ActionParam1" field. KotOR 2 Only.
-        script2_param1: "ActionParam1b" field. KotOR 2 Only.
-        script1_param2: "ActionParam2" field. KotOR 2 Only.
-        script2_param2: "ActionParam2b" field. KotOR 2 Only.
-        script1_param3: "ActionParam3" field. KotOR 2 Only.
-        script2_param3: "ActionParam3b" field. KotOR 2 Only.
-        script1_param4: "ActionParam4" field. KotOR 2 Only.
-        script2_param4: "ActionParam4b" field. KotOR 2 Only.
-        script1_param5: "ActionParam5" field. KotOR 2 Only.
-        script2_param5: "ActionParam5b" field. KotOR 2 Only.
-        script1_param6: "ActionParamStrA" field. KotOR 2 Only.
-        script2_param6: "ActionParamStrB" field. KotOR 2 Only.
-        script2: "Script2" field. KotOR 2 Only.
-        alien_race_node: "AlienRaceNode" field. KotOR 2 Only.
-        emotion_id: "Emotion" field. KotOR 2 Only.
-        facial_id: "FacialAnim" field. KotOR 2 Only.
-        node_id: "NodeID" field. KotOR 2 Only.
-        unskippable: "NodeUnskippable" field. KotOR 2 Only.
-        post_proc_node: "PostProcNode" field. KotOR 2 Only.
-        record_no_vo_override: "RecordNoVOOverri" field. KotOR 2 Only.
-        record_vo: "RecordVO" field. KotOR 2 Only.
-        vo_text_changed: "VOTextChanged" field. KotOR 2 Only.
-    """
-
     def __init__(
         self,
     ):
@@ -375,12 +388,101 @@ class DLGNode:
         self.record_vo: bool = False
         self.vo_text_changed: bool = False
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DLGNode):
+            return NotImplemented
+        if self.__class__ != other.__class__:
+            return False
+        return (
+            self.comment == other.comment
+            and self.links == other.links
+            and self.list_index == other.list_index
+            and self.camera_angle == other.camera_angle
+            and self.delay == other.delay
+            and self.fade_type == other.fade_type
+            and self.listener == other.listener
+            and self.plot_index == other.plot_index
+            and self.plot_xp_percentage == other.plot_xp_percentage
+            and self.quest == other.quest
+            and self.script1 == other.script1
+            and self.sound == other.sound
+            and self.sound_exists == other.sound_exists
+            and self.text == other.text
+            and self.vo_resref == other.vo_resref
+            and self.wait_flags == other.wait_flags
+            and self.animations == other.animations
+            and self.quest_entry == other.quest_entry
+            and self.fade_color == other.fade_color
+            and self.fade_delay == other.fade_delay
+            and self.fade_length == other.fade_length
+            and self.camera_anim == other.camera_anim
+            and self.camera_id == other.camera_id
+            and self.camera_fov == other.camera_fov
+            and self.camera_height == other.camera_height
+            and self.camera_effect == other.camera_effect
+            and self.target_height == other.target_height
+            and self.script1_param1 == other.script1_param1
+            and self.script1_param2 == other.script1_param2
+            and self.script1_param3 == other.script1_param3
+            and self.script1_param4 == other.script1_param4
+            and self.script1_param5 == other.script1_param5
+            and self.script1_param6 == other.script1_param6
+            and self.script2_param1 == other.script2_param1
+            and self.script2 == other.script2
+            and self.script2_param2 == other.script2_param2
+            and self.script2_param3 == other.script2_param3
+            and self.script2_param4 == other.script2_param4
+            and self.script2_param5 == other.script2_param5
+            and self.script2_param6 == other.script2_param6
+            and self.alien_race_node == other.alien_race_node
+            and self.emotion_id == other.emotion_id
+            and self.facial_id == other.facial_id
+            and self.unskippable == other.unskippable
+            and self.node_id == other.node_id
+            and self.post_proc_node == other.post_proc_node
+            and self.record_no_vo_override == other.record_no_vo_override
+            and self.record_vo == other.record_vo
+            and self.vo_text_changed == other.vo_text_changed
+            and getattr(self, "speaker", None) == getattr(other, "speaker", None)
+        )
+
     def __repr__(
         self,
     ) -> str:
         text = self.text.get(Language.ENGLISH, Gender.MALE, use_fallback=True)
         strref_display = f"stringref={self.text.stringref}" if text is None else f"text={text}"
         return f"{self.__class__.__name__}({strref_display}, list_index={self.list_index}, links={self.links})"
+
+    def __copy__(self) -> DLGNode:
+        return self.__class__.from_dict(self.to_dict())
+
+    def __deepcopy__(self, memo: dict[str, Any]) -> DLGNode:
+        if id(self) in memo:
+            return memo[id(self)]
+        copied_obj = self.__class__.from_dict(self.to_dict())
+        memo[id(self)] = copied_obj
+        return copied_obj
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(comment={self.comment}, links={self.links}, "
+            f"list_index={self.list_index}, camera_angle={self.camera_angle}, delay={self.delay}, "
+            f"fade_type={self.fade_type}, listener={self.listener}, plot_index={self.plot_index}, "
+            f"plot_xp_percentage={self.plot_xp_percentage}, quest={self.quest}, script1={self.script1}, "
+            f"sound={self.sound}, sound_exists={self.sound_exists}, text={self.text}, "
+            f"vo_resref={self.vo_resref}, wait_flags={self.wait_flags}, animations={self.animations}, "
+            f"quest_entry={self.quest_entry}, fade_color={self.fade_color}, fade_delay={self.fade_delay}, "
+            f"fade_length={self.fade_length}, camera_anim={self.camera_anim}, camera_id={self.camera_id}, "
+            f"camera_fov={self.camera_fov}, camera_height={self.camera_height}, camera_effect={self.camera_effect}, "
+            f"target_height={self.target_height}, script1_param1={self.script1_param1}, script1_param2={self.script1_param2}, "
+            f"script1_param3={self.script1_param3}, script1_param4={self.script1_param4}, script1_param5={self.script1_param5}, "
+            f"script1_param6={self.script1_param6}, script2_param1={self.script2_param1}, script2={self.script2}, "
+            f"script2_param2={self.script2_param2}, script2_param3={self.script2_param3}, script2_param4={self.script2_param4}, "
+            f"script2_param5={self.script2_param5}, script2_param6={self.script2_param6}, alien_race_node={self.alien_race_node}, "
+            f"emotion_id={self.emotion_id}, facial_id={self.facial_id}, unskippable={self.unskippable}, node_id={self.node_id}, "
+            f"post_proc_node={self.post_proc_node}, record_no_vo_override={self.record_no_vo_override}, "
+            f"record_vo={self.record_vo}, vo_text_changed={self.vo_text_changed})"
+        )
 
     def add_node(
         self,
@@ -402,8 +504,13 @@ class DLGNode:
         else:
             raise IndexError(new_index)
 
+    def get_node_key(self) -> str:
+        """Generate a unique key for the node using UUID."""
+        if not hasattr(self, "_uuid"):
+            self._uuid = uuid.uuid4().hex
+        return self._uuid
+
     def to_dict(self, node_map: dict[str, Any] | None = None) -> dict:
-        """Converts the DLGNode to a dictionary, handling circular references."""
         if node_map is None:
             node_map = {}
 
@@ -411,77 +518,95 @@ class DLGNode:
         if node_key in node_map:
             return {"type": self.__class__.__name__, "ref": node_key}
 
-        node_dict = {
-            "type": self.__class__.__name__,
-            "key": node_key,
-            "data": {}
-        }
+        node_dict = {"type": self.__class__.__name__, "key": node_key, "data": {}}
         node_map[node_key] = node_dict
 
         for key, value in self.__dict__.items():
-            if isinstance(value, bool):
-                node_dict["data"][key] = int(value)
+            if key.startswith("__"):  # ignore python built-in attrs
+                continue
+            if key == "links":
+                node_dict["data"][key] = {"value": [link.to_dict(node_map) for link in value], "py_type": "list"}
+            elif isinstance(value, bool):
+                node_dict["data"][key] = {"value": int(value), "py_type": "bool"}
+            elif isinstance(value, int):
+                node_dict["data"][key] = {"value": value, "py_type": "int"}
+            elif isinstance(value, float):
+                node_dict["data"][key] = {"value": value, "py_type": "float"}
+            elif isinstance(value, str):
+                node_dict["data"][key] = {"value": value, "py_type": "str"}
             elif isinstance(value, ResRef):
-                node_dict["data"][key] = str(value)
+                node_dict["data"][key] = {"value": str(value), "py_type": "ResRef"}
             elif isinstance(value, Color):
-                node_dict["data"][key] = value.bgr_integer()
+                node_dict["data"][key] = {"value": value.bgr_integer(), "py_type": "Color"}
             elif isinstance(value, LocalizedString):
-                node_dict["data"][key] = value.to_dict()
-            elif isinstance(value, list) and key == "links":
-                links = cast(List[DLGLink], value)
-                node_dict["data"][key] = [link.node.to_dict(node_map) for link in links if link.node]
+                node_dict["data"][key] = {"value": value.to_dict(), "py_type": "LocalizedString"}
             elif isinstance(value, list) and all(isinstance(item, DLGAnimation) for item in value):
-                anims = cast(List[DLGAnimation], value)
-                node_dict["data"][key] = [anim.to_dict() for anim in anims]
+                node_dict["data"][key] = {"value": [anim.to_dict() for anim in value], "py_type": "list"}
+            elif isinstance(value, list):
+                node_dict["data"][key] = {"value": value, "py_type": "list"}
+            elif value is None:
+                node_dict["data"][key] = {"value": None, "py_type": "None"}
             else:
-                node_dict["data"][key] = value
+                raise ValueError(f"Unsupported type: {type(value)} for key: {key}")
+
+        # Debugging output for serialization
+        print(f"Serialized Node: {node_key}, Data: {node_dict}")
 
         return node_dict
 
-    def get_node_key(self) -> str:
-        """Generate a unique key for the node using UUID."""
-        if not hasattr(self, "_uuid"):
-            self._uuid = uuid.uuid4().hex
-        return self._uuid
-
     @staticmethod
-    def from_dict(data: dict[str, Any]) -> DLGNode:
+    def from_dict(data: dict[str, Any], node_map: dict[str, Any] | None = None) -> DLGNode:
+        if node_map is None:
+            node_map = {}
+
+        if "ref" in data:
+            return node_map[data["ref"]]
+
+        node_key = data.get("key")
         node_type: Literal["DLGEntry", "DLGReply"] | None = data.get("type")
         node_data: dict[str, Any] = data.get("data", {})
-        links_data = node_data.pop("links", [])
 
         if node_type == "DLGEntry":
             node = DLGEntry()
-            node.speaker = node_data.pop("speaker", "")
+            node.speaker = node_data.pop("speaker", {"value": ""})["value"]
         elif node_type == "DLGReply":
             node = DLGReply()
         else:
             raise ValueError(f"Unknown node type: {node_type}")
 
+        node._uuid = node_key
+        node_map[node_key] = node
+
         for key, value in node_data.items():
             if value is None:
                 continue
-            if key in ["comment", "listener", "quest", "script1_param6", "script2_param6"]:
-                setattr(node, key, value)
-            elif key in ["camera_angle", "delay", "fade_type", "plot_index", "wait_flags", "script1_param1", "script2_param1",
-                         "script1_param2", "script2_param2", "script1_param3", "script2_param3", "script1_param4", "script2_param4",
-                         "script1_param5", "script2_param5", "alien_race_node", "emotion_id", "facial_id", "node_id", "post_proc_node",
-                         "record_no_vo_override", "record_vo", "vo_text_changed"]:
-                setattr(node, key, int(value))
-            elif key in ["plot_xp_percentage", "fade_delay", "fade_length", "camera_fov", "camera_height", "camera_effect", "target_height"]:
-                setattr(node, key, float(value))
-            elif key in ["script1", "sound", "vo_resref"]:
-                setattr(node, key, ResRef(value))
-            elif key == "fade_color" and value:
-                setattr(node, key, Color.from_bgr_integer(value))
-            elif key == "text":
-                node.text = LocalizedString.from_dict(value)
-            elif key == "animations":
-                node.animations = [DLGAnimation.from_dict(anim) for anim in value]
+            py_type = value.get("py_type")
+            actual_value = value.get("value")
 
-        for link_data in cast(List[Dict[str, Any]], links_data):
-            child_node = DLGNode.from_dict(link_data)
-            node.links.append(DLGLink(child_node))
+            if py_type == "str":
+                setattr(node, key, actual_value)
+            elif py_type == "int":
+                setattr(node, key, int(actual_value))
+            elif py_type == "float":
+                setattr(node, key, float(actual_value))
+            elif py_type == "bool":
+                setattr(node, key, bool(actual_value))
+            elif py_type == "ResRef":
+                setattr(node, key, ResRef(actual_value))
+            elif py_type == "Color":
+                setattr(node, key, Color.from_bgr_integer(actual_value))
+            elif py_type == "LocalizedString":
+                node.text = LocalizedString.from_dict(actual_value)
+            elif py_type == "list" and key == "links":
+                node.links = [DLGLink.from_dict(link, node_map) for link in actual_value]
+            elif py_type == "list" and key == "animations":
+                node.animations = [DLGAnimation.from_dict(anim) for anim in actual_value]
+            elif py_type == "list":
+                setattr(node, key, actual_value)
+            elif py_type == "None" or actual_value == "None":
+                setattr(node, key, None)
+            else:
+                raise ValueError(f"Unsupported type: {py_type} for key: {key}")
 
         return node
 
@@ -491,8 +616,17 @@ class DLGReply(DLGNode):
 
     def __init__(
         self,
+        **kwargs,
     ):
         super().__init__()
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __eq__(self, other: object) -> bool:
+        # sourcery skip: assign-if-exp, reintroduce-else, swap-if-else-branches
+        if not isinstance(other, DLGReply):
+            return NotImplemented
+        return super().__eq__(other)
 
 
 class DLGEntry(DLGNode):
@@ -500,9 +634,17 @@ class DLGEntry(DLGNode):
 
     def __init__(
         self,
+        **kwargs,
     ):
         super().__init__()
         self.speaker: str = ""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DLGEntry):
+            return NotImplemented
+        return super().__eq__(other) and self.speaker == other.speaker
 
 
 class DLGAnimation:
@@ -514,12 +656,30 @@ class DLGAnimation:
         self.animation_id: int = 6
         self.participant: str = ""
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DLGAnimation):
+            return NotImplemented
+        return self.animation_id == other.animation_id and self.participant == other.participant
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(animation_id={self.animation_id}, participant={self.participant})"
+
+    def __copy__(self) -> Self:
+        return self.__class__.from_dict(self.to_dict())
+
+    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
+        if id(self) in memo:
+            return memo[id(self)]
+        copied_obj = self.__class__.from_dict(self.to_dict())
+        memo[id(self)] = copied_obj
+        return copied_obj
+
     def to_dict(self) -> dict[str, Any]:
         return {"animation_id": self.animation_id, "participant": self.participant}
 
-    @staticmethod
-    def from_dict(data: dict) -> DLGAnimation:
-        animation = DLGAnimation()
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        animation = cls()
         animation.animation_id = data.get("animation_id", 6)
         animation.participant = data.get("participant", "")
         return animation
@@ -583,10 +743,67 @@ class DLGLink:
         self.active2_param5: int = 0
         self.active2_param6: str = ""
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}(link_index={self.link_index})"#, node={self.node})"
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(link_index={self.link_index}, node={self.node}, active1={self.active1}, "
+            f"comment={self.comment}, is_child={self.is_child}, active2={self.active2}, active1_not={self.active1_not}, "
+            f"active2_not={self.active2_not}, logic={self.logic}, active1_param1={self.active1_param1}, active1_param2={self.active1_param2}, "
+            f"active1_param3={self.active1_param3}, active1_param4={self.active1_param4}, active1_param5={self.active1_param5}, "
+            f"active1_param6={self.active1_param6}, active2_param1={self.active2_param1}, active2_param2={self.active2_param2}, "
+            f"active2_param3={self.active2_param3}, active2_param4={self.active2_param4}, active2_param5={self.active2_param5}, "
+            f"active2_param6={self.active2_param6})"
+        )
 
-    def to_dict(self, node_map: dict[str, Any] | None = None):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DLGLink):
+            return NotImplemented
+        return (
+            self.link_index == other.link_index
+            and self.node.get_node_key() == other.node.get_node_key()
+            and self.active1 == other.active1
+            and self.comment == other.comment
+            and self.is_child == other.is_child
+            and self.active2 == other.active2
+            and self.active1_not == other.active1_not
+            and self.active2_not == other.active2_not
+            and self.logic == other.logic
+            and self.active1_param1 == other.active1_param1
+            and self.active1_param2 == other.active1_param2
+            and self.active1_param3 == other.active1_param3
+            and self.active1_param4 == other.active1_param4
+            and self.active1_param5 == other.active1_param5
+            and self.active1_param6 == other.active1_param6
+            and self.active2_param1 == other.active2_param1
+            and self.active2_param2 == other.active2_param2
+            and self.active2_param3 == other.active2_param3
+            and self.active2_param4 == other.active2_param4
+            and self.active2_param5 == other.active2_param5
+            and self.active2_param6 == other.active2_param6
+        )
+
+    def get_node_key(self) -> str:
+        """Generate a unique key for the node using UUID."""
+        if not hasattr(self, "_uuid"):
+            self._uuid = uuid.uuid4().hex
+        return self._uuid
+
+    def get_node_key(self) -> str:
+        """Generate a unique key for the node using UUID."""
+        if not hasattr(self, "_uuid"):
+            self._uuid = uuid.uuid4().hex
+        return self._uuid
+
+    def __copy__(self) -> Self:
+        return self.__class__.from_dict(self.to_dict())
+
+    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
+        if id(self) in memo:
+            return memo[id(self)]
+        copied_obj = self.__class__.from_dict(self.to_dict())
+        memo[id(self)] = copied_obj
+        return copied_obj
+
+    def to_dict(self, node_map: dict[str, Any] | None = None) -> dict[str, Any]:
         if node_map is None:
             node_map = {}
 
@@ -597,17 +814,12 @@ class DLGLink:
         link_dict = {
             "type": self.__class__.__name__,
             "key": node_key,
-            "node": self.node.to_dict(node_map) if self.node else None
+            "node": self.node.to_dict(node_map) if self.node else None,
+            "link_index": self.link_index,
         }
         node_map[node_key] = link_dict
 
         return link_dict
-
-    def get_node_key(self) -> str:
-        """Generate a unique key for the node using UUID."""
-        if not hasattr(self, "_uuid"):
-            self._uuid = uuid.uuid4().hex
-        return self._uuid
 
     @classmethod
     def from_dict(cls, data: dict, node_map: dict[str, Any] | None = None) -> Self:
@@ -615,15 +827,22 @@ class DLGLink:
             node_map = {}
 
         node_key = data["key"]
+        print(f"Deserializing Link Key: {node_key}")
+
         if node_key in node_map:
+            print(f"Link Key {node_key} found in node_map. Returning existing link.")
             return node_map[node_key]
 
         link = cls()
         link._uuid = node_key  # noqa: SLF001
         node_map[node_key] = link
 
+        link.link_index = data.get("link_index", -1)
         if data["node"]:
             link.node = DLGNode.from_dict(data["node"], node_map)
+
+        # Debugging output for deserialization
+        print(f"Deserialized Link: {node_key}, Data: {link.__dict__}")
 
         return link
 
@@ -641,6 +860,26 @@ class DLGStunt:
     ):
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
+
+    def __copy__(self) -> Self:
+        return self.__class__.from_dict(self.to_dict())
+
+    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
+        if id(self) in memo:
+            return memo[id(self)]
+        copied_obj = self.__class__.from_dict(self.to_dict())
+        memo[id(self)] = copied_obj
+        return copied_obj
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"participant": self.participant, "stunt_model": str(self.stunt_model)}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        stunt = cls()
+        stunt.participant = data.get("participant", "")
+        stunt.stunt_model = ResRef(data.get("stunt_model", ""))
+        return stunt
 
 
 def construct_dlg(
@@ -837,7 +1076,9 @@ def construct_dlg(
         try:
             link.node = all_entries[link.link_index]
         except IndexError:
-            RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{starting_list._structs.index(link_struct)+1} in StartingList) does not point to a valid EntryList node, omitting...")
+            RobustRootLogger().error(
+                f"'Index' field value '{link.link_index}' (struct #{starting_list._structs.index(link_struct)+1} in StartingList) does not point to a valid EntryList node, omitting..."
+            )
         else:
             dlg.starters.append(link)
             construct_link(link_struct, link)
@@ -856,7 +1097,9 @@ def construct_dlg(
             try:
                 link.node = all_replies[link.link_index]
             except IndexError:
-                RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in RepliesList) does not point to a valid ReplyList node, omitting...")
+                RobustRootLogger().error(
+                    f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in RepliesList) does not point to a valid ReplyList node, omitting..."
+                )
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
@@ -877,7 +1120,9 @@ def construct_dlg(
             try:
                 link.node = all_entries[link.link_index]
             except IndexError:
-                RobustRootLogger().error(f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in EntriesList) does not point to a valid EntryList node, omitting...")
+                RobustRootLogger().error(
+                    f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in EntriesList) does not point to a valid EntryList node, omitting..."
+                )
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
