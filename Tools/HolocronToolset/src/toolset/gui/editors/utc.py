@@ -110,14 +110,25 @@ class UTCEditor(Editor):
         self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
 
     def _generatePortraitTooltip(self, *, asHtml: bool = False) -> str:
+        # sourcery skip: lift-return-into-if
         """Generates a detailed tooltip for the portrait picture."""
-        portrait = self._extracted_from__portraitContextMenu_3()
-        return f"<b>Portrait:</b> {portrait}" if asHtml else f"Portrait: {portrait}"
+        portrait = self._getPortraitResRef()
+        if asHtml:
+            tooltip = (
+                f"<b>Portrait:</b> {portrait}<br>"
+                "<br><i>Right-click for more options.</i>"
+            )
+        else:
+            tooltip = (
+                f"Portrait: {portrait}\n"
+                "\nRight-click for more options."
+            )
+        return tooltip
 
     def _portraitContextMenu(self, position):
         contextMenu = QMenu(self)
 
-        portrait = self._extracted_from__portraitContextMenu_3()
+        portrait = self._getPortraitResRef()
         fileMenu = contextMenu.addMenu("File...")
         locations = self._installation.locations(
             (
@@ -146,7 +157,7 @@ class UTCEditor(Editor):
         contextMenu.exec_(self.ui.portraitPicture.mapToGlobal(position))
 
     # TODO Rename this here and in `_generatePortraitTooltip` and `_portraitContextMenu`
-    def _extracted_from__portraitContextMenu_3(self):
+    def _getPortraitResRef(self):
         index = self.ui.portraitSelect.currentIndex()
         alignment = self.ui.alignmentSlider.value()
         portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
