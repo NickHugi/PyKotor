@@ -10,6 +10,7 @@ from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QAction, QApplication, QDialog, QListWidgetItem, QMenu, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
 from pykotor.resource.type import ResourceType
@@ -436,7 +437,16 @@ class UTIEditor(Editor):
 
         fileMenu = contextMenu.addMenu("File...")
         assert fileMenu is not None
-        locations = self._installation.locations(([iconPath], [ResourceType.TGA, ResourceType.TPC]))
+        locations = self._installation.locations(
+            ([iconPath], [ResourceType.TGA, ResourceType.TPC]),
+            order=[
+                SearchLocation.OVERRIDE,
+                SearchLocation.TEXTURES_GUI,
+                SearchLocation.TEXTURES_TPA,
+                SearchLocation.TEXTURES_TPB,
+                SearchLocation.TEXTURES_TPC
+            ]
+        )
         flatLocations = [item for sublist in locations.values() for item in sublist]
         mousePos: QPoint = QCursor.pos()
         if flatLocations:

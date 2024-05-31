@@ -7,8 +7,8 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QSettings
-from qtpy.QtGui import QImage, QPixmap, QTransform
-from qtpy.QtWidgets import QListWidgetItem, QMessageBox
+from qtpy.QtGui import QCursor, QImage, QPixmap, QTransform
+from qtpy.QtWidgets import QApplication, QListWidgetItem, QMenu, QMessageBox
 
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
@@ -23,9 +23,10 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_sav_file
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.utils.window import openResourceEditor
+from toolset.utils.window import addWindow, openResourceEditor
 
 if TYPE_CHECKING:
     import os
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
-    from pykotor.extract.file import ResourceResult
+    from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.ltr.ltr_data import LTR
     from pykotor.resource.formats.tpc.tpc_data import TPC
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -102,6 +103,80 @@ class UTCEditor(Editor):
         self.update3dPreview()
 
         self.new()
+
+        # Connect the new context menu and tooltip actions
+        self.ui.portraitPicture.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.portraitPicture.customContextMenuRequested.connect(self._portraitContextMenu)
+        self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
+
+    def _generatePortraitTooltip(self, *, asHtml: bool = False) -> str:
+        """Generates a detailed tooltip for the portrait picture."""
+        portrait = self._extracted_from__portraitContextMenu_3()
+        return f"<b>Portrait:</b> {portrait}" if asHtml else f"Portrait: {portrait}"
+
+    def _portraitContextMenu(self, position):
+        contextMenu = QMenu(self)
+
+        portrait = self._extracted_from__portraitContextMenu_3()
+        fileMenu = contextMenu.addMenu("File...")
+        locations = self._installation.locations(
+            (
+                [portrait],
+                [ResourceType.TGA, ResourceType.TPC]
+            ),
+            order=[
+                SearchLocation.OVERRIDE,
+                SearchLocation.TEXTURES_GUI,
+                SearchLocation.TEXTURES_TPA,
+                SearchLocation.TEXTURES_TPB,
+                SearchLocation.TEXTURES_TPC
+            ]
+        )
+        flatLocations = [item for sublist in locations.values() for item in sublist]
+        mousePos = QCursor.pos()
+        if flatLocations:
+            for location in flatLocations:
+                displayPathStr = str(location.filepath.relative_to(self._installation.path()))
+                locMenu = fileMenu.addMenu(displayPathStr)
+                resourceMenuBuilder = ResourceItems(resources=[location])
+                resourceMenuBuilder.build_menu(mousePos, locMenu)
+
+            fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
+
+        contextMenu.exec_(self.ui.portraitPicture.mapToGlobal(position))
+
+    # TODO Rename this here and in `_generatePortraitTooltip` and `_portraitContextMenu`
+    def _extracted_from__portraitContextMenu_3(self):
+        index = self.ui.portraitSelect.currentIndex()
+        alignment = self.ui.alignmentSlider.value()
+        portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
+        result = portraits.get_cell(index, "baseresref")
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe"):
+            result = portraits.get_cell(index, "baseresrefe")
+        elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve"):
+            result = portraits.get_cell(index, "baseresrefve")
+        elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve"):
+            result = portraits.get_cell(index, "baseresrefvve")
+        elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve"):
+            result = portraits.get_cell(index, "baseresrefvvve")
+        return result
+
+    def _openDetails(self, locations: list[LocationResult]):
+        """Opens a details window for the given resource locations."""
+        selectionWindow = FileSelectionWindow(locations, self._installation)
+        selectionWindow.show()
+        selectionWindow.activateWindow()
+        addWindow(selectionWindow)
+
+    def _copyPortraitTooltip(self):
+        tooltipText = self._generatePortraitTooltip(asHtml=False)
+        clipboard = QApplication.clipboard()
+        clipboard.setText(tooltipText)
+
+    def _copyToClipboard(self, text: str):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+
 
     def _setupSignals(self):
         """Connect signals to slots.
@@ -541,6 +616,7 @@ class UTCEditor(Editor):
         else:
             pixmap = self._build_pixmap(index)
         self.ui.portraitPicture.setPixmap(pixmap)
+        self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
 
     def _build_pixmap(self, index: int) -> QPixmap:
         """Builds a portrait pixmap based on character alignment.
