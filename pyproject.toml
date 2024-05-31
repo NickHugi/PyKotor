@@ -182,6 +182,7 @@ ignore = [
     "N806",     # Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
     "PLR0904",  # Too many public methods
+    "RET504",   # Unnecessary assignment to `varname` before `return` statement
     "RUF100",   # Unused `noqa` directive (non-enabled: `PLC0415`)
     "T201",     # 'print' detected
     "TD001",    # Invalid TODO tag: `FIXME`

@@ -14,7 +14,7 @@ from contextlib import contextmanager, suppress
 from logging.handlers import QueueListener, RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
 from queue import Queue
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from utility.error_handling import format_exception_with_variables
 
@@ -469,6 +469,29 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
     def __reduce__(self) -> tuple[type[Self], tuple[()]]:
         return self.__class__, ()
 
+    def _safe_print(self, message: str):
+        print(message, file=sys.__stderr__)
+
+    def __getattribute__(self, name: str) -> Any:
+        """Drop this function in any class to make the class never throw exceptions."""
+        try:
+            attr = super().__getattribute__(name)
+            self_type = object.__getattribute__(self, "__class__")
+            if callable(attr) and not isinstance(attr, self_type) and attr is not self_type:
+                def wrapped(*args, **kwargs):
+                    try:
+                        return attr(*args, **kwargs)
+                    except Exception as e:  # noqa: BLE001
+                        self._safe_print(f"Exception in {name}: {e}")
+                return wrapped
+        except Exception as e:  # noqa: BLE001
+            self._safe_print(f"Exception when accessing attribute {name}: {e}")
+            def fallback(*args, **kwargs):
+                self._safe_print(f"Fallback function called for {name} with args: {args} and kwargs: {kwargs}")
+            return fallback
+        else:
+            return attr
+
     def __getattr__(self, attr_name: str):
         if attr_name not in self.__dict__:
             return getattr(self._logger, attr_name)
@@ -570,7 +593,7 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
         return self._logger
 
     @classmethod
-    def log(cls, level, msg: str, *args, **kwargs):
+    def log(cls, level: int, msg: str, *args, **kwargs):
         cls()._logger.log(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
@@ -594,7 +617,7 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
         cls()._logger.error(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
     @classmethod
-    def exception(cls, msg: str, *args, exc_info=True, **kwargs):
+    def exception(cls, msg: str, *args, exc_info: logging._ExcInfoType = True, **kwargs):
         cls()._logger.exception(msg.encode(encoding="utf-8", errors="replace").decode(), *args, exc_info=exc_info, **kwargs)  # noqa: SLF001
 
     @classmethod
@@ -604,62 +627,6 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
     @classmethod
     def fatal(cls, msg: str, *args, **kwargs):
         cls()._logger.fatal(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def setLevel(cls, level):
-        cls()._logger.setLevel(level)  # noqa: SLF001
-
-    @classmethod
-    def addHandler(cls, hdlr):
-        cls()._logger.addHandler(hdlr)  # noqa: SLF001
-
-    @classmethod
-    def removeHandler(cls, hdlr):
-        cls()._logger.removeHandler(hdlr)  # noqa: SLF001
-
-    @classmethod
-    def hasHandlers(cls):
-        return cls()._logger.hasHandlers()  # noqa: SLF001
-
-    @classmethod
-    def handle(cls, record):
-        cls()._logger.handle(record)  # noqa: SLF001
-
-    @classmethod
-    def makeRecord(cls, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):  # noqa: PLR0913
-        return cls()._logger.makeRecord(name, level, fn, lno, msg, args, exc_info, func, extra, sinfo)  # noqa: SLF001
-
-    @classmethod
-    def findCaller(cls, stack_info=False, stacklevel=1):  # noqa: FBT002
-        return cls()._logger.findCaller(stack_info, stacklevel)  # noqa: SLF001
-
-    @classmethod
-    def isEnabledFor(cls, level):
-        return cls()._logger.isEnabledFor(level)  # noqa: SLF001
-
-    @classmethod
-    def getEffectiveLevel(cls):
-        return cls()._logger.getEffectiveLevel()  # noqa: SLF001
-
-    @classmethod
-    def addFilter(cls, filt):
-        cls()._logger.addFilter(filt)  # noqa: SLF001
-
-    @classmethod
-    def removeFilter(cls, filt):
-        cls()._logger.removeFilter(filt)  # noqa: SLF001
-
-    @classmethod
-    def filter(cls, record):
-        return cls()._logger.filter(record)  # noqa: SLF001
-
-    @classmethod
-    def getChild(cls, suffix):
-        return cls()._logger.getChild(suffix)  # noqa: SLF001
-
-    @classmethod
-    def callHandlers(cls, record):
-        cls()._logger.callHandlers(record)  # noqa: SLF001
 
 
 get_root_logger = RobustRootLogger  # deprecated, provided for backwards compatibility.

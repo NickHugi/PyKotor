@@ -49,15 +49,6 @@
     "5678",
     "--wait-for-client"
   ],
-  "python.analysis.diagnosticSeverityOverrides": {
-    "reportGeneralTypeIssues": "warning",
-    "reportOptionalMemberAccess": "warning", // Ignores issues with defs that can optionally be None.
-    "reportCallIssue": "warning",  // doesn't handle NamedTuple correctly.
-    "reportAssignmentType": "warning",
-    "reportArgumentType": "warning",
-    "reportPrivateImportUsage": "warning",
-  },
-  "python.analysis.autoFormatStrings": true,
   "mypy.extraArguments": [
     "--exclude=./.venv",
     "--exclude=tests/results",
@@ -74,6 +65,6 @@
   ],
   "mypy.runUsingActiveInterpreter": true,
   "mypy-type-checker.preferDaemon": true,
-  "mypy-type-checker.reportingScope": "workspace",
+  "mypy-type-checker.reportingScope": "file",
   "mypy-type-checker.importStrategy": "fromEnvironment",
 }
