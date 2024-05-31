@@ -8,7 +8,7 @@ from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
 
-from pykotor.common.geometry import Vector2
+from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
@@ -56,8 +56,11 @@ class ModelRenderer(QOpenGLWidget):
     def initializeGL(self):
         self._scene = Scene(installation=self.installation)
         self.scene.camera.fov = ModuleDesignerSettings().fieldOfView
-        self.scene.camera.distance = 4
-        self.scene.camera.z = 1.8
+        self.scene.camera.distance = 0  # Set distance to 0
+
+        # Set camera position manually to simulate moving it further back
+        new_position = Vector3(0.0, -4.0, 1.8)  # Adjust this vector as needed
+        self.scene.camera.set_position(new_position)
         self.scene.camera.yaw = math.pi / 2
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
@@ -188,6 +191,34 @@ class ModelRenderer(QOpenGLWidget):
         self._mouseDown.discard(button)
         #RobustRootLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
+    def panCamera(self, forward: float, right: float, up: float):
+        """Moves the camera by the specified amount.
+
+        The movement takes into account both the rotation and zoom of the
+        camera on the x/y plane.
+
+        Args:
+        ----
+            forward: Units to move forwards.
+            right: Units to move to the right.
+            up: Units to move upwards.
+        """
+        forward_vec: vec3 = forward * self.scene.camera.forward()
+        sideways = right * self.scene.camera.sideward()
+
+        self.scene.camera.x += forward_vec.x + sideways.x
+        self.scene.camera.y += forward_vec.y + sideways.y
+        self.scene.camera.z += up
+
+    def moveCamera(self, forward: float, right: float, up: float):
+        forward_vec: vec3 = forward * self.scene.camera.forward(ignore_z=False)
+        sideways = right * self.scene.camera.sideward(ignore_z=False)
+        upward = -up * self.scene.camera.upward(ignore_xy=False)
+
+        self.scene.camera.x += upward.x + sideways.x + forward_vec.x
+        self.scene.camera.y += upward.y + sideways.y + forward_vec.y
+        self.scene.camera.z += upward.z + sideways.z + forward_vec.z
+
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         key: int = e.key()
         self._keysDown.add(key)
@@ -207,13 +238,13 @@ class ModelRenderer(QOpenGLWidget):
         if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
         if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.x += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
+            self.panCamera(0, -(ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0)
         if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.x -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
+            self.panCamera(0, (ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0)
         if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
+            self.panCamera((ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0, 0)
         if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.y += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
+            self.panCamera(-(ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0, 0)
 
         if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
