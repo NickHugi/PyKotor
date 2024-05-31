@@ -433,7 +433,10 @@ class FileItems(CustomItem):
     ):
         selected = self.selectedItems()
         if len(selected) == 1:
-            savepath_str, _ = QFileDialog.getSaveFileName(None, "Save As", "")
+            # Extract the original filename from the selected item or file path
+            original_filename = file_path.name
+            # Pass the original filename as the initial selected filter
+            savepath_str, _ = QFileDialog.getSaveFileName(None, "Save As", original_filename)
             if not savepath_str or not savepath_str.strip():
                 return
             savepath = Path(savepath_str)
