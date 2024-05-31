@@ -528,7 +528,7 @@ class ToolWindow(QMainWindow):
             dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Qt.GlobalColor.darkGray)
             dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Light, QColor(53, 53, 53))
             QApplication.setPalette(dark_palette)
-        print("themeName:", themeName)
+        print(f"Theme changed to: '{themeName}'")
         self.show()  # Re-apply the window with new flags
 
     # region Signal callbacks
@@ -708,7 +708,7 @@ class ToolWindow(QMainWindow):
         if not path or not path.strip() or not Path(path).safe_isdir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec_()
-            path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}")
+            path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}", "Knights of the Old Republic II" if tsl else "swkotor")
 
         # If the user still has not set a path, then return them to the [None] option.
         if not path:
