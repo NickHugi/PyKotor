@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import cProfile
+import gc
 import multiprocessing
 import os
 import pathlib
@@ -109,12 +110,20 @@ def qt_cleanup():
     """Cleanup so we can exit."""
     from toolset.utils.window import WINDOWS
     from utility.logger_util import RobustRootLogger
+    from utility.system.os_helper import terminate_child_processes
 
     RobustRootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
     for window in WINDOWS:
         window.close()
         window.destroy()
     WINDOWS.clear()
+    gc.collect()
+    for obj in gc.get_objects():
+        if isinstance(obj, QThread) and obj.isRunning():
+            RobustRootLogger().debug(f"Terminating QThread: {obj}")
+            obj.terminate()
+            obj.wait()
+    terminate_child_processes()
 
 def last_resort_cleanup():
     """Prevents the toolset from running in the background after sys.exit is called..."""
