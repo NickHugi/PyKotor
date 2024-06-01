@@ -35,6 +35,7 @@ class _DataTypes(IntEnum):
 
 
 class TPCTGAReader(ResourceReader):
+    """Used to read TGA binary data."""
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -314,6 +315,7 @@ class TPCTGAReader(ResourceReader):
 
 
 class TPCTGAWriter(ResourceWriter):
+    """Used to write TPC instances as TGA image data."""
     def __init__(
         self,
         tpc: TPC,

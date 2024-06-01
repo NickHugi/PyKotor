@@ -49,6 +49,7 @@ def _get_size(
 
 
 class TPCBinaryReader(ResourceReader):
+    """Used to read TPC binary data."""
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -136,6 +137,7 @@ class TPCBinaryReader(ResourceReader):
 
 
 class TPCBinaryWriter(ResourceWriter):
+    """Used to write TPC instances as TPC binary data."""
     def __init__(
         self,
         tpc: TPC,
