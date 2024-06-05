@@ -34,7 +34,7 @@ from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception
 from utility.logger_util import get_log_directory
 from utility.system.path import Path, PurePath
-from utility.updater.github import download_github_file, fetch_repo_index
+from utility.updater.github import download_github_file
 
 if TYPE_CHECKING:
     import os
@@ -233,54 +233,10 @@ class NSSEditor(Editor):
                 self._revert = context.revert
                 self.refreshWindowTitle()
 
-    def determine_script_path(self, resref: str, repo_index: dict[str, str]) -> str:
-        """Determines the script path in the repository based on resref and game type.
-
-        Args:
-        ----
-            resref: The resource reference of the script.
-            repo_index: The repository index mapping file paths to their URLs.
-
-        Returns:
-        -------
-            The path of the script in the repository.
-        """
-        # Assuming resref is the filestem, add ".nss" to make it a full filename
+    def determine_script_path(self, resref: str) -> str:
         script_filename = f"{resref}.nss"
-        print(f"Determined script filename: {script_filename}")
-
-        # Determine the parent folder name which is assumed to be the module filename
-        module_filename = self._filepath.stem
-        print(f"Module filename: '{module_filename}'")
-
-        # Construct the path in the repository index
-        tsl_base_path = "TSL/Vanilla/Modules"
-        k1_base_path = "K1/Vanilla/Modules"
-        base_path = tsl_base_path if self._installation.tsl else k1_base_path
-
-        script_path = f"{base_path}/{module_filename}/{script_filename}"
-        print(f"Constructed script path: {script_path}")
-
-        # Check if the script path exists in the repository index
-        if script_path not in repo_index:
-            print(f"script path '{script_path}' doesn't exist on self.repo.")
-            script_path: str = self._choose_from_multiple_matches(
-                repo_index,
-                script_filename
-            )
-        return script_path
-
-    def _choose_from_multiple_matches(self, repo_index: dict[str, Any], script_filename: str) -> str:
-        # If not found, show the user all matching options
-        script_filename.lower()
-        matching_paths = [
-            path.split("/")[-1]
-            for path in repo_index
-            if path.endswith(script_filename)
-        ]
-
-        # Show dialog to select the correct path
-        dialog = GitHubFileSelector(self.owner, self.repo, selectedFiles=matching_paths, parent=self)
+        script_filename = script_filename.lower()
+        dialog = GitHubFileSelector(self.owner, self.repo, selectedFiles=[script_filename], parent=self)
         if dialog.exec_() != QDialog.Accepted:
             raise ValueError("No script selected.")
 
@@ -354,9 +310,7 @@ class NSSEditor(Editor):
         self._is_decompiled = True
 
     def _download_and_load_remote_script(self, resref: str) -> str:
-        repo_index: dict[str, str] = fetch_repo_index(self.owner, self.repo)
-
-        script_path: str = self.determine_script_path(resref, repo_index)
+        script_path: str = self.determine_script_path(resref)
         local_path = CaseAwarePath(get_log_directory(self._global_settings.extractPath), PurePath(script_path).name)
         print(f"Local path: {local_path}")
 

@@ -179,8 +179,9 @@ class GitHubFileSelector(QDialog):
                 e.response.status_code == 403
                 and "X-RateLimit-Reset" in e.response.headers
             ):
-                QMessageBox.critical(self, "You are rate limited.", "You have submitted too many requests to github's api, check the status bar at the bottom.")
-                self.start_rate_limit_timer(e)
+                if not self.timer.isActive():
+                    QMessageBox.critical(self, "You are rate limited.", "You have submitted too many requests to github's api, check the status bar at the bottom.")
+                    self.start_rate_limit_timer(e)
                 return None
 
             QMessageBox.critical(self, "Repository Not Found", f"The repository '{self.owner}/{self.repo}' had an unexpected error:<br><br>{e}")
@@ -425,18 +426,17 @@ class GitHubFileSelector(QDialog):
         self.statusBar.clearMessage()
 
     def update_rate_limit_status(self) -> None:
-        if self.rate_limit_reset is not None and self.rate_limit_remaining is not None:
-            if self.rate_limit_remaining > 0:
-                self.statusBar.showMessage(f"Requests remaining: {self.rate_limit_remaining}")
+        if self.rate_limit_remaining is not None and self.rate_limit_remaining > 0:
+            self.statusBar.showMessage(f"Requests remaining: {self.rate_limit_remaining}")
+            self.stop_rate_limit_timer()
+        elif self.rate_limit_reset is not None:
+            remaining_time = max(self.rate_limit_reset - time.time(), 0)
+            self.statusBar.showMessage(f"Rate limit exceeded. Try again in {int(remaining_time)} seconds.")
+            if int(remaining_time) % 15 == 0:
+                self.refresh_data()
+            elif remaining_time <= 0:
+                self.refresh_data()
                 self.stop_rate_limit_timer()
-            else:
-                remaining_time = max(self.rate_limit_reset - time.time(), 0)
-                self.statusBar.showMessage(f"Rate limit exceeded. Try again in {int(remaining_time)} seconds.")
-                if remaining_time % 15 == 0:
-                    self.refresh_data()
-                elif remaining_time <= 0:
-                    self.refresh_data()
-                    self.stop_rate_limit_timer()
 
     def update_rate_limit_info(self, headers: dict):
         if "X-RateLimit-Reset" in headers:
