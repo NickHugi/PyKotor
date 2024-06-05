@@ -38,7 +38,6 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
-    QStyle,
     QVBoxLayout,
 )
 from watchdog.events import FileSystemEventHandler
@@ -94,8 +93,9 @@ from toolset.utils.window import addWindow, openResourceEditor
 from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
 from utility.logger_util import RobustRootLogger
-from utility.misc import ProcessorArchitecture
+from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.system.path import Path, PurePath
+from utility.tricks import debug_reload_pymodules
 from utility.updater.update import AppUpdate
 
 if qtpy.API_NAME == "PySide2":
@@ -110,7 +110,6 @@ else:
     raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
 if TYPE_CHECKING:
-    from typing import NoReturn
 
     from qtpy import QtGui
     from qtpy.QtCore import QObject
@@ -130,14 +129,6 @@ if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
     from utility.common.more_collections import CaseInsensitiveDict
-
-def run_progress_dialog(progress_queue: Queue, title: str = "Operation Progress") -> NoReturn:
-    app = QApplication(sys.argv)
-    dialog = ProgressDialog(progress_queue, title)
-    icon = app.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
-    dialog.setWindowIcon(QIcon(icon))
-    dialog.show()
-    sys.exit(app.exec_())
 
 def run_module_designer(
     active_path: str,
@@ -227,6 +218,9 @@ class ToolWindow(QMainWindow):
         self.ui.coreWidget.hideSection()
         self.ui.coreWidget.hideReloadButton()
 
+        if is_debug_mode():
+            self.ui.menubar.addAction("Debug Reload").triggered.connect(debug_reload_pymodules)
+
         # Standardized resource path format
         icon_path = ":/images/icons/sith.png"
 
@@ -291,7 +285,7 @@ class ToolWindow(QMainWindow):
         modulesSectionCombo.setMaxVisibleItems(18)
 
         # Expandable actions for the 'Collect...' button
-        def create_more_actions_menu():
+        def create_more_actions_menu() -> QMenu:
             menu = QMenu()
             menu.addAction("Room Textures").triggered.connect(self.extractModuleRoomTextures)
             menu.addAction("Room Models").triggered.connect(self.extractModuleRoomModels)

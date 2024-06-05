@@ -33,6 +33,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigu
 from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception
 from utility.logger_util import get_log_directory
+from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.updater.github import download_github_file
 
@@ -281,11 +282,13 @@ class NSSEditor(Editor):
             except ValueError as e:
                 error_occurred = True
                 QMessageBox(QMessageBox.Icon.Critical, "Decompilation/Download Failed", str(universal_simplify_exception(e))).exec_()
-                raise
+                if is_debug_mode():
+                    raise
             except NoConfigurationSetError as e:
                 error_occurred = True
                 QMessageBox(QMessageBox.Icon.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                raise
+                if is_debug_mode():
+                    raise
             finally:
                 if error_occurred:
                     self.new()

@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import gc
+import multiprocessing
+import os
+import pathlib
 import platform
 import sys
 
-from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any
+from contextlib import suppress
+from multiprocessing import Queue
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import markdown
 import requests
 
 from qtpy.QtCore import QThread, Qt
-from qtpy.QtGui import QFont
-from qtpy.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QTextEdit, QVBoxLayout
+from qtpy.QtGui import QFont, QIcon
+from qtpy.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QStyle, QTextEdit, QVBoxLayout
 
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
@@ -26,9 +30,45 @@ if TYPE_CHECKING:
     from utility.updater.github import Asset
 
 
+if __name__ == "__main__":
+    with suppress(Exception):
+        def update_sys_path(path: pathlib.Path):
+            working_dir = str(path)
+            if working_dir not in sys.path:
+                sys.path.append(working_dir)
+
+        file_absolute_path = pathlib.Path(__file__).resolve()
+
+        pykotor_path = file_absolute_path.parents[6] / "Libraries" / "PyKotor" / "src" / "pykotor"
+        if pykotor_path.exists():
+            update_sys_path(pykotor_path.parent)
+        pykotor_gl_path = file_absolute_path.parents[6] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
+        if pykotor_gl_path.exists():
+            update_sys_path(pykotor_gl_path.parent)
+        utility_path = file_absolute_path.parents[6] / "Libraries" / "Utility" / "src"
+        if utility_path.exists():
+            update_sys_path(utility_path)
+        toolset_path = file_absolute_path.parents[3] / "toolset"
+        if toolset_path.exists():
+            update_sys_path(toolset_path.parent)
+            os.chdir(toolset_path)
+
+
 def convert_markdown_to_html(md_text: str) -> str:
     """Convert Markdown text to HTML."""
     return markdown.markdown(md_text)
+
+def run_progress_dialog(
+    progress_queue: Queue,
+    title: str = "Operation Progress",
+) -> NoReturn:
+    """Call this with multiprocessing.Process."""
+    app = QApplication(sys.argv)
+    dialog = ProgressDialog(progress_queue, title)
+    icon = app.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxInformation)
+    dialog.setWindowIcon(QIcon(icon))
+    dialog.show()
+    sys.exit(app.exec_())
 
 class UpdateDialog(QDialog):
     def __init__(self, parent=None):
@@ -231,6 +271,7 @@ class UpdateDialog(QDialog):
         self.start_update(release)
 
     def start_update(self, release: GithubRelease):
+        # sourcery skip: remove-unreachable-code
         os_name = platform.system().lower()
         proc_arch = ProcessorArchitecture.from_os().get_machine_repr()
         asset: Asset | None = next((a for a in release.assets if proc_arch in a.name.lower() and os_name in a.name.lower()), None)
@@ -242,7 +283,8 @@ class UpdateDialog(QDialog):
             # TODO(th3w1zard1): compile from src.
             # Realistically wouldn't be that hard, just run ./install_powershell.ps1 and ./compile/compile_toolset.ps1 and run the exe.
             # The difficult part would be finishing LibUpdate, currently only AppUpdate is working.
-            result = QMessageBox(
+            return
+            result = QMessageBox(  # noqa: F841
                 QMessageBox.Icon.Question,
                 "No asset found for this release.",
                 f"There are no binaries available for download for release '{release.tag_name}'.", #Would you like to compile this release from source instead?",
@@ -250,11 +292,15 @@ class UpdateDialog(QDialog):
                 None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             ).exec_()
-            return
 
-        from toolset.gui.windows.main import run_progress_dialog
         progress_queue = Queue()
-        progress_process = Process(target=run_progress_dialog, args=(progress_queue, "Holocron Toolset is updating and will restart shortly..."))
+        progress_process = multiprocessing.Process(
+            target=run_progress_dialog,
+            args=(
+                progress_queue,
+                "Holocron Toolset is updating and will restart shortly...",
+            ),
+        )
         progress_process.start()
         self.hide()
 
