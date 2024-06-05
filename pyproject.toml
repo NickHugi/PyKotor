@@ -136,7 +136,6 @@ src = [
 ]
 
 [tool.ruff.lint]
-ignore-init-module-imports = true
 external = ["V"]
 task-tags = ["TODO", "FIXME", "HACK"]
 select = ["ALL"]

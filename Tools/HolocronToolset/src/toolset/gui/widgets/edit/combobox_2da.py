@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QStandardItemModel
 from qtpy import QtCore
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
@@ -10,6 +9,7 @@ from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QStandardItemModel
     from qtpy.QtCore import QPoint
     from qtpy.QtWidgets import QWidget
 

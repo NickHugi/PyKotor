@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
@@ -276,22 +276,22 @@ class BetterMessageBox(QtWidgets.QDialog):
         **kwargs,
     ):
         super().__init__(parent, *args, **kwargs)
-        self.setWindowTitle(title)
+        self.detailed_text: str | None = None
         self.icon_type: QtWidgets.QStyle.StandardPixmap = ICON_MAP.get(icon, icon)
+        self.buttons: list[QtWidgets.QPushButton] = MessageBoxButton.standardbuttons_to_qpushbuttons(buttons)
+        self.result_button: QMessageBox.StandardButton = MessageBoxButton(defaultButton).as_standardbutton()
         if self.icon_type is None:
             self.icon_type = QtWidgets.QStyle.SP_MessageBoxInformation
-        self.buttons: list[QtWidgets.QPushButton] = MessageBoxButton.standardbuttons_to_qpushbuttons(buttons)
         smb_default_button: QtWidgets.QPushButton = MessageBoxButton(defaultButton).as_qpushbutton()
         if smb_default_button not in self.buttons:
             self.buttons.append(smb_default_button)
-        self.result_button: QMessageBox.StandardButton = MessageBoxButton(defaultButton).as_standardbutton()
         self.initUI(message.replace("<br>", "\n"))
+        self.setWindowTitle(title)
 
-    def initUI(self, message):
+    def initUI(self, message: str):
         layout = QtWidgets.QVBoxLayout(self)
         self._setup_icon(layout)
-        # Add spacing above the text
-        layout.addSpacerItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+        layout.addSpacing(20)  # Add spacing above the text
 
         # Add text label
         label = QtWidgets.QLabel(message, self)
@@ -299,8 +299,19 @@ class BetterMessageBox(QtWidgets.QDialog):
         label.setAlignment(QtCore.Qt.AlignCenter)
         layout.addWidget(label)
 
-        # Add spacing below the text
-        layout.addSpacerItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+        # Add detailed text section with expander
+        if self.detailed_text:
+            self.detailed_text_widget = QtWidgets.QTextEdit(self)
+            self.detailed_text_widget.setText(self.detailed_text)
+            self.detailed_text_widget.setReadOnly(True)
+            self.detailed_text_widget.setVisible(False)
+            toggle_button = QtWidgets.QPushButton("Show Details...", self)
+            toggle_button.setCheckable(True)
+            toggle_button.clicked.connect(self.toggle_detailed_text)
+            layout.addWidget(toggle_button)
+            layout.addWidget(self.detailed_text_widget)
+
+        layout.addSpacing(20)  # Add spacing below the text
 
         # Add buttons
         button_layout = QtWidgets.QHBoxLayout()
@@ -311,6 +322,13 @@ class BetterMessageBox(QtWidgets.QDialog):
 
         self.adjustSizeToFitContent(label)
         self.applyStylesheet()
+
+    def toggle_detailed_text(self, checked: bool):
+        if self.detailed_text_widget:
+            self.detailed_text_widget.setVisible(checked)
+            sender = self.sender()
+            if isinstance(sender, QtWidgets.QPushButton):
+                sender.setText("Hide Details..." if checked else "Show Details...")
 
     def _setup_icon(
         self,
@@ -342,6 +360,24 @@ class BetterMessageBox(QtWidgets.QDialog):
             layout.addWidget(button)
             button.clicked.connect(lambda *args, e_button=e_button: self.button_clicked(e_button))
 
+    def setButtonText(self, button: Union[int, QMessageBox.StandardButtons, QMessageBox.StandardButton, MessageBoxButton, CustomQPushButton], text: str):
+        for btn in self.buttons:
+            if isinstance(button, int) and btn.property("standardButtonRole") == button:
+                btn.setText(text)
+                return
+            if isinstance(button, QMessageBox.StandardButtons) and btn.property("standardButtonRole") & button:
+                btn.setText(text)
+                return
+            if isinstance(button, QMessageBox.StandardButton) and btn.property("standardButtonRole") == button:
+                btn.setText(text)
+                return
+            if isinstance(button, MessageBoxButton) and btn.property("standardButtonRole") == button.value:
+                btn.setText(text)
+                return
+            if isinstance(button, CustomQPushButton) and btn == button:
+                btn.setText(text)
+                return
+
     def button_clicked(self, e_button: MessageBoxButton):
         sButton: QMessageBox.StandardButton = e_button.as_standardbutton()
         print(f"User pressed button: {MessageBoxButton(sButton).text()}")
@@ -354,7 +390,7 @@ class BetterMessageBox(QtWidgets.QDialog):
         text_width = font_metrics.boundingRect(0, 0, 2000, 2000, Qt.TextWordWrap, label.text()).width()
         title_width = QtGui.QFontMetrics(self.font()).width(self.windowTitle()) + 100
         width = max(text_width, title_width) + 60  # Additional space for padding
-        
+
         # Adjust height based on content
         height = font_metrics.boundingRect(0, 0, width, 2000, Qt.TextWordWrap, label.text()).height()
         self.setFixedSize(width, height + 150)  # 100 pixels extra for icon and buttons
@@ -369,6 +405,12 @@ class BetterMessageBox(QtWidgets.QDialog):
                 min-width: 80px;
                 min-height: 30px;
                 font-size: 14px;
+            }
+            QTextEdit {
+                font-size: 12px;
+                color: gray;
+                background-color: #f0f0f0;
+                border: 1px solid #d0d0d0;
             }
         """)
 

@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
 
+
+
+
 class FileDownloaderError(ConnectionError):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -42,7 +45,7 @@ class FileDownloader:
 
     Args:
     ----
-        filename (os.PathLike | str): The name of file to download
+        filepath (os.PathLike | str): The filepath to download to.
         urls (list[str]): List of urls to use for file download
         hexdigest (str | None): The hash of the file to download
 
@@ -59,7 +62,7 @@ class FileDownloader:
 
     def __init__(
         self,
-        filename: os.PathLike | str,
+        filepath: os.PathLike | str,
         urls: list[str],
         hexdigest: str | None,
         *,
@@ -72,9 +75,9 @@ class FileDownloader:
     ):
         # We'll append the filename to one of the provided urls
         # to create the download link
-        if not filename:
+        if not filepath:
             raise FileDownloaderError("No filename provided", expected=True)
-        self.filepath = Path.pathify(filename)
+        self.filepath = Path.pathify(filepath)
         self.log = logger or RobustRootLogger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
@@ -178,7 +181,9 @@ class FileDownloader:
                     # Determine the filename from the Content-Disposition header or URL.
                     filename = self._get_filename_from_cd(r.headers.get("Content-Disposition")) or Path(url).name
                     self.downloaded_filename = filename
+                    RobustRootLogger.info(f"Expected downloaded filename: {self.downloaded_filename}")
                     file_path = self.filepath.parent / filename
+                    RobustRootLogger.info(f"Expected download path: {file_path}")
 
                     # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))

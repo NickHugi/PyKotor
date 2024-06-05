@@ -209,7 +209,8 @@ class Editor(QMainWindow):
             - Refreshes the window title
             - Enables the Revert menu item
         """
-        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
+        orig_filename = self._filepath.name if self._filepath and self._filepath.name else ""
+        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", orig_filename, self._saveFilter, "")
         if not filepath_str:
             return
         try:
