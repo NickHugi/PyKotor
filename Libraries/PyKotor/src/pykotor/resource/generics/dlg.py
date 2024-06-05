@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import uuid
 
 from enum import IntEnum
@@ -17,6 +16,7 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     from typing_extensions import Literal, Self
 
+    from pykotor.extract.installation import Installation
     from pykotor.resource.formats.gff.gff_data import GFFStruct
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
@@ -172,26 +172,30 @@ class DLG:
 
     def print_tree(
         self,
+        install: Installation | None = None,
     ):
         """Prints all the nodes (one per line) in the dialog tree with appropriate indentation."""
-        self._print_tree(self.starters, 0, [], [])
+        self._print_tree(self.starters, install, 0, [], [])
 
     def _print_tree(
         self,
         links: list[DLGLink],
+        install: Installation | None,
         indent: int,
         seen_links: list[DLGLink],
         seen_nodes: list[DLGNode],
     ):
         for link in links:
+            text = link.node.text if install is None else install.string(link.node.text)
             if link.node not in seen_nodes:
-                print(f'{" " * indent}-> {link.node.text}')
+                print(f'{" " * indent}-> {text}')
                 seen_links.append(link)
 
                 if link.node not in seen_nodes:
                     seen_nodes.append(link.node)
                     self._print_tree(
                         link.node.links,
+                        install,
                         indent + 3,
                         seen_links,
                         seen_nodes,
@@ -549,9 +553,6 @@ class DLGNode:
             else:
                 raise ValueError(f"Unsupported type: {type(value)} for key: {key}")
 
-        # Debugging output for serialization
-        print(f"Serialized Node: {node_key}, Data: {node_dict}")
-
         return node_dict
 
     @staticmethod
@@ -827,10 +828,8 @@ class DLGLink:
             node_map = {}
 
         node_key = data["key"]
-        print(f"Deserializing Link Key: {node_key}")
 
         if node_key in node_map:
-            print(f"Link Key {node_key} found in node_map. Returning existing link.")
             return node_map[node_key]
 
         link = cls()
@@ -840,9 +839,6 @@ class DLGLink:
         link.link_index = data.get("link_index", -1)
         if data["node"]:
             link.node = DLGNode.from_dict(data["node"], node_map)
-
-        # Debugging output for deserialization
-        print(f"Deserialized Link: {node_key}, Data: {link.__dict__}")
 
         return link
 
