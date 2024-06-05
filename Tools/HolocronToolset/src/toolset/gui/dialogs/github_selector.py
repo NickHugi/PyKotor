@@ -179,7 +179,7 @@ class GitHubFileSelector(QDialog):
                 e.response.status_code == 403
                 and "X-RateLimit-Reset" in e.response.headers
             ):
-                if not self.timer.isActive():
+                if not self.timer.isActive() and self.rate_limit_reset is not None:
                     QMessageBox.critical(self, "You are rate limited.", "You have submitted too many requests to github's api, check the status bar at the bottom.")
                     self.start_rate_limit_timer(e)
                 return None
@@ -424,6 +424,7 @@ class GitHubFileSelector(QDialog):
     def stop_rate_limit_timer(self) -> None:
         self.timer.stop()
         self.statusBar.clearMessage()
+        self.rate_limit_reset = None
 
     def update_rate_limit_status(self) -> None:
         if self.rate_limit_remaining is not None and self.rate_limit_remaining > 0:
@@ -432,12 +433,9 @@ class GitHubFileSelector(QDialog):
         elif self.rate_limit_reset is not None:
             remaining_time = max(self.rate_limit_reset - time.time(), 0)
             self.statusBar.showMessage(f"Rate limit exceeded. Try again in {int(remaining_time)} seconds.")
-            if int(remaining_time) % 15 == 0:
-                self.refresh_data()
+            if int(remaining_time) % 15 == 0 or remaining_time <= 0:
                 self.stop_rate_limit_timer()
-            elif remaining_time <= 0:
                 self.refresh_data()
-                self.stop_rate_limit_timer()
 
     def update_rate_limit_info(self, headers: dict):
         if "X-RateLimit-Reset" in headers:
