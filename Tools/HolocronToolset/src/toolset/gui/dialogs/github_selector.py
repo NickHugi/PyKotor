@@ -434,6 +434,7 @@ class GitHubFileSelector(QDialog):
             self.statusBar.showMessage(f"Rate limit exceeded. Try again in {int(remaining_time)} seconds.")
             if int(remaining_time) % 15 == 0:
                 self.refresh_data()
+                self.stop_rate_limit_timer()
             elif remaining_time <= 0:
                 self.refresh_data()
                 self.stop_rate_limit_timer()
