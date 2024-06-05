@@ -174,7 +174,6 @@ class GitHubFileSelector(QDialog):
     def initializeRepoData(self) -> CompleteRepoData | None:
         try:
             repo_data = CompleteRepoData.load_repo(self.owner, self.repo)
-            raise requests.exceptions.HTTPError(response=requests.Response())
         except requests.exceptions.HTTPError as e:
             if (
                 e.response.status_code == 403
