@@ -291,14 +291,15 @@ class NSSEditor(Editor):
                     self.new()
 
     def _handle_user_ncs(self, data: dict[str, str], resname: str) -> None:
-        box = BetterMessageBox(
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
             "Decompile or Download",
             f"Would you like to decompile this script, or download it from the <a href='{self.sourcerepo_url}'>Vanilla Source Repository</a>?",
-            buttons=QMessageBox.Yes | QMessageBox.No,
-            defaultButton=QMessageBox.Yes
+            buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
         )
-        box.setButtonText(QMessageBox.Yes, "Decompile")
-        box.setButtonText(QMessageBox.No, "Download")
+        box.setDefaultButton(QMessageBox.Cancel)
+        box.button(QMessageBox.Yes).setText("Decompile")
+        box.button(QMessageBox.No).setText("Download")
         choice = box.exec_()
         print(f"User chose {choice} in the decompile/download messagebox.")
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import os
 import pathlib
 import subprocess
@@ -7,7 +8,7 @@ import sys
 import time
 
 from contextlib import suppress
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 import requests
@@ -512,10 +513,14 @@ class GitHubFileSelector(QDialog):
         for url in urls:
             try:
                 response = self.api_get(url)
-                filename = url.split("/")[-1]
-                with open(filename, "wb") as file:
-                    file.write(response.content)
-                QMessageBox.information(self, "Download Successful", f"Downloaded {filename}")
+                if isinstance(response, dict) and "content" in response:
+                    content = base64.b64decode(response["content"])
+                    filename = self.convert_item_to_web_url(item).split("/")[-1]
+                    with open(filename, "wb") as file:
+                        file.write(content)
+                    QMessageBox.information(self, "Download Successful", f"Downloaded {filename} to {Path(filename).resolve()}")
+                else:
+                    QMessageBox.critical(self, "Download Failed", "Failed to download the file content.")
             except requests.exceptions.RequestException as e:  # noqa: PERF203
                 QMessageBox.critical(self, "Download Failed", f"Failed to download {url.split('/')[-1]}: {e!s}")
 
