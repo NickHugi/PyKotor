@@ -12,7 +12,7 @@ import typing
 from abc import ABC
 from contextlib import suppress
 from dataclasses import MISSING, dataclass, fields
-from typing import TYPE_CHECKING, Any, TypeVar, Union, get_args, get_origin, overload
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, Union, get_args, get_origin, overload
 
 from utility.system.path import Path, PurePath
 
@@ -46,9 +46,14 @@ if __name__ == "__main__":
 
 T = TypeVar("T")
 
-class AbstractAPIResult(ABC):
-    def __getattr__(self, attr_name: str):
+class AbstractAPIResult(ABC):  # noqa: B024
+    _type_cache: ClassVar[dict] = {}
+
+    def __getitem__(self, attr_name: str):
         return self.__dict__[attr_name]
+
+    def __setitem__(self, attr_name: str, value: Any):
+        self.__dict__[attr_name] = value
 
     @classmethod
     def from_dict(cls, json_dict: dict[str, Any]) -> Self:
@@ -58,7 +63,7 @@ class AbstractAPIResult(ABC):
             key = this_field.name
             expected_type = this_field.metadata.get("default_type", (this_field.type,))
             if key not in json_dict:
-                print(f"{cls.__name__} Warning: Missing expected key '{key}' in data")
+                #print(f"{cls.__name__} Warning: Missing expected key '{key}' in data")
                 processed_data[key] = this_field.default if this_field.default is not MISSING else None
             else:
                 value = json_dict[key]
@@ -134,12 +139,15 @@ class AbstractAPIResult(ABC):
 
         tree = ast.parse(type_str, mode="eval")
         assert not isinstance(tree, str), "Parsed tree should not be a string."
-        return resolve(tree.body)
+        resolved_type = resolve(tree.body)
+        cls._type_cache[type_str] = resolved_type
+        return resolved_type
 
     @classmethod
     def handle_casting(cls, value: Any, expected_types: tuple[type[T], ...]) -> T:
-        # sourcery skip: assign-if-exp, reintroduce-else
-        assert isinstance(expected_types, tuple)
+        # Optimize by caching converted types
+        converted_types = tuple(cls._type_cache.get(t, cls.resolve_type(t) if isinstance(t, str) else t) for t in expected_types)
+        cls._type_cache.update(zip(expected_types, converted_types))
 
         # Convert all string type names to actual types
         converted_types = []
@@ -366,7 +374,7 @@ class RepoIndexData(ForkContentsData):
 
 
 @dataclass
-class TreeInfoData(AbstractAPIResult):
+class CommitTreeInfo(AbstractAPIResult):
     sha: str
     url: str
 
@@ -410,7 +418,7 @@ class CommitDetailData(AbstractAPIResult):
     author: AuthorInfoData
     committer: AuthorInfoData
     message: str
-    tree: TreeInfoData
+    tree: CommitTreeInfo
     url: str
     comment_count: int
     verification: VerificationInfoData
@@ -438,35 +446,53 @@ class CommitInfoData(AbstractAPIResult):
 
 
 @dataclass
-class ParentCommitInfoData(TreeInfoData):
+class ParentCommitInfoData(CommitTreeInfo):
     html_url: str
 
 
 @dataclass
 class BranchInfoData(AbstractAPIResult):
     name: str
-    commit: TreeInfoData
+    commit: CommitTreeInfo
     protected: bool
+
+
+@dataclass
+class TreeInfoData(AbstractAPIResult):
+    path: str
+    mode: str
+    type: str
+    sha: str
+    size: int | None
+    url: str
 
 
 @dataclass
 class CompleteRepoData(AbstractAPIResult):
     repo_info: RepoIndexData
     branches: list[BranchInfoData]
-    commits: list[CommitInfoData]
+    #commits: list[CommitInfoData]
     #issues: list[dict[str, Any]]
     #pulls: list[dict[str, Any]]
     #contributors: list[ContributorsInfoData]
-    releases: list[GithubRelease]
+    #releases: list[GithubRelease]
     #tags: list[dict[str, Any]]
     contents: list[ContentInfoData]
     #languages: dict[str, Any]
     forks: list[ForkContentsData]
     #stargazers: list[dict[str, Any]]
     #subscribers: list[dict[str, Any]]
+    tree: list[TreeInfoData]
 
     def __getattr__(self, attr_name: str):
         return self.__dict__[attr_name]
+
+    def get_main_branch_files(self) -> list[ContentInfoData]:
+        main_branch = next((branch for branch in self.branches if branch.name == self.repo_info.default_branch), None)
+        if not main_branch:
+            raise ValueError(f"Main branch {self.repo_info.default_branch} not found in branches")
+
+        return [content for content in self.contents if content.path.startswith(main_branch.commit.sha)]
 
     @classmethod
     def load_repo(cls, owner: str, repo_name: str, *, timeout: int = 15) -> CompleteRepoData:
@@ -475,17 +501,8 @@ class CompleteRepoData(AbstractAPIResult):
         endpoints = {
             "repo_info": base_url,
             "branches": f"{base_url}/branches",
-            "commits": f"{base_url}/commits",
-            #"issues": f"{base_url}/issues",
-            #"pulls": f"{base_url}/pulls",
-            #"contributors": f"{base_url}/contributors",
-            "releases": f"{base_url}/releases",
-            #"tags": f"{base_url}/tags",
             "contents": f"{base_url}/contents",
-            #"languages": f"{base_url}/languages",
-            "forks": f"{base_url}/forks",
-            #"stargazers": f"{base_url}/stargazers",
-            #"subscribers": f"{base_url}/subscribers",
+            "forks": f"{base_url}/forks"
         }
 
         repo_data = {}
@@ -493,26 +510,28 @@ class CompleteRepoData(AbstractAPIResult):
         for key, url in endpoints.items():
             print(f"Fetching {key}...")
             response = requests.get(url, timeout=timeout)
-            if response.status_code == 200:
-                repo_data[key] = response.json()
-            else:
-                print(f"Failed to fetch {key} from {url}")
+            response.raise_for_status()
+            repo_data[key] = response.json()
 
-        return cls(
+        # Fetch the tree using the correct default branch
+        default_branch = repo_data.get("repo_info", {}).get("default_branch", "main")
+        tree_url = f"{base_url}/git/trees/{default_branch}?recursive=1"
+        print(f"Fetching tree from {tree_url}...")
+        tree_response = requests.get(tree_url, timeout=timeout)
+        if tree_response.status_code == 200:
+            repo_data["tree"] = tree_response.json().get("tree", [])
+        else:
+            print(f"Failed to fetch tree from {tree_url}")
+
+        instance = cls(
             repo_info=RepoIndexData.from_dict(repo_data.get("repo_info", {})),
             branches=[BranchInfoData.from_dict(item) for item in repo_data.get("branches", [])],
-            commits=[CommitInfoData.from_dict(item) for item in repo_data.get("commits", [])],
-            #issues=repo_data.get("issues", []),
-            #pulls=repo_data.get("pulls", []),
-            #contributors=repo_data.get("contributors", []),
-            releases=[GithubRelease.from_dict(item) for item in repo_data.get("releases", [])],
-            #tags=repo_data.get("tags", []),
             contents=[ContentInfoData.from_dict(item) for item in repo_data.get("contents", [])],
-            #languages=repo_data.get("languages", {}),
             forks=[ForkContentsData.from_dict(item) for item in repo_data.get("forks", [])],
-            #stargazers=repo_data.get("stargazers", []),
-            #subscribers=repo_data.get("subscribers", []),
+            tree=[TreeInfoData.from_dict(item) for item in repo_data.get("tree", [])]
         )
+        print(f"Completed loading of '{base_url}'")
+        return instance
 
     @classmethod
     def load_repo_from_files(cls, folder_path: str) -> CompleteRepoData:
@@ -523,11 +542,11 @@ class CompleteRepoData(AbstractAPIResult):
         repo_data = {
             "repo_info": load_json(os.path.join(folder_path, "repo_info.json")),
             "branches": load_json(os.path.join(folder_path, "branches.json")),
-            "commits": load_json(os.path.join(folder_path, "commits.json")),
-       #     "issues": load_json(os.path.join(folder_path, "issues.json")),
+        #    "commits": load_json(os.path.join(folder_path, "commits.json")),
+        #    "issues": load_json(os.path.join(folder_path, "issues.json")),
         #    "pulls": load_json(os.path.join(folder_path, "pulls.json")),
         #    "contributors": load_json(os.path.join(folder_path, "contributors.json")),
-            "releases": load_json(os.path.join(folder_path, "releases.json")),
+        #    "releases": load_json(os.path.join(folder_path, "releases.json")),
         #    "tags": load_json(os.path.join(folder_path, "tags.json")),
             "contents": load_json(os.path.join(folder_path, "contents.json")),
         #    "languages": load_json(os.path.join(folder_path, "languages.json")),
@@ -539,11 +558,11 @@ class CompleteRepoData(AbstractAPIResult):
         return cls(
             repo_info=RepoIndexData.from_dict(repo_data.get("repo_info", {})),
             branches=[BranchInfoData.from_dict(item) for item in repo_data.get("branches", [])],
-            commits=[CommitInfoData.from_dict(item) for item in repo_data.get("commits", [])],
+        #    commits=[CommitInfoData.from_dict(item) for item in repo_data.get("commits", [])],
         #    issues=repo_data.get("issues", []),
         #    pulls=repo_data.get("pulls", []),
-            contributors=[ContributorsInfoData.from_dict(item) for item in repo_data.get("contributors", [])],
-            releases=[GithubRelease.from_dict(item) for item in repo_data.get("releases", [])],
+        #    contributors=[ContributorsInfoData.from_dict(item) for item in repo_data.get("contributors", [])],
+        #    releases=[GithubRelease.from_dict(item) for item in repo_data.get("releases", [])],
         #    tags=repo_data.get("tags", []),
             contents=[ContentInfoData.from_dict(item) for item in repo_data.get("contents", [])],
         #    languages=repo_data.get("languages", {}),
@@ -730,3 +749,11 @@ def extract_owner_repo(url: str) -> tuple[str, str]:
         return extract_owner_repo_from_main_url(url)
     raise ValueError("Invalid GitHub URL format")
 
+if __name__ == "__main__":
+    import sys
+
+    from toolset.__main__ import onAppCrash
+    sys.excepthook = onAppCrash
+    test1 = CompleteRepoData.load_repo_from_files(r"C:\GitHub\PyKotor\KOTORCommunityPatches_Vanilla_KOTOR_Script_Source\json files")
+    test1_dict = test1.to_dict()
+    print(json.dumps(test1_dict, indent=4))
