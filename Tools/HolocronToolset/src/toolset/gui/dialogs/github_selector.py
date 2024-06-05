@@ -191,7 +191,7 @@ class GitHubFileSelector(QDialog):
                 response.raise_for_status()
                 forks_data = response.json()
                 if forks_data:
-                    first_fork = forks_data[0]['full_name']
+                    first_fork = forks_data[0]["full_name"]
                     QMessageBox.information(self, "Using Fork", f"The main repository is not available. Using the fork: {first_fork}")
                     fork_owner, fork_repo = first_fork.split("/")
                     fork_repo_data = CompleteRepoData.load_repo(fork_owner, fork_repo)
@@ -437,7 +437,7 @@ class GitHubFileSelector(QDialog):
         else:
             remaining_time = max(self.rate_limit_reset - time.time(), 0)
             self.statusBar.showMessage(f"Rate limit exceeded. Try again in {int(remaining_time)} seconds.")
-            if int(remaining_time) % 15 == 0:
+            if int(remaining_time) % 15 == 0:  # Refresh every 15 seconds, sometimes github's X-RateLimit-Reset is wrong.
                 self.refresh_data()
             elif remaining_time <= 0:
                 self.refresh_data()
@@ -479,11 +479,27 @@ class GitHubFileSelector(QDialog):
         context_menu.addAction("Download").triggered.connect(lambda: self.download(item))
         context_menu.exec_(self.repoTreeWidget.viewport().mapToGlobal(position))
 
+    def convert_item_to_web_url(self, item: QTreeWidgetItem) -> str:
+        # Extract owner and repo from self
+        owner = self.owner
+        repo = self.repo
+
+        # Extract the file path from the item
+        item_info: TreeInfoData = item.data(0, Qt.UserRole)
+        if item_info and item_info.type == "blob":
+            file_path = item_info.path
+
+            # Construct the web URL
+            web_url = f"https://github.com/{owner}/{repo}/blob/{self.repoData.branches[0].name}/{file_path}"
+            return web_url
+
+        return ""
+
     def open_in_web_browser(self, item: QTreeWidgetItem) -> None:
-        url = item.toolTip(0)
-        if url:
+        web_url = self.convert_item_to_web_url(item)
+        if web_url:
             import webbrowser
-            webbrowser.open(url)
+            webbrowser.open(web_url)
 
     def copy_url(self, item: QTreeWidgetItem) -> None:
         url = item.toolTip(0)
