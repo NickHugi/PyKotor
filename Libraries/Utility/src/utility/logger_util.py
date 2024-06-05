@@ -90,6 +90,7 @@ class CustomPrintToLogger:
         self.log_type: Literal["stdout", "stderr"] = log_type
         self.logger: logging.Logger = logger
         self.configure_logger_stream()
+        self.buffer = ""
 
     def isatty(self) -> Literal[False]:
         return False
@@ -100,21 +101,27 @@ class CustomPrintToLogger:
             if isinstance(handler, logging.StreamHandler):
                 handler.setStream(utf8_wrapper)
 
-    def write(
-        self,
-        message: str,
-    ):
+    def write(self, message: str):
         if getattr(THREAD_LOCAL, "is_logging", False):
             self.original_out.write(message)
-        elif message.strip():
-            # Use the logging_context to prevent recursive calls
+        else:
+            self.buffer += message
+            while "\n" in self.buffer:
+                line, self.buffer = self.buffer.split("\n", 1)
+                self._log_message(line)
+
+    def flush(self):
+        if self.buffer:
+            self._log_message(self.buffer)
+            self.buffer = ""
+
+    def _log_message(self, message: str):
+        if message and message.strip():
             with logging_context():
                 if self.log_type == "stderr":
                     self.logger.error(message.strip())
                 else:
                     self.logger.info(message.strip())
-
-    def flush(self): ...
 
 
 class SafeEncodingLogger(logging.Logger):
@@ -449,7 +456,32 @@ class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler
             self.stream = self._open()
 
 
-class RobustRootLogger(logging.Logger):  # noqa: N801
+class MetaLogger(type):
+    def _create_instance(cls: type[RobustRootLogger]):
+        instance = object.__new__(cls)
+        object.__getattribute__(instance, "__new__")(cls)
+        object.__getattribute__(instance, "__init__")()
+        type.__setattr__(cls, "_instance", instance)
+        return instance
+    def __getattribute__(cls: type[RobustRootLogger], attr_name: str):  # noqa: N805
+        if attr_name.startswith("__") and attr_name.endswith("__"):
+            return super().__getattribute__(attr_name)
+        instance: RobustRootLogger | None = type.__getattribute__(RobustRootLogger, "_instance")
+        if instance is None:
+            instance = MetaLogger._create_instance(cls)
+        return getattr(instance, attr_name)
+
+    def __call__(cls, *args, **kwargs) -> RobustRootLogger:
+        # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
+        instance: RobustRootLogger | None = type.__getattribute__(RobustRootLogger, "_instance")
+        if instance is None:
+            instance = MetaLogger._create_instance(cls)
+        if args or kwargs:
+            instance.info(*args, **kwargs)
+        return instance
+
+
+class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
     """Setup a logger with some standard features.
 
     The goal is to have this be callable anywhere anytime regardless of whether a logger is setup yet.
@@ -472,44 +504,54 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
     def _safe_print(self, message: str):
         print(message, file=sys.__stderr__)
 
-    def __getattribute__(self, name: str) -> Any:
-        """Drop this function in any class to make the class never throw exceptions."""
+    def __getattribute__(self, attr_name: str) -> Any:
+        our_type: type[Self] = object.__getattribute__(self, "__class__")
         try:
-            attr = super().__getattribute__(name)
-            self_type = object.__getattribute__(self, "__class__")
-            if callable(attr) and not isinstance(attr, self_type) and attr is not self_type:
+            attr_value = super().__getattribute__(attr_name)
+            if attr_name == "_robust_root_lock":
+                return attr_value
+            if object.__getattribute__(self, "_robust_root_lock"):  # noqa: FBT003
+                return attr_value
+            if attr_value is not our_type and not isinstance(attr_value, our_type) and callable(attr_value):
                 def wrapped(*args, **kwargs):
                     try:
-                        return attr(*args, **kwargs)
+                        object.__setattr__(self, "_robust_root_lock", True)
+                        return attr_value(*args, **kwargs)
                     except Exception as e:  # noqa: BLE001
-                        self._safe_print(f"Exception in {name}: {e}")
+                        print(f"Exception when accessing attribute {attr_name}: {e}", file=sys.__stderr__)
+                        #print(traceback.format_exc(), file=sys.__stderr__)
+                        print(f"{e.__class__.__name__}: {e}", file=sys.__stderr__)
+                    finally:
+                        object.__setattr__(self, "_robust_root_lock", False)
                 return wrapped
+        except AttributeError:
+            raise
         except Exception as e:  # noqa: BLE001
-            self._safe_print(f"Exception when accessing attribute {name}: {e}")
-            def fallback(*args, **kwargs):
-                self._safe_print(f"Fallback function called for {name} with args: {args} and kwargs: {kwargs}")
-            return fallback
+            #if isinstance(e, AttributeError) and type.__getattribute__(our_type, "__getattr__") is not None:
+            #    raise  # python's logger module doesn't define this, but might as well future proof our code.
+
+            print(f"(Caught by RobustRootLogger!) Exception when accessing attribute '{attr_name}': {e}", file=sys.__stderr__)
+            print(f"{e.__class__.__name__}: {e}", file=sys.__stderr__)
+            return ""
         else:
-            return attr
+            return attr_value
 
     def __getattr__(self, attr_name: str):
-        if attr_name not in self.__dict__:
-            return getattr(self._logger, attr_name)
-        return super().__getattr__(attr_name)
-
-    def __new__(cls, *args, **kwargs) -> Self:
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+        logger = object.__getattribute__(self, "_logger")
+        if logger is None:
+            object.__setattr__(self, "_instance", None)
+            object.__getattribute__(self, "__init__")()
+            logger = object.__getattribute__(self, "_logger")
+        assert logger is not None
+        return object.__getattribute__(logger, attr_name)
 
     def __init__(self, use_level: logging._Level = logging.DEBUG):
         self.listener: QueueListener
-        cls = self.__class__
-        if not cls._logger:
-            cls._logger = self._setup_logger(use_level)
-            self.listener_thread = threading.Thread(target=self._start_listener)
-            self.listener_thread.daemon = True
-            self.listener_thread.start()
+        cls = object.__getattribute__(self, "__class__")
+        if not object.__getattribute__(cls, "_logger"):
+            type.__setattr__(cls, "_logger", object.__getattribute__(self, "_setup_logger")(use_level))
+            self.listener_thread = threading.Thread(target=object.__getattribute__(self, "_start_listener"))
+            object.__getattribute__(self, "listener_thread").daemon = True
 
     def _setup_logger(
         self,
@@ -575,58 +617,28 @@ class RobustRootLogger(logging.Logger):  # noqa: N801
             logger.addHandler(exception_handler)
 
             # Adding handlers to the queue listener
-            self.listener = QueueListener(self._queue, console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler)
+            self.listener = QueueListener(object.__getattribute__(self, "_queue"), console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler)
 
         return logger
 
     def _start_listener(self):
         if not hasattr(self, "listener"):
-            self._setup_logger()
+            object.__getattribute__(self, "_setup_logger")()
         try:
-            self.listener.start()
+            object.__getattribute__(self, "listener_thread").start()
         except AttributeError:
             logging.getLogger().handlers = []
-            self._setup_logger()
-            self.listener.start()
+            object.__setattr__(object.__getattribute__(self, "__class__"), "_logger", self._setup_logger())
+            object.__getattribute__(self, "listener_thread").start()
 
-    def __call__(self) -> logging.Logger:
-        return self._logger
+    def __call__(self, *args, **kwargs) -> RobustRootLogger:
+        _actual_logger: logging.Logger | None = object.__getattribute__(self, "_logger")
+        if _actual_logger is None:
+            object.__getattribute__(self, "__class__")()
+        return self
 
-    @classmethod
-    def log(cls, level: int, msg: str, *args, **kwargs):
-        cls()._logger.log(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def debug(cls, msg: str, *args, **kwargs):
-        cls()._logger.debug(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def info(cls, msg: str, *args, **kwargs):
-        cls()._logger.info(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def warning(cls, msg: str, *args, **kwargs):
-        cls()._logger.warning(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def warn(cls, msg: str, *args, **kwargs):
-        cls()._logger.warning(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def error(cls, msg: str, *args, **kwargs):
-        cls()._logger.error(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def exception(cls, msg: str, *args, exc_info: logging._ExcInfoType = True, **kwargs):
-        cls()._logger.exception(msg.encode(encoding="utf-8", errors="replace").decode(), *args, exc_info=exc_info, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def critical(cls, msg: str, *args, **kwargs):
-        cls()._logger.critical(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-
-    @classmethod
-    def fatal(cls, msg: str, *args, **kwargs):
-        cls()._logger.fatal(msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
+    def _log(self, level: int, msg: str, *args, **kwargs) -> None:
+        return super()._log(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)
 
 
 get_root_logger = RobustRootLogger  # deprecated, provided for backwards compatibility.
@@ -640,6 +652,9 @@ if __name__ == "__main__":
     logger.warning("This is a warning message.")
     logger.error("This is an error message.")
     logger.critical("This is a critical message.")
+
+    # Test various edge case
+    RobustRootLogger("This is a test of __call__")
 
     # Uncomment to test uncaught exception logging
     raise RuntimeError("Test uncaught exception")
