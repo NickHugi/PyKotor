@@ -457,7 +457,7 @@ class GitHubFileSelector(QDialog):
         self.accept()
 
     def clone_repository(self) -> None:
-        selectedFork = self.forkComboBox.currentText()
+        selectedFork = self.forkComboBox.currentText().replace(" (main)", "")
         if not selectedFork:
             QMessageBox.warning(self, "No Fork Selected", "Please select a fork to clone.")
             return
@@ -502,7 +502,7 @@ class GitHubFileSelector(QDialog):
             webbrowser.open(web_url)
 
     def copy_url(self, item: QTreeWidgetItem) -> None:
-        url = item.toolTip(0)
+        url = self.convert_item_to_web_url(item)
         if url:
             QApplication.clipboard().setText(url)
 
