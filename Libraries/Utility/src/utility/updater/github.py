@@ -69,9 +69,9 @@ class AbstractAPIResult(ABC):  # noqa: B024
                 value = json_dict[key]
                 processed_data[key] = cls.handle_casting(value, expected_type)
 
-        for key, value in json_dict.items():
-            if key not in processed_data:
-                print(f"{cls.__name__} Warning: Unexpected key '{key}' in data with value '{value!r}'")
+        #for key, value in json_dict.items():
+            #if key not in processed_data:
+            #    print(f"{cls.__name__} Warning: Unexpected key '{key}' in data with value '{value!r}'")
 
         return cls(**processed_data)
 
@@ -747,7 +747,7 @@ def extract_owner_repo(url: str) -> tuple[str, str]:
         return extract_owner_repo_from_raw_url(url)
     if "github.com" in url:
         return extract_owner_repo_from_main_url(url)
-    raise ValueError("Invalid GitHub URL format")
+    raise ValueError(f"Invalid GitHub URL format: {url}")
 
 if __name__ == "__main__":
     import sys

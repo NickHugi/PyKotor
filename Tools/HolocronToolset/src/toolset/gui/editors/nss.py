@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import multiprocessing
+
 from contextlib import contextmanager
 from operator import attrgetter
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
@@ -17,16 +19,22 @@ from qtpy.QtGui import (
     QTextCharFormat,
     QTextFormat,
 )
-from qtpy.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
+from qtpy.QtWidgets import QDialog, QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
+from toolset.gui.dialogs.github_selector import GitHubFileSelector
 from toolset.gui.editor import Editor
+from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception
-from utility.system.path import Path
+from utility.logger_util import get_log_directory
+from utility.system.path import Path, PurePath
+from utility.updater.github import download_github_file, fetch_repo_index
 
 if TYPE_CHECKING:
     import os
@@ -40,6 +48,17 @@ if TYPE_CHECKING:
 
     from pykotor.common.script import ScriptConstant, ScriptFunction
     from toolset.data.installation import HTInstallation
+
+
+def download_script(
+    url: str,
+    local_path: str,
+    script_relpath: str,
+):
+    """Downloads a file using `download_github_file` and updates the progress queue."""
+    print(f"Downloading script @ {url}")
+    print(f"Saving to {local_path}")
+    download_github_file(url, local_path, script_relpath)
 
 
 class NSSEditor(Editor):
@@ -85,6 +104,11 @@ class NSSEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+
+        self.owner: str = "KOTORCommunityPatches"
+        self.repo: str = "Vanilla_KOTOR_Script_Source"
+        self.sourcerepo_url: str = f"https://github.com/{self.owner}/{self.repo}"
+        self.sourcerepo_forks_url: str = f"{self.sourcerepo_url}/forks"
 
         self._length: int = 0
         self._is_decompiled: bool = False
@@ -209,6 +233,64 @@ class NSSEditor(Editor):
                 self._revert = context.revert
                 self.refreshWindowTitle()
 
+    def determine_script_path(self, resref: str, repo_index: dict[str, str]) -> str:
+        """Determines the script path in the repository based on resref and game type.
+
+        Args:
+        ----
+            resref: The resource reference of the script.
+            repo_index: The repository index mapping file paths to their URLs.
+
+        Returns:
+        -------
+            The path of the script in the repository.
+        """
+        # Assuming resref is the filestem, add ".nss" to make it a full filename
+        script_filename = f"{resref}.nss"
+        print(f"Determined script filename: {script_filename}")
+
+        # Determine the parent folder name which is assumed to be the module filename
+        module_filename = self._filepath.stem
+        print(f"Module filename: '{module_filename}'")
+
+        # Construct the path in the repository index
+        tsl_base_path = "TSL/Vanilla/Modules"
+        k1_base_path = "K1/Vanilla/Modules"
+        base_path = tsl_base_path if self._installation.tsl else k1_base_path
+
+        script_path = f"{base_path}/{module_filename}/{script_filename}"
+        print(f"Constructed script path: {script_path}")
+
+        # Check if the script path exists in the repository index
+        if script_path not in repo_index:
+            print(f"script path '{script_path}' doesn't exist on self.repo.")
+            script_path: str = self._choose_from_multiple_matches(
+                repo_index,
+                script_filename
+            )
+        return script_path
+
+    def _choose_from_multiple_matches(self, repo_index: dict[str, Any], script_filename: str) -> str:
+        # If not found, show the user all matching options
+        script_filename.lower()
+        matching_paths = [
+            path.split("/")[-1]
+            for path in repo_index
+            if path.endswith(script_filename)
+        ]
+
+        # Show dialog to select the correct path
+        dialog = GitHubFileSelector(self.owner, self.repo, selectedFiles=matching_paths, parent=self)
+        if dialog.exec_() != QDialog.Accepted:
+            raise ValueError("No script selected.")
+
+        selected_path = dialog.getSelectedPath()
+        if not selected_path:
+            raise ValueError("No script selected.")
+        result = selected_path
+        print(f"User selected script path: {result}")
+        return result
+
     def load(
         self,
         filepath: os.PathLike | str,
@@ -237,25 +319,69 @@ class NSSEditor(Editor):
         if restype is ResourceType.NSS:
             self.ui.codeEdit.setPlainText(data.decode("windows-1252", errors="ignore"))
         elif restype is ResourceType.NCS:
+            error_occurred = False
             try:
-                source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
-                self.ui.codeEdit.setPlainText(source)
-                self._is_decompiled = True
+                self._handle_user_ncs(data, resref)
             except ValueError as e:
-                QMessageBox(QMessageBox.Icon.Critical, "Decompilation Failed", str(universal_simplify_exception(e))).exec_()
-                self.new()
+                error_occurred = True
+                QMessageBox(QMessageBox.Icon.Critical, "Decompilation/Download Failed", str(universal_simplify_exception(e))).exec_()
+                raise
             except NoConfigurationSetError as e:
+                error_occurred = True
                 QMessageBox(QMessageBox.Icon.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                self.new()  # minor TODO(th3w1zard1): should we destroy self here?
+                raise
+            finally:
+                if error_occurred:
+                    self.new()
+
+    def _handle_user_ncs(self, data: dict[str, str], resname: str) -> None:
+        box = BetterMessageBox(
+            "Decompile or Download",
+            f"Would you like to decompile this script, or download it from the <a href='{self.sourcerepo_url}'>Vanilla Source Repository</a>?",
+            buttons=QMessageBox.Yes | QMessageBox.No,
+            defaultButton=QMessageBox.Yes
+        )
+        box.setButtonText(QMessageBox.Yes, "Decompile")
+        box.setButtonText(QMessageBox.No, "Download")
+        choice = box.exec_()
+        print(f"User chose {choice} in the decompile/download messagebox.")
+
+        if choice == QMessageBox.Yes:
+            source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
+        else:
+            source = self._download_and_load_remote_script(resname)
+        self.ui.codeEdit.setPlainText(source)
+        self._is_decompiled = True
+
+    def _download_and_load_remote_script(self, resref: str) -> str:
+        repo_index: dict[str, str] = fetch_repo_index(self.owner, self.repo)
+
+        script_path: str = self.determine_script_path(resref, repo_index)
+        local_path = CaseAwarePath(get_log_directory(self._global_settings.extractPath), PurePath(script_path).name)
+        print(f"Local path: {local_path}")
+
+        download_process = multiprocessing.Process(
+            target=download_script,
+            args=(f"{self.owner}/{self.repo}", str(local_path), script_path)
+        )
+        download_process.start()
+        download_process.join()
+
+        if not local_path.exists():
+            raise ValueError(f"Failed to download the script: '{local_path}' did not exist after download completed.")  # noqa: TRY301
+
+        result = BinaryReader.load_file(local_path).decode(encoding="windows-1252")
+
+        return result
 
     def build(self) -> tuple[bytes | None, bytes]:
         if self._restype is not ResourceType.NCS:
             return self.ui.codeEdit.toPlainText().encode("windows-1252"), b""
 
-        print("compiling script from nsseditor")
+        self._logger.debug(f"Compiling script '{self._resname}.{self._restype.extension}' from the NSSEditor...")
         compiled_bytes: bytes | None = compileScript(self.ui.codeEdit.toPlainText(), self._installation.path(), tsl=self._installation.tsl)
         if compiled_bytes is None:
-            print("user cancelled the compilation")
+            self._logger.debug(f"User cancelled the compilation of '{self._resname}.{self._restype.extension}'.")
             return None, b""
         return compiled_bytes, b""
 
