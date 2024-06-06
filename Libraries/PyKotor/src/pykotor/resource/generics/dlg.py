@@ -103,16 +103,6 @@ class DLG:
         self.delay_entry: int = 0
         self.delay_reply: int = 0
 
-    def __copy__(self) -> Self:
-        return self.__class__.from_dict(self.to_dict())
-
-    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
-        if id(self) in memo:
-            return memo[id(self)]
-        copied_obj = self.__class__.from_dict(self.to_dict())
-        memo[id(self)] = copied_obj
-        return copied_obj
-
     def to_dict(self) -> dict:
         node_map = {}
         data = {
@@ -217,14 +207,14 @@ class DLG:
     def _all_entries(
         self,
         links: list[DLGLink] | None = None,
-        seen_entries: list | None = None,
+        seen_entries: set | None = None,
     ) -> list[DLGEntry]:
         """Collect all entries reachable from the given links.
 
         Args:
         ----
             links: {List of starting DLGLinks}
-            seen_entries: {List of entries already processed}
+            seen_entries: {Set of entries already processed}
 
         Returns:
         -------
@@ -240,14 +230,14 @@ class DLG:
         entries: list[DLGEntry] = []
 
         links = self.starters if links is None else links
-        seen_entries = [] if seen_entries is None else seen_entries
+        seen_entries = set() if seen_entries is None else seen_entries
 
         for link in links:
             entry: DLGNode = link.node
             if entry not in seen_entries:  # sourcery skip: class-extract-method
                 assert isinstance(entry, DLGEntry), f"{type(entry).__name__}: {entry}"  # noqa: S101
                 entries.append(entry)
-                seen_entries.append(entry)
+                seen_entries.add(entry)
                 for reply_link in entry.links:
                     reply = reply_link.node
                     entries.extend(self._all_entries(reply.links, seen_entries))
@@ -333,7 +323,7 @@ class DLGNode:
         if not isinstance(self, (DLGEntry, DLGNode)):
             raise RuntimeError("Cannot construct base class DLGNode: use DLGEntry or DLGReply instead.")  # noqa: TRY004
 
-        self._uuid = uuid.uuid4().hex
+        self._hash_cache = hash(uuid.uuid4().hex)
         self.comment: str = ""
         self.links: list[DLGLink] = []
         self.list_index: int = -1
@@ -392,64 +382,6 @@ class DLGNode:
         self.record_vo: bool = False
         self.vo_text_changed: bool = False
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, DLGNode):
-            return NotImplemented
-        if self.__class__ != other.__class__:
-            return False
-        return (
-            self.comment == other.comment
-            and self.links == other.links
-            and self.list_index == other.list_index
-            and self.camera_angle == other.camera_angle
-            and self.delay == other.delay
-            and self.fade_type == other.fade_type
-            and self.listener == other.listener
-            and self.plot_index == other.plot_index
-            and self.plot_xp_percentage == other.plot_xp_percentage
-            and self.quest == other.quest
-            and self.script1 == other.script1
-            and self.sound == other.sound
-            and self.sound_exists == other.sound_exists
-            and self.text == other.text
-            and self.vo_resref == other.vo_resref
-            and self.wait_flags == other.wait_flags
-            and self.animations == other.animations
-            and self.quest_entry == other.quest_entry
-            and self.fade_color == other.fade_color
-            and self.fade_delay == other.fade_delay
-            and self.fade_length == other.fade_length
-            and self.camera_anim == other.camera_anim
-            and self.camera_id == other.camera_id
-            and self.camera_fov == other.camera_fov
-            and self.camera_height == other.camera_height
-            and self.camera_effect == other.camera_effect
-            and self.target_height == other.target_height
-            and self.script1_param1 == other.script1_param1
-            and self.script1_param2 == other.script1_param2
-            and self.script1_param3 == other.script1_param3
-            and self.script1_param4 == other.script1_param4
-            and self.script1_param5 == other.script1_param5
-            and self.script1_param6 == other.script1_param6
-            and self.script2_param1 == other.script2_param1
-            and self.script2 == other.script2
-            and self.script2_param2 == other.script2_param2
-            and self.script2_param3 == other.script2_param3
-            and self.script2_param4 == other.script2_param4
-            and self.script2_param5 == other.script2_param5
-            and self.script2_param6 == other.script2_param6
-            and self.alien_race_node == other.alien_race_node
-            and self.emotion_id == other.emotion_id
-            and self.facial_id == other.facial_id
-            and self.unskippable == other.unskippable
-            and self.node_id == other.node_id
-            and self.post_proc_node == other.post_proc_node
-            and self.record_no_vo_override == other.record_no_vo_override
-            and self.record_vo == other.record_vo
-            and self.vo_text_changed == other.vo_text_changed
-            and getattr(self, "speaker", None) == getattr(other, "speaker", None)
-        )
-
     def __repr__(
         self,
     ) -> str:
@@ -457,36 +389,13 @@ class DLGNode:
         strref_display = f"stringref={self.text.stringref}" if text is None else f"text={text}"
         return f"{self.__class__.__name__}({strref_display}, list_index={self.list_index}, links={self.links})"
 
-    def __copy__(self) -> DLGNode:
-        return self.__class__.from_dict(self.to_dict())
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        return self.__hash__() == other.__hash__()
 
-    def __deepcopy__(self, memo: dict[str, Any]) -> DLGNode:
-        if id(self) in memo:
-            return memo[id(self)]
-        copied_obj = self.__class__.from_dict(self.to_dict())
-        memo[id(self)] = copied_obj
-        return copied_obj
-
-    def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(comment={self.comment}, links={self.links}, "
-            f"list_index={self.list_index}, camera_angle={self.camera_angle}, delay={self.delay}, "
-            f"fade_type={self.fade_type}, listener={self.listener}, plot_index={self.plot_index}, "
-            f"plot_xp_percentage={self.plot_xp_percentage}, quest={self.quest}, script1={self.script1}, "
-            f"sound={self.sound}, sound_exists={self.sound_exists}, text={self.text}, "
-            f"vo_resref={self.vo_resref}, wait_flags={self.wait_flags}, animations={self.animations}, "
-            f"quest_entry={self.quest_entry}, fade_color={self.fade_color}, fade_delay={self.fade_delay}, "
-            f"fade_length={self.fade_length}, camera_anim={self.camera_anim}, camera_id={self.camera_id}, "
-            f"camera_fov={self.camera_fov}, camera_height={self.camera_height}, camera_effect={self.camera_effect}, "
-            f"target_height={self.target_height}, script1_param1={self.script1_param1}, script1_param2={self.script1_param2}, "
-            f"script1_param3={self.script1_param3}, script1_param4={self.script1_param4}, script1_param5={self.script1_param5}, "
-            f"script1_param6={self.script1_param6}, script2_param1={self.script2_param1}, script2={self.script2}, "
-            f"script2_param2={self.script2_param2}, script2_param3={self.script2_param3}, script2_param4={self.script2_param4}, "
-            f"script2_param5={self.script2_param5}, script2_param6={self.script2_param6}, alien_race_node={self.alien_race_node}, "
-            f"emotion_id={self.emotion_id}, facial_id={self.facial_id}, unskippable={self.unskippable}, node_id={self.node_id}, "
-            f"post_proc_node={self.post_proc_node}, record_no_vo_override={self.record_no_vo_override}, "
-            f"record_vo={self.record_vo}, vo_text_changed={self.vo_text_changed})"
-        )
+    def __hash__(self):
+        return self._hash_cache
 
     def add_node(
         self,
@@ -508,17 +417,11 @@ class DLGNode:
         else:
             raise IndexError(new_index)
 
-    def get_node_key(self) -> str:
-        """Generate a unique key for the node using UUID."""
-        if not hasattr(self, "_uuid"):
-            self._uuid = uuid.uuid4().hex
-        return self._uuid
-
     def to_dict(self, node_map: dict[str, Any] | None = None) -> dict:
         if node_map is None:
             node_map = {}
 
-        node_key = self.get_node_key()
+        node_key = hash(self)
         if node_key in node_map:
             return {"type": self.__class__.__name__, "ref": node_key}
 
@@ -529,7 +432,8 @@ class DLGNode:
             if key.startswith("__"):  # ignore python built-in attrs
                 continue
             if key == "links":
-                node_dict["data"][key] = {"value": [link.to_dict(node_map) for link in value], "py_type": "list"}
+                links: list[DLGLink] = value
+                node_dict["data"][key] = {"value": [link.to_dict(node_map) for link in links], "py_type": "list"}
             elif isinstance(value, bool):
                 node_dict["data"][key] = {"value": int(value), "py_type": "bool"}
             elif isinstance(value, int):
@@ -544,8 +448,9 @@ class DLGNode:
                 node_dict["data"][key] = {"value": value.bgr_integer(), "py_type": "Color"}
             elif isinstance(value, LocalizedString):
                 node_dict["data"][key] = {"value": value.to_dict(), "py_type": "LocalizedString"}
-            elif isinstance(value, list) and all(isinstance(item, DLGAnimation) for item in value):
-                node_dict["data"][key] = {"value": [anim.to_dict() for anim in value], "py_type": "list"}
+            elif key == "animations":
+                anims: list[DLGAnimation] = value
+                node_dict["data"][key] = {"value": [anim.to_dict() for anim in anims], "py_type": "list"}
             elif isinstance(value, list):
                 node_dict["data"][key] = {"value": value, "py_type": "list"}
             elif value is None:
@@ -575,9 +480,9 @@ class DLGNode:
         else:
             raise ValueError(f"Unknown node type: {node_type}")
 
-        node._uuid = node_key
         node_map[node_key] = node
 
+        node._hash_cache = int(node_key)  # noqa: SLF001
         for key, value in node_data.items():
             if value is None:
                 continue
@@ -623,12 +528,6 @@ class DLGReply(DLGNode):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def __eq__(self, other: object) -> bool:
-        # sourcery skip: assign-if-exp, reintroduce-else, swap-if-else-branches
-        if not isinstance(other, DLGReply):
-            return NotImplemented
-        return super().__eq__(other)
-
 
 class DLGEntry(DLGNode):
     """Entries are nodes that are responses by NPCs."""
@@ -642,11 +541,6 @@ class DLGEntry(DLGNode):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, DLGEntry):
-            return NotImplemented
-        return super().__eq__(other) and self.speaker == other.speaker
-
 
 class DLGAnimation:
     """Represents a unit of animation executed during a node."""
@@ -654,35 +548,30 @@ class DLGAnimation:
     def __init__(
         self,
     ):
+        self._hash_cache = hash(uuid.uuid4().hex)
         self.animation_id: int = 6
         self.participant: str = ""
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, DLGAnimation):
-            return NotImplemented
-        return self.animation_id == other.animation_id and self.participant == other.participant
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(animation_id={self.animation_id}, participant={self.participant})"
 
-    def __copy__(self) -> Self:
-        return self.__class__.from_dict(self.to_dict())
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        return self.__hash__() == other.__hash__()
 
-    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
-        if id(self) in memo:
-            return memo[id(self)]
-        copied_obj = self.__class__.from_dict(self.to_dict())
-        memo[id(self)] = copied_obj
-        return copied_obj
+    def __hash__(self):
+        return self._hash_cache
 
     def to_dict(self) -> dict[str, Any]:
-        return {"animation_id": self.animation_id, "participant": self.participant}
+        return {"animation_id": self.animation_id, "participant": self.participant, "_hash_cache": self._hash_cache}
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         animation = cls()
         animation.animation_id = data.get("animation_id", 6)
         animation.participant = data.get("participant", "")
+        animation._hash_cache = data.get("_hash_cache", animation._hash_cache)  # noqa: SLF001
         return animation
 
 
@@ -716,6 +605,7 @@ class DLGLink:
         self,
         node: DLGNode | None = None,
     ):
+        self._hash_cache = hash(uuid.uuid4().hex)
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode | None = node
         self.link_index: int = -1
@@ -745,80 +635,31 @@ class DLGLink:
         self.active2_param6: str = ""
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(link_index={self.link_index}, node={self.node}, active1={self.active1}, "
-            f"comment={self.comment}, is_child={self.is_child}, active2={self.active2}, active1_not={self.active1_not}, "
-            f"active2_not={self.active2_not}, logic={self.logic}, active1_param1={self.active1_param1}, active1_param2={self.active1_param2}, "
-            f"active1_param3={self.active1_param3}, active1_param4={self.active1_param4}, active1_param5={self.active1_param5}, "
-            f"active1_param6={self.active1_param6}, active2_param1={self.active2_param1}, active2_param2={self.active2_param2}, "
-            f"active2_param3={self.active2_param3}, active2_param4={self.active2_param4}, active2_param5={self.active2_param5}, "
-            f"active2_param6={self.active2_param6})"
-        )
+        return (f"{self.__class__.__name__}(link_index={self.link_index}, comment={self.comment})")
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, DLGLink):
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
             return NotImplemented
-        return (
-            self.link_index == other.link_index
-            and self.node.get_node_key() == other.node.get_node_key()
-            and self.active1 == other.active1
-            and self.comment == other.comment
-            and self.is_child == other.is_child
-            and self.active2 == other.active2
-            and self.active1_not == other.active1_not
-            and self.active2_not == other.active2_not
-            and self.logic == other.logic
-            and self.active1_param1 == other.active1_param1
-            and self.active1_param2 == other.active1_param2
-            and self.active1_param3 == other.active1_param3
-            and self.active1_param4 == other.active1_param4
-            and self.active1_param5 == other.active1_param5
-            and self.active1_param6 == other.active1_param6
-            and self.active2_param1 == other.active2_param1
-            and self.active2_param2 == other.active2_param2
-            and self.active2_param3 == other.active2_param3
-            and self.active2_param4 == other.active2_param4
-            and self.active2_param5 == other.active2_param5
-            and self.active2_param6 == other.active2_param6
-        )
+        return self.__hash__() == other.__hash__()
 
-    def get_node_key(self) -> str:
-        """Generate a unique key for the node using UUID."""
-        if not hasattr(self, "_uuid"):
-            self._uuid = uuid.uuid4().hex
-        return self._uuid
-
-    def get_node_key(self) -> str:
-        """Generate a unique key for the node using UUID."""
-        if not hasattr(self, "_uuid"):
-            self._uuid = uuid.uuid4().hex
-        return self._uuid
-
-    def __copy__(self) -> Self:
-        return self.__class__.from_dict(self.to_dict())
-
-    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
-        if id(self) in memo:
-            return memo[id(self)]
-        copied_obj = self.__class__.from_dict(self.to_dict())
-        memo[id(self)] = copied_obj
-        return copied_obj
+    def __hash__(self):
+        return self._hash_cache
 
     def to_dict(self, node_map: dict[str, Any] | None = None) -> dict[str, Any]:
         if node_map is None:
             node_map = {}
 
-        node_key = self.get_node_key()
-        if node_key in node_map:
-            return {"type": self.__class__.__name__, "ref": node_key}
+        link_key = hash(self)
+        if link_key in node_map:
+            return {"type": self.__class__.__name__, "ref": link_key}
 
         link_dict = {
             "type": self.__class__.__name__,
-            "key": node_key,
+            "key": link_key,
             "node": self.node.to_dict(node_map) if self.node else None,
             "link_index": self.link_index,
         }
-        node_map[node_key] = link_dict
+        node_map[link_key] = link_dict
 
         return link_dict
 
@@ -827,16 +668,16 @@ class DLGLink:
         if node_map is None:
             node_map = {}
 
-        node_key = data["key"]
+        link_key = data["key"]
 
-        if node_key in node_map:
-            return node_map[node_key]
+        if link_key in node_map:
+            return node_map[link_key]
 
         link = cls()
-        link._uuid = node_key  # noqa: SLF001
-        node_map[node_key] = link
-
+        link._hash_cache = int(link_key)  # noqa: SLF001
         link.link_index = data.get("link_index", -1)
+        node_map[link_key] = link
+
         if data["node"]:
             link.node = DLGNode.from_dict(data["node"], node_map)
 
@@ -854,27 +695,27 @@ class DLGStunt:
     def __init__(
         self,
     ):
+        self._hash_cache = hash(uuid.uuid4().hex)
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
 
-    def __copy__(self) -> Self:
-        return self.__class__.from_dict(self.to_dict())
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return NotImplemented
+        return self.__hash__() == other.__hash__()
 
-    def __deepcopy__(self, memo: dict[str, Any]) -> Self:
-        if id(self) in memo:
-            return memo[id(self)]
-        copied_obj = self.__class__.from_dict(self.to_dict())
-        memo[id(self)] = copied_obj
-        return copied_obj
+    def __hash__(self):
+        return self._hash_cache
 
     def to_dict(self) -> dict[str, Any]:
-        return {"participant": self.participant, "stunt_model": str(self.stunt_model)}
+        return {"participant": self.participant, "stunt_model": str(self.stunt_model), "_hash_cache": self._hash_cache}
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         stunt = cls()
         stunt.participant = data.get("participant", "")
         stunt.stunt_model = ResRef(data.get("stunt_model", ""))
+        stunt._hash_cache = data.get("_hash_cache", stunt._hash_cache)  # noqa: SLF001
         return stunt
 
 
@@ -1089,13 +930,12 @@ def construct_dlg(
         replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
         for link_struct in replies_list:
             link = DLGLink()
-            link.link_index = link_struct.acquire("Index", 0)
+            node_index = link_struct.acquire("Index", 0)
             try:
-                link.node = all_replies[link.link_index]
+                link.node = all_replies[node_index]
             except IndexError:
-                RobustRootLogger().error(
-                    f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in RepliesList) does not point to a valid ReplyList node, omitting..."
-                )
+                context_link_msg = f"(EntryList/{i}/RepliesList/{replies_list._structs.index(link_struct)+1})"  # noqa: SLF001
+                RobustRootLogger().error(f"'Index' field value '{node_index}' {context_link_msg} does not point to a valid ReplyList node, omitting...")
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
@@ -1112,13 +952,12 @@ def construct_dlg(
         entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
         for link_struct in entries_list:
             link = DLGLink()
-            link.link_index = link_struct.acquire("Index", 0)
+            node_index = link_struct.acquire("Index", 0)
             try:
-                link.node = all_entries[link.link_index]
+                link.node = all_entries[node_index]
             except IndexError:
-                RobustRootLogger().error(
-                    f"'Index' field value '{link.link_index}' (struct #{replies_list._structs.index(link_struct)+1} in EntriesList) does not point to a valid EntryList node, omitting..."
-                )
+                context_link_msg = f"(ReplyList/{i}/EntriesList/{entries_list._structs.index(link_struct)+1})"  # noqa: SLF001
+                RobustRootLogger().error(f"'Index' field value '{link.link_index}'{context_link_msg} does not point to a valid EntryList node, omitting...")
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
@@ -1181,8 +1020,8 @@ def dismantle_dlg(
             - Sets the Index uint32 on the GFFStruct from the node list index
             - If game is K2, sets additional link properties on the GFFStruct.
         """
-        # Indexes the prior dialog
-        gff_struct.set_uint32("Index", nodes.index(link.node) if link.link_index == -1 else link.link_index)
+        node_index = nodes.index(link.node)
+        gff_struct.set_uint32("Index", node_index)
 
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))

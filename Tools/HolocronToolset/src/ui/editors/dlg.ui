@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QTreeView" name="dialogTree">
+      <widget class="DraggableTreeView" name="dialogTree">
        <property name="contextMenuPolicy">
         <enum>Qt::CustomContextMenu</enum>
        </property>
@@ -1538,6 +1538,13 @@
    </property>
   </action>
  </widget>
+<customwidgets>
+  <customwidget>
+   <class>DraggableTreeView</class>
+   <extends>QTreeView</extends>
+   <header location="global">toolset.gui.editors.dlg</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

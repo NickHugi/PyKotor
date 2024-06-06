@@ -14,7 +14,13 @@ if TYPE_CHECKING:
 
 
 class CutsceneModelDialog(QDialog):
-    def __init__(self, parent: QWidget, stunt: DLGStunt = DLGStunt()):
+    def __init__(
+        self,
+        parent: QWidget,
+        stunt: DLGStunt | None = None,
+    ):
+        if stunt is None:
+            stunt = DLGStunt()
         super().__init__(parent)
 
         if qtpy.API_NAME == "PySide2":

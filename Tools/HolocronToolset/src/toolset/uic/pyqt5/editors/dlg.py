@@ -22,7 +22,7 @@ class Ui_MainWindow(object):
         self.splitter = QtWidgets.QSplitter(self.centralwidget)
         self.splitter.setOrientation(QtCore.Qt.Vertical)
         self.splitter.setObjectName("splitter")
-        self.dialogTree = QtWidgets.QTreeView(self.splitter)
+        self.dialogTree = DraggableTreeView(self.splitter)
         self.dialogTree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.dialogTree.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.dialogTree.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
@@ -917,5 +917,6 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionReloadTree.setText(_translate("MainWindow", "Reload Tree"))
         self.actionUnfocus.setText(_translate("MainWindow", "Unfocus Tree"))
+from toolset.gui.editors.dlg import DraggableTreeView
 
 from toolset.rcc import resources_rc_pyqt5
