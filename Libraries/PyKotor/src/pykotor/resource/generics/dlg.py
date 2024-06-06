@@ -1359,21 +1359,6 @@ def dismantle_dlg(
         reply_struct: GFFStruct = reply_list.add(i)
         dismantle_node(reply_struct, reply, all_entries, "EntriesList")
 
-    # This part helps preserve the original GFF if this DLG was in fact constructed from one.
-    # In scenarios where a brand new DLG is created from scratch this sort algo probably does nothing.
-    def sort_entry(struct: GFFStruct) -> int:
-        entry: DLGEntry = all_entries[struct.struct_id]
-        struct.struct_id = struct.struct_id if entry.list_index == -1 else entry.list_index
-        return struct.struct_id
-
-    def sort_reply(struct: GFFStruct) -> int:
-        reply: DLGReply = all_replies[struct.struct_id]
-        struct.struct_id = struct.struct_id if reply.list_index == -1 else reply.list_index
-        return struct.struct_id
-
-    entry_list._structs.sort(key=sort_entry)  # noqa: SLF001
-    reply_list._structs.sort(key=sort_reply)  # noqa: SLF001
-
     return gff
 
 
