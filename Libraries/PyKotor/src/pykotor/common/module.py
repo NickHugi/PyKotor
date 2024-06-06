@@ -188,7 +188,7 @@ class ModulePieceResource(Capsule):
                 new_cls = ModuleDLGPiece
             elif piece_info.modtype is KModuleType.MOD:
                 new_cls = ModuleFullOverridePiece
-        return super().__new__(new_cls)  # type: ignore[reportArgumentType]
+        return object.__new__(new_cls)  # type: ignore[reportArgumentType]
 
     def __init__(
         self,
