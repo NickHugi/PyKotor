@@ -75,7 +75,7 @@ SEARCH_ORDER: list[SearchLocation] = [
     SearchLocation.CHITIN,
 ]
 
-class ModuleType(Enum):
+class KModuleType(Enum):
     MAIN = ".rim"  # Contains the IFO/ARE/GIT
     DATA = "_s.rim"  # Contains everything else
     K2_DLG = "_dlg.erf"  # In TSL, DLGs are here instead of _s.rim.
@@ -138,7 +138,7 @@ class ModuleType(Enum):
 @dataclass(frozen=True)
 class ModulePieceInfo:
     root: str
-    modtype: ModuleType
+    modtype: KModuleType
 
     @classmethod
     def from_filename(
@@ -150,7 +150,7 @@ class ModulePieceInfo:
         root = Module.find_root(filename)
         return cls(
             root,
-            ModuleType(filename[len(root):])
+            KModuleType(filename[len(root):])
         )
 
     def filename(self) -> str:
@@ -180,13 +180,13 @@ class ModulePieceResource(Capsule):
         if new_cls is ModulePieceResource:
             path_obj = CaseAwarePath.pathify(path)
             piece_info = ModulePieceInfo.from_filename(path_obj.name)
-            if piece_info.modtype is ModuleType.DATA:
+            if piece_info.modtype is KModuleType.DATA:
                 new_cls = ModuleDataPiece
-            elif piece_info.modtype is ModuleType.MAIN:
+            elif piece_info.modtype is KModuleType.MAIN:
                 new_cls = ModuleLinkPiece
-            elif piece_info.modtype is ModuleType.K2_DLG:
+            elif piece_info.modtype is KModuleType.K2_DLG:
                 new_cls = ModuleDLGPiece
-            elif piece_info.modtype is ModuleType.MOD:
+            elif piece_info.modtype is KModuleType.MOD:
                 new_cls = ModuleFullOverridePiece
         return super().__new__(new_cls)  # type: ignore[reportArgumentType]
 
@@ -248,7 +248,7 @@ class ModuleLinkPiece(ModulePieceResource):
         link_resources = {
             resource
             for resource in self._resources
-            if resource.restype() is not ResourceType.IFO and ModuleType.MAIN.contains(resource.restype())
+            if resource.restype() is not ResourceType.IFO and KModuleType.MAIN.contains(resource.restype())
         }
         if link_resources:
             check_resname = next(iter(link_resources)).identifier().lower_resname
@@ -327,26 +327,26 @@ class Module:  # noqa: PLR0904
 
         # Build all capsules relevant to this root in the provided installation
         self._capsules: _CapsuleDictTypes = {
-            ModuleType.MAIN.name: None,
-            ModuleType.DATA.name: None,
-            ModuleType.K2_DLG.name: None,
-            ModuleType.MOD.name: None,
+            KModuleType.MAIN.name: None,
+            KModuleType.DATA.name: None,
+            KModuleType.K2_DLG.name: None,
+            KModuleType.MOD.name: None,
         }
         if self.dot_mod:
-            mod_filepath = installation.module_path().joinpath(self._root + ModuleType.MOD.value)
+            mod_filepath = installation.module_path().joinpath(self._root + KModuleType.MOD.value)
             if mod_filepath.safe_isfile():
-                self._capsules[ModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
+                self._capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             else:
                 self.dot_mod = False
-                self._capsules[ModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(self._root + ModuleType.MAIN.value))
-                self._capsules[ModuleType.DATA.name] = ModuleDataPiece(installation.module_path().joinpath(self._root + ModuleType.DATA.value))
+                self._capsules[KModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(self._root + KModuleType.MAIN.value))
+                self._capsules[KModuleType.DATA.name] = ModuleDataPiece(installation.module_path().joinpath(self._root + KModuleType.DATA.value))
                 if self._installation.game().is_k2():
-                    self._capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(installation.module_path().joinpath(self._root + ModuleType.K2_DLG.value))
+                    self._capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(installation.module_path().joinpath(self._root + KModuleType.K2_DLG.value))
         else:
-            self._capsules[ModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(self._root + ModuleType.MAIN.value))
-            self._capsules[ModuleType.DATA.name] = ModuleDataPiece(installation.module_path().joinpath(self._root + ModuleType.DATA.value))
+            self._capsules[KModuleType.MAIN.name] = ModuleLinkPiece(installation.module_path().joinpath(self._root + KModuleType.MAIN.value))
+            self._capsules[KModuleType.DATA.name] = ModuleDataPiece(installation.module_path().joinpath(self._root + KModuleType.DATA.value))
             if self._installation.game().is_k2():
-                self._capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(installation.module_path().joinpath(self._root + ModuleType.K2_DLG.value))
+                self._capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(installation.module_path().joinpath(self._root + KModuleType.K2_DLG.value))
 
         self.reload_resources()
 
@@ -358,26 +358,26 @@ class Module:  # noqa: PLR0904
         root = cls.find_root(filename)
         # Build all capsules relevant to this root in the provided installation
         capsules: _CapsuleDictTypes = {
-            ModuleType.MAIN.name: None,
-            ModuleType.DATA.name: None,
-            ModuleType.K2_DLG.name: None,
-            ModuleType.MOD.name: None,
+            KModuleType.MAIN.name: None,
+            KModuleType.DATA.name: None,
+            KModuleType.K2_DLG.name: None,
+            KModuleType.MOD.name: None,
         }
         module_path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
-            mod_filepath = module_path.joinpath(root + ModuleType.MOD.value)
+            mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
             if mod_filepath.safe_isfile():
-                capsules[ModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
+                capsules[KModuleType.MOD.name] = ModuleFullOverridePiece(mod_filepath)
             elif not strict:
-                capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
-                capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
+                capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
+                capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
                 if install_or_path.game().is_k2():
-                    capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + ModuleType.K2_DLG.value))
+                    capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
         else:
-            capsules[ModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + ModuleType.MAIN.value))
-            capsules[ModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + ModuleType.DATA.value))
+            capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
+            capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
             if install_or_path.game().is_k2():
-                capsules[ModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + ModuleType.K2_DLG.value))
+                capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
         return [capsule for capsule in capsules.values() if capsule is not None]
 
 
@@ -392,9 +392,9 @@ class Module:  # noqa: PLR0904
         self,
     ) -> ModuleFullOverridePiece | ModuleLinkPiece:
         relevant_capsule: ModuleFullOverridePiece | ModuleLinkPiece | None = (
-            self._capsules[ModuleType.MOD.name]
-            if self.dot_mod and self._capsules[ModuleType.MOD.name] is not None
-            else self._capsules[ModuleType.MAIN.name]
+            self._capsules[KModuleType.MOD.name]
+            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None
+            else self._capsules[KModuleType.MAIN.name]
         )
         assert relevant_capsule is not None
         return relevant_capsule
@@ -403,9 +403,9 @@ class Module:  # noqa: PLR0904
         self,
     ) -> ModuleFullOverridePiece | ModuleDataPiece:
         relevant_capsule: ModuleFullOverridePiece | ModuleDataPiece | None = (
-            self._capsules[ModuleType.MOD.name]
-            if self.dot_mod and self._capsules[ModuleType.MOD.name] is not None
-            else self._capsules[ModuleType.DATA.name]
+            self._capsules[KModuleType.MOD.name]
+            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None
+            else self._capsules[KModuleType.DATA.name]
         )
         assert relevant_capsule is not None
         return relevant_capsule
@@ -414,9 +414,9 @@ class Module:  # noqa: PLR0904
         self,
     ) -> ModuleFullOverridePiece | ModuleDLGPiece:
         relevant_capsule: ModuleDataPiece | ModuleDLGPiece | None = (
-            self._capsules[ModuleType.MOD.name]
-            if self.dot_mod and self._capsules[ModuleType.MOD.name] is not None
-            else (self._capsules[ModuleType.K2_DLG.name] if self._installation.game().is_k2() else self._capsules[ModuleType.DATA.name])
+            self._capsules[KModuleType.MOD.name]
+            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None
+            else (self._capsules[KModuleType.K2_DLG.name] if self._installation.game().is_k2() else self._capsules[KModuleType.DATA.name])
         )
         assert relevant_capsule is not None
         return relevant_capsule
@@ -477,7 +477,7 @@ class Module:  # noqa: PLR0904
         """
         display_name = f"{self._root}.mod" if self.dot_mod else f"{self._root}.rim"
         RobustRootLogger().info("Loading module resources needed for '%s'", display_name)
-        mod_capsule = self._capsules[ModuleType.MOD.name]
+        mod_capsule = self._capsules[KModuleType.MOD.name]
         capsules_to_search = [self.lookup_main_capsule()] if mod_capsule is None else [mod_capsule]
         # Lookup the GIT and LYT first.
         order = [

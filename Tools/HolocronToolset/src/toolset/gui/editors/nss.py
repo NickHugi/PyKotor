@@ -28,7 +28,6 @@ from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.github_selector import GitHubFileSelector
 from toolset.gui.editor import Editor
-from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception

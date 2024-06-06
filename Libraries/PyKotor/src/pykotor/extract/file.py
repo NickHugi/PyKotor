@@ -31,11 +31,9 @@ class FileResource:
 
         # Check if the current class's __new__ is overridden beyond FileResource's __new__
         if cls.__new__ is not FileResource.__new__:
-            instance = super().__new__(cls, resname, *args, **kwargs)
-        else:
-            # If not, proceed with the default object creation process
-            instance = object.__new__(cls)
-        return instance
+            return super().__new__(cls, resname, *args, **kwargs)
+        # If not, proceed with the default object creation process
+        return object.__new__(cls)
 
     def __init__(
         self,
