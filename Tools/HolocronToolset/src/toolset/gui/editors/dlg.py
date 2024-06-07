@@ -41,6 +41,7 @@ from qtpy.QtWidgets import (
 )
 
 from pykotor.common.misc import ResRef
+from pykotor.extract.file import LocationResult, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.generics.dlg import (
     DLG,
@@ -58,9 +59,11 @@ from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import QtKey, getQtKeyString
+from toolset.utils.window import addWindow
 from utility.system.os_helper import remove_any
 
 if TYPE_CHECKING:
@@ -406,22 +409,20 @@ class DraggableTreeView(QTreeView):
         stream = QDataStream(data, QIODevice.ReadOnly)
 
         if stream.atEnd():
-            print("Stream is empty")
+            self.editor._logger.debug("Mime data stream is empty")  # noqa: SLF001
             return None
-
-        print("Mime Data Size:", data.size())
 
         while not stream.atEnd():
             row = stream.readInt32()
             column = stream.readInt32()
             map_items = stream.readInt32()
 
-            print(f"Row: {row}, Column: {column}, Map Items: {map_items}")
+            self.editor._logger.debug(f"Mime data: Row: {row}, Column: {column}, Map Items: {map_items}")  # noqa: SLF001
 
             for _ in range(map_items):
                 role: int = stream.readInt32()
                 value = stream.readQVariant()
-                print(f"Role: {role}, Value: {value}")
+                self.editor._logger.debug(f"Mime data: Role: {role}, Value: {value}")  # noqa: SLF001
                 if role == _LINK_ROLE:
                     link: DLGLink = value
                     return link.node
@@ -436,12 +437,30 @@ class DraggableTreeView(QTreeView):
         dragged_model = source.model()
         return dragged_model == self.model()
 
-    def showDropIndicator(self, index):
+    def getItemDepth(self, index: QModelIndex) -> int:
+        depth = 0
+        while index.parent().isValid():
+            index = index.parent()
+            depth += 1
+        return depth
+
+    def showDropIndicator(self, index: QModelIndex):
         rect = self.visualRect(index)
-        mid_point = rect.center().y()
-        if self.dropIndicatorRect.isNull() or self.dropIndicatorRect.center().y() != mid_point:
-            self.dropIndicatorRect = QRect(rect.left(), mid_point - 2, rect.width(), 4)
-            self.viewport().update()
+        mid_point_y = rect.center().y()
+        indent = self.indentation() * self.getItemDepth(index)
+
+        buffer_size = 4
+        pos = self.mapFromGlobal(QCursor.pos())
+        if pos.y() < mid_point_y:
+            self.dropIndicatorRect = QRect(rect.left(), rect.top() - buffer_size, rect.width(), 4)
+        else:
+            self.dropIndicatorRect = QRect(rect.left(), rect.bottom() + buffer_size, rect.width(), 4)
+
+        # Handle x-coordinate for deeper nesting
+        if pos.x() >= rect.left() + indent:
+            self.dropIndicatorRect.adjust(indent, 0, indent, 0)  # Adjust drop indicator to reflect indentation
+
+        self.viewport().update()
 
     @staticmethod
     def bothNodesSameType(dragged_node: DLGNode, target_node: DLGNode) -> bool:
@@ -464,8 +483,11 @@ class DraggableTreeView(QTreeView):
         self.dragIndex = QModelIndex()  # Reset drag index after dropping
         self.startPos = None
 
-    def sizeHintForRow(self, row) -> int:
-        if self.dragIndex.isValid() and (self.dragIndex.row() == row or self.dragIndex.row() + 1 == row):
+    def sizeHintForRow(self, row: int) -> int:
+        if self.dragIndex.isValid() and (
+            self.dragIndex.row() == row
+            or self.dragIndex.row() + 1 == row
+        ):
             return super().sizeHintForRow(row) + 10  # Increase height to push apart
         return super().sizeHintForRow(row)
 
@@ -544,7 +566,14 @@ class DraggableTreeView(QTreeView):
         drag.exec_(Qt.MoveAction)
         self.isDragging = False
 
-    def draw_drag_icons(self, painter: QPainter, center: QPoint, radius: int, color: QColor, text: str):
+    def draw_drag_icons(
+        self,
+        painter: QPainter,
+        center: QPoint,
+        radius: int,
+        color: QColor,
+        text: str,
+    ):
         gradient = QRadialGradient(center, radius)
         gradient.setColorAt(0, QColor(255, 255, 255, 200))
         gradient.setColorAt(0.5, color.lighter())
@@ -771,8 +800,9 @@ class DLGEditor(Editor):
 
         self._dlg = dlg
         self.model.clear()
-        self._seenLinks: set[DLGLink] = set()
-        self._seenNodes: set[DLGNode] = set()
+        self._seenLinks: dict[DLGLink, QStandardItem] = {}
+        self._seenNodes: dict[DLGNode, QStandardItem] = {}
+        self._nodeCopies: dict[DLGNode, list[QStandardItem]] = {}
         for start in dlg.starters:  # descending order - matches what the game does.
             item = QStandardItem()
             self._loadDLGRec(item, start)
@@ -798,9 +828,13 @@ class DLGEditor(Editor):
 
         alreadyListed: bool = link in self._seenLinks or node in self._seenNodes
         if link not in self._seenLinks:
-            self._seenLinks.add(link)
+            self._seenLinks[link] = item
         if node not in self._seenNodes:
-            self._seenNodes.add(node)
+            self._seenNodes[node] = item
+        else:
+            if node not in self._nodeCopies:
+                self._nodeCopies[node] = []
+            self._nodeCopies[node].append(item)
 
         item.setData(alreadyListed, _COPY_ROLE)
         self.refreshItem(item)
@@ -1034,7 +1068,8 @@ class DLGEditor(Editor):
         self.ui.dialogTree.viewport().update()
         self.ui.dialogTree.update()
         self.refreshItem(newItem)
-        self.refreshItem(parentItem)
+        if hasattr(parentItem, "text") and parentItem.text().endswith("[End Dialog]"):  # HACK: fix later.
+            self.refreshItem(parentItem)
         # Add placeholder child if the new node has children
         if pastedNode in self._seenNodes:
             newItem.setData(True, _COPY_ROLE)
@@ -1242,9 +1277,9 @@ class DLGEditor(Editor):
             self.ui.dialogTree.expand(parent.index())  # type: ignore[arg-type]
             parent = parent.parent()
 
-    def jumpToOriginal(self, sourceItem: QStandardItem):
+    def jumpToOriginal(self, copiedItem: QStandardItem):
         """Jumps to the original node of a copied item."""
-        copiedNode: DLGNode = self._getNodeFromLinkItem(sourceItem)
+        sourceNode: DLGNode = self._getNodeFromLinkItem(copiedItem)
 
         items: list[QStandardItem | None] = [self.model.item(i, 0) for i in range(self.model.rowCount())]
         while items:
@@ -1254,18 +1289,18 @@ class DLGEditor(Editor):
             if link is None:
                 continue
             isCopy: bool = item.data(_COPY_ROLE)
-            if link.node is copiedNode and not isCopy:
+            if link.node == sourceNode and not isCopy:
                 self.expandToRoot(item)
                 self.ui.dialogTree.setCurrentIndex(item.index())
                 break
             items.extend([item.child(i, 0) for i in range(item.rowCount())])
         else:
-            self._logger.error(f"Failed to find original node: {copiedNode!r}")
+            self._logger.error(f"Failed to find original node for node {sourceNode!r}")
 
     def refreshItem(self, item: QStandardItem):
         """Refreshes the item text and formatting based on the node data."""
         node: DLGNode = self._getNodeFromLinkItem(item)
-        isCopy: bool = item.data(_COPY_ROLE)
+        isCopy = item.data(_COPY_ROLE)
         color: QColor | None = None
 
         if GlobalSettings().selectedTheme == "Default (Light)":
@@ -1277,7 +1312,6 @@ class DLGEditor(Editor):
                 prefix = "R"
             else:
                 prefix = "N"
-
         elif isinstance(node, DLGEntry):
             color = QColor(255, 128, 128) if isCopy else QColor(255, 64, 64)
             prefix = "E"
@@ -1286,8 +1320,9 @@ class DLGEditor(Editor):
             prefix = "R"
         else:
             prefix = "N"
-        list_prefix: str = f"{prefix}{node.list_index}: "
-        text: str = self._installation.string(node.text, "")
+
+        list_prefix = f"{prefix}{node.list_index}: "
+        text = self._installation.string(node.text, "")
         if not node.links:
             item.setText(f"{list_prefix}{text}[End Dialog]")
         else:
@@ -1295,7 +1330,7 @@ class DLGEditor(Editor):
                 text = f"{list_prefix}{text if text.strip() else '(continue)'}"
             item.setText(text)
 
-        if color is not None:
+        if color:
             item.setForeground(QBrush(color))
 
     def blinkWindow(self):
@@ -1374,8 +1409,9 @@ class DLGEditor(Editor):
         self._focused = True
 
         item = QStandardItem()
-        self._seenLinks: set[DLGLink] = set()
-        self._seenNodes: set[DLGNode] = set()
+        self._seenLinks: dict[DLGLink, QStandardItem] = {}
+        self._seenNodes: dict[DLGNode, QStandardItem] = {}
+        self._nodeCopies: dict[DLGNode, list[QStandardItem]] = {}
         self._loadDLGRec(item, link)
         self.model.appendRow(item)
         return item
@@ -1438,8 +1474,8 @@ class DLGEditor(Editor):
             self.refreshItem(targetParent)
         self.refreshItem(itemToMove)
 
-    def saveExpandedItems(self):
-        expanded_items = []
+    def saveExpandedItems(self) -> list[QModelIndex]:
+        expanded_items: list[QModelIndex] = []
         def saveItemsRecursively(index):
             if not index.isValid():
                 return
@@ -1450,26 +1486,26 @@ class DLGEditor(Editor):
         saveItemsRecursively(self.ui.dialogTree.rootIndex())
         return expanded_items
 
-    def saveScrollPosition(self):
+    def saveScrollPosition(self) -> int:
         return self.ui.dialogTree.verticalScrollBar().value()
 
-    def saveSelectedItem(self):
+    def saveSelectedItem(self) -> QModelIndex:
         selection_model = self.ui.dialogTree.selectionModel()
         if selection_model.hasSelection():
             return selection_model.currentIndex()
         return None
 
-    def restoreExpandedItems(self, expanded_items):
-        for index in expanded_items:
+    def restoreExpandedItems(self, expandedItems: list[QModelIndex]):
+        for index in expandedItems:
             self.ui.dialogTree.setExpanded(index, True)
 
-    def restoreScrollPosition(self, scroll_position):
-        self.ui.dialogTree.verticalScrollBar().setValue(scroll_position)
+    def restoreScrollPosition(self, scrollPosition: int):
+        self.ui.dialogTree.verticalScrollBar().setValue(scrollPosition)
 
-    def restoreSelectedItem(self, selected_index):
-        if selected_index and selected_index.isValid():
-            self.ui.dialogTree.setCurrentIndex(selected_index)
-            self.ui.dialogTree.scrollTo(selected_index)
+    def restoreSelectedItem(self, selectedIndex: QModelIndex):
+        if selectedIndex and selectedIndex.isValid():
+            self.ui.dialogTree.setCurrentIndex(selectedIndex)
+            self.ui.dialogTree.scrollTo(selectedIndex)
 
     def updateTreeView(self):
         expanded_items = self.saveExpandedItems()
@@ -1481,6 +1517,11 @@ class DLGEditor(Editor):
         self.restoreExpandedItems(expanded_items)
         self.restoreScrollPosition(scroll_position)
         self.restoreSelectedItem(selected_index)
+
+    def _updateCopies(self, original: DLGNode):
+        if original in self._nodeCopies:
+            for item in self._nodeCopies[original]:
+                self.refreshItem(item)
 
     def shiftItem(self, item: QStandardItem, amount: int, *, noSelectionUpdate: bool = False):
         """Shifts an item in the tree by a given amount."""
@@ -1533,6 +1574,22 @@ class DLGEditor(Editor):
             menu.addAction("Add Entry").triggered.connect(self.addRootNode)
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
+    def expandAllChildren(self, item: QStandardItem, seenItems: set[QStandardItem]):
+        """Recursively expand all children of the given item."""
+        if item in seenItems:
+            return
+        seenItems.add(item)
+
+        if item.data(_COPY_ROLE):  # Not used currently, but will be for the _FUTURE_EXPAND_ROLE implementation.
+            return
+
+        for row in range(item.rowCount()):
+            childItem = item.child(row)
+            if childItem and childItem not in seenItems:
+                self.expandAllChildren(childItem, seenItems)
+                index: QModelIndex = childItem.index()
+                self.ui.dialogTree.expand(index)
+
     def _setContextMenuActions(self, item: QStandardItem, point: QPoint):
         """Sets context menu actions for a dialog tree item."""
         self._checkClipboardForJsonNode()
@@ -1553,6 +1610,10 @@ class DLGEditor(Editor):
         focusAction.setShortcut(QKeySequence(QtKey.Key_Enter | QtKey.Key_Return))
         if not node.links:
             focusAction.setEnabled(False)
+        # Expand All Children Action (non copies)
+        expandAllChildrenAction = menu.addAction("Expand All Children")
+        expandAllChildrenAction.triggered.connect(lambda: self.expandAllChildren(item, set()))
+        expandAllChildrenAction.setShortcut(QKeySequence(Qt.ShiftModifier | QtKey.Key_Return))
         menu.addSeparator()
 
         # Play Actions
@@ -1676,6 +1737,7 @@ class DLGEditor(Editor):
     def keyPressEvent(self, event: QKeyEvent, *, isTreeViewCall: bool = False):
         if not isTreeViewCall:
             self.ui.dialogTree.keyPressEvent(event)
+            super().keyPressEvent(event)
             return
 
         super().keyPressEvent(event)
@@ -1691,7 +1753,8 @@ class DLGEditor(Editor):
             if key == QtKey.Key_Insert:
                 self.addRootNode()
             return
-        self._logger.debug(f"DLGEditor.keyPressEvent: {getQtKeyString(key)} isTreeViewCall: {isTreeViewCall}")
+        self._logger.debug(f"DLGEditor.keyPressEvent: {getQtKeyString(key)} isTreeViewCall: {isTreeViewCall} held: {'+'.join([getQtKeyString(k) for k in iter(self._keysDown)])}")
+        link: DLGLink = item.data(_LINK_ROLE)
         node = self._getNodeFromLinkItem(item)
         if node is None:
             return
@@ -1703,7 +1766,7 @@ class DLGEditor(Editor):
             elif key in (QtKey.Key_Delete, QtKey.Key_Backspace):
                 self.removeLink(item)
             elif key in (QtKey.Key_Enter, QtKey.Key_Return):
-                self.focusOnNode(node)
+                self.focusOnNode(link)
             elif key == QtKey.Key_Insert:
                 self._addLinkToParentItem(item)
             elif key == QtKey.Key_P:
@@ -1732,6 +1795,8 @@ class DLGEditor(Editor):
                     self.copyPath(node)
                 else:
                     self.copyNode(node)
+            elif QtKey.Key_Enter in self._keysDown or QtKey.Key_Return in self._keysDown:
+                self.jumpToOriginal(item)
             elif QtKey.Key_V in self._keysDown:
                 if QtKey.Key_Alt in self._keysDown:
                     self.pasteItem(item, asNewBranches=True)
@@ -1748,7 +1813,7 @@ class DLGEditor(Editor):
         key = event.key()
         if key in self._keysDown:
             self._keysDown.remove(key)
-        self._logger.debug(f"DLGEditor.keyReleaseEvent: {getQtKeyString(key)}")
+        self._logger.debug(f"DLGEditor.keyReleaseEvent: {getQtKeyString(key)} held: {'+'.join([getQtKeyString(k) for k in iter(self._keysDown)])}")
 
     def mouseDoubleClickEvent(self, event: QMouseEvent | QModelIndex):
         if not self.ui.dialogTree.underMouse():
@@ -1759,6 +1824,39 @@ class DLGEditor(Editor):
             link = cast(DLGLink, item.data(_LINK_ROLE))
             if link:
                 self.focusOnNode(link)
+
+    def doResourceContextMenu(
+        self,
+        parent: QWidget,
+        resident: ResourceIdentifier,
+        order: list[SearchLocation] | None = None,
+    ):
+        contextMenu = QMenu(self.ui.scriptsTab)
+        flatLocations: list[LocationResult] = self._installation.location(
+            resident,
+            [
+                SearchLocation.CHITIN,
+                SearchLocation.OVERRIDE,
+                SearchLocation.MODULES,
+                SearchLocation.RIMS,
+            ]
+        )
+        mousePos: QPoint = QCursor.pos()
+        if flatLocations:
+            for location in flatLocations:
+                displayPathStr = str(location.filepath.relative_to(self._installation.path()))
+                locMenu = contextMenu.addMenu(displayPathStr)
+                resourceMenuBuilder = ResourceItems(resources=[location])
+                resourceMenuBuilder.build_menu(mousePos, locMenu)
+
+            contextMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
+
+        contextMenu.exec_(QCursor.pos())
+
+    def _openDetails(self, locations: list[LocationResult]):
+        selectionWindow = FileSelectionWindow(locations, self._installation)
+        addWindow(selectionWindow)
+        selectionWindow.activateWindow()
 
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node."""
@@ -1790,6 +1888,19 @@ class DLGEditor(Editor):
             self._loadLocstring(self.ui.textEdit, node.text)
 
             self.ui.script1ResrefEdit.setText(str(node.script1))
+            self.ui.script1ResrefEdit.setToolTip("A ResRef representing a script to call, where the entrypoint is its `main()` function.<br><br><i>Right click for more options</i>")
+            self.ui.script1ResrefEdit.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.ui.script1ResrefEdit.customContextMenuRequested.connect(
+                lambda *args: self.doResourceContextMenu(
+                    self.ui.script1ResrefEdit,
+                    ResourceIdentifier(self.ui.script1ResrefEdit.text(), ResourceType.NCS),
+                    order=[
+                        SearchLocation.OVERRIDE,
+                        SearchLocation.MODULES,
+                        SearchLocation.RIMS,
+                    ],
+                )
+            )
             self.ui.script1Param1Spin.setValue(node.script1_param1)
             self.ui.script1Param2Spin.setValue(node.script1_param2)
             self.ui.script1Param3Spin.setValue(node.script1_param3)
@@ -1798,6 +1909,19 @@ class DLGEditor(Editor):
             self.ui.script1Param6Edit.setText(node.script1_param6)
 
             self.ui.script2ResrefEdit.setText(str(node.script2))
+            self.ui.script2ResrefEdit.setToolTip("A ResRef representing a script to call, where the entrypoint is its main() function.<br><br><i>Right click for more options</i>")
+            self.ui.script2ResrefEdit.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.ui.script2ResrefEdit.customContextMenuRequested.connect(
+                lambda *args: self.doResourceContextMenu(
+                    self.ui.script2ResrefEdit,
+                    ResourceIdentifier(self.ui.script2ResrefEdit.text(), ResourceType.NCS),
+                    order=[
+                        SearchLocation.OVERRIDE,
+                        SearchLocation.MODULES,
+                        SearchLocation.RIMS,
+                    ],
+                )
+            )
             self.ui.script2Param1Spin.setValue(node.script2_param1)
             self.ui.script2Param2Spin.setValue(node.script2_param2)
             self.ui.script2Param3Spin.setValue(node.script2_param3)
@@ -1806,6 +1930,19 @@ class DLGEditor(Editor):
             self.ui.script2Param6Edit.setText(node.script2_param6)
 
             self.ui.condition1ResrefEdit.setText(str(link.active1))
+            self.ui.condition1ResrefEdit.setToolTip("A ResRef representing a script defining a conditional function `int StartingConditional()`.<br>Should return 1 or 0 representing a boolean.<br><br><i>Right click for more options</i>")
+            self.ui.condition1ResrefEdit.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.ui.condition1ResrefEdit.customContextMenuRequested.connect(
+                lambda *args: self.doResourceContextMenu(
+                    self.ui.condition1ResrefEdit,
+                    ResourceIdentifier(self.ui.condition1ResrefEdit.text(), ResourceType.NCS),
+                    order=[
+                        SearchLocation.OVERRIDE,
+                        SearchLocation.MODULES,
+                        SearchLocation.RIMS,
+                    ],
+                )
+            )
             self.ui.condition1Param1Spin.setValue(link.active1_param1)
             self.ui.condition1Param2Spin.setValue(link.active1_param2)
             self.ui.condition1Param3Spin.setValue(link.active1_param3)
@@ -1815,6 +1952,19 @@ class DLGEditor(Editor):
             self.ui.condition1NotCheckbox.setChecked(link.active1_not)
 
             self.ui.condition2ResrefEdit.setText(str(link.active2))
+            self.ui.condition2ResrefEdit.setToolTip("A ResRef representing a script defining a conditional function `int StartingConditional()`.<br>Should return 1 or 0 representing a boolean.<br><br><i>Right click for more options</i>")
+            self.ui.condition2ResrefEdit.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.ui.condition2ResrefEdit.customContextMenuRequested.connect(
+                lambda *args: self.doResourceContextMenu(
+                    self.ui.condition2ResrefEdit,
+                    ResourceIdentifier(self.ui.condition2ResrefEdit.text(), ResourceType.NCS),
+                    order=[
+                        SearchLocation.OVERRIDE,
+                        SearchLocation.MODULES,
+                        SearchLocation.RIMS,
+                    ],
+                )
+            )
             self.ui.condition2Param1Spin.setValue(link.active2_param1)
             self.ui.condition2Param2Spin.setValue(link.active2_param2)
             self.ui.condition2Param3Spin.setValue(link.active2_param3)
@@ -1935,8 +2085,9 @@ class DLGEditor(Editor):
         node.delay = self.ui.delaySpin.value()
         node.wait_flags = self.ui.waitFlagSpin.value()
         node.fade_type = self.ui.fadeTypeSpin.value()
-
         node.comment = self.ui.commentsEdit.toPlainText()
+
+        self._updateCopies(node)
 
     def onItemExpanded(self, index: QModelIndex):
         item = self.model.itemFromIndex(index)
