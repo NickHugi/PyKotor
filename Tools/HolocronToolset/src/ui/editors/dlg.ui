@@ -1219,12 +1219,12 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QSpinBox" name="cameraAnimSpin">
+               <widget class="GFFFieldSpinBox" name="cameraAnimSpin">
                 <property name="minimum">
-                 <number>-2147483648</number>
+                 <number>-1</number>
                 </property>
                 <property name="maximum">
-                 <number>2147483647</number>
+                 <number>65534</number>
                 </property>
                </widget>
               </item>
@@ -1543,6 +1543,18 @@
    <class>DraggableTreeView</class>
    <extends>QTreeView</extends>
    <header location="global">toolset.gui.editors.dlg</header>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedStringLineEdit</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.edit.locstring</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GFFFieldSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header location="global">toolset.gui.editors.dlg</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

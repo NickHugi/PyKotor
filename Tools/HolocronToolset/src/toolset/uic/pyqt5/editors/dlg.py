@@ -671,9 +671,9 @@ class Ui_MainWindow(object):
         self.label_28 = QtWidgets.QLabel(self.cameraTab)
         self.label_28.setObjectName("label_28")
         self.formLayout_4.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_28)
-        self.cameraAnimSpin = QtWidgets.QSpinBox(self.cameraTab)
-        self.cameraAnimSpin.setMinimum(-2147483648)
-        self.cameraAnimSpin.setMaximum(2147483647)
+        self.cameraAnimSpin = GFFFieldSpinBox(self.cameraTab)
+        self.cameraAnimSpin.setMinimum(-1)
+        self.cameraAnimSpin.setMaximum(65534)
         self.cameraAnimSpin.setObjectName("cameraAnimSpin")
         self.formLayout_4.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.cameraAnimSpin)
         self.label_29 = QtWidgets.QLabel(self.cameraTab)
@@ -917,6 +917,6 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionReloadTree.setText(_translate("MainWindow", "Reload Tree"))
         self.actionUnfocus.setText(_translate("MainWindow", "Unfocus Tree"))
-from toolset.gui.editors.dlg import DraggableTreeView
+from toolset.gui.editors.dlg import DraggableTreeView, GFFFieldSpinBox
 
 from toolset.rcc import resources_rc_pyqt5

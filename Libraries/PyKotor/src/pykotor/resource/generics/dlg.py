@@ -265,6 +265,8 @@ class DLG:
 
     def all_entries(
         self,
+        *,
+        as_sorted: bool = False
     ) -> list[DLGEntry]:
         """Returns a flat list of all entries in the dialog.
 
@@ -273,6 +275,8 @@ class DLG:
             A list of all stored entries.
         """
         entries = self._all_entries()
+        if not as_sorted:
+            return entries
         return sorted(entries, key=lambda entry: (entry.list_index == -1, entry.list_index))
 
     def _all_entries(
@@ -317,6 +321,8 @@ class DLG:
 
     def all_replies(
         self,
+        *,
+        as_sorted: bool = False,
     ) -> list[DLGReply]:
         """Returns a flat list of all replies in the dialog.
 
@@ -325,6 +331,8 @@ class DLG:
             A list of all stored replies.
         """
         replies = self._all_replies()
+        if not as_sorted:
+            return replies
         return sorted(replies, key=lambda reply: (reply.list_index == -1, reply.list_index))
 
     def _all_replies(
@@ -1199,8 +1207,8 @@ def dismantle_dlg(
             link_struct: GFFStruct = link_list.add(i)
             dismantle_link(link_struct, link, nodes, list_name)
 
-    all_entries: list[DLGEntry] = dlg.all_entries()
-    all_replies: list[DLGReply] = dlg.all_replies()
+    all_entries: list[DLGEntry] = dlg.all_entries(as_sorted=True)
+    all_replies: list[DLGReply] = dlg.all_replies(as_sorted=True)
 
     gff = GFF(GFFContent.DLG)
 
