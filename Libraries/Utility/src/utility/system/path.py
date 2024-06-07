@@ -512,8 +512,8 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             self._last_stat_result = super().stat()
         return self._last_stat_result
 
-    def stat(self) -> os.stat_result:
-        self._last_stat_result = super().stat()
+    def stat(self, *args, **kwargs) -> os.stat_result:
+        self._last_stat_result = super().stat(*args, **kwargs)
         return self._last_stat_result
 
     # Safe rglob operation
@@ -571,7 +571,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         try:
             check = self.exists()
         except (OSError, ValueError):
-            #RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+            # RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
