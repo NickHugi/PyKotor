@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -12,6 +12,7 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
 from utility.logger_util import RobustRootLogger
+from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from typing_extensions import Literal, Self
@@ -160,6 +161,75 @@ class DLG:
 
         return dlg
 
+    def find_paths(self, target: DLGEntry | DLGReply | DLGLink) -> list[PureWindowsPath]:
+        paths = []
+        seen_nodes = set()
+        seen_links = set()
+        self._find_paths_recursive(self.starters, target, PureWindowsPath(), paths, seen_nodes, seen_links)
+        return paths
+
+    def _find_paths_recursive(
+        self,
+        links: list[DLGLink],
+        target: DLGEntry | DLGReply | DLGLink,
+        current_path: PureWindowsPath,
+        paths: list[PureWindowsPath],
+        seen_nodes: set[DLGNode],
+    ):
+        for link in links:
+            node = link.node
+            if node not in seen_nodes:
+                seen_nodes.add(node)
+
+                if isinstance(node, DLGEntry):
+                    nodePart, linkPart = "EntryList", "RepliesList"
+                else:
+                    nodePart, linkPart = "ReplyList", "EntriesList"
+
+                node_path = current_path / f"{nodePart}/{node.list_index}"
+                if node == target:
+                    paths.append(node_path)
+                self._find_paths_recursive(node.links, target, node_path / linkPart, paths, seen_nodes)
+
+    def lookup_from_path(self, path: PureWindowsPath | str) -> list[DLGNode] | DLGNode | list[DLGLink] | DLGLink | None:
+        path = PureWindowsPath.pathify(path)
+        if not path.parts or not path.name:
+            return None
+        num_of_parts = len(path.parts)
+
+        def find_by_index(collection: list[DLGNode | DLGLink], index: str | int) -> DLGNode | DLGLink | None:
+            try:
+                index = int(index)
+                return (
+                    collection[index]
+                    if index < len(collection)
+                    else next(node for node in collection if node.list_index == index)
+                )
+            except (ValueError, IndexError, StopIteration):
+                return None
+
+        current_node = None
+        if path.parts[0] == "EntryList":
+            entries = self.all_entries()
+            if num_of_parts <= 1:
+                return entries
+            current_node = find_by_index(entries, path.parts[1])
+        elif path.parts[0] == "ReplyList":
+            replies = self.all_replies()
+            if num_of_parts <= 1:
+                return replies
+            current_node = find_by_index(replies, path.parts[1])
+
+        if (
+            current_node is not None
+            and num_of_parts >= 3  # noqa: PLR2004
+            and path.parts[2] in {"RepliesList", "EntriesList"}
+        ):
+            if num_of_parts == 3:  # noqa: PLR2004
+                return current_node.links
+            current_node = find_by_index(current_node.links, path.parts[3])
+        return current_node
+
     def print_tree(
         self,
         install: Installation | None = None,
@@ -202,7 +272,8 @@ class DLG:
         -------
             A list of all stored entries.
         """
-        return self._all_entries()
+        entries = self._all_entries()
+        return sorted(entries, key=lambda entry: (entry.list_index == -1, entry.list_index))
 
     def _all_entries(
         self,
@@ -253,7 +324,8 @@ class DLG:
         -------
             A list of all stored replies.
         """
-        return self._all_replies()
+        replies = self._all_replies()
+        return sorted(replies, key=lambda reply: (reply.list_index == -1, reply.list_index))
 
     def _all_replies(
         self,
@@ -574,8 +646,9 @@ class DLGAnimation:
         animation._hash_cache = data.get("_hash_cache", animation._hash_cache)  # noqa: SLF001
         return animation
 
+T = TypeVar("T", bound=DLGNode)
 
-class DLGLink:
+class DLGLink(Generic[T]):
     """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
     Attributes:
@@ -608,7 +681,7 @@ class DLGLink:
         self._hash_cache = hash(uuid.uuid4().hex)
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode | None = node
-        self.link_index: int = -1
+        self.list_index: int = -1
 
         # not in StartingList
         self.is_child: bool = False
@@ -635,17 +708,20 @@ class DLGLink:
         self.active2_param6: str = ""
 
     def __repr__(self) -> str:
-        return (f"{self.__class__.__name__}(link_index={self.link_index}, comment={self.comment})")
+        return (f"{self.__class__.__name__}(link_list_index={self.list_index}, comment={self.comment})")
 
     def __eq__(self, other):
         if self.__class__ is not other.__class__:
             return NotImplemented
         return self.__hash__() == other.__hash__()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self._hash_cache
 
-    def to_dict(self, node_map: dict[str, Any] | None = None) -> dict[str, Any]:
+    def to_dict(
+        self,
+        node_map: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         if node_map is None:
             node_map = {}
 
@@ -657,7 +733,7 @@ class DLGLink:
             "type": self.__class__.__name__,
             "key": link_key,
             "node": self.node.to_dict(node_map) if self.node else None,
-            "link_index": self.link_index,
+            "link_list_index": self.list_index,
         }
         node_map[link_key] = link_dict
 
@@ -675,7 +751,7 @@ class DLGLink:
 
         link = cls()
         link._hash_cache = int(link_key)  # noqa: SLF001
-        link.link_index = data.get("link_index", -1)
+        link.list_index = data.get("link_list_index", -1)
         node_map[link_key] = link
 
         if data["node"]:
@@ -731,13 +807,6 @@ def construct_dlg(
     Returns:
     -------
         DLG - The constructed DLG object
-
-    Processing Logic:
-    ----------------
-        - Constructs DLGNode objects from GFFStructs
-        - Constructs DLGLink objects from GFFStructs
-        - Populates DLG object with nodes, links, and metadata
-        - Loops through GFF lists to populate all nodes and links.
     """
 
     def construct_node(
@@ -754,13 +823,6 @@ def construct_dlg(
         Returns:
         -------
             None - Populates the node in-place
-
-        Processing Logic:
-        ----------------
-            - Acquires fields from the GFFStruct and assigns to the node
-            - Handles optional fields
-            - Populates animations list
-            - Sets various parameters.
         """
         node.text = gff_struct.acquire("Text", LocalizedString.from_invalid())
         node.listener = gff_struct.acquire("Listener", "")
@@ -844,14 +906,6 @@ def construct_dlg(
         Returns:
         -------
             None - Populates the link object
-
-        Processing Logic:
-        ----------------
-            - Acquires an "Active" resource and assigns to link.active1
-            - Acquires an "Active2" resource and assigns to link.active2
-            - Acquires a "Logic" resource and assigns to link.logic
-            - Acquires "Not", "Not2" resources and assigns to link.active1_not, link.active2_not
-            - Acquires "Param1-6", "ParamStrA-B" resources and assigns to link parameters.
         """
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
@@ -907,35 +961,36 @@ def construct_dlg(
         stunt.stunt_model = stunt_struct.acquire("StuntModel", ResRef.from_blank())
 
     starting_list: GFFList = root.acquire("StartingList", GFFList())
-    for link_struct in starting_list:
+    for link_list_index, link_struct in enumerate(starting_list):
         link = DLGLink()
-        link.link_index = link_struct.acquire("Index", 0)
+        link.list_index = link_list_index
+        node_struct_id = link_struct.acquire("Index", 0)
         try:
-            link.node = all_entries[link.link_index]
+            link.node = all_entries[node_struct_id]
         except IndexError:
-            RobustRootLogger().error(
-                f"'Index' field value '{link.link_index}' (struct #{starting_list._structs.index(link_struct)+1} in StartingList) does not point to a valid EntryList node, omitting..."
-            )
+            context_link_msg = f"(StartingList/{link_list_index})"  # noqa: SLF001
+            RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
         else:
             dlg.starters.append(link)
             construct_link(link_struct, link)
 
     entry_list: GFFList = root.acquire("EntryList", GFFList())
-    for i, entry_struct in enumerate(entry_list):
-        entry: DLGEntry = all_entries[i]
+    for node_list_index, entry_struct in enumerate(entry_list):
+        entry: DLGEntry = all_entries[node_list_index]
         entry.speaker = entry_struct.acquire("Speaker", "")
-        entry.list_index = i
+        entry.list_index = node_list_index
         construct_node(entry_struct, entry)
 
         replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
-        for link_struct in replies_list:
+        for link_list_index, link_struct in enumerate(replies_list):
             link = DLGLink()
-            node_index = link_struct.acquire("Index", 0)
+            link.list_index = link_list_index
+            node_struct_id = link_struct.acquire("Index", 0)
             try:
-                link.node = all_replies[node_index]
+                link.node = all_replies[node_struct_id]
             except IndexError:
-                context_link_msg = f"(EntryList/{i}/RepliesList/{replies_list._structs.index(link_struct)+1})"  # noqa: SLF001
-                RobustRootLogger().error(f"'Index' field value '{node_index}' {context_link_msg} does not point to a valid ReplyList node, omitting...")
+                context_link_msg = f"(EntryList/{node_list_index}/RepliesList/{link_list_index})"  # noqa: SLF001
+                RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
@@ -944,20 +999,21 @@ def construct_dlg(
                 construct_link(link_struct, link)
 
     reply_list: GFFList = root.acquire("ReplyList", GFFList())
-    for i, reply_struct in enumerate(reply_list):
-        reply: DLGReply = all_replies[i]
-        reply.list_index = i
+    for node_list_index, reply_struct in enumerate(reply_list):
+        reply: DLGReply = all_replies[node_list_index]
+        reply.list_index = node_list_index
         construct_node(reply_struct, reply)
 
         entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
-        for link_struct in entries_list:
+        for link_list_index, link_struct in enumerate(entries_list):
             link = DLGLink()
-            node_index = link_struct.acquire("Index", 0)
+            link.list_index = link_list_index
+            node_struct_id = link_struct.acquire("Index", 0)
             try:
-                link.node = all_entries[node_index]
+                link.node = all_entries[node_struct_id]
             except IndexError:
-                context_link_msg = f"(ReplyList/{i}/EntriesList/{entries_list._structs.index(link_struct)+1})"  # noqa: SLF001
-                RobustRootLogger().error(f"'Index' field value '{link.link_index}'{context_link_msg} does not point to a valid EntryList node, omitting...")
+                context_link_msg = f"(ReplyList/{node_list_index}/EntriesList/{link_list_index})"  # noqa: SLF001
+                RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid EntryList node, omitting...")
             else:
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
@@ -1020,8 +1076,8 @@ def dismantle_dlg(
             - Sets the Index uint32 on the GFFStruct from the node list index
             - If game is K2, sets additional link properties on the GFFStruct.
         """
-        node_index = nodes.index(link.node)
-        gff_struct.set_uint32("Index", node_index)
+        node_list_index = nodes.index(link.node)
+        gff_struct.set_uint32("Index", node_list_index)
 
         if list_name != "StartingList":
             gff_struct.set_uint8("IsChild", int(link.is_child))
@@ -1137,7 +1193,9 @@ def dismantle_dlg(
             gff_struct.set_int32("VOTextChanged", node.vo_text_changed)
 
         link_list: GFFList = gff_struct.set_list(list_name, GFFList())
-        for i, link in enumerate(node.links):
+        # Sort links by link_list_index, treating -1 as the highest value
+        sorted_links = sorted(node.links, key=lambda link: (link.list_index == -1, link.list_index))
+        for i, link in enumerate(sorted_links):
             link_struct: GFFStruct = link_list.add(i)
             dismantle_link(link_struct, link, nodes, list_name)
 
@@ -1183,19 +1241,20 @@ def dismantle_dlg(
         stunt_struct.set_resref("StuntModel", stunt.stunt_model)
 
     starting_list: GFFList = root.set_list("StartingList", GFFList())
-    for i, starter in enumerate(dlg.starters):
-        starting_struct: GFFStruct = starting_list.add(i)
+    sorted_links: list[DLGLink] = sorted(dlg.starters, key=lambda link: (link.list_index == -1, link.list_index))
+    for link_list_index, starter in enumerate(sorted_links):
+        starting_struct: GFFStruct = starting_list.add(link_list_index)
         dismantle_link(starting_struct, starter, all_entries, "StartingList")
 
     entry_list: GFFList = root.set_list("EntryList", GFFList())
-    for i, entry in enumerate(all_entries):
-        entry_struct: GFFStruct = entry_list.add(i)
+    for node_list_index, entry in enumerate(all_entries):
+        entry_struct: GFFStruct = entry_list.add(node_list_index)
         entry_struct.set_string("Speaker", entry.speaker)
         dismantle_node(entry_struct, entry, all_replies, "RepliesList")
 
     reply_list: GFFList = root.set_list("ReplyList", GFFList())
-    for i, reply in enumerate(all_replies):
-        reply_struct: GFFStruct = reply_list.add(i)
+    for node_list_index, reply in enumerate(all_replies):
+        reply_struct: GFFStruct = reply_list.add(node_list_index)
         dismantle_node(reply_struct, reply, all_entries, "EntriesList")
 
     return gff
