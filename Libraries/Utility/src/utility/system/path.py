@@ -570,8 +570,8 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
         check: bool | None = None
         try:
             check = self.exists()
-        except (OSError, ValueError, TypeError):
-            RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
+        except (OSError, ValueError):
+            # RobustRootLogger().debug("This exception has been suppressed and is only relevant for debug purposes.", exc_info=True)
             return None
         else:
             return check
