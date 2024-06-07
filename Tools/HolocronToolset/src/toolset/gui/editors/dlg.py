@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Callable, cast
 import qtpy
 
 from qtpy import QtMultimedia
-from qtpy.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QModelIndex, QPoint, QRect, QTimer, QUrl, Qt
+from qtpy.QtCore import QBuffer, QByteArray, QDataStream, QIODevice, QItemSelection, QItemSelectionModel, QMimeData, QModelIndex, QPoint, QRect, QTimer, QUrl, Qt
 from qtpy.QtGui import (
     QBrush,
     QColor,
@@ -26,7 +26,6 @@ from qtpy.QtGui import (
 )
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import (
-    QAbstractItemView,
     QApplication,
     QFormLayout,
     QHBoxLayout,
@@ -244,7 +243,7 @@ class DraggableTreeView(QTreeView):
         curIndex = self.indexAt(pos)
 
         if curIndex == self.currentIndex():
-            self.editor._logger.debug(f"{self.__class__.__name__}.dragMoveEvent: early return, hovering over dragged item.")
+            self.editor._logger.debug(f"{self.__class__.__name__}.dragMoveEvent: early return, hovering over dragged item.")  # noqa: SLF001
             event.ignore()
             self.setDropIndicatorShown(False)
             return
@@ -253,7 +252,7 @@ class DraggableTreeView(QTreeView):
         if pos.y() < mid_point:  # handle which side of the current item we're on.
             curIndex = curIndex.siblingAtRow(curIndex.row() - 1) if curIndex.row() > 0 else QModelIndex()
         itemModel: QStandardItemModel = self.model()
-        self.editor._logger.debug(f"{self.__class__.__name__}.dragMoveEvent: {self.getIdentifyingTextForIndex(curIndex)}")
+        self.editor._logger.debug(f"{self.__class__.__name__}.dragMoveEvent: {self.getIdentifyingTextForIndex(curIndex)}")  # noqa: SLF001
 
         if curIndex.isValid():
             ...
@@ -302,7 +301,7 @@ class DraggableTreeView(QTreeView):
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasFormat("application/x-qabstractitemmodeldatalist"):
             event.acceptProposedAction()
-            self.editor._logger.debug(f"{self.__class__.__name__}.dragEnterEvent: Accepted drag enter with mimeData {event.mimeData().formats()}")
+            self.editor._logger.debug(f"{self.__class__.__name__}.dragEnterEvent: Accepted drag enter with mimeData {event.mimeData().formats()}")  # noqa: SLF001
         else:
             event.ignore()
             self.setDropIndicatorShown(False)
@@ -356,11 +355,21 @@ class DraggableTreeView(QTreeView):
 
         # If target_item is None, determine if the drop is at the top or bottom
         if target_item is None and self.target_index is not None and self.target_index.isValid():
-            self.editor._logger.debug(f"{self.__class__.__name__}.dropEvent: using self.target_index as self.indexAt(self.mapFromGlobal(QCursor.pos())) returned an invalid index.")
+            self.editor._logger.debug(f"{self.__class__.__name__}.dropEvent: using self.target_index as self.indexAt(self.mapFromGlobal(QCursor.pos())) returned an invalid index.")  # noqa: SLF001
             target_item = itemModel.itemFromIndex(self.target_index)
             assert self.target_index.isValid()
         if not target_item:
             event.ignore()
+            self.clearDragIndicators()
+            return
+
+        # Check if the dragged item belongs to the current model
+        if not self.isItemFromCurrentModel(event):
+            dragged_node = self.getDraggedNodeFromMimeData(event.mimeData())
+            if dragged_node:
+                event.acceptProposedAction()
+                self.editor.pasteItem(target_item, dragged_node, asNewBranches=False)
+                super().dropEvent(event)
             self.clearDragIndicators()
             return
 
@@ -374,14 +383,6 @@ class DraggableTreeView(QTreeView):
             return  # Invalid drop, do nothing
         link: DLGLink = dragged_item.data(_LINK_ROLE)
         dragged_node: DLGNode = link.node
-
-        # Determine if it's from a different dlg (moved between windows):
-        lookup_dragging_item = self.editor.findItemForNode(dragged_node)
-        if lookup_dragging_item is None:
-            event.acceptProposedAction()
-            self.editor.pasteItem(target_item, dragged_node, asNewBranches=False)
-            super().dropEvent(event)
-            return
 
         target_link: DLGLink = target_item.data(_LINK_ROLE)
         target_node: DLGNode = target_link.node
@@ -398,6 +399,42 @@ class DraggableTreeView(QTreeView):
         event.acceptProposedAction()
         super().dropEvent(event)
         self.viewport().update()
+
+    def getDraggedNodeFromMimeData(self, mimeData: QMimeData) -> DLGNode | None:
+        """Extract the dragged DLGNode from the mime data."""
+        data = mimeData.data("application/x-qabstractitemmodeldatalist")
+        stream = QDataStream(data, QIODevice.ReadOnly)
+
+        if stream.atEnd():
+            print("Stream is empty")
+            return None
+
+        print("Mime Data Size:", data.size())
+
+        while not stream.atEnd():
+            row = stream.readInt32()
+            column = stream.readInt32()
+            map_items = stream.readInt32()
+
+            print(f"Row: {row}, Column: {column}, Map Items: {map_items}")
+
+            for _ in range(map_items):
+                role: int = stream.readInt32()
+                value = stream.readQVariant()
+                print(f"Role: {role}, Value: {value}")
+                if role == _LINK_ROLE:
+                    link: DLGLink = value
+                    return link.node
+
+        return None
+
+    def isItemFromCurrentModel(self, event: QDropEvent) -> bool:
+        """Check if the dragged item belongs to the current model."""
+        source = event.source()
+        if not isinstance(source, QTreeView):
+            return False
+        dragged_model = source.model()
+        return dragged_model == self.model()
 
     def showDropIndicator(self, index):
         rect = self.visualRect(index)
@@ -427,7 +464,7 @@ class DraggableTreeView(QTreeView):
         self.dragIndex = QModelIndex()  # Reset drag index after dropping
         self.startPos = None
 
-    def sizeHintForRow(self, row):
+    def sizeHintForRow(self, row) -> int:
         if self.dragIndex.isValid() and (self.dragIndex.row() == row or self.dragIndex.row() + 1 == row):
             return super().sizeHintForRow(row) + 10  # Increase height to push apart
         return super().sizeHintForRow(row)
@@ -476,9 +513,33 @@ class DraggableTreeView(QTreeView):
 
         painter.end()
 
+        drag = QDrag(self)
+        mimeData = QMimeData()
+        encoded_data = QByteArray()
+        stream = QDataStream(encoded_data, QIODevice.WriteOnly)
+
+        for row in range(itemModel.rowCount()):
+            for column in range(itemModel.columnCount()):
+                index = itemModel.index(row, column)
+                if not index.isValid():
+                    continue
+                item = itemModel.itemFromIndex(index)
+                if not item:
+                    continue
+                stream.writeInt32(row)
+                stream.writeInt32(column)
+                roles = item.data(Qt.UserRole)
+                stream.writeInt32(len(roles))
+                for role, value in roles.items():
+                    stream.writeInt32(role)
+                    stream.writeQVariant(value)
+
+        mimeData.setData("application/x-qabstractitemmodeldatalist", encoded_data)
+        drag.setMimeData(mimeData)
+
         drag.setPixmap(pixmap)
         drag.setHotSpot(self.mapFromGlobal(QCursor.pos()) - self.startPos)
-        self.editor._logger.debug(f"{self.__class__.__name__}.performDrag: Starting drag operation for {num_links} links and {num_unique_nodes} unique nodes")
+        self.editor._logger.debug(f"{self.__class__.__name__}.performDrag: Starting drag operation for {num_links} links and {num_unique_nodes} unique nodes")  # noqa: SLF001
         self.isDragging = True
         drag.exec_(Qt.MoveAction)
         self.isDragging = False
@@ -498,7 +559,7 @@ class DraggableTreeView(QTreeView):
         text_rect = QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
         painter.drawText(text_rect, Qt.AlignCenter, text)
 
-        self.editor._logger.debug(f"{self.__class__.__name__}.draw_drag_icons: Drawing drag icon at {center} with text {text}")
+        self.editor._logger.debug(f"{self.__class__.__name__}.draw_drag_icons: Drawing drag icon at {center} with text {text}")  # noqa: SLF001
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         super().mouseReleaseEvent(event)
@@ -530,7 +591,7 @@ class DraggableTreeView(QTreeView):
 
     def getDraggedItem(self) -> QStandardItem | None:
         dragged_index = self.currentIndex()
-        self.editor._logger.debug(f"{self.__class__.__name__}.getDraggedItem: Current index - {self.getIdentifyingTextForIndex(dragged_index)}")
+        self.editor._logger.debug(f"{self.__class__.__name__}.getDraggedItem: Current index - {self.getIdentifyingTextForIndex(dragged_index)}")  # noqa: SLF001
         if not dragged_index.isValid():
             return None
         itemModel: QStandardItemModel = self.model()
@@ -973,6 +1034,7 @@ class DLGEditor(Editor):
         self.ui.dialogTree.viewport().update()
         self.ui.dialogTree.update()
         self.refreshItem(newItem)
+        self.refreshItem(parentItem)
         # Add placeholder child if the new node has children
         if pastedNode in self._seenNodes:
             newItem.setData(True, _COPY_ROLE)
