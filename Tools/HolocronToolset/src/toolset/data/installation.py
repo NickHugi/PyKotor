@@ -183,7 +183,7 @@ class HTInstallation(Installation):
             - Return cached texture or None if not found.
         """
         if resname not in self._cacheTpc:
-            tex = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
+            tex = self.texture(resname, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
             if tex is not None:
                 self._cacheTpc[resname] = tex
         return self._cacheTpc.get(resname, None)
