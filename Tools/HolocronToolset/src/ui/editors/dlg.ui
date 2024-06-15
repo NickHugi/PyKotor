@@ -473,7 +473,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="script1ResrefEdit"/>
+               <widget class="FilterComboBox" name="script1ResrefEdit"/>
               </item>
               <item>
                <widget class="GFFFieldSpinBox" name="script1Param1Spin">
@@ -592,7 +592,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="script2ResrefEdit"/>
+               <widget class="FilterComboBox" name="script2ResrefEdit"/>
               </item>
               <item>
                <widget class="GFFFieldSpinBox" name="script2Param1Spin">
@@ -711,7 +711,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="condition1ResrefEdit"/>
+               <widget class="FilterComboBox" name="condition1ResrefEdit"/>
               </item>
               <item>
                <widget class="GFFFieldSpinBox" name="condition1Param1Spin">
@@ -821,7 +821,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="condition2ResrefEdit"/>
+               <widget class="FilterComboBox" name="condition2ResrefEdit"/>
               </item>
               <item>
                <widget class="GFFFieldSpinBox" name="condition2Param1Spin">
@@ -1025,65 +1025,57 @@
                </widget>
               </item>
               <item>
-               <layout class="QFormLayout" name="formLayout_2">
-                <item row="0" column="0">
-                 <widget class="QLabel" name="label_19">
-                  <property name="text">
-                   <string>Sound:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="0" column="1">
-                 <layout class="QVBoxLayout" name="verticalLayout_6">
-                  <item>
-                   <widget class="QLineEdit" name="soundEdit">
-                    <property name="maxLength">
-                     <number>16</number>
-                    </property>
-                   </widget>
+                <layout class="QFormLayout" name="formLayout_2">
+                  <item row="0" column="0">
+                    <widget class="QLabel" name="label_19">
+                      <property name="text">
+                        <string>Sound:</string>
+                      </property>
+                    </widget>
                   </item>
-                  <item>
-                   <widget class="QPushButton" name="soundButton">
-                    <property name="text">
-                     <string>Play</string>
-                    </property>
-                   </widget>
+                  <item row="0" column="1">
+                    <layout class="QVBoxLayout" name="verticalLayout_6">
+                      <item>
+                        <widget class="FilterComboBox" name="soundComboBox"/>
+                      </item>
+                      <item>
+                        <widget class="QPushButton" name="soundButton">
+                          <property name="text">
+                            <string>Play</string>
+                          </property>
+                        </widget>
+                      </item>
+                    </layout>
                   </item>
-                 </layout>
-                </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="label_20">
-                  <property name="text">
-                   <string>Voice:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
-                 <layout class="QVBoxLayout" name="verticalLayout_8">
-                  <item>
-                   <widget class="QLineEdit" name="voiceEdit">
-                    <property name="maxLength">
-                     <number>16</number>
-                    </property>
-                   </widget>
+                  <item row="1" column="0">
+                    <widget class="QLabel" name="label_20">
+                      <property name="text">
+                        <string>Voice:</string>
+                      </property>
+                    </widget>
                   </item>
-                  <item>
-                   <widget class="QPushButton" name="voiceButton">
-                    <property name="text">
-                     <string>Play</string>
-                    </property>
-                   </widget>
+                  <item row="1" column="1">
+                    <layout class="QVBoxLayout" name="verticalLayout_8">
+                      <item>
+                        <widget class="FilterComboBox" name="voiceComboBox"/>
+                      </item>
+                      <item>
+                        <widget class="QPushButton" name="voiceButton">
+                          <property name="text">
+                            <string>Play</string>
+                          </property>
+                        </widget>
+                      </item>
+                    </layout>
                   </item>
-                 </layout>
-                </item>
-                <item row="2" column="1">
-                 <widget class="QCheckBox" name="soundCheckbox">
-                  <property name="text">
-                   <string>Enabled</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
+                  <item row="2" column="1">
+                    <widget class="QCheckBox" name="soundCheckbox">
+                      <property name="text">
+                        <string>Enabled</string>
+                      </property>
+                    </widget>
+                  </item>
+                </layout>
               </item>
               <item>
                <spacer name="verticalSpacer_2">
@@ -1554,6 +1546,11 @@
    <class>ComboBox2DA</class>
    <extends>QComboBox</extends>
    <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.editors.dlg</header>
   </customwidget>
   <customwidget>
    <class>GFFFieldSpinBox</class>
