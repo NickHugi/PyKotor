@@ -992,7 +992,8 @@ class ToolWindow(QMainWindow):
         print("<SDM> [handleSearchCompleted scope] resultsDialog: ", resultsDialog)
 
         resultsDialog.setModal(False)
-        addWindow(resultsDialog)
+        addWindow(resultsDialog, show=False)
+        resultsDialog.show()
         resultsDialog.selectionSignal.connect(self.handleResultsSelection)
 
     def handleResultsSelection(
