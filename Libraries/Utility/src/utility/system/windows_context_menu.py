@@ -217,7 +217,7 @@ def windows_context_menu(path: os.PathLike | str):
 if __name__ == "__main__":
     import sys
 
-    from icloudexplore.__main__ import onAppCrash
+    from toolset.__main__ import onAppCrash
 
     sys.excepthook = onAppCrash
     filepath = r"C:\Users\Wizard\test_folder\City.sol"
