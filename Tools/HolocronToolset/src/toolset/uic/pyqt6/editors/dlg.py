@@ -580,10 +580,9 @@ class Ui_MainWindow(object):
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.ItemRole.LabelRole, self.label_19)
         self.verticalLayout_6 = QtWidgets.QVBoxLayout()
         self.verticalLayout_6.setObjectName("verticalLayout_6")
-        self.soundEdit = QtWidgets.QLineEdit(parent=self.animsTab)
-        self.soundEdit.setMaxLength(16)
-        self.soundEdit.setObjectName("soundEdit")
-        self.verticalLayout_6.addWidget(self.soundEdit)
+        self.soundComboBox = FilterComboBox(parent=self.animsTab)
+        self.soundComboBox.setObjectName("soundComboBox")
+        self.verticalLayout_6.addWidget(self.soundComboBox)
         self.soundButton = QtWidgets.QPushButton(parent=self.animsTab)
         self.soundButton.setObjectName("soundButton")
         self.verticalLayout_6.addWidget(self.soundButton)
@@ -593,10 +592,9 @@ class Ui_MainWindow(object):
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.ItemRole.LabelRole, self.label_20)
         self.verticalLayout_8 = QtWidgets.QVBoxLayout()
         self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.voiceEdit = QtWidgets.QLineEdit(parent=self.animsTab)
-        self.voiceEdit.setMaxLength(16)
-        self.voiceEdit.setObjectName("voiceEdit")
-        self.verticalLayout_8.addWidget(self.voiceEdit)
+        self.voiceComboBox = FilterComboBox(parent=self.animsTab)
+        self.voiceComboBox.setObjectName("voiceComboBox")
+        self.verticalLayout_8.addWidget(self.voiceComboBox)
         self.voiceButton = QtWidgets.QPushButton(parent=self.animsTab)
         self.voiceButton.setObjectName("voiceButton")
         self.verticalLayout_8.addWidget(self.voiceButton)
@@ -779,7 +777,7 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.commentsTab, "")
         self.horizontalLayout.addWidget(self.tabWidget)
         self.horizontalLayout.setStretch(0, 3)
-        self.gridLayout_2.addWidget(self.splitter, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.splitter, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1135, 22))
@@ -915,7 +913,7 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionReloadTree.setText(_translate("MainWindow", "Reload Tree"))
         self.actionUnfocus.setText(_translate("MainWindow", "Unfocus Tree"))
-from toolset.gui.editors.dlg import DLGTreeView, GFFFieldSpinBox
+from toolset.gui.editors.dlg import DLGTreeView, FilterComboBox, GFFFieldSpinBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 
 from toolset.rcc import resources_rc_pyqt6

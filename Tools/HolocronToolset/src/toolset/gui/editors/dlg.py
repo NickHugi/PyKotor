@@ -20,13 +20,13 @@ from qtpy.QtCore import (
     QItemSelectionModel,
     QMimeData,
     QModelIndex,
+    QObject,
     QPoint,
     QRect,
     QRectF,
-    QRegExp,
-    QRegularExpression,
     QSize,
     QSortFilterProxyModel,
+    QStringListModel,
     QTimer,
     QUrl,
     Qt,
@@ -34,7 +34,6 @@ from qtpy.QtCore import (
 from qtpy.QtGui import (
     QBrush,
     QColor,
-    QCursor,
     QDrag,
     QFont,
     QHoverEvent,
@@ -45,7 +44,6 @@ from qtpy.QtGui import (
     QPen,
     QPixmap,
     QRadialGradient,
-    QResizeEvent,
     QStandardItem,
     QStandardItemModel,
     QTextDocument,
@@ -55,10 +53,12 @@ from qtpy.QtWidgets import (
     QAbstractItemView,
     QAction,
     QApplication,
+    QComboBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListView,
     QListWidgetItem,
     QMenu,
     QPlainTextEdit,
@@ -70,7 +70,6 @@ from qtpy.QtWidgets import (
     QToolTip,
     QTreeView,
     QUndoCommand,
-    QVBoxLayout,
     QWidget,
     QWidgetAction,
 )
@@ -116,6 +115,7 @@ if TYPE_CHECKING:
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
+        QResizeEvent,
         QWheelEvent,
     )
     from qtpy.QtWidgets import (
@@ -124,7 +124,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.language import LocalizedString
-    from pykotor.extract.file import LocationResult, ResourceIdentifier
+    from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier
     from pykotor.resource.generics.dlg import (
         DLGAnimation,
         DLGStunt,
@@ -132,6 +132,149 @@ if TYPE_CHECKING:
     from utility.system.path import PureWindowsPath
 
 _FUTURE_EXPAND_ROLE = Qt.ItemDataRole.UserRole + 3
+
+class TrieNode:
+    """A node in the trie structure."""
+    def __init__(self):
+        self.children = {}
+        self.is_end_of_word = False
+
+class Trie:
+    """The trie object containing the whole data structure."""
+    def __init__(self):
+        self.root = TrieNode()
+
+    def insert(self, text: str):
+        node = self.root
+        for char in text:
+            if char not in node.children:
+                node.children[char] = TrieNode()
+            node = node.children[char]
+        node.is_end_of_word = True  # This marks the end of a word
+
+    def search(self, prefix: str) -> bool:
+        node = self.root
+        for char in prefix:
+            if char not in node.children:
+                return False
+            node = node.children[char]
+        return True  # The prefix is valid if we successfully traverse the Trie
+
+    def rebuild(self, data_list):
+        self.root = TrieNode()  # Reset the Trie
+        for data in data_list:
+            self.insert(data)
+
+class FilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
+        self.filter_text: str = ""
+        self.filter_timer: QTimer = QTimer()
+        self.filter_timer.setSingleShot(True)
+        self.filter_timer.timeout.connect(self.invalidateFilter)
+        self.debounce_delay = 300  # Milliseconds
+
+    def setFilterText(self, text: str):
+        self.filter_text = text.lower()
+        if not self.filter_text:  # If filter text is empty, reset immediately
+            self.invalidateFilter()
+        else:
+            self.filter_timer.stop()
+            self.filter_timer.start(self.debounce_delay)  # Restart the timer on each input
+
+    def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
+        if source_row == 0:
+            return True
+        index = self.sourceModel().index(source_row, 0, source_parent)
+        item_text = index.data(Qt.DisplayRole)
+        return False if item_text is None else self.filter_text in item_text.lower()
+
+    def rebuildTrie(self):
+        # Ensure there is a source model before trying to rebuild the Trie
+        if self.sourceModel() is not None:
+            self.trie.rebuild(
+                [
+                    self.sourceModel().data(self.sourceModel().index(row, 0), Qt.DisplayRole).lower()
+                    for row in range(1, self.sourceModel().rowCount())  # Start from 1 to skip placeholder
+                ]
+            )
+
+
+class ButtonDelegate(QStyledItemDelegate):
+    def __init__(self, button_text: str, button_callback: Callable[[int], Any], parent: QObject | None = None):
+        super().__init__(parent)
+        self.button_text: str = button_text
+        self.button_callback: Callable[[int], Any] = button_callback
+        self.buttons: dict[int, QPushButton] = {}
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
+        super().paint(painter, option, index)
+        if index.row() not in self.buttons:
+            button = QPushButton(self.button_text, parent=option.widget)
+            button.clicked.connect(lambda _checked, row=index.row(): self.button_callback(self.get_item_text(row)))
+            self.buttons[index.row()] = button
+        button = self.buttons[index.row()]
+        button_size = button.sizeHint()
+        button_size = QSize(button_size.width() // 2, button_size.height())
+        button.resize(button_size)
+        button.move(option.rect.right() - button_size.width(), option.rect.top())
+        button.show()
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+        size = super().sizeHint(option, index)
+        button = self.buttons.get(index.row(), QPushButton(self.button_text))
+        button_size = button.sizeHint()
+        button_size = QSize(button_size.width() // 2, button_size.height())
+        size.setWidth(size.width() + button_size.width())
+        return size
+
+    def get_item_text(self, row: int) -> str:
+        model = self.parent().model()
+        index = model.index(row, 0)
+        return model.data(index)
+
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+        editor.setGeometry(option.rect)
+
+
+class FilterComboBox(QComboBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setView(QListView(self))
+        self.original_model = QStringListModel(self)
+        # Insert a placeholder item at the start
+        self.items = [""]  # Invisible item as placeholder
+        self.original_model.setStringList(self.items)
+
+        self.proxy_model = FilterProxyModel(self)
+        self.proxy_model.setSourceModel(self.original_model)
+        self.setModel(self.proxy_model)
+
+        self.line_edit = QLineEdit(self)
+        self.line_edit.setPlaceholderText("Type to filter...")
+        self.line_edit.setClearButtonEnabled(True)
+        self.line_edit.textChanged.connect(self.filter_items)
+        self.line_edit.hide()
+
+    def showPopup(self):
+        super().showPopup()
+        # Always set line_edit to the first index
+        self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
+        self.line_edit.show()
+        self.line_edit.setFocus()
+
+    def populate_items(self, items):
+        # Start from index 1 to leave the placeholder intact
+        self.items = ["", *items]
+        self.original_model.setStringList(self.items)
+
+    def filter_items(self, text):
+        self.proxy_model.setFilterText(text)
+        self.proxy_model.invalidateFilter()
+
+    def set_button_delegate(self, button_text: str, button_callback: Callable[[int], Any]):
+        button_delegate = ButtonDelegate(button_text, button_callback, self.view())
+        self.view().setItemDelegate(button_delegate)
 
 
 class GFFFieldSpinBox(QSpinBox):
@@ -1947,23 +2090,32 @@ class DLGEditor(Editor):
 
     def _connectContextMenu(
         self,
-        widget: QPlainTextEdit | QLineEdit,
+        widget: QPlainTextEdit | QLineEdit | QComboBox,
         resref_type: list[ResourceType] | list[ResourceIdentifier],
         order: list[SearchLocation] | None = None,
     ):
         def extendContextMenu(pos):
-            rootMenu: QMenu = widget.createStandardContextMenu()
-            print("<SDM> [extendContextMenu scope] rootMenu: ", rootMenu)
+            if isinstance(widget, QComboBox):
+                rootMenu = QMenu(widget)
+                widgetText = widget.currentText().strip()
+                firstAction = None
+            else:
+                rootMenu = widget.createStandardContextMenu()
+                widgetText = (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
+                firstAction = rootMenu.actions()[0] if rootMenu.actions() else None
 
-            widgetText: str = (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
+            print("<SDM> [extendContextMenu scope] rootMenu: ", rootMenu)
             print("<SDM> [extendContextMenu scope] widgetText: ", widgetText)
 
             if widgetText:
                 fileMenu = QMenu("File...", widget)
                 print("<SDM> [extendContextMenu scope] fileMenu: ", fileMenu)
 
-                firstAction: QAction = rootMenu.actions()[0]
-                print("<SDM> [extendContextMenu scope] firstAction: ", firstAction.text())
+                if firstAction:
+                    rootMenu.insertMenu(firstAction, fileMenu)
+                    rootMenu.insertSeparator(firstAction)
+                else:
+                    rootMenu.addMenu(fileMenu)
 
                 rootMenu.insertMenu(firstAction, fileMenu)
                 rootMenu.insertSeparator(firstAction)
@@ -2046,21 +2198,24 @@ Should return 1 or 0, representing a boolean.
         self._connectContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         self._connectContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
-        self.ui.soundEdit.textEdited.connect(self.onNodeUpdate)
+        self.ui.soundComboBox.currentTextChanged.connect(self.onNodeUpdate)
         self._connectContextMenu(
-            self.ui.soundEdit,
+            self.ui.soundComboBox,
             [ResourceType.WAV, ResourceType.MP3],
             [SearchLocation.SOUND, SearchLocation.VOICE],
         )
-        self.ui.voiceEdit.textEdited.connect(self.onNodeUpdate)
+        self.ui.voiceComboBox.currentTextChanged.connect(self.onNodeUpdate)
         self._connectContextMenu(
-            self.ui.voiceEdit,
+            self.ui.voiceComboBox,
             [ResourceType.WAV, ResourceType.MP3],
             [SearchLocation.SOUND, SearchLocation.VOICE],
         )
 
-        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()) and None or None)
-        self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()) and None or None)
+        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundComboBox.currentText()) and None or None)
+        self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceComboBox.currentText()) and None or None)
+
+        self.ui.soundComboBox.set_button_delegate("Play", lambda text: self.playSound(text))
+        self.ui.voiceComboBox.set_button_delegate("Play", lambda text: self.playSound(text))
 
         self.ui.speakerEdit.textEdited.connect(self.onNodeUpdate)
         self.ui.listenerEdit.textEdited.connect(self.onNodeUpdate)
@@ -2298,9 +2453,18 @@ Should return 1 or 0, representing a boolean.
         self.ui.cameraEffectSelect.clear()
         self.ui.cameraEffectSelect.addItem("[None]", None)
 
+        # Populate sound and voice comboboxes
+        self.populateComboBox(self.ui.soundComboBox, self._installation._streamsounds)
+        self.populateComboBox(self.ui.voiceComboBox, self._installation._streamwaves)
+
         videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
+
+    def populateComboBox(self, comboBox: QComboBox, fileResources: list[FileResource]):
+        comboBox.clear()
+        for fileResource in fileResources:
+            comboBox.addItem(fileResource.resname())
 
     def _setupTslInstallDefs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection."""
@@ -2654,11 +2818,11 @@ Should return 1 or 0, representing a boolean.
         playSoundAction.triggered.connect(lambda: self.playSound(str(node.sound)) and None or None)
         playVoiceAction = playMenu.addAction("Play Voice")
         playVoiceAction.triggered.connect(lambda: self.playSound(str(node.vo_resref)) and None or None)
-        if not self.ui.soundEdit.text().strip():
+        if not self.ui.soundComboBox.currentText().strip():
             playSoundAction.setEnabled(False)
-        if not self.ui.voiceEdit.text().strip():
+        if not self.ui.voiceComboBox.currentText().strip():
             playVoiceAction.setEnabled(False)
-        if not self.ui.soundEdit.text().strip() and not self.ui.voiceEdit.text().strip():
+        if not self.ui.soundComboBox.currentText().strip() and not self.ui.voiceComboBox.currentText().strip():
             playMenu.setEnabled(False)
         menu.addSeparator()
 
@@ -2800,10 +2964,10 @@ Should return 1 or 0, representing a boolean.
             elif key == QtKey.Key_P:
                 print("<SDM> [keyPressEvent play scope] key: %s", key)
 
-                if self.ui.soundEdit.text().strip():
-                    self.playSound(self.ui.soundEdit.text().strip())
-                elif self.ui.voiceEdit.text().strip():
-                    self.playSound(self.ui.voiceEdit.text().strip())
+                if self.ui.soundComboBox.currentText().strip():
+                    self.playSound(self.ui.soundComboBox.currentText().strip())
+                elif self.ui.voiceComboBox.currentText().strip():
+                    self.playSound(self.ui.voiceComboBox.currentText().strip())
                 else:
                     self.blinkWindow()
             return
@@ -2857,6 +3021,21 @@ Should return 1 or 0, representing a boolean.
         index: QModelIndex = event if isinstance(event, QModelIndex) else self.ui.dialogTree.indexAt(event.pos())
         if index.isValid():
             self.ui.dialogTree.expand(index)
+
+    @staticmethod
+    def setComboBoxText(comboBox: QComboBox, text: str, *, alwaysOnTop: bool = True):
+        index = comboBox.findText(text)
+        if alwaysOnTop:
+            if index != -1:  # Text found
+                comboBox.removeItem(index)
+            newIndex = 1 if isinstance(comboBox, FilterComboBox) else 0
+            comboBox.insertItem(newIndex, text)  # Insert at the top
+            comboBox.setCurrentIndex(newIndex)  # Set the current index to the top item
+        else:
+            if index == -1:  # Text not found
+                comboBox.addItem(text)
+                index = comboBox.findText(text)
+            comboBox.setCurrentIndex(index)
 
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node."""
@@ -2919,9 +3098,9 @@ Should return 1 or 0, representing a boolean.
             self.refreshAnimList()
             self.ui.emotionSelect.setCurrentIndex(node.emotion_id)
             self.ui.expressionSelect.setCurrentIndex(node.facial_id)
-            self.ui.soundEdit.setText(str(node.sound))
+            self.setComboBoxText(self.ui.soundComboBox, str(node.sound))
             self.ui.soundCheckbox.setChecked(node.sound_exists)
-            self.ui.voiceEdit.setText(str(node.vo_resref))
+            self.setComboBoxText(self.ui.voiceComboBox, str(node.vo_resref))
 
             self.ui.plotIndexSpin.setValue(node.plot_index)
             self.ui.plotXpSpin.setValue(node.plot_xp_percentage)
@@ -3002,9 +3181,9 @@ Should return 1 or 0, representing a boolean.
 
         node.emotion_id = self.ui.emotionSelect.currentIndex()
         node.facial_id = self.ui.expressionSelect.currentIndex()
-        node.sound = ResRef(self.ui.soundEdit.text())
+        node.sound = ResRef(self.ui.soundComboBox.currentText())
         node.sound_exists = self.ui.soundCheckbox.isChecked()
-        node.vo_resref = ResRef(self.ui.voiceEdit.text())
+        node.vo_resref = ResRef(self.ui.voiceComboBox.currentText())
 
         node.plot_index = self.ui.plotIndexSpin.value()
         node.plot_xp_percentage = self.ui.plotXpSpin.value()

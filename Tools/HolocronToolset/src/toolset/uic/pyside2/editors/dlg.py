@@ -15,6 +15,7 @@ from PySide2.QtWidgets import *
 from toolset.gui.editors.dlg import DLGTreeView
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.editors.dlg import FilterComboBox
 from toolset.gui.editors.dlg import GFFFieldSpinBox
 
 
@@ -764,11 +765,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6 = QVBoxLayout()
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-        self.soundEdit = QLineEdit(self.animsTab)
-        self.soundEdit.setObjectName(u"soundEdit")
-        self.soundEdit.setMaxLength(16)
+        self.soundComboBox = FilterComboBox(self.animsTab)
+        self.soundComboBox.setObjectName(u"soundComboBox")
 
-        self.verticalLayout_6.addWidget(self.soundEdit)
+        self.verticalLayout_6.addWidget(self.soundComboBox)
 
         self.soundButton = QPushButton(self.animsTab)
         self.soundButton.setObjectName(u"soundButton")
@@ -785,11 +785,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_8 = QVBoxLayout()
         self.verticalLayout_8.setObjectName(u"verticalLayout_8")
-        self.voiceEdit = QLineEdit(self.animsTab)
-        self.voiceEdit.setObjectName(u"voiceEdit")
-        self.voiceEdit.setMaxLength(16)
+        self.voiceComboBox = FilterComboBox(self.animsTab)
+        self.voiceComboBox.setObjectName(u"voiceComboBox")
 
-        self.verticalLayout_8.addWidget(self.voiceEdit)
+        self.verticalLayout_8.addWidget(self.voiceComboBox)
 
         self.voiceButton = QPushButton(self.animsTab)
         self.voiceButton.setObjectName(u"voiceButton")
@@ -1067,7 +1066,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setStretch(0, 3)
         self.splitter.addWidget(self.layoutWidget)
 
-        self.gridLayout_2.addWidget(self.splitter, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.splitter, 0, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
