@@ -78,9 +78,42 @@ def format_gpu_info(
     return output
 
 
-def get_system_info():
+def print_excluding_base_classes(
+    obj: object,
+    exclude_base_classes: list[type[object]] | None = None,
+):
+    if exclude_base_classes is None:
+        exclude_base_classes = [object, type]
+
+    def get_base_class_attributes(base_classes: Iterable[type[object]]) -> set[str]:
+        attrs = set()
+        for base_class in base_classes:
+            attrs.update(dir(base_class))
+        return attrs
+
+    def print_filtered_attributes(obj: object, obj_name: str, exclude_attrs: Iterable[str]):
+        print(f"{obj_name} Attributes:")
+        for attr in dir(obj):
+            if (
+                not attr.startswith("_")
+                and not callable(getattr(obj, attr))
+                and attr not in exclude_attrs
+            ):
+                try:
+                    print(f"  {attr}: {getattr(obj, attr)}")
+                except Exception as ex:
+                    print(f"  {attr}: Unable to retrieve value ({ex})")
+
+    # Get the attributes of the base classes to exclude
+    base_class_attrs = get_base_class_attributes(exclude_base_classes)
+
+    # Print the filtered attributes of the object
+    print_filtered_attributes(obj, obj.__class__.__name__, base_class_attrs)
+
+
+def get_system_info() -> dict[str, Any]:
     # sourcery skip: extract-method, list-comprehension, merge-dict-assign
-    info = {}
+    info: dict[str, Any] = {}
 
     # Basic OS information
     info["Platform"] = platform.system()
@@ -138,7 +171,11 @@ T = TypeVar("T")
 
 def remove_duplicates(my_list: list[T], *, case_insensitive: bool = False) -> list[T]:
     seen = set()
-    return [x.lower() if case_insensitive and isinstance(x, str) else x for x in my_list if not (x in seen or seen.add(x))]
+    return [
+        x.lower() if case_insensitive and isinstance(x, str) else x
+        for x in my_list
+        if not (x in seen or seen.add(x))  # type: ignore[func-returns-value]
+    ]
 
 
 def is_debug_mode() -> bool:
@@ -183,7 +220,6 @@ def generate_hash(
     *,
     always_chunk: bool = False,  # Don't unnecessarily chunk bytes/bytearray inputs.
 ) -> str:
-    # Create a hash object for the specified algorithm
     try:
         hasher = hashlib.new(hash_algo)
     except ValueError as e:
@@ -192,7 +228,6 @@ def generate_hash(
         raise ValueError(msg) from e
 
     if isinstance(data_input, (bytes, bytearray, memoryview)):
-        # Process the byte-like data in chunks
         if always_chunk or isinstance(data_input, memoryview):
             for start in range(0, len(data_input), chunk_size):
                 end = start + chunk_size
@@ -204,11 +239,7 @@ def generate_hash(
             for chunk in iter(lambda: f.read(chunk_size), b""):
                 hasher.update(chunk)
 
-    # Special handling for SHAKE algorithms which require a digest length
-    if "shake" in hash_algo:
-        # Producing a 64-byte (512 bits) output
-        return hasher.hexdigest(64)  # type: ignore[]
-    return hasher.hexdigest()
+    return hasher.hexdigest(64) if "shake" in hash_algo else hasher.hexdigest()  # type: ignore[call-arg]
 
 
 def indent(

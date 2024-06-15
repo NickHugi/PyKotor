@@ -624,7 +624,7 @@ class StackObject:
 
 class ActionStackValue(NamedTuple):
     block: list[NCSInstruction]
-    stack: list
+    stack: list[StackObject]
 
 
 class ActionSnapshot(NamedTuple):

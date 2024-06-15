@@ -316,9 +316,8 @@ def debug_reload_pymodules():
                             if old_cls is old_class:
                                 setattr(obj, attr_name, new_class)
 
-    modules_to_reload = list(sys.modules.items())
-
-    for name, loaded_module in modules_to_reload:
+    modules_to_reload: dict[str, ModuleType] = sys.modules.copy()
+    for name, loaded_module in modules_to_reload.items():
         if loaded_module is None:
             continue
         if is_builtin_module(loaded_module):
@@ -341,7 +340,7 @@ def debug_reload_pymodules():
                 safe_object_setattr(loaded_module, "__mtime__", last_file_modified_time)
             if last_file_modified_time <= current_mtime:
                 continue  # No changes on disk, skip reloading
-            logic_to_use = 1
+            logic_to_use = -1
             if logic_to_use < 1:
                 reloaded_module = importlib.reload(loaded_module)
                 safe_object_setattr(reloaded_module, "__mtime__", last_file_modified_time)
