@@ -74,7 +74,7 @@ def getRemoteToolsetUpdateInfo(
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]
 
     try:  # Download this same file config.py from the repo and only parse the json between the markers. This prevents remote execution security issues.
-        req = requests.get(UPDATE_INFO_LINK, timeout=15)
+        req = requests.get(UPDATE_INFO_LINK, timeout=2 if silent else 15)
         req.raise_for_status()
         file_data = req.json()
         base64_content = file_data["content"]
