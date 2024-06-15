@@ -848,7 +848,10 @@ class ToolWindow(QMainWindow):
                 self.dogObserver.stop()
 
             # FIXME(th3w1zard1): Not once in my life have I seen this watchdog report modified files correctly. Not even in Cortisol's last release version.
-            # Causes a hella slowdown on Linux, something to do with internal logging since it seems to be tracking `os.stat_result` lookups or something.`
+            # Causes a hella slowdown on Linux, something to do with internal logging since it seems to be overly tracking `os.stat_result` and creating
+            # about 20 debug logs every second, spamming both our logs and the console.`
+            # What we should do instead, is save the Installation instance to our QSettings, modify FileResource cls to store a LastModified attr, and onLoad we just
+            # load only the files that were changed. Would reduce toolset startups by a ton.
             #self.dogObserver = Observer()
             #self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
             #self.dogObserver.start()
@@ -2313,17 +2316,13 @@ class ToolWindow(QMainWindow):
 class FolderObserver(FileSystemEventHandler):
     def __init__(self, window: ToolWindow):
         self.window: ToolWindow = window
-        print("<SDM> [__init__ scope] ToolWindow: ", ToolWindow)
-
         self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
-        print("<SDM> [__init__ scope] datetime: ", datetime)
-
 
     def on_any_event(self, event: FileSystemEvent):
         if self.window.active is None:
             return
         rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
-        print("<SDM> [on_any_event scope] datetime: ", datetime)
+        print("<SDM> [on_any_event scope] rightnow: ", rightnow)
 
         if rightnow - self.lastModified < timedelta(seconds=1):
             return
@@ -2332,17 +2331,17 @@ class FolderObserver(FileSystemEventHandler):
         print("<SDM> [on_any_event scope] self.lastModified: ", self.lastModified)
 
         modified_path: Path = Path(event.src_path)
-        print("<SDM> [on_any_event scope] Path: ", Path)
+        print("<SDM> [on_any_event scope] modified_path: ", modified_path)
 
 
         if not modified_path.safe_isfile():
             return
 
         module_path: Path = self.window.active.module_path()
-        print("<SDM> [on_any_event scope] Path: ", Path)
+        print("<SDM> [on_any_event scope] module_path: ", module_path)
 
         override_path: Path = self.window.active.override_path()
-        print("<SDM> [on_any_event scope] Path: ", Path)
+        print("<SDM> [on_any_event scope] override_path: ", override_path)
 
 
         if modified_path.is_relative_to(module_path):
