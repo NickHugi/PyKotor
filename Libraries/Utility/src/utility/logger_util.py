@@ -121,7 +121,7 @@ class CustomPrintToLogger:
                 if self.log_type == "stderr":
                     self.logger.error(message.strip())
                 else:
-                    self.logger.info(message.strip())
+                    self.logger.debug(message.strip())
 
 
 class SafeEncodingLogger(logging.Logger):

@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="DraggableTreeView" name="dialogTree">
+      <widget class="DLGTreeView" name="dialogTree">
        <property name="contextMenuPolicy">
         <enum>Qt::CustomContextMenu</enum>
        </property>
@@ -269,7 +269,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QSpinBox" name="entryDelaySpin">
+                 <widget class="GFFFieldSpinBox" name="entryDelaySpin">
                   <property name="minimum">
                    <number>-2147483648</number>
                   </property>
@@ -286,7 +286,7 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QSpinBox" name="replyDelaySpin">
+                 <widget class="GFFFieldSpinBox" name="replyDelaySpin">
                   <property name="minimum">
                    <number>-2147483648</number>
                   </property>
@@ -460,7 +460,7 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,3,1,1,1,1,1,2,0">
               <item>
-               <widget class="QLabel" name="label_4">
+               <widget class="QLabel" name="script1Label">
                 <property name="minimumSize">
                  <size>
                   <width>80</width>
@@ -476,7 +476,7 @@
                <widget class="QLineEdit" name="script1ResrefEdit"/>
               </item>
               <item>
-               <widget class="QSpinBox" name="script1Param1Spin">
+               <widget class="GFFFieldSpinBox" name="script1Param1Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -492,7 +492,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script1Param2Spin">
+               <widget class="GFFFieldSpinBox" name="script1Param2Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -508,7 +508,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script1Param3Spin">
+               <widget class="GFFFieldSpinBox" name="script1Param3Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -524,7 +524,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script1Param4Spin">
+               <widget class="GFFFieldSpinBox" name="script1Param4Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -540,7 +540,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script1Param5Spin">
+               <widget class="GFFFieldSpinBox" name="script1Param5Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -579,7 +579,7 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,3,1,1,1,1,1,2,0">
               <item>
-               <widget class="QLabel" name="label_13">
+               <widget class="QLabel" name="script2Label">
                 <property name="minimumSize">
                  <size>
                   <width>80</width>
@@ -595,7 +595,7 @@
                <widget class="QLineEdit" name="script2ResrefEdit"/>
               </item>
               <item>
-               <widget class="QSpinBox" name="script2Param1Spin">
+               <widget class="GFFFieldSpinBox" name="script2Param1Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -611,7 +611,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script2Param2Spin">
+               <widget class="GFFFieldSpinBox" name="script2Param2Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -627,7 +627,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script2Param3Spin">
+               <widget class="GFFFieldSpinBox" name="script2Param3Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -643,7 +643,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script2Param4Spin">
+               <widget class="GFFFieldSpinBox" name="script2Param4Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -659,7 +659,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="script2Param5Spin">
+               <widget class="GFFFieldSpinBox" name="script2Param5Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -698,7 +698,7 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,3,1,1,1,1,1,2,0">
               <item>
-               <widget class="QLabel" name="label_14">
+               <widget class="QLabel" name="conditional1Label">
                 <property name="minimumSize">
                  <size>
                   <width>80</width>
@@ -714,7 +714,7 @@
                <widget class="QLineEdit" name="condition1ResrefEdit"/>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition1Param1Spin">
+               <widget class="GFFFieldSpinBox" name="condition1Param1Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -730,7 +730,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition1Param2Spin">
+               <widget class="GFFFieldSpinBox" name="condition1Param2Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -746,7 +746,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition1Param3Spin">
+               <widget class="GFFFieldSpinBox" name="condition1Param3Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -762,7 +762,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition1Param4Spin">
+               <widget class="GFFFieldSpinBox" name="condition1Param4Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -778,7 +778,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition1Param5Spin">
+               <widget class="GFFFieldSpinBox" name="condition1Param5Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -808,7 +808,7 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,3,1,1,1,1,1,2,0">
               <item>
-               <widget class="QLabel" name="label_15">
+               <widget class="QLabel" name="conditional2Label">
                 <property name="minimumSize">
                  <size>
                   <width>80</width>
@@ -824,7 +824,7 @@
                <widget class="QLineEdit" name="condition2ResrefEdit"/>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition2Param1Spin">
+               <widget class="GFFFieldSpinBox" name="condition2Param1Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -840,7 +840,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition2Param2Spin">
+               <widget class="GFFFieldSpinBox" name="condition2Param2Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -856,7 +856,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition2Param3Spin">
+               <widget class="GFFFieldSpinBox" name="condition2Param3Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -872,7 +872,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition2Param4Spin">
+               <widget class="GFFFieldSpinBox" name="condition2Param4Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -888,7 +888,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QSpinBox" name="condition2Param5Spin">
+               <widget class="GFFFieldSpinBox" name="condition2Param5Spin">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -1003,7 +1003,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QComboBox" name="emotionSelect"/>
+                 <widget class="ComboBox2DA" name="emotionSelect"/>
                 </item>
                 <item row="1" column="0">
                  <widget class="QLabel" name="label_18">
@@ -1013,7 +1013,7 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QComboBox" name="expressionSelect"/>
+                 <widget class="ComboBox2DA" name="expressionSelect"/>
                 </item>
                </layout>
               </item>
@@ -1117,7 +1117,7 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QSpinBox" name="plotIndexSpin">
+               <widget class="GFFFieldSpinBox" name="plotIndexSpin">
                 <property name="minimum">
                  <number>-1</number>
                 </property>
@@ -1148,7 +1148,7 @@
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="QSpinBox" name="questEntrySpin">
+               <widget class="GFFFieldSpinBox" name="questEntrySpin">
                 <property name="minimum">
                  <number>-2147483648</number>
                 </property>
@@ -1195,7 +1195,7 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QSpinBox" name="cameraIdSpin">
+               <widget class="GFFFieldSpinBox" name="cameraIdSpin">
                 <property name="minimum">
                  <number>-1</number>
                 </property>
@@ -1318,7 +1318,7 @@
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="QSpinBox" name="nodeIdSpin">
+                 <widget class="GFFFieldSpinBox" name="nodeIdSpin">
                   <property name="maximum">
                    <number>999999</number>
                   </property>
@@ -1332,7 +1332,7 @@
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="QSpinBox" name="alienRaceNodeSpin">
+                 <widget class="GFFFieldSpinBox" name="alienRaceNodeSpin">
                   <property name="minimum">
                    <number>-1</number>
                   </property>
@@ -1349,7 +1349,7 @@
                  </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="QSpinBox" name="postProcSpin">
+                 <widget class="GFFFieldSpinBox" name="postProcSpin">
                   <property name="minimum">
                    <number>-1</number>
                   </property>
@@ -1366,7 +1366,7 @@
                  </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QSpinBox" name="delaySpin">
+                 <widget class="GFFFieldSpinBox" name="delaySpin">
                   <property name="minimum">
                    <number>-1</number>
                   </property>
@@ -1383,7 +1383,7 @@
                  </widget>
                 </item>
                 <item row="4" column="1">
-                 <widget class="QSpinBox" name="logicSpin">
+                 <widget class="GFFFieldSpinBox" name="logicSpin">
                   <property name="minimum">
                    <number>-1</number>
                   </property>
@@ -1400,7 +1400,7 @@
                  </widget>
                 </item>
                 <item row="5" column="1">
-                 <widget class="QSpinBox" name="waitFlagSpin">
+                 <widget class="GFFFieldSpinBox" name="waitFlagSpin">
                   <property name="minimum">
                    <number>-1</number>
                   </property>
@@ -1417,7 +1417,7 @@
                  </widget>
                 </item>
                 <item row="6" column="1">
-                 <widget class="QSpinBox" name="fadeTypeSpin">
+                 <widget class="GFFFieldSpinBox" name="fadeTypeSpin">
                   <property name="minimum">
                    <number>-1</number>
                   </property>
@@ -1540,7 +1540,7 @@
  </widget>
 <customwidgets>
   <customwidget>
-   <class>DraggableTreeView</class>
+   <class>DLGTreeView</class>
    <extends>QTreeView</extends>
    <header location="global">toolset.gui.editors.dlg</header>
   </customwidget>
@@ -1549,6 +1549,11 @@
    <extends>QWidget</extends>
    <header location="global">toolset.gui.widgets.edit.locstring</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
   </customwidget>
   <customwidget>
    <class>GFFFieldSpinBox</class>

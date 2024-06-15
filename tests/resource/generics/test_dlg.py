@@ -86,162 +86,16 @@ Extra 'Int32' field found at 'GFFRoot\ReplyList\4\PlotIndex': '-1'
         gff: GFF = read_gff(TEST_K1_FILE)
         dlg: DLG = construct_dlg(gff)
         for node in dlg.all_entries():
-            reserialized_dlg_node: DLGNode = deepcopy(node)
-            differences = self.get_differences(node, reserialized_dlg_node)
-            assert differences == "", differences
+            assert node == DLGNode.from_dict(node.to_dict())
 
     def test_k2_serialization(self):
         gff: GFF = read_gff(TEST_FILE)
         dlg: DLG = construct_dlg(gff)
         for node in dlg.all_entries():
             reserialized_dlg_node: DLGNode = DLGNode.from_dict(node.to_dict())
-            differences = self.get_differences(node, reserialized_dlg_node)
-            assert differences == "", differences
-
-    def get_differences(self, node: DLGNode, reserialized_node: DLGNode) -> str:
-        attrs = [
-            "comment",
-            "links",
-            "list_index",
-            "camera_angle",
-            "delay",
-            "fade_type",
-            "listener",
-            "plot_index",
-            "plot_xp_percentage",
-            "quest",
-            "script1",
-            "sound",
-            "sound_exists",
-            "text",
-            "vo_resref",
-            "wait_flags",
-            "animations",
-            "quest_entry",
-            "fade_color",
-            "fade_delay",
-            "fade_length",
-            "camera_anim",
-            "camera_id",
-            "camera_fov",
-            "camera_height",
-            "camera_effect",
-            "target_height",
-            "script1_param1",
-            "script1_param2",
-            "script1_param3",
-            "script1_param4",
-            "script1_param5",
-            "script1_param6",
-            "script2_param1",
-            "script2",
-            "script2_param2",
-            "script2_param3",
-            "script2_param4",
-            "script2_param5",
-            "script2_param6",
-            "alien_race_node",
-            "emotion_id",
-            "facial_id",
-            "unskippable",
-            "node_id",
-            "post_proc_node",
-            "record_no_vo_override",
-            "record_vo",
-            "vo_text_changed",
-        ]
-
-        differences = []
-        for attr in attrs:
-            original_value = getattr(node, attr)
-            reserialized_value = getattr(reserialized_node, attr)
-
-            if isinstance(original_value, list) and isinstance(reserialized_value, list):
-                if len(original_value) != len(reserialized_value):
-                    differences.append(
-                        f"\nDifference found in attribute '{attr}':\n"
-                        f"Original value length: {len(original_value)}\n"
-                        f"Reserialized value length: {len(reserialized_value)}\n"
-                    )
-                    continue
-                for i, (orig_item, reserial_item) in enumerate(zip(original_value, reserialized_value)):
-                    if not self.compare_objects(orig_item, reserial_item):
-                        differences.append(f"\nDifference found in attribute '{attr}[{i}]':\n" f"Original value: {orig_item!r}\n" f"Reserialized value: {reserial_item!r}\n")
-                        if isinstance(orig_item, DLGLink):
-                            link_differences = self.get_link_differences(orig_item, reserial_item)
-                            differences.append(link_differences)
-                        elif isinstance(orig_item, DLGAnimation):
-                            anim_differences = self.get_animation_differences(orig_item, reserial_item)
-                            differences.append(anim_differences)
-            elif not self.compare_objects(original_value, reserialized_value):
-                differences.append(f"\nDifference found in attribute '{attr}':\n" f"Original value: {original_value!r}\n" f"Reserialized value: {reserialized_value!r}\n")
-
-        return "\n".join(differences)
-
-    def get_link_differences(self, link: DLGLink, reserialized_link: DLGLink) -> str:
-        link_attrs = [
-            "link_index",
-            "node",
-            "active1",
-            "comment",
-            "is_child",
-            "active2",
-            "active1_not",
-            "active2_not",
-            "logic",
-            "active1_param1",
-            "active1_param2",
-            "active1_param3",
-            "active1_param4",
-            "active1_param5",
-            "active1_param6",
-            "active2_param1",
-            "active2_param2",
-            "active2_param3",
-            "active2_param4",
-            "active2_param5",
-            "active2_param6",
-        ]
-
-        differences = []
-        for attr in link_attrs:
-            original_value = getattr(link, attr)
-            reserialized_value = getattr(reserialized_link, attr)
-
-            if not self.compare_objects(original_value, reserialized_value):
-                differences.append(f"\nDifference found in link attribute '{attr}':\n" f"Original value: {original_value!r}\n" f"Reserialized value: {reserialized_value!r}\n")
-                if attr == "node":
-                    node_differences = self.get_differences(original_value, reserialized_value)
-                    differences.append(node_differences)
-
-        return "\n".join(differences)
-
-    def get_animation_differences(self, animation: DLGAnimation, reserialized_animation: DLGAnimation) -> str:
-        anim_attrs = ["animation_id", "participant"]
-
-        differences = []
-        for attr in anim_attrs:
-            original_value = getattr(animation, attr)
-            reserialized_value = getattr(reserialized_animation, attr)
-
-            if not self.compare_objects(original_value, reserialized_value):
-                differences.append(
-                    f"\nDifference found in animation attribute '{attr}':\n" f"Original value: {original_value!r}\n" f"Reserialized value: {reserialized_value!r}\n"
-                )
-
-        return "\n".join(differences)
-
-    def compare_objects(self, obj1, obj2) -> bool:
-        """Compare two objects by comparing their attributes."""
-        if type(obj1) != type(obj2):
-            return False
-
-        if isinstance(obj1, (DLGNode, DLGLink, DLGAnimation)):
-            return all(
-                getattr(obj1, attr) == getattr(obj2, attr)
-                for attr in obj1.__dict__.keys()
-            )
-        return obj1 == obj2
+            for attr_name, value in node.__dict__.items():
+                reserialized_node_attr_value = reserialized_dlg_node.__dict__[attr_name]
+                assert reserialized_node_attr_value == value, attr_name + repr(value) + " vs " + repr(reserialized_node_attr_value)
 
     def test_k2_reconstruct(self):
         gff: GFF = read_gff(TEST_FILE)
@@ -394,7 +248,7 @@ class TestDLGEntrySerialization(unittest.TestCase):
         entry = DLGEntry()
         entry.comment = "Entry with links"
         link = DLGLink()
-        link.link_index = 1
+        link.list_index = 1
         entry.links.append(link)
 
         serialized = entry.to_dict()
@@ -402,7 +256,7 @@ class TestDLGEntrySerialization(unittest.TestCase):
 
         self.assertEqual(entry.comment, deserialized.comment)
         self.assertEqual(len(deserialized.links), 1)
-        self.assertEqual(deserialized.links[0].link_index, 1)
+        self.assertEqual(deserialized.links[0].list_index, 1)
 
     def test_dlg_entry_serialization_all_attributes(self):
         entry = DLGEntry()
@@ -538,7 +392,7 @@ class TestDLGReplySerialization(unittest.TestCase):
         reply = DLGReply()
         reply.text = LocalizedString.from_english("Reply with links")
         link = DLGLink()
-        link.link_index = 2
+        link.list_index = 2
         reply.links.append(link)
 
         serialized = reply.to_dict()
@@ -546,7 +400,7 @@ class TestDLGReplySerialization(unittest.TestCase):
 
         self.assertEqual(reply.text, deserialized.text)
         self.assertEqual(len(deserialized.links), 1)
-        self.assertEqual(deserialized.links[0].link_index, 2)
+        self.assertEqual(deserialized.links[0].list_index, 2)
 
     def test_dlg_reply_serialization_all_attributes(self):
         reply = DLGReply()
@@ -679,14 +533,15 @@ class TestDLGReplySerialization(unittest.TestCase):
 class TestDLGLinkSerialization(unittest.TestCase):
     def test_dlg_link_serialization_basic(self):
         link = DLGLink()
-        link.link_index = 3
+        link.list_index = 3
 
         serialized = link.to_dict()
         deserialized = DLGLink.from_dict(serialized)
 
-        self.assertEqual(link.link_index, deserialized.link_index)
+        self.assertEqual(link.list_index, deserialized.list_index)
 
     def test_dlg_link_serialization_with_node(self):
+        # sourcery skip: class-extract-method
         link = DLGLink()
         entry = DLGEntry()
         entry.comment = "Linked entry"
@@ -878,12 +733,12 @@ class TestDLGStuntSerialization(unittest.TestCase):
 class TestDLGLinkSerialization(unittest.TestCase):
     def test_dlg_link_serialization_basic(self):
         link = DLGLink()
-        link.link_index = 3
+        link.list_index = 3
 
         serialized = link.to_dict()
         deserialized = DLGLink.from_dict(serialized)
 
-        self.assertEqual(link.link_index, deserialized.link_index)
+        self.assertEqual(link.list_index, deserialized.list_index)
 
     def test_dlg_link_serialization_with_node(self):
         link = DLGLink()
@@ -898,7 +753,7 @@ class TestDLGLinkSerialization(unittest.TestCase):
 
     def test_dlg_link_serialization_all_attributes(self):
         link = DLGLink()
-        link.link_index = 5
+        link.list_index = 5
         reply = DLGReply()
         reply.text = "Linked reply"
         link.node = reply
@@ -906,7 +761,7 @@ class TestDLGLinkSerialization(unittest.TestCase):
         serialized = link.to_dict()
         deserialized = DLGLink.from_dict(serialized)
 
-        self.assertEqual(link.link_index, deserialized.link_index)
+        self.assertEqual(link.list_index, deserialized.list_index)
         self.assertEqual(link.node.text, deserialized.node.text)
 
     def test_dlg_link_with_nested_entries_and_replies(self):

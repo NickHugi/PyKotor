@@ -1,129 +1,213 @@
 from __future__ import annotations
 
-import os
-import pathlib
-import sys
 import unittest
-
-from unittest import TestCase
-
-try:
-    from qtpy.QtTest import QTest
-    from qtpy.QtWidgets import QApplication
-except (ImportError, ModuleNotFoundError):
-    QTest, QApplication = None, None  # type: ignore[misc, assignment]
-
-
-absolute_file_path = pathlib.Path(__file__).resolve()
-TESTS_FILES_PATH = next(f for f in absolute_file_path.parents if f.name == "tests") / "files"
-
-if getattr(sys, "frozen", False) is False:
-
-    def add_sys_path(p):
-        working_dir = str(p)
-        if working_dir in sys.path:
-            sys.path.remove(working_dir)
-        sys.path.append(working_dir)
-
-    pykotor_path = absolute_file_path.parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
-    if pykotor_path.exists():
-        add_sys_path(pykotor_path.parent)
-    gl_path = absolute_file_path.parents[4] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
-    if gl_path.exists():
-        add_sys_path(gl_path.parent)
-    utility_path = absolute_file_path.parents[4] / "Libraries" / "Utility" / "src" / "utility"
-    if utility_path.exists():
-        add_sys_path(utility_path.parent)
-    toolset_path = absolute_file_path.parents[4] / "Tools" / "HolocronToolset" / "src" / "toolset"
-    if toolset_path.exists():
-        add_sys_path(toolset_path.parent)
-
-
-K1_PATH = os.environ.get("K1_PATH")
-K2_PATH = os.environ.get("K2_PATH")
-
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation
+from unittest.mock import Mock
+from qtpy.QtCore import Qt, QModelIndex, QMimeData, QByteArray, QDataStream, QIODevice
+from qtpy.QtWidgets import QApplication, QWidget
 from pykotor.resource.formats.gff.gff_auto import read_gff
+from pykotor.common.stream import BinaryReader
+from pykotor.resource.generics.dlg import DLG
 from pykotor.resource.type import ResourceType
+from toolset.gui.editors.dlg import DLGEditor, DLGStandardItemModel, DLGStandardItem, DLGNode, DLGLink, DLGEntry, DLGReply, DLGTreeView
+from toolset.gui.editor import Editor
+from pykotor.common.language import LocalizedString
+import json
 
+from utility.logger_util import RobustRootLogger
 
-@unittest.skipIf(
-    not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-    "K2_PATH environment variable is not set or not found on disk.",
-)
-@unittest.skipIf(
-    QTest is None or not QApplication,
-    "qtpy is required, please run pip install -r requirements.txt before running this test.",
-)
-class DLGEditorTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Make sure to configure this environment path before testing!
-        from toolset.data.installation import HTInstallation
+app = QApplication([])
 
-        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)  # type: ignore[reportGeneralTypeIssues]
-        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)  # type: ignore[reportGeneralTypeIssues]
-
+class TestDLGStandardItemModel(unittest.TestCase):
     def setUp(self):
-        from toolset.gui.editors.dlg import DLGEditor
-
-        self.app = QApplication([])
-        self.editor = DLGEditor(None, self.K2_INSTALLATION)
-        self.log_messages: list[str] = [os.linesep]
+        self.editor = DLGEditor(None, None)
+        self.treeView: DLGTreeView = self.editor.ui.dialogTree
+        self.model: DLGStandardItemModel = self.editor.ui.dialogTree.model()
+        self.editor.core_dlg = DLG(blank_node=False)
 
     def tearDown(self):
-        self.app.deleteLater()
+        self.model = None
 
-    def log_func(self, *args):
-        self.log_messages.append("\t".join(args))
+    def create_item(self, node) -> DLGStandardItem:
+        link = DLGLink(node=node)
+        item = DLGStandardItem(link=link)
+        self.model.loadDLGItemRec(item)
+        return item
 
-    def test_save_and_load(self):
-        filepath = TESTS_FILES_PATH / "ORIHA.dlg"
+    def create_complex_tree(self) -> DLG:
+        # Create the DLG structure with entries and replies
+        dlg = DLG(blank_node=False)
+        entries = [DLGEntry(comment=f"E{i}") for i in range(5)]
+        replies = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
 
-        data = BinaryReader.load_file(filepath)
-        old = read_gff(data)
-        self.editor.load(filepath, "ORIHA", ResourceType.DLG, data)
+        # Create a nested structure
+        def add_links(parent_node: DLGNode, children: list[DLGNode]):
+            for i, child in enumerate(children):
+                link = DLGLink(node=child, list_index=i)
+                parent_node.links.append(link)
 
-        data, _ = self.editor.build()
-        new = read_gff(data)
+        add_links(entries[0], [replies[0]])
+        add_links(replies[0], [entries[1]])
+        add_links(entries[1], [replies[1]])
+        add_links(replies[1], [entries[2]])
+        add_links(entries[2], [replies[2]])
+        add_links(replies[2], [entries[3]])
+        add_links(entries[3], [replies[3]])
+        add_links(replies[3], [entries[4]])
 
-        diff = old.compare(new, self.log_func, ignore_default_changes=True)
-        self.assertTrue(diff, os.linesep.join(self.log_messages))
+        # Reuse nodes/links
+        entries[2].links.append(DLGLink(node=entries[4], list_index=1))  # reuse E4
+        replies[0].links.append(DLGLink(node=replies[1], list_index=1))  # reuse R7
 
-    @unittest.skipIf(
-        not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
-        "K1_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k1_installation(self):
-        self.installation = Installation(K1_PATH)  # type: ignore[arg-type]
-        for dlg_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.DLG, ResourceType.DLG_XML}):
-            old = read_gff(dlg_resource.data())
-            self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
+        # Set starters
+        dlg.starters.append(DLGLink(node=entries[0], list_index=0))  # Start with the first entry
 
-            data, _ = self.editor.build()
-            new = read_gff(data)
+        # Manually update list_index
+        def update_list_index(links: list[DLGLink]):
+            for i, link in enumerate(links):
+                link.list_index = i
+                if link.node:
+                    update_list_index(link.node.links)
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+        update_list_index(dlg.starters)
 
-    @unittest.skipIf(
-        not K2_PATH or not pathlib.Path(K2_PATH).joinpath("chitin.key").exists(),
-        "K2_PATH environment variable is not set or not found on disk.",
-    )
-    def test_gff_reconstruct_from_k2_installation(self):
-        self.installation = Installation(K2_PATH)  # type: ignore[arg-type]
-        for dlg_resource in (resource for resource in self.installation if resource.restype() in {ResourceType.DLG, ResourceType.DLG_XML}):
-            old = read_gff(dlg_resource.data())
-            self.editor.load(dlg_resource.filepath(), dlg_resource.resname(), dlg_resource.restype(), dlg_resource.data())
+        return dlg
 
-            data, _ = self.editor.build()
-            new = read_gff(data)
+    def test_dictionaries_filled_correctly(self):
+        dlg = self.create_complex_tree()
+        self.editor._loadDLG(dlg)
+        items = []
+        for link in dlg.starters:
+            items.extend(self.model.linkToItems.get(link, []))
 
-            diff = old.compare(new, self.log_func, ignore_default_changes=True)
-            self.assertTrue(diff, os.linesep.join(self.log_messages))
+        for item in items:
+            self.assertIn(item, self.model.linkToItems[item.link])
+            self.assertIn(item, self.model.nodeToItems[item.link.node])
+            self.assertIn(item.link, self.model.linkToItems)
+            self.assertIn(item.link.node, self.model.nodeToItems)
 
-    def test_placeholder(self): ...
+    def test_hashing(self):
+        dlg = self.create_complex_tree()
+        self.editor._loadDLG(dlg)
+        items = []
+        for link in dlg.starters:
+            items.extend(self.model.linkToItems.get(link, []))
+
+        for item in items:
+            self.assertEqual(hash(item), id(item))
+
+    def test_link_list_index_sync(self):
+        dlg: DLG = self.create_complex_tree()
+
+        def verify_list_index(node: DLGNode):
+            for i, link in enumerate(node.links):
+                self.assertEqual(link.list_index, i, f"Link list_index {link.list_index} != {i} before loading to the model")
+                verify_list_index(link.node)
+
+        for i, link in enumerate(dlg.starters):
+            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} != {i} before loading to the model")
+            verify_list_index(link.node)
+
+        self.editor._loadDLG(dlg)
+
+        for i, link in enumerate(dlg.starters):
+            self.assertEqual(link.list_index, i, f"Starter link list_index {link.list_index} != {i} after loading to the model")
+            verify_list_index(link.node)
+
+        items: list[DLGStandardItem] = []
+        for link in dlg.starters:
+            items.extend(self.model.linkToItems.get(link, []))
+
+        for index, item in enumerate(items):
+            self.assertEqual(item.link.list_index, index, f"{item.link.list_index} != {index}")
+
+
+    def test_shift_item(self):
+        dlg = self.create_complex_tree()
+        self.editor._loadDLG(dlg)
+        items: list[DLGStandardItem] = []
+        for link in dlg.starters:
+            items.extend(self.model.linkToItems.get(link, []))
+
+        self.model.shiftItem(items[0], 1)
+        self.assertEqual(items[0].row(), 1)
+        self.assertEqual(items[1].row(), 0)
+
+    def test_move_item_to_index(self):
+        dlg = self.create_complex_tree()
+        self.editor._loadDLG(dlg)
+        items: list[DLGStandardItem] = []
+        for link in dlg.starters:
+            items.extend(self.model.linkToItems.get(link, []))
+
+        self.model.moveItemToIndex(items[0], 1, None)
+        self.assertEqual(items[0].row(), 1)
+        self.assertEqual(items[1].row(), 0)
+
+    def test_paste_item(self):
+        dlg = self.create_complex_tree()
+        self.editor._loadDLG(dlg)
+        items: list[DLGStandardItem] = []
+        for link in dlg.starters:
+            items.extend(self.model.linkToItems.get(link, []))
+
+        node = DLGNode()
+        self.model.pasteItem(items[0], node)
+
+        pastedItem = items[0].child(0)
+        self.assertEqual(pastedItem.link.node, node)
+
+    def test_serialize_mime_data(self):
+        dlg = self.create_complex_tree()
+        self.editor._loadDLG(dlg)
+
+        # Step 1: Generate a flat list of all QModelIndex objects
+        all_indices = []
+
+        def collect_indices(parent_index=QModelIndex()):
+            for row in range(self.model.rowCount(parent_index)):
+                index = self.model.index(row, 0, parent_index)
+                if index.isValid():
+                    all_indices.append(index)
+                    collect_indices(index)
+
+        collect_indices()
+
+        # Step 2: Generate a flat list of all DLGStandardItem objects
+        all_items = []
+        invalid_indices = []
+
+        for index in all_indices:
+            item = self.model.itemFromIndex(index)
+            if item is None:
+                invalid_indices.append(index)
+            else:
+                all_items.append(item)
+
+        mime_data = self.model.mimeData([item.index() for item in all_items])
+
+        self.assertTrue(mime_data.hasFormat("application/x-qabstractitemmodeldatalist"))
+        self.assertTrue(mime_data.hasFormat("application/x-pykotor-dlgbranch"))
+
+        data = mime_data.data("application/x-pykotor-dlgbranch")
+        stream = QDataStream(data, QIODevice.ReadOnly)
+        model_memory_id = stream.readInt64()
+        dlg_nodes_encoded = stream.readString()
+        dlg_nodes_json = dlg_nodes_encoded.decode()
+        dlg_nodes_dict = json.loads(dlg_nodes_json)
+
+        # Deserialize and compare
+        try:
+            deserialized_node = DLGNode.from_dict(dlg_nodes_dict)
+        except Exception:
+            RobustRootLogger.exception("Unhandled exception by DLGNode.from_dict.")
+            raise
+        test1 = deserialized_node.links[0].node.links[0].node.links[0].node
+        try:
+            test2 = all_items[4].link.node
+        except IndexError:
+            RobustRootLogger.exception("IndexError: items[4].link.node")
+            raise
+        self.assertEqual(test1, test2)
 
 
 if __name__ == "__main__":

@@ -74,7 +74,7 @@ class DLG:
 
         if blank_node:
             # Add bare minimum to be openable by DLGEditor
-            starter = DLGLink()
+            starter: DLGLink = DLGLink()
             entry = DLGEntry()
             entry.text.set_data(Language.ENGLISH, Gender.MALE, "")
             starter.node = entry
@@ -105,7 +105,6 @@ class DLG:
         self.delay_reply: int = 0
 
     def to_dict(self) -> dict:
-        node_map = {}
         data = {
             "ambient_track": str(self.ambient_track),
             "animated_cut": self.animated_cut,
@@ -126,7 +125,7 @@ class DLG:
             "record_no_vo": self.record_no_vo,
             "delay_entry": self.delay_entry,
             "delay_reply": self.delay_reply,
-            "starters": [link.to_dict(node_map) for link in self.starters],
+            "starters": [link.to_dict({}) for link in self.starters],
             "stunts": [stunt.to_dict() for stunt in self.stunts],
         }
         return data
@@ -134,7 +133,6 @@ class DLG:
     @classmethod
     def from_dict(cls, data: dict) -> Self:
         dlg = cls(blank_node=False)
-        node_map = {}
 
         dlg.ambient_track = ResRef(data["ambient_track"])
         dlg.animated_cut = data["animated_cut"]
@@ -156,19 +154,18 @@ class DLG:
         dlg.delay_entry = data["delay_entry"]
         dlg.delay_reply = data["delay_reply"]
 
-        dlg.starters = [DLGLink.from_dict(link_data, node_map) for link_data in data["starters"]]
+        dlg.starters = [DLGLink.from_dict(link_data, {}) for link_data in data["starters"]]
         dlg.stunts = [DLGStunt.from_dict(stunt_data) for stunt_data in data["stunts"]]
 
         return dlg
 
     def find_paths(self, target: DLGEntry | DLGReply | DLGLink) -> list[PureWindowsPath]:
-        paths = []
-        seen_nodes = set()
-        seen_links = set()
-        self._find_paths_recursive(self.starters, target, PureWindowsPath(), paths, seen_nodes, seen_links)
+        paths: list[PureWindowsPath] = []
+        seen_nodes: set[DLGNode] = set()
+        self._find_paths_recursive(self.starters, target, PureWindowsPath(), paths, seen_nodes)
         return paths
 
-    def _find_paths_recursive(
+    def _find_paths_recursive(  # noqa: PLR0913
         self,
         links: list[DLGLink],
         target: DLGEntry | DLGReply | DLGLink,
@@ -208,7 +205,7 @@ class DLG:
             except (ValueError, IndexError, StopIteration):
                 return None
 
-        current_node = None
+        current_node: DLGNode | DLGLink | None = None
         if path.parts[0] == "EntryList":
             entries = self.all_entries()
             if num_of_parts <= 1:
@@ -308,7 +305,7 @@ class DLG:
         seen_entries = set() if seen_entries is None else seen_entries
 
         for link in links:
-            entry: DLGNode = link.node
+            entry: DLGNode | None = link.node
             if entry not in seen_entries:  # sourcery skip: class-extract-method
                 assert isinstance(entry, DLGEntry), f"{type(entry).__name__}: {entry}"  # noqa: S101
                 entries.append(entry)
@@ -482,8 +479,7 @@ class DLGNode:
         target_links: list[DLGLink],
         source: DLGNode,
     ):
-        newLink = DLGLink(source)
-        target_links.append(newLink)
+        target_links.append(DLGLink(source))
 
     def shift_item(
         self,
@@ -497,7 +493,10 @@ class DLGNode:
         else:
             raise IndexError(new_index)
 
-    def to_dict(self, node_map: dict[str, Any] | None = None) -> dict:
+    def to_dict(
+        self,
+        node_map: dict[str | int, Any] | None = None,
+    ) -> dict[str, Any]:
         if node_map is None:
             node_map = {}
 
@@ -509,10 +508,10 @@ class DLGNode:
         node_map[node_key] = node_dict
 
         for key, value in self.__dict__.items():
-            if key.startswith("__"):  # ignore python built-in attrs
+            if key.startswith("__"):
                 continue
             if key == "links":
-                links: list[DLGLink] = value
+                links = value
                 node_dict["data"][key] = {"value": [link.to_dict(node_map) for link in links], "py_type": "list"}
             elif isinstance(value, bool):
                 node_dict["data"][key] = {"value": int(value), "py_type": "bool"}
@@ -529,7 +528,7 @@ class DLGNode:
             elif isinstance(value, LocalizedString):
                 node_dict["data"][key] = {"value": value.to_dict(), "py_type": "LocalizedString"}
             elif key == "animations":
-                anims: list[DLGAnimation] = value
+                anims = value
                 node_dict["data"][key] = {"value": [anim.to_dict() for anim in anims], "py_type": "list"}
             elif isinstance(value, list):
                 node_dict["data"][key] = {"value": value, "py_type": "list"}
@@ -541,7 +540,7 @@ class DLGNode:
         return node_dict
 
     @staticmethod
-    def from_dict(data: dict[str, Any], node_map: dict[str, Any] | None = None) -> DLGNode:
+    def from_dict(data, node_map=None):
         if node_map is None:
             node_map = {}
 
@@ -549,7 +548,7 @@ class DLGNode:
             return node_map[data["ref"]]
 
         node_key = data.get("key")
-        node_type: Literal["DLGEntry", "DLGReply"] | None = data.get("type")
+        node_type = data.get("type")
         node_data: dict[str, Any] = data.get("data", {})
 
         if node_type == "DLGEntry":
@@ -685,11 +684,12 @@ class DLGLink(Generic[T]):
     def __init__(
         self,
         node: DLGNode | None = None,
+        list_index: int = -1,
     ):
         self._hash_cache = hash(uuid.uuid4().hex)
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode | None = node
-        self.list_index: int = -1
+        self.list_index: int = list_index
 
         # not in StartingList
         self.is_child: bool = False
@@ -726,10 +726,7 @@ class DLGLink(Generic[T]):
     def __hash__(self) -> int:
         return self._hash_cache
 
-    def to_dict(
-        self,
-        node_map: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    def to_dict(self, node_map=None):
         if node_map is None:
             node_map = {}
 
@@ -748,9 +745,12 @@ class DLGLink(Generic[T]):
         return link_dict
 
     @classmethod
-    def from_dict(cls, data: dict, node_map: dict[str, Any] | None = None) -> Self:
+    def from_dict(cls, data, node_map=None):
         if node_map is None:
             node_map = {}
+
+        if "ref" in data:
+            return node_map[data["ref"]]
 
         link_key = data["key"]
 

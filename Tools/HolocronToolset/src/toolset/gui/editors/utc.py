@@ -150,7 +150,7 @@ class UTCEditor(Editor):
                 displayPathStr = str(location.filepath.relative_to(self._installation.path()))
                 locMenu = fileMenu.addMenu(displayPathStr)
                 resourceMenuBuilder = ResourceItems(resources=[location])
-                resourceMenuBuilder.build_menu(mousePos, locMenu)
+                resourceMenuBuilder.build_menu(locMenu)
 
             fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
 

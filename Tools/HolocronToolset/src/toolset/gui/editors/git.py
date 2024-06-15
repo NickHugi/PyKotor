@@ -1044,7 +1044,7 @@ class _InstanceMode(_Mode):
                 displayPath = result.filepath.joinpath(str(instance.identifier()))
             locMenu: QMenu = fileMenu.addMenu(str(displayPath.relative_to(self._installation.path())))
             resourceMenuBuilder = ResourceItems(resources=[result])
-            resourceMenuBuilder.build_menu(mousePos, locMenu)
+            resourceMenuBuilder.build_menu(locMenu)
         def moreInfo():
             selectionWindow = FileSelectionWindow(
                 locations,

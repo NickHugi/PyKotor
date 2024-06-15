@@ -238,9 +238,20 @@ class CustomItem:
         menu_dict[display_name] = (action, func)
         return action
 
+    def build_menu(
+        self,
+        menu: QMenu | None = None,
+    ) -> QMenu:
+        menu = QMenu() if menu is None else menu
+        menu_dict = self.create_context_menu_dict()
+        for action, func in menu_dict.values():
+            action.setParent(menu)
+            action.triggered.connect(func)
+            menu.addAction(action)
+        return menu
+
     def create_context_menu_dict(
         self,
-        position: QPoint,
     ) -> OrderedDict[str, tuple[QAction, Callable]]:
         menu_dict = OrderedDict()
         selected = self.selectedItems()
@@ -252,21 +263,8 @@ class CustomItem:
 
         return menu_dict
 
-    def build_menu(
-        self,
-        position: QPoint,
-        menu: QMenu | None = None,
-    ) -> QMenu:
-        menu = QMenu() if menu is None else menu
-        menu_dict = self.create_context_menu_dict(position)
-        for action, func in menu_dict.values():
-            action.setParent(menu)
-            action.triggered.connect(func)
-            menu.addAction(action)
-        return menu
-
     def runContextMenu(self, position: QPoint) -> QAction:
-        menu: QMenu = self.build_menu(position)
+        menu: QMenu = self.build_menu()
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
         return executed_action  # noqa: RET504
 
@@ -325,9 +323,8 @@ class FileItems(CustomItem):
 
     def create_context_menu_dict(
         self,
-        position: QPoint,
     ) -> OrderedDict[str, tuple[QAction, Callable]]:
-        menu_dict = super().create_context_menu_dict(position)
+        menu_dict = super().create_context_menu_dict()
         selected = cast(Set[FileTableWidgetItem], {*self.selectedItems()})
         if not selected:
             return menu_dict
@@ -731,6 +728,32 @@ class ResourceItems(FileItems):
         if error_files:
             self._show_errored_results(error_files)
 
+    def build_menu(
+        self,
+        menu: QMenu | None = None,
+        installation: HTInstallation | None = None,
+        resources: set[FileResource] | None = None,
+    ) -> QMenu:
+        menu = QMenu() if menu is None else menu
+        super().build_menu(menu)
+        if hasattr(self, "selectedItems") and resources is None:
+            resources = {tableItem.resource for tableItem in self.selectedItems()}
+        if resources is not None:
+            if all(resource.restype().target_type().contents == "gff" for resource in resources):
+                open_with_menu = menu.addMenu("Open With")  # This is the submenu
+
+                # Add actions to the submenu
+                open_with_menu.addAction("Open with GFF Editor").triggered.connect(
+                    lambda: self.open_selected_resource(resources, installation, gff_specialized=False))
+                if installation is not None:
+                    open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
+                        lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
+                    open_with_menu.addAction("Open with Default Editor").triggered.connect(
+                        lambda: self.open_selected_resource(resources, installation, gff_specialized=None))
+            elif installation is not None:
+                menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
+        return menu
+
     def runContextMenu(
         self,
         position: QPoint,
@@ -739,21 +762,7 @@ class ResourceItems(FileItems):
         menu: QMenu | None = None,
     ) -> QAction:
         resources: set[FileResource] = {tableItem.resource for tableItem in self.selectedItems()}
-        menu: QMenu = self.build_menu(position, menu)
-        if all(resource.restype().target_type().contents == "gff" for resource in resources):
-            open_with_menu = menu.addMenu("Open With")  # This is the submenu
-
-            # Add actions to the submenu
-            open_with_menu.addAction("Open with GFF Editor").triggered.connect(
-                lambda: self.open_selected_resource(resources, installation, gff_specialized=False))
-            if installation is not None:
-                open_with_menu.addAction("Open with Specialized Editor").triggered.connect(
-                    lambda: self.open_selected_resource(resources, installation, gff_specialized=True))
-                open_with_menu.addAction("Open with Default Editor").triggered.connect(
-                    lambda: self.open_selected_resource(resources, installation, gff_specialized=None))
-        elif installation is not None:
-            menu.addAction("Open with Editor").triggered.connect(lambda: self.open_selected_resource(resources, installation))  # TODO(th3w1zard1): disable when file doesn't exist.
-
+        menu: QMenu = self.build_menu(menu)
         executed_action = menu.exec_(self.viewport().mapToGlobal(position))
         if executed_action is None:
             return executed_action

@@ -21,8 +21,12 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QHBoxLayout, QHeaderView, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QMainWindow, QMenu,
     QMenuBar, QPlainTextEdit, QPushButton, QSizePolicy,
-    QSpacerItem, QSpinBox, QSplitter, QTabWidget,
-    QTreeView, QVBoxLayout, QWidget)
+    QSpacerItem, QSplitter, QTabWidget, QVBoxLayout,
+    QWidget)
+
+from toolset.gui.editors.dlg import (DLGTreeView, GFFFieldSpinBox)
+from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -53,7 +57,7 @@ class Ui_MainWindow(object):
         self.splitter = QSplitter(self.centralwidget)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Vertical)
-        self.dialogTree = QTreeView(self.splitter)
+        self.dialogTree = DLGTreeView(self.splitter)
         self.dialogTree.setObjectName(u"dialogTree")
         self.dialogTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.dialogTree.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -234,7 +238,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_7.setWidget(0, QFormLayout.LabelRole, self.label_44)
 
-        self.entryDelaySpin = QSpinBox(self.fileTab)
+        self.entryDelaySpin = GFFFieldSpinBox(self.fileTab)
         self.entryDelaySpin.setObjectName(u"entryDelaySpin")
         self.entryDelaySpin.setMinimum(-2147483648)
         self.entryDelaySpin.setMaximum(2147483647)
@@ -246,7 +250,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_7.setWidget(1, QFormLayout.LabelRole, self.label_45)
 
-        self.replyDelaySpin = QSpinBox(self.fileTab)
+        self.replyDelaySpin = GFFFieldSpinBox(self.fileTab)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
         self.replyDelaySpin.setMinimum(-2147483648)
         self.replyDelaySpin.setMaximum(2147483647)
@@ -363,18 +367,18 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.label_4 = QLabel(self.scriptsTab)
-        self.label_4.setObjectName(u"label_4")
-        self.label_4.setMinimumSize(QSize(80, 0))
+        self.script1Label = QLabel(self.scriptsTab)
+        self.script1Label.setObjectName(u"script1Label")
+        self.script1Label.setMinimumSize(QSize(80, 0))
 
-        self.horizontalLayout_2.addWidget(self.label_4)
+        self.horizontalLayout_2.addWidget(self.script1Label)
 
         self.script1ResrefEdit = QLineEdit(self.scriptsTab)
         self.script1ResrefEdit.setObjectName(u"script1ResrefEdit")
 
         self.horizontalLayout_2.addWidget(self.script1ResrefEdit)
 
-        self.script1Param1Spin = QSpinBox(self.scriptsTab)
+        self.script1Param1Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script1Param1Spin.setObjectName(u"script1Param1Spin")
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -386,7 +390,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.script1Param1Spin)
 
-        self.script1Param2Spin = QSpinBox(self.scriptsTab)
+        self.script1Param2Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script1Param2Spin.setObjectName(u"script1Param2Spin")
         sizePolicy.setHeightForWidth(self.script1Param2Spin.sizePolicy().hasHeightForWidth())
         self.script1Param2Spin.setSizePolicy(sizePolicy)
@@ -395,7 +399,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.script1Param2Spin)
 
-        self.script1Param3Spin = QSpinBox(self.scriptsTab)
+        self.script1Param3Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script1Param3Spin.setObjectName(u"script1Param3Spin")
         sizePolicy.setHeightForWidth(self.script1Param3Spin.sizePolicy().hasHeightForWidth())
         self.script1Param3Spin.setSizePolicy(sizePolicy)
@@ -404,7 +408,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.script1Param3Spin)
 
-        self.script1Param4Spin = QSpinBox(self.scriptsTab)
+        self.script1Param4Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script1Param4Spin.setObjectName(u"script1Param4Spin")
         sizePolicy.setHeightForWidth(self.script1Param4Spin.sizePolicy().hasHeightForWidth())
         self.script1Param4Spin.setSizePolicy(sizePolicy)
@@ -413,7 +417,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.script1Param4Spin)
 
-        self.script1Param5Spin = QSpinBox(self.scriptsTab)
+        self.script1Param5Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script1Param5Spin.setObjectName(u"script1Param5Spin")
         sizePolicy.setHeightForWidth(self.script1Param5Spin.sizePolicy().hasHeightForWidth())
         self.script1Param5Spin.setSizePolicy(sizePolicy)
@@ -443,18 +447,18 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.label_13 = QLabel(self.scriptsTab)
-        self.label_13.setObjectName(u"label_13")
-        self.label_13.setMinimumSize(QSize(80, 0))
+        self.script2Label = QLabel(self.scriptsTab)
+        self.script2Label.setObjectName(u"script2Label")
+        self.script2Label.setMinimumSize(QSize(80, 0))
 
-        self.horizontalLayout_3.addWidget(self.label_13)
+        self.horizontalLayout_3.addWidget(self.script2Label)
 
         self.script2ResrefEdit = QLineEdit(self.scriptsTab)
         self.script2ResrefEdit.setObjectName(u"script2ResrefEdit")
 
         self.horizontalLayout_3.addWidget(self.script2ResrefEdit)
 
-        self.script2Param1Spin = QSpinBox(self.scriptsTab)
+        self.script2Param1Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script2Param1Spin.setObjectName(u"script2Param1Spin")
         sizePolicy.setHeightForWidth(self.script2Param1Spin.sizePolicy().hasHeightForWidth())
         self.script2Param1Spin.setSizePolicy(sizePolicy)
@@ -463,7 +467,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.script2Param1Spin)
 
-        self.script2Param2Spin = QSpinBox(self.scriptsTab)
+        self.script2Param2Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script2Param2Spin.setObjectName(u"script2Param2Spin")
         sizePolicy.setHeightForWidth(self.script2Param2Spin.sizePolicy().hasHeightForWidth())
         self.script2Param2Spin.setSizePolicy(sizePolicy)
@@ -472,7 +476,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.script2Param2Spin)
 
-        self.script2Param3Spin = QSpinBox(self.scriptsTab)
+        self.script2Param3Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script2Param3Spin.setObjectName(u"script2Param3Spin")
         sizePolicy.setHeightForWidth(self.script2Param3Spin.sizePolicy().hasHeightForWidth())
         self.script2Param3Spin.setSizePolicy(sizePolicy)
@@ -481,7 +485,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.script2Param3Spin)
 
-        self.script2Param4Spin = QSpinBox(self.scriptsTab)
+        self.script2Param4Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script2Param4Spin.setObjectName(u"script2Param4Spin")
         sizePolicy.setHeightForWidth(self.script2Param4Spin.sizePolicy().hasHeightForWidth())
         self.script2Param4Spin.setSizePolicy(sizePolicy)
@@ -490,7 +494,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.script2Param4Spin)
 
-        self.script2Param5Spin = QSpinBox(self.scriptsTab)
+        self.script2Param5Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script2Param5Spin.setObjectName(u"script2Param5Spin")
         sizePolicy.setHeightForWidth(self.script2Param5Spin.sizePolicy().hasHeightForWidth())
         self.script2Param5Spin.setSizePolicy(sizePolicy)
@@ -520,18 +524,18 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4 = QHBoxLayout()
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.label_14 = QLabel(self.scriptsTab)
-        self.label_14.setObjectName(u"label_14")
-        self.label_14.setMinimumSize(QSize(80, 0))
+        self.conditional1Label = QLabel(self.scriptsTab)
+        self.conditional1Label.setObjectName(u"conditional1Label")
+        self.conditional1Label.setMinimumSize(QSize(80, 0))
 
-        self.horizontalLayout_4.addWidget(self.label_14)
+        self.horizontalLayout_4.addWidget(self.conditional1Label)
 
         self.condition1ResrefEdit = QLineEdit(self.scriptsTab)
         self.condition1ResrefEdit.setObjectName(u"condition1ResrefEdit")
 
         self.horizontalLayout_4.addWidget(self.condition1ResrefEdit)
 
-        self.condition1Param1Spin = QSpinBox(self.scriptsTab)
+        self.condition1Param1Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition1Param1Spin.setObjectName(u"condition1Param1Spin")
         sizePolicy.setHeightForWidth(self.condition1Param1Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param1Spin.setSizePolicy(sizePolicy)
@@ -540,7 +544,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.condition1Param1Spin)
 
-        self.condition1Param2Spin = QSpinBox(self.scriptsTab)
+        self.condition1Param2Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition1Param2Spin.setObjectName(u"condition1Param2Spin")
         sizePolicy.setHeightForWidth(self.condition1Param2Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param2Spin.setSizePolicy(sizePolicy)
@@ -549,7 +553,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.condition1Param2Spin)
 
-        self.condition1Param3Spin = QSpinBox(self.scriptsTab)
+        self.condition1Param3Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition1Param3Spin.setObjectName(u"condition1Param3Spin")
         sizePolicy.setHeightForWidth(self.condition1Param3Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param3Spin.setSizePolicy(sizePolicy)
@@ -558,7 +562,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.condition1Param3Spin)
 
-        self.condition1Param4Spin = QSpinBox(self.scriptsTab)
+        self.condition1Param4Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition1Param4Spin.setObjectName(u"condition1Param4Spin")
         sizePolicy.setHeightForWidth(self.condition1Param4Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param4Spin.setSizePolicy(sizePolicy)
@@ -567,7 +571,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.condition1Param4Spin)
 
-        self.condition1Param5Spin = QSpinBox(self.scriptsTab)
+        self.condition1Param5Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition1Param5Spin.setObjectName(u"condition1Param5Spin")
         sizePolicy.setHeightForWidth(self.condition1Param5Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param5Spin.setSizePolicy(sizePolicy)
@@ -598,18 +602,18 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.label_15 = QLabel(self.scriptsTab)
-        self.label_15.setObjectName(u"label_15")
-        self.label_15.setMinimumSize(QSize(80, 0))
+        self.conditional2Label = QLabel(self.scriptsTab)
+        self.conditional2Label.setObjectName(u"conditional2Label")
+        self.conditional2Label.setMinimumSize(QSize(80, 0))
 
-        self.horizontalLayout_5.addWidget(self.label_15)
+        self.horizontalLayout_5.addWidget(self.conditional2Label)
 
         self.condition2ResrefEdit = QLineEdit(self.scriptsTab)
         self.condition2ResrefEdit.setObjectName(u"condition2ResrefEdit")
 
         self.horizontalLayout_5.addWidget(self.condition2ResrefEdit)
 
-        self.condition2Param1Spin = QSpinBox(self.scriptsTab)
+        self.condition2Param1Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition2Param1Spin.setObjectName(u"condition2Param1Spin")
         sizePolicy.setHeightForWidth(self.condition2Param1Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param1Spin.setSizePolicy(sizePolicy)
@@ -618,7 +622,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.condition2Param1Spin)
 
-        self.condition2Param2Spin = QSpinBox(self.scriptsTab)
+        self.condition2Param2Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition2Param2Spin.setObjectName(u"condition2Param2Spin")
         sizePolicy.setHeightForWidth(self.condition2Param2Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param2Spin.setSizePolicy(sizePolicy)
@@ -627,7 +631,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.condition2Param2Spin)
 
-        self.condition2Param3Spin = QSpinBox(self.scriptsTab)
+        self.condition2Param3Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition2Param3Spin.setObjectName(u"condition2Param3Spin")
         sizePolicy.setHeightForWidth(self.condition2Param3Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param3Spin.setSizePolicy(sizePolicy)
@@ -636,7 +640,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.condition2Param3Spin)
 
-        self.condition2Param4Spin = QSpinBox(self.scriptsTab)
+        self.condition2Param4Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition2Param4Spin.setObjectName(u"condition2Param4Spin")
         sizePolicy.setHeightForWidth(self.condition2Param4Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param4Spin.setSizePolicy(sizePolicy)
@@ -645,7 +649,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.condition2Param4Spin)
 
-        self.condition2Param5Spin = QSpinBox(self.scriptsTab)
+        self.condition2Param5Spin = GFFFieldSpinBox(self.scriptsTab)
         self.condition2Param5Spin.setObjectName(u"condition2Param5Spin")
         sizePolicy.setHeightForWidth(self.condition2Param5Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param5Spin.setSizePolicy(sizePolicy)
@@ -736,7 +740,7 @@ class Ui_MainWindow(object):
 
         self.formLayout.setWidget(0, QFormLayout.LabelRole, self.label_17)
 
-        self.emotionSelect = QComboBox(self.animsTab)
+        self.emotionSelect = ComboBox2DA(self.animsTab)
         self.emotionSelect.setObjectName(u"emotionSelect")
 
         self.formLayout.setWidget(0, QFormLayout.FieldRole, self.emotionSelect)
@@ -746,7 +750,7 @@ class Ui_MainWindow(object):
 
         self.formLayout.setWidget(1, QFormLayout.LabelRole, self.label_18)
 
-        self.expressionSelect = QComboBox(self.animsTab)
+        self.expressionSelect = ComboBox2DA(self.animsTab)
         self.expressionSelect.setObjectName(u"expressionSelect")
 
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.expressionSelect)
@@ -832,7 +836,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_22)
 
-        self.plotIndexSpin = QSpinBox(self.journalTab)
+        self.plotIndexSpin = GFFFieldSpinBox(self.journalTab)
         self.plotIndexSpin.setObjectName(u"plotIndexSpin")
         self.plotIndexSpin.setMinimum(-1)
         self.plotIndexSpin.setMaximum(10000)
@@ -854,7 +858,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.label_25)
 
-        self.questEntrySpin = QSpinBox(self.journalTab)
+        self.questEntrySpin = GFFFieldSpinBox(self.journalTab)
         self.questEntrySpin.setObjectName(u"questEntrySpin")
         self.questEntrySpin.setMinimum(-2147483648)
         self.questEntrySpin.setMaximum(2147483647)
@@ -892,7 +896,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_4.setWidget(0, QFormLayout.LabelRole, self.label_26)
 
-        self.cameraIdSpin = QSpinBox(self.cameraTab)
+        self.cameraIdSpin = GFFFieldSpinBox(self.cameraTab)
         self.cameraIdSpin.setObjectName(u"cameraIdSpin")
         self.cameraIdSpin.setMinimum(-1)
         self.cameraIdSpin.setMaximum(10000)
@@ -909,10 +913,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_4.setWidget(2, QFormLayout.LabelRole, self.label_28)
 
-        self.cameraAnimSpin = QSpinBox(self.cameraTab)
+        self.cameraAnimSpin = GFFFieldSpinBox(self.cameraTab)
         self.cameraAnimSpin.setObjectName(u"cameraAnimSpin")
-        self.cameraAnimSpin.setMinimum(-2147483648)
-        self.cameraAnimSpin.setMaximum(2147483647)
+        self.cameraAnimSpin.setMinimum(-1)
+        self.cameraAnimSpin.setMaximum(65534)
 
         self.formLayout_4.setWidget(1, QFormLayout.FieldRole, self.cameraAnimSpin)
 
@@ -966,7 +970,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(0, QFormLayout.LabelRole, self.label_30)
 
-        self.nodeIdSpin = QSpinBox(self.otherTab)
+        self.nodeIdSpin = GFFFieldSpinBox(self.otherTab)
         self.nodeIdSpin.setObjectName(u"nodeIdSpin")
         self.nodeIdSpin.setMaximum(999999)
 
@@ -977,7 +981,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(1, QFormLayout.LabelRole, self.label_31)
 
-        self.alienRaceNodeSpin = QSpinBox(self.otherTab)
+        self.alienRaceNodeSpin = GFFFieldSpinBox(self.otherTab)
         self.alienRaceNodeSpin.setObjectName(u"alienRaceNodeSpin")
         self.alienRaceNodeSpin.setMinimum(-1)
         self.alienRaceNodeSpin.setMaximum(2147483647)
@@ -989,7 +993,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(2, QFormLayout.LabelRole, self.label_32)
 
-        self.postProcSpin = QSpinBox(self.otherTab)
+        self.postProcSpin = GFFFieldSpinBox(self.otherTab)
         self.postProcSpin.setObjectName(u"postProcSpin")
         self.postProcSpin.setMinimum(-1)
         self.postProcSpin.setMaximum(2147483647)
@@ -1001,7 +1005,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(3, QFormLayout.LabelRole, self.label_33)
 
-        self.delaySpin = QSpinBox(self.otherTab)
+        self.delaySpin = GFFFieldSpinBox(self.otherTab)
         self.delaySpin.setObjectName(u"delaySpin")
         self.delaySpin.setMinimum(-1)
         self.delaySpin.setMaximum(2147483647)
@@ -1013,7 +1017,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(4, QFormLayout.LabelRole, self.label_34)
 
-        self.logicSpin = QSpinBox(self.otherTab)
+        self.logicSpin = GFFFieldSpinBox(self.otherTab)
         self.logicSpin.setObjectName(u"logicSpin")
         self.logicSpin.setMinimum(-1)
         self.logicSpin.setMaximum(2147483647)
@@ -1025,7 +1029,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(5, QFormLayout.LabelRole, self.label_35)
 
-        self.waitFlagSpin = QSpinBox(self.otherTab)
+        self.waitFlagSpin = GFFFieldSpinBox(self.otherTab)
         self.waitFlagSpin.setObjectName(u"waitFlagSpin")
         self.waitFlagSpin.setMinimum(-1)
         self.waitFlagSpin.setMaximum(2147483647)
@@ -1037,7 +1041,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(6, QFormLayout.LabelRole, self.label_36)
 
-        self.fadeTypeSpin = QSpinBox(self.otherTab)
+        self.fadeTypeSpin = GFFFieldSpinBox(self.otherTab)
         self.fadeTypeSpin.setObjectName(u"fadeTypeSpin")
         self.fadeTypeSpin.setMinimum(-1)
         self.fadeTypeSpin.setMaximum(2147483647)
@@ -1073,7 +1077,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setStretch(0, 3)
         self.splitter.addWidget(self.layoutWidget)
 
-        self.gridLayout_2.addWidget(self.splitter, 0, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.splitter, 1, 0, 1, 1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -1154,11 +1158,11 @@ class Ui_MainWindow(object):
         self.label_9.setText(QCoreApplication.translate("MainWindow", u"P4", None))
         self.label_10.setText(QCoreApplication.translate("MainWindow", u"P5", None))
         self.label_11.setText(QCoreApplication.translate("MainWindow", u"P6", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"Script #1:", None))
-        self.label_13.setText(QCoreApplication.translate("MainWindow", u"Script #2:", None))
-        self.label_14.setText(QCoreApplication.translate("MainWindow", u"Conditional #1:", None))
+        self.script1Label.setText(QCoreApplication.translate("MainWindow", u"Script #1:", None))
+        self.script2Label.setText(QCoreApplication.translate("MainWindow", u"Script #2:", None))
+        self.conditional1Label.setText(QCoreApplication.translate("MainWindow", u"Conditional #1:", None))
         self.condition1NotCheckbox.setText("")
-        self.label_15.setText(QCoreApplication.translate("MainWindow", u"Conditional #2:", None))
+        self.conditional2Label.setText(QCoreApplication.translate("MainWindow", u"Conditional #2:", None))
         self.condition2NotCheckbox.setText("")
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.scriptsTab), QCoreApplication.translate("MainWindow", u"Scripts", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Current Animations", None))
