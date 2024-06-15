@@ -364,7 +364,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.script1Label)
 
-        self.script1ResrefEdit = QLineEdit(self.scriptsTab)
+        self.script1ResrefEdit = FilterComboBox(self.scriptsTab)
         self.script1ResrefEdit.setObjectName(u"script1ResrefEdit")
 
         self.horizontalLayout_2.addWidget(self.script1ResrefEdit)
@@ -444,7 +444,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.script2Label)
 
-        self.script2ResrefEdit = QLineEdit(self.scriptsTab)
+        self.script2ResrefEdit = FilterComboBox(self.scriptsTab)
         self.script2ResrefEdit.setObjectName(u"script2ResrefEdit")
 
         self.horizontalLayout_3.addWidget(self.script2ResrefEdit)
@@ -521,7 +521,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.conditional1Label)
 
-        self.condition1ResrefEdit = QLineEdit(self.scriptsTab)
+        self.condition1ResrefEdit = FilterComboBox(self.scriptsTab)
         self.condition1ResrefEdit.setObjectName(u"condition1ResrefEdit")
 
         self.horizontalLayout_4.addWidget(self.condition1ResrefEdit)
@@ -599,7 +599,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.conditional2Label)
 
-        self.condition2ResrefEdit = QLineEdit(self.scriptsTab)
+        self.condition2ResrefEdit = FilterComboBox(self.scriptsTab)
         self.condition2ResrefEdit.setObjectName(u"condition2ResrefEdit")
 
         self.horizontalLayout_5.addWidget(self.condition2ResrefEdit)

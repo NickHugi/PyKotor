@@ -15,12 +15,12 @@ from qtpy.QtCore import (
     QBuffer,
     QByteArray,
     QDataStream,
+    QEvent,
     QIODevice,
     QItemSelection,
     QItemSelectionModel,
     QMimeData,
     QModelIndex,
-    QObject,
     QPoint,
     QRect,
     QRectF,
@@ -36,6 +36,7 @@ from qtpy.QtGui import (
     QColor,
     QDrag,
     QFont,
+    QFontMetrics,
     QHoverEvent,
     QIcon,
     QKeySequence,
@@ -76,7 +77,6 @@ from qtpy.QtWidgets import (
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.generics.dlg import (
     DLG,
     DLGComputerType,
@@ -105,6 +105,7 @@ if TYPE_CHECKING:
     import os
 
     from qtpy.QtCore import (
+        QObject,
         QTemporaryFile,
     )
     from qtpy.QtGui import (
@@ -124,7 +125,8 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.language import LocalizedString
-    from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier
+    from pykotor.extract.file import LocationResult, ResourceIdentifier
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.dlg import (
         DLGAnimation,
         DLGStunt,
@@ -213,55 +215,105 @@ class ButtonDelegate(QStyledItemDelegate):
             button = QPushButton(self.button_text, parent=option.widget)
             button.clicked.connect(lambda _checked, row=index.row(): self.button_callback(self.get_item_text(row)))
             self.buttons[index.row()] = button
+
         button = self.buttons[index.row()]
-        button_size = button.sizeHint()
-        button_size = QSize(button_size.width() // 2, button_size.height())
-        button.resize(button_size)
+        fm = QFontMetrics(button.font())
+        # Calculate button width considering padding
+        button_width = fm.width(self.button_text) + 10  # Adjust padding as necessary
+        button_height = fm.height()+10
+        # Set button size and position
+        button_size = QSize(button_width, button_height)
         button.move(option.rect.right() - button_size.width(), option.rect.top())
+        button.resize(button_size)
         button.show()
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
-        size = super().sizeHint(option, index)
-        button = self.buttons.get(index.row(), QPushButton(self.button_text))
-        button_size = button.sizeHint()
-        button_size = QSize(button_size.width() // 2, button_size.height())
-        size.setWidth(size.width() + button_size.width())
-        return size
+        fm = QFontMetrics(option.font)
+        text_width = fm.width(index.model().data(index, Qt.DisplayRole))  # Get text width
+        text_height = fm.height()  # Get text height
+        button_width = fm.width(self.button_text) + 10  # Include padding for the button
+        # Calculate total width and set height based on the taller element (text or button)
+        total_width = text_width + button_width + 5  # Additional padding between text and button
+        button_height = fm.height()+10
+        return QSize(total_width, max(text_height, button_height))
 
     def get_item_text(self, row: int) -> str:
         model = self.parent().model()
         index = model.index(row, 0)
         return model.data(index)
 
-    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+    def handleButtonClick(self, row):
+        print(f"Button clicked for row {row}")
+        # Handle the button click action here
+
+    def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
 
 class FilterComboBox(QComboBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setView(QListView(self))
-        self.original_model = QStringListModel(self)
-        # Insert a placeholder item at the start
-        self.items = [""]  # Invisible item as placeholder
-        self.original_model.setStringList(self.items)
+        self.setEditable(True)
+        self.original_model: QStringListModel = QStringListModel(self)
+        self.items: list[str] = [""]
+        self.proxy_model: FilterProxyModel = FilterProxyModel(self)
 
-        self.proxy_model = FilterProxyModel(self)
+        self.setView(QListView(self))
         self.proxy_model.setSourceModel(self.original_model)
         self.setModel(self.proxy_model)
+        self.original_model.setStringList(self.items)
+        self.create_line_edit()
 
+    def eventFilter(self, source: QObject, event: QEvent) -> bool:
+        # Ensure that the line edit is always focused when the widget is active
+        if event.type() == QEvent.FocusIn and source is not self.line_edit:
+            self.line_edit.setFocus()
+            return True
+        return super().eventFilter(source, event)
+
+    def create_line_edit(self):
         self.line_edit = QLineEdit(self)
         self.line_edit.setPlaceholderText("Type to filter...")
         self.line_edit.setClearButtonEnabled(True)
         self.line_edit.textChanged.connect(self.filter_items)
         self.line_edit.hide()
+        self.line_edit.setFocusPolicy(Qt.StrongFocus)
+        self.line_edit.installEventFilter(self)  # Install event filter
 
     def showPopup(self):
         super().showPopup()
-        # Always set line_edit to the first index
-        self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
+        try:
+            self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
+        except RuntimeError:  # wrapped C/C++ object of type QLineEdit has been deleted
+            self.create_line_edit()
+            self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
         self.line_edit.show()
         self.line_edit.setFocus()
+        # Start with the current width of the ComboBox
+        max_width = self.width()
+
+        # Delegate for calculating sizeHint
+        delegate = self.itemDelegate()
+
+        # Get the maximum width of the first 20 items, or fewer if there are fewer items
+        max_items_to_measure = 20
+        num_items = min(self.model().rowCount(), max_items_to_measure)
+
+        # Loop through the items to determine the maximum width
+        for i in range(num_items):
+            index = self.model().index(i, 0)
+            option = QStyleOptionViewItem()
+            # Get size hint from the delegate
+            item_size = delegate.sizeHint(option, index)
+            item_width = item_size.width()
+
+            # Update the maximum width if the current item is wider
+            if item_width > max_width:
+                max_width = item_width
+
+        # Set the width of the dropdown list
+        self.view().setFixedWidth(max_width+25)
+        super().showPopup()
 
     def populate_items(self, items):
         # Start from index 1 to leave the placeholder intact
@@ -2055,6 +2107,12 @@ class DLGEditor(Editor):
         self.new()
         self.keysDown: set[int] = set()
 
+        # Debounce timer to delay a cpu-intensive task.
+        self.voIdEditTimer = QTimer(self)
+        self.voIdEditTimer.setSingleShot(True)
+        self.voIdEditTimer.setInterval(500)  # 500 milliseconds delay
+        self.voIdEditTimer.timeout.connect(self.onVoIdEditFinished)
+
     def setupDLGTreeMVC(self):
         # self.model.setHorizontalHeaderLabels(["Dialog", "Children", "Copies"])
         self.treeView: DLGTreeView = self.ui.dialogTree
@@ -2177,8 +2235,8 @@ A ResRef to a script, where the entry point is its <code>main()</code> function.
         self.ui.script2Label.setToolTip(scriptTextEntryTooltip)
         self.ui.script1ResrefEdit.setToolTip(scriptTextEntryTooltip)
         self.ui.script2ResrefEdit.setToolTip(scriptTextEntryTooltip)
-        self.ui.script1ResrefEdit.textEdited.connect(self.onNodeUpdate)
-        self.ui.script2ResrefEdit.textEdited.connect(self.onNodeUpdate)
+        self.ui.script1ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
+        self.ui.script2ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
         self._connectContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         self._connectContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
@@ -2193,8 +2251,8 @@ Should return 1 or 0, representing a boolean.
         self.ui.conditional2Label.setToolTip(conditionalTextEntryTooltip)
         self.ui.condition1ResrefEdit.setToolTip(conditionalTextEntryTooltip)
         self.ui.condition2ResrefEdit.setToolTip(conditionalTextEntryTooltip)
-        self.ui.condition1ResrefEdit.textEdited.connect(self.onNodeUpdate)
-        self.ui.condition2ResrefEdit.textEdited.connect(self.onNodeUpdate)
+        self.ui.condition1ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
+        self.ui.condition2ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
         self._connectContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         self._connectContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
@@ -2298,6 +2356,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.onAbortEdit.setText(str(dlg.on_abort))
         self.ui.onEndEdit.setText(str(dlg.on_end))
         self.ui.voIdEdit.setText(dlg.vo_id)
+        self.ui.voIdEdit.textChanged.connect(self.restartVoIdEditTimer)
         self.ui.ambientTrackEdit.setText(str(dlg.ambient_track))
         self.ui.cameraModelEdit.setText(str(dlg.camera_model))
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
@@ -2310,6 +2369,26 @@ Should return 1 or 0, representing a boolean.
         self.ui.entryDelaySpin.setValue(dlg.delay_entry)
         self.ui.replyDelaySpin.setValue(dlg.delay_reply)
 
+    def restartVoIdEditTimer(self):
+        """Restarts the timer whenever text is changed."""
+        self.voIdEditTimer.stop()
+        self.voIdEditTimer.start()
+
+    def onVoIdEditFinished(self):
+        """Slot to be called when text editing is finished.
+
+        The editors the game devs themselves used probably did something like this
+        """
+        print("voIdEditTimer debounce finished, populate voiceComboBox with new VO_ID filter...")
+        vo_id = self.core_dlg.vo_id
+        if vo_id and vo_id.strip():
+            vo_id_lower = vo_id.lower()
+            filtered_voices = [voice for voice in self.all_voices if vo_id_lower in voice.lower()]
+            print(f"filtered {len(self.all_voices)} voices to {len(filtered_voices)} by substring vo_id '{vo_id_lower}'")
+        else:
+            filtered_voices = self.all_voices
+        self.populateComboBox(self.ui.voiceComboBox, filtered_voices)
+
     def _loadDLG(self, dlg: DLG):
         """Loads a dialog tree into the UI view."""
         print("<SDM> [_loadDLG scope] GlobalSettings().selectedTheme: ", GlobalSettings().selectedTheme)
@@ -2317,7 +2396,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.dialogTree.setStyleSheet("")
         self._focused = False
         self.core_dlg = dlg
-
+        self.onVoIdEditFinished()
         self.model.resetModel()
         assert self.model.rowCount() == 0 and self.model.columnCount() == 0, "Model is not empty after resetModel"  # noqa: PT018
         self.model.blockSignals(True)
@@ -2387,7 +2466,7 @@ Should return 1 or 0, representing a boolean.
     def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
         widget.setEnabled(installation.tsl)
         if not installation.tsl:
-            widget.setToolTip("This widget is only available in KOTOR's sequel.")
+            widget.setToolTip("This widget is only available in KOTOR II.")
 
     def _setupInstallation(self, installation: HTInstallation):
         """Sets up the installation for the UI."""
@@ -2448,32 +2527,38 @@ Should return 1 or 0, representing a boolean.
 
         installation.htBatchCache2DA(required)
 
+        all_installation_script_resnames = sorted(
+            {res.resname() for res in self._installation if res.restype() is ResourceType.NCS},
+            key=str.lower
+        )
         if installation.tsl:
             self._setupTslInstallDefs(installation)
+            self.populateComboBox(self.ui.script2ResrefEdit, all_installation_script_resnames)
+            self.populateComboBox(self.ui.condition2ResrefEdit, all_installation_script_resnames)
         self.ui.cameraEffectSelect.clear()
         self.ui.cameraEffectSelect.addItem("[None]", None)
+        self.all_voices = sorted({res.resname() for res in self._installation._streamwaves}, key=str.lower)
+        all_streamsounds = sorted({res.resname() for res in self._installation._streamsounds}, key=str.lower)
+        self.populateComboBox(self.ui.soundComboBox, all_streamsounds)
+        self.populateComboBox(self.ui.script1ResrefEdit, all_installation_script_resnames)
+        self.populateComboBox(self.ui.condition1ResrefEdit, all_installation_script_resnames)
 
-        # Populate sound and voice comboboxes
-        self.populateComboBox(self.ui.soundComboBox, self._installation._streamsounds)
-        self.populateComboBox(self.ui.voiceComboBox, self._installation._streamwaves)
 
         videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         for i, label in enumerate(videoEffects.get_column("label")):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
-    def populateComboBox(self, comboBox: QComboBox, fileResources: list[FileResource]):
+    def populateComboBox(self, comboBox: QComboBox | FilterComboBox, resnames: list[str]):
         comboBox.clear()
-        for fileResource in fileResources:
-            comboBox.addItem(fileResource.resname())
+        if isinstance(comboBox, FilterComboBox):
+            comboBox.populate_items(resnames)
+        else:
+            comboBox.addItems(resnames)
 
     def _setupTslInstallDefs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection."""
         expressions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
-        print("<SDM> [_setupTslInstallDefs scope] TwoDA: ", TwoDA)
-
         emotions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
-        print("<SDM> [_setupTslInstallDefs scope] TwoDA: ", TwoDA)
-
         self.ui.emotionSelect.clear()
         self.ui.emotionSelect.setItems(emotions.get_column("label"))
         self.ui.emotionSelect.setContext(emotions, self._installation, HTInstallation.TwoDA_EMOTIONS)
@@ -3057,12 +3142,10 @@ Should return 1 or 0, representing a boolean.
                 self.ui.speakerEdit.setEnabled(False)
                 self.ui.speakerEdit.setText("")
 
-            self.ui.textEdit.setEnabled(not self.model.isCopy(item))
-
             self.ui.listenerEdit.setText(node.listener)
             self._loadLocstring(self.ui.textEdit, node.text)
 
-            self.ui.script1ResrefEdit.setText(str(node.script1))
+            self.setComboBoxText(self.ui.script1ResrefEdit, str(node.script1))
             self.ui.script1Param1Spin.setValue(node.script1_param1)
             self.ui.script1Param2Spin.setValue(node.script1_param2)
             self.ui.script1Param3Spin.setValue(node.script1_param3)
@@ -3070,7 +3153,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.script1Param5Spin.setValue(node.script1_param5)
             self.ui.script1Param6Edit.setText(node.script1_param6)
 
-            self.ui.script2ResrefEdit.setText(str(node.script2))
+            self.setComboBoxText(self.ui.script2ResrefEdit, str(node.script2))
             self.ui.script2Param1Spin.setValue(node.script2_param1)
             self.ui.script2Param2Spin.setValue(node.script2_param2)
             self.ui.script2Param3Spin.setValue(node.script2_param3)
@@ -3078,7 +3161,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.script2Param5Spin.setValue(node.script2_param5)
             self.ui.script2Param6Edit.setText(node.script2_param6)
 
-            self.ui.condition1ResrefEdit.setText(str(link.active1))
+            self.setComboBoxText(self.ui.condition1ResrefEdit, str(link.active1))
             self.ui.condition1Param1Spin.setValue(link.active1_param1)
             self.ui.condition1Param2Spin.setValue(link.active1_param2)
             self.ui.condition1Param3Spin.setValue(link.active1_param3)
@@ -3086,7 +3169,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.condition1Param5Spin.setValue(link.active1_param5)
             self.ui.condition1Param6Edit.setText(link.active1_param6)
             self.ui.condition1NotCheckbox.setChecked(link.active1_not)
-            self.ui.condition2ResrefEdit.setText(str(link.active2))
+            self.setComboBoxText(self.ui.condition2ResrefEdit, str(link.active2))
             self.ui.condition2Param1Spin.setValue(link.active2_param1)
             self.ui.condition2Param2Spin.setValue(link.active2_param2)
             self.ui.condition2Param3Spin.setValue(link.active2_param3)
@@ -3126,34 +3209,32 @@ Should return 1 or 0, representing a boolean.
             self.ui.fadeTypeSpin.setValue(node.fade_type)
 
             self.ui.commentsEdit.setPlainText(node.comment)
+            self.model._updateCopies(link, item)
         self.acceptUpdates = True
 
     def onNodeUpdate(self):
         """Updates node properties based on UI selections."""
         selectedIndices = self.ui.dialogTree.selectedIndexes()
-        print("<SDM> [onNodeUpdate scope] selectedIndices: %s", selectedIndices)
-
         if not selectedIndices:
             return
         if not self.acceptUpdates:
             return
+        print("<SDM> [onNodeUpdate scope] selectedIndices: %s", selectedIndices)
         index: QModelIndex = selectedIndices[0]
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
         link: DLGLink = item.link
-        assert isinstance(link, DLGLink)
         node: DLGNode | None = link.node
-        assert isinstance(node, DLGNode)
         node.listener = self.ui.listenerEdit.text()
         if isinstance(node, DLGEntry):
             node.speaker = self.ui.speakerEdit.text()
-        node.script1 = ResRef(self.ui.script1ResrefEdit.text())
+        node.script1 = ResRef(self.ui.script1ResrefEdit.currentText())
         node.script1_param1 = self.ui.script1Param1Spin.value()
         node.script1_param2 = self.ui.script1Param2Spin.value()
         node.script1_param3 = self.ui.script1Param3Spin.value()
         node.script1_param4 = self.ui.script1Param4Spin.value()
         node.script1_param5 = self.ui.script1Param5Spin.value()
         node.script1_param6 = self.ui.script1Param6Edit.text()
-        node.script2 = ResRef(self.ui.script2ResrefEdit.text())
+        node.script2 = ResRef(self.ui.script2ResrefEdit.currentText())
         node.script2_param1 = self.ui.script2Param1Spin.value()
         node.script2_param2 = self.ui.script2Param2Spin.value()
         node.script2_param3 = self.ui.script2Param3Spin.value()
@@ -3161,7 +3242,7 @@ Should return 1 or 0, representing a boolean.
         node.script2_param5 = self.ui.script2Param5Spin.value()
         node.script2_param6 = self.ui.script2Param6Edit.text()
 
-        link.active1 = ResRef(self.ui.condition1ResrefEdit.text())
+        link.active1 = ResRef(self.ui.condition1ResrefEdit.currentText())
         link.active1_param1 = self.ui.condition1Param1Spin.value()
         link.active1_param2 = self.ui.condition1Param2Spin.value()
         link.active1_param3 = self.ui.condition1Param3Spin.value()
@@ -3169,7 +3250,7 @@ Should return 1 or 0, representing a boolean.
         link.active1_param5 = self.ui.condition1Param5Spin.value()
         link.active1_param6 = self.ui.condition1Param6Edit.text()
         link.active1_not = self.ui.condition1NotCheckbox.isChecked()
-        link.active2 = ResRef(self.ui.condition2ResrefEdit.text())
+        link.active2 = ResRef(self.ui.condition2ResrefEdit.currentText())
         link.active2_param1 = self.ui.condition2Param1Spin.value()
         link.active2_param2 = self.ui.condition2Param2Spin.value()
         link.active2_param3 = self.ui.condition2Param3Spin.value()
