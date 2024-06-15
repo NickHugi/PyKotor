@@ -1098,7 +1098,7 @@ class ToolWindow(QMainWindow):
         searchDialog = FileSearcher(self, self.installations)
         searchDialog.setModal(False)  # Make the dialog non-modal
         searchDialog.show()  # Show the dialog without blocking
-        addWindow(searchDialog)
+        addWindow(searchDialog, show=False)
         searchDialog.fileResults.connect(self.handleSearchCompleted)
 
     def openIndoorMapBuilder(self):
