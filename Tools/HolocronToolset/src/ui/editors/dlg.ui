@@ -1550,7 +1550,7 @@
   <customwidget>
    <class>FilterComboBox</class>
    <extends>QComboBox</extends>
-   <header location="global">toolset.gui.editors.dlg</header>
+   <header location="global">toolset.gui.widgets.edit.combobox</header>
   </customwidget>
   <customwidget>
    <class>GFFFieldSpinBox</class>

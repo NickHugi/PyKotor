@@ -177,7 +177,7 @@ def main_init():
 if __name__ == "__main__":
     main_init()
 
-    from qtpy.QtCore import QThread
+    from qtpy.QtCore import QThread, Qt
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     app = QApplication(sys.argv)
@@ -187,6 +187,9 @@ if __name__ == "__main__":
     # app.setFont(font)
     # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     # app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+    app.setApplicationName("HolocronToolsetV3")
+    app.setOrganizationName("PyKotor")
+    app.setOrganizationDomain("github.com/NickHugi/PyKotor")
 
     app.thread().setPriority(QThread.Priority.HighestPriority)
 

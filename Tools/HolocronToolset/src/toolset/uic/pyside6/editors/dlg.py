@@ -24,7 +24,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QSpacerItem, QSplitter, QTabWidget, QVBoxLayout,
     QWidget)
 
-from toolset.gui.editors.dlg import (DLGTreeView, FilterComboBox, GFFFieldSpinBox)
+from toolset.gui.editors.dlg import (DLGTreeView, GFFFieldSpinBox)
+from toolset.gui.widgets.edit.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 

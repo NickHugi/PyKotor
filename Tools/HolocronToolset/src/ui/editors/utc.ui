@@ -318,11 +318,7 @@
              <item row="6" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_5">
                <item>
-                <widget class="QLineEdit" name="conversationEdit">
-                 <property name="maxLength">
-                  <number>16</number>
-                 </property>
-                </widget>
+                <widget class="FilterComboBox" name="conversationEdit"/>
                </item>
                <item>
                 <widget class="QPushButton" name="conversationModifyButton">
@@ -1376,11 +1372,7 @@
         <item row="0" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_29">
           <item>
-           <widget class="QLineEdit" name="onBlockedEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onBlockedEdit"/>
           </item>
          </layout>
         </item>
@@ -1394,11 +1386,7 @@
         <item row="1" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_30">
           <item>
-           <widget class="QLineEdit" name="onAttakcedEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onAttackedEdit"/>
           </item>
          </layout>
         </item>
@@ -1412,11 +1400,7 @@
         <item row="2" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_31">
           <item>
-           <widget class="QLineEdit" name="onNoticeEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onNoticeEdit"/>
           </item>
          </layout>
         </item>
@@ -1430,11 +1414,7 @@
         <item row="3" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_32">
           <item>
-           <widget class="QLineEdit" name="onConversationEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onConversationEdit"/>
           </item>
          </layout>
         </item>
@@ -1448,11 +1428,7 @@
         <item row="4" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_33">
           <item>
-           <widget class="QLineEdit" name="onDamagedEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onDamagedEdit"/>
           </item>
          </layout>
         </item>
@@ -1466,14 +1442,7 @@
         <item row="5" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_34">
           <item>
-           <widget class="QLineEdit" name="onDeathEdit">
-            <property name="text">
-             <string/>
-            </property>
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onDeathEdit"/>
           </item>
          </layout>
         </item>
@@ -1487,11 +1456,7 @@
         <item row="6" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_35">
           <item>
-           <widget class="QLineEdit" name="onEndRoundEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onEndRoundEdit"/>
           </item>
          </layout>
         </item>
@@ -1505,11 +1470,7 @@
         <item row="7" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_36">
           <item>
-           <widget class="QLineEdit" name="onEndConversationEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onEndConversationEdit"/>
           </item>
          </layout>
         </item>
@@ -1523,11 +1484,7 @@
         <item row="8" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_38">
           <item>
-           <widget class="QLineEdit" name="onDisturbedEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onDisturbedEdit"/>
           </item>
          </layout>
         </item>
@@ -1541,11 +1498,7 @@
         <item row="9" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_39">
           <item>
-           <widget class="QLineEdit" name="onHeartbeatEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onHeartbeatEdit"/>
           </item>
          </layout>
         </item>
@@ -1559,11 +1512,7 @@
         <item row="10" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_41">
           <item>
-           <widget class="QLineEdit" name="onSpawnEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onSpawnEdit"/>
           </item>
          </layout>
         </item>
@@ -1577,11 +1526,7 @@
         <item row="11" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_42">
           <item>
-           <widget class="QLineEdit" name="onSpellCastEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onSpellCastEdit"/>
           </item>
          </layout>
         </item>
@@ -1595,11 +1540,7 @@
         <item row="12" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_43">
           <item>
-           <widget class="QLineEdit" name="onUserDefinedEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onUserDefinedEdit"/>
           </item>
          </layout>
         </item>
@@ -1718,6 +1659,11 @@
    <class>ModelRenderer</class>
    <extends>QOpenGLWidget</extends>
    <header location="global">toolset.gui.widgets.renderer.model</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox</header>
   </customwidget>
   <customwidget>
    <class>LocalizedStringLineEdit</class>

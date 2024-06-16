@@ -13,6 +13,7 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 from toolset.gui.widgets.renderer.model import ModelRenderer
+from toolset.gui.widgets.edit.combobox import FilterComboBox
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 
@@ -218,9 +219,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.conversationEdit = QLineEdit(self.groupBox)
+        self.conversationEdit = FilterComboBox(self.groupBox)
         self.conversationEdit.setObjectName(u"conversationEdit")
-        self.conversationEdit.setMaxLength(16)
 
         self.horizontalLayout_5.addWidget(self.conversationEdit)
 
@@ -984,9 +984,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_29 = QHBoxLayout()
         self.horizontalLayout_29.setObjectName(u"horizontalLayout_29")
-        self.onBlockedEdit = QLineEdit(self.tab_7)
+        self.onBlockedEdit = FilterComboBox(self.tab_7)
         self.onBlockedEdit.setObjectName(u"onBlockedEdit")
-        self.onBlockedEdit.setMaxLength(16)
 
         self.horizontalLayout_29.addWidget(self.onBlockedEdit)
 
@@ -1000,11 +999,10 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_30 = QHBoxLayout()
         self.horizontalLayout_30.setObjectName(u"horizontalLayout_30")
-        self.onAttakcedEdit = QLineEdit(self.tab_7)
-        self.onAttakcedEdit.setObjectName(u"onAttakcedEdit")
-        self.onAttakcedEdit.setMaxLength(16)
+        self.onAttackedEdit = FilterComboBox(self.tab_7)
+        self.onAttackedEdit.setObjectName(u"onAttackedEdit")
 
-        self.horizontalLayout_30.addWidget(self.onAttakcedEdit)
+        self.horizontalLayout_30.addWidget(self.onAttackedEdit)
 
 
         self.formLayout_22.setLayout(1, QFormLayout.FieldRole, self.horizontalLayout_30)
@@ -1016,9 +1014,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_31 = QHBoxLayout()
         self.horizontalLayout_31.setObjectName(u"horizontalLayout_31")
-        self.onNoticeEdit = QLineEdit(self.tab_7)
+        self.onNoticeEdit = FilterComboBox(self.tab_7)
         self.onNoticeEdit.setObjectName(u"onNoticeEdit")
-        self.onNoticeEdit.setMaxLength(16)
 
         self.horizontalLayout_31.addWidget(self.onNoticeEdit)
 
@@ -1032,9 +1029,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_32 = QHBoxLayout()
         self.horizontalLayout_32.setObjectName(u"horizontalLayout_32")
-        self.onConversationEdit = QLineEdit(self.tab_7)
+        self.onConversationEdit = FilterComboBox(self.tab_7)
         self.onConversationEdit.setObjectName(u"onConversationEdit")
-        self.onConversationEdit.setMaxLength(16)
 
         self.horizontalLayout_32.addWidget(self.onConversationEdit)
 
@@ -1048,9 +1044,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_33 = QHBoxLayout()
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
-        self.onDamagedEdit = QLineEdit(self.tab_7)
+        self.onDamagedEdit = FilterComboBox(self.tab_7)
         self.onDamagedEdit.setObjectName(u"onDamagedEdit")
-        self.onDamagedEdit.setMaxLength(16)
 
         self.horizontalLayout_33.addWidget(self.onDamagedEdit)
 
@@ -1064,9 +1059,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_34 = QHBoxLayout()
         self.horizontalLayout_34.setObjectName(u"horizontalLayout_34")
-        self.onDeathEdit = QLineEdit(self.tab_7)
+        self.onDeathEdit = FilterComboBox(self.tab_7)
         self.onDeathEdit.setObjectName(u"onDeathEdit")
-        self.onDeathEdit.setMaxLength(16)
 
         self.horizontalLayout_34.addWidget(self.onDeathEdit)
 
@@ -1080,9 +1074,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_35 = QHBoxLayout()
         self.horizontalLayout_35.setObjectName(u"horizontalLayout_35")
-        self.onEndRoundEdit = QLineEdit(self.tab_7)
+        self.onEndRoundEdit = FilterComboBox(self.tab_7)
         self.onEndRoundEdit.setObjectName(u"onEndRoundEdit")
-        self.onEndRoundEdit.setMaxLength(16)
 
         self.horizontalLayout_35.addWidget(self.onEndRoundEdit)
 
@@ -1096,9 +1089,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_36 = QHBoxLayout()
         self.horizontalLayout_36.setObjectName(u"horizontalLayout_36")
-        self.onEndConversationEdit = QLineEdit(self.tab_7)
+        self.onEndConversationEdit = FilterComboBox(self.tab_7)
         self.onEndConversationEdit.setObjectName(u"onEndConversationEdit")
-        self.onEndConversationEdit.setMaxLength(16)
 
         self.horizontalLayout_36.addWidget(self.onEndConversationEdit)
 
@@ -1112,9 +1104,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_38 = QHBoxLayout()
         self.horizontalLayout_38.setObjectName(u"horizontalLayout_38")
-        self.onDisturbedEdit = QLineEdit(self.tab_7)
+        self.onDisturbedEdit = FilterComboBox(self.tab_7)
         self.onDisturbedEdit.setObjectName(u"onDisturbedEdit")
-        self.onDisturbedEdit.setMaxLength(16)
 
         self.horizontalLayout_38.addWidget(self.onDisturbedEdit)
 
@@ -1128,9 +1119,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_39 = QHBoxLayout()
         self.horizontalLayout_39.setObjectName(u"horizontalLayout_39")
-        self.onHeartbeatEdit = QLineEdit(self.tab_7)
+        self.onHeartbeatEdit = FilterComboBox(self.tab_7)
         self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
-        self.onHeartbeatEdit.setMaxLength(16)
 
         self.horizontalLayout_39.addWidget(self.onHeartbeatEdit)
 
@@ -1144,9 +1134,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_41 = QHBoxLayout()
         self.horizontalLayout_41.setObjectName(u"horizontalLayout_41")
-        self.onSpawnEdit = QLineEdit(self.tab_7)
+        self.onSpawnEdit = FilterComboBox(self.tab_7)
         self.onSpawnEdit.setObjectName(u"onSpawnEdit")
-        self.onSpawnEdit.setMaxLength(16)
 
         self.horizontalLayout_41.addWidget(self.onSpawnEdit)
 
@@ -1160,9 +1149,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_42 = QHBoxLayout()
         self.horizontalLayout_42.setObjectName(u"horizontalLayout_42")
-        self.onSpellCastEdit = QLineEdit(self.tab_7)
+        self.onSpellCastEdit = FilterComboBox(self.tab_7)
         self.onSpellCastEdit.setObjectName(u"onSpellCastEdit")
-        self.onSpellCastEdit.setMaxLength(16)
 
         self.horizontalLayout_42.addWidget(self.onSpellCastEdit)
 
@@ -1176,9 +1164,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_43 = QHBoxLayout()
         self.horizontalLayout_43.setObjectName(u"horizontalLayout_43")
-        self.onUserDefinedEdit = QLineEdit(self.tab_7)
+        self.onUserDefinedEdit = FilterComboBox(self.tab_7)
         self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
-        self.onUserDefinedEdit.setMaxLength(16)
 
         self.horizontalLayout_43.addWidget(self.onUserDefinedEdit)
 
@@ -1329,7 +1316,6 @@ class Ui_MainWindow(object):
         self.label_97.setText(QCoreApplication.translate("MainWindow", u"OnConversation:", None))
         self.label_98.setText(QCoreApplication.translate("MainWindow", u"OnDamaged:", None))
         self.label_109.setText(QCoreApplication.translate("MainWindow", u"OnDeath:", None))
-        self.onDeathEdit.setText("")
         self.label_107.setText(QCoreApplication.translate("MainWindow", u"OnEndRound:", None))
         self.label_108.setText(QCoreApplication.translate("MainWindow", u"OnEndConversation:", None))
         self.label_100.setText(QCoreApplication.translate("MainWindow", u"OnDisturbed:", None))

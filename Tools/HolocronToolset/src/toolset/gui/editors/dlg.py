@@ -127,7 +127,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.language import LocalizedString
-    from pykotor.extract.file import LocationResult, ResourceIdentifier
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.dlg import (
         DLGAnimation,
@@ -168,141 +167,6 @@ class Trie:
         self.root = TrieNode()  # Reset the Trie
         for data in data_list:
             self.insert(data)
-
-class FilterProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent: QObject | None = None):
-        super().__init__(parent)
-        self.filter_text: str = ""
-        self.filter_timer: QTimer = QTimer()
-        self.filter_timer.setSingleShot(True)
-        self.filter_timer.timeout.connect(self.invalidateFilter)
-        self.debounce_delay = 300  # Milliseconds
-
-    def setFilterText(self, text: str):
-        self.filter_text = text.lower()
-        if not self.filter_text:
-            self.invalidateFilter()
-        else:
-            self.filter_timer.stop()
-            self.filter_timer.start(self.debounce_delay)
-
-    def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
-        if source_row == 0:
-            return True
-        index = self.sourceModel().index(source_row, 0, source_parent)
-        item_text = index.data(Qt.DisplayRole)
-        return False if item_text is None else self.filter_text in item_text.lower()
-
-    def rebuildTrie(self):
-        if self.sourceModel() is not None:
-            self.trie.rebuild(
-                [
-                    self.sourceModel().data(self.sourceModel().index(row, 0), Qt.DisplayRole).lower()
-                    for row in range(1, self.sourceModel().rowCount())  # Start from 1 to skip placeholder
-                ]
-            )
-
-
-class ButtonDelegate(QStyledItemDelegate):
-    def __init__(self, button_text: str, button_callback: Callable[[int], Any], parent: QObject | None = None):
-        super().__init__(parent)
-        self.button_text: str = button_text
-        self.button_callback: Callable[[int], Any] = button_callback
-        self.buttons: dict[int, QPushButton] = {}
-
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
-        super().paint(painter, option, index)
-        if index.row() not in self.buttons:
-            button = QPushButton(self.button_text, parent=option.widget)
-            button.clicked.connect(lambda _checked, idx=index: self.button_callback(self.get_item_text(idx)))
-            self.buttons[index.row()] = button
-
-        button = self.buttons[index.row()]
-        fm = QFontMetrics(button.font())
-        button_width = fm.width(self.button_text) + 10
-        button_height = fm.height() + 10
-        button_size = QSize(button_width, button_height)
-        button.move(option.rect.right() - button_size.width(), option.rect.top())
-        button.resize(button_size)
-        button.show()
-
-    def get_item_text(self, index: QModelIndex) -> str:
-        return index.model().data(index, Qt.DisplayRole) if index.isValid() else ""
-
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
-        fm = QFontMetrics(option.font)
-        text_width = fm.width(index.model().data(index, Qt.DisplayRole))
-        text_height = fm.height()
-        button_width = fm.width(self.button_text) + 10
-        total_width = text_width + button_width + 5
-        button_height = fm.height()+10
-        return QSize(total_width, max(text_height, button_height))
-
-    def updateEditorGeometry(self, editor, option, index):
-        editor.setGeometry(option.rect)
-
-
-class FilterComboBox(QComboBox):
-    def __init__(self, parent: QWidget | None = None):
-        super().__init__(parent)
-        self.setEditable(True)
-        self.original_model: QStringListModel = QStringListModel(self)
-        self.items: list[str] = [""]
-        self.proxy_model: FilterProxyModel = FilterProxyModel(self)
-
-        self.setView(QListView(self))
-        self.proxy_model.setSourceModel(self.original_model)
-        self.setModel(self.proxy_model)
-        self.original_model.setStringList(self.items)
-        self.create_line_edit()
-
-    def eventFilter(self, source: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.FocusIn and source is not self.line_edit:
-            self.line_edit.setFocus()
-            return True
-        return super().eventFilter(source, event)
-
-    def create_line_edit(self):
-        self.line_edit = QLineEdit(self)
-        self.line_edit.setPlaceholderText("Type to filter...")
-        self.line_edit.setClearButtonEnabled(True)
-        self.line_edit.textChanged.connect(self.filter_items)
-        self.line_edit.hide()
-        self.line_edit.setFocusPolicy(Qt.StrongFocus)
-        self.line_edit.installEventFilter(self)
-
-    def showPopup(self):
-        super().showPopup()
-        try:
-            self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
-        except RuntimeError:  # wrapped C/C++ object of type QLineEdit has been deleted
-            self.create_line_edit()
-            self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
-        self.line_edit.show()
-        self.line_edit.setFocus()
-        max_width = self.width()
-        delegate = self.itemDelegate()
-        max_items_to_measure = 20
-        for i in range(min(self.model().rowCount(), max_items_to_measure)):
-            item_width = delegate.sizeHint(QStyleOptionViewItem(), self.model().index(i, 0)).width()
-            if item_width > max_width:
-                max_width = item_width
-
-        # Set the width of the dropdown list
-        self.view().setFixedWidth(max_width+25)
-        super().showPopup()
-
-    def populate_items(self, items):
-        self.items = ["", *items]
-        self.original_model.setStringList(self.items)
-
-    def filter_items(self, text):
-        self.proxy_model.setFilterText(text)
-        self.proxy_model.invalidateFilter()
-
-    def set_button_delegate(self, button_text: str, button_callback: Callable[[int], Any]):
-        button_delegate = ButtonDelegate(button_text, button_callback, self.view())
-        self.view().setItemDelegate(button_delegate)
 
 
 class GFFFieldSpinBox(QSpinBox):
@@ -518,7 +382,7 @@ class RobustTreeView(QTreeView):
         self.setAutoScroll(True)
         self.setExpandsOnDoubleClick(True)
         self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
-        self.setIndentation(10)
+        self.setIndentation(20)
         #self.setGraphicsEffect(QGraphicsEffect.)
         #self.setAlternatingRowColors(True)
         self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
@@ -526,6 +390,50 @@ class RobustTreeView(QTreeView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+
+    def drawBranches(self, painter: QPainter, rect: QRect, index: QModelIndex):
+        painter.save()
+
+        # Fix expander height/position
+        if self.itemDelegate():
+            item_size = self.itemDelegate().sizeHint(QStyleOptionViewItem(), index)
+            center_y = (
+                rect.top()
+                + (rect.height() - item_size.height()) // 2
+                + item_size.height() / 2
+                - rect.height() / 2
+            )
+            rect.moveTop(int(center_y))
+
+        # Set pen color based on level
+        pen_color = Qt.darkGray
+        pen = QPen(pen_color, 2, Qt.SolidLine)  # Increase line thickness and set color
+        painter.setPen(pen)
+        parent = index.parent()
+
+        # Calculate the expander icon position
+        icon_x = rect.left() + self.indentation() // 2  # Correct the calculation to ensure it falls within the visible area
+        icon_y = rect.top() + rect.height() // 2
+
+        painter.restore()
+        super().drawBranches(painter, rect, index)
+
+    def drawCircle(self, painter: QPainter, center_x: int, center_y: int, radius: int):
+        circle_rect = QRect(center_x - radius, center_y - radius, 2 * radius, 2 * radius)
+        painter.setBrush(Qt.GlobalColor.white)  # Fill the circle with white color
+        painter.drawEllipse(circle_rect)
+
+        # Draw useful information inside the circle
+        random_number = 5
+        font = painter.font()
+        font.setPointSize(8)
+        painter.setFont(font)
+        painter.drawText(circle_rect, Qt.AlignCenter, str(random_number))
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if event.type() in (QEvent.Scroll, QEvent.ScrollPrepare):
+            return True  # block automated scroll events
+        return super().eventFilter(obj, event)
 
     def itemDelegate(self, *args) -> HTMLDelegate:
         delegate = super().itemDelegate(*args)
@@ -555,25 +463,10 @@ class RobustTreeView(QTreeView):
             response = self._wheel_changes_text_size(event)
         if modifiers & Qt.ShiftModifier:
             response = self._wheel_changes_item_spacing(event)
-        if response is not True:
+        if modifiers & Qt.AltModifier:
+            response = self._wheel_changes_indent_size(event)
+        if response is not True and self.hasAutoScroll():
             super().wheelEvent(event)
-
-    def drawBranches(
-        self,
-        painter: QPainter,
-        rect: QRect,
-        index: QModelIndex,
-    ):
-        if self.itemDelegate():
-            item_size = self.itemDelegate().sizeHint(QStyleOptionViewItem(), index)
-            center_y = (
-                rect.top()
-                + (rect.height() - item_size.height()) // 2
-                + item_size.height() / 2
-                - rect.height() / 2
-            )
-            rect.moveTop(int(center_y))
-        super().drawBranches(painter, rect, index)
 
     def _wheel_changes_text_size(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().y()
@@ -593,6 +486,16 @@ class RobustTreeView(QTreeView):
         if self.itemDelegate() is not None:
             new_spacing: int = max(0, self.itemDelegate().verticalSpacing + (1 if delta > 0 else -1))
             self.itemDelegate().setVerticalSpacing(new_spacing)
+            self.viewport().update()
+            return True
+        return False
+
+    def _wheel_changes_indent_size(self, event: QWheelEvent) -> bool:
+        delta: int = event.angleDelta().y()
+        if not delta:
+            return False
+        if self.itemDelegate() is not None:
+            self.setIndentation(max(0, self.indentation() + (1 if delta > 0 else -1)))
             self.viewport().update()
             return True
         return False
@@ -1246,18 +1149,14 @@ class DLGStandardItemModel(QStandardItemModel):
         entryIndices: set[int] | None = None,
         replyIndices: set[int] | None = None,
     ) -> int:
-        """Generate a new unique index for the node."""
+        """Generate a new unique list index for the node."""
         if isinstance(node, DLGEntry):
             indices = {entry.list_index for entry in self.editor.core_dlg.all_entries()} if entryIndices is None else entryIndices
-            print("<SDM> [_getNewNodeListIndex scope] indices: ", indices)
-
-            print("<SDM> [_getNewNodeListIndex scope] indices: ", indices)
+            print("<SDM> [_getNewNodeListIndex scope] entry indices: ", indices, "length: ", len(indices))
 
         elif isinstance(node, DLGReply):
             indices = {reply.list_index for reply in self.editor.core_dlg.all_replies()} if replyIndices is None else replyIndices
-            print("<SDM> [_getNewNodeListIndex scope] indices: ", indices)
-
-            print("<SDM> [_getNewNodeListIndex scope] indices: ", indices)
+            print("<SDM> [_getNewNodeListIndex scope] reply indices: ", indices, "length: ", len(indices))
 
         else:
             raise TypeError(node.__class__.__name__)
@@ -1270,7 +1169,7 @@ class DLGStandardItemModel(QStandardItemModel):
         return new_index
 
     def _getAllIndices(self) -> tuple[set[int], set[int]]:
-        """Get all indices for entries and replies."""
+        """Get all list indices for entries and replies."""
         entryIndices = {entry.list_index for entry in self.editor.core_dlg.all_entries()}
         print("<SDM> [_getAllIndices scope] entryIndices: ", entryIndices)
 
@@ -1727,33 +1626,16 @@ class DLGTreeView(RobustTreeView):
             return
 
         painter = QPainter(self.viewport())
-        painter.setRenderHint(QPainter.Antialiasing)  # For smoother edges
-
-        # Check if the rect is a line or should act as a highlight area
+        painter.setRenderHint(QPainter.Antialiasing)
         if self.dropIndicatorRect.topLeft().y() == self.dropIndicatorRect.bottomLeft().y():
-            # It's more of a line, draw it with a dashed pen
             pen = QPen(Qt.black, 1, Qt.DashLine)
             painter.setPen(pen)
             painter.drawLine(self.dropIndicatorRect.topLeft(), self.dropIndicatorRect.topRight())
         else:
-            # It's an area, fill it with a light grey highlight without a border
-            highlight_color = QColor(200, 200, 200, 120)  # Light grey with alpha transparency
+            highlight_color = QColor(200, 200, 200, 120)
             painter.fillRect(self.dropIndicatorRect, highlight_color)
 
         painter.end()
-
-    def initStyleOption(self, option: QStyleOptionViewItem, index: QModelIndex):
-        """Initialize style option for the given index."""
-        option.initFrom(self)
-        option.rect = self.visualRect(index)
-        option.state = self.viewOptions().state
-        option.state |= QStyle.State_Active
-        option.features = QStyleOptionViewItem.ViewItemFeature.HasDisplay
-        option.widget = self
-        option.text = index.data(Qt.DisplayRole)
-
-        icon = index.data(Qt.DecorationRole)
-        option.icon = icon if icon is not None else QIcon()
 
     def keyPressEvent(self, event: QKeyEvent):
         print("<SDM> [DLGTreeView.keyPressEvent scope] key: %s", event.key())
@@ -1787,20 +1669,23 @@ class DLGTreeView(RobustTreeView):
         super().mouseMoveEvent(event)
 
     def createDragPixmap(self, dragged_item: DLGStandardItem) -> QPixmap:
-        pixmap = QPixmap(250, 90)
-        pixmap.fill(Qt.transparent)
+        pixmap = QPixmap(250, 70)
+        pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setBrush(QColor(255, 255, 255, 200))
         painter.setPen(QPen(QColor(200, 200, 200), 1))
         painter.drawRoundedRect(QRect(0, 0, pixmap.width(), pixmap.height()), 10, 10)
         self.draw_drag_icons(painter, QPoint(30, 25), 15, QColor(255, 0, 0), f"{self.num_links}")
-        self.draw_drag_icons(painter, QPoint(100, 25), 15, QColor(0, 0, 255), f"{self.num_unique_nodes}")
+        self.draw_drag_icons(painter, QPoint(pixmap.width() - 30, 25), 15, QColor(0, 0, 255), f"{self.num_unique_nodes}")
         font = QFont("Arial", 11)
         painter.setFont(font)
-        text = dragged_item.text()[:40] + ("..." if len(dragged_item.text()) > 40 else "")
-        painter.setPen(QColor(50, 50, 50))
-        painter.drawText(QRect(10, 50, 230, 40), Qt.AlignCenter, text)
+        doc = QTextDocument()
+        doc.setHtml(dragged_item.text())
+        doc.setDefaultFont(QFont("Arial", 11))
+        doc.setTextWidth(230)
+        painter.translate(10, 50)
+        doc.drawContents(painter)  # Drawing the contents of the document
         painter.end()
         return pixmap
 
@@ -1811,11 +1696,13 @@ class DLGTreeView(RobustTreeView):
         encoded_data = QByteArray()
         stream = QDataStream(encoded_data, QIODevice.WriteOnly)
         stream.writeInt64(id(self.model()))
-        stream.writeString(json.dumps(self.draggedItem.link.to_dict()))
+        stream.writeString(json.dumps(self.draggedItem.link.to_dict()).encode())
         mimeData.setData("application/x-pykotor-dlgbranch", encoded_data)
         drag.setMimeData(mimeData)
-        drag.setPixmap(self.createDragPixmap(self.draggedItem))
-        drag.setHotSpot(self.mapFromGlobal(self.startPos))
+        pixmap = self.createDragPixmap(self.draggedItem)
+        drag.setPixmap(pixmap)
+        item_top_left_global = self.mapToGlobal(self.visualRect(self.draggedItem.index()).topLeft())
+        drag.setHotSpot(QPoint(pixmap.width() // 2, QCursor.pos().y() - item_top_left_global.y()))
         drag.exec_(self.model().supportedDragActions())
         print("\nstartDrag: completely done")
 
@@ -1854,7 +1741,11 @@ class DLGTreeView(RobustTreeView):
             print("startDrag called but prepareDrag returned False, resetting the drag state.")
             self.resetDragState()
             return
-        super().startDrag(supportedActions)
+        mode = 2
+        if mode == 1:
+            super().startDrag(supportedActions)
+        elif mode == 2:
+            self.performDrag()
         print("startDrag done, call resetDragState")
         self.resetDragState()
 
@@ -2140,91 +2031,6 @@ class DLGEditor(Editor):
             level += 1
         raise RuntimeError(f"DLGEditor is not in the parent hierarchy, attempted {level} levels.")
 
-    def _openDetails(self, locations: list[LocationResult]):
-        selectionWindow = FileSelectionWindow(locations, self._installation)
-        print("<SDM> [_openDetails scope] selectionWindow: %s", selectionWindow)
-
-        addWindow(selectionWindow)
-        selectionWindow.activateWindow()
-
-    def _connectContextMenu(
-        self,
-        widget: QPlainTextEdit | QLineEdit | QComboBox,
-        resref_type: list[ResourceType] | list[ResourceIdentifier],
-        order: list[SearchLocation] | None = None,
-    ):
-        def extendContextMenu(pos):
-            if isinstance(widget, QComboBox):
-                rootMenu = QMenu(widget)
-                widgetText = widget.currentText().strip()
-                firstAction = None
-            else:
-                rootMenu = widget.createStandardContextMenu()
-                widgetText = (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
-                firstAction = rootMenu.actions()[0] if rootMenu.actions() else None
-
-            print("<SDM> [extendContextMenu scope] rootMenu: ", rootMenu)
-            print("<SDM> [extendContextMenu scope] widgetText: ", widgetText)
-
-            if widgetText:
-                fileMenu = QMenu("File...", widget)
-                print("<SDM> [extendContextMenu scope] fileMenu: ", fileMenu)
-
-                if firstAction:
-                    rootMenu.insertMenu(firstAction, fileMenu)
-                    rootMenu.insertSeparator(firstAction)
-                else:
-                    rootMenu.addMenu(fileMenu)
-
-                rootMenu.insertMenu(firstAction, fileMenu)
-                rootMenu.insertSeparator(firstAction)
-                search_order = order or [
-                    SearchLocation.CHITIN,
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.MODULES,
-                    SearchLocation.RIMS,
-                ]
-                print("<SDM> [extendContextMenu scope] search_order: ", search_order)
-
-                locations = self._installation.locations(([widgetText], resref_type if isinstance(resref_type[1], ResourceType) else resref_type), search_order)
-                print("<SDM> [extendContextMenu scope] locations: ", locations)
-
-                flatLocations = [item for sublist in locations.values() for item in sublist] if isinstance(locations, dict) else locations
-                print("<SDM> [extendContextMenu scope] flatLocations: ", flatLocations)
-
-                if flatLocations:
-                    for location in flatLocations:
-                        displayPath = location.filepath.relative_to(self._installation.path())
-                        if location.as_file_resource().inside_bif:
-                            displayPath /= location.as_file_resource().filename()
-                        displayPathStr = str(displayPath)
-                        print("<SDM> [extendContextMenu scope] displayPathStr: ", displayPathStr)
-
-                        locationMenu = fileMenu.addMenu(displayPathStr)
-                        print("<SDM> [extendContextMenu scope] locationMenu: ", locationMenu)
-
-                        resourceMenuBuilder = ResourceItems(resources=[location])
-                        print("<SDM> [extendContextMenu scope] resourceMenuBuilder: ", resourceMenuBuilder)
-
-                        resourceMenuBuilder.build_menu(locationMenu, self._installation)
-
-                    detailsAction = QAction("Details...", fileMenu)
-                    print("<SDM> [extendContextMenu scope] detailsAction: ", detailsAction)
-
-                    detailsAction.triggered.connect(lambda: self._openDetails(flatLocations))
-                    fileMenu.addAction(detailsAction)
-                else:
-                    fileMenu.setDisabled(True)
-                for action in rootMenu.actions():
-                    if action.text() == "File...":
-                        action.setText(f"{len(flatLocations)} file(s) located")
-                        break
-
-            rootMenu.exec_(widget.mapToGlobal(pos))
-
-        widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        widget.customContextMenuRequested.connect(extendContextMenu)
-
     def _setupSignals(self):
         """Connects UI signals to update node/link on change."""
         scriptTextEntryTooltip = """
@@ -2238,8 +2044,8 @@ A ResRef to a script, where the entry point is its <code>main()</code> function.
         self.ui.script2ResrefEdit.setToolTip(scriptTextEntryTooltip)
         self.ui.script1ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
         self.ui.script2ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
-        self._connectContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._connectContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
         conditionalTextEntryTooltip = """
 A ResRef to a script that defines the conditional function <code>int StartingConditional()</code>.
@@ -2254,17 +2060,17 @@ Should return 1 or 0, representing a boolean.
         self.ui.condition2ResrefEdit.setToolTip(conditionalTextEntryTooltip)
         self.ui.condition1ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
         self.ui.condition2ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
-        self._connectContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._connectContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
         self.ui.soundComboBox.currentTextChanged.connect(self.onNodeUpdate)
-        self._connectContextMenu(
+        self._installation.setupFileContextMenu(
             self.ui.soundComboBox,
             [ResourceType.WAV, ResourceType.MP3],
             [SearchLocation.SOUND, SearchLocation.VOICE],
         )
         self.ui.voiceComboBox.currentTextChanged.connect(self.onNodeUpdate)
-        self._connectContextMenu(
+        self._installation.setupFileContextMenu(
             self.ui.voiceComboBox,
             [ResourceType.WAV, ResourceType.MP3],
             [SearchLocation.SOUND, SearchLocation.VOICE],
@@ -2337,6 +2143,110 @@ Should return 1 or 0, representing a boolean.
         self.ui.addAnimButton.clicked.connect(self.onAddAnimClicked)
         self.ui.removeAnimButton.clicked.connect(self.onRemoveAnimClicked)
         self.ui.editAnimButton.clicked.connect(self.onEditAnimClicked)
+        self._setupViewMenu()
+
+    def _setupViewMenu(self):
+        viewMenu = self.ui.menubar.addMenu("View")
+
+        # Adding mutually exclusive options
+        self._addExclusiveMenuAction(viewMenu, "Text Elide Mode", self.ui.dialogTree.textElideMode, self.ui.dialogTree.setTextElideMode, options={
+            "Elide Left": Qt.ElideLeft,
+            "Elide Right": Qt.ElideRight,
+            "Elide Middle": Qt.ElideMiddle,
+            "Elide None": Qt.ElideNone
+        })
+        self._addExclusiveMenuAction(viewMenu, "Focus Policy", self.ui.dialogTree.focusPolicy, self.ui.dialogTree.setFocusPolicy, options={
+            "No Focus": Qt.NoFocus,
+            "Tab Focus": Qt.TabFocus,
+            "Click Focus": Qt.ClickFocus,
+            "Strong Focus": Qt.StrongFocus,
+            "Wheel Focus": Qt.WheelFocus
+        })
+        self._addExclusiveMenuAction(viewMenu, "Layout Direction", self.ui.dialogTree.layoutDirection, self.ui.dialogTree.setLayoutDirection, options={
+            "Left to Right": Qt.LeftToRight,
+            "Right to Left": Qt.RightToLeft
+        })
+        self._addExclusiveMenuAction(viewMenu, "Scroll Mode", self.ui.dialogTree.verticalScrollMode, self.ui.dialogTree.setVerticalScrollMode, options={
+            "Scroll Per Item": QAbstractItemView.ScrollPerItem,
+            "Scroll Per Pixel": QAbstractItemView.ScrollPerPixel
+        })
+
+        # Adding boolean options
+        self._addMenuAction(viewMenu, "Uniform Row Heights", self.ui.dialogTree.uniformRowHeights, self.ui.dialogTree.setUniformRowHeights)
+        self._addMenuAction(viewMenu, "Animations", self.ui.dialogTree.isAnimated, self.ui.dialogTree.setAnimated)
+        self._addMenuAction(viewMenu, "Auto Scroll (internal)", self.ui.dialogTree.hasAutoScroll, self.ui.dialogTree.setAutoScroll)
+        self._addMenuAction(viewMenu, "Expand Items on Double Click", self.ui.dialogTree.expandsOnDoubleClick, self.ui.dialogTree.setExpandsOnDoubleClick)
+        self._addMenuAction(viewMenu, "Auto Fill Background", self.ui.dialogTree.autoFillBackground, self.ui.dialogTree.setAutoFillBackground)
+        self._addMenuAction(viewMenu, "Alternating Row Colors", self.ui.dialogTree.alternatingRowColors, self.ui.dialogTree.setAlternatingRowColors)
+
+        # Adding int options
+        viewMenu.addSeparator()
+        self._addMenuAction(viewMenu, "Branch Indent", self.ui.dialogTree.indentation, self.ui.dialogTree.setIndentation, param_type=int)
+
+        # Adding actions for updates and repaints
+        viewMenu.addSeparator()
+        refreshMenu = viewMenu.addMenu("Refresh")
+        self._addSimpleAction(refreshMenu, "Viewport Refresh (queue)", self.ui.dialogTree.viewport().update)
+        self._addSimpleAction(refreshMenu, "Viewport Refresh (instant)", self.ui.dialogTree.viewport().repaint)
+        self._addSimpleAction(refreshMenu, "Tree Refresh (queued)", self.ui.dialogTree.repaint)
+        self._addSimpleAction(refreshMenu, "Tree Refresh (instant)", self.ui.dialogTree.update)
+        self._addSimpleAction(refreshMenu, "DLGEditor.model.layoutChanged.emit()", self.ui.dialogTree.model().layoutChanged.emit)
+
+    def _addMenuAction(
+        self,
+        menu: QMenu,
+        title: str,
+        current_state_func: Callable[[], Any],
+        set_func: Callable[[Any], Any],
+        param_type: type = bool,
+        options: dict | None = None,
+    ):
+        action = QAction(title, self)
+        if param_type is bool:
+            action.setCheckable(True)
+            action.setChecked(current_state_func())
+            action.toggled.connect(lambda checked: set_func(checked))
+        elif param_type is int:
+            action.triggered.connect(lambda: self._handleIntAction(set_func, title))
+        else:
+            action.triggered.connect(lambda: self._handleNonBoolAction(set_func, title, options))
+        menu.addAction(action)
+
+    def _addExclusiveMenuAction(
+        self,
+        menu: QMenu,
+        title: str,
+        current_state_func: Callable[[], Any],
+        set_func: Callable[[Any], Any],
+        options: dict
+    ):
+        subMenu = menu.addMenu(title)
+        actionGroup = QActionGroup(self)
+        actionGroup.setExclusive(True)
+        current_state = current_state_func()
+        for option_name, option_value in options.items():
+            action = QAction(option_name, self)
+            action.setCheckable(True)
+            action.setChecked(current_state == option_value)
+            action.triggered.connect(lambda checked, val=option_value: set_func(val) if checked else None)
+            subMenu.addAction(action)
+            actionGroup.addAction(action)
+
+    def _addSimpleAction(self, menu: QMenu, title: str, func: Callable[[], Any]):
+        action = QAction(title, self)
+        action.triggered.connect(func)
+        menu.addAction(action)
+
+    def _handleIntAction(self, func: Callable[[int], Any], title: str):
+        value, ok = QInputDialog.getInt(self, f"Set {title}", f"Enter {title}:", min=0)
+        if ok:
+            func(value)
+
+    def _handleNonBoolAction(self, func: Callable[[Any], Any], title: str, options: dict):
+        items = list(options.keys())
+        item, ok = QInputDialog.getItem(self, f"Select {title}", f"Select {title}:", items, 0, False)
+        if ok and item:
+            func(options[item])
 
     def load(
         self,
@@ -3060,14 +2970,20 @@ Should return 1 or 0, representing a boolean.
             return
 
         self.keysDown.add(key)
-        if {QtKey.Key_Shift, QtKey.Key_Up} == self.keysDown:
+        if self.keysDown in (
+            {QtKey.Key_Shift, QtKey.Key_Up},
+            {QtKey.Key_Shift, QtKey.Key_Up, QtKey.Key_Alt},
+        ):
             newIndex = self.ui.dialogTree.indexAbove(selectedItem)
             print("<SDM> [keyPressEvent scope] newIndex: %s", newIndex)
 
             if newIndex.isValid():
                 self.ui.dialogTree.setCurrentIndex(newIndex)
             self.model.shiftItem(item, -1, noSelectionUpdate=True)
-        elif {QtKey.Key_Shift, QtKey.Key_Down} == self.keysDown:
+        if self.keysDown in (
+            {QtKey.Key_Shift, QtKey.Key_Down},
+            {QtKey.Key_Shift, QtKey.Key_Down, QtKey.Key_Alt},
+        ):
             newIndex = self.ui.dialogTree.indexBelow(selectedItem)
             print("<SDM> [keyPressEvent scope] newIndex: %s", newIndex)
 
@@ -3102,21 +3018,6 @@ Should return 1 or 0, representing a boolean.
             self.keysDown.remove(key)
         print(f"DLGEditor.keyReleaseEvent: {getQtKeyString(key)}, held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
 
-    @staticmethod
-    def setComboBoxText(comboBox: QComboBox, text: str, *, alwaysOnTop: bool = True):
-        index = comboBox.findText(text)
-        if alwaysOnTop:
-            if index != -1:  # Text found
-                comboBox.removeItem(index)
-            newIndex = 1 if isinstance(comboBox, FilterComboBox) else 0
-            comboBox.insertItem(newIndex, text)  # Insert at the top
-            comboBox.setCurrentIndex(newIndex)  # Set the current index to the top item
-        else:
-            if index == -1:  # Text not found
-                comboBox.addItem(text)
-                index = comboBox.findText(text)
-            comboBox.setCurrentIndex(index)
-
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node."""
         self.acceptUpdates = False
@@ -3137,7 +3038,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.listenerEdit.setText(node.listener)
             self._loadLocstring(self.ui.textEdit, node.text)
 
-            self.setComboBoxText(self.ui.script1ResrefEdit, str(node.script1))
+            self.ui.script1ResrefEdit.setComboBoxText(str(node.script1))
             self.ui.script1Param1Spin.setValue(node.script1_param1)
             self.ui.script1Param2Spin.setValue(node.script1_param2)
             self.ui.script1Param3Spin.setValue(node.script1_param3)
@@ -3145,7 +3046,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.script1Param5Spin.setValue(node.script1_param5)
             self.ui.script1Param6Edit.setText(node.script1_param6)
 
-            self.setComboBoxText(self.ui.script2ResrefEdit, str(node.script2))
+            self.ui.script2ResrefEdit.setComboBoxText(str(node.script2))
             self.ui.script2Param1Spin.setValue(node.script2_param1)
             self.ui.script2Param2Spin.setValue(node.script2_param2)
             self.ui.script2Param3Spin.setValue(node.script2_param3)
@@ -3153,7 +3054,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.script2Param5Spin.setValue(node.script2_param5)
             self.ui.script2Param6Edit.setText(node.script2_param6)
 
-            self.setComboBoxText(self.ui.condition1ResrefEdit, str(link.active1))
+            self.ui.condition1ResrefEdit.setComboBoxText(str(link.active1))
             self.ui.condition1Param1Spin.setValue(link.active1_param1)
             self.ui.condition1Param2Spin.setValue(link.active1_param2)
             self.ui.condition1Param3Spin.setValue(link.active1_param3)
@@ -3161,7 +3062,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.condition1Param5Spin.setValue(link.active1_param5)
             self.ui.condition1Param6Edit.setText(link.active1_param6)
             self.ui.condition1NotCheckbox.setChecked(link.active1_not)
-            self.setComboBoxText(self.ui.condition2ResrefEdit, str(link.active2))
+            self.ui.condition2ResrefEdit.setComboBoxText(str(link.active2))
             self.ui.condition2Param1Spin.setValue(link.active2_param1)
             self.ui.condition2Param2Spin.setValue(link.active2_param2)
             self.ui.condition2Param3Spin.setValue(link.active2_param3)
@@ -3173,9 +3074,9 @@ Should return 1 or 0, representing a boolean.
             self.refreshAnimList()
             self.ui.emotionSelect.setCurrentIndex(node.emotion_id)
             self.ui.expressionSelect.setCurrentIndex(node.facial_id)
-            self.setComboBoxText(self.ui.soundComboBox, str(node.sound))
+            self.ui.soundComboBox.setComboBoxText(str(node.sound))
             self.ui.soundCheckbox.setChecked(node.sound_exists)
-            self.setComboBoxText(self.ui.voiceComboBox, str(node.vo_resref))
+            self.ui.voiceComboBox.setComboBoxText(str(node.vo_resref))
 
             self.ui.plotIndexSpin.setValue(node.plot_index)
             self.ui.plotXpSpin.setValue(node.plot_xp_percentage)

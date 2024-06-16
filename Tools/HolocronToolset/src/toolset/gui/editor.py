@@ -119,7 +119,7 @@ class Editor(QMainWindow):
         self._readSupported: list[ResourceType] = readSupported
         self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
-        self._mainWindow: QMainWindow | None = mainWindow  # FIXME: unused?
+        self._mainWindow: QMainWindow | None = mainWindow  # FIXME: unused? Why does the UTI editor need this?
 
         self._editorTitle: str = title
         self.setWindowTitle(title)

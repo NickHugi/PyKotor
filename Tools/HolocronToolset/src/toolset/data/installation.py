@@ -1,15 +1,37 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Collection
+
+from qtpy.QtCore import (
+    Qt,
+)
+from qtpy.QtWidgets import (
+    QAction,
+    QComboBox,
+    QLineEdit,
+    QMenu,
+)
+
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.type import ResourceType
+from toolset.utils.window import addWindow
+
+if TYPE_CHECKING:
+
+    from qtpy.QtWidgets import (
+        QPlainTextEdit,
+    )
+
+    from pykotor.extract.file import LocationResult, ResourceIdentifier
 from contextlib import suppress
 from typing import TYPE_CHECKING, cast
 
 from qtpy.QtGui import QImage, QPixmap, QTransform
 
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.formats.twoda import read_2da
-from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QStandardItemModel
@@ -92,11 +114,11 @@ class HTInstallation(Installation):
         return self._tsl
 
     @classmethod
-    def as_ht(cls, installation: Installation, mainWindow: QWidget) -> Self:
+    def from_base_instance(cls, installation: Installation, mainWindow: QWidget) -> Self:
         ht_installation = cast(cls, installation)
 
         ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
-        ht_installation._tsl = installation.game().is_k2()
+        ht_installation._tsl = installation.game().is_k2()  # noqa: SLF001
         ht_installation.mainWindow = mainWindow
         ht_installation.cacheCoreItems = None
         ht_installation._cache2da = {}  # noqa: SLF001
@@ -104,6 +126,94 @@ class HTInstallation(Installation):
 
         ht_installation.__class__ = cls
         return ht_installation
+
+    def setupFileContextMenu(
+        self,
+        widget: QPlainTextEdit | QLineEdit | QComboBox,
+        resref_type: list[ResourceType] | list[ResourceIdentifier],
+        order: list[SearchLocation] | None = None,
+    ):
+        from toolset.gui.dialogs.load_from_location_result import ResourceItems
+        def extendContextMenu(pos):
+            if isinstance(widget, QComboBox):
+                rootMenu = QMenu(widget)
+                widgetText = widget.currentText().strip()
+                firstAction = None
+            else:
+                rootMenu = widget.createStandardContextMenu()
+                widgetText = (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
+                firstAction = rootMenu.actions()[0] if rootMenu.actions() else None
+
+            print("<SDM> [extendContextMenu scope] rootMenu: ", rootMenu)
+            print("<SDM> [extendContextMenu scope] widgetText: ", widgetText)
+
+            if widgetText:
+                fileMenu = QMenu("File...", widget)
+                print("<SDM> [extendContextMenu scope] fileMenu: ", fileMenu)
+
+                if firstAction:
+                    rootMenu.insertMenu(firstAction, fileMenu)
+                    rootMenu.insertSeparator(firstAction)
+                else:
+                    rootMenu.addMenu(fileMenu)
+
+                rootMenu.insertMenu(firstAction, fileMenu)
+                rootMenu.insertSeparator(firstAction)
+                search_order = order or [
+                    SearchLocation.CHITIN,
+                    SearchLocation.OVERRIDE,
+                    SearchLocation.MODULES,
+                    SearchLocation.RIMS,
+                ]
+                print("<SDM> [extendContextMenu scope] search_order: ", search_order)
+
+                locations = self.locations(([widgetText], resref_type if isinstance(resref_type, Collection) and len(resref_type) > 1 and isinstance(resref_type[1], ResourceType) else resref_type), search_order)
+                print("<SDM> [extendContextMenu scope] locations: ", locations)
+
+                flatLocations = [item for sublist in locations.values() for item in sublist] if isinstance(locations, dict) else locations
+                print("<SDM> [extendContextMenu scope] flatLocations: ", flatLocations)
+
+                if flatLocations:
+                    for location in flatLocations:
+                        displayPath = location.filepath.relative_to(self.path())
+                        if location.as_file_resource().inside_bif:
+                            displayPath /= location.as_file_resource().filename()
+                        displayPathStr = str(displayPath)
+                        print("<SDM> [extendContextMenu scope] displayPathStr: ", displayPathStr)
+
+                        locationMenu = fileMenu.addMenu(displayPathStr)
+                        print("<SDM> [extendContextMenu scope] locationMenu: ", locationMenu)
+
+                        resourceMenuBuilder = ResourceItems(resources=[location])
+                        print("<SDM> [extendContextMenu scope] resourceMenuBuilder: ", resourceMenuBuilder)
+
+                        resourceMenuBuilder.build_menu(locationMenu, self)
+
+                    detailsAction = QAction("Details...", fileMenu)
+                    print("<SDM> [extendContextMenu scope] detailsAction: ", detailsAction)
+
+                    detailsAction.triggered.connect(lambda: self._openDetails(flatLocations))
+                    fileMenu.addAction(detailsAction)
+                else:
+                    fileMenu.setDisabled(True)
+                for action in rootMenu.actions():
+                    if action.text() == "File...":
+                        action.setText(f"{len(flatLocations)} file(s) located")
+                        break
+
+            rootMenu.exec_(widget.mapToGlobal(pos))
+
+        widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        widget.customContextMenuRequested.connect(extendContextMenu)
+
+    def _openDetails(self, locations: list[LocationResult]):
+        from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow
+        selectionWindow = FileSelectionWindow(locations, self)
+        print("<SDM> [_openDetails scope] selectionWindow: %s", selectionWindow)
+
+        addWindow(selectionWindow)
+        selectionWindow.activateWindow()
+
 
     # region Cache 2DA
     def htGetCache2DA(self, resname: str) -> TwoDA:

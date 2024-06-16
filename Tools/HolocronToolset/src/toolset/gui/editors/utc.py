@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Iterable, Sequence
 
 import qtpy
 
@@ -25,13 +25,14 @@ from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.edit.combobox import FilterComboBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import addWindow, openResourceEditor
 
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtWidgets import QMainWindow, QWidget
+    from qtpy.QtWidgets import QComboBox, QMainWindow, QWidget
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
@@ -323,6 +324,41 @@ class UTCEditor(Editor):
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
+        self.all_script_resnames = sorted(
+            {res.resname() for res in self._installation if res.restype() is ResourceType.NCS},
+            key=str.lower
+        )
+
+        self.populateComboBox(self.ui.conversationEdit, {res.resname().lower() for res in self._installation if res.restype() is ResourceType.DLG})
+        self._installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+
+        self.populateComboBox(self.ui.onBlockedEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onAttackedEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onNoticeEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onConversationEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onDamagedEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onDeathEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onEndRoundEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onEndConversationEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onDisturbedEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onHeartbeatEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onSpawnEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onSpellCastEdit, self.all_script_resnames)
+        self.populateComboBox(self.ui.onUserDefinedEdit, self.all_script_resnames)
+
+        self._installation.setupFileContextMenu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onNoticeEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onEndRoundEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onDisturbedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onSpawnEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onSpellCastEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
 
     def load(
         self,
@@ -365,7 +401,7 @@ class UTCEditor(Editor):
         self.ui.resrefEdit.setText(str(utc.resref))
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
         self.ui.soundsetSelect.setCurrentIndex(utc.soundset_id)
-        self.ui.conversationEdit.setText(str(utc.conversation))
+        self.ui.conversationEdit.setComboBoxText(str(utc.conversation))
         self.ui.portraitSelect.setCurrentIndex(utc.portrait_id)
 
         # Advanced
@@ -457,22 +493,45 @@ class UTCEditor(Editor):
                 item.setCheckState(QtCore.Qt.Checked)
 
         # Scripts
-        self.ui.onBlockedEdit.setText(str(utc.on_blocked))
-        self.ui.onAttakcedEdit.setText(str(utc.on_attacked))
-        self.ui.onNoticeEdit.setText(str(utc.on_notice))
-        self.ui.onConversationEdit.setText(str(utc.on_dialog))
-        self.ui.onDamagedEdit.setText(str(utc.on_damaged))
-        self.ui.onDeathEdit.setText(str(utc.on_death))
-        self.ui.onEndRoundEdit.setText(str(utc.on_end_round))
-        self.ui.onEndConversationEdit.setText(str(utc.on_end_dialog))
-        self.ui.onDisturbedEdit.setText(str(utc.on_disturbed))
-        self.ui.onHeartbeatEdit.setText(str(utc.on_heartbeat))
-        self.ui.onSpawnEdit.setText(str(utc.on_spawn))
-        self.ui.onSpellCastEdit.setText(str(utc.on_spell))
-        self.ui.onUserDefinedEdit.setText(str(utc.on_user_defined))
+        self.ui.onBlockedEdit.setComboBoxText(str(utc.on_blocked))
+        self.ui.onAttackedEdit.setComboBoxText(str(utc.on_attacked))
+        self.ui.onNoticeEdit.setComboBoxText(str(utc.on_notice))
+        self.ui.onConversationEdit.setComboBoxText(str(utc.on_dialog))
+        self.ui.onDamagedEdit.setComboBoxText(str(utc.on_damaged))
+        self.ui.onDeathEdit.setComboBoxText(str(utc.on_death))
+        self.ui.onEndRoundEdit.setComboBoxText(str(utc.on_end_round))
+        self.ui.onEndConversationEdit.setComboBoxText(str(utc.on_end_dialog))
+        self.ui.onDisturbedEdit.setComboBoxText(str(utc.on_disturbed))
+        self.ui.onHeartbeatEdit.setComboBoxText(str(utc.on_heartbeat))
+        self.ui.onSpawnEdit.setComboBoxText(str(utc.on_spawn))
+        self.ui.onSpellCastEdit.setComboBoxText(str(utc.on_spell))
+        self.ui.onUserDefinedEdit.setComboBoxText(str(utc.on_user_defined))
 
         # Comments
         self.ui.comments.setPlainText(utc.comment)
+
+    @staticmethod
+    def setComboBoxText(comboBox: QComboBox, text: str, *, alwaysOnTop: bool = True):
+        index = comboBox.findText(text)
+        if alwaysOnTop:
+            if index != -1:  # Text found
+                comboBox.removeItem(index)
+            newIndex = 1 if isinstance(comboBox, FilterComboBox) else 0
+            comboBox.insertItem(newIndex, text)  # Insert at the top
+            comboBox.setCurrentIndex(newIndex)  # Set the current index to the top item
+        else:
+            if index == -1:  # Text not found
+                comboBox.addItem(text)
+                index = comboBox.findText(text)
+            comboBox.setCurrentIndex(index)
+
+    @staticmethod
+    def populateComboBox(comboBox: QComboBox | FilterComboBox, resnames: Iterable[str]):
+        comboBox.clear()
+        if isinstance(comboBox, FilterComboBox):
+            comboBox.populate_items(resnames)
+        else:
+            comboBox.addItems(resnames)
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTC from UI data.
@@ -496,7 +555,7 @@ class UTCEditor(Editor):
         utc.resref = ResRef(self.ui.resrefEdit.text())
         utc.appearance_id = self.ui.appearanceSelect.currentIndex()
         utc.soundset_id = self.ui.soundsetSelect.currentIndex()
-        utc.conversation = ResRef(self.ui.conversationEdit.text())
+        utc.conversation = ResRef(self.ui.conversationEdit.currentText())
         utc.portrait_id = self.ui.portraitSelect.currentIndex()
         utc.disarmable = self.ui.disarmableCheckbox.isChecked()
         utc.no_perm_death = self.ui.noPermDeathCheckbox.isChecked()
@@ -537,19 +596,19 @@ class UTCEditor(Editor):
         utc.fp = self.ui.currentFpSpin.value()
         utc.max_fp = self.ui.maxFpSpin.value()
         utc.alignment = self.ui.alignmentSlider.value()
-        utc.on_blocked = ResRef(self.ui.onBlockedEdit.text())
-        utc.on_attacked = ResRef(self.ui.onAttakcedEdit.text())
-        utc.on_notice = ResRef(self.ui.onNoticeEdit.text())
-        utc.on_dialog = ResRef(self.ui.onConversationEdit.text())
-        utc.on_damaged = ResRef(self.ui.onDamagedEdit.text())
-        utc.on_disturbed = ResRef(self.ui.onDisturbedEdit.text())
-        utc.on_death = ResRef(self.ui.onDeathEdit.text())
-        utc.on_end_round = ResRef(self.ui.onEndRoundEdit.text())
-        utc.on_end_dialog = ResRef(self.ui.onEndConversationEdit.text())
-        utc.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        utc.on_spawn = ResRef(self.ui.onSpawnEdit.text())
-        utc.on_spell = ResRef(self.ui.onSpellCastEdit.text())
-        utc.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        utc.on_blocked = ResRef(self.ui.onBlockedEdit.currentText())
+        utc.on_attacked = ResRef(self.ui.onAttackedEdit.currentText())
+        utc.on_notice = ResRef(self.ui.onNoticeEdit.currentText())
+        utc.on_dialog = ResRef(self.ui.onConversationEdit.currentText())
+        utc.on_damaged = ResRef(self.ui.onDamagedEdit.currentText())
+        utc.on_disturbed = ResRef(self.ui.onDisturbedEdit.currentText())
+        utc.on_death = ResRef(self.ui.onDeathEdit.currentText())
+        utc.on_end_round = ResRef(self.ui.onEndRoundEdit.currentText())
+        utc.on_end_dialog = ResRef(self.ui.onEndConversationEdit.currentText())
+        utc.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utc.on_spawn = ResRef(self.ui.onSpawnEdit.currentText())
+        utc.on_spell = ResRef(self.ui.onSpellCastEdit.currentText())
+        utc.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
         utc.comment = self.ui.comments.toPlainText()
 
         utc.classes = []
@@ -679,14 +738,14 @@ class UTCEditor(Editor):
             3. If not found, prompts to create a new file in the override folder
             4. Opens the resource editor with the conversation data.
         """
-        resname: str = self.ui.conversationEdit.text()
+        resname: str = self.ui.conversationEdit.currentText()
 
         restype: ResourceType | None = None
         filepath: Path | CaseAwarePath | None = None
         data: bytes | None = None
 
         if not resname:
-            QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Icon.Critical, "Invalid Dialog Reference", "Conversation field cannot be blank.").exec_()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
