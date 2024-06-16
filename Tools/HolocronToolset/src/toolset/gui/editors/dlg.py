@@ -71,6 +71,7 @@ from qtpy.QtWidgets import (
     QToolTip,
     QTreeView,
     QUndoCommand,
+    QVBoxLayout,
     QWidget,
     QWidgetAction,
 )
@@ -213,19 +214,20 @@ class ButtonDelegate(QStyledItemDelegate):
         super().paint(painter, option, index)
         if index.row() not in self.buttons:
             button = QPushButton(self.button_text, parent=option.widget)
-            button.clicked.connect(lambda _checked, row=index.row(): self.button_callback(self.get_item_text(row)))
+            button.clicked.connect(lambda _checked, idx=index: self.button_callback(self.get_item_text(idx)))
             self.buttons[index.row()] = button
 
         button = self.buttons[index.row()]
         fm = QFontMetrics(button.font())
-        # Calculate button width considering padding
         button_width = fm.width(self.button_text) + 10  # Adjust padding as necessary
-        button_height = fm.height()+10
-        # Set button size and position
+        button_height = fm.height() + 10
         button_size = QSize(button_width, button_height)
         button.move(option.rect.right() - button_size.width(), option.rect.top())
         button.resize(button_size)
         button.show()
+
+    def get_item_text(self, index: QModelIndex) -> str:
+        return index.model().data(index, Qt.DisplayRole) if index.isValid() else ""
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         fm = QFontMetrics(option.font)
@@ -236,11 +238,6 @@ class ButtonDelegate(QStyledItemDelegate):
         total_width = text_width + button_width + 5  # Additional padding between text and button
         button_height = fm.height()+10
         return QSize(total_width, max(text_height, button_height))
-
-    def get_item_text(self, row: int) -> str:
-        model = self.parent().model()
-        index = model.index(row, 0)
-        return model.data(index)
 
     def handleButtonClick(self, row):
         print(f"Button clicked for row {row}")
@@ -3435,3 +3432,17 @@ Should return 1 or 0, representing a boolean.
 
                 item.setData(Qt.ItemDataRole.UserRole, anim)
                 self.ui.animsList.addItem(item)
+
+if __name__ == "__main__":
+    app = QApplication([])
+    window = QWidget()
+    layout = QVBoxLayout(window)
+
+    combo_box = FilterComboBox()
+    combo_box.populate_items(["item1", "item2", "item3", "item4", "nm35aabast06005_", "nbtn14stun01003_", "nbtn14stun01004_", "nbtn14stun01005_", "nstn57c01001009_", "nstn57c01001014_", "nglobebeast06890"])
+    layout.addWidget(combo_box)
+    combo_box.set_button_delegate("Play", lambda x: x)
+
+    window.setLayout(layout)
+    window.show()
+    app.exec_()
