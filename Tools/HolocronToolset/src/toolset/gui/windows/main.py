@@ -533,12 +533,14 @@ class ToolWindow(QMainWindow):
                 | Qt.WindowType.WindowMinimizeButtonHint
                 | Qt.WindowType.WindowMaximizeButtonHint
             )
+        elif themeName == "Fusion (Light)":
+            app.setStyleSheet("")  # Reset to default style
+            app.setPalette(self.original_palette)  # Reset to default palette
+            app.setStyle("Fusion")
         elif themeName == "Fusion (Dark)":
             app.setStyleSheet("")  # Reset to default style
             app.setStyle("Fusion")
             dark_palette = QPalette()
-            print("<SDM> [toggle_stylesheet scope] dark_palette: ", dark_palette)
-
             dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
             dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
             dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))

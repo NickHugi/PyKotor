@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QDialog
+from qtpy.QtWidgets import QDialog, QMessageBox, QPushButton
+
+from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QTreeWidgetItem, QWidget
@@ -31,7 +33,6 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         # Add maximize and minimize buttons
         self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
-
 
         self.installationEdited: bool = False
 
@@ -64,6 +65,10 @@ class SettingsDialog(QDialog):
     def _setupSignals(self):
         self.ui.installationsWidget.edited.connect(self.onInstallationEdited)
         self.ui.settingsTree.itemClicked.connect(self.pageChanged)
+        self.resetButton = QPushButton("Reset All Settings", self)
+        self.resetButton.setObjectName("resetButton")
+        self.resetButton.clicked.connect(self.resetAllSettings)
+        self.ui.verticalLayout.addWidget(self.resetButton)
 
     def pageChanged(self, pageTreeItem: QTreeWidgetItem):
         pageItemText = pageTreeItem.text(0)
@@ -78,6 +83,24 @@ class SettingsDialog(QDialog):
                 self.resize(self.originalSize)
 
         self.previousPage = pageItemText
+
+    def resetAllSettings(self):
+        reply = QMessageBox.question(
+            self,
+            "Reset All Settings",
+            "Are you sure you want to reset all settings to their default values? This action cannot be undone.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            GlobalSettings().settings.clear()
+            GlobalSettings().firstTime = True
+            QMessageBox.information(
+                self,
+                "Settings Reset",
+                "All settings have been cleared and reset to their default values."
+            )
 
     def onInstallationEdited(self):
         self.installationEdited = True

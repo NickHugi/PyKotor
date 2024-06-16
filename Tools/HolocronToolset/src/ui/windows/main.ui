@@ -342,6 +342,7 @@
      <string>Theme</string>
     </property>
     <addaction name="defaultLight"/>
+    <addaction name="fusionLight"/>
     <addaction name="breezeDark"/>
     <addaction name="darkManualTheme2"/>
    </widget>
@@ -685,6 +686,11 @@
   <action name="defaultLight">
    <property name="text">
     <string>Default (Light)</string>
+   </property>
+  </action>
+  <action name="fusionLight">
+   <property name="text">
+    <string>Fusion (Light)</string>
    </property>
   </action>
   <action name="breezeDark">
