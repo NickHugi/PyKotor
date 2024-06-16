@@ -56,6 +56,7 @@ from qtpy.QtWidgets import (
     QApplication,
     QComboBox,
     QFormLayout,
+    QGraphicsEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -179,11 +180,11 @@ class FilterProxyModel(QSortFilterProxyModel):
 
     def setFilterText(self, text: str):
         self.filter_text = text.lower()
-        if not self.filter_text:  # If filter text is empty, reset immediately
+        if not self.filter_text:
             self.invalidateFilter()
         else:
             self.filter_timer.stop()
-            self.filter_timer.start(self.debounce_delay)  # Restart the timer on each input
+            self.filter_timer.start(self.debounce_delay)
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
         if source_row == 0:
@@ -193,7 +194,6 @@ class FilterProxyModel(QSortFilterProxyModel):
         return False if item_text is None else self.filter_text in item_text.lower()
 
     def rebuildTrie(self):
-        # Ensure there is a source model before trying to rebuild the Trie
         if self.sourceModel() is not None:
             self.trie.rebuild(
                 [
@@ -219,7 +219,7 @@ class ButtonDelegate(QStyledItemDelegate):
 
         button = self.buttons[index.row()]
         fm = QFontMetrics(button.font())
-        button_width = fm.width(self.button_text) + 10  # Adjust padding as necessary
+        button_width = fm.width(self.button_text) + 10
         button_height = fm.height() + 10
         button_size = QSize(button_width, button_height)
         button.move(option.rect.right() - button_size.width(), option.rect.top())
@@ -231,17 +231,12 @@ class ButtonDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         fm = QFontMetrics(option.font)
-        text_width = fm.width(index.model().data(index, Qt.DisplayRole))  # Get text width
-        text_height = fm.height()  # Get text height
-        button_width = fm.width(self.button_text) + 10  # Include padding for the button
-        # Calculate total width and set height based on the taller element (text or button)
-        total_width = text_width + button_width + 5  # Additional padding between text and button
+        text_width = fm.width(index.model().data(index, Qt.DisplayRole))
+        text_height = fm.height()
+        button_width = fm.width(self.button_text) + 10
+        total_width = text_width + button_width + 5
         button_height = fm.height()+10
         return QSize(total_width, max(text_height, button_height))
-
-    def handleButtonClick(self, row):
-        print(f"Button clicked for row {row}")
-        # Handle the button click action here
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
@@ -262,7 +257,6 @@ class FilterComboBox(QComboBox):
         self.create_line_edit()
 
     def eventFilter(self, source: QObject, event: QEvent) -> bool:
-        # Ensure that the line edit is always focused when the widget is active
         if event.type() == QEvent.FocusIn and source is not self.line_edit:
             self.line_edit.setFocus()
             return True
@@ -275,7 +269,7 @@ class FilterComboBox(QComboBox):
         self.line_edit.textChanged.connect(self.filter_items)
         self.line_edit.hide()
         self.line_edit.setFocusPolicy(Qt.StrongFocus)
-        self.line_edit.installEventFilter(self)  # Install event filter
+        self.line_edit.installEventFilter(self)
 
     def showPopup(self):
         super().showPopup()
@@ -286,25 +280,11 @@ class FilterComboBox(QComboBox):
             self.view().setIndexWidget(self.proxy_model.index(0, 0), self.line_edit)
         self.line_edit.show()
         self.line_edit.setFocus()
-        # Start with the current width of the ComboBox
         max_width = self.width()
-
-        # Delegate for calculating sizeHint
         delegate = self.itemDelegate()
-
-        # Get the maximum width of the first 20 items, or fewer if there are fewer items
         max_items_to_measure = 20
-        num_items = min(self.model().rowCount(), max_items_to_measure)
-
-        # Loop through the items to determine the maximum width
-        for i in range(num_items):
-            index = self.model().index(i, 0)
-            option = QStyleOptionViewItem()
-            # Get size hint from the delegate
-            item_size = delegate.sizeHint(option, index)
-            item_width = item_size.width()
-
-            # Update the maximum width if the current item is wider
+        for i in range(min(self.model().rowCount(), max_items_to_measure)):
+            item_width = delegate.sizeHint(QStyleOptionViewItem(), self.model().index(i, 0)).width()
             if item_width > max_width:
                 max_width = item_width
 
@@ -313,7 +293,6 @@ class FilterComboBox(QComboBox):
         super().showPopup()
 
     def populate_items(self, items):
-        # Start from index 1 to leave the placeholder intact
         self.items = ["", *items]
         self.original_model.setStringList(self.items)
 
@@ -503,7 +482,6 @@ class HTMLDelegate(QStyledItemDelegate):
         option: QStyleOptionViewItem,
         index: QModelIndex,
     ) -> QSize:
-        option.textElideMode = Qt.ElideNone  # Disable text elision
         #print(f"HTMLDelegate.sizeHint({option}, {index})")
         if self.dlgTreeView:
             window_width = self.dlgTreeView.viewport().width()
@@ -514,26 +492,18 @@ class HTMLDelegate(QStyledItemDelegate):
         html: str | None = index.data(Qt.DisplayRole)
         if html is None:
             return super().sizeHint(option, index)
-        updated_html = self.updateHtmlSizeAndSpacing(html, self.text_size)
 
         doc = QTextDocument()
-        doc.setHtml(updated_html)
-        doc.setTextWidth(max_width)  # Set the text width to force wrapping at the specified width
-
-        required_height = doc.size().height()
-
-        # Include vertical spacing explicitly since QTextDocument may not account for margins
-        vertical_padding = self.verticalSpacing * 2  # Since margin is added to both top and bottom
-        total_required_height = required_height + vertical_padding
+        doc.setHtml(self.updateHtmlSizeAndSpacing(html, self.text_size))
+        doc.setTextWidth(max_width)
+        total_required_height = doc.size().height() + self.verticalSpacing * 2
 
         if self.dlgTreeView:
             max_height = self.max_height_percentage * self.dlgTreeView.viewport().height()
         else:
             max_height = 200  # Fallback maximum height
 
-        final_adjusted_height = min(total_required_height, max_height)
-
-        return QSize(int(max_width), int(final_adjusted_height))
+        return QSize(int(max_width), int(min(total_required_height, max_height)))
 
 
 class RobustTreeView(QTreeView):
@@ -542,10 +512,20 @@ class RobustTreeView(QTreeView):
         self.text_size: int = 12
 
         self.setUniformRowHeights(False)
-        self.setMouseTracking(False)  # Disable hover events
+        self.setTextElideMode(Qt.TextElideMode.ElideNone)
+        self.setAnimated(True)
+        self.setAutoExpandDelay(2000)
+        self.setAutoScroll(True)
+        self.setExpandsOnDoubleClick(True)
+        self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+        self.setIndentation(10)
+        #self.setGraphicsEffect(QGraphicsEffect.)
+        #self.setAlternatingRowColors(True)
+        self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        self.setAutoFillBackground(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerItem)
+        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
     def itemDelegate(self, *args) -> HTMLDelegate:
         delegate = super().itemDelegate(*args)
@@ -1645,7 +1625,6 @@ class DLGTreeView(RobustTreeView):
         self.setDropIndicatorShown(False)  # We have our own.
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         #self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove | QAbstractItemView.DragDropMode.DragDrop)
-        self.setUniformRowHeights(False)
 
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
@@ -1965,7 +1944,28 @@ class DLGTreeView(RobustTreeView):
         parentIndexOfDrop = self.dropTarget.parentIndex
         droppedAtRow = self.dropTarget.row
         self.resetDragState()
-        #self.selectionModel().setCurrentIndex(self.model().index(droppedAtRow, 0, parentIndexOfDrop), QItemSelectionModel.ClearAndSelect)
+        self.setAutoScroll(False)
+        #self.setSelectionOnDrop(droppedAtRow, parentIndexOfDrop)
+        QTimer.singleShot(0, lambda: self.setSelectionOnDrop(droppedAtRow, parentIndexOfDrop))
+
+    def setSelectionOnDrop(self, row: int, parentIndex: QModelIndex):
+        print("setSelectionOnDrop")
+        self.clearSelection()
+        if not parentIndex.isValid():
+            print("setSelectionOnDrop: root item selected")
+            droppedIndex = self.model().index(row, 0)
+        else:
+            droppedIndex = self.model().index(row, 0, parentIndex)
+        if not droppedIndex.isValid():
+            print("setSelectionOnDrop droppedIndex invalid")
+            return
+        self.selectionModel().setCurrentIndex(droppedIndex, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+        self.update()
+        self.viewport().update()
+        self.setState(QAbstractItemView.State.DragSelectingState)
+        QTimer.singleShot(0, lambda: self.setState(QAbstractItemView.State.NoState))
+        QTimer.singleShot(0, lambda: self.viewport().update())
+        QTimer.singleShot(0, lambda: self.setAutoScroll(True))
 
     def getDraggedNodeFromMimeData(self, mimeData: QMimeData) -> DLGLink | None:
         try:
@@ -1999,17 +1999,21 @@ class DLGTreeView(RobustTreeView):
         self.dropIndicatorRect = QRect()
         self.dropTarget = None
         self.unsetCursor()
-        QTimer.singleShot(0, self.viewport().update)
+        self.viewport().update()
 
     def setInvalidDragDrop(
         self,
         event: QDropEvent | QDragEnterEvent | QDragMoveEvent,
     ):
         print("<SDM> [setInvalidDragDrop scope]")
-        event.accept()
+        event.acceptProposedAction()
         event.setDropAction(Qt.DropAction.IgnoreAction)
         self.setCursor(Qt.CursorShape.ForbiddenCursor)
-        QTimer.singleShot(0, self.viewport().update)
+        self.viewport().update()
+        QTimer.singleShot(0, lambda *args: self.setDragEnabled(True))
+        #QTimer.singleShot(0, self.setFocus)
+        #QTimer.singleShot(0, lambda *args: self.setAcceptDrops(True))
+        #QTimer.singleShot(0, lambda *args: self.viewport().setAcceptDrops(True))
 
     def setValidDragDrop(
         self,
@@ -2545,7 +2549,8 @@ Should return 1 or 0, representing a boolean.
         for i, label in enumerate(videoEffects.get_column("label")):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
-    def populateComboBox(self, comboBox: QComboBox | FilterComboBox, resnames: list[str]):
+    @staticmethod
+    def populateComboBox(comboBox: QComboBox | FilterComboBox, resnames: list[str]):
         comboBox.clear()
         if isinstance(comboBox, FilterComboBox):
             comboBox.populate_items(resnames)
@@ -3097,13 +3102,6 @@ Should return 1 or 0, representing a boolean.
             self.keysDown.remove(key)
         print(f"DLGEditor.keyReleaseEvent: {getQtKeyString(key)}, held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
 
-    def mouseDoubleClickEvent(self, event: QMouseEvent | QModelIndex):
-        if not self.ui.dialogTree.underMouse():
-            return
-        index: QModelIndex = event if isinstance(event, QModelIndex) else self.ui.dialogTree.indexAt(event.pos())
-        if index.isValid():
-            self.ui.dialogTree.expand(index)
-
     @staticmethod
     def setComboBoxText(comboBox: QComboBox, text: str, *, alwaysOnTop: bool = True):
         index = comboBox.findText(text)
@@ -3121,12 +3119,9 @@ Should return 1 or 0, representing a boolean.
 
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node."""
-        if self.ui.dialogTree.draggedItem:
-            print("dialogTree drag operation happening.")
-            return
         self.acceptUpdates = False
         selectionIndices = selection.indexes()
-        print("<SDM> [onSelectionChanged scope] selectionIndices: ", ",\n".join([self.model.itemFromIndex(index).text() for index in selectionIndices if self.model.itemFromIndex(index) is not None]))
+        print("<SDM> [onSelectionChanged scope] selectionIndices:\n", ",\n".join([self.model.itemFromIndex(index).text() for index in selectionIndices if self.model.itemFromIndex(index) is not None]))
         if selectionIndices:
             item: DLGStandardItem | None = self.model.itemFromIndex(selectionIndices[0])
             link: DLGLink = item.link
@@ -3213,11 +3208,16 @@ Should return 1 or 0, representing a boolean.
         """Updates node properties based on UI selections."""
         selectedIndices = self.ui.dialogTree.selectedIndexes()
         if not selectedIndices:
+            print("onNodeUpdate: no selected indices, early return")
             return
         if not self.acceptUpdates:
+            print("onNodeUpdate: acceptUpdates is False, early return")
             return
-        print("<SDM> [onNodeUpdate scope] selectedIndices: %s", selectedIndices)
         index: QModelIndex = selectedIndices[0]
+        if not index.isValid():
+            print("onNodeUpdate: index invalid, early return")
+            return
+        print("<SDM> [onNodeUpdate scope] selectedIndices: %s", [self.ui.dialogTree.getIdentifyingText(indx) for indx in selectedIndices])
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
         link: DLGLink = item.link
         node: DLGNode | None = link.node
@@ -3292,7 +3292,6 @@ Should return 1 or 0, representing a boolean.
             self._fullyLoadFutureExpandItem(item, index)
         if item.parent() is None:
             self.setExpandRecursively(item, set(), expand=True)
-        # Refresh the model by emitting dataChanged.
         index = self.model.indexFromItem(item)
         self.model.dataChanged.emit(index, index)
 
