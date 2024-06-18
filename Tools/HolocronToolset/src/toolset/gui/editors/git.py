@@ -937,18 +937,23 @@ class _InstanceMode(_Mode):
         if isinstance(self._editor, GITEditor):
             assert self._editor._filepath is not None
             module_root: str = self._installation.get_module_root(self._editor._filepath.name)
+            edited_file_from_dot_mod = self._editor._filepath.suffix.lower() == ".mod"
         else:
             assert self._editor._module is not None
             module_root = self._editor._module._root
+            edited_file_from_dot_mod = self._editor._module.dot_mod
 
         module_root = module_root.lower()
         for loc in search:
-            if (
-                loc.filepath.parent.name.lower() == "modules"
-                and self._installation.get_module_root(loc.filepath.name.lower()) != module_root
-            ):
-                RobustRootLogger().debug(f"Removing non-module location '{loc.filepath}' (not in our module '{module_root}')")
-                search.remove(loc)
+            if loc.filepath.parent.name.lower() == "modules":
+                loc_module_root = self._installation.get_module_root(loc.filepath.name.lower())
+                loc_is_dot_mod = loc.filepath.suffix.lower() == ".mod"
+                if loc_module_root != module_root:
+                    RobustRootLogger.debug(f"Removing location '{loc.filepath}' (not in our module '{module_root}')")
+                    search.remove(loc)
+                elif loc_is_dot_mod != edited_file_from_dot_mod:
+                    RobustRootLogger.debug(f"Removing location '{loc.filepath}' due to rim/mod check")
+                    search.remove(loc)
         if len(search) > 1:
             selectionWindow = FileSelectionWindow(search, self._installation)
             selectionWindow.show()
@@ -989,13 +994,6 @@ class _InstanceMode(_Mode):
         ----
             instance: {The selected GIT instance object}
             menu: {The QMenu to add actions to}.
-
-        Processing Logic:
-        ----------------
-            - Adds basic "Remove" and "Edit Instance" actions
-            - Conditionally adds "Edit Resource" action and disables for cameras
-            - Adds additional geometry and spawn point editing for encounters and triggers
-            - Connects each action to a method on the class to handle the trigger
         """
         menu.addAction("Remove").triggered.connect(self.deleteSelected)
         if isinstance(self._editor, GITEditor):
