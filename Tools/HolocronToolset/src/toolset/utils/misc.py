@@ -171,7 +171,7 @@ def getQtKeyString(key: QtKey | T) -> str:
     result = getattr(key, "name", MODIFIER_KEY_NAMES.get(key, QKeySequence(key).toString()))  # type: ignore[arg-type]
     return result.decode(errors="replace") if isinstance(result, bytes) else result
 
-def getQtKeyStringLocalized(key: QtKey | str | int | bytes):
+def getQtKeyStringLocalized(key: QtKey | str | int | bytes) -> str:
     return MODIFIER_KEY_NAMES.get(key, getattr(key, "name", QKeySequence(key).toString())).upper().strip().replace("KEY_", "").replace("CONTROL", "CTRL")  # type: ignore[arg-type]
 
 

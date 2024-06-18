@@ -89,7 +89,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout.addWidget(self.label_7)
 
-        self.upgradeSelect = QComboBox(Dialog)
+        self.upgradeSelect = ComboBox2DA(Dialog)
         self.upgradeSelect.setObjectName(u"upgradeSelect")
 
         self.verticalLayout.addWidget(self.upgradeSelect)

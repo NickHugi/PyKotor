@@ -152,16 +152,16 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addItem(self.verticalSpacer)
 
         self.tabWidget.addTab(self.tab_2, "")
-        self.tab_3 = QWidget()
-        self.tab_3.setObjectName(u"tab_3")
-        self.gridLayout_2 = QGridLayout(self.tab_3)
+        self.commentsTab = QWidget()
+        self.commentsTab.setObjectName(u"commentsTab")
+        self.gridLayout_2 = QGridLayout(self.commentsTab)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.commentsEdit = QPlainTextEdit(self.tab_3)
+        self.commentsEdit = QPlainTextEdit(self.commentsTab)
         self.commentsEdit.setObjectName(u"commentsEdit")
 
         self.gridLayout_2.addWidget(self.commentsEdit, 0, 0, 1, 1)
 
-        self.tabWidget.addTab(self.tab_3, "")
+        self.tabWidget.addTab(self.commentsTab, "")
 
         self.gridLayout.addWidget(self.tabWidget, 0, 0, 1, 1)
 
@@ -209,7 +209,7 @@ class Ui_MainWindow(object):
         self.label.setText(QCoreApplication.translate("MainWindow", u"Map Note:", None))
         self.noteChangeButton.setText(QCoreApplication.translate("MainWindow", u"...", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"Advanced", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Comments", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.commentsTab), QCoreApplication.translate("MainWindow", u"Comments", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
 

@@ -15,6 +15,7 @@ from PySide2.QtWidgets import *
 from toolset.gui.widgets.renderer.model import ModelRenderer
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.widgets.edit.combobox import FilterComboBox
 
 
 class Ui_MainWindow(object):
@@ -156,9 +157,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.conversationEdit = QLineEdit(self.groupBox)
+        self.conversationEdit = FilterComboBox(self.groupBox)
         self.conversationEdit.setObjectName(u"conversationEdit")
-        self.conversationEdit.setMaxLength(16)
 
         self.horizontalLayout_5.addWidget(self.conversationEdit)
 
@@ -436,9 +436,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.label_18)
 
-        self.onClickEdit = QLineEdit(self.tab_2)
+        self.onClickEdit = FilterComboBox(self.tab_2)
         self.onClickEdit.setObjectName(u"onClickEdit")
-        self.onClickEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.onClickEdit)
 
@@ -447,9 +446,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.label_5)
 
-        self.onClosedEdit = QLineEdit(self.tab_2)
+        self.onClosedEdit = FilterComboBox(self.tab_2)
         self.onClosedEdit.setObjectName(u"onClosedEdit")
-        self.onClosedEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.onClosedEdit)
 
@@ -458,9 +456,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(2, QFormLayout.LabelRole, self.label_7)
 
-        self.onDamagedEdit = QLineEdit(self.tab_2)
+        self.onDamagedEdit = FilterComboBox(self.tab_2)
         self.onDamagedEdit.setObjectName(u"onDamagedEdit")
-        self.onDamagedEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.onDamagedEdit)
 
@@ -469,9 +466,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(3, QFormLayout.LabelRole, self.label_8)
 
-        self.onDeathEdit = QLineEdit(self.tab_2)
+        self.onDeathEdit = FilterComboBox(self.tab_2)
         self.onDeathEdit.setObjectName(u"onDeathEdit")
-        self.onDeathEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(3, QFormLayout.FieldRole, self.onDeathEdit)
 
@@ -480,9 +476,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(4, QFormLayout.LabelRole, self.label_10)
 
-        self.onOpenFailedEdit = QLineEdit(self.tab_2)
+        self.onOpenFailedEdit = FilterComboBox(self.tab_2)
         self.onOpenFailedEdit.setObjectName(u"onOpenFailedEdit")
-        self.onOpenFailedEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(4, QFormLayout.FieldRole, self.onOpenFailedEdit)
 
@@ -491,9 +486,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(5, QFormLayout.LabelRole, self.label_11)
 
-        self.onHeartbeatEdit = QLineEdit(self.tab_2)
+        self.onHeartbeatEdit = FilterComboBox(self.tab_2)
         self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
-        self.onHeartbeatEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(5, QFormLayout.FieldRole, self.onHeartbeatEdit)
 
@@ -502,9 +496,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(6, QFormLayout.LabelRole, self.label_13)
 
-        self.onMeleeAttackEdit = QLineEdit(self.tab_2)
+        self.onMeleeAttackEdit = FilterComboBox(self.tab_2)
         self.onMeleeAttackEdit.setObjectName(u"onMeleeAttackEdit")
-        self.onMeleeAttackEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(6, QFormLayout.FieldRole, self.onMeleeAttackEdit)
 
@@ -513,9 +506,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(7, QFormLayout.LabelRole, self.label_16)
 
-        self.onSpellEdit = QLineEdit(self.tab_2)
+        self.onSpellEdit = FilterComboBox(self.tab_2)
         self.onSpellEdit.setObjectName(u"onSpellEdit")
-        self.onSpellEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(7, QFormLayout.FieldRole, self.onSpellEdit)
 
@@ -524,9 +516,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(8, QFormLayout.LabelRole, self.label_17)
 
-        self.onOpenEdit = QLineEdit(self.tab_2)
+        self.onOpenEdit = FilterComboBox(self.tab_2)
         self.onOpenEdit.setObjectName(u"onOpenEdit")
-        self.onOpenEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(8, QFormLayout.FieldRole, self.onOpenEdit)
 
@@ -535,9 +526,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(9, QFormLayout.LabelRole, self.label_23)
 
-        self.onUnlockEdit = QLineEdit(self.tab_2)
+        self.onUnlockEdit = FilterComboBox(self.tab_2)
         self.onUnlockEdit.setObjectName(u"onUnlockEdit")
-        self.onUnlockEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(9, QFormLayout.FieldRole, self.onUnlockEdit)
 
@@ -546,23 +536,22 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(10, QFormLayout.LabelRole, self.label_19)
 
-        self.onUserDefinedEdit = QLineEdit(self.tab_2)
+        self.onUserDefinedEdit = FilterComboBox(self.tab_2)
         self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
-        self.onUserDefinedEdit.setMaxLength(16)
 
         self.formLayout_2.setWidget(10, QFormLayout.FieldRole, self.onUserDefinedEdit)
 
         self.tabWidget.addTab(self.tab_2, "")
-        self.tab_3 = QWidget()
-        self.tab_3.setObjectName(u"tab_3")
-        self.gridLayout_4 = QGridLayout(self.tab_3)
+        self.commentsTab = QWidget()
+        self.commentsTab.setObjectName(u"commentsTab")
+        self.gridLayout_4 = QGridLayout(self.commentsTab)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
-        self.commentsEdit = QPlainTextEdit(self.tab_3)
+        self.commentsEdit = QPlainTextEdit(self.commentsTab)
         self.commentsEdit.setObjectName(u"commentsEdit")
 
         self.gridLayout_4.addWidget(self.commentsEdit, 0, 0, 1, 1)
 
-        self.tabWidget.addTab(self.tab_3, "")
+        self.tabWidget.addTab(self.commentsTab, "")
 
         self.horizontalLayout_2.addWidget(self.tabWidget)
 
@@ -654,7 +643,7 @@ class Ui_MainWindow(object):
         self.label_23.setText(QCoreApplication.translate("MainWindow", u"OnUnlock:", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"OnUserDefined:", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"Scripts", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Comments", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.commentsTab), QCoreApplication.translate("MainWindow", u"Comments", None))
         self.menuNew.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"View", None))
     # retranslateUi

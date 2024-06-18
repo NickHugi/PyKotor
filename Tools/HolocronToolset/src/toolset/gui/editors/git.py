@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Sequence
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtGui import QColor, QCursor, QIcon, QKeySequence
+from qtpy.QtGui import QColor, QIcon, QKeySequence
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
@@ -1025,10 +1025,9 @@ class _InstanceMode(_Mode):
         if isinstance(self._editor, GITEditor):
             valid_filepaths = [self._editor._filepath]
         else:
-            assert self._editor._module is not None
+            assert self._editor._module is not None  # noqa: SLF001
             valid_filepaths = [res.filepath() for res in self._editor._module.get_capsules() if res is not None]
 
-        mousePos: QPoint = QCursor.pos()
         override_path = self._installation.override_path()
         # Iterate over each location to create submenus
         for result in locations:
@@ -1036,10 +1035,10 @@ class _InstanceMode(_Mode):
             if result.filepath not in valid_filepaths:
                 continue
             if result.filepath.is_relative_to(override_path):
-                displayPath = override_path
+                displayPath = result.filepath.relative_to(override_path.parent)
             else:
-                displayPath = result.filepath.joinpath(str(instance.identifier()))
-            locMenu: QMenu = fileMenu.addMenu(str(displayPath.relative_to(self._installation.path())))
+                displayPath = result.filepath.joinpath(str(instance.identifier())).relative_to(self._installation.path())
+            locMenu: QMenu = fileMenu.addMenu(str(displayPath))
             resourceMenuBuilder = ResourceItems(resources=[result])
             resourceMenuBuilder.build_menu(locMenu)
         def moreInfo():
@@ -1361,7 +1360,7 @@ class _GeometryMode(_Mode):
         instance.geometry.append(point)
         self.renderer2d.geomPointsUnderMouse().append(newGeomPoint)
         self.renderer2d.geometrySelection._selection.append(newGeomPoint)
-        RobustRootLogger().debug(f"inserting a new geompoint under mouse for instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
+        RobustRootLogger().debug(f"Inserting new geompoint, instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
 
     # region Interface Methods
     def onItemSelectionChanged(self, item: QListWidgetItem):

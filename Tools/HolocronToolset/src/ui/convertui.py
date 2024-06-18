@@ -78,9 +78,7 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
                 new_filedata == filedata
                 and re.search(f"from toolset.rcc import resources_rc_{qt_version}", new_filedata) is None
             ):
-                # If no substitutions were made, append the import statement at the end
                 new_filedata += f"\nfrom toolset.rcc import resources_rc_{qt_version}\n"
-            # Write the file out again
             with ui_target.open("w", encoding="utf-8") as file:
                 file.write(new_filedata)
 

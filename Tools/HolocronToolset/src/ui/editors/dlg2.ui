@@ -1,0 +1,1137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>4095</width>
+    <height>2235</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QWidget" name="leftWidget">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="DLGTreeView" name="dialogTree">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>150</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOn</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOn</enum>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <attribute name="headerVisible">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Speaker Tag:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="speakerEdit"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>Listener Tag:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="listenerEdit"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Text/StringRef:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPlainTextEdit" name="textEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     <widget class="QStackedWidget" name="rightWidget">
+        <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+        </sizepolicy>
+        </property>
+        <property name="minimumSize">
+        <size>
+        <width>250</width>
+        <height>0</height>
+        </size>
+        </property>
+        <property name="maximumSize">
+        <size>
+        <width>1500</width>
+        <height>16777215</height>
+        </size>
+        </property>
+        <property name="focusPolicy">
+        <enum>Qt::WheelFocus</enum>
+        </property>
+        <widget class="QScrollArea" name="scrollArea">
+        <property name="widgetResizable">
+        <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents_2">
+        </widget>
+        <widget class="QWidget" name="rightWidgetPage1">
+        <layout class="QGridLayout" name="gridLayout">
+            <item row="0" column="0" colspan="2">
+            <widget class="QLabel" name="label_37">
+            <property name="text">
+            <string>Conversation Ends Script:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="0" column="1">
+            <widget class="FilterComboBox" name="onEndEdit"/>
+            </item>
+            <item row="1" column="0" colspan="2">
+            <widget class="QLabel" name="label_38">
+            <property name="text">
+            <string>Conversation Aborts Script:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="1" column="1">
+            <widget class="FilterComboBox" name="onAbortEdit"/>
+            </item>
+            <item row="2" column="0">
+            <widget class="QLabel" name="label_39">
+            <property name="text">
+            <string>Voiceover ID:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="2" column="1">
+            <widget class="QLineEdit" name="voIdEdit">
+            <property name="maxLength">
+            <number>16</number>
+            </property>
+            </widget>
+            </item>
+            <item row="3" column="0">
+            <widget class="QLabel" name="label_42">
+            <property name="text">
+            <string>Conversation Type:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="3" column="1">
+            <widget class="QComboBox" name="conversationSelect">
+            <item>
+            <property name="text">
+                <string>Human</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Computer</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Type 3</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Type 4</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Type 5</string>
+            </property>
+            </item>
+            </widget>
+            </item>
+            <item row="4" column="0">
+            <widget class="QLabel" name="label_43">
+            <property name="text">
+            <string>Computer Type:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="4" column="1">
+            <widget class="QComboBox" name="computerSelect">
+            <item>
+            <property name="text">
+                <string>Modern</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Ancient</string>
+            </property>
+            </item>
+            </widget>
+            </item>
+            <item row="5" column="0">
+            <widget class="QLabel" name="label_41">
+            <property name="text">
+            <string>Camera Model:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="5" column="1">
+            <widget class="QLineEdit" name="cameraModelEdit">
+            <property name="maxLength">
+            <number>16</number>
+            </property>
+            </widget>
+            </item>
+            <item row="6" column="0">
+            <widget class="QLabel" name="label_40">
+            <property name="text">
+            <string>Ambient Track:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="6" column="1">
+            <widget class="QLineEdit" name="ambientTrackEdit">
+            <property name="maxLength">
+            <number>16</number>
+            </property>
+            </widget>
+            </item>
+            <item row="7" column="0" colspan="2">
+            <widget class="QLabel" name="label_22">
+            <property name="text">
+            <string>Plot Index:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="7" column="1">
+            <widget class="GFFFieldSpinBox" name="plotIndexSpin">
+            <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+            </sizepolicy>
+            </property>
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>10000</number>
+            </property>
+            </widget>
+            </item>
+            <item row="8" column="0">
+            <widget class="QLabel" name="label_23">
+            <property name="text">
+            <string>Plot XP Percentage:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="8" column="1">
+            <widget class="QSpinBox" name="plotXpSpin"/>
+            </item>
+            <item row="9" column="0">
+            <widget class="QLabel" name="label_24">
+            <property name="text">
+            <string>Quest:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="9" column="1">
+            <widget class="QLineEdit" name="questEdit"/>
+            </item>
+            <item row="10" column="0">
+            <widget class="QLabel" name="label_25">
+            <property name="text">
+            <string>Quest Entry:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="10" column="1">
+            <widget class="GFFFieldSpinBox" name="questEntrySpin">
+            <property name="minimum">
+            <number>-2147483648</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="11" column="0">
+            <widget class="QLabel" name="label_26">
+            <property name="text">
+            <string>Camera ID:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="11" column="1">
+            <widget class="GFFFieldSpinBox" name="cameraIdSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>10000</number>
+            </property>
+            </widget>
+            </item>
+            <item row="12" column="0">
+            <widget class="QLabel" name="label_27">
+            <property name="text">
+            <string>Camera Animation:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="12" column="1">
+            <widget class="GFFFieldSpinBox" name="cameraAnimSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>65534</number>
+            </property>
+            </widget>
+            </item>
+            <item row="13" column="0">
+            <widget class="QLabel" name="label_28">
+            <property name="text">
+            <string>Camera Angle:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="13" column="1">
+            <widget class="QComboBox" name="cameraAngleSelect">
+            <item>
+            <property name="text">
+                <string>Auto</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Face</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Shoulder</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Wide Shot</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Animated Camera</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>No Change</string>
+            </property>
+            </item>
+            <item>
+            <property name="text">
+                <string>Static Camera</string>
+            </property>
+            </item>
+            </widget>
+            </item>
+            <item row="14" column="0">
+            <widget class="QLabel" name="label_29">
+            <property name="text">
+            <string>Camera Video Effect:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="14" column="1">
+            <widget class="QComboBox" name="cameraEffectSelect"/>
+            </item>
+            <item row="15" column="0" colspan="2">
+            <widget class="QLabel" name="script1Label">
+            <property name="text">
+            <string>Script #1:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="16" column="0" colspan="2">
+            <widget class="FilterComboBox" name="script1ResrefEdit"/>
+            </item>
+            <item row="17" column="0">
+            <widget class="GFFFieldSpinBox" name="script1Param1Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="17" column="1">
+            <widget class="GFFFieldSpinBox" name="script1Param2Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="18" column="0">
+            <widget class="GFFFieldSpinBox" name="script1Param3Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="18" column="1">
+            <widget class="GFFFieldSpinBox" name="script1Param4Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="19" column="0">
+            <widget class="GFFFieldSpinBox" name="script1Param5Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="19" column="1">
+            <widget class="QLineEdit" name="script1Param6Edit"/>
+            </item>
+            <item row="20" column="0" colspan="2">
+            <widget class="QLabel" name="script2Label">
+            <property name="text">
+            <string>Script #2:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="21" column="0" colspan="2">
+            <widget class="FilterComboBox" name="script2ResrefEdit"/>
+            </item>
+            <item row="22" column="0">
+            <widget class="GFFFieldSpinBox" name="script2Param1Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="22" column="1">
+            <widget class="GFFFieldSpinBox" name="script2Param2Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="23" column="0">
+            <widget class="GFFFieldSpinBox" name="script2Param3Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="23" column="1">
+            <widget class="GFFFieldSpinBox" name="script2Param4Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="24" column="0">
+            <widget class="GFFFieldSpinBox" name="script2Param5Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="24" column="1">
+            <widget class="QLineEdit" name="script2Param6Edit"/>
+            </item>
+            <item row="25" column="0" colspan="2">
+            <widget class="QLabel" name="conditional1Label">
+            <property name="text">
+            <string>Conditional #1:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="26" column="0">
+            <widget class="FilterComboBox" name="condition1ResrefEdit"/>
+            </item>
+            <item row="26" column="1">
+            <widget class="GFFFieldSpinBox" name="condition1Param1Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="27" column="0">
+            <widget class="GFFFieldSpinBox" name="condition1Param2Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="27" column="1">
+            <widget class="QCheckBox" name="condition1NotCheckbox">
+            <property name="text">
+            <string>Not</string>
+            </property>
+            </widget>
+            </item>
+            <item row="28" column="0">
+            <widget class="GFFFieldSpinBox" name="condition1Param3Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="28" column="1">
+            <widget class="GFFFieldSpinBox" name="condition1Param4Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="29" column="0">
+            <widget class="GFFFieldSpinBox" name="condition1Param5Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="29" column="1">
+            <widget class="QLineEdit" name="condition1Param6Edit"/>
+            </item>
+            <item row="30" column="0" colspan="2">
+            <widget class="QLabel" name="conditional2Label">
+            <property name="text">
+            <string>Conditional #2:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="31" column="0">
+            <widget class="FilterComboBox" name="condition2ResrefEdit"/>
+            </item>
+            <item row="31" column="1">
+            <widget class="GFFFieldSpinBox" name="condition2Param1Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="32" column="0">
+            <widget class="GFFFieldSpinBox" name="condition2Param2Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="32" column="1">
+            <widget class="QCheckBox" name="condition2NotCheckbox">
+            <property name="text">
+            <string>Not</string>
+            </property>
+            </widget>
+            </item>
+            <item row="33" column="0">
+            <widget class="GFFFieldSpinBox" name="condition2Param3Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="33" column="1">
+            <widget class="GFFFieldSpinBox" name="condition2Param4Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="34" column="0">
+            <widget class="GFFFieldSpinBox" name="condition2Param5Spin">
+            <property name="minimum">
+            <number>-2147483647</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="34" column="1">
+            <widget class="QLineEdit" name="condition2Param6Edit"/>
+            </item>
+            <item row="35" column="0" colspan="2">
+            <widget class="QLabel" name="label_12">
+            <property name="text">
+            <string>Current Animations</string>
+            </property>
+            </widget>
+            </item>
+            <item row="36" column="0" colspan="2">
+            <widget class="QListWidget" name="animsList"/>
+            </item>
+            <item row="37" column="0" colspan="2">
+            <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+            <widget class="QPushButton" name="addAnimButton">
+                <property name="text">
+                <string>Add</string>
+                </property>
+            </widget>
+            </item>
+            <item>
+            <widget class="QPushButton" name="removeAnimButton">
+                <property name="text">
+                <string>Remove</string>
+                </property>
+            </widget>
+            </item>
+            <item>
+            <widget class="QPushButton" name="editAnimButton">
+                <property name="text">
+                <string>Edit</string>
+                </property>
+            </widget>
+            </item>
+            </layout>
+            </item>
+            <item row="38" column="0" colspan="2">
+            <widget class="QLabel" name="label_34">
+            <property name="text">
+            <string>Logic:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="39" column="0">
+            <widget class="ComboBox2DA" name="expressionSelect"/>
+            </item>
+            <item row="39" column="1">
+            <widget class="ComboBox2DA" name="emotionSelect"/>
+            </item>
+            <item row="40" column="0">
+            <widget class="QLabel" name="label_33">
+            <property name="text">
+            <string>Post Proc Node:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="40" column="1">
+            <widget class="GFFFieldSpinBox" name="postProcSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="41" column="0" colspan="2">
+            <widget class="Line" name="line">
+            <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+            </property>
+            </widget>
+            </item>
+            <item row="42" column="0">
+            <widget class="QLabel" name="label_20">
+            <property name="text">
+            <string>Voice:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="42" column="1">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+            <widget class="FilterComboBox" name="voiceComboBox"/>
+            </item>
+            <item>
+            <widget class="QPushButton" name="voiceButton">
+                <property name="text">
+                <string>Play</string>
+                </property>
+            </widget>
+            </item>
+            </layout>
+            </item>
+            <item row="43" column="0">
+            <widget class="QLabel" name="label_19">
+            <property name="text">
+            <string>Sound:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="43" column="1">
+            <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+            <widget class="FilterComboBox" name="soundComboBox"/>
+            </item>
+            <item>
+            <widget class="QPushButton" name="soundButton">
+                <property name="text">
+                <string>Play</string>
+                </property>
+            </widget>
+            </item>
+            </layout>
+            </item>
+            <item row="44" column="0" colspan="2">
+            <widget class="QCheckBox" name="soundCheckbox">
+            <property name="text">
+            <string>Enabled</string>
+            </property>
+            </widget>
+            </item>
+            <item row="45" column="0">
+            <widget class="QLabel" name="label_36">
+            <property name="text">
+            <string>Fade Type:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="45" column="1">
+            <widget class="GFFFieldSpinBox" name="fadeTypeSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="46" column="0">
+            <widget class="QLabel" name="label_35">
+            <property name="text">
+            <string>Wait Flags:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="46" column="1">
+            <widget class="GFFFieldSpinBox" name="waitFlagSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="47" column="0">
+            <widget class="QLabel" name="label_31">
+            <property name="text">
+            <string>Alien Race Node:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="47" column="1">
+            <widget class="GFFFieldSpinBox" name="alienRaceNodeSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="48" column="0">
+            <widget class="QLabel" name="label_32">
+            <property name="text">
+            <string>Node ID:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="48" column="1">
+            <widget class="GFFFieldSpinBox" name="nodeIdSpin">
+            <property name="maximum">
+            <number>999999</number>
+            </property>
+            </widget>
+            </item>
+            <item row="49" column="0">
+            <widget class="QLabel" name="label_30">
+            <property name="text">
+            <string>Post Proc Node:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="49" column="1">
+            <widget class="GFFFieldSpinBox" name="postProcSpin"/>
+            </item>
+            <item row="50" column="0" colspan="2">
+            <widget class="QLabel" name="label_33">
+            <property name="text">
+            <string>Logic:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="51" column="0">
+            <widget class="GFFFieldSpinBox" name="logicSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="51" column="1">
+            <widget class="ComboBox2DA" name="expressionSelect"/>
+            </item>
+            <item row="52" column="0">
+            <widget class="QLabel" name="label_18">
+            <property name="text">
+            <string>Expression:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="52" column="1">
+            <widget class="ComboBox2DA" name="emotionSelect"/>
+            </item>
+            <item row="53" column="0">
+            <widget class="QLabel" name="label_19">
+            <property name="text">
+            <string>Emotion:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="53" column="1">
+            <widget class="ComboBox2DA" name="emotionSelect"/>
+            </item>
+            <item row="54" column="0">
+            <widget class="QLabel" name="label_20">
+            <property name="text">
+            <string>Voice:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="54" column="1">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+            <widget class="FilterComboBox" name="voiceComboBox"/>
+            </item>
+            <item>
+            <widget class="QPushButton" name="voiceButton">
+                <property name="text">
+                <string>Play</string>
+                </property>
+            </widget>
+            </item>
+            </layout>
+            </item>
+            <item row="55" column="0">
+            <widget class="QLabel" name="label_36">
+            <property name="text">
+            <string>Fade Type:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="55" column="1">
+            <widget class="GFFFieldSpinBox" name="fadeTypeSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="56" column="0">
+            <widget class="QLabel" name="label_35">
+            <property name="text">
+            <string>Wait Flags:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="56" column="1">
+            <widget class="GFFFieldSpinBox" name="waitFlagSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="57" column="0">
+            <widget class="QLabel" name="label_34">
+            <property name="text">
+            <string>Post Proc Node:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="57" column="1">
+            <widget class="GFFFieldSpinBox" name="postProcSpin">
+            <property name="minimum">
+            <number>-1</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="58" column="0">
+            <widget class="QCheckBox" name="soundCheckbox">
+            <property name="text">
+            <string>Enabled</string>
+            </property>
+            </widget>
+            </item>
+            <item row="59" column="0">
+            <widget class="QCheckBox" name="unequipHandsCheckbox">
+            <property name="text">
+            <string>Unequip Hands</string>
+            </property>
+            </widget>
+            </item>
+            <item row="60" column="0">
+            <widget class="QCheckBox" name="unequipAllCheckbox">
+            <property name="text">
+            <string>Unequip All</string>
+            </property>
+            </widget>
+            </item>
+            <item row="61" column="0">
+            <widget class="QLabel" name="label_44">
+            <property name="text">
+            <string>Delay before entry:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="61" column="1">
+            <widget class="GFFFieldSpinBox" name="entryDelaySpin">
+            <property name="minimum">
+            <number>-2147483648</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="62" column="0">
+            <widget class="QLabel" name="label_45">
+            <property name="text">
+            <string>Delay before reply:</string>
+            </property>
+            </widget>
+            </item>
+            <item row="62" column="1">
+            <widget class="GFFFieldSpinBox" name="replyDelaySpin">
+            <property name="minimum">
+            <number>-2147483648</number>
+            </property>
+            <property name="maximum">
+            <number>2147483647</number>
+            </property>
+            </widget>
+            </item>
+            <item row="63" column="0" colspan="2">
+            <widget class="QPlainTextEdit" name="commentsEdit"/>
+            </item>
+        </layout>
+        </widget>
+        </widget>
+        </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>4095</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSaveAs"/>
+    <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionReloadTree"/>
+    <addaction name="actionUnfocus"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="text">
+    <string>Revert</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionReloadTree">
+   <property name="text">
+    <string>Reload Tree</string>
+   </property>
+  </action>
+  <action name="actionUnfocus">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Unfocus Tree</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>DLGTreeView</class>
+   <extends>QTreeView</extends>
+   <header location="global">toolset.gui.editors.dlg</header>
+  </customwidget>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>GFFFieldSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header location="global">toolset.gui.editors.dlg</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

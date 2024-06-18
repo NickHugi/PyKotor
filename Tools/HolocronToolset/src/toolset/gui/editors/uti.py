@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy import QtCore
-from qtpy.QtGui import QCursor
+from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QAction, QApplication, QDialog, QListWidgetItem, QMenu, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
@@ -25,7 +24,6 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QPoint
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
@@ -88,7 +86,7 @@ class UTIEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.onDelShortcut)
 
-        self.ui.iconLabel.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.iconLabel.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.iconLabel.customContextMenuRequested.connect(self._iconLabelContextMenu)
 
         self.new()
@@ -96,6 +94,7 @@ class UTIEditor(Editor):
     def _setupSignals(self):
         """Set up signal connections for UI elements."""
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.tagGenerateButton.setToolTip("Reset this custom tag so it matches the resref")
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
         self.ui.removePropertyButton.clicked.connect(self.removeSelectedProperty)
@@ -147,20 +146,20 @@ class UTIEditor(Editor):
 
             subtypeResname = itemProperties.get_cell(i, "subtyperesref")
             if not subtypeResname:
-                item.setData(0, QtCore.Qt.ItemDataRole.UserRole, i)
-                item.setData(0, QtCore.Qt.ItemDataRole.UserRole + 1, i)
+                item.setData(0, Qt.ItemDataRole.UserRole, i)
+                item.setData(0, Qt.ItemDataRole.UserRole + 1, i)
                 continue
 
             subtype = installation.htGetCache2DA(subtypeResname)
             for j in range(subtype.get_height()):
-                if subtypeResname == "spells":
+                if subtypeResname == "spells":  # TODO(th3w1zard1): what were we debugging here again exactly...?
                     print("   ", j)
                 name = UTIEditor.subpropertyName(installation, i, j)
                 if not name or not name.strip():  # removes the blank entries
                     continue
                 child = QTreeWidgetItem([name])
-                child.setData(0, QtCore.Qt.ItemDataRole.UserRole, i)
-                child.setData(0, QtCore.Qt.ItemDataRole.UserRole + 1, j)
+                child.setData(0, Qt.ItemDataRole.UserRole, i)
+                child.setData(0, Qt.ItemDataRole.UserRole + 1, j)
                 item.addChild(child)
 
     def load(
@@ -209,7 +208,7 @@ class UTIEditor(Editor):
         for utiProperty in uti.properties:
             text = self.propertySummary(utiProperty)
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, utiProperty)
+            item.setData(Qt.ItemDataRole.UserRole, utiProperty)
             self.ui.assignedPropertiesList.addItem(item)
 
         # Comments
@@ -252,7 +251,7 @@ class UTIEditor(Editor):
         uti.texture_variation = self.ui.textureVarSpin.value()
 
         uti.properties = [
-            self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
+            self.ui.assignedPropertiesList.item(i).data(Qt.ItemDataRole.UserRole)
             for i in range(self.ui.assignedPropertiesList.count())
         ]
         # Comments
@@ -295,21 +294,21 @@ class UTIEditor(Editor):
     def editSelectedProperty(self):
         if not self.ui.assignedPropertiesList.selectedItems():
             return
-        utiProperty: UTIProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(QtCore.Qt.ItemDataRole.UserRole)
+        utiProperty: UTIProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(Qt.ItemDataRole.UserRole)
         dialog = PropertyEditor(self._installation, utiProperty)
         if not dialog.exec_():
             return
-        self.ui.assignedPropertiesList.selectedItems()[0].setData(QtCore.Qt.ItemDataRole.UserRole, dialog.utiProperty())
+        self.ui.assignedPropertiesList.selectedItems()[0].setData(Qt.ItemDataRole.UserRole, dialog.utiProperty())
         self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
 
     def addSelectedProperty(self):
         if not self.ui.availablePropertyList.selectedItems():
             return
         item = self.ui.availablePropertyList.selectedItems()[0]
-        propertyId = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        propertyId = item.data(0, Qt.ItemDataRole.UserRole)
         if propertyId is None:
             return
-        subtypeId = item.data(0, QtCore.Qt.ItemDataRole.UserRole + 1)
+        subtypeId = item.data(0, Qt.ItemDataRole.UserRole + 1)
         self._add_property_main(propertyId, subtypeId)
 
     def _add_property_main(
@@ -344,7 +343,7 @@ class UTIEditor(Editor):
 
         text: str = self.propertySummary(utiProperty)
         item = QListWidgetItem(text)
-        item.setData(QtCore.Qt.ItemDataRole.UserRole, utiProperty)
+        item.setData(Qt.ItemDataRole.UserRole, utiProperty)
         self.ui.assignedPropertiesList.addItem(item)
 
     def removeSelectedProperty(self):
@@ -376,7 +375,7 @@ class UTIEditor(Editor):
             return f"{propName}: [{costName}]"
         return f"{propName}"
 
-    def _generateIconTooltip(self, *, asHtml: bool = False) -> str:
+    def _generateIconTooltip(self, *, asHtml: bool = False) -> str:  # sourcery skip: lift-return-into-if
         """Generates a detailed tooltip for the iconLabel."""
         baseItem = self.ui.baseSelect.currentIndex()
         modelVariation = self.ui.modelVarSpin.value()
@@ -448,7 +447,6 @@ class UTIEditor(Editor):
             ]
         )
         flatLocations = [item for sublist in locations.values() for item in sublist]
-        mousePos: QPoint = QCursor.pos()
         if flatLocations:
             for location in flatLocations:
                 displayPathStr = str(location.filepath.relative_to(self._installation.path()))
@@ -547,17 +545,15 @@ class UTIEditor(Editor):
         installation: HTInstallation,
         cost: int,
         value: int,
-    ) -> str | None:
-        # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
+    ) -> str | None:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
         costtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
         costtable: TwoDA = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
         try:
             stringref: int | None = costtable.get_row(value).get_integer("name")
             if stringref is not None:
                 return installation.talktable().string(stringref)
-        except (IndexError, Exception) as e:  # noqa: BLE001
-            RobustRootLogger().info(f"Could not get the costtable 2da row/value: {e}")
-            RobustRootLogger().debug("Could not get the costtable 2da row/value", exc_info=True)
+        except (IndexError, Exception):  # noqa: BLE001
+            RobustRootLogger().warning("Could not get the costtable 2da row/value", exc_info=True)
         return None
 
     @staticmethod
@@ -565,13 +561,13 @@ class UTIEditor(Editor):
         installation: HTInstallation,
         paramtable: int,
         param: int,
-    ) -> str | None:
+    ) -> str | None:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
         paramtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
         paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
         try:
             stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
-        except Exception as e:
-            RobustRootLogger().info("Could not get the paramtable 2da row/value", exc_info=True)
+        except (IndexError, Exception):  # noqa: BLE001
+            RobustRootLogger().warning("Could not get the paramtable 2da row/value", exc_info=True)
         else:
             return installation.talktable().string(stringref)
         return None
@@ -627,9 +623,9 @@ class PropertyEditor(QDialog):
             for i in range(costtable.get_height()):
                 costName = UTIEditor.costName(installation, utiProperty.cost_table, i)
                 if not costName:
-                    print(f"No cost at index {i}")
+                    RobustRootLogger.warning(f"No costName at index {i}")
                 item = QListWidgetItem(costName)
-                item.setData(QtCore.Qt.ItemDataRole.UserRole, i)
+                item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.costList.addItem(item)
 
         if utiProperty.param1 != 0xFF:
@@ -638,16 +634,20 @@ class PropertyEditor(QDialog):
             for i in range(paramtable.get_height()):
                 paramName = UTIEditor.paramName(installation, utiProperty.param1, i)
                 if not paramName:
-                    print(f"No param at index {i}")
+                    RobustRootLogger.warning(f"No paramName at index {i}")
                 item = QListWidgetItem(paramName)
-                item.setData(QtCore.Qt.ItemDataRole.UserRole, i)
+                item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.parameterList.addItem(item)
 
         upgrades = installation.htGetCache2DA(HTInstallation.TwoDA_UPGRADES)
-        self.ui.upgradeSelect.addItem("[None]", None)
-        for i in range(upgrades.get_height()):
-            text = upgrades.get_cell(i, "label").replace("_", " ").title()
-            self.ui.upgradeSelect.addItem(text, i)
+        self.ui.upgradeSelect.setItems(
+            (
+                upgrades.get_cell(i, "label").replace("_", " ").title()
+                for i in range(upgrades.get_height())
+            ),
+            cleanupStrings=False,
+        )
+        self.ui.upgradeSelect.setContext(upgrades, installation, HTInstallation.TwoDA_UPGRADES)
         if utiProperty.upgrade_type is not None:
             self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type + 1)
 
@@ -671,14 +671,14 @@ class PropertyEditor(QDialog):
         if not self.ui.costList.currentItem():
             return
 
-        self._utiProperty.cost_value = self.ui.costList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)
+        self._utiProperty.cost_value = self.ui.costList.currentItem().data(Qt.ItemDataRole.UserRole)
         self.reloadTextboxes()
 
     def selectParam(self):
         if not self.ui.parameterList.currentItem():
             return
 
-        self._utiProperty.param1_value = self.ui.parameterList.currentItem().data(QtCore.Qt.ItemDataRole.UserRole)
+        self._utiProperty.param1_value = self.ui.parameterList.currentItem().data(Qt.ItemDataRole.UserRole)
         self.reloadTextboxes()
 
     def utiProperty(self) -> UTIProperty:

@@ -14,6 +14,7 @@ from PySide2.QtWidgets import *
 
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.widgets.edit.combobox import FilterComboBox
 
 
 class Ui_MainWindow(object):
@@ -292,9 +293,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_4)
 
-        self.onEnterEdit = QLineEdit(self.tab_3)
+        self.onEnterEdit = FilterComboBox(self.tab_3)
         self.onEnterEdit.setObjectName(u"onEnterEdit")
-        self.onEnterEdit.setMaxLength(16)
 
         self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.onEnterEdit)
 
@@ -318,27 +318,23 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(4, QFormLayout.LabelRole, self.label_9)
 
-        self.onExitEdit = QLineEdit(self.tab_3)
+        self.onExitEdit = FilterComboBox(self.tab_3)
         self.onExitEdit.setObjectName(u"onExitEdit")
-        self.onExitEdit.setMaxLength(16)
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.onExitEdit)
 
-        self.onExhaustedEdit = QLineEdit(self.tab_3)
+        self.onExhaustedEdit = FilterComboBox(self.tab_3)
         self.onExhaustedEdit.setObjectName(u"onExhaustedEdit")
-        self.onExhaustedEdit.setMaxLength(16)
 
         self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.onExhaustedEdit)
 
-        self.onHeartbeatEdit = QLineEdit(self.tab_3)
+        self.onHeartbeatEdit = FilterComboBox(self.tab_3)
         self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
-        self.onHeartbeatEdit.setMaxLength(16)
 
         self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.onHeartbeatEdit)
 
-        self.onUserDefinedEdit = QLineEdit(self.tab_3)
+        self.onUserDefinedEdit = FilterComboBox(self.tab_3)
         self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
-        self.onUserDefinedEdit.setMaxLength(16)
 
         self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.onUserDefinedEdit)
 

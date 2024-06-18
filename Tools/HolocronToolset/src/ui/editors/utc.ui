@@ -438,7 +438,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_2">
+      <widget class="QWidget" name="advancedTab">
        <attribute name="title">
         <string>Advanced</string>
        </attribute>
@@ -694,7 +694,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="statsTab">
        <attribute name="title">
         <string>Stats</string>
        </attribute>
@@ -1180,7 +1180,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_4">
+      <widget class="QWidget" name="classesTab">
        <attribute name="title">
         <string>Classes</string>
        </attribute>
@@ -1305,7 +1305,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_5">
+      <widget class="QWidget" name="featsTab">
        <attribute name="title">
         <string>Feats</string>
        </attribute>
@@ -1331,7 +1331,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_6">
+      <widget class="QWidget" name="powersTab">
        <attribute name="title">
         <string>Powers</string>
        </attribute>
@@ -1357,7 +1357,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_7">
+      <widget class="QWidget" name="Scripts">
        <attribute name="title">
         <string>Scripts</string>
        </attribute>
@@ -1546,7 +1546,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_8">
+      <widget class="QWidget" name="commentsTab">
        <attribute name="title">
         <string>Comments</string>
        </attribute>
@@ -1565,7 +1565,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>794</width>
+     <width>900</width>
      <height>22</height>
     </rect>
    </property>

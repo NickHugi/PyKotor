@@ -449,7 +449,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="commentsTab">
        <attribute name="title">
         <string>Comments</string>
        </attribute>

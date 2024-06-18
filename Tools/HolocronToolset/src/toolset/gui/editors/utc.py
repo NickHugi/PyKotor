@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Iterable, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 import qtpy
 
-from qtpy import QtCore
-from qtpy.QtCore import QSettings
-from qtpy.QtGui import QCursor, QImage, QPixmap, QTransform
+from qtpy.QtCore import QSettings, Qt
+from qtpy.QtGui import QImage, QPixmap, QTransform
 from qtpy.QtWidgets import QApplication, QListWidgetItem, QMenu, QMessageBox
 
 from pykotor.common.language import Gender, Language
@@ -25,14 +24,14 @@ from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.edit.combobox import FilterComboBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import addWindow, openResourceEditor
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtWidgets import QComboBox, QMainWindow, QWidget
+    from qtpy.QtWidgets import QMainWindow, QWidget
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
@@ -106,7 +105,7 @@ class UTCEditor(Editor):
         self.new()
 
         # Connect the new context menu and tooltip actions
-        self.ui.portraitPicture.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.portraitPicture.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.portraitPicture.customContextMenuRequested.connect(self._portraitContextMenu)
         self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
 
@@ -145,7 +144,6 @@ class UTCEditor(Editor):
             ]
         )
         flatLocations = [item for sublist in locations.values() for item in sublist]
-        mousePos = QCursor.pos()
         if flatLocations:
             for location in flatLocations:
                 displayPathStr = str(location.filepath.relative_to(self._installation.path()))
@@ -200,7 +198,9 @@ class UTCEditor(Editor):
             - Connects menu action triggers to toggle settings.
         """
         self.ui.firstnameRandomButton.clicked.connect(self.randomizeFirstname)
+        self.ui.firstnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
         self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
+        self.ui.lastnameRandomButton.setToolTip("Utilize the game's LTR randomizers to generate a unique name.")
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.alignmentSlider.valueChanged.connect(lambda: self.portraitChanged(self.ui.portraitSelect.currentIndex()))
         self.ui.portraitSelect.currentIndexChanged.connect(self.portraitChanged)
@@ -300,12 +300,12 @@ class UTCEditor(Editor):
             text: str = installation.talktable().string(stringref) if stringref else feat.get_string("label")
             text = text or f"[Unused Feat ID: {feat.label()}]"
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, int(feat.label()))
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Unchecked)
+            item.setData(Qt.ItemDataRole.UserRole, int(feat.label()))
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(Qt.Unchecked)
             self.ui.featList.addItem(item)
         self.ui.featList.setSortingEnabled(True)
-        self.ui.featList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
+        self.ui.featList.sortItems(Qt.SortOrder.AscendingOrder)
 
         self.ui.powerList.clear()
         for power in powers:
@@ -314,12 +314,12 @@ class UTCEditor(Editor):
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
             text = text or f"[Unused Power ID: {power.label()}]"
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, int(power.label()))
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Unchecked)
+            item.setData(Qt.ItemDataRole.UserRole, int(power.label()))
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
             self.ui.powerList.addItem(item)
         self.ui.powerList.setSortingEnabled(True)
-        self.ui.powerList.sortItems(QtCore.Qt.SortOrder.AscendingOrder)
+        self.ui.powerList.sortItems(Qt.SortOrder.AscendingOrder)
 
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
@@ -329,22 +329,27 @@ class UTCEditor(Editor):
             key=str.lower
         )
 
-        self.populateComboBox(self.ui.conversationEdit, {res.resname().lower() for res in self._installation if res.restype() is ResourceType.DLG})
+        self.ui.conversationEdit.populateComboBox(
+            sorted(
+                {res.resname().lower() for res in self._installation if res.restype() is ResourceType.DLG},
+                key=str.lower,
+            ),
+        )
         self._installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
 
-        self.populateComboBox(self.ui.onBlockedEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onAttackedEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onNoticeEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onConversationEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onDamagedEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onDeathEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onEndRoundEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onEndConversationEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onDisturbedEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onHeartbeatEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onSpawnEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onSpellCastEdit, self.all_script_resnames)
-        self.populateComboBox(self.ui.onUserDefinedEdit, self.all_script_resnames)
+        self.ui.onBlockedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onAttackedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onNoticeEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onConversationEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onEndRoundEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onEndConversationEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDisturbedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onSpawnEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onSpellCastEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
 
         self._installation.setupFileContextMenu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -467,30 +472,30 @@ class UTCEditor(Editor):
         # Feats
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
-            item.setCheckState(QtCore.Qt.Unchecked)
+            item.setCheckState(Qt.CheckState.Unchecked)
         for feat in utc.feats:
             item = self.getFeatItem(feat)
             if item is None:
                 item = QListWidgetItem(f"[Modded Feat ID: {feat}]")
-                item.setData(QtCore.Qt.ItemDataRole.UserRole, feat)
-                item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+                item.setData(Qt.ItemDataRole.UserRole, feat)
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 self.ui.featList.addItem(item)
-            item.setCheckState(QtCore.Qt.Checked)
+            item.setCheckState(Qt.CheckState.Checked)
 
         # Powers
         item: QListWidgetItem | None
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
-            item.setCheckState(QtCore.Qt.Unchecked)
+            item.setCheckState(Qt.CheckState.Unchecked)
         for utc_class in utc.classes:
             for power in utc_class.powers:
                 item = self.getPowerItem(power)
                 if item is None:
                     item = QListWidgetItem(f"[Modded Power ID: {power}]")
-                    item.setData(QtCore.Qt.ItemDataRole.UserRole, power)
-                    item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+                    item.setData(Qt.ItemDataRole.UserRole, power)
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)
-                item.setCheckState(QtCore.Qt.Checked)
+                item.setCheckState(Qt.CheckState.Checked)
 
         # Scripts
         self.ui.onBlockedEdit.setComboBoxText(str(utc.on_blocked))
@@ -509,29 +514,15 @@ class UTCEditor(Editor):
 
         # Comments
         self.ui.comments.setPlainText(utc.comment)
+        self._updateCommentsTabTitle()
 
-    @staticmethod
-    def setComboBoxText(comboBox: QComboBox, text: str, *, alwaysOnTop: bool = True):
-        index = comboBox.findText(text)
-        if alwaysOnTop:
-            if index != -1:  # Text found
-                comboBox.removeItem(index)
-            newIndex = 1 if isinstance(comboBox, FilterComboBox) else 0
-            comboBox.insertItem(newIndex, text)  # Insert at the top
-            comboBox.setCurrentIndex(newIndex)  # Set the current index to the top item
+    def _updateCommentsTabTitle(self):
+        """Updates the Comments tab title with a notification badge if comments are not blank."""
+        comments = self.ui.comments.toPlainText()
+        if comments:
+            self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(self.ui.commentsTab), "Comments *")
         else:
-            if index == -1:  # Text not found
-                comboBox.addItem(text)
-                index = comboBox.findText(text)
-            comboBox.setCurrentIndex(index)
-
-    @staticmethod
-    def populateComboBox(comboBox: QComboBox | FilterComboBox, resnames: Iterable[str]):
-        comboBox.clear()
-        if isinstance(comboBox, FilterComboBox):
-            comboBox.populate_items(resnames)
-        else:
-            comboBox.addItems(resnames)
+            self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(self.ui.commentsTab), "Comments")
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTC from UI data.
@@ -625,14 +616,14 @@ class UTCEditor(Editor):
         utc.feats = []
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
-            if item.checkState() == QtCore.Qt.Checked:
-                utc.feats.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
+            if item.checkState() == Qt.CheckState.Checked:
+                utc.feats.append(item.data(Qt.ItemDataRole.UserRole))
 
         powers: list[int] = utc.classes[-1].powers
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
-            if item.checkState() == QtCore.Qt.Checked:
-                powers.append(item.data(QtCore.Qt.ItemDataRole.UserRole))
+            if item.checkState() == Qt.CheckState.Checked:
+                powers.append(item.data(Qt.ItemDataRole.UserRole))
 
         use_tsl: Literal[Game.K2, Game.K1] = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
         data = bytearray()
@@ -681,7 +672,7 @@ class UTCEditor(Editor):
             - Sets pixmap to portrait picture widget.
         """
         if index == 0:
-            image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
+            image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
             pixmap = QPixmap.fromImage(image)
         else:
             pixmap = self._build_pixmap(index)
@@ -722,10 +713,10 @@ class UTCEditor(Editor):
 
         if texture is not None:
             width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
-            image = QImage(rgba, width, height, QImage.Format_RGB888)
+            image = QImage(rgba, width, height, QImage.Format.Format_RGB888)
             return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
-        image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
+        image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
         return QPixmap.fromImage(image)
 
     def editConversation(self):
@@ -749,18 +740,18 @@ class UTCEditor(Editor):
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
-
         if search is None:
             if (
-                QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
+                QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a new dialog in the 'Override' folder?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
                 == QMessageBox.StandardButton.Yes
             ):
                 data = bytearray()
                 filepath = self._installation.override_path() / f"{resname}.dlg"
 
                 dlg = DLG()
-                write_dlg(dlg, data)
-                write_dlg(dlg, filepath)
+                write_dlg(dlg, data, Game.K2 if self._installation.tsl else Game.K1)
+                with filepath.open("wb") as f:
+                    f.write(data)
         else:
             resname, restype, filepath, data = search
 
@@ -810,9 +801,9 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
-                print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
+                RobustRootLogger.warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
                 continue
-            if item.data(QtCore.Qt.ItemDataRole.UserRole) == featId:
+            if item.data(Qt.ItemDataRole.UserRole) == featId:
                 return item
         return None
 
@@ -820,9 +811,9 @@ class UTCEditor(Editor):
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
-                print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
+                RobustRootLogger.warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
                 continue
-            if item.data(QtCore.Qt.ItemDataRole.UserRole) == powerId:
+            if item.data(Qt.ItemDataRole.UserRole) == powerId:
                 return item
         return None
 
@@ -844,10 +835,10 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
-                print(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
+                RobustRootLogger.warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
                 continue
 
-            if item.checkState() == QtCore.Qt.Checked:
+            if item.checkState() == Qt.Checked:
                 summary += f"{item.text()}\n"
         self.ui.featSummaryEdit.setPlainText(summary)
 
@@ -865,10 +856,10 @@ class UTCEditor(Editor):
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
-                print(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
+                RobustRootLogger.warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
                 continue
 
-            if item.checkState() == QtCore.Qt.Checked:
+            if item.checkState() == Qt.Checked:
                 summary += f"{item.text()}\n"
         self.ui.powerSummaryEdit.setPlainText(summary)
 

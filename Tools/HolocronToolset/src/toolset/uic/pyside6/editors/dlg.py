@@ -120,9 +120,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_6.setWidget(0, QFormLayout.LabelRole, self.label_37)
 
-        self.onEndEdit = QLineEdit(self.fileTab)
+        self.onEndEdit = FilterComboBox(self.fileTab)
         self.onEndEdit.setObjectName(u"onEndEdit")
-        self.onEndEdit.setMaxLength(16)
 
         self.formLayout_6.setWidget(0, QFormLayout.FieldRole, self.onEndEdit)
 
@@ -131,9 +130,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_6.setWidget(1, QFormLayout.LabelRole, self.label_38)
 
-        self.onAbortEdit = QLineEdit(self.fileTab)
+        self.onAbortEdit = FilterComboBox(self.fileTab)
         self.onAbortEdit.setObjectName(u"onAbortEdit")
-        self.onAbortEdit.setMaxLength(16)
 
         self.formLayout_6.setWidget(1, QFormLayout.FieldRole, self.onAbortEdit)
 
@@ -1194,7 +1192,7 @@ class Ui_MainWindow(object):
         self.cameraAngleSelect.setItemText(6, QCoreApplication.translate("MainWindow", u"Static Camera", None))
 
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.cameraTab), QCoreApplication.translate("MainWindow", u"Camera", None))
-        self.nodeUnskippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unskippable", None))
+        self.nodeUnskippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Node Unskippable", None))
         self.label_30.setText(QCoreApplication.translate("MainWindow", u"Node ID:", None))
         self.label_31.setText(QCoreApplication.translate("MainWindow", u"Alien Race Node:", None))
         self.label_32.setText(QCoreApplication.translate("MainWindow", u"Post Proc Node:", None))

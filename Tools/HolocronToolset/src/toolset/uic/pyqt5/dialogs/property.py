@@ -60,7 +60,7 @@ class Ui_Dialog(object):
         self.label_7 = QtWidgets.QLabel(Dialog)
         self.label_7.setObjectName("label_7")
         self.verticalLayout.addWidget(self.label_7)
-        self.upgradeSelect = QtWidgets.QComboBox(Dialog)
+        self.upgradeSelect = ComboBox2DA(Dialog)
         self.upgradeSelect.setObjectName("upgradeSelect")
         self.verticalLayout.addWidget(self.upgradeSelect)
         self.horizontalLayout.addLayout(self.verticalLayout)
@@ -116,4 +116,5 @@ class Ui_Dialog(object):
         self.label_6.setText(_translate("Dialog", "Parameter Values:"))
         self.parameterSelectButton.setText(_translate("Dialog", "Select"))
 
+from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.rcc import resources_rc_pyqt5

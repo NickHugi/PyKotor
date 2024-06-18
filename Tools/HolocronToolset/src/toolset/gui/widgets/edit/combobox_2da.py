@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from qtpy import QtCore
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
@@ -35,8 +35,7 @@ class ComboBox2DA(QComboBox):
         self._resname: str | None = None
 
     def currentIndex(self) -> int:
-        """Returns the row index from the currently selected item: This is NOT the index into the combobox like it would be with a
-        normal QCombobox.
+        """Returns the row index from the currently selected item: This is NOT the index into the combobox like it would be with a normal QCombobox.
 
         Returns:
         -------
@@ -49,8 +48,9 @@ class ComboBox2DA(QComboBox):
         return row_index or 0
 
     def setCurrentIndex(self, rowIn2DA: int):
-        """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a
-        normal QCombobox. If the index cannot be found, it will create an item with the matching index.
+        """Selects the item with the specified row index: This is NOT the index into the combobox like it would be with a normal QCombobox.
+
+        If the index cannot be found, it will create an item with the matching index.
 
         Args:
         ----
@@ -72,7 +72,9 @@ class ComboBox2DA(QComboBox):
         text: str,
         row: int | None = None,
     ):
-        """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number of items in the combobox.
+        """Adds the 2DA row into the combobox.
+
+        If the row index is not specified, then the value will be set to the number of items in the combobox (the last row + 1).
 
         Args:
         ----
@@ -126,7 +128,7 @@ class ComboBox2DA(QComboBox):
 
     def setItems(
         self,
-        values: list[str],
+        values: Iterable[str],
         *,
         sortAlphabetically: bool = True,
         cleanupStrings: bool = True,
@@ -137,7 +139,6 @@ class ComboBox2DA(QComboBox):
 
         for index, text in enumerate(values):
             assert isinstance(text, str), f"text '{text}' ({text.__class__.__name__}) is not a str"
-            assert isinstance(index, int), f"index '{index}' ({index.__class__.__name__}) is not an int"
             new_text: str = text
             if cleanupStrings:
                 new_text = text.replace("TRAP_", "")

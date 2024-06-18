@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import qtpy
 
@@ -180,6 +180,23 @@ class UTEEditor(Editor):
         self.ui.onHeartbeatEdit.setText(str(ute.on_heartbeat))
         self.ui.onUserDefinedEdit.setText(str(ute.on_user_defined))
 
+        self.all_script_resnames = sorted(
+            {res.resname() for res in self._installation if res.restype() is ResourceType.NCS},
+            key=str.lower
+        )
+
+        self.ui.onEnterEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onExitEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onExhaustedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
+
+        self._installation.setupFileContextMenu(self.ui.onEnterEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExitEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
 
@@ -220,9 +237,9 @@ class UTEEditor(Editor):
         # Creatures
         ute.creatures = []
         for i in range(self.ui.creatureTable.rowCount()):
-            singleCheckbox: QCheckBox = self.ui.creatureTable.cellWidget(i, 0)
-            challengeSpin: QDoubleSpinBox = self.ui.creatureTable.cellWidget(i, 1)
-            appearanceSpin: QSpinBox = self.ui.creatureTable.cellWidget(i, 2)
+            singleCheckbox = cast(QCheckBox, self.ui.creatureTable.cellWidget(i, 0))
+            challengeSpin = cast(QDoubleSpinBox, self.ui.creatureTable.cellWidget(i, 1))
+            appearanceSpin = cast(QSpinBox, self.ui.creatureTable.cellWidget(i, 2))
 
             creature = UTECreature()
             creature.resref = ResRef(self.ui.creatureTable.item(i, 3).text())

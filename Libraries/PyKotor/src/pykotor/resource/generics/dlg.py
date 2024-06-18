@@ -161,32 +161,48 @@ class DLG:
 
     def find_paths(self, target: DLGEntry | DLGReply | DLGLink) -> list[PureWindowsPath]:
         paths: list[PureWindowsPath] = []
-        seen_nodes: set[DLGNode] = set()
+        seen_nodes: set[DLGNode | DLGLink] = set()
         self._find_paths_recursive(self.starters, target, PureWindowsPath(), paths, seen_nodes)
         return paths
 
     def _find_paths_recursive(  # noqa: PLR0913
         self,
         links: list[DLGLink],
-        target: DLGEntry | DLGReply | DLGLink,
+        target: DLGNode | DLGLink,
         current_path: PureWindowsPath,
         paths: list[PureWindowsPath],
-        seen_nodes: set[DLGNode],
+        seen_links_and_nodes: set[DLGNode | DLGLink],
     ):
         for link in links:
+            if link is None or link in seen_links_and_nodes:
+                continue
+            seen_links_and_nodes.add(link)
+            if isinstance(target, DLGLink) and link == target:
+                if links is self.starters:
+                    paths.append(PureWindowsPath("StartingList", str(link.list_index)))
+                elif current_path.name in ("EntriesList", "RepliesList"):
+                    paths.append(current_path / str(link.list_index))
+
             node = link.node
-            if node not in seen_nodes:
-                seen_nodes.add(node)
+            assert node is not None, "Corrupted DLG/buggy code detected"
+            if node in seen_links_and_nodes:
+                continue
+            seen_links_and_nodes.add(node)
 
-                if isinstance(node, DLGEntry):
-                    nodePart, linkPart = "EntryList", "RepliesList"
-                else:
-                    nodePart, linkPart = "ReplyList", "EntriesList"
+            if isinstance(node, DLGEntry):
+                node_list_name, link_list_name = "EntryList", "RepliesList"
+            else:
+                node_list_name, link_list_name = "ReplyList", "EntriesList"
+            node_path = PureWindowsPath(node_list_name, str(node.list_index))
 
-                node_path = current_path / f"{nodePart}/{node.list_index}"
+            if isinstance(target, DLGLink):
+                current_path = node_path / link_list_name
+            else:
+                current_path = PureWindowsPath()
                 if node == target:
                     paths.append(node_path)
-                self._find_paths_recursive(node.links, target, node_path / linkPart, paths, seen_nodes)
+
+            self._find_paths_recursive(node.links, target, current_path, paths, seen_links_and_nodes)
 
     def lookup_from_path(self, path: PureWindowsPath | str) -> list[DLGNode] | DLGNode | list[DLGLink] | DLGLink | None:
         path = PureWindowsPath.pathify(path)

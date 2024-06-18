@@ -1416,8 +1416,8 @@ class KOTORPatchingToolUI:
 
         # TGA <-> TPC
         ttk.Label(self.root, text="Convert TGAs to TPCs or TPCs to TGAs:").grid(row=row, column=0)
-        self.convert_tga_combobox = ttk.Combobox(self.root, textvariable=self.convert_tga, state='readonly')
-        self.convert_tga_combobox['values'] = ('None', 'TGA to TPC', 'TPC to TGA')
+        self.convert_tga_combobox = ttk.Combobox(self.root, textvariable=self.convert_tga, state="readonly")
+        self.convert_tga_combobox["values"] = ("None", "TGA to TPC", "TPC to TGA")
         self.convert_tga_combobox.grid(row=row, column=1)
         row += 1
 

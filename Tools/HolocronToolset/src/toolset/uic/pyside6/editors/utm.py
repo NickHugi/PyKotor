@@ -214,16 +214,16 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addLayout(self.horizontalLayout_2)
 
         self.tabWidget.addTab(self.tab, "")
-        self.tab_3 = QWidget()
-        self.tab_3.setObjectName(u"tab_3")
-        self.gridLayout_2 = QGridLayout(self.tab_3)
+        self.commentsTab = QWidget()
+        self.commentsTab.setObjectName(u"commentsTab")
+        self.gridLayout_2 = QGridLayout(self.commentsTab)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.commentsEdit = QPlainTextEdit(self.tab_3)
+        self.commentsEdit = QPlainTextEdit(self.commentsTab)
         self.commentsEdit.setObjectName(u"commentsEdit")
 
         self.gridLayout_2.addWidget(self.commentsEdit, 0, 0, 1, 1)
 
-        self.tabWidget.addTab(self.tab_3, "")
+        self.tabWidget.addTab(self.commentsTab, "")
 
         self.gridLayout.addWidget(self.tabWidget, 0, 0, 1, 1)
 
@@ -278,7 +278,7 @@ class Ui_MainWindow(object):
         self.storeFlagSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Buy and Sell", None))
 
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Basic", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Comments", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.commentsTab), QCoreApplication.translate("MainWindow", u"Comments", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
     # retranslateUi
 

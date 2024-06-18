@@ -134,7 +134,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="upgradeSelect"/>
+        <widget class="ComboBox2DA" name="upgradeSelect"/>
        </item>
       </layout>
      </item>

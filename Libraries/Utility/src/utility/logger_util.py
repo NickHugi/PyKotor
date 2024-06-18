@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import multiprocessing
 import os
-import re
 import shutil
 import sys
 import threading
@@ -11,7 +10,7 @@ import time
 import uuid
 
 from contextlib import contextmanager, suppress
-from logging.handlers import QueueListener, RotatingFileHandler, TimedRotatingFileHandler
+from logging.handlers import QueueListener, RotatingFileHandler
 from pathlib import Path
 from queue import Queue
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -19,8 +18,6 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
-    import datetime
-
     from io import TextIOWrapper
     from types import TracebackType
 
@@ -83,10 +80,10 @@ class CustomPrintToLogger:
     def __init__(
         self,
         logger: logging.Logger,
-        original: TextIOWrapper[str],
+        original: TextIOWrapper,
         log_type: Literal["stdout", "stderr"],
     ):
-        self.original_out: TextIOWrapper[str] = original
+        self.original_out: TextIOWrapper = original
         self.log_type: Literal["stdout", "stderr"] = log_type
         self.logger: logging.Logger = logger
         self.configure_logger_stream()
@@ -99,7 +96,7 @@ class CustomPrintToLogger:
         utf8_wrapper = UTF8StreamWrapper(self.original_out)
         for handler in self.logger.handlers:
             if isinstance(handler, logging.StreamHandler):
-                handler.setStream(utf8_wrapper)
+                handler.setStream(utf8_wrapper)  # type: ignore[arg-type]
 
     def write(self, message: str):
         if getattr(THREAD_LOCAL, "is_logging", False):
@@ -119,6 +116,8 @@ class CustomPrintToLogger:
         if message and message.strip():
             with logging_context():
                 if self.log_type == "stderr":
+                    if "DeprecationWarning: sipPyTypeDict() is deprecated, the extension module should use sipPyTypeDictRef() instead" in message:
+                        return
                     self.logger.error(message.strip())
                 else:
                     self.logger.debug(message.strip())
@@ -325,7 +324,7 @@ def get_log_directory(subdir: os.PathLike | str | None = None) -> Path:
     subdir = Path("logs") if subdir is None else Path(subdir)
     try:
         return check(subdir)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Failed to init 'logs' dir in cwd '{cwd}': {e}")
         try:
             return check(cwd)
@@ -333,139 +332,29 @@ def get_log_directory(subdir: os.PathLike | str | None = None) -> Path:
             print(f"Failed to init cwd fallback '{cwd}' as log directory: {e2}\noriginal: {e}")
             return check(get_fallback_log_dir())
 
+
 def safe_isfile(path: Path) -> bool:
     with suppress(Exception):
         return path.is_file()
     return False
+
 
 def safe_isdir(path: Path) -> bool:
     with suppress(Exception):
         return path.is_dir()
     return False
 
-class DirectoryRotatingFileHandler(TimedRotatingFileHandler, RotatingFileHandler):
-    """Handler for logging into daily directories with a static filename."""
-    def __init__(
-        self,
-        base_log_dir: os.PathLike | str,
-        filename: os.PathLike | str,
-        mode: str = "a",
-        maxBytes: int = 1048576,  # noqa: N803
-        when: Literal["s", "m", "h", "d", "w", "S", "M", "H", "D", "W", "W0", "W1", "W2", "W3", "W4", "W5", "W6", "w0", "w1", "w2", "w3", "w4", "w5", "w6", "MIDNIGHT", "midnight"] = "d",
-        interval: int = 1,
-        backupCount: int = 0,  # noqa: N803
-        encoding: str | None = None,
-        delay: bool = False,  # noqa: FBT001, FBT002
-        utc: bool = False,  # noqa: FBT001, FBT002
-        atTime: datetime.time | None = None,  # noqa: N803
-    ):
-        self._baseFilename = None
-        self._base_dir = Path(base_log_dir)
-        self._filename = Path(filename).name
-
-        # Initialize both Timed and Rotating handlers
-        TimedRotatingFileHandler.__init__(
-            self, filename=self.baseFilename, when=when, interval=interval,
-            backupCount=backupCount, encoding=encoding, delay=delay, utc=utc, atTime=atTime)
-        RotatingFileHandler.__init__(
-            self, filename=self.baseFilename, mode=mode, maxBytes=maxBytes,
-            backupCount=backupCount, encoding=encoding, delay=delay)
-
-        self.maxBytes: int = maxBytes
-        self.rotator = self._rotate
-
-    @property
-    def baseFilename(self) -> str:
-        if not hasattr(self, "rolloverAt"):
-            return str(self._base_dir / self._filename)
-        if self._baseFilename is None:
-            self._baseFilename = str(self._get_cur_directory() / self._filename)
-            return self._baseFilename
-        return self._baseFilename
-
-    @baseFilename.setter
-    def baseFilename(self, value):
-        ...  # Override to do nothing
-
-    def _get_timestamp_folder_name(self) -> str:
-        """Get the time that this sequence started at and make it a TimeTuple."""
-        currentTime = int(time.time())
-        dstNow = time.localtime(currentTime)[-1]
-        t = self.rolloverAt - self.interval
-        if self.utc:
-            timeTuple = time.gmtime(t)
-        else:
-            timeTuple = time.localtime(t)
-            dstThen = timeTuple[-1]
-            if dstNow != dstThen:
-                addend = 3600 if dstNow else -3600
-                timeTuple = time.localtime(t + addend)
-        return self.rotation_filename(time.strftime(self.suffix, timeTuple))
-
-    def _get_cur_directory(self) -> Path:
-        """Generate the directory path based on the current date or interval."""
-        return get_log_directory(self._base_dir / self._get_timestamp_folder_name())
-
-    def shouldRollover(
-        self,
-        record: logging.LogRecord,
-    ) -> Literal[1, 0]:
-        """Check for rollover based on both size and time."""
-        return RotatingFileHandler.shouldRollover(self, record)
-
-    def _rotate(
-        self,
-        source: os.PathLike | str,
-        dest: os.PathLike | str,
-    ):
-        """Custom rotate method that handles file rotation."""
-        src_path = Path(source)
-        if src_path.exists():
-            src_path.rename(Path(dest))
-
-    def doRollover(self):
-        """Perform a rollover.
-        In this version, old files are never deleted.
-        """
-        if self.stream:
-            self.stream.close()
-            self.stream = None
-
-        current_path = Path(self.baseFilename)
-        root = current_path.stem
-        ext = current_path.suffix
-        directory = current_path.parent
-
-        # Regex to match files that follow the naming pattern 'root.number.ext'
-        pattern = re.compile(rf"^{re.escape(root)}\.(\d+){re.escape(ext)}$")
-
-        # Collect and parse existing log files to determine the next file number
-        files: list[int] = []
-        for f in directory.iterdir():
-            if not safe_isfile(f):
-                continue
-            match = pattern.match(f.name)
-            if match:
-                files.append(int(match.group(1)))
-
-        next_file_number = max(files) + 1 if files else 1
-        new_name = directory / f"{root}.{next_file_number}{ext}"
-        self.rotate(self.baseFilename, str(new_name))
-
-        if not self.delay:
-            self.stream = self._open()
-
 
 class MetaLogger(type):
-    def _create_instance(cls: type[RobustRootLogger]):
+    def _create_instance(cls: type[RobustRootLogger]) -> RobustRootLogger:  # type: ignore[misc]
         instance = object.__new__(cls)
         object.__getattribute__(instance, "__new__")(cls)
         object.__getattribute__(instance, "__init__")()
         type.__setattr__(cls, "_instance", instance)
         return instance
-    def __getattribute__(cls: type[RobustRootLogger], attr_name: str):  # noqa: N805
+    def __getattribute__(cls: type[RobustRootLogger], attr_name: str):  # type: ignore[misc]
         if attr_name.startswith("__") and attr_name.endswith("__"):
-            return super().__getattribute__(attr_name)
+            return super().__getattribute__(attr_name)  # type: ignore[misc]
         instance: RobustRootLogger | None = type.__getattribute__(RobustRootLogger, "_instance")
         if instance is None:
             instance = MetaLogger._create_instance(cls)
@@ -475,7 +364,7 @@ class MetaLogger(type):
         # sourcery skip: assign-if-exp, merge-duplicate-blocks, reintroduce-else, remove-redundant-if, split-or-ifs
         instance: RobustRootLogger | None = type.__getattribute__(RobustRootLogger, "_instance")
         if instance is None:
-            instance = MetaLogger._create_instance(cls)
+            instance = MetaLogger._create_instance(cls)  # type: ignore[arg-type]
         if args or kwargs:
             instance.info(*args, **kwargs)
         return instance
@@ -496,7 +385,7 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
     """
     _instance: Self | None = None
     _queue: Queue = Queue()
-    _logger: logging.Logger = None  # type: ignore[arg-type]
+    _logger: logging.Logger = None  # type: ignore[assignment]
 
     def __reduce__(self) -> tuple[type[Self], tuple[()]]:
         return self.__class__, ()
@@ -583,8 +472,8 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             logger.addHandler(console_handler)
 
             # Redirect stdout and stderr
-            sys.stdout = CustomPrintToLogger(logger, sys.__stdout__, log_type="stdout")
-            sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")
+            sys.stdout = CustomPrintToLogger(logger, sys.__stdout__, log_type="stdout")  # type: ignore[assignment]
+            sys.stderr = CustomPrintToLogger(logger, sys.__stderr__, log_type="stderr")  # type: ignore[assignment]
 
             default_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")

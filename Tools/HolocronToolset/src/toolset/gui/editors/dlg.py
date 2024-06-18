@@ -24,9 +24,8 @@ from qtpy.QtCore import (
     QPoint,
     QRect,
     QRectF,
+    QSettings,
     QSize,
-    QSortFilterProxyModel,
-    QStringListModel,
     QTimer,
     QUrl,
     Qt,
@@ -34,11 +33,10 @@ from qtpy.QtCore import (
 from qtpy.QtGui import (
     QBrush,
     QColor,
+    QCursor,
     QDrag,
     QFont,
-    QFontMetrics,
     QHoverEvent,
-    QIcon,
     QKeySequence,
     QPainter,
     QPalette,
@@ -53,18 +51,17 @@ from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QAction,
+    QActionGroup,
     QApplication,
-    QComboBox,
     QFormLayout,
-    QGraphicsEffect,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
-    QListView,
     QListWidgetItem,
     QMenu,
     QPlainTextEdit,
-    QPushButton,
+    QSizePolicy,
     QSpinBox,
     QStyle,
     QStyleOptionViewItem,
@@ -95,11 +92,10 @@ from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
+from toolset.gui.widgets.edit.combobox import FilterComboBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import QtKey, getQtKeyString
-from toolset.utils.window import addWindow
 from utility.logger_util import RobustRootLogger
 from utility.system.os_helper import remove_any
 
@@ -111,6 +107,7 @@ if TYPE_CHECKING:
         QTemporaryFile,
     )
     from qtpy.QtGui import (
+        QCloseEvent,
         QDragEnterEvent,
         QDragMoveEvent,
         QDropEvent,
@@ -409,11 +406,6 @@ class RobustTreeView(QTreeView):
         pen_color = Qt.darkGray
         pen = QPen(pen_color, 2, Qt.SolidLine)  # Increase line thickness and set color
         painter.setPen(pen)
-        parent = index.parent()
-
-        # Calculate the expander icon position
-        icon_x = rect.left() + self.indentation() // 2  # Correct the calculation to ensure it falls within the visible area
-        icon_y = rect.top() + rect.height() // 2
 
         painter.restore()
         super().drawBranches(painter, rect, index)
@@ -491,11 +483,14 @@ class RobustTreeView(QTreeView):
         return False
 
     def _wheel_changes_indent_size(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().y()
+        delta: int = event.angleDelta().x()  # inversed due to AltModifier
+        print(f"wheel changes indent delta: {delta}")
         if not delta:
             return False
         if self.itemDelegate() is not None:
-            self.setIndentation(max(0, self.indentation() + (1 if delta > 0 else -1)))
+            newIndentation = max(0, self.indentation() + (1 if delta > 0 else -1))
+            print(f"set indentation to {newIndentation}")
+            self.setIndentation(newIndentation)
             self.viewport().update()
             return True
         return False
@@ -1347,15 +1342,14 @@ class DLGStandardItemModel(QStandardItemModel):
             for item in items:
                 if item is itemToIgnore:
                     continue
+                self.blockSignals(True)
                 self.treeView.setItemDisplayData(item)
                 if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):
                     # Item has a future expand role, only update display data
                     continue
-                self.blockSignals(True)
                 item.removeRows(0, item.rowCount())
                 self.blockSignals(False)
                 self.setItemFutureExpand(item)
-                self.treeView.collapse(item.index())
 
     def shiftItem(
         self,
@@ -1525,6 +1519,11 @@ class DLGTreeView(RobustTreeView):
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         #self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove | QAbstractItemView.DragDropMode.DragDrop)
 
+    def model(self) -> DLGStandardItemModel:
+        model = super().model()
+        assert isinstance(model, DLGStandardItemModel)
+        return model
+
     def resizeEvent(self, event: QResizeEvent):
         super().resizeEvent(event)
         self.viewport().update()  # call our html delegate to recalc item sizing/spacing.
@@ -1563,7 +1562,7 @@ class DLGTreeView(RobustTreeView):
             display_text = text if text.strip() else "(continue)"
 
         # Add CSS styles for better spacing and appearance
-        formatted_text = f'<span style="color:{color_hex}; font-size:{self.text_size}pt; line-height:120%;">{list_prefix}{display_text}</span>'
+        formatted_text = f'<span style="color:{color_hex}; font-size:{self.text_size}pt;">{list_prefix}{display_text}</span>'
         item.setData(formatted_text, Qt.DisplayRole)
 
         if color:
@@ -1971,19 +1970,21 @@ class DLGEditor(Editor):
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
+        self._copy: DLGNode | None = None
+        self._focused: bool = False
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setupDLGTreeMVC()
 
+        self.dlg_settings: DLGSettings = DLGSettings()
         self._setupMenus()
         self._setupSignals()
-        self._installation = installation
         if installation:
             self._setupInstallation(installation)
 
-        self._focused: bool = False
+        self.voIdEditTimer: QTimer = QTimer(self)
         self.core_dlg: DLG = DLG()
-        self._copy: DLGNode | None = None
 
         self.ui.textEdit.mouseDoubleClickEvent = self.editText
         install_immediate_tooltip(self.ui.textEdit, "Double click to edit.")
@@ -1994,16 +1995,43 @@ class DLGEditor(Editor):
         self.player: QMediaPlayer = QMediaPlayer(self)
         self.tempFile: QTemporaryFile | None = None
 
-        self.acceptUpdates: bool = False
+        self.uiDataLoadedForSelection: bool = False
         self.ui.splitter.setSizes([99999999, 1])
+        #self.ui.horizontalLayout.setStretch(0, 1)  # verticalLayout part
+        #self.ui.horizontalLayout.setStretch(1, 3)  # tabWidget part
         self.new()
         self.keysDown: set[int] = set()
 
         # Debounce timer to delay a cpu-intensive task.
-        self.voIdEditTimer = QTimer(self)
         self.voIdEditTimer.setSingleShot(True)
         self.voIdEditTimer.setInterval(500)  # 500 milliseconds delay
-        self.voIdEditTimer.timeout.connect(self.onVoIdEditFinished)
+        self.voIdEditTimer.timeout.connect(self.populateComboboxOnVoIdEditFinished)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def _saveSetting(self, key: str, value: Any):  # noqa: C901
+        """Helper method to save settings."""
+        if key == "Text Elide Mode":
+            self.dlg_settings.setTextElideMode(value)
+        elif key == "Focus Policy":
+            self.dlg_settings.setFocusPolicy(value)
+        elif key == "Layout Direction":
+            self.dlg_settings.setLayoutDirection(value)
+        elif key == "Scroll Mode":
+            self.dlg_settings.setVerticalScrollMode(value)
+        elif key == "Uniform Row Heights":
+            self.dlg_settings.setUniformRowHeights(value)
+        elif key == "Animations":
+            self.dlg_settings.setAnimations(value)
+        elif key == "Auto Scroll (internal)":
+            self.dlg_settings.setAutoScroll(value)
+        elif key == "Expand Items on Double Click":
+            self.dlg_settings.setExpandsOnDoubleClick(value)
+        elif key == "Auto Fill Background":
+            self.dlg_settings.setAutoFillBackground(value)
+        elif key == "Alternating Row Colors":
+            self.dlg_settings.setAlternatingRowColors(value)
+        elif key == "Branch Indent":
+            self.dlg_settings.setIndentation(value)
 
     def setupDLGTreeMVC(self):
         # self.model.setHorizontalHeaderLabels(["Dialog", "Children", "Copies"])
@@ -2031,7 +2059,7 @@ class DLGEditor(Editor):
             level += 1
         raise RuntimeError(f"DLGEditor is not in the parent hierarchy, attempted {level} levels.")
 
-    def _setupSignals(self):
+    def _setupSignals(self):  # noqa: PLR0915
         """Connects UI signals to update node/link on change."""
         scriptTextEntryTooltip = """
 A ResRef to a script, where the entry point is its <code>main()</code> function.
@@ -2044,8 +2072,6 @@ A ResRef to a script, where the entry point is its <code>main()</code> function.
         self.ui.script2ResrefEdit.setToolTip(scriptTextEntryTooltip)
         self.ui.script1ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
         self.ui.script2ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
-        self._installation.setupFileContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
         conditionalTextEntryTooltip = """
 A ResRef to a script that defines the conditional function <code>int StartingConditional()</code>.
@@ -2060,21 +2086,9 @@ Should return 1 or 0, representing a boolean.
         self.ui.condition2ResrefEdit.setToolTip(conditionalTextEntryTooltip)
         self.ui.condition1ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
         self.ui.condition2ResrefEdit.currentTextChanged.connect(self.onNodeUpdate)
-        self._installation.setupFileContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
         self.ui.soundComboBox.currentTextChanged.connect(self.onNodeUpdate)
-        self._installation.setupFileContextMenu(
-            self.ui.soundComboBox,
-            [ResourceType.WAV, ResourceType.MP3],
-            [SearchLocation.SOUND, SearchLocation.VOICE],
-        )
         self.ui.voiceComboBox.currentTextChanged.connect(self.onNodeUpdate)
-        self._installation.setupFileContextMenu(
-            self.ui.voiceComboBox,
-            [ResourceType.WAV, ResourceType.MP3],
-            [SearchLocation.SOUND, SearchLocation.VOICE],
-        )
 
         self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundComboBox.currentText()) and None or None)
         self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceComboBox.currentText()) and None or None)
@@ -2149,39 +2163,96 @@ Should return 1 or 0, representing a boolean.
         viewMenu = self.ui.menubar.addMenu("View")
 
         # Adding mutually exclusive options
-        self._addExclusiveMenuAction(viewMenu, "Text Elide Mode", self.ui.dialogTree.textElideMode, self.ui.dialogTree.setTextElideMode, options={
-            "Elide Left": Qt.ElideLeft,
-            "Elide Right": Qt.ElideRight,
-            "Elide Middle": Qt.ElideMiddle,
-            "Elide None": Qt.ElideNone
-        })
-        self._addExclusiveMenuAction(viewMenu, "Focus Policy", self.ui.dialogTree.focusPolicy, self.ui.dialogTree.setFocusPolicy, options={
-            "No Focus": Qt.NoFocus,
-            "Tab Focus": Qt.TabFocus,
-            "Click Focus": Qt.ClickFocus,
-            "Strong Focus": Qt.StrongFocus,
-            "Wheel Focus": Qt.WheelFocus
-        })
-        self._addExclusiveMenuAction(viewMenu, "Layout Direction", self.ui.dialogTree.layoutDirection, self.ui.dialogTree.setLayoutDirection, options={
-            "Left to Right": Qt.LeftToRight,
-            "Right to Left": Qt.RightToLeft
-        })
-        self._addExclusiveMenuAction(viewMenu, "Scroll Mode", self.ui.dialogTree.verticalScrollMode, self.ui.dialogTree.setVerticalScrollMode, options={
-            "Scroll Per Item": QAbstractItemView.ScrollPerItem,
-            "Scroll Per Pixel": QAbstractItemView.ScrollPerPixel
-        })
+        self._addExclusiveMenuAction(viewMenu, "Text Elide Mode",
+                                     self.ui.dialogTree.textElideMode,
+                                     self.ui.dialogTree.setTextElideMode,
+                                     options={
+                                        "Elide Left": Qt.ElideLeft,
+                                        "Elide Right": Qt.ElideRight,
+                                        "Elide Middle": Qt.ElideMiddle,
+                                        "Elide None": Qt.ElideNone
+                                     },
+                                     settings_key="textElideMode",
+                                     default_value=self.ui.dialogTree.textElideMode())
+
+        self._addExclusiveMenuAction(viewMenu, "Focus Policy",
+                                     self.ui.dialogTree.focusPolicy,
+                                     self.ui.dialogTree.setFocusPolicy,
+                                     options={
+                                        "No Focus": Qt.NoFocus,
+                                        "Tab Focus": Qt.TabFocus,
+                                        "Click Focus": Qt.ClickFocus,
+                                        "Strong Focus": Qt.StrongFocus,
+                                        "Wheel Focus": Qt.WheelFocus
+                                     },
+                                     settings_key="focusPolicy",
+                                     default_value=self.ui.dialogTree.focusPolicy())
+
+        self._addExclusiveMenuAction(viewMenu, "Layout Direction",
+                                     self.ui.dialogTree.layoutDirection,
+                                     self.ui.dialogTree.setLayoutDirection,
+                                     options={
+                                        "Left to Right": Qt.LeftToRight,
+                                        "Right to Left": Qt.RightToLeft
+                                     },
+                                     settings_key="layoutDirection",
+                                     default_value=self.ui.dialogTree.layoutDirection())
+
+        self._addExclusiveMenuAction(viewMenu, "Scroll Mode",
+                                     self.ui.dialogTree.verticalScrollMode,
+                                     self.ui.dialogTree.setVerticalScrollMode,
+                                     options={
+                                        "Scroll Per Item": QAbstractItemView.ScrollPerItem,
+                                        "Scroll Per Pixel": QAbstractItemView.ScrollPerPixel
+                                     },
+                                     settings_key="verticalScrollMode",
+                                     default_value=self.ui.dialogTree.verticalScrollMode())
 
         # Adding boolean options
-        self._addMenuAction(viewMenu, "Uniform Row Heights", self.ui.dialogTree.uniformRowHeights, self.ui.dialogTree.setUniformRowHeights)
-        self._addMenuAction(viewMenu, "Animations", self.ui.dialogTree.isAnimated, self.ui.dialogTree.setAnimated)
-        self._addMenuAction(viewMenu, "Auto Scroll (internal)", self.ui.dialogTree.hasAutoScroll, self.ui.dialogTree.setAutoScroll)
-        self._addMenuAction(viewMenu, "Expand Items on Double Click", self.ui.dialogTree.expandsOnDoubleClick, self.ui.dialogTree.setExpandsOnDoubleClick)
-        self._addMenuAction(viewMenu, "Auto Fill Background", self.ui.dialogTree.autoFillBackground, self.ui.dialogTree.setAutoFillBackground)
-        self._addMenuAction(viewMenu, "Alternating Row Colors", self.ui.dialogTree.alternatingRowColors, self.ui.dialogTree.setAlternatingRowColors)
+        self._addMenuAction(viewMenu, "Uniform Row Heights",
+                            self.ui.dialogTree.uniformRowHeights,
+                            self.ui.dialogTree.setUniformRowHeights,
+                            settings_key="uniformRowHeights",
+                            default_value=self.ui.dialogTree.uniformRowHeights())
+
+        self._addMenuAction(viewMenu, "Animations",
+                            self.ui.dialogTree.isAnimated,
+                            self.ui.dialogTree.setAnimated,
+                            settings_key="animations",
+                            default_value=self.ui.dialogTree.isAnimated())
+
+        self._addMenuAction(viewMenu, "Auto Scroll (internal)",
+                            self.ui.dialogTree.hasAutoScroll,
+                            self.ui.dialogTree.setAutoScroll,
+                            settings_key="autoScroll",
+                            default_value=self.ui.dialogTree.hasAutoScroll())
+
+        self._addMenuAction(viewMenu, "Expand Items on Double Click",
+                            self.ui.dialogTree.expandsOnDoubleClick,
+                            self.ui.dialogTree.setExpandsOnDoubleClick,
+                            settings_key="expandsOnDoubleClick",
+                            default_value=self.ui.dialogTree.expandsOnDoubleClick())
+
+        self._addMenuAction(viewMenu, "Auto Fill Background",
+                            self.ui.dialogTree.autoFillBackground,
+                            self.ui.dialogTree.setAutoFillBackground,
+                            settings_key="autoFillBackground",
+                            default_value=self.ui.dialogTree.autoFillBackground())
+
+        self._addMenuAction(viewMenu, "Alternating Row Colors",
+                            self.ui.dialogTree.alternatingRowColors,
+                            self.ui.dialogTree.setAlternatingRowColors,
+                            settings_key="alternatingRowColors",
+                            default_value=self.ui.dialogTree.alternatingRowColors())
 
         # Adding int options
         viewMenu.addSeparator()
-        self._addMenuAction(viewMenu, "Branch Indent", self.ui.dialogTree.indentation, self.ui.dialogTree.setIndentation, param_type=int)
+        self._addMenuAction(viewMenu, "Branch Indent",
+                            self.ui.dialogTree.indentation,
+                            self.ui.dialogTree.setIndentation,
+                            param_type=int,
+                            settings_key="indentation",
+                            default_value=self.ui.dialogTree.indentation())
 
         # Adding actions for updates and repaints
         viewMenu.addSeparator()
@@ -2192,61 +2263,71 @@ Should return 1 or 0, representing a boolean.
         self._addSimpleAction(refreshMenu, "Tree Refresh (instant)", self.ui.dialogTree.update)
         self._addSimpleAction(refreshMenu, "DLGEditor.model.layoutChanged.emit()", self.ui.dialogTree.model().layoutChanged.emit)
 
-    def _addMenuAction(
+    def _addSimpleAction(self, menu: QMenu, title: str, func: Callable[[], Any]):
+        action = QAction(title, self)
+        action.triggered.connect(func)
+        menu.addAction(action)
+
+    def _addMenuAction(  # noqa: PLR0913
         self,
         menu: QMenu,
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
         param_type: type = bool,
+        settings_key: str | None = None,
+        default_value: Any = None,
         options: dict | None = None,
     ):
         action = QAction(title, self)
         if param_type is bool:
             action.setCheckable(True)
-            action.setChecked(current_state_func())
-            action.toggled.connect(lambda checked: set_func(checked))
+            initial_value = self.dlg_settings.get(settings_key, current_state_func())
+            action.setChecked(initial_value)
+            set_func(initial_value)  # Apply the initial value from settings
+            action.toggled.connect(lambda checked: [set_func(checked), self.dlg_settings.set(settings_key, checked)])
         elif param_type is int:
-            action.triggered.connect(lambda: self._handleIntAction(set_func, title))
+            action.triggered.connect(lambda: self._handleIntAction(set_func, title, settings_key))
         else:
-            action.triggered.connect(lambda: self._handleNonBoolAction(set_func, title, options))
+            action.triggered.connect(lambda: self._handleNonBoolAction(set_func, title, options, settings_key))
         menu.addAction(action)
 
-    def _addExclusiveMenuAction(
+    def _addExclusiveMenuAction(  # noqa: PLR0913
         self,
         menu: QMenu,
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
-        options: dict
+        options: dict,
+        settings_key: str | None = None,
+        default_value: Any = None,
     ):
         subMenu = menu.addMenu(title)
         actionGroup = QActionGroup(self)
         actionGroup.setExclusive(True)
-        current_state = current_state_func()
+        initial_value = self.dlg_settings.get(settings_key, current_state_func())
+        set_func(initial_value)  # Apply the initial value from settings
         for option_name, option_value in options.items():
             action = QAction(option_name, self)
             action.setCheckable(True)
-            action.setChecked(current_state == option_value)
-            action.triggered.connect(lambda checked, val=option_value: set_func(val) if checked else None)
+            action.setChecked(initial_value == option_value)
+            action.triggered.connect(lambda checked, val=option_value: [set_func(val), self.dlg_settings.set(settings_key, val)] if checked else None)
             subMenu.addAction(action)
             actionGroup.addAction(action)
 
-    def _addSimpleAction(self, menu: QMenu, title: str, func: Callable[[], Any]):
-        action = QAction(title, self)
-        action.triggered.connect(func)
-        menu.addAction(action)
-
-    def _handleIntAction(self, func: Callable[[int], Any], title: str):
+    def _handleIntAction(self, func: Callable[[int], Any], title: str, settings_key: str):
         value, ok = QInputDialog.getInt(self, f"Set {title}", f"Enter {title}:", min=0)
         if ok:
             func(value)
+            self.dlg_settings.set(settings_key, value)
 
-    def _handleNonBoolAction(self, func: Callable[[Any], Any], title: str, options: dict):
+    def _handleNonBoolAction(self, func: Callable[[Any], Any], title: str, options: dict, settings_key: str):
         items = list(options.keys())
         item, ok = QInputDialog.getItem(self, f"Select {title}", f"Select {title}:", items, 0, False)
         if ok and item:
-            func(options[item])
+            value = options[item]
+            func(value)
+            self.dlg_settings.set(settings_key, value)
 
     def load(
         self,
@@ -2264,8 +2345,8 @@ Should return 1 or 0, representing a boolean.
         self._loadDLG(dlg)
         self.refreshStuntList()
 
-        self.ui.onAbortEdit.setText(str(dlg.on_abort))
-        self.ui.onEndEdit.setText(str(dlg.on_end))
+        self.ui.onAbortEdit.setComboBoxText(str(dlg.on_abort))
+        self.ui.onEndEdit.setComboBoxText(str(dlg.on_end))
         self.ui.voIdEdit.setText(dlg.vo_id)
         self.ui.voIdEdit.textChanged.connect(self.restartVoIdEditTimer)
         self.ui.ambientTrackEdit.setText(str(dlg.ambient_track))
@@ -2285,7 +2366,7 @@ Should return 1 or 0, representing a boolean.
         self.voIdEditTimer.stop()
         self.voIdEditTimer.start()
 
-    def onVoIdEditFinished(self):
+    def populateComboboxOnVoIdEditFinished(self):
         """Slot to be called when text editing is finished.
 
         The editors the game devs themselves used probably did something like this
@@ -2298,7 +2379,7 @@ Should return 1 or 0, representing a boolean.
             print(f"filtered {len(self.all_voices)} voices to {len(filtered_voices)} by substring vo_id '{vo_id_lower}'")
         else:
             filtered_voices = self.all_voices
-        self.populateComboBox(self.ui.voiceComboBox, filtered_voices)
+        self.ui.voiceComboBox.populateComboBox(filtered_voices)
 
     def _loadDLG(self, dlg: DLG):
         """Loads a dialog tree into the UI view."""
@@ -2307,25 +2388,26 @@ Should return 1 or 0, representing a boolean.
             self.ui.dialogTree.setStyleSheet("")
         self._focused = False
         self.core_dlg = dlg
-        self.onVoIdEditFinished()
+        self.populateComboboxOnVoIdEditFinished()
+
+        self.model.beginResetModel()
         self.model.resetModel()
         assert self.model.rowCount() == 0 and self.model.columnCount() == 0, "Model is not empty after resetModel"  # noqa: PT018
         self.model.blockSignals(True)
-        self.model.layoutAboutToBeChanged.emit()
         for start in dlg.starters:  # descending order - matches what the game does.
             item = DLGStandardItem(link=start)
             self.model.loadDLGItemRec(item)
             self.model.appendRow(item)
-        self.model.layoutChanged.emit()
-        assert self.model.rowCount() != 0, "Model is empty after _loadDLG!"  # noqa: PT018
         self.model.blockSignals(False)
+        self.model.endResetModel()
+        assert self.model.rowCount() != 0, "Model is empty after _loadDLG!"  # noqa: PT018
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a dialogue from UI components."""
-        self.core_dlg.on_abort = ResRef(self.ui.onAbortEdit.text())
+        self.core_dlg.on_abort = ResRef(self.ui.onAbortEdit.currentText())
         print("<SDM> [build scope] self.editor.core_dlg.on_abort: ", self.core_dlg.on_abort)
 
-        self.core_dlg.on_end = ResRef(self.ui.onEndEdit.text())
+        self.core_dlg.on_end = ResRef(self.ui.onEndEdit.currentText())
         print("<SDM> [build scope] self.editor.core_dlg.on_end: ", self.core_dlg.on_end)
 
         self.core_dlg.vo_id = self.ui.voIdEdit.text()
@@ -2384,6 +2466,58 @@ Should return 1 or 0, representing a boolean.
         self._installation = installation
         print("<SDM> [_setupInstallation scope] self._installation: ", self._installation)
 
+        if installation.game().is_k1():
+            required: list[str] = [HTInstallation.TwoDA_VIDEO_EFFECTS, HTInstallation.TwoDA_DIALOG_ANIMS]
+
+        else:
+            required = [
+                HTInstallation.TwoDA_EMOTIONS,
+                HTInstallation.TwoDA_EXPRESSIONS,
+                HTInstallation.TwoDA_VIDEO_EFFECTS,
+                HTInstallation.TwoDA_DIALOG_ANIMS,
+            ]
+
+        installation.htBatchCache2DA(required)
+
+        all_installation_script_resnames = sorted(
+            {res.resname() for res in installation if res.restype() is ResourceType.NCS},
+            key=str.lower
+        )
+        self._setupTslInstallDefs(installation)
+        if installation.tsl:
+            self.ui.script2ResrefEdit.populateComboBox(all_installation_script_resnames)
+            self.ui.condition2ResrefEdit.populateComboBox(all_installation_script_resnames)
+
+        self.ui.cameraEffectSelect.clear()
+        self.ui.cameraEffectSelect.addItem("[None]", None)
+        self.all_voices = sorted({res.resname() for res in installation._streamwaves}, key=str.lower)  # noqa: SLF001
+        all_streamsounds = sorted({res.resname() for res in installation._streamsounds}, key=str.lower)  # noqa: SLF001
+        self.ui.soundComboBox.populateComboBox(all_streamsounds)
+        self.ui.script1ResrefEdit.populateComboBox(all_installation_script_resnames)
+        self.ui.condition1ResrefEdit.populateComboBox(all_installation_script_resnames)
+        self.ui.onEndEdit.populateComboBox(all_installation_script_resnames)
+        self.ui.onAbortEdit.populateComboBox(all_installation_script_resnames)
+        installation.setupFileContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3])
+        installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3])
+        installation.setupFileContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(
+            self.ui.soundComboBox,
+            [ResourceType.WAV, ResourceType.MP3],
+            [SearchLocation.SOUND, SearchLocation.VOICE],
+        )
+        installation.setupFileContextMenu(
+            self.ui.voiceComboBox,
+            [ResourceType.WAV, ResourceType.MP3],
+            [SearchLocation.SOUND, SearchLocation.VOICE],
+        )
+
+        videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
+        for i, label in enumerate(videoEffects.get_column("label")):
+            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
+
+    def _setupTslInstallDefs(self, installation: HTInstallation):
+        """Set up UI elements for TSL installation selection."""
         self.handleWidgetWithTSL(self.ui.script1Param1Spin, installation)
         self.handleWidgetWithTSL(self.ui.script1Param2Spin, installation)
         self.handleWidgetWithTSL(self.ui.script1Param3Spin, installation)
@@ -2425,78 +2559,39 @@ Should return 1 or 0, representing a boolean.
         self.handleWidgetWithTSL(self.ui.postProcSpin, installation)
         self.handleWidgetWithTSL(self.ui.logicSpin, installation)
 
-        if installation.game().is_k1():
-            required: list[str] = [HTInstallation.TwoDA_VIDEO_EFFECTS, HTInstallation.TwoDA_DIALOG_ANIMS]
+        self.handleWidgetWithTSL(self.ui.emotionSelect, installation)
+        self.handleWidgetWithTSL(self.ui.expressionSelect, installation)
+        self.handleWidgetWithTSL(self.ui.script2ResrefEdit, installation)
+        self.handleWidgetWithTSL(self.ui.condition2ResrefEdit, installation)
 
-        else:
-            required = [
-                HTInstallation.TwoDA_EMOTIONS,
-                HTInstallation.TwoDA_EXPRESSIONS,
-                HTInstallation.TwoDA_VIDEO_EFFECTS,
-                HTInstallation.TwoDA_DIALOG_ANIMS,
-            ]
-
-        installation.htBatchCache2DA(required)
-
-        all_installation_script_resnames = sorted(
-            {res.resname() for res in self._installation if res.restype() is ResourceType.NCS},
-            key=str.lower
-        )
         if installation.tsl:
-            self._setupTslInstallDefs(installation)
-            self.populateComboBox(self.ui.script2ResrefEdit, all_installation_script_resnames)
-            self.populateComboBox(self.ui.condition2ResrefEdit, all_installation_script_resnames)
-        self.ui.cameraEffectSelect.clear()
-        self.ui.cameraEffectSelect.addItem("[None]", None)
-        self.all_voices = sorted({res.resname() for res in self._installation._streamwaves}, key=str.lower)
-        all_streamsounds = sorted({res.resname() for res in self._installation._streamsounds}, key=str.lower)
-        self.populateComboBox(self.ui.soundComboBox, all_streamsounds)
-        self.populateComboBox(self.ui.script1ResrefEdit, all_installation_script_resnames)
-        self.populateComboBox(self.ui.condition1ResrefEdit, all_installation_script_resnames)
+            emotions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
+            self.ui.emotionSelect.clear()
+            self.ui.emotionSelect.setItems(emotions.get_column("label"))
+            self.ui.emotionSelect.setContext(emotions, installation, HTInstallation.TwoDA_EMOTIONS)
 
+            expressions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
+            self.ui.expressionSelect.clear()
+            self.ui.expressionSelect.setItems(expressions.get_column("label"))
+            self.ui.expressionSelect.setContext(expressions, installation, HTInstallation.TwoDA_EXPRESSIONS)
 
-        videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
-        for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
-
-    @staticmethod
-    def populateComboBox(comboBox: QComboBox | FilterComboBox, resnames: list[str]):
-        comboBox.clear()
-        if isinstance(comboBox, FilterComboBox):
-            comboBox.populate_items(resnames)
-        else:
-            comboBox.addItems(resnames)
-
-    def _setupTslInstallDefs(self, installation: HTInstallation):
-        """Set up UI elements for TSL installation selection."""
-        expressions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
-        emotions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
-        self.ui.emotionSelect.clear()
-        self.ui.emotionSelect.setItems(emotions.get_column("label"))
-        self.ui.emotionSelect.setContext(emotions, self._installation, HTInstallation.TwoDA_EMOTIONS)
-
-        self.ui.expressionSelect.clear()
-        self.ui.expressionSelect.setItems(expressions.get_column("label"))
-        self.ui.expressionSelect.setContext(expressions, self._installation, HTInstallation.TwoDA_EXPRESSIONS)
+            installation.setupFileContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+            installation.setupFileContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
     def editText(self, e: QMouseEvent | None = None):
         """Edits the text of the selected dialog node."""
         indexes: list[QModelIndex] = self.ui.dialogTree.selectionModel().selectedIndexes()
-
         if indexes:
             item: DLGStandardItem | None = self.model.itemFromIndex(indexes[0])
-            link: DLGLink = item.link
-            node: DLGNode | None = link.node
+            assert item is not None, "self.model.itemFromIndex(indexes[0]) should not return None here in editText"
 
-            dialog = LocalizedStringDialog(self, self._installation, node.text)
-            print("<SDM> [editText scope] dialog: ", dialog)
-
+            dialog = LocalizedStringDialog(self, self._installation, item.link.node.text)
             if dialog.exec_():
-                node.text = dialog.locstring
-                print("<SDM> [editText scope] node.text: ", node.text)
+                item.link.node.text = dialog.locstring
+                print("<SDM> [editText scope] item.link.node.text: ", item.link.node.text)
 
-                item.setText(self._installation.string(node.text, "(continue)"))
-                self._loadLocstring(self.ui.textEdit, node.text)
+                self.treeView.setItemDisplayData(item)
+                self._loadLocstring(self.ui.textEdit, item.link.node.text)
 
     def _loadLocstring(self, textbox: QPlainTextEdit | QTextEdit, locstring: LocalizedString):
         setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
@@ -2514,7 +2609,7 @@ Should return 1 or 0, representing a boolean.
             text = str(locstring)
             print("<SDM> [_loadLocstring scope] text: ", text)
 
-            setText(text if text != "-1" else "")
+            setText("" if text == "-1" else text)
             # Check theme condition for setting stylesheet
             if theme == "Default (Light)":
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white;}}")
@@ -2571,30 +2666,22 @@ Should return 1 or 0, representing a boolean.
     def jumpToOriginal(self, copiedItem: DLGStandardItem):
         """Jumps to the original node of a copied item."""
         sourceNode: DLGNode = copiedItem.link.node
-        #print("<SDM> [jumpToOriginal scope] DLGNode: ", DLGNode)
-
         items: list[DLGStandardItem | None] = [self.model.item(i, 0) for i in range(self.model.rowCount())]
 
         while items:
             item: DLGStandardItem | None = items.pop()
-
             assert item is not None
-            link: DLGLink | None = item.link
 
-            if link is None:
+            if item.link is None:
                 continue
-            print("<SDM> [jumpToOriginal scope] link.node: ", link.node)
-            if link.node == sourceNode:
+            print("<SDM> [jumpToOriginal scope] item.link.node: ", item.link.node)
+            if item.link.node == sourceNode:
                 self.expandToRoot(item)
                 self.ui.dialogTree.setCurrentIndex(item.index())
                 break
             items.extend([item.child(i, 0) for i in range(item.rowCount())])
         else:
             self._logger.error(f"Failed to find original node for node {sourceNode!r}")
-
-    def blinkWindow(self):
-        self.setWindowOpacity(0.7)
-        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
 
     def playSound(self, resname: str) -> bool:
         """Plays a sound resource."""
@@ -2751,14 +2838,18 @@ Should return 1 or 0, representing a boolean.
             menu.addAction("Add Entry").triggered.connect(self.model.addRootNode)
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
-    def setExpandRecursively(
+    def setExpandRecursively(  # noqa: PLR0913
         self,
         item: DLGStandardItem,
         seenNodes: set[DLGNode],
         *,
         expand: bool,
+        maxdepth: int = 6,
+        depth: int = 0,
     ):
         """Recursively expand/collapse all children of the given item."""
+        if depth > maxdepth >= 0:
+            return
         itemIndex: QModelIndex = item.index()
         if not itemIndex.isValid():
             return
@@ -2777,11 +2868,9 @@ Should return 1 or 0, representing a boolean.
             if childItem is None:
                 continue
             childIndex: QModelIndex = childItem.index()
-            if childIndex is None:
-                continue
             if not childIndex.isValid():
                 continue
-            self.setExpandRecursively(childItem, seenNodes, expand=expand)
+            self.setExpandRecursively(childItem, seenNodes, expand=expand, maxdepth=maxdepth, depth=depth + 1)
 
     def _setContextMenuActions(self, item: DLGStandardItem, point: QPoint):
         """Sets context menu actions for a dialog tree item."""
@@ -2881,15 +2970,14 @@ Should return 1 or 0, representing a boolean.
             QLabel {
                 color: red;
                 font-weight: bold;
-                padding: 4px;
-                text-align: center;
+                font-size: 12px;
             }
             QLabel:hover {
                 background-color: #d3d3d3;
             }
         """)
         layout.addWidget(deleteAllReferencesLabel)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(40, 10, 40, 10)
         deleteAllReferencesWidget.setLayout(layout)
         deleteAllReferencesAction.setDefaultWidget(deleteAllReferencesWidget)
         deleteAllReferencesAction.triggered.connect(lambda: self.model.deleteNodeEverywhere(node))
@@ -2910,7 +2998,11 @@ Should return 1 or 0, representing a boolean.
     def focusOutEvent(self, e: QFocusEvent):
         self.keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        # print("dlgedit.focusOutEvent: clearing all keys/buttons held down.")
+        print("dlgedit.focusOutEvent: clearing all keys/buttons held down.")
+
+    def closeEvent(self, event: QCloseEvent):
+        self.player.stop()
+        super().closeEvent(event)
 
     def keyPressEvent(
         self,
@@ -2919,7 +3011,7 @@ Should return 1 or 0, representing a boolean.
         isTreeViewCall: bool = False,
     ):
         if not isTreeViewCall:
-            self.ui.dialogTree.keyPressEvent(event)
+            self.ui.dialogTree.keyPressEvent(event)  # this'll call us back immediately, just ensures we don't get called twice for the same event.
             return
         super().keyPressEvent(event)
         key = event.key()
@@ -2927,21 +3019,18 @@ Should return 1 or 0, representing a boolean.
 
         if event.isAutoRepeat() or key in self.keysDown:
             return  # Ignore auto-repeat events and prevent multiple executions on single key
-        selectedItem: QModelIndex = self.ui.dialogTree.currentIndex()
-        if not selectedItem.isValid():
+        selectedIndex: QModelIndex = self.ui.dialogTree.currentIndex()
+        if not selectedIndex.isValid():
             return
 
-        item: DLGStandardItem | None = self.model.itemFromIndex(selectedItem)
-        if item is None:
+        selectedItem: DLGStandardItem | None = self.model.itemFromIndex(selectedIndex)
+        if selectedItem is None:
             if key == QtKey.Key_Insert:
                 print("<SDM> [keyPressEvent scope insert1] key: %s", key)
                 self.model.addRootNode()
             return
-        print(
-            f"DLGEditor.keyPressEvent: {getQtKeyString(key)} held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}"
-        )
-        link: DLGLink = item.link
-        node = item.link.node
+        print(f"DLGEditor.keyPressEvent: {getQtKeyString(key)}, held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
+        node = selectedItem.link.node
         print("<SDM> [keyPressEvent scope] node: %s", node)
         if node is None:
             return
@@ -2949,15 +3038,15 @@ Should return 1 or 0, representing a boolean.
         if not self.keysDown:
             self.keysDown.add(key)
             if key in (QtKey.Key_Insert,):
-                self.model.addChildToItem(item, node)
+                self.model.addChildToItem(selectedItem, node)
             elif key in (QtKey.Key_Delete, QtKey.Key_Backspace):
-                self.model.removeLink(item)
+                self.model.removeLink(selectedItem)
             elif key in (QtKey.Key_Enter, QtKey.Key_Return):
-                self.focusOnNode(link)
+                self.focusOnNode(selectedItem.link)
             elif key == QtKey.Key_Insert:
                 print("<SDM> [keyPressEvent insert2 scope] key: %s", key)
 
-                self.model.addChildToItem(item)
+                self.model.addChildToItem(selectedItem)
             elif key == QtKey.Key_P:
                 print("<SDM> [keyPressEvent play scope] key: %s", key)
 
@@ -2971,25 +3060,35 @@ Should return 1 or 0, representing a boolean.
 
         self.keysDown.add(key)
         if self.keysDown in (
+            {QtKey.Key_Shift, QtKey.Key_Return},
+            {QtKey.Key_Shift, QtKey.Key_Enter},
+        ):
+            self.setExpandRecursively(selectedItem, set(), expand=True)
+        elif self.keysDown in (
+            {QtKey.Key_Shift, QtKey.Key_Return, QtKey.Key_Alt},
+            {QtKey.Key_Shift, QtKey.Key_Enter, QtKey.Key_Alt},
+        ):
+            self.setExpandRecursively(selectedItem, set(), expand=False, maxdepth=-1)
+        if self.keysDown in (
             {QtKey.Key_Shift, QtKey.Key_Up},
             {QtKey.Key_Shift, QtKey.Key_Up, QtKey.Key_Alt},
         ):
-            newIndex = self.ui.dialogTree.indexAbove(selectedItem)
+            newIndex = self.ui.dialogTree.indexAbove(selectedIndex)
             print("<SDM> [keyPressEvent scope] newIndex: %s", newIndex)
 
             if newIndex.isValid():
                 self.ui.dialogTree.setCurrentIndex(newIndex)
-            self.model.shiftItem(item, -1, noSelectionUpdate=True)
+            self.model.shiftItem(selectedItem, -1, noSelectionUpdate=True)
         if self.keysDown in (
             {QtKey.Key_Shift, QtKey.Key_Down},
             {QtKey.Key_Shift, QtKey.Key_Down, QtKey.Key_Alt},
         ):
-            newIndex = self.ui.dialogTree.indexBelow(selectedItem)
+            newIndex = self.ui.dialogTree.indexBelow(selectedIndex)
             print("<SDM> [keyPressEvent scope] newIndex: %s", newIndex)
 
             if newIndex.isValid():
                 self.ui.dialogTree.setCurrentIndex(newIndex)
-            self.model.shiftItem(item, 1, noSelectionUpdate=True)
+            self.model.shiftItem(selectedItem, 1, noSelectionUpdate=True)
         elif QtKey.Key_Control in self.keysDown:
             if QtKey.Key_C in self.keysDown:
                 if QtKey.Key_Alt in self.keysDown:
@@ -2997,12 +3096,19 @@ Should return 1 or 0, representing a boolean.
                 else:
                     self.model.copyNode(node)
             elif QtKey.Key_Enter in self.keysDown or QtKey.Key_Return in self.keysDown:
-                self.jumpToOriginal(item)
+                self.jumpToOriginal(selectedItem)
             elif QtKey.Key_V in self.keysDown:
+                self._checkClipboardForJsonNode()
+                if not self._copy:
+                    self.blinkWindow()
+                    return
+                if self._copy.__class__ is selectedItem.link.node.__class__:
+                    self.blinkWindow()
+                    return
                 if QtKey.Key_Alt in self.keysDown:
-                    self.model.pasteItem(item, asNewBranches=True)
+                    self.model.pasteItem(selectedItem, asNewBranches=True)
                 else:
-                    self.model.pasteItem(item, asNewBranches=False)
+                    self.model.pasteItem(selectedItem, asNewBranches=False)
             elif QtKey.Key_Delete in self.keysDown:
                 if QtKey.Key_Shift in self.keysDown:
                     self.model.deleteNodeEverywhere(node)
@@ -3020,7 +3126,7 @@ Should return 1 or 0, representing a boolean.
 
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node."""
-        self.acceptUpdates = False
+        self.uiDataLoadedForSelection = False
         selectionIndices = selection.indexes()
         print("<SDM> [onSelectionChanged scope] selectionIndices:\n", ",\n".join([self.model.itemFromIndex(index).text() for index in selectionIndices if self.model.itemFromIndex(index) is not None]))
         if selectionIndices:
@@ -3102,8 +3208,7 @@ Should return 1 or 0, representing a boolean.
             self.ui.fadeTypeSpin.setValue(node.fade_type)
 
             self.ui.commentsEdit.setPlainText(node.comment)
-            self.model._updateCopies(link, item)
-        self.acceptUpdates = True
+        self.uiDataLoadedForSelection = True
 
     def onNodeUpdate(self):
         """Updates node properties based on UI selections."""
@@ -3111,7 +3216,7 @@ Should return 1 or 0, representing a boolean.
         if not selectedIndices:
             print("onNodeUpdate: no selected indices, early return")
             return
-        if not self.acceptUpdates:
+        if not self.uiDataLoadedForSelection:
             print("onNodeUpdate: acceptUpdates is False, early return")
             return
         index: QModelIndex = selectedIndices[0]
@@ -3186,6 +3291,7 @@ Should return 1 or 0, representing a boolean.
         node.wait_flags = self.ui.waitFlagSpin.value()
         node.fade_type = self.ui.fadeTypeSpin.value()
         node.comment = self.ui.commentsEdit.toPlainText()
+        self.model._updateCopies(link, item)  # noqa: SLF001
 
     def onItemExpanded(self, index: QModelIndex):
         item = self.model.itemFromIndex(index)
@@ -3333,13 +3439,105 @@ Should return 1 or 0, representing a boolean.
                 item.setData(Qt.ItemDataRole.UserRole, anim)
                 self.ui.animsList.addItem(item)
 
+
+class DLGSettings:
+    def __init__(self):
+        self.settings = QSettings("HolocronToolsetV3", "DLGEditor")
+
+    def get(self, key: str, default: Any) -> Any:
+        return self.settings.value(key, default, default.__class__)
+
+    def set(self, key: str, value: Any):
+        self.settings.setValue(key, value)
+
+    def textElideMode(self, default: int) -> int:
+        return self.get("textElideMode", default)
+
+    def setTextElideMode(self, value: int):
+        self.set("textElideMode", value)
+
+    def focusPolicy(self, default: int) -> int:
+        return self.get("focusPolicy", default)
+
+    def setFocusPolicy(self, value: int):
+        self.set("focusPolicy", value)
+
+    def layoutDirection(self, default: int) -> int:
+        return self.get("layoutDirection", default)
+
+    def setLayoutDirection(self, value: int):  # noqa: FBT001
+        self.set("layoutDirection", value)
+
+    def verticalScrollMode(self, default: int) -> int:  # noqa: FBT001
+        return self.get("verticalScrollMode", default)
+
+    def setVerticalScrollMode(self, value: int):  # noqa: FBT001
+        self.set("verticalScrollMode", value)
+
+    def uniformRowHeights(self, default: bool) -> bool:  # noqa: FBT001
+        return self.get("uniformRowHeights", default)
+
+    def setUniformRowHeights(self, value: bool):  # noqa: FBT001
+        self.set("uniformRowHeights", value)
+
+    def animations(self, default: bool) -> bool:  # noqa: FBT001
+        return self.get("animations", default)
+
+    def setAnimations(self, value: bool):  # noqa: FBT001
+        self.set("animations", value)
+
+    def autoScroll(self, default: bool) -> bool:  # noqa: FBT001
+        return self.get("autoScroll", default)
+
+    def setAutoScroll(self, value: bool):  # noqa: FBT001
+        self.set("autoScroll", value)
+
+    def expandsOnDoubleClick(self, default: bool) -> bool:  # noqa: FBT001
+        return self.get("expandsOnDoubleClick", default)
+
+    def setExpandsOnDoubleClick(self, value: bool):  # noqa: FBT001
+        self.set("expandsOnDoubleClick", value)
+
+    def autoFillBackground(self, default: bool) -> bool:  # noqa: FBT001
+        return self.get("autoFillBackground", default)
+
+    def setAutoFillBackground(self, value: bool):  # noqa: FBT001
+        self.set("autoFillBackground", value)
+
+    def alternatingRowColors(self, default: bool) -> bool:  # noqa: FBT001
+        return self.get("alternatingRowColors", default)
+
+    def setAlternatingRowColors(self, value: bool):  # noqa: FBT001
+        self.set("alternatingRowColors", value)
+
+    def indentation(self, default: int) -> int:
+        return self.get("indentation", default)
+
+    def setIndentation(self, value: int):
+        self.set("indentation", value)
+
+
 if __name__ == "__main__":
     app = QApplication([])
     window = QWidget()
     layout = QVBoxLayout(window)
 
     combo_box = FilterComboBox()
-    combo_box.populate_items(["item1", "item2", "item3", "item4", "nm35aabast06005_", "nbtn14stun01003_", "nbtn14stun01004_", "nbtn14stun01005_", "nstn57c01001009_", "nstn57c01001014_", "nglobebeast06890"])
+    combo_box.populateComboBox(
+        [
+            "item1",
+            "item2",
+            "item3",
+            "item4",
+            "nm35aabast06005_",
+            "nbtn14stun01003_",
+            "nbtn14stun01004_",
+            "nbtn14stun01005_",
+            "nstn57c01001009_",
+            "nstn57c01001014_",
+            "nglobebeast06890",
+        ]
+    )
     layout.addWidget(combo_box)
     combo_box.set_button_delegate("Play", lambda x: x)
 

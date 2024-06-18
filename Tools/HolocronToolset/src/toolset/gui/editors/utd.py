@@ -140,11 +140,46 @@ class UTDEditor(Editor):
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
 
-        self.ui.notBlastableCheckbox.setVisible(installation.tsl)
-        self.ui.difficultyModSpin.setVisible(installation.tsl)
-        self.ui.difficultySpin.setVisible(installation.tsl)
-        self.ui.difficultyLabel.setVisible(installation.tsl)
-        self.ui.difficultyModLabel.setVisible(installation.tsl)
+        self.handleWidgetWithTSL(self.ui.notBlastableCheckbox, installation)
+        self.handleWidgetWithTSL(self.ui.difficultyModSpin, installation)
+        self.handleWidgetWithTSL(self.ui.difficultySpin, installation)
+        self.handleWidgetWithTSL(self.ui.difficultyLabel, installation)
+        self.handleWidgetWithTSL(self.ui.difficultyModLabel, installation)
+
+        self.all_script_resnames = sorted(
+            {res.resname().lower() for res in self._installation if res.restype() is ResourceType.NCS},
+            key=str.lower,
+        )
+        self.ui.onClickEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onClosedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onMeleeAttackEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onOpenEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onOpenFailedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onSpellEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUnlockEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.conversationEdit.populateComboBox(sorted({res.resname().lower() for res in self._installation if res.restype() is ResourceType.DLG}))
+
+        installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+
+    def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
+        widget.setEnabled(installation.tsl)
+        if not installation.tsl:
+            widget.setToolTip("This widget is only available in KOTOR II.")
 
     def load(
         self,
@@ -204,20 +239,29 @@ class UTDEditor(Editor):
         self.ui.difficultyModSpin.setValue(utd.unlock_diff_mod)
 
         # Scripts
-        self.ui.onClickEdit.setText(str(utd.on_click))
-        self.ui.onClosedEdit.setText(str(utd.on_closed))
-        self.ui.onDamagedEdit.setText(str(utd.on_damaged))
-        self.ui.onDeathEdit.setText(str(utd.on_death))
-        self.ui.onOpenFailedEdit.setText(str(utd.on_open_failed))
-        self.ui.onHeartbeatEdit.setText(str(utd.on_heartbeat))
-        self.ui.onMeleeAttackEdit.setText(str(utd.on_melee))
-        self.ui.onSpellEdit.setText(str(utd.on_power))
-        self.ui.onOpenEdit.setText(str(utd.on_open))
-        self.ui.onUnlockEdit.setText(str(utd.on_unlock))
-        self.ui.onUserDefinedEdit.setText(str(utd.on_user_defined))
+        self.ui.onClickEdit.setComboBoxText(str(utd.on_click))
+        self.ui.onClosedEdit.setComboBoxText(str(utd.on_closed))
+        self.ui.onDamagedEdit.setComboBoxText(str(utd.on_damaged))
+        self.ui.onDeathEdit.setComboBoxText(str(utd.on_death))
+        self.ui.onOpenFailedEdit.setComboBoxText(str(utd.on_open_failed))
+        self.ui.onHeartbeatEdit.setComboBoxText(str(utd.on_heartbeat))
+        self.ui.onMeleeAttackEdit.setComboBoxText(str(utd.on_melee))
+        self.ui.onSpellEdit.setComboBoxText(str(utd.on_power))
+        self.ui.onOpenEdit.setComboBoxText(str(utd.on_open))
+        self.ui.onUnlockEdit.setComboBoxText(str(utd.on_unlock))
+        self.ui.onUserDefinedEdit.setComboBoxText(str(utd.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
+        self._updateCommentsTabTitle()
+
+    def _updateCommentsTabTitle(self):
+        """Updates the Comments tab title with a notification badge if comments are not blank."""
+        comments = self.ui.commentsEdit.toPlainText()
+        if comments:
+            self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(self.ui.commentsTab), "Comments *")
+        else:
+            self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(self.ui.commentsTab), "Comments")
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTD object from UI data.
@@ -239,7 +283,7 @@ class UTDEditor(Editor):
         utd.tag = self.ui.tagEdit.text()
         utd.resref = ResRef(self.ui.resrefEdit.text())
         utd.appearance_id = self.ui.appearanceSelect.currentIndex()
-        utd.conversation = ResRef(self.ui.conversationEdit.text())
+        utd.conversation = ResRef(self.ui.conversationEdit.currentText())
 
         # Advanced
         utd.min1_hp = self.ui.min1HpCheckbox.isChecked()
@@ -265,17 +309,17 @@ class UTDEditor(Editor):
         utd.key_name = self.ui.keyEdit.text()
 
         # Scripts
-        utd.on_click = ResRef(self.ui.onClickEdit.text())
-        utd.on_closed = ResRef(self.ui.onClosedEdit.text())
-        utd.on_damaged = ResRef(self.ui.onDamagedEdit.text())
-        utd.on_death = ResRef(self.ui.onDeathEdit.text())
-        utd.on_open_failed = ResRef(self.ui.onOpenFailedEdit.text())
-        utd.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        utd.on_melee = ResRef(self.ui.onMeleeAttackEdit.text())
-        utd.on_power = ResRef(self.ui.onSpellEdit.text())
-        utd.on_open = ResRef(self.ui.onOpenEdit.text())
-        utd.on_unlock = ResRef(self.ui.onUnlockEdit.text())
-        utd.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        utd.on_click = ResRef(self.ui.onClickEdit.currentText())
+        utd.on_closed = ResRef(self.ui.onClosedEdit.currentText())
+        utd.on_damaged = ResRef(self.ui.onDamagedEdit.currentText())
+        utd.on_death = ResRef(self.ui.onDeathEdit.currentText())
+        utd.on_open_failed = ResRef(self.ui.onOpenFailedEdit.currentText())
+        utd.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utd.on_melee = ResRef(self.ui.onMeleeAttackEdit.currentText())
+        utd.on_power = ResRef(self.ui.onSpellEdit.currentText())
+        utd.on_open = ResRef(self.ui.onOpenEdit.currentText())
+        utd.on_unlock = ResRef(self.ui.onUnlockEdit.currentText())
+        utd.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
 
         # Comments
         utd.comment = self.ui.commentsEdit.toPlainText()

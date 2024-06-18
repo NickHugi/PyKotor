@@ -140,11 +140,46 @@ class UTPEditor(Editor):
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
 
+        self.all_script_resnames = sorted(
+            {res.resname().lower() for res in self._installation if res.restype() is ResourceType.NCS},
+            key=str.lower,
+        )
+
         self.ui.notBlastableCheckbox.setVisible(installation.tsl)
         self.ui.difficultyModSpin.setVisible(installation.tsl)
         self.ui.difficultySpin.setVisible(installation.tsl)
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
+
+        self.ui.onClosedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onEndConversationEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onOpenFailedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onInventoryEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onMeleeAttackEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onSpellEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onOpenEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onLockEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUnlockEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUsedEdit.populateComboBox(self.all_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
+
+        installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onInventoryEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onLockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
 
     def load(
         self,
@@ -209,20 +244,20 @@ class UTPEditor(Editor):
         self.ui.difficultyModSpin.setValue(utp.unlock_diff_mod)
 
         # Scripts
-        self.ui.onClosedEdit.setText(str(utp.on_closed))
-        self.ui.onDamagedEdit.setText(str(utp.on_damaged))
-        self.ui.onDeathEdit.setText(str(utp.on_death))
-        self.ui.onEndConversationEdit.setText(str(utp.on_end_dialog))
-        self.ui.onOpenFailedEdit.setText(str(utp.on_open_failed))
-        self.ui.onHeartbeatEdit.setText(str(utp.on_heartbeat))
-        self.ui.onInventoryEdit.setText(str(utp.on_inventory))
-        self.ui.onMeleeAttackEdit.setText(str(utp.on_melee_attack))
-        self.ui.onSpellEdit.setText(str(utp.on_force_power))
-        self.ui.onOpenEdit.setText(str(utp.on_open))
-        self.ui.onLockEdit.setText(str(utp.on_lock))
-        self.ui.onUnlockEdit.setText(str(utp.on_unlock))
-        self.ui.onUsedEdit.setText(str(utp.on_used))
-        self.ui.onUserDefinedEdit.setText(str(utp.on_user_defined))
+        self.ui.onClosedEdit.setComboBoxText(str(utp.on_closed))
+        self.ui.onDamagedEdit.setComboBoxText(str(utp.on_damaged))
+        self.ui.onDeathEdit.setComboBoxText(str(utp.on_death))
+        self.ui.onEndConversationEdit.setComboBoxText(str(utp.on_end_dialog))
+        self.ui.onOpenFailedEdit.setComboBoxText(str(utp.on_open_failed))
+        self.ui.onHeartbeatEdit.setComboBoxText(str(utp.on_heartbeat))
+        self.ui.onInventoryEdit.setComboBoxText(str(utp.on_inventory))
+        self.ui.onMeleeAttackEdit.setComboBoxText(str(utp.on_melee_attack))
+        self.ui.onSpellEdit.setComboBoxText(str(utp.on_force_power))
+        self.ui.onOpenEdit.setComboBoxText(str(utp.on_open))
+        self.ui.onLockEdit.setComboBoxText(str(utp.on_lock))
+        self.ui.onUnlockEdit.setComboBoxText(str(utp.on_unlock))
+        self.ui.onUsedEdit.setComboBoxText(str(utp.on_used))
+        self.ui.onUserDefinedEdit.setComboBoxText(str(utp.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utp.comment)

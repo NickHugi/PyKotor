@@ -177,7 +177,7 @@ def main_init():
 if __name__ == "__main__":
     main_init()
 
-    from qtpy.QtCore import QThread, Qt
+    from qtpy.QtCore import QThread
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     app = QApplication(sys.argv)

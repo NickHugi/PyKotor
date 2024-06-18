@@ -125,6 +125,9 @@ class FilterComboBox(QComboBox):
         self.create_line_edit()
         self.lineEdit().editingFinished.connect(lambda *args: self.setComboBoxText(self.currentText()))
 
+    def setText(self, text: str):
+        self.setComboBoxText(text)
+
     def setComboBoxText(
         self,
         text: str,
@@ -192,9 +195,12 @@ class FilterComboBox(QComboBox):
         self.view().setFixedWidth(max_width+25)
         super().showPopup()
 
-    def populate_items(self, items):
+    def populateComboBox(self, items):
         self.items = ["", *items]
         self.itemsLoaded = False
+
+    def text(self):
+        return self.currentText()
 
     def filter_items(self, text):
         self.proxy_model.setFilterText(text)

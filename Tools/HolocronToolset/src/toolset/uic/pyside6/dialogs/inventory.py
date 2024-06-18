@@ -488,13 +488,13 @@ class Ui_Dialog(object):
 
         self.tabWidget_3 = QTabWidget(Dialog)
         self.tabWidget_3.setObjectName(u"tabWidget_3")
-        self.tab_6 = QWidget()
-        self.tab_6.setObjectName(u"tab_6")
-        self.gridLayout_3 = QGridLayout(self.tab_6)
+        self.contentsTab = QWidget()
+        self.contentsTab.setObjectName(u"contentsTab")
+        self.gridLayout_3 = QGridLayout(self.contentsTab)
         self.gridLayout_3.setSpacing(0)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.gridLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.contentsTable = InventoryTable(self.tab_6)
+        self.contentsTable = InventoryTable(self.contentsTab)
         if (self.contentsTable.columnCount() < 3):
             self.contentsTable.setColumnCount(3)
         __qtablewidgetitem = QTableWidgetItem()
@@ -514,7 +514,7 @@ class Ui_Dialog(object):
 
         self.gridLayout_3.addWidget(self.contentsTable, 0, 0, 1, 1)
 
-        self.tabWidget_3.addTab(self.tab_6, "")
+        self.tabWidget_3.addTab(self.contentsTab, "")
 
         self.verticalLayout.addWidget(self.tabWidget_3)
 
@@ -595,7 +595,7 @@ class Ui_Dialog(object):
         ___qtablewidgetitem1.setText(QCoreApplication.translate("Dialog", u"ResRef", None));
         ___qtablewidgetitem2 = self.contentsTable.horizontalHeaderItem(2)
         ___qtablewidgetitem2.setText(QCoreApplication.translate("Dialog", u"Name", None));
-        self.tabWidget_3.setTabText(self.tabWidget_3.indexOf(self.tab_6), QCoreApplication.translate("Dialog", u"Contents", None))
+        self.tabWidget_3.setTabText(self.tabWidget_3.indexOf(self.contentsTab), QCoreApplication.translate("Dialog", u"Contents", None))
         self.okButton.setText(QCoreApplication.translate("Dialog", u"OK", None))
         self.cancelButton.setText(QCoreApplication.translate("Dialog", u"Cancel", None))
     # retranslateUi

@@ -293,11 +293,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.setStretch(0, 1)
         self.tabWidget.addTab(self.tab, "")
-        self.tab_2 = QWidget()
-        self.tab_2.setObjectName(u"tab_2")
-        self.verticalLayout_4 = QVBoxLayout(self.tab_2)
+        self.advancedTab = QWidget()
+        self.advancedTab.setObjectName(u"advancedTab")
+        self.verticalLayout_4 = QVBoxLayout(self.advancedTab)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.groupBox_3 = QGroupBox(self.tab_2)
+        self.groupBox_3 = QGroupBox(self.advancedTab)
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.horizontalLayout_9 = QHBoxLayout(self.groupBox_3)
         self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
@@ -358,7 +358,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.groupBox_3)
 
-        self.groupBox_4 = QGroupBox(self.tab_2)
+        self.groupBox_4 = QGroupBox(self.advancedTab)
         self.groupBox_4.setObjectName(u"groupBox_4")
         self.formLayout_2 = QFormLayout(self.groupBox_4)
         self.formLayout_2.setObjectName(u"formLayout_2")
@@ -385,7 +385,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.groupBox_4)
 
-        self.groupBox_5 = QGroupBox(self.tab_2)
+        self.groupBox_5 = QGroupBox(self.advancedTab)
         self.groupBox_5.setObjectName(u"groupBox_5")
         self.verticalLayout_18 = QVBoxLayout(self.groupBox_5)
         self.verticalLayout_18.setObjectName(u"verticalLayout_18")
@@ -492,14 +492,14 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.setStretch(0, 1)
         self.verticalLayout_4.setStretch(1, 1)
-        self.tabWidget.addTab(self.tab_2, "")
-        self.tab_3 = QWidget()
-        self.tab_3.setObjectName(u"tab_3")
-        self.horizontalLayout_11 = QHBoxLayout(self.tab_3)
+        self.tabWidget.addTab(self.advancedTab, "")
+        self.statsTab = QWidget()
+        self.statsTab.setObjectName(u"statsTab")
+        self.horizontalLayout_11 = QHBoxLayout(self.statsTab)
         self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
         self.verticalLayout_5 = QVBoxLayout()
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-        self.groupBox_6 = QGroupBox(self.tab_3)
+        self.groupBox_6 = QGroupBox(self.statsTab)
         self.groupBox_6.setObjectName(u"groupBox_6")
         self.formLayout_4 = QFormLayout(self.groupBox_6)
         self.formLayout_4.setObjectName(u"formLayout_4")
@@ -602,7 +602,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.groupBox_6)
 
-        self.groupBox_8 = QGroupBox(self.tab_3)
+        self.groupBox_8 = QGroupBox(self.statsTab)
         self.groupBox_8.setObjectName(u"groupBox_8")
         self.formLayout_6 = QFormLayout(self.groupBox_8)
         self.formLayout_6.setObjectName(u"formLayout_6")
@@ -645,7 +645,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.groupBox_8)
 
-        self.groupBox_9 = QGroupBox(self.tab_3)
+        self.groupBox_9 = QGroupBox(self.statsTab)
         self.groupBox_9.setObjectName(u"groupBox_9")
         self.formLayout_7 = QFormLayout(self.groupBox_9)
         self.formLayout_7.setObjectName(u"formLayout_7")
@@ -673,7 +673,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6 = QVBoxLayout()
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-        self.groupBox_7 = QGroupBox(self.tab_3)
+        self.groupBox_7 = QGroupBox(self.statsTab)
         self.groupBox_7.setObjectName(u"groupBox_7")
         self.formLayout_5 = QFormLayout(self.groupBox_7)
         self.formLayout_5.setObjectName(u"formLayout_5")
@@ -752,7 +752,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6.addWidget(self.groupBox_7)
 
-        self.groupBox_10 = QGroupBox(self.tab_3)
+        self.groupBox_10 = QGroupBox(self.statsTab)
         self.groupBox_10.setObjectName(u"groupBox_10")
         self.formLayout_8 = QFormLayout(self.groupBox_10)
         self.formLayout_8.setObjectName(u"formLayout_8")
@@ -795,7 +795,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6.addWidget(self.groupBox_10)
 
-        self.groupBox_11 = QGroupBox(self.tab_3)
+        self.groupBox_11 = QGroupBox(self.statsTab)
         self.groupBox_11.setObjectName(u"groupBox_11")
         self.formLayout_9 = QFormLayout(self.groupBox_11)
         self.formLayout_9.setObjectName(u"formLayout_9")
@@ -833,12 +833,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_11.addLayout(self.verticalLayout_6)
 
-        self.tabWidget.addTab(self.tab_3, "")
-        self.tab_4 = QWidget()
-        self.tab_4.setObjectName(u"tab_4")
-        self.verticalLayout_7 = QVBoxLayout(self.tab_4)
+        self.tabWidget.addTab(self.statsTab, "")
+        self.classesTab = QWidget()
+        self.classesTab.setObjectName(u"classesTab")
+        self.verticalLayout_7 = QVBoxLayout(self.classesTab)
         self.verticalLayout_7.setObjectName(u"verticalLayout_7")
-        self.groupBox_13 = QGroupBox(self.tab_4)
+        self.groupBox_13 = QGroupBox(self.classesTab)
         self.groupBox_13.setObjectName(u"groupBox_13")
         self.gridLayout_3 = QGridLayout(self.groupBox_13)
         self.gridLayout_3.setObjectName(u"gridLayout_3")
@@ -893,7 +893,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_7.addWidget(self.groupBox_13)
 
-        self.groupBox_12 = QGroupBox(self.tab_4)
+        self.groupBox_12 = QGroupBox(self.classesTab)
         self.groupBox_12.setObjectName(u"groupBox_12")
         self.horizontalLayout_12 = QHBoxLayout(self.groupBox_12)
         self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
@@ -922,17 +922,17 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_7.addItem(self.spacer)
 
-        self.tabWidget.addTab(self.tab_4, "")
-        self.tab_5 = QWidget()
-        self.tab_5.setObjectName(u"tab_5")
-        self.verticalLayout_8 = QVBoxLayout(self.tab_5)
+        self.tabWidget.addTab(self.classesTab, "")
+        self.featsTab = QWidget()
+        self.featsTab.setObjectName(u"featsTab")
+        self.verticalLayout_8 = QVBoxLayout(self.featsTab)
         self.verticalLayout_8.setObjectName(u"verticalLayout_8")
-        self.featList = QListWidget(self.tab_5)
+        self.featList = QListWidget(self.featsTab)
         self.featList.setObjectName(u"featList")
 
         self.verticalLayout_8.addWidget(self.featList)
 
-        self.groupBox_14 = QGroupBox(self.tab_5)
+        self.groupBox_14 = QGroupBox(self.featsTab)
         self.groupBox_14.setObjectName(u"groupBox_14")
         self.gridLayout_4 = QGridLayout(self.groupBox_14)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
@@ -947,17 +947,17 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_8.setStretch(0, 2)
         self.verticalLayout_8.setStretch(1, 1)
-        self.tabWidget.addTab(self.tab_5, "")
-        self.tab_6 = QWidget()
-        self.tab_6.setObjectName(u"tab_6")
-        self.verticalLayout_17 = QVBoxLayout(self.tab_6)
+        self.tabWidget.addTab(self.featsTab, "")
+        self.powersTab = QWidget()
+        self.powersTab.setObjectName(u"powersTab")
+        self.verticalLayout_17 = QVBoxLayout(self.powersTab)
         self.verticalLayout_17.setObjectName(u"verticalLayout_17")
-        self.powerList = QListWidget(self.tab_6)
+        self.powerList = QListWidget(self.powersTab)
         self.powerList.setObjectName(u"powerList")
 
         self.verticalLayout_17.addWidget(self.powerList)
 
-        self.groupBox_29 = QGroupBox(self.tab_6)
+        self.groupBox_29 = QGroupBox(self.powersTab)
         self.groupBox_29.setObjectName(u"groupBox_29")
         self.gridLayout_8 = QGridLayout(self.groupBox_29)
         self.gridLayout_8.setObjectName(u"gridLayout_8")
@@ -972,19 +972,19 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_17.setStretch(0, 2)
         self.verticalLayout_17.setStretch(1, 1)
-        self.tabWidget.addTab(self.tab_6, "")
-        self.tab_7 = QWidget()
-        self.tab_7.setObjectName(u"tab_7")
-        self.formLayout_22 = QFormLayout(self.tab_7)
+        self.tabWidget.addTab(self.powersTab, "")
+        self.Scripts = QWidget()
+        self.Scripts.setObjectName(u"Scripts")
+        self.formLayout_22 = QFormLayout(self.Scripts)
         self.formLayout_22.setObjectName(u"formLayout_22")
-        self.label_95 = QLabel(self.tab_7)
+        self.label_95 = QLabel(self.Scripts)
         self.label_95.setObjectName(u"label_95")
 
         self.formLayout_22.setWidget(0, QFormLayout.LabelRole, self.label_95)
 
         self.horizontalLayout_29 = QHBoxLayout()
         self.horizontalLayout_29.setObjectName(u"horizontalLayout_29")
-        self.onBlockedEdit = FilterComboBox(self.tab_7)
+        self.onBlockedEdit = FilterComboBox(self.Scripts)
         self.onBlockedEdit.setObjectName(u"onBlockedEdit")
 
         self.horizontalLayout_29.addWidget(self.onBlockedEdit)
@@ -992,14 +992,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(0, QFormLayout.FieldRole, self.horizontalLayout_29)
 
-        self.label_106 = QLabel(self.tab_7)
+        self.label_106 = QLabel(self.Scripts)
         self.label_106.setObjectName(u"label_106")
 
         self.formLayout_22.setWidget(1, QFormLayout.LabelRole, self.label_106)
 
         self.horizontalLayout_30 = QHBoxLayout()
         self.horizontalLayout_30.setObjectName(u"horizontalLayout_30")
-        self.onAttackedEdit = FilterComboBox(self.tab_7)
+        self.onAttackedEdit = FilterComboBox(self.Scripts)
         self.onAttackedEdit.setObjectName(u"onAttackedEdit")
 
         self.horizontalLayout_30.addWidget(self.onAttackedEdit)
@@ -1007,14 +1007,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(1, QFormLayout.FieldRole, self.horizontalLayout_30)
 
-        self.label_96 = QLabel(self.tab_7)
+        self.label_96 = QLabel(self.Scripts)
         self.label_96.setObjectName(u"label_96")
 
         self.formLayout_22.setWidget(2, QFormLayout.LabelRole, self.label_96)
 
         self.horizontalLayout_31 = QHBoxLayout()
         self.horizontalLayout_31.setObjectName(u"horizontalLayout_31")
-        self.onNoticeEdit = FilterComboBox(self.tab_7)
+        self.onNoticeEdit = FilterComboBox(self.Scripts)
         self.onNoticeEdit.setObjectName(u"onNoticeEdit")
 
         self.horizontalLayout_31.addWidget(self.onNoticeEdit)
@@ -1022,14 +1022,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(2, QFormLayout.FieldRole, self.horizontalLayout_31)
 
-        self.label_97 = QLabel(self.tab_7)
+        self.label_97 = QLabel(self.Scripts)
         self.label_97.setObjectName(u"label_97")
 
         self.formLayout_22.setWidget(3, QFormLayout.LabelRole, self.label_97)
 
         self.horizontalLayout_32 = QHBoxLayout()
         self.horizontalLayout_32.setObjectName(u"horizontalLayout_32")
-        self.onConversationEdit = FilterComboBox(self.tab_7)
+        self.onConversationEdit = FilterComboBox(self.Scripts)
         self.onConversationEdit.setObjectName(u"onConversationEdit")
 
         self.horizontalLayout_32.addWidget(self.onConversationEdit)
@@ -1037,14 +1037,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(3, QFormLayout.FieldRole, self.horizontalLayout_32)
 
-        self.label_98 = QLabel(self.tab_7)
+        self.label_98 = QLabel(self.Scripts)
         self.label_98.setObjectName(u"label_98")
 
         self.formLayout_22.setWidget(4, QFormLayout.LabelRole, self.label_98)
 
         self.horizontalLayout_33 = QHBoxLayout()
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
-        self.onDamagedEdit = FilterComboBox(self.tab_7)
+        self.onDamagedEdit = FilterComboBox(self.Scripts)
         self.onDamagedEdit.setObjectName(u"onDamagedEdit")
 
         self.horizontalLayout_33.addWidget(self.onDamagedEdit)
@@ -1052,14 +1052,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(4, QFormLayout.FieldRole, self.horizontalLayout_33)
 
-        self.label_109 = QLabel(self.tab_7)
+        self.label_109 = QLabel(self.Scripts)
         self.label_109.setObjectName(u"label_109")
 
         self.formLayout_22.setWidget(5, QFormLayout.LabelRole, self.label_109)
 
         self.horizontalLayout_34 = QHBoxLayout()
         self.horizontalLayout_34.setObjectName(u"horizontalLayout_34")
-        self.onDeathEdit = FilterComboBox(self.tab_7)
+        self.onDeathEdit = FilterComboBox(self.Scripts)
         self.onDeathEdit.setObjectName(u"onDeathEdit")
 
         self.horizontalLayout_34.addWidget(self.onDeathEdit)
@@ -1067,14 +1067,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(5, QFormLayout.FieldRole, self.horizontalLayout_34)
 
-        self.label_107 = QLabel(self.tab_7)
+        self.label_107 = QLabel(self.Scripts)
         self.label_107.setObjectName(u"label_107")
 
         self.formLayout_22.setWidget(6, QFormLayout.LabelRole, self.label_107)
 
         self.horizontalLayout_35 = QHBoxLayout()
         self.horizontalLayout_35.setObjectName(u"horizontalLayout_35")
-        self.onEndRoundEdit = FilterComboBox(self.tab_7)
+        self.onEndRoundEdit = FilterComboBox(self.Scripts)
         self.onEndRoundEdit.setObjectName(u"onEndRoundEdit")
 
         self.horizontalLayout_35.addWidget(self.onEndRoundEdit)
@@ -1082,14 +1082,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(6, QFormLayout.FieldRole, self.horizontalLayout_35)
 
-        self.label_108 = QLabel(self.tab_7)
+        self.label_108 = QLabel(self.Scripts)
         self.label_108.setObjectName(u"label_108")
 
         self.formLayout_22.setWidget(7, QFormLayout.LabelRole, self.label_108)
 
         self.horizontalLayout_36 = QHBoxLayout()
         self.horizontalLayout_36.setObjectName(u"horizontalLayout_36")
-        self.onEndConversationEdit = FilterComboBox(self.tab_7)
+        self.onEndConversationEdit = FilterComboBox(self.Scripts)
         self.onEndConversationEdit.setObjectName(u"onEndConversationEdit")
 
         self.horizontalLayout_36.addWidget(self.onEndConversationEdit)
@@ -1097,14 +1097,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(7, QFormLayout.FieldRole, self.horizontalLayout_36)
 
-        self.label_100 = QLabel(self.tab_7)
+        self.label_100 = QLabel(self.Scripts)
         self.label_100.setObjectName(u"label_100")
 
         self.formLayout_22.setWidget(8, QFormLayout.LabelRole, self.label_100)
 
         self.horizontalLayout_38 = QHBoxLayout()
         self.horizontalLayout_38.setObjectName(u"horizontalLayout_38")
-        self.onDisturbedEdit = FilterComboBox(self.tab_7)
+        self.onDisturbedEdit = FilterComboBox(self.Scripts)
         self.onDisturbedEdit.setObjectName(u"onDisturbedEdit")
 
         self.horizontalLayout_38.addWidget(self.onDisturbedEdit)
@@ -1112,14 +1112,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(8, QFormLayout.FieldRole, self.horizontalLayout_38)
 
-        self.label_101 = QLabel(self.tab_7)
+        self.label_101 = QLabel(self.Scripts)
         self.label_101.setObjectName(u"label_101")
 
         self.formLayout_22.setWidget(9, QFormLayout.LabelRole, self.label_101)
 
         self.horizontalLayout_39 = QHBoxLayout()
         self.horizontalLayout_39.setObjectName(u"horizontalLayout_39")
-        self.onHeartbeatEdit = FilterComboBox(self.tab_7)
+        self.onHeartbeatEdit = FilterComboBox(self.Scripts)
         self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
 
         self.horizontalLayout_39.addWidget(self.onHeartbeatEdit)
@@ -1127,14 +1127,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(9, QFormLayout.FieldRole, self.horizontalLayout_39)
 
-        self.label_103 = QLabel(self.tab_7)
+        self.label_103 = QLabel(self.Scripts)
         self.label_103.setObjectName(u"label_103")
 
         self.formLayout_22.setWidget(10, QFormLayout.LabelRole, self.label_103)
 
         self.horizontalLayout_41 = QHBoxLayout()
         self.horizontalLayout_41.setObjectName(u"horizontalLayout_41")
-        self.onSpawnEdit = FilterComboBox(self.tab_7)
+        self.onSpawnEdit = FilterComboBox(self.Scripts)
         self.onSpawnEdit.setObjectName(u"onSpawnEdit")
 
         self.horizontalLayout_41.addWidget(self.onSpawnEdit)
@@ -1142,14 +1142,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(10, QFormLayout.FieldRole, self.horizontalLayout_41)
 
-        self.label_104 = QLabel(self.tab_7)
+        self.label_104 = QLabel(self.Scripts)
         self.label_104.setObjectName(u"label_104")
 
         self.formLayout_22.setWidget(11, QFormLayout.LabelRole, self.label_104)
 
         self.horizontalLayout_42 = QHBoxLayout()
         self.horizontalLayout_42.setObjectName(u"horizontalLayout_42")
-        self.onSpellCastEdit = FilterComboBox(self.tab_7)
+        self.onSpellCastEdit = FilterComboBox(self.Scripts)
         self.onSpellCastEdit.setObjectName(u"onSpellCastEdit")
 
         self.horizontalLayout_42.addWidget(self.onSpellCastEdit)
@@ -1157,14 +1157,14 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(11, QFormLayout.FieldRole, self.horizontalLayout_42)
 
-        self.label_105 = QLabel(self.tab_7)
+        self.label_105 = QLabel(self.Scripts)
         self.label_105.setObjectName(u"label_105")
 
         self.formLayout_22.setWidget(12, QFormLayout.LabelRole, self.label_105)
 
         self.horizontalLayout_43 = QHBoxLayout()
         self.horizontalLayout_43.setObjectName(u"horizontalLayout_43")
-        self.onUserDefinedEdit = FilterComboBox(self.tab_7)
+        self.onUserDefinedEdit = FilterComboBox(self.Scripts)
         self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
 
         self.horizontalLayout_43.addWidget(self.onUserDefinedEdit)
@@ -1172,24 +1172,24 @@ class Ui_MainWindow(object):
 
         self.formLayout_22.setLayout(12, QFormLayout.FieldRole, self.horizontalLayout_43)
 
-        self.tabWidget.addTab(self.tab_7, "")
-        self.tab_8 = QWidget()
-        self.tab_8.setObjectName(u"tab_8")
-        self.gridLayout_9 = QGridLayout(self.tab_8)
+        self.tabWidget.addTab(self.Scripts, "")
+        self.commentsTab = QWidget()
+        self.commentsTab.setObjectName(u"commentsTab")
+        self.gridLayout_9 = QGridLayout(self.commentsTab)
         self.gridLayout_9.setObjectName(u"gridLayout_9")
-        self.comments = QPlainTextEdit(self.tab_8)
+        self.comments = QPlainTextEdit(self.commentsTab)
         self.comments.setObjectName(u"comments")
 
         self.gridLayout_9.addWidget(self.comments, 0, 0, 1, 1)
 
-        self.tabWidget.addTab(self.tab_8, "")
+        self.tabWidget.addTab(self.commentsTab, "")
 
         self.horizontalLayout_15.addWidget(self.tabWidget)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 794, 22))
+        self.menubar.setGeometry(QRect(0, 0, 900, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuTools = QMenu(self.menubar)
@@ -1270,7 +1270,7 @@ class Ui_MainWindow(object):
         self.label_13.setText(QCoreApplication.translate("MainWindow", u"Challenge Rating:", None))
         self.label_102.setText(QCoreApplication.translate("MainWindow", u"Blindspot:", None))
         self.label_110.setText(QCoreApplication.translate("MainWindow", u"Multiplier Set:", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", u"Advanced", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.advancedTab), QCoreApplication.translate("MainWindow", u"Advanced", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("MainWindow", u"Skills", None))
         self.label_17.setText(QCoreApplication.translate("MainWindow", u"Computer Use:", None))
         self.label_18.setText(QCoreApplication.translate("MainWindow", u"Demolitions:", None))
@@ -1300,16 +1300,16 @@ class Ui_MainWindow(object):
         self.groupBox_11.setTitle(QCoreApplication.translate("MainWindow", u"Force Points", None))
         self.label_39.setText(QCoreApplication.translate("MainWindow", u"Current FP:", None))
         self.label_40.setText(QCoreApplication.translate("MainWindow", u"Max FP:", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), QCoreApplication.translate("MainWindow", u"Stats", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.statsTab), QCoreApplication.translate("MainWindow", u"Stats", None))
         self.groupBox_13.setTitle(QCoreApplication.translate("MainWindow", u"Classes", None))
         self.groupBox_12.setTitle(QCoreApplication.translate("MainWindow", u"Alignment", None))
         self.label_52.setText(QCoreApplication.translate("MainWindow", u"Dark", None))
         self.label_53.setText(QCoreApplication.translate("MainWindow", u"Light", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), QCoreApplication.translate("MainWindow", u"Classes", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.classesTab), QCoreApplication.translate("MainWindow", u"Classes", None))
         self.groupBox_14.setTitle(QCoreApplication.translate("MainWindow", u"Feat Summary", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), QCoreApplication.translate("MainWindow", u"Feats", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.featsTab), QCoreApplication.translate("MainWindow", u"Feats", None))
         self.groupBox_29.setTitle(QCoreApplication.translate("MainWindow", u"Force Power Summary", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_6), QCoreApplication.translate("MainWindow", u"Powers", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.powersTab), QCoreApplication.translate("MainWindow", u"Powers", None))
         self.label_95.setText(QCoreApplication.translate("MainWindow", u"OnBlocked:", None))
         self.label_106.setText(QCoreApplication.translate("MainWindow", u"OnAttacked:", None))
         self.label_96.setText(QCoreApplication.translate("MainWindow", u"OnNoticed:", None))
@@ -1323,8 +1323,8 @@ class Ui_MainWindow(object):
         self.label_103.setText(QCoreApplication.translate("MainWindow", u"OnSpawn:", None))
         self.label_104.setText(QCoreApplication.translate("MainWindow", u"OnSpellCastAt:", None))
         self.label_105.setText(QCoreApplication.translate("MainWindow", u"OnUserDefined:", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_7), QCoreApplication.translate("MainWindow", u"Scripts", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_8), QCoreApplication.translate("MainWindow", u"Comments", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.Scripts), QCoreApplication.translate("MainWindow", u"Scripts", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.commentsTab), QCoreApplication.translate("MainWindow", u"Comments", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"View", None))

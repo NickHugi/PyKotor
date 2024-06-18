@@ -1244,7 +1244,7 @@
        </item>
        <item>
         <widget class="QTabWidget" name="tabWidget_3">
-         <widget class="QWidget" name="tab_6">
+         <widget class="QWidget" name="contentsTab">
           <attribute name="title">
            <string>Contents</string>
           </attribute>

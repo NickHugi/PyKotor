@@ -611,11 +611,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="onClosedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onClosedEdit"/>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_7">
@@ -709,99 +705,47 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="onDamagedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onDamagedEdit"/>
         </item>
         <item row="2" column="1">
-         <widget class="QLineEdit" name="onDeathEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onDeathEdit"/>
         </item>
         <item row="3" column="1">
-         <widget class="QLineEdit" name="onEndConversationEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onEndConversationEdit"/>
         </item>
         <item row="4" column="1">
-         <widget class="QLineEdit" name="onOpenFailedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onOpenFailedEdit"/>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="onHeartbeatEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onHeartbeatEdit"/>
         </item>
         <item row="6" column="1">
-         <widget class="QLineEdit" name="onInventoryEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onInventoryEdit"/>
         </item>
         <item row="7" column="1">
-         <widget class="QLineEdit" name="onMeleeAttackEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onMeleeAttackEdit"/>
         </item>
         <item row="8" column="1">
-         <widget class="QLineEdit" name="onSpellEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onSpellEdit"/>
         </item>
         <item row="9" column="1">
-         <widget class="QLineEdit" name="onOpenEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onOpenEdit"/>
         </item>
         <item row="10" column="1">
-         <widget class="QLineEdit" name="onLockEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onLockEdit"/>
         </item>
         <item row="11" column="1">
-         <widget class="QLineEdit" name="onUnlockEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onUnlockEdit"/>
         </item>
         <item row="12" column="1">
-         <widget class="QLineEdit" name="onUsedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onUsedEdit"/>
         </item>
         <item row="13" column="1">
-         <widget class="QLineEdit" name="onUserDefinedEdit">
-          <property name="maxLength">
-           <number>16</number>
-          </property>
-         </widget>
+         <widget class="FilterComboBox" name="onUserDefinedEdit"/>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
+      <widget class="QWidget" name="commentsTab">
        <attribute name="title">
         <string>Comments</string>
        </attribute>
@@ -900,6 +844,11 @@
    <class>ComboBox2DA</class>
    <extends>QComboBox</extends>
    <header location="global">toolset.gui.widgets.edit.combobox_2da</header>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.widgets.edit.combobox</header>
   </customwidget>
  </customwidgets>
  <resources/>

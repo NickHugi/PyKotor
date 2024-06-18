@@ -34,3 +34,15 @@ def extract_name(data: bytes) -> LocalizedString:
 def extract_tag_from_gff(data: bytes) -> str:
     gff = read_gff(data)
     return gff.root.get_string("Tag")
+
+if __name__ == "__main__":
+    import pkgutil
+
+    def list_modules(package_name):
+        package = __import__(package_name, fromlist=[""])
+        return [name for _, name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + ".")]
+
+    # Example usage
+    package_name = "pykotor"
+    modules = list_modules(package_name)
+    print(f"Total modules: {len(modules)}")

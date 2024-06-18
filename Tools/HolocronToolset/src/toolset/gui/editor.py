@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QTimer, Qt
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QShortcut
 
@@ -629,6 +629,10 @@ class Editor(QMainWindow):
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded;}}")
             else:
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
+
+    def blinkWindow(self):
+        self.setWindowOpacity(0.7)
+        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
 
     def filepath(self) -> str | None:
         return str(self._filepath)
