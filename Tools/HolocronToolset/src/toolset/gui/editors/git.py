@@ -935,25 +935,24 @@ class _InstanceMode(_Mode):
         search: list[LocationResult] = self._installation.location(resname, restype, order)
 
         if isinstance(self._editor, GITEditor):
-            assert self._editor._filepath is not None
-            module_root: str = self._installation.get_module_root(self._editor._filepath.name)
+            assert self._editor._filepath is not None  # noqa: SLF001
+            module_root: str = self._installation.get_module_root(self._editor._filepath.name).lower()
             edited_file_from_dot_mod = self._editor._filepath.suffix.lower() == ".mod"
         else:
-            assert self._editor._module is not None
-            module_root = self._editor._module._root
+            assert self._editor._module is not None  # noqa: SLF001
+            module_root = self._editor._module.root_name().lower()
             edited_file_from_dot_mod = self._editor._module.dot_mod
 
-        module_root = module_root.lower()
-        for loc in search:
+        for i, loc in reversed(list(enumerate(search))):
             if loc.filepath.parent.name.lower() == "modules":
                 loc_module_root = self._installation.get_module_root(loc.filepath.name.lower())
                 loc_is_dot_mod = loc.filepath.suffix.lower() == ".mod"
                 if loc_module_root != module_root:
                     RobustRootLogger.debug(f"Removing location '{loc.filepath}' (not in our module '{module_root}')")
-                    search.remove(loc)
+                    search.pop(i)
                 elif loc_is_dot_mod != edited_file_from_dot_mod:
                     RobustRootLogger.debug(f"Removing location '{loc.filepath}' due to rim/mod check")
-                    search.remove(loc)
+                    search.pop(i)
         if len(search) > 1:
             selectionWindow = FileSelectionWindow(search, self._installation)
             selectionWindow.show()
