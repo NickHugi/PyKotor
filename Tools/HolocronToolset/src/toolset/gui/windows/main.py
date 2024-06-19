@@ -9,7 +9,7 @@ import sys
 
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Iterable, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, cast
 
 import qtpy
 
@@ -502,66 +502,56 @@ class ToolWindow(QMainWindow):
         openResourceEditor(file, resource.resname(), resource.restype(), resource.data(), self.active, self)
 
     def toggle_stylesheet(self, theme: QAction | str):
-        # get the QApplication instance
         app = QApplication.instance()
-        print("<SDM> [toggle_stylesheet scope] app: ", app)
+        assert isinstance(app, QApplication), "No Qt Application found or not a QApplication instance."
 
-        if app is None or not isinstance(app, QApplication):
-            raise RuntimeError("No Qt Application found or not a QApplication instance.")
-
-        themeName: str = theme.text() if isinstance(theme, QAction) else theme
-        self.settings.selectedTheme = themeName
         print("<SDM> [toggle_stylesheet scope] self.settings.selectedTheme: ", self.settings.selectedTheme)
+        self.settings.selectedTheme = theme.text() if isinstance(theme, QAction) else theme
 
-        if themeName == "Breeze (Dark)":
-            file = QFile(":/dark/stylesheet.qss")
-            print("<SDM> [toggle_stylesheet scope] file: ", file)
-
-            file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)  # type: ignore[arg-type]
-            stream = QTextStream(file)
-            app.setStyleSheet(stream.readAll())
-            file.close()
-            self.show()  # Re-apply the window with new flags
-        elif not themeName or themeName == "Default (Light)":
-            app.setStyleSheet("")  # Reset to default style
-            app.setPalette(self.original_palette)  # Reset to default palette
+        if not self.settings.selectedTheme or self.settings.selectedTheme == "Default (Light)":
+            app.setStyleSheet("")
+            app.setPalette(self.original_palette)
             app.setStyle(self.original_style)
-            # Reset window flags to default, which includes the title bar
-            self.setWindowFlags(
-                Qt.WindowType.Window  # type: ignore[arg-type]
-                | Qt.WindowType.WindowCloseButtonHint
-                | Qt.WindowType.WindowMinimizeButtonHint
-                | Qt.WindowType.WindowMaximizeButtonHint
-            )
-        elif themeName == "Fusion (Light)":
-            app.setStyleSheet("")  # Reset to default style
-            app.setPalette(self.original_palette)  # Reset to default palette
+        elif self.settings.selectedTheme == "Fusion (Light)":
+            app.setStyleSheet("")
+            app.setPalette(self.original_palette)
             app.setStyle("Fusion")
-        elif themeName == "Fusion (Dark)":
-            app.setStyleSheet("")  # Reset to default style
+        elif self.settings.selectedTheme == "Default (Dark)":
+            app.setStyleSheet("")
+            self._applyCustomDarkPalette()
+        elif self.settings.selectedTheme == "Fusion (Dark)":
+            app.setStyleSheet("")
             app.setStyle("Fusion")
-            dark_palette = QPalette()
-            dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
-            dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
-            dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-            dark_palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
-            dark_palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
-            dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
-            dark_palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
-            dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
-            dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-            dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
-            dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Qt.GlobalColor.darkGray)
-            dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, Qt.GlobalColor.darkGray)
-            dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Qt.GlobalColor.darkGray)
-            dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Light, QColor(53, 53, 53))
-            QApplication.setPalette(dark_palette)
-        print(f"Theme changed to: '{themeName}'")
-        self.show()  # Re-apply the window with new flags
+            self._applyCustomDarkPalette()
+        elif self.settings.selectedTheme == "Breeze (Dark)":
+            file = QFile(":/dark/stylesheet.qss")
+            file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
+            app.setStyleSheet(QTextStream(file).readAll())
+            file.close()
+        print(f"Theme changed to: '{self.settings.selectedTheme}'")
+        self.show()
+
+    def _applyCustomDarkPalette(self):
+        dark_palette = QPalette()
+        dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Qt.GlobalColor.darkGray)
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, Qt.GlobalColor.darkGray)
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Qt.GlobalColor.darkGray)
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Light, QColor(53, 53, 53))
+        QApplication.setPalette(dark_palette)
 
     # region Signal callbacks
     def onCoreRefresh(self):
