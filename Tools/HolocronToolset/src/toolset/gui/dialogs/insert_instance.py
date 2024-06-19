@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtGui import QColor
+from qtpy.QtGui import QBrush, QPalette
 from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QMessageBox
 
 from pykotor.common.misc import ResRef
@@ -25,6 +25,7 @@ from pykotor.tools import door, placeable
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -118,15 +119,14 @@ class InsertInstanceDialog(QDialog):
         data, _ = self.build()
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
         if not modelname or not modelname.strip():
-            RobustRootLogger().warning("Placeable '%s.%s' has no model to render!", self._resname, self._restype)
+            RobustRootLogger.warning(
+                "Placeable '%s.%s' has no model to render!",
+                self._resname,
+                self._restype,
+            )
             self.ui.previewRenderer.clearModel()
             return
-        mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
-        mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
-        if mdl is not None and mdx is not None:
-            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
-        else:
-            self.ui.previewRenderer.clearModel()
+        self._extracted_from_onResourceSelected_19(modelname)
 
     def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
@@ -157,6 +157,8 @@ class InsertInstanceDialog(QDialog):
             - Loops through module capsules and nested resources, adding matching type
             - Selects first item if list is populated.
         """
+        palette = self.palette()  # Get the current application palette if needed
+        textColor = palette.color(QPalette.WindowText)
         for resource in self._installation.core_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
@@ -169,14 +171,14 @@ class InsertInstanceDialog(QDialog):
                 if resource.restype() == self._restype:
                     item = QListWidgetItem(resource.resname())
                     item.setToolTip(str(resource.filepath()))
-                    item.setForeground(QColor(30, 30, 30))
+                    item.setForeground(QBrush(textColor))
                     item.setData(QtCore.Qt.ItemDataRole.UserRole, resource)
                     self.ui.resourceList.addItem(item)
 
         if self.ui.resourceList.count() > 0:
             self.ui.resourceList.item(0).setSelected(True)
 
-    def accept(self):
+    def accept(self):  # noqa: C901, PLR0912
         """Accepts resource selection and updates module accordingly.
 
         Processing Logic:
@@ -269,22 +271,10 @@ class InsertInstanceDialog(QDialog):
                 mdx_data: bytes | None = None
                 if resource.restype() is ResourceType.UTD and self.globalSettings.showPreviewUTD:
                     modelname: str = door.get_model(read_utd(resource.data()), self._installation)
-                    mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
-                    mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
-                    if mdl is not None and mdx is not None:
-                        self.ui.previewRenderer.setModel(mdl.data, mdx.data)
-                    else:
-                        self.ui.previewRenderer.clearModel()
-
+                    self._extracted_from_onResourceSelected_19(modelname)
                 elif resource.restype() is ResourceType.UTP and self.globalSettings.showPreviewUTP:
                     modelname: str = placeable.get_model(read_utp(resource.data()), self._installation)
-                    mdl: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDL)
-                    mdx: ResourceResult | None = self._installation.resource(modelname, ResourceType.MDX)
-                    if mdl is not None and mdx is not None:
-                        self.ui.previewRenderer.setModel(mdl.data, mdx.data)
-                    else:
-                        self.ui.previewRenderer.clearModel()
-
+                    self._extracted_from_onResourceSelected_19(modelname)
                 elif (
                     resource.restype() in (ResourceType.MDL, ResourceType.MDX)
                     and any((
@@ -323,6 +313,19 @@ class InsertInstanceDialog(QDialog):
                         self.ui.previewRenderer.setModel(mdl_data, mdx_data)
                     else:
                         self.ui.previewRenderer.clearModel()
+
+    # TODO Rename this here and in `_update_model` and `onResourceSelected`
+    def _extracted_from_onResourceSelected_19(self, modelname):
+        mdl: ResourceResult | None = self._installation.resource(
+            modelname, ResourceType.MDL
+        )
+        mdx: ResourceResult | None = self._installation.resource(
+            modelname, ResourceType.MDX
+        )
+        if mdl is not None and mdx is not None:
+            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+        else:
+            self.ui.previewRenderer.clearModel()
 
     def generateResourceSummary(self, resource: FileResource) -> str:
         """Generates a summary of the selected resource.
