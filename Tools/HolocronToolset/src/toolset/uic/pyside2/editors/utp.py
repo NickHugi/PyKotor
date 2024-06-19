@@ -277,6 +277,11 @@ class Ui_MainWindow(object):
 
         self.currenHpSpin = QSpinBox(self.frame_4)
         self.currenHpSpin.setObjectName(u"currenHpSpin")
+        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.currenHpSpin.sizePolicy().hasHeightForWidth())
+        self.currenHpSpin.setSizePolicy(sizePolicy)
         self.currenHpSpin.setMinimum(-2147483648)
         self.currenHpSpin.setMaximum(2147483647)
 
@@ -289,6 +294,8 @@ class Ui_MainWindow(object):
 
         self.maxHpSpin = QSpinBox(self.frame_4)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
+        sizePolicy.setHeightForWidth(self.maxHpSpin.sizePolicy().hasHeightForWidth())
+        self.maxHpSpin.setSizePolicy(sizePolicy)
         self.maxHpSpin.setMinimum(-2147483648)
         self.maxHpSpin.setMaximum(2147483647)
 
@@ -301,6 +308,8 @@ class Ui_MainWindow(object):
 
         self.hardnessSpin = QSpinBox(self.frame_4)
         self.hardnessSpin.setObjectName(u"hardnessSpin")
+        sizePolicy.setHeightForWidth(self.hardnessSpin.sizePolicy().hasHeightForWidth())
+        self.hardnessSpin.setSizePolicy(sizePolicy)
         self.hardnessSpin.setMinimum(-2147483648)
         self.hardnessSpin.setMaximum(2147483647)
 
@@ -313,6 +322,8 @@ class Ui_MainWindow(object):
 
         self.fortitudeSpin = QSpinBox(self.frame_4)
         self.fortitudeSpin.setObjectName(u"fortitudeSpin")
+        sizePolicy.setHeightForWidth(self.fortitudeSpin.sizePolicy().hasHeightForWidth())
+        self.fortitudeSpin.setSizePolicy(sizePolicy)
         self.fortitudeSpin.setMinimum(-2147483648)
         self.fortitudeSpin.setMaximum(2147483647)
 
@@ -325,6 +336,8 @@ class Ui_MainWindow(object):
 
         self.reflexSpin = QSpinBox(self.frame_4)
         self.reflexSpin.setObjectName(u"reflexSpin")
+        sizePolicy.setHeightForWidth(self.reflexSpin.sizePolicy().hasHeightForWidth())
+        self.reflexSpin.setSizePolicy(sizePolicy)
         self.reflexSpin.setMinimum(-2147483648)
         self.reflexSpin.setMaximum(2147483647)
 
@@ -337,6 +350,8 @@ class Ui_MainWindow(object):
 
         self.willSpin = QSpinBox(self.frame_4)
         self.willSpin.setObjectName(u"willSpin")
+        sizePolicy.setHeightForWidth(self.willSpin.sizePolicy().hasHeightForWidth())
+        self.willSpin.setSizePolicy(sizePolicy)
         self.willSpin.setMinimum(-2147483648)
         self.willSpin.setMaximum(2147483647)
 
@@ -630,7 +645,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
