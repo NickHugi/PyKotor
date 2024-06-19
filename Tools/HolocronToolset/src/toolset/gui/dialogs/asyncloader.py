@@ -222,8 +222,13 @@ class AsyncLoader(QDialog, Generic[T]):
             self._mainTaskText.setText(value)
         elif task_type == "update_subtask_text":
             self._subTaskText.setText(value)
+        old_width = self.width()
         self.adjustSize()
         self.setMinimumSize(self.size())
+        new_width = self.width()
+        width_change = new_width - old_width
+        if width_change > 0:
+            self.move(self.x() - width_change // 2, self.y())
 
 
 class AsyncWorker(QThread):
