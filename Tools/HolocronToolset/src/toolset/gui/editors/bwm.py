@@ -11,6 +11,7 @@ from qtpy.QtGui import QColor, QIcon, QImage, QPixmap
 from qtpy.QtWidgets import QListWidgetItem, QShortcut
 
 from pykotor.common.geometry import SurfaceMaterial
+from pykotor.common.misc import Color
 from pykotor.resource.formats.bwm import read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
@@ -77,28 +78,34 @@ class BWMEditor(Editor):
 
         self._bwm: BWM | None = None
 
+        moduleDesignerSettings = ModuleDesignerSettings()
+
+        def intColorToQColor(intvalue: int) -> QColor:
+            color = Color.from_rgba_integer(intvalue)
+            return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
+
         self.materialColors: dict[SurfaceMaterial, QColor] = {
-            SurfaceMaterial.UNDEFINED: QColor(0xF45086),
-            SurfaceMaterial.OBSCURING: QColor(0x555555),
-            SurfaceMaterial.DIRT: QColor(0x800000),
-            SurfaceMaterial.GRASS: QColor(0x33CC33),
-            SurfaceMaterial.STONE: QColor(0x808080),
-            SurfaceMaterial.WOOD: QColor(0x5E260C),
-            SurfaceMaterial.WATER: QColor(0x0066FF),
-            SurfaceMaterial.NON_WALK: QColor(0xFF00FF),
-            SurfaceMaterial.TRANSPARENT: QColor(0xB3FFFF),
-            SurfaceMaterial.CARPET: QColor(0xFFFF00),
-            SurfaceMaterial.METAL: QColor(0x4D4D4D),
-            SurfaceMaterial.PUDDLES: QColor(0x00FFAA),
-            SurfaceMaterial.SWAMP: QColor(0x00995C),
-            SurfaceMaterial.MUD: QColor(0xCC6600),
-            SurfaceMaterial.LEAVES: QColor(0x009933),
-            SurfaceMaterial.LAVA: QColor(0xFF944D),
-            SurfaceMaterial.BOTTOMLESS_PIT: QColor(0xE6E6E6),
-            SurfaceMaterial.DEEP_WATER: QColor(0x9999FF),
-            SurfaceMaterial.DOOR: QColor(0xFFB3B3),
-            SurfaceMaterial.NON_WALK_GRASS: QColor(0xB3FFB3),
-            SurfaceMaterial.TRIGGER: QColor(0x4D0033),
+            SurfaceMaterial.UNDEFINED: intColorToQColor(moduleDesignerSettings.undefinedMaterialColour),
+            SurfaceMaterial.OBSCURING: intColorToQColor(moduleDesignerSettings.obscuringMaterialColour),
+            SurfaceMaterial.DIRT: intColorToQColor(moduleDesignerSettings.dirtMaterialColour),
+            SurfaceMaterial.GRASS: intColorToQColor(moduleDesignerSettings.grassMaterialColour),
+            SurfaceMaterial.STONE: intColorToQColor(moduleDesignerSettings.stoneMaterialColour),
+            SurfaceMaterial.WOOD: intColorToQColor(moduleDesignerSettings.woodMaterialColour),
+            SurfaceMaterial.WATER: intColorToQColor(moduleDesignerSettings.waterMaterialColour),
+            SurfaceMaterial.NON_WALK: intColorToQColor(moduleDesignerSettings.nonWalkMaterialColour),
+            SurfaceMaterial.TRANSPARENT: intColorToQColor(moduleDesignerSettings.transparentMaterialColour),
+            SurfaceMaterial.CARPET: intColorToQColor(moduleDesignerSettings.carpetMaterialColour),
+            SurfaceMaterial.METAL: intColorToQColor(moduleDesignerSettings.metalMaterialColour),
+            SurfaceMaterial.PUDDLES: intColorToQColor(moduleDesignerSettings.puddlesMaterialColour),
+            SurfaceMaterial.SWAMP: intColorToQColor(moduleDesignerSettings.swampMaterialColour),
+            SurfaceMaterial.MUD: intColorToQColor(moduleDesignerSettings.mudMaterialColour),
+            SurfaceMaterial.LEAVES: intColorToQColor(moduleDesignerSettings.leavesMaterialColour),
+            SurfaceMaterial.LAVA: intColorToQColor(moduleDesignerSettings.lavaMaterialColour),
+            SurfaceMaterial.BOTTOMLESS_PIT: intColorToQColor(moduleDesignerSettings.bottomlessPitMaterialColour),
+            SurfaceMaterial.DEEP_WATER: intColorToQColor(moduleDesignerSettings.deepWaterMaterialColour),
+            SurfaceMaterial.DOOR: intColorToQColor(moduleDesignerSettings.doorMaterialColour),
+            SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
+            SurfaceMaterial.TRIGGER: intColorToQColor(moduleDesignerSettings.nonWalkGrassMaterialColour),
         }
         self.ui.renderArea.materialColors = self.materialColors
         self.rebuildMaterials()

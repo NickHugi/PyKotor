@@ -15,7 +15,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from toolset.gui.widgets.settings.base import NoScrollEventFilter
+from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
@@ -46,7 +46,7 @@ class MiscWidget(QWidget):
         self.setupValues()
 
         # Install the event filter on all child widgets
-        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
+        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter(self)
         self.installEventFilters(self, self.noScrollEventFilter)
 
     def installEventFilters(

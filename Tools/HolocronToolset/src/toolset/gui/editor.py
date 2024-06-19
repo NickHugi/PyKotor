@@ -99,6 +99,7 @@ class Editor(QMainWindow):
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
         self._logger = RobustRootLogger()
+        self._global_settings: GlobalSettings = GlobalSettings()
 
         self._filepath: Path | None = None
         self._resname: str | None = None

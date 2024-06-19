@@ -276,7 +276,6 @@ case-sensitive = true
 force-wrap-aliases = false
 combine-as-imports = true
 lines-between-types = 1
-no-sections = false
 required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.format]

@@ -2,48 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from qtpy.QtCore import QEvent, QObject, Qt
 from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from pykotor.common.misc import Color
+from toolset.gui.common.filters import HoverEventFilter, NoScrollEventFilter
 from utility.logger_util import RobustRootLogger
 from utility.misc import is_int
 
 if TYPE_CHECKING:
+    from qtpy.QtCore import QObject
+
     from toolset.data.misc import Bind
     from toolset.data.settings import Settings
     from toolset.gui.widgets.edit.color import ColorEdit
     from toolset.gui.widgets.set_bind import SetBindWidget
-
-
-class HoverEventFilter(QObject):
-    def __init__(self):
-        super().__init__()
-        self.current_widget: QObject | None = None
-
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.HoverEnter:
-            self.current_widget = obj
-        elif event.type() == QEvent.HoverLeave:
-            if self.current_widget == obj:
-                self.current_widget = None
-        elif event.type() == QEvent.KeyPress and event.key() == Qt.Key_Pause:
-            if self.current_widget:
-                RobustRootLogger.info(f"Hovered control: {self.current_widget.__class__.__name__} ({self.current_widget.objectName()})")
-            else:
-                RobustRootLogger.info("No control is currently hovered.")
-        return super().eventFilter(obj, event)
-
-
-class NoScrollEventFilter(QObject):
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.Wheel:
-            if isinstance(obj, QWidget):
-                RobustRootLogger.debug(f"Blocking scroll on {obj.__class__.__name__} ({obj.objectName()})")
-            else:
-                RobustRootLogger.debug(f"Blocking scroll on unknown: {obj} (type: {obj.__class__.__name__}) ({obj.objectName()})")
-            return True  # Block the event
-        return super().eventFilter(obj, event)
 
 
 class SettingsWidget(QWidget):
@@ -55,8 +27,8 @@ class SettingsWidget(QWidget):
         self.settings: Settings
 
         # Install the event filter on all child widgets
-        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter()
-        self.hoverEventFilter: HoverEventFilter = HoverEventFilter()
+        self.noScrollEventFilter: NoScrollEventFilter = NoScrollEventFilter(self)
+        self.hoverEventFilter: HoverEventFilter = HoverEventFilter(self)
         self.installEventFilters(self, self.noScrollEventFilter)
         #self.installEventFilters(self, self.hoverEventFilter, include_types=[QWidget])
 

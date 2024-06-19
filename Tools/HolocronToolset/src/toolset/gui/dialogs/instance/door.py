@@ -81,7 +81,7 @@ class DoorDialog(QDialog):
         )
         self.door.transition_destination = self.ui.transNameEdit.locstring()
 
-    def doorCheckboxesChanged(self, state: bool):
+    def doorCheckboxesChanged(self, state: bool):  # noqa: FBT001
         self.ui.linkToTagEdit.setEnabled(state)
         self.ui.linkToModuleEdit.setEnabled(state)
         self.ui.transNameEdit.setEnabled(state)
