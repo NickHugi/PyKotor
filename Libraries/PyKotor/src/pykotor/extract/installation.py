@@ -456,7 +456,7 @@ class Installation:
         if not capsule_check(filepath):
             return filepath, None
         if self.progress_callback:
-            self.progress_callback(f"Gathering resource list from capsule: '{filepath.relative_to(self._path)}'", "update_subtask_text")
+            self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
         return filepath, list(Capsule(filepath))
 
     def load_resources_dict(
