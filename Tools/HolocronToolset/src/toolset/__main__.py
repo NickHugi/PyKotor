@@ -177,16 +177,27 @@ def main_init():
 if __name__ == "__main__":
     main_init()
 
-    from qtpy.QtCore import QThread
+    from qtpy.QtCore import QThread, Qt
     from qtpy.QtWidgets import QApplication, QMessageBox
+
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, False)
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseDesktopOpenGL, True)
 
     app = QApplication(sys.argv)
 
-    # font = app.font()
-    # font.setPixelSize(15)
-    # app.setFont(font)
-    # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-    # app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+    font = app.font()
+    font.setPixelSize(15)
+    app.setFont(font)
+    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+    # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl
+    app.setAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity, False)
+    app.setAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation, False)
+    app.setAttribute(Qt.ApplicationAttribute.AA_CompressHighFrequencyEvents, False)
+    app.setAttribute(Qt.ApplicationAttribute.AA_CompressTabletEvents, False)
+    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+    app.setAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation, True)
+    app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
     app.setOrganizationDomain("github.com/NickHugi/PyKotor")
