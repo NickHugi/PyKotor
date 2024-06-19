@@ -291,7 +291,7 @@ class UTCEditor(Editor):
         self.ui.raceSelect.addItem("Creature", 6)
 
         self.ui.class2Select.clear()
-        self.ui.class2Select.addItem("[None]")
+        self.ui.class2Select.setPlaceholderText("[None]")
         [self.ui.class2Select.addItem(label) for label in classes.get_column("label")]
 
         self.ui.featList.clear()
