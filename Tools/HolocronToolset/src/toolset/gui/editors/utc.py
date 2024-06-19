@@ -324,32 +324,6 @@ class UTCEditor(Editor):
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
-        self.all_script_resnames = sorted(
-            {res.resname() for res in self._installation if res.restype() is ResourceType.NCS},
-            key=str.lower
-        )
-
-        self.ui.conversationEdit.populateComboBox(
-            sorted(
-                {res.resname().lower() for res in self._installation if res.restype() is ResourceType.DLG},
-                key=str.lower,
-            ),
-        )
-        self._installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
-
-        self.ui.onBlockedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onAttackedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onNoticeEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onConversationEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onEndRoundEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onEndConversationEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDisturbedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onSpawnEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onSpellCastEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
 
         self._installation.setupFileContextMenu(self.ui.onBlockedEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onAttackedEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -496,6 +470,44 @@ class UTCEditor(Editor):
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)
                 item.setCheckState(Qt.CheckState.Checked)
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.conversationEdit.populateComboBox(
+            sorted(
+                iter(
+                    {
+                        res.resname().lower()
+                        for res in self._installation.getRelevantResources(
+                            ResourceType.DLG, self._filepath
+                        )
+                    }
+                )
+            )
+        )
+        self._installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
+
+        self.ui.onBlockedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onAttackedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onNoticeEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onConversationEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEndRoundEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDisturbedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onSpawnEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onSpellCastEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
 
         # Scripts
         self.ui.onBlockedEdit.setComboBoxText(str(utc.on_blocked))

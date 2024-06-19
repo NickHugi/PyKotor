@@ -20,10 +20,11 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import QPlainTextEdit, QWidget
     from typing_extensions import Literal, Self
 
-    from pykotor.extract.file import LocationResult
+    from pykotor.extract.file import FileResource, LocationResult
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
+    from utility.system.path import PurePath
 
 
 class HTInstallation(Installation):
@@ -223,6 +224,38 @@ class HTInstallation(Installation):
             result = self.resource(resname, ResourceType.TwoDA, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
+
+    def getRelevantResources(
+        self,
+        restype: ResourceType,
+        src_filepath: PurePath | None = None,
+    ) -> set[FileResource]:
+        """Use logic to get a list of relevant resources for various contexts."""
+        from pykotor.common.module import Module
+        if src_filepath is not None:
+            relevant_resources = {res for res in self.override_resources() if res.restype() is restype}
+            relevant_resources.update(res for res in self.chitin_resources() if res.restype() is restype)
+            if src_filepath.is_relative_to(self.module_path()):
+                relevant_resources.update(
+                    res
+                    for cap in Module.find_capsules(self, src_filepath.name, strict=True)
+                    for res in cap
+                    if res.restype() is restype
+                )
+            elif src_filepath.is_relative_to(self.override_path()):
+                relevant_resources.update(
+                    res
+                    for relevant_reslist in (
+                        reslist
+                        for reslist in self._modules.values()
+                        if any(res.identifier() == src_filepath.name for res in reslist)
+                    )
+                    for res in relevant_reslist
+                    if res.restype() is restype
+                )
+        else:
+            relevant_resources = {res for res in self if res.restype() is restype}
+        return relevant_resources
 
     def htBatchCache2DA(self, resnames: list[str], *, reload: bool = False):
         """Cache 2D array resources in batch.

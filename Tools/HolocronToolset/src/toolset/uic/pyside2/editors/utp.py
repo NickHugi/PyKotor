@@ -22,7 +22,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(674, 457)
+        MainWindow.resize(674, 498)
         self.actionOpen = QAction(MainWindow)
         self.actionOpen.setObjectName(u"actionOpen")
         self.actionSave = QAction(MainWindow)
@@ -175,9 +175,8 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.conversationEdit = QLineEdit(self.groupBox)
+        self.conversationEdit = FilterComboBox(self.groupBox)
         self.conversationEdit.setObjectName(u"conversationEdit")
-        self.conversationEdit.setMaxLength(16)
 
         self.horizontalLayout_5.addWidget(self.conversationEdit)
 
@@ -267,84 +266,84 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.groupBox_17)
 
-        self.groupBox_4 = QGroupBox(self.tab_10)
-        self.groupBox_4.setObjectName(u"groupBox_4")
-        self.formLayout_3 = QFormLayout(self.groupBox_4)
+        self.frame_4 = QFrame(self.tab_10)
+        self.frame_4.setObjectName(u"frame_4")
+        self.formLayout_3 = QFormLayout(self.frame_4)
         self.formLayout_3.setObjectName(u"formLayout_3")
-        self.label_3 = QLabel(self.groupBox_4)
+        self.label_3 = QLabel(self.frame_4)
         self.label_3.setObjectName(u"label_3")
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_3)
 
-        self.currenHpSpin = QSpinBox(self.groupBox_4)
+        self.currenHpSpin = QSpinBox(self.frame_4)
         self.currenHpSpin.setObjectName(u"currenHpSpin")
         self.currenHpSpin.setMinimum(-2147483648)
         self.currenHpSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.currenHpSpin)
 
-        self.label_26 = QLabel(self.groupBox_4)
+        self.label_26 = QLabel(self.frame_4)
         self.label_26.setObjectName(u"label_26")
 
         self.formLayout_3.setWidget(1, QFormLayout.LabelRole, self.label_26)
 
-        self.label_20 = QLabel(self.groupBox_4)
-        self.label_20.setObjectName(u"label_20")
-
-        self.formLayout_3.setWidget(2, QFormLayout.LabelRole, self.label_20)
-
-        self.hardnessSpin = QSpinBox(self.groupBox_4)
-        self.hardnessSpin.setObjectName(u"hardnessSpin")
-        self.hardnessSpin.setMinimum(-2147483648)
-        self.hardnessSpin.setMaximum(2147483647)
-
-        self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.hardnessSpin)
-
-        self.label_21 = QLabel(self.groupBox_4)
-        self.label_21.setObjectName(u"label_21")
-
-        self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.label_21)
-
-        self.fortitudeSpin = QSpinBox(self.groupBox_4)
-        self.fortitudeSpin.setObjectName(u"fortitudeSpin")
-        self.fortitudeSpin.setMinimum(-2147483648)
-        self.fortitudeSpin.setMaximum(2147483647)
-
-        self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.fortitudeSpin)
-
-        self.label_24 = QLabel(self.groupBox_4)
-        self.label_24.setObjectName(u"label_24")
-
-        self.formLayout_3.setWidget(4, QFormLayout.LabelRole, self.label_24)
-
-        self.reflexSpin = QSpinBox(self.groupBox_4)
-        self.reflexSpin.setObjectName(u"reflexSpin")
-        self.reflexSpin.setMinimum(-2147483648)
-        self.reflexSpin.setMaximum(2147483647)
-
-        self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.reflexSpin)
-
-        self.label_25 = QLabel(self.groupBox_4)
-        self.label_25.setObjectName(u"label_25")
-
-        self.formLayout_3.setWidget(5, QFormLayout.LabelRole, self.label_25)
-
-        self.willSpin = QSpinBox(self.groupBox_4)
-        self.willSpin.setObjectName(u"willSpin")
-        self.willSpin.setMinimum(-2147483648)
-        self.willSpin.setMaximum(2147483647)
-
-        self.formLayout_3.setWidget(5, QFormLayout.FieldRole, self.willSpin)
-
-        self.maxHpSpin = QSpinBox(self.groupBox_4)
+        self.maxHpSpin = QSpinBox(self.frame_4)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
         self.maxHpSpin.setMinimum(-2147483648)
         self.maxHpSpin.setMaximum(2147483647)
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.maxHpSpin)
 
+        self.label_20 = QLabel(self.frame_4)
+        self.label_20.setObjectName(u"label_20")
 
-        self.verticalLayout.addWidget(self.groupBox_4)
+        self.formLayout_3.setWidget(2, QFormLayout.LabelRole, self.label_20)
+
+        self.hardnessSpin = QSpinBox(self.frame_4)
+        self.hardnessSpin.setObjectName(u"hardnessSpin")
+        self.hardnessSpin.setMinimum(-2147483648)
+        self.hardnessSpin.setMaximum(2147483647)
+
+        self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.hardnessSpin)
+
+        self.label_21 = QLabel(self.frame_4)
+        self.label_21.setObjectName(u"label_21")
+
+        self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.label_21)
+
+        self.fortitudeSpin = QSpinBox(self.frame_4)
+        self.fortitudeSpin.setObjectName(u"fortitudeSpin")
+        self.fortitudeSpin.setMinimum(-2147483648)
+        self.fortitudeSpin.setMaximum(2147483647)
+
+        self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.fortitudeSpin)
+
+        self.label_24 = QLabel(self.frame_4)
+        self.label_24.setObjectName(u"label_24")
+
+        self.formLayout_3.setWidget(4, QFormLayout.LabelRole, self.label_24)
+
+        self.reflexSpin = QSpinBox(self.frame_4)
+        self.reflexSpin.setObjectName(u"reflexSpin")
+        self.reflexSpin.setMinimum(-2147483648)
+        self.reflexSpin.setMaximum(2147483647)
+
+        self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.reflexSpin)
+
+        self.label_25 = QLabel(self.frame_4)
+        self.label_25.setObjectName(u"label_25")
+
+        self.formLayout_3.setWidget(5, QFormLayout.LabelRole, self.label_25)
+
+        self.willSpin = QSpinBox(self.frame_4)
+        self.willSpin.setObjectName(u"willSpin")
+        self.willSpin.setMinimum(-2147483648)
+        self.willSpin.setMaximum(2147483647)
+
+        self.formLayout_3.setWidget(5, QFormLayout.FieldRole, self.willSpin)
+
+
+        self.verticalLayout.addWidget(self.frame_4)
 
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
@@ -631,7 +630,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -670,7 +669,6 @@ class Ui_MainWindow(object):
         self.groupBox_17.setTitle(QCoreApplication.translate("MainWindow", u"Other", None))
         self.label_41.setText(QCoreApplication.translate("MainWindow", u"Faction:", None))
         self.label_42.setText(QCoreApplication.translate("MainWindow", u"Animation State:", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("MainWindow", u"Stats", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"Current HP:", None))
         self.label_26.setText(QCoreApplication.translate("MainWindow", u"Max HP:", None))
         self.label_20.setText(QCoreApplication.translate("MainWindow", u"Hardness:", None))

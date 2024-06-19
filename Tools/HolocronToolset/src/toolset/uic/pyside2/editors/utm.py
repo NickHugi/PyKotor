@@ -19,7 +19,12 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(414, 319)
+        MainWindow.resize(414, 335)
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
+        MainWindow.setSizePolicy(sizePolicy)
         self.actionNew = QAction(MainWindow)
         self.actionNew.setObjectName(u"actionNew")
         self.actionOpen = QAction(MainWindow)
@@ -165,36 +170,43 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.groupBox_2 = QGroupBox(self.tab)
-        self.groupBox_2.setObjectName(u"groupBox_2")
-        self.formLayout_3 = QFormLayout(self.groupBox_2)
+        self.frame_2 = QFrame(self.tab)
+        self.frame_2.setObjectName(u"frame_2")
+        self.formLayout_3 = QFormLayout(self.frame_2)
         self.formLayout_3.setObjectName(u"formLayout_3")
-        self.label_3 = QLabel(self.groupBox_2)
+        self.label_3 = QLabel(self.frame_2)
         self.label_3.setObjectName(u"label_3")
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_3)
 
-        self.onOpenEdit = QLineEdit(self.groupBox_2)
+        self.onOpenEdit = QLineEdit(self.frame_2)
         self.onOpenEdit.setObjectName(u"onOpenEdit")
+        sizePolicy.setHeightForWidth(self.onOpenEdit.sizePolicy().hasHeightForWidth())
+        self.onOpenEdit.setSizePolicy(sizePolicy)
         self.onOpenEdit.setMaxLength(16)
 
         self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.onOpenEdit)
 
-        self.label_4 = QLabel(self.groupBox_2)
+        self.label_4 = QLabel(self.frame_2)
         self.label_4.setObjectName(u"label_4")
 
         self.formLayout_3.setWidget(1, QFormLayout.LabelRole, self.label_4)
 
-        self.storeFlagSelect = QComboBox(self.groupBox_2)
+        self.storeFlagSelect = QComboBox(self.frame_2)
         self.storeFlagSelect.addItem("")
         self.storeFlagSelect.addItem("")
         self.storeFlagSelect.addItem("")
         self.storeFlagSelect.setObjectName(u"storeFlagSelect")
+        sizePolicy1 = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.storeFlagSelect.sizePolicy().hasHeightForWidth())
+        self.storeFlagSelect.setSizePolicy(sizePolicy1)
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.storeFlagSelect)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_2)
+        self.verticalLayout_2.addWidget(self.frame_2, 0, Qt.AlignVCenter)
 
 
         self.horizontalLayout_2.addLayout(self.verticalLayout_2)
@@ -221,7 +233,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 414, 21))
+        self.menubar.setGeometry(QRect(0, 0, 414, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         MainWindow.setMenuBar(self.menubar)
@@ -261,7 +273,6 @@ class Ui_MainWindow(object):
         self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Pricing", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Mark Up", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"Mark Down", None))
-        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Other", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"OnOpenStore", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"Store", None))
         self.storeFlagSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Only Buy", None))

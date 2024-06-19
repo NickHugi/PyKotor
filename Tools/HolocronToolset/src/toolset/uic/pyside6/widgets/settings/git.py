@@ -34,7 +34,7 @@ class Ui_Form(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 429, 920))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 429, 952))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox = QGroupBox(self.scrollAreaWidgetContents)
@@ -55,97 +55,101 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout_3)
 
-        self.formLayout = QFormLayout()
+        self.widget = QWidget(self.groupBox)
+        self.widget.setObjectName(u"widget")
+        self.widget.setMinimumSize(QSize(0, 200))
+        self.formLayout = QFormLayout(self.widget)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setVerticalSpacing(10)
-        self.label = QLabel(self.groupBox)
+        self.label = QLabel(self.widget)
         self.label.setObjectName(u"label")
 
         self.formLayout.setWidget(0, QFormLayout.LabelRole, self.label)
 
-        self.moveCameraBindEdit = SetBindWidget(self.groupBox)
+        self.moveCameraBindEdit = SetBindWidget(self.widget)
         self.moveCameraBindEdit.setObjectName(u"moveCameraBindEdit")
 
         self.formLayout.setWidget(0, QFormLayout.FieldRole, self.moveCameraBindEdit)
 
-        self.label_2 = QLabel(self.groupBox)
+        self.label_2 = QLabel(self.widget)
         self.label_2.setObjectName(u"label_2")
 
         self.formLayout.setWidget(1, QFormLayout.LabelRole, self.label_2)
 
-        self.rotateCameraBindEdit = SetBindWidget(self.groupBox)
+        self.rotateCameraBindEdit = SetBindWidget(self.widget)
         self.rotateCameraBindEdit.setObjectName(u"rotateCameraBindEdit")
 
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.rotateCameraBindEdit)
 
-        self.label_3 = QLabel(self.groupBox)
+        self.label_3 = QLabel(self.widget)
         self.label_3.setObjectName(u"label_3")
 
         self.formLayout.setWidget(2, QFormLayout.LabelRole, self.label_3)
 
-        self.zoomCameraBindEdit = SetBindWidget(self.groupBox)
+        self.zoomCameraBindEdit = SetBindWidget(self.widget)
         self.zoomCameraBindEdit.setObjectName(u"zoomCameraBindEdit")
 
         self.formLayout.setWidget(2, QFormLayout.FieldRole, self.zoomCameraBindEdit)
 
-        self.label_5 = QLabel(self.groupBox)
+        self.label_5 = QLabel(self.widget)
         self.label_5.setObjectName(u"label_5")
 
         self.formLayout.setWidget(3, QFormLayout.LabelRole, self.label_5)
 
-        self.selectUnderneathBindEdit = SetBindWidget(self.groupBox)
+        self.selectUnderneathBindEdit = SetBindWidget(self.widget)
         self.selectUnderneathBindEdit.setObjectName(u"selectUnderneathBindEdit")
 
         self.formLayout.setWidget(3, QFormLayout.FieldRole, self.selectUnderneathBindEdit)
 
-        self.label_4 = QLabel(self.groupBox)
+        self.label_4 = QLabel(self.widget)
         self.label_4.setObjectName(u"label_4")
 
         self.formLayout.setWidget(4, QFormLayout.LabelRole, self.label_4)
 
-        self.rotateSelectedToPointBindEdit = SetBindWidget(self.groupBox)
+        self.rotateSelectedToPointBindEdit = SetBindWidget(self.widget)
         self.rotateSelectedToPointBindEdit.setObjectName(u"rotateSelectedToPointBindEdit")
 
         self.formLayout.setWidget(4, QFormLayout.FieldRole, self.rotateSelectedToPointBindEdit)
 
-        self.label_6 = QLabel(self.groupBox)
+        self.label_6 = QLabel(self.widget)
         self.label_6.setObjectName(u"label_6")
 
         self.formLayout.setWidget(5, QFormLayout.LabelRole, self.label_6)
 
-        self.deleteSelectedBindEdit = SetBindWidget(self.groupBox)
+        self.deleteSelectedBindEdit = SetBindWidget(self.widget)
         self.deleteSelectedBindEdit.setObjectName(u"deleteSelectedBindEdit")
 
         self.formLayout.setWidget(5, QFormLayout.FieldRole, self.deleteSelectedBindEdit)
 
-        self.label_7 = QLabel(self.groupBox)
+        self.label_7 = QLabel(self.widget)
         self.label_7.setObjectName(u"label_7")
 
         self.formLayout.setWidget(6, QFormLayout.LabelRole, self.label_7)
 
-        self.duplicateSelectedBindEdit = SetBindWidget(self.groupBox)
+        self.duplicateSelectedBindEdit = SetBindWidget(self.widget)
         self.duplicateSelectedBindEdit.setObjectName(u"duplicateSelectedBindEdit")
 
         self.formLayout.setWidget(6, QFormLayout.FieldRole, self.duplicateSelectedBindEdit)
 
-        self.label_8 = QLabel(self.groupBox)
+        self.label_8 = QLabel(self.widget)
         self.label_8.setObjectName(u"label_8")
 
         self.formLayout.setWidget(7, QFormLayout.LabelRole, self.label_8)
 
-        self.toggleLockInstancesBindEdit = SetBindWidget(self.groupBox)
+        self.toggleLockInstancesBindEdit = SetBindWidget(self.widget)
         self.toggleLockInstancesBindEdit.setObjectName(u"toggleLockInstancesBindEdit")
 
         self.formLayout.setWidget(7, QFormLayout.FieldRole, self.toggleLockInstancesBindEdit)
 
 
-        self.verticalLayout_2.addLayout(self.formLayout)
+        self.verticalLayout_2.addWidget(self.widget)
 
 
         self.verticalLayout.addWidget(self.groupBox)
 
         self.groupBox_2 = QGroupBox(self.scrollAreaWidgetContents)
         self.groupBox_2.setObjectName(u"groupBox_2")
+        self.groupBox_2.setMinimumSize(QSize(0, 660))
         self.gridLayout_2 = QGridLayout(self.groupBox_2)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.formLayout_2 = QFormLayout()

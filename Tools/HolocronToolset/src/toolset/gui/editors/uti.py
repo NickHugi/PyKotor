@@ -563,8 +563,8 @@ class UTIEditor(Editor):
         param: int,
     ) -> str | None:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
         paramtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-        paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
         try:
+            paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
             stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
         except (IndexError, Exception):  # noqa: BLE001
             RobustRootLogger().warning("Could not get the paramtable 2da row/value", exc_info=True)

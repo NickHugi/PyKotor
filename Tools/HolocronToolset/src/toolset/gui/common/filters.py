@@ -4,7 +4,7 @@ from typing import cast
 
 from qtpy.QtCore import QEvent, QObject, Qt
 from qtpy.QtGui import QKeyEvent
-from qtpy.QtWidgets import QApplication, QWidget
+from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 
 class NoScrollEventFilter(QObject):
@@ -17,6 +17,27 @@ class NoScrollEventFilter(QObject):
                 QApplication.sendEvent(parent_widget, event)
             return True
         return super().eventFilter(obj, event)
+
+    @classmethod
+    def installEventFilters(
+        cls,
+        parent_widget: QWidget,
+        event_filter: QObject,
+        include_types: list[type[QWidget]] | None = None
+    ) -> None:
+        """Recursively install event filters on all child widgets."""
+        if include_types is None:
+            include_types = [QComboBox, QSlider, QSpinBox, QGroupBox, QAbstractSpinBox, QDoubleSpinBox]
+
+        for widget in parent_widget.findChildren(QWidget):
+            if not widget.objectName():
+                widget.setObjectName(widget.__class__.__name__)
+            if isinstance(widget, tuple(include_types)):
+                #RobustRootLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
+                widget.installEventFilter(event_filter)
+            #else:
+            #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
+            cls.installEventFilters(widget, event_filter, include_types)
 
 
 class HoverEventFilter(QObject):

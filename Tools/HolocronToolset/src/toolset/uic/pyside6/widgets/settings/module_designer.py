@@ -35,7 +35,7 @@ class Ui_Form(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 416, 2255))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -686, 416, 1767))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.formLayout_3 = QFormLayout()
@@ -57,7 +57,6 @@ class Ui_Form(object):
 
         self.tabWidget = QTabWidget(self.scrollAreaWidgetContents)
         self.tabWidget.setObjectName(u"tabWidget")
-        self.tabWidget.setGeometry(QRect(0, 0, 416, 2255))
         self.tab3DControls = QWidget()
         self.tab3DControls.setObjectName(u"tab3DControls")
         self.verticalLayout_2 = QVBoxLayout(self.tab3DControls)
@@ -718,6 +717,10 @@ class Ui_Form(object):
 
         self.verticalLayout_3.addLayout(self.formLayout_2)
 
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_3.addItem(self.verticalSpacer_3)
+
         self.tabWidget.addTab(self.tab2DControls, "")
         self.tabFCControls = QWidget()
         self.tabFCControls.setObjectName(u"tabFCControls")
@@ -739,9 +742,9 @@ class Ui_Form(object):
 
         self.line_5 = QFrame(self.tabFCControls)
         self.line_5.setObjectName(u"line_5")
-        self.line_5.setVerticalSpacing(10)
         self.line_5.setFrameShape(QFrame.HLine)
         self.line_5.setFrameShadow(QFrame.Sunken)
+        self.line_5.setProperty("verticalSpacing", 10)
 
         self.verticalLayout_4.addWidget(self.line_5)
 
@@ -791,9 +794,9 @@ class Ui_Form(object):
 
         self.line_6 = QFrame(self.tabFCControls)
         self.line_6.setObjectName(u"line_6")
-        self.line_6.setVerticalSpacing(10)
         self.line_6.setFrameShape(QFrame.HLine)
         self.line_6.setFrameShadow(QFrame.Sunken)
+        self.line_6.setProperty("verticalSpacing", 10)
 
         self.verticalLayout_4.addWidget(self.line_6)
 
@@ -997,6 +1000,10 @@ class Ui_Form(object):
 
 
         self.verticalLayout_4.addLayout(self.formLayout_8)
+
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout_4.addItem(self.verticalSpacer_2)
 
         self.tabWidget.addTab(self.tabFCControls, "")
 
@@ -1279,6 +1286,9 @@ class Ui_Form(object):
 
 
         self.retranslateUi(Form)
+
+        self.tabWidget.setCurrentIndex(1)
+
 
         QMetaObject.connectSlotsByName(Form)
     # setupUi

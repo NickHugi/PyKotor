@@ -119,6 +119,12 @@ class UTEEditor(Editor):
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
+        self._installation.setupFileContextMenu(self.ui.onEnterEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExitEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+
     def load(
         self,
         filepath: os.PathLike | str,
@@ -174,28 +180,28 @@ class UTEEditor(Editor):
             self.addCreature(str(creature.resref), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
 
         # Scripts
-        self.ui.onEnterEdit.setText(str(ute.on_entered))
-        self.ui.onExitEdit.setText(str(ute.on_exit))
-        self.ui.onExhaustedEdit.setText(str(ute.on_exhausted))
-        self.ui.onHeartbeatEdit.setText(str(ute.on_heartbeat))
-        self.ui.onUserDefinedEdit.setText(str(ute.on_user_defined))
+        self.ui.onEnterEdit.setComboBoxText(str(ute.on_entered))
+        self.ui.onExitEdit.setComboBoxText(str(ute.on_exit))
+        self.ui.onExhaustedEdit.setComboBoxText(str(ute.on_exhausted))
+        self.ui.onHeartbeatEdit.setComboBoxText(str(ute.on_heartbeat))
+        self.ui.onUserDefinedEdit.setComboBoxText(str(ute.on_user_defined))
 
-        self.all_script_resnames = sorted(
-            {res.resname() for res in self._installation if res.restype() is ResourceType.NCS},
-            key=str.lower
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
         )
 
-        self.ui.onEnterEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onExitEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onExhaustedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
-
-        self._installation.setupFileContextMenu(self.ui.onEnterEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onExitEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self.ui.onEnterEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExhaustedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
 
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)

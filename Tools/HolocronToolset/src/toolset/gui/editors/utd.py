@@ -146,23 +146,6 @@ class UTDEditor(Editor):
         self.handleWidgetWithTSL(self.ui.difficultyLabel, installation)
         self.handleWidgetWithTSL(self.ui.difficultyModLabel, installation)
 
-        self.all_script_resnames = sorted(
-            {res.resname().lower() for res in self._installation if res.restype() is ResourceType.NCS},
-            key=str.lower,
-        )
-        self.ui.onClickEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onClosedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onMeleeAttackEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onOpenEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onOpenFailedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onSpellEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUnlockEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.conversationEdit.populateComboBox(sorted({res.resname().lower() for res in self._installation if res.restype() is ResourceType.DLG}))
-
         installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -213,7 +196,7 @@ class UTDEditor(Editor):
         self.ui.tagEdit.setText(utd.tag)
         self.ui.resrefEdit.setText(str(utd.resref))
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)
-        self.ui.conversationEdit.setText(str(utd.conversation))
+        self.ui.conversationEdit.setComboBoxText(str(utd.conversation))
 
         # Advanced
         self.ui.min1HpCheckbox.setChecked(utd.min1_hp)
@@ -251,17 +234,42 @@ class UTDEditor(Editor):
         self.ui.onUnlockEdit.setComboBoxText(str(utd.on_unlock))
         self.ui.onUserDefinedEdit.setComboBoxText(str(utd.on_user_defined))
 
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+        self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onClosedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onOpenEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.conversationEdit.populateComboBox(
+            sorted(
+                iter(
+                    {
+                        res.resname().lower()
+                        for res in self._installation.getRelevantResources(
+                            ResourceType.DLG, self._filepath
+                        )
+                    }
+                )
+            )
+        )
+
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
-        self._updateCommentsTabTitle()
-
-    def _updateCommentsTabTitle(self):
-        """Updates the Comments tab title with a notification badge if comments are not blank."""
-        comments = self.ui.commentsEdit.toPlainText()
-        if comments:
-            self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(self.ui.commentsTab), "Comments *")
-        else:
-            self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(self.ui.commentsTab), "Comments")
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a UTD object from UI data.

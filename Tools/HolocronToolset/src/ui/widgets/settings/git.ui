@@ -25,7 +25,7 @@
         <x>0</x>
         <y>0</y>
         <width>429</width>
-        <height>920</height>
+        <height>952</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -60,97 +60,111 @@
            </layout>
           </item>
           <item>
-           <layout class="QFormLayout" name="formLayout">
-            <property name="verticalSpacing">
-             <number>10</number>
+           <widget class="QWidget" name="" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>200</height>
+             </size>
             </property>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>Move Camera:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="SetBindWidget" name="moveCameraBindEdit" native="true"/>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_2">
-              <property name="text">
-               <string>Rotate Camera:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="SetBindWidget" name="rotateCameraBindEdit" native="true"/>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Zoom Camera:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="SetBindWidget" name="zoomCameraBindEdit" native="true"/>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Select Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="SetBindWidget" name="selectUnderneathBindEdit" native="true"/>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>Rotate Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="SetBindWidget" name="rotateSelectedToPointBindEdit" native="true"/>
-            </item>
-            <item row="5" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Delete Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="1">
-             <widget class="SetBindWidget" name="deleteSelectedBindEdit" native="true"/>
-            </item>
-            <item row="6" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Duplicate Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="1">
-             <widget class="SetBindWidget" name="duplicateSelectedBindEdit" native="true"/>
-            </item>
-            <item row="7" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>Toggle Instance Lock:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="1">
-             <widget class="SetBindWidget" name="toggleLockInstancesBindEdit" native="true"/>
-            </item>
-           </layout>
+            <layout class="QFormLayout" name="formLayout">
+             <property name="verticalSpacing">
+              <number>10</number>
+             </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Move Camera:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="SetBindWidget" name="moveCameraBindEdit" native="true"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Rotate Camera:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="SetBindWidget" name="rotateCameraBindEdit" native="true"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Zoom Camera:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="SetBindWidget" name="zoomCameraBindEdit" native="true"/>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Select Object:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="SetBindWidget" name="selectUnderneathBindEdit" native="true"/>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Rotate Object:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="SetBindWidget" name="rotateSelectedToPointBindEdit" native="true"/>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Delete Object:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="SetBindWidget" name="deleteSelectedBindEdit" native="true"/>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Duplicate Object:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="SetBindWidget" name="duplicateSelectedBindEdit" native="true"/>
+             </item>
+             <item row="7" column="0">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Toggle Instance Lock:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="1">
+              <widget class="SetBindWidget" name="toggleLockInstancesBindEdit" native="true"/>
+             </item>
+            </layout>
+           </widget>
           </item>
          </layout>
         </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="groupBox_2">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>660</height>
+          </size>
+         </property>
          <property name="title">
           <string>Walkmesh Colours</string>
          </property>

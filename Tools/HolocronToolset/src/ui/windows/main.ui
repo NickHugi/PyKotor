@@ -342,9 +342,10 @@
      <string>Theme</string>
     </property>
     <addaction name="defaultLight"/>
+    <addaction name="defaultDark"/>
     <addaction name="fusionLight"/>
+    <addaction name="fusionDark"/>
     <addaction name="breezeDark"/>
-    <addaction name="darkManualTheme2"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -688,19 +689,24 @@
     <string>Default (Light)</string>
    </property>
   </action>
+  <action name="defaultDark">
+   <property name="text">
+    <string>Default (Dark)</string>
+   </property>
+  </action>
   <action name="fusionLight">
    <property name="text">
     <string>Fusion (Light)</string>
    </property>
   </action>
+  <action name="fusionDark">
+   <property name="text">
+    <string>Fusion (Dark)</string>
+   </property>
+  </action>
   <action name="breezeDark">
    <property name="text">
     <string>Breeze (Dark)</string>
-   </property>
-  </action>
-  <action name="darkManualTheme2">
-   <property name="text">
-    <string>Fusion (Dark)</string>
    </property>
   </action>
   <action name="actionIndoorMapBuilder">

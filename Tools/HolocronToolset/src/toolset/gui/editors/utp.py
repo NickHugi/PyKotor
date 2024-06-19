@@ -140,31 +140,11 @@ class UTPEditor(Editor):
         self.ui.appearanceSelect.setItems(appearances.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
 
-        self.all_script_resnames = sorted(
-            {res.resname().lower() for res in self._installation if res.restype() is ResourceType.NCS},
-            key=str.lower,
-        )
-
         self.ui.notBlastableCheckbox.setVisible(installation.tsl)
         self.ui.difficultyModSpin.setVisible(installation.tsl)
         self.ui.difficultySpin.setVisible(installation.tsl)
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
-
-        self.ui.onClosedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDamagedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onDeathEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onEndConversationEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onOpenFailedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onInventoryEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onMeleeAttackEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onSpellEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onOpenEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onLockEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUnlockEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUsedEdit.populateComboBox(self.all_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.all_script_resnames)
 
         installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -215,7 +195,7 @@ class UTPEditor(Editor):
         self.ui.tagEdit.setText(utp.tag)
         self.ui.resrefEdit.setText(str(utp.resref))
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)
-        self.ui.conversationEdit.setText(str(utp.conversation))
+        self.ui.conversationEdit.setComboBoxText(str(utp.conversation))
 
         # Advanced
         self.ui.hasInventoryCheckbox.setChecked(utp.has_inventory)
@@ -242,6 +222,32 @@ class UTPEditor(Editor):
         self.ui.openLockSpin.setValue(utp.unlock_dc)
         self.ui.difficultySpin.setValue(utp.unlock_diff)
         self.ui.difficultyModSpin.setValue(utp.unlock_diff_mod)
+
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.onClosedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onInventoryEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onOpenEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onLockEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUsedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
 
         # Scripts
         self.ui.onClosedEdit.setComboBoxText(str(utp.on_closed))
@@ -289,7 +295,7 @@ class UTPEditor(Editor):
         utp.tag = self.ui.tagEdit.text()
         utp.resref = ResRef(self.ui.resrefEdit.text())
         utp.appearance_id = self.ui.appearanceSelect.currentIndex()
-        utp.conversation = ResRef(self.ui.conversationEdit.text())
+        utp.conversation = ResRef(self.ui.conversationEdit.currentText())
         utp.has_inventory = self.ui.hasInventoryCheckbox.isChecked()
 
         # Advanced
@@ -366,24 +372,15 @@ class UTPEditor(Editor):
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
     def editConversation(self):
-        """Edits a conversation.
-
-        Processing Logic:
-        ----------------
-            - It gets the conversation name from the UI text field
-            - Searches the installation for the conversation resource
-            - If not found, it creates a new empty file in the override
-            - If found, it opens the resource editor window.
-        """
-        resname = self.ui.conversationEdit.text()
+        """Edits a conversation. This function is duplicated in most UT-prefixed gffs."""
+        resname = self.ui.conversationEdit.currentText()
         data, filepath = None, None
 
-        if resname == "":
+        if not resname or not resname.strip():
             QMessageBox(QMessageBox.Icon.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search: ResourceResult | None = self._installation.resource(resname, ResourceType.DLG)
-
         if search is None:
             msgbox: int = QMessageBox(QMessageBox.Icon.Information, "DLG file not found", "Do you wish to create a file in the override?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No).exec_()
             if QMessageBox.StandardButton.Yes == msgbox:
