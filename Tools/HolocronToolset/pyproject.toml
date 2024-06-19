@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name="HolocronToolset"
 description="A PyQt5-backed program with a collection of tools and editors that make it easy to work with kotor files"
-version="2.2.0"
+version="3.0.0b9"
 requires-python = ">= 3.7"
 dependencies = [
     "idna",  # Tested with 3.3
@@ -33,7 +33,7 @@ maintainers = [
 ]
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "GPLv3 License"}
-keywords = ["kotor", "pyqt5", "holocron", "toolset", "pykotor"]
+keywords = ["kotor", "pyqt5", "holocron", "toolset", "pykotor", "star", "wars", "starwars", "toolset", "toolkit", "opengl", "designer", "module", "modding", "dlgeditor", "AIO", "editor", "GFF"]
 
 [project.urls]
 Homepage = "https://github.com/NickHugi/PyKotor"
@@ -51,7 +51,7 @@ extend = "../../pyproject.toml"
 
 [tool.ruff.lint]
 ignore = [
-    "N",     # disable case checks for pyqt5
+    "N",     # disable snake_case vs PascalCase/camelCase checks for pyqt5
 ]
 
 [tool.ruff.lint.per-file-ignores]

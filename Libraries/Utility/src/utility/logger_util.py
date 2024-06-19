@@ -116,8 +116,6 @@ class CustomPrintToLogger:
         if message and message.strip():
             with logging_context():
                 if self.log_type == "stderr":
-                    if "DeprecationWarning: sipPyTypeDict() is deprecated, the extension module should use sipPyTypeDictRef() instead" in message:
-                        return
                     self.logger.error(message.strip())
                 else:
                     self.logger.debug(message.strip())
