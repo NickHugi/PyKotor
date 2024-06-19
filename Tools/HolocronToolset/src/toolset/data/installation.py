@@ -1,43 +1,26 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Collection
+from contextlib import suppress
+from typing import TYPE_CHECKING, Any, Callable, Collection, cast
 
-from qtpy.QtCore import (
-    Qt,
-)
-from qtpy.QtWidgets import (
-    QAction,
-    QComboBox,
-    QLineEdit,
-    QMenu,
-)
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QImage, QPixmap, QTransform
+from qtpy.QtWidgets import QAction, QComboBox, QLineEdit, QMenu
 
-from pykotor.extract.installation import SearchLocation
+from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.formats.tpc import TPCTextureFormat
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 from toolset.utils.window import addWindow
 
 if TYPE_CHECKING:
 
-    from qtpy.QtWidgets import (
-        QPlainTextEdit,
-    )
-
-    from pykotor.extract.file import LocationResult, ResourceIdentifier
-from contextlib import suppress
-from typing import TYPE_CHECKING, cast
-
-from qtpy.QtGui import QImage, QPixmap, QTransform
-
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.extract.installation import Installation
-from pykotor.resource.formats.tpc import TPCTextureFormat
-from pykotor.resource.formats.twoda import read_2da
-
-if TYPE_CHECKING:
     from qtpy.QtGui import QStandardItemModel
-    from qtpy.QtWidgets import QWidget
-    from typing_extensions import Self
+    from qtpy.QtWidgets import QPlainTextEdit, QWidget
+    from typing_extensions import Literal, Self
 
+    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
@@ -95,8 +78,9 @@ class HTInstallation(Installation):
         mainWindow: QWidget | None = None,
         *,
         tsl: bool | None = None,
+        progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None
     ):
-        super().__init__(path)
+        super().__init__(path, progress_callback=progress_callback)
 
         self.name: str = name
 

@@ -32,6 +32,8 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     from logging import Logger
 
+    from typing_extensions import Literal
+
     from pykotor.extract.talktable import StringResult
     from pykotor.resource.formats.gff import GFF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -139,6 +141,7 @@ class Installation:
         path: os.PathLike | str,
         *,
         multithread: bool = False,
+        progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None
     ):
         self.use_multithreading: bool = multithread
 
@@ -164,33 +167,52 @@ class Installation:
         self._game: Game | None = None
 
         self._initialized = False
+        self.progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = progress_callback
         self.reload_all()
 
     def reload_all(self):
+        if self.progress_callback is not None:
+            self.progress_callback(11, "set_maximum")
+        self._report_main_progress("Loading chitin...")
         self.load_chitin()
+        self._report_main_progress("Loading lips...")
         self.load_lips()
+        self._report_main_progress("Loading modules...")
         self.load_modules()
+        self._report_main_progress("Loading override...")
         self.load_override()
 
-        # Game doesn't use these.
+        # K1 doesn't actually use the RIMs in the Rims folder.
         #if self.game().is_k1():
         #    self.load_rims()
 
+        self._report_main_progress("Loading streammusic...")
         self.load_streammusic()
+        self._report_main_progress("Loading streamsounds...")
         self.load_streamsounds()
         if self.game().is_k1():
+            self._report_main_progress("Loading streamwaves...")
             self.load_streamwaves()
         elif self.game().is_k2():
+            self._report_main_progress("Loading streamvoice...")
             self.load_streamvoice()
+        self._report_main_progress("Loading textures...")
         self.load_textures()
+        self._report_main_progress("Loading saves...")
         self.load_saves()
         if self.game().is_k1():
             patch_erf_path = self.path().joinpath("patch.erf")
             if patch_erf_path.safe_isfile():
                 self._log.info(f"Game is K1 and 'patch.erf' found at {patch_erf_path.relative_to(self._path.parent)}")
                 self._patch_erf.extend(Capsule(patch_erf_path))
-        self._log.info("Finished loading the installation from %s", self._path)
+        self._report_main_progress(f"Finished loading the installation from {self._path}")
         self._initialized = True
+
+    def _report_main_progress(self, message: str):
+        if self.progress_callback:
+            self.progress_callback(message, "update_maintask_text")
+            self.progress_callback(1, "increment")
+        self._log.info(message)
 
     def __iter__(self) -> Generator[FileResource, Any, None]:
         if not self._initialized:
@@ -420,7 +442,10 @@ class Installation:
         resname, restype = ResourceIdentifier.from_path(filepath).unpack()
         if restype.is_invalid:
             return None
-        return FileResource(resname, restype, filepath.stat().st_size, offset=0, filepath=filepath)
+        resource = FileResource(resname, restype, filepath.stat().st_size, offset=0, filepath=filepath)
+        if self.progress_callback:
+            self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
+        return resource
 
     def _build_resource_list(
         self,
@@ -430,6 +455,8 @@ class Installation:
         # sourcery skip: extract-method
         if not capsule_check(filepath):
             return filepath, None
+        if self.progress_callback:
+            self.progress_callback(f"Gathering resource list from capsule: '{filepath.relative_to(self._path)}'", "update_subtask_text")
         return filepath, list(Capsule(filepath))
 
     def load_resources_dict(

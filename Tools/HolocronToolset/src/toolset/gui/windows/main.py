@@ -791,17 +791,30 @@ class ToolWindow(QMainWindow):
             print("<SDM> [changeActiveInstallation scope] self.active: ", self.active)
 
         else:
+
+            loader = None
             def load_task() -> HTInstallation:
                 profiler = None
                 if self.settings.profileToolset and cProfile is not None:
                     profiler = cProfile.Profile()
                     profiler.enable()
-                new_active = HTInstallation(path, name, self, tsl=tsl)
+                progress_callback = None
+                if loader._use_progress:  # noqa: SLF001
+                    def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
+                        loader._worker.progress.emit(data, mtype)  # noqa: SLF001
+                new_active = HTInstallation(path, name, self, tsl=tsl, progress_callback=progress_callback)
                 if self.settings.profileToolset and profiler:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
                 return new_active
-            loader = AsyncLoader(self, "Loading Installation", load_task, "Failed to load installation")
+
+            loader = AsyncLoader(
+                self,
+                "Loading Installation",
+                load_task,
+                "Failed to load installation",
+                use_progress=True,  # Enable/Disable progress bar information globally here.
+            )
             if not loader.exec_():
                 self.ui.gameCombo.setCurrentIndex(previousIndex)
                 return
