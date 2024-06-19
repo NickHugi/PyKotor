@@ -9,7 +9,7 @@ import sys
 
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Callable, Iterable, cast
+from typing import TYPE_CHECKING, Any, Iterable, cast
 
 import qtpy
 
@@ -508,19 +508,162 @@ class ToolWindow(QMainWindow):
         print("<SDM> [toggle_stylesheet scope] self.settings.selectedTheme: ", self.settings.selectedTheme)
         self.settings.selectedTheme = theme.text() if isinstance(theme, QAction) else theme
 
+        app.setStyle("")
+        app.setStyleSheet("")
+        app.setPalette(app.style().standardPalette())
+        for widget in app.allWidgets():
+            widget.setStyleSheet("")
         if not self.settings.selectedTheme or self.settings.selectedTheme == "Default (Light)":
-            app.setStyleSheet("")
-            app.setPalette(self.original_palette)
             app.setStyle(self.original_style)
-        elif self.settings.selectedTheme == "Fusion (Light)":
-            app.setStyleSheet("")
             app.setPalette(self.original_palette)
+        elif self.settings.selectedTheme == "Fusion (Light)":
             app.setStyle("Fusion")
+            app.setPalette(self.original_palette)
         elif self.settings.selectedTheme == "Default (Dark)":
-            app.setStyleSheet("")
+            self.setStyleSheet("""
+    QMenuBar {
+        background-color: #353535;
+        color: white;
+    }
+
+    QMenuBar::item {
+        background-color: #353535;
+        color: white;
+    }
+
+    QMenuBar::item::selected {
+        background-color: #4a90e2; /* Updated highlight color */
+        color: #232323;
+    }
+
+    QMenu {
+        background-color: #353535;
+        color: white;
+    }
+
+    QMenu::item::selected {
+        background-color: #4a90e2; /* Updated highlight color */
+        color: #232323;
+    }
+
+    QPushButton {
+        background-color: #3d3d3d;
+        color: white;
+        border: 1px solid #555555;
+        padding: 5px;
+    }
+
+    QPushButton::hover {
+        background-color: #4a90e2; /* Updated hover color */
+        color: #232323;
+    }
+
+    QComboBox {
+        background-color: #3d3d3d;
+        color: white;
+        border: 1px solid #555555;
+        padding: 5px;
+    }
+
+    QComboBox::drop-down {
+        border-left-width: 1px;
+        border-left-color: #555555;
+        border-left-style: solid;
+        background: #353535;
+    }
+
+    QComboBox::down-arrow {
+        image: url(down_arrow.png);  /* Use a suitable down arrow image */
+    }
+
+    QLineEdit {
+        background-color: #3d3d3d;
+        color: white;
+        border: 1px solid #555555;
+        padding: 5px;
+    }
+
+    QScrollBar:vertical {
+        background: #353535;
+        width: 15px;
+    }
+
+    QScrollBar::handle:vertical {
+        background: #555555;
+        min-height: 20px;
+    }
+
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        background: #353535;
+    }
+
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        background: #353535;
+    }
+
+    QScrollBar:horizontal {
+        background: #353535;
+        height: 15px;
+    }
+
+    QScrollBar::handle:horizontal {
+        background: #555555;
+        min-width: 20px;
+    }
+
+    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+        background: #353535;
+    }
+
+    QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+        background: #353535;
+    }
+
+    QToolTip {
+        background-color: #252525;
+        color: white;
+        border: 1px solid #555555;
+    }
+
+    QTabWidget::pane {
+        border: 1px solid #555555;
+    }
+
+    QTabBar::tab {
+        background: #3d3d3d;
+        color: white;
+        border: 1px solid #555555;
+        padding: 5px;
+    }
+
+    QTabBar::tab:selected {
+        background: #4a90e2; /* Updated selected tab color */
+        color: #232323;
+    }
+
+    QHeaderView::section {
+        background-color: #353535; /* Set header background */
+        color: white; /* Set header text color */
+        border: 1px solid #555555;
+        padding: 5px;
+    }
+
+    QTreeView, QTreeWidget, QListWidget, QTableWidget, QTableView {
+        background-color: #353535; /* Set view background */
+        color: white; /* Set view text color */
+        alternate-background-color: #404040; /* Alternate row color */
+    }
+
+    QTreeView::item:selected, QTreeWidget::item:selected, QListWidget::item:selected, QTableWidget::item:selected, QTableView::item:selected {
+        background-color: #4a90e2; /* Updated selected item color */
+        color: #232323;
+    }
+""")
+
+
+            app.setStyle(self.original_style)
             self._applyCustomDarkPalette()
         elif self.settings.selectedTheme == "Fusion (Dark)":
-            app.setStyleSheet("")
             app.setStyle("Fusion")
             self._applyCustomDarkPalette()
         elif self.settings.selectedTheme == "Breeze (Dark)":
@@ -528,29 +671,86 @@ class ToolWindow(QMainWindow):
             file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
             app.setStyleSheet(QTextStream(file).readAll())
             file.close()
-        print(f"Theme changed to: '{self.settings.selectedTheme}'")
+        print(f"Theme changed to: '{self.settings.selectedTheme}'. Native style: {self.original_style}")
         self.show()
 
     def _applyCustomDarkPalette(self):
         dark_palette = QPalette()
+
+        # Window colors
         dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
         dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+
+        # Base colors
         dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
         dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
         dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
         dark_palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+
+        # Text colors
         dark_palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
         dark_palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
         dark_palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+
+        # Button colors
+        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+
+        # Link colors
         dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
+
+        # Highlight colors
         dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
         dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Qt.GlobalColor.darkGray)
+
+        # Disabled state colors
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))
         dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, Qt.GlobalColor.darkGray)
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.darkGray)
         dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Qt.GlobalColor.darkGray)
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Light, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Qt.GlobalColor.darkGray)
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+
+        # Active state colors
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+
+        # Inactive state colors
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Text, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+
         QApplication.setPalette(dark_palette)
 
     # region Signal callbacks
