@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import multiprocessing
 import re
 
 from contextlib import suppress
@@ -63,6 +64,13 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
 CURRENT_VERSION = LOCAL_PROGRAM_INFO["currentVersion"]
 
 
+def fetch_update_info(update_link: str, timeout: int = 15) -> Any:
+    req = requests.get(update_link, timeout=timeout)
+    req.raise_for_status()
+    file_data = req.json()
+    return file_data
+
+
 def getRemoteToolsetUpdateInfo(
     *,
     useBetaChannel: bool = False,
@@ -73,10 +81,12 @@ def getRemoteToolsetUpdateInfo(
     else:
         UPDATE_INFO_LINK = LOCAL_PROGRAM_INFO["updateInfoLink"]
 
+    # Use multiprocessing pool to handle timeout
+    pool = multiprocessing.Pool(1)  # Create a Pool with a single worker
     try:  # Download this same file config.py from the repo and only parse the json between the markers. This prevents remote execution security issues.
-        req = requests.get(UPDATE_INFO_LINK, timeout=2 if silent else 15)
-        req.raise_for_status()
-        file_data = req.json()
+        timeout = 2 if silent else 10
+        result = pool.apply_async(fetch_update_info, [UPDATE_INFO_LINK, timeout])
+        file_data = result.get(timeout=timeout)
         base64_content = file_data["content"]
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         decoded_content_str = decoded_content.decode(encoding="utf-8")
@@ -93,6 +103,7 @@ def getRemoteToolsetUpdateInfo(
         if not isinstance(remoteInfo, dict):
             raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remoteInfo.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001
+        pool.terminate()  # Terminate the pool
         errMsg = str(universal_simplify_exception(e))
         result = silent or QMessageBox.question(
             None,
@@ -109,6 +120,9 @@ def getRemoteToolsetUpdateInfo(
         if result not in {QMessageBox.StandardButton.Yes, True}:
             return e
         remoteInfo = LOCAL_PROGRAM_INFO
+    finally:
+        pool.close()  # Close the pool
+        pool.join()  # Wait for the worker to finish
     return remoteInfo
 
 
