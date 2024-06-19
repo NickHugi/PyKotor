@@ -191,7 +191,7 @@ if __name__ == "__main__":
     app.setFont(font)
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
     # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl
-    app.setAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity, False)
+    # app.setAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity, False)
     app.setAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation, False)
     app.setAttribute(Qt.ApplicationAttribute.AA_CompressHighFrequencyEvents, False)
     app.setAttribute(Qt.ApplicationAttribute.AA_CompressTabletEvents, False)
