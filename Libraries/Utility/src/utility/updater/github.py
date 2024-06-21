@@ -253,7 +253,7 @@ class ContentInfoData(AbstractAPIResult):
 
 
 @dataclass
-class GithubRelease(AbstractAPIResult):
+class GithubRelease:
     url: str
     assets_url: str
     upload_url: str
@@ -272,6 +272,31 @@ class GithubRelease(AbstractAPIResult):
     tarball_url: str
     zipball_url: str
     body: str
+
+    @staticmethod
+    def from_json(json_dict: dict) -> GithubRelease:
+        assets = [Asset(**asset) for asset in json_dict.get("assets", [])]
+        return GithubRelease(
+            url=json_dict["url"],
+            assets_url=json_dict["assets_url"],
+            upload_url=json_dict["upload_url"],
+            html_url=json_dict["html_url"],
+            id=json_dict["id"],
+            author=json_dict["author"],
+            node_id=json_dict["node_id"],
+            tag_name=json_dict["tag_name"],
+            target_commitish=json_dict["target_commitish"],
+            name=json_dict["name"],
+            draft=json_dict["draft"],
+            prerelease=json_dict["prerelease"],
+            created_at=json_dict["created_at"],
+            published_at=json_dict["published_at"],
+            assets=assets,
+            tarball_url=json_dict["tarball_url"],
+            zipball_url=json_dict["zipball_url"],
+            body=json_dict["body"]
+        )
+
 
 
 @dataclass
