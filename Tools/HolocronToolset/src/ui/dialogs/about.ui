@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>430</width>
-    <height>162</height>
+    <height>207</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,34 +32,61 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="closeButton">
+  <widget class="QWidget" name="verticalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>340</x>
-     <y>130</y>
-     <width>75</width>
-     <height>23</height>
+     <x>160</x>
+     <y>20</y>
+     <width>262</width>
+     <height>169</height>
     </rect>
    </property>
-   <property name="text">
-    <string>Close</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="aboutLabel">
-   <property name="geometry">
-    <rect>
-     <x>190</x>
-     <y>10</y>
-     <width>221</width>
-     <height>111</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Holocron Toolset&lt;/span&gt;&lt;br/&gt;Version X.X.X&lt;br/&gt;Copyright (c) 2022 Nicholas Hugi&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://sketchfab.com/3d-models/sith-holocron-star-wars-cb3d49a6261a4913817e8e00d6ab6e43&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Holocron Image Source&lt;br/&gt;&lt;/span&gt;&lt;/a&gt;&lt;a href=&quot;https://deadlystream.com/profile/49753-cortisol/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Deadlystream Page&lt;br/&gt;&lt;/span&gt;&lt;/a&gt;&lt;a href=&quot;https://github.com/NickHugi/PyKotor&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Github&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-   <property name="openExternalLinks">
-    <bool>true</bool>
-   </property>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="aboutLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;Holocron Toolset&lt;/span&gt;&lt;br/&gt;Version X.X.X&lt;br/&gt;Copyright (c) 2022 Nicholas Hugi&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://sketchfab.com/3d-models/sith-holocron-star-wars-cb3d49a6261a4913817e8e00d6ab6e43&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Holocron Image Source&lt;br/&gt;&lt;/span&gt;&lt;/a&gt;&lt;a href=&quot;https://deadlystream.com/files/file/1982-holocron-toolset/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Deadlystream Page&lt;br/&gt;&lt;/span&gt;&lt;/a&gt;&lt;a href=&quot;https://github.com/NickHugi/PyKotor&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Github&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="openExternalLinks">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QPushButton" name="closeButton">
+        <property name="text">
+         <string>Close</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources>
