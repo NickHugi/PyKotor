@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import logging
 import multiprocessing
 import os
@@ -10,15 +11,20 @@ import time
 import uuid
 
 from contextlib import contextmanager, suppress
-from logging.handlers import QueueListener, RotatingFileHandler
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from queue import Queue
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Tuple, Union, cast
 
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
+    import queue
+
+    from contextlib import _GeneratorContextManager
     from io import TextIOWrapper
+    from logging.handlers import QueueListener
+    from multiprocessing.process import BaseProcess
     from types import TracebackType
 
     from typing_extensions import Literal, Self
@@ -448,7 +454,7 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
         if not logger.handlers:
             logger.setLevel(use_level)
 
-            cur_process = multiprocessing.current_process()
+            cur_process: BaseProcess = multiprocessing.current_process()
             console_format_str = "%(levelname)s(%(name)s): %(message)s"
             if cur_process.name == "MainProcess":
                 log_dir = get_log_directory(subdir="logs")
@@ -463,6 +469,10 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
                 error_critical_log_file = f"errors_pykotor_{cur_process.pid}.log"
                 exception_log_file = f"exception_pykotor_{cur_process.pid}.log"
                 console_format_str = f"PID={cur_process.pid} - {console_format_str}"
+
+            #our_queue = type.__getattribute__(object.__getattribute__(self, "__class__"), "_queue")
+            #queue_handler = QueueHandler(our_queue)
+            #logger.addHandler(queue_handler)
 
             console_handler = ColoredConsoleHandler()
             formatter = logging.Formatter(console_format_str)
@@ -502,9 +512,11 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             exception_handler.setFormatter(exception_formatter)
             exception_handler.addFilter(LogLevelFilter(logging.ERROR))
             logger.addHandler(exception_handler)
+            object.__setattr__(self, "_orig_log_func", logger._log)
+            #logger._log = object.__getattribute__(self, "_log")  # doesn't properly work
 
             # Adding handlers to the queue listener
-            self.listener = QueueListener(object.__getattribute__(self, "_queue"), console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler)
+            #object.__setattr__(self, "listener", QueueListener(object.__getattribute__(self, "_queue"), console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler))
 
         return logger
 
@@ -524,8 +536,32 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             object.__getattribute__(self, "__class__")()
         return self
 
-    def _log(self, level: int, msg: str, *args, **kwargs) -> None:
-        return super()._log(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)
+    def _log(self, level: int, msg: str, *args, **kwargs) -> None:  # type: ignore[override]
+        our_queue: queue.Queue = object.__getattribute__(self, "_queue")
+        try:
+            logging_thread_func = object.__getattribute__(self, "logging_thread_func")
+        except AttributeError:
+            # Custom logic to prevent encoding issues
+            def logging_thread_func(
+                queue: queue.Queue,
+                logging_context: Callable[..., _GeneratorContextManager[None]],
+            ):
+                while True:
+                    task = cast(Union[Tuple[int, str, tuple, dict], None], queue.get())
+                    if task is None:
+                        break  # Stop signal
+                    level, msg, args, kwargs = task
+                    orig_log_func = object.__getattribute__(self, "_orig_log_func")
+                    with logging_context():
+                        orig_log_func(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
+                    queue.task_done()
+
+            logging_thread = threading.Thread(target=logging_thread_func, args=(our_queue,logging_context))
+            logging_thread.start()
+            atexit.register(our_queue.put, None)
+            object.__setattr__(self, "logging_thread_func", logging_thread_func)
+
+        our_queue.put((level, msg, args, kwargs))
 
 
 get_root_logger = RobustRootLogger  # deprecated, provided for backwards compatibility.

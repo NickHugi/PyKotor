@@ -7,8 +7,8 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QTimer, Qt
-from qtpy.QtGui import QIcon, QPixmap
-from qtpy.QtWidgets import QFileDialog, QLineEdit, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QShortcut
+from qtpy.QtGui import QGuiApplication, QIcon, QPixmap
+from qtpy.QtWidgets import QApplication, QDockWidget, QFileDialog, QLineEdit, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QShortcut
 
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -46,7 +46,9 @@ else:
 if TYPE_CHECKING:
     import os
 
+    from qtpy.QtGui import QShowEvent
     from qtpy.QtWidgets import QWidget
+    from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
@@ -142,6 +144,114 @@ class Editor(QMainWindow):
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
         self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
 
+    def showEvent(self, event: QShowEvent):
+        QTimer.singleShot(0, lambda event=event: self.adjustPosition(event))
+
+    def adjustPosition(self, event: QShowEvent | None = None):  # sourcery skip: extract-method
+        if event is not None:
+            super().showEvent(event)
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        window_geometry = self.geometry()
+        x = (screen_geometry.width() - window_geometry.width()) // 2
+        y = (screen_geometry.height() - window_geometry.height()) // 2
+        self.move(x, y)
+
+        main_window = next(
+            (
+                widget
+                for widget in QApplication.topLevelWidgets()
+                if isinstance(widget, QMainWindow)
+                and widget.__class__.__name__ == "ToolWindow"
+            ),
+            None,
+        )
+
+        if not main_window:
+            self._logger.error("Main ToolWindow not found")
+            return
+
+        main_geometry = main_window.geometry()
+        editor_geometry = self.geometry()
+        if editor_geometry.intersects(main_geometry):
+            new_x = main_geometry.right() + 10
+            if new_x + editor_geometry.width() > screen_geometry.right():
+                new_x = main_geometry.left() - editor_geometry.width() - 10
+            new_y = main_geometry.top()
+            if new_y + editor_geometry.height() > screen_geometry.bottom():
+                new_y = screen_geometry.bottom() - editor_geometry.height()
+            if new_x < screen_geometry.left():
+                new_x = screen_geometry.left()
+            if new_y < screen_geometry.top():
+                new_y = screen_geometry.top()
+            self.move(new_x, new_y)
+            main_geometry = main_window.geometry()
+            editor_geometry = self.geometry()
+            if editor_geometry.intersects(main_geometry):
+                new_mw_x = editor_geometry.width()+10
+                if new_mw_x < screen_geometry.left():
+                    new_mw_x = screen_geometry.left()
+                main_window.move(new_mw_x, main_window.pos().y())
+
+    def setSecondaryWidgetPosition(self, widget: QWidget, position: Literal["left", "right", "top", "bottom"]):
+        if isinstance(widget, QDockWidget):
+            widget.setFloating(True)
+
+        widget.resize(widget.width(), self.height())
+        self.move(self.pos().x(), self.pos().y() - 50)
+
+        if position == "right":
+            relevant_editor_coord = self.mapToGlobal(self.rect().topRight())
+        elif position == "left":
+            relevant_editor_coord = self.mapToGlobal(self.rect().topLeft())
+        elif position == "top":
+            relevant_editor_coord = self.mapToGlobal(self.rect().topLeft())
+        elif position == "bottom":
+            relevant_editor_coord = self.mapToGlobal(self.rect().bottomLeft())
+        else:
+            raise ValueError("Invalid position argument. Must be 'left', 'right', 'top', or 'bottom'.")
+
+        if position == "right":
+            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y())
+        elif position == "left":
+            widget.move(relevant_editor_coord.x() - widget.width(), relevant_editor_coord.y())
+        elif position == "top":
+            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y() - widget.height())
+        elif position == "bottom":
+            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y())
+
+        editor_bottom_y = self.geometry().bottom()
+        dock_bottom_y = widget.geometry().bottom()
+        title_bar_height = dock_bottom_y - editor_bottom_y
+
+        if position in ("right", "left", "bottom"):
+            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y() - title_bar_height)
+        elif position == "top":
+            widget.move(relevant_editor_coord.x() - widget.width(), relevant_editor_coord.y() - widget.height() - title_bar_height)
+
+        # Ensure the widget and the editor are on screen and move them if necessary
+        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
+        widget_geometry = widget.geometry()
+        editor_geometry = self.geometry()
+
+        # Check if either the widget or the editor is off screen
+        if not screen_geometry.contains(widget_geometry) or not screen_geometry.contains(editor_geometry):
+            move_x = move_y = 0
+
+            if widget_geometry.right() > screen_geometry.right():
+                move_x = screen_geometry.right() - widget_geometry.right()
+            elif widget_geometry.left() < screen_geometry.left():
+                move_x = screen_geometry.left() - widget_geometry.left()
+
+            if widget_geometry.bottom() > screen_geometry.bottom():
+                move_y = screen_geometry.bottom() - widget_geometry.bottom()
+            elif widget_geometry.top() < screen_geometry.top():
+                move_y = screen_geometry.top() - widget_geometry.top()
+
+            self.move(self.x() + move_x, self.y() + move_y)
+            widget.move(widget.x() + move_x, widget.y() + move_y)
+
+        widget.show()
+
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
 
@@ -184,7 +294,7 @@ class Editor(QMainWindow):
     def refreshWindowTitle(self):
         """Refreshes the window title based on the current state of the editor."""
         installationName = "No Installation" if self._installation is None else self._installation.name
-        if self._filepath is None:
+        if self._filepath is None or self._resname is None or self._restype is None:
             self.setWindowTitle(f"{self._editorTitle}({installationName})")
             return
 
@@ -196,6 +306,16 @@ class Editor(QMainWindow):
         else:
             assert relpath.name.lower() == f"{self._resname}.{self._restype}".lower()
         self.setWindowTitle(f"{relpath} - {self._editorTitle}({installationName})")
+
+    def getOpenedFileName(self):
+        if self._filepath is not None and self._filepath.name and self._restype is not None:
+            if is_bif_file(self._filepath) or is_capsule_file(self._filepath):
+                orig_filename = f"{self._resname or ''}.{self._restype.extension}"
+            else:
+                orig_filename = self._filepath.name
+        else:
+            orig_filename = ""
+        return orig_filename
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -210,8 +330,7 @@ class Editor(QMainWindow):
             - Refreshes the window title
             - Enables the Revert menu item
         """
-        orig_filename = self._filepath.name if self._filepath and self._filepath.name else ""
-        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", orig_filename, self._saveFilter, "")
+        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", self.getOpenedFileName(), self._saveFilter, "")
         if not filepath_str:
             return
         try:
@@ -231,7 +350,7 @@ class Editor(QMainWindow):
             return
 
         if is_capsule_file(filepath_str) and f"Save into module ({self.CAPSULE_FILTER})" in self._saveFilter:
-            if self._resname is None:
+            if self._resname is None or self._restype is None:
                 self._resname = "new"
                 self._restype = self._writeSupported[0]
 
@@ -271,6 +390,7 @@ class Editor(QMainWindow):
 
             if (
                 self._global_settings.attemptKeepOldGFFFields
+                and self._restype is not None
                 and self._restype.is_gff()
                 and not isinstance(self, GFFEditor)
                 and self._revert is not None
@@ -323,6 +443,8 @@ class Editor(QMainWindow):
                 print(f"User cancelled filepath lookup in _saveEndsWithBif ({self._resname}.{self._restype})")
                 return
 
+            assert self._resname is not None
+            assert self._restype is not None
             r_filepath = Path(str_filepath)
             dialog2 = SaveToModuleDialog(self._resname, self._restype, self._writeSupported)
             if dialog2.exec_():
@@ -331,6 +453,9 @@ class Editor(QMainWindow):
                 self._filepath = r_filepath
                 self.save()
         elif dialog.option == BifSaveOption.Override:
+            assert self._resname is not None
+            assert self._restype is not None
+            assert self._installation is not None
             self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
             self.save()
         else:
@@ -365,6 +490,7 @@ class Editor(QMainWindow):
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
+                assert self._installation is not None
                 self._filepath = self._installation.override_path() / f"{self._resname}.{self._restype.extension}"
                 self.save()
             return
@@ -406,7 +532,7 @@ class Editor(QMainWindow):
 
         # At this point, c_filepath points to the physical ERF/RIM on disk
         # and c_parent_filepath points to the physical folder containing the file.
-        erf_or_rim = read_rim(c_filepath) if ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM else read_erf(c_filepath)
+        erf_or_rim: ERF | RIM = read_rim(c_filepath) if ResourceType.from_extension(c_parent_filepath.suffix) is ResourceType.RIM else read_erf(c_filepath)
         nested_capsules: list[tuple[PurePath, ERF | RIM]] = [(c_filepath, erf_or_rim)]
         for capsule_path in reversed(nested_paths[:-1]):
             nested_erf_or_rim_data = erf_or_rim.get(capsule_path.stem, ResourceType.from_extension(capsule_path.suffix))
