@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QDialogBu
     QStackedWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
     QWidget)
 
+from toolset.gui.widgets.settings.application import ApplicationSettingsWidget
 from toolset.gui.widgets.settings.git import GITWidget
 from toolset.gui.widgets.settings.installations import InstallationsWidget
 from toolset.gui.widgets.settings.misc import MiscWidget
@@ -36,6 +37,7 @@ class Ui_Dialog(object):
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
         self.settingsTree = QTreeWidget(self.splitter)
+        QTreeWidgetItem(self.settingsTree)
         QTreeWidgetItem(self.settingsTree)
         QTreeWidgetItem(self.settingsTree)
         QTreeWidgetItem(self.settingsTree)
@@ -65,6 +67,16 @@ class Ui_Dialog(object):
         self.gridLayout_2.addWidget(self.installationsWidget, 0, 0, 1, 1)
 
         self.settingsStack.addWidget(self.installationsPage)
+        self.applicationSettingsPage = QWidget()
+        self.applicationSettingsPage.setObjectName(u"applicationSettingsPage")
+        self.gridLayout_26 = QGridLayout(self.applicationSettingsPage)
+        self.gridLayout_26.setObjectName(u"gridLayout_26")
+        self.applicationSettingsWidget = ApplicationSettingsWidget(self.applicationSettingsPage)
+        self.applicationSettingsWidget.setObjectName(u"applicationSettingsWidget")
+
+        self.gridLayout_26.addWidget(self.applicationSettingsWidget, 0, 0, 1, 1)
+
+        self.settingsStack.addWidget(self.applicationSettingsPage)
         self.moduleDesignerPage = QWidget()
         self.moduleDesignerPage.setObjectName(u"moduleDesignerPage")
         self.gridLayout_3 = QGridLayout(self.moduleDesignerPage)
@@ -111,7 +123,7 @@ class Ui_Dialog(object):
         self.buttonBox.accepted.connect(Dialog.accept)
         self.buttonBox.rejected.connect(Dialog.reject)
 
-        self.settingsStack.setCurrentIndex(0)
+        self.settingsStack.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(Dialog)
@@ -132,6 +144,8 @@ class Ui_Dialog(object):
         ___qtreewidgetitem3.setText(0, QCoreApplication.translate("Dialog", u"Module Designer", None));
         ___qtreewidgetitem4 = self.settingsTree.topLevelItem(3)
         ___qtreewidgetitem4.setText(0, QCoreApplication.translate("Dialog", u"Misc", None));
+        ___qtreewidgetitem5 = self.settingsTree.topLevelItem(4)
+        ___qtreewidgetitem5.setText(0, QCoreApplication.translate("Dialog", u"Application", None));
         self.settingsTree.setSortingEnabled(__sortingEnabled)
 
     # retranslateUi

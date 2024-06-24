@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ApplicationSettingsWidget</class>
+ <widget class="QWidget" name="ApplicationSettingsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Application Settings</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>780</width>
+        <height>580</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QGroupBox" name="groupBoxAASettings">
+         <property name="title">
+          <string>AA Settings</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <!-- Add placeholder checkboxes for AA settings -->
+          <item>
+           <widget class="QCheckBox" name="AA_ImmediateWidgetCreationCheckBox">
+            <property name="text">
+             <string>Immediate Widget Creation</string>
+            </property>
+           </widget>
+          </item>
+          <!-- Add other AA settings checkboxes as needed -->
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxCacheSettings">
+         <property name="title">
+          <string>Cache Settings</string>
+         </property>
+         <layout class="QFormLayout" name="formLayoutCacheSettings">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelCacheSize">
+            <property name="text">
+             <string>Cache Size:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="cacheSizeSpinBox"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelCacheDirectory">
+            <property name="text">
+             <string>Cache Directory:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="cacheDirectoryLineEdit"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxEnvironmentVariables">
+         <property name="title">
+          <string>Environment Variables</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayoutEnvironmentVariables">
+          <item>
+           <widget class="QListWidget" name="environmentVariablesListWidget"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxFilePaths">
+         <property name="title">
+          <string>File Paths</string>
+         </property>
+         <layout class="QFormLayout" name="formLayoutFilePaths">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelLogFilePath">
+            <property name="text">
+             <string>Log File Path:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="logFilePathLineEdit"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelTempFilePath">
+            <property name="text">
+             <string>Temp File Path:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="tempFilePathLineEdit"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxPerformanceSettings">
+         <property name="title">
+          <string>Performance Settings</string>
+         </property>
+         <layout class="QFormLayout" name="formLayoutPerformanceSettings">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelMaxThreads">
+            <property name="text">
+             <string>Max Threads:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="maxThreadsSpinBox"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayoutButtons">
+         <item>
+          <widget class="QPushButton" name="resetAttributesButton">
+           <property name="text">
+            <string>Reset Attributes</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="resetCacheSettingsButton">
+           <property name="text">
+            <string>Reset Cache Settings</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="resetEnvironmentVariablesButton">
+           <property name="text">
+            <string>Reset Environment Variables</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="resetFilePathsButton">
+           <property name="text">
+            <string>Reset File Paths</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="resetPerformanceSettingsButton">
+           <property name="text">
+            <string>Reset Performance Settings</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

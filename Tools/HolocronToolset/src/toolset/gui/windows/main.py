@@ -9,7 +9,7 @@ import sys
 
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Iterable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
@@ -18,7 +18,6 @@ from qtpy.QtCore import (
     QCoreApplication,
     QEvent,
     QFile,
-    QObject,
     QTextStream,
     QThread,
     Qt,
@@ -59,7 +58,6 @@ from pykotor.resource.formats.tpc import TPC, read_tpc, write_tpc
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
@@ -119,6 +117,9 @@ else:
 if TYPE_CHECKING:
 
     from qtpy import QtGui
+    from qtpy.QtCore import (
+        QObject,
+    )
     from qtpy.QtGui import (
         QCloseEvent,
         QKeyEvent,
@@ -287,10 +288,10 @@ class ToolWindow(QMainWindow):
         modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)
         merged_stylesheet = f"""{modulesSectionCombo.styleSheet()}
             QComboBox {{
-                font-size: 14px; /* Increase text size */
-                font-family: Arial, Helvetica, sans-serif; /* Use a readable font */
-                padding: 5px; /* Add padding for spacing */
-                text-align: center; /* Center the text */
+                font-size: {QApplication.font().pointSize()}px;
+                font-family: Arial, Helvetica, sans-serif;
+                padding: 5px;
+                text-align: center;
             }}
         """
         modulesSectionCombo.setStyleSheet(merged_stylesheet)
@@ -678,62 +679,56 @@ class ToolWindow(QMainWindow):
         dark_palette = QPalette()
 
         # Window colors
-        dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark gray for window background
+        dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # Light gray for window text
 
         # Base colors
-        dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))  # Darker gray for base background
+        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Medium dark gray for alternate base
+        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for tooltip base
+        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for tooltip text
 
         # Text colors
-        dark_palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        dark_palette.setColor(QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for main text
+        dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(230, 230, 230))  # Slightly lighter gray for button text
+        dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 69, 0))  # Orange-red for bright text
 
         # Button colors
-        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark gray for buttons
 
         # Link colors
-        dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorRole.Link, QColor(100, 149, 237))  # Cornflower blue for links
+        dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for visited links
 
         # Highlight colors
-        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for highlight
+        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for highlighted text
 
         # Disabled state colors
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, Qt.GlobalColor.darkGray)
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.darkGray)
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, Qt.GlobalColor.darkGray)
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, Qt.GlobalColor.darkGray)
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark slate gray for disabled window
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(169, 169, 169))  # Dark gray for disabled window text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Dark slate gray for disabled base
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))  # Dark slate blue for disabled alternate base
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for disabled tooltip base
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, QColor(169, 169, 169))  # Dark gray for disabled tooltip text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(128, 128, 128))  # Gray for disabled text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate gray for disabled buttons
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(105, 105, 105))  # Dim gray for disabled button text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for disabled bright text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))  # Dodger blue for disabled links
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for disabled visited links
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for disabled highlight
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for disabled highlighted text
 
         # Active state colors
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Link, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Darker gray for active window
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # White for active window text
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Even darker gray for active base
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Darker medium gray for active alternate base
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Darker gray for active tooltip base
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for active tooltip text
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for active text
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate
 
         # Inactive state colors
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
@@ -989,7 +984,7 @@ class ToolWindow(QMainWindow):
                     profiler = cProfile.Profile()
                     profiler.enable()
                 progress_callback = None
-                if loader._use_progress:  # noqa: SLF001
+                if loader._realtime_progress:  # noqa: SLF001
                     def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
                         loader._worker.progress.emit(data, mtype)  # noqa: SLF001
                 new_active = HTInstallation(path, name, self, tsl=tsl, progress_callback=progress_callback)
@@ -1003,7 +998,7 @@ class ToolWindow(QMainWindow):
                 "Loading Installation",
                 load_task,
                 "Failed to load installation",
-                use_progress=True,  # Enable/Disable progress bar information globally here.
+                realtime_progress=True,  # Enable/Disable progress bar information globally here.
             )
             if not loader.exec_():
                 self.ui.gameCombo.setCurrentIndex(previousIndex)
@@ -1263,64 +1258,11 @@ class ToolWindow(QMainWindow):
         else:
             super().keyPressEvent(event)
 
-    def printDropDragEventAttrs(self, e: QtGui.QDropEvent | QtGui.QDragEnterEvent):
-        def get_base_class_attributes(base_classes: Iterable[type[object]]) -> set[str]:
-            attrs = set()
-            for base_class in base_classes:
-                attrs.update(dir(base_class))
-            return attrs
-
-        def print_filtered_attributes(obj: object, obj_name: str, exclude_attrs: Iterable[str]):
-            print(f"{obj_name} Attributes:")
-            for attr in dir(obj):
-                if (
-                    not attr.startswith("_")
-                    and not callable(getattr(obj, attr))
-                    and attr not in exclude_attrs
-                ):
-                    try:
-                        print(f"  {attr}: {getattr(obj, attr)}")
-                    except Exception as ex:  # noqa: BLE001
-                        print(f"  {attr}: Unable to retrieve value ({ex})")
-
-        def byte_array_to_hex(byte_array):
-            # Convert each byte in the QByteArray to integer before formatting
-            return "".join(f"{b:02x}" for b in byte_array.data())
-
-        # Get attributes to exclude from QObject and QEvent
-        exclude_attrs = get_base_class_attributes([QObject, QEvent, object])
-
-        # Print detailed information about the event
-        print_filtered_attributes(e, "Event", exclude_attrs)
-
-        mime_data = e.mimeData()
-        print_filtered_attributes(mime_data, "Mime Data", exclude_attrs)
-
-        # Print all available formats
-        formats = mime_data.formats()
-        print("Available Formats:")
-        for format in formats:
-            print(f" - {format}")
-
-        # Print data for each format
-        for format in formats:
-            data = mime_data.data(format)
-            # Convert QByteArray to hex manually, ensuring each byte is an integer
-            hex_data = byte_array_to_hex(data)
-            print(f"Data for format {format}: {hex_data[:100]}")
-            # Attempt to decode the full raw data using utf-16-le
-            try:
-                decoded_data = decode_bytes_with_fallbacks(data.data()[:100])
-            except UnicodeDecodeError as decode_error:
-                print(f"UnicodeDecodeError: {decode_error}")
-                decoded_data = "Error decoding data"
-            print(f"Decoded data for format {format}: {decoded_data}")
-
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
             return
 
-        #self.printDropDragEventAttrs(e)
+        #print_qt_object(e)
         if not e.mimeData().hasUrls():
             return
 
@@ -1610,8 +1552,6 @@ class ToolWindow(QMainWindow):
             print("<SDM> [determine_version_info scope] releaseVersion: ", releaseVersion)
 
             remoteInfo = edgeRemoteInfo if version_list[0][1] == "edge" else masterRemoteInfo
-            print("<SDM> [determine_version_info scope] remoteInfo: ", remoteInfo)
-
             return remoteInfo, releaseVersion
 
         def display_version_message(

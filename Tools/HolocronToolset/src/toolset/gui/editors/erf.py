@@ -16,9 +16,9 @@ from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, wr
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file
+from toolset.gui.common.filters import RobustSortFilterProxyModel
 from toolset.gui.dialogs.save.generic_file_saver import FileSaveHandler
 from toolset.gui.editor import Editor
-from toolset.gui.helpers.sort_proxy_filter import RobustSortFilterProxyModel
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception

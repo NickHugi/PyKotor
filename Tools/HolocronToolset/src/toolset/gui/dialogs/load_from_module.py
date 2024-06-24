@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QDialog, QListWidgetItem
 
@@ -32,6 +33,7 @@ class LoadFromModuleDialog(QDialog):
             - Associates the original resource with each list item.
         """
         super().__init__()
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs.load_from_module import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415

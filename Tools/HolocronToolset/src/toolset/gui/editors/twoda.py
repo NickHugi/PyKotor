@@ -76,7 +76,7 @@ class TwoDAEditor(Editor):
         self.model.itemChanged.connect(self.resetVerticalHeaders)
 
         self.new()
-        if GlobalSettings().selectedTheme == "Fusion (Dark)":
+        if "(Dark)" in GlobalSettings().selectedTheme:
             self.ui.twodaTable.verticalHeader().setStyleSheet("""
                 QHeaderView::section {
                     color: rgba(255, 255, 255, 0.0);  /* Transparent text */

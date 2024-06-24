@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy.QtCore import Qt
+from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QMessageBox, QPushButton
 
 from toolset.gui.widgets.settings.installations import GlobalSettings
@@ -31,8 +31,7 @@ class SettingsDialog(QDialog):
             - Connect signal handlers.
         """
         super().__init__(parent)
-        # Add maximize and minimize buttons
-        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
 
         self.installationEdited: bool = False
 
@@ -60,6 +59,7 @@ class SettingsDialog(QDialog):
             "GIT Editor": self.ui.gitEditorPage,
             "Misc": self.ui.miscPage,
             "Module Designer": self.ui.moduleDesignerPage,
+            "Application": self.ui.applicationSettingsPage,
         }
 
     def _setupSignals(self):
@@ -74,6 +74,8 @@ class SettingsDialog(QDialog):
         pageItemText = pageTreeItem.text(0)
         newPage = self.pageDict[pageItemText]
         self.ui.settingsStack.setCurrentWidget(newPage)  # type: ignore[arg-type]
+        if self.isMaximized():
+            return
 
         if self.previousPage not in ("GIT Editor", "Module Designer") and pageItemText in ("GIT Editor", "Module Designer"):
             self.originalSize = self.size()
@@ -112,3 +114,4 @@ class SettingsDialog(QDialog):
         self.ui.gitEditorWidget.save()
         self.ui.moduleDesignerWidget.save()
         self.ui.installationsWidget.save()
+        self.ui.applicationSettingsWidget.save()

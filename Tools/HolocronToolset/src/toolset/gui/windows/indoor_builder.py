@@ -1028,6 +1028,7 @@ class IndoorMapRenderer(QWidget):
 class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs.indoor_downloader import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415

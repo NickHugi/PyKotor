@@ -427,6 +427,7 @@ class LoaderDialog(QDialog):
             - Connects signals from worker to update progress bar.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
         self._progressBar = QProgressBar(self)
         self._progressBar.setMinimum(0)

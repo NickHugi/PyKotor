@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QStackedWidget, QVBoxLayout, QWidget)
 
 from toolset.gui.editors.dlg import (DLGTreeView, GFFFieldSpinBox)
-from toolset.gui.widgets.edit.combobox import FilterComboBox
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 
 class Ui_MainWindow(object):

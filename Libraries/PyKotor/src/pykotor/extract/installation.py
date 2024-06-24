@@ -176,30 +176,30 @@ class Installation:
         self._report_main_progress("Loading chitin...")
         self.load_chitin()
         self._report_main_progress("Loading lips...")
-        self.load_lips()
+        #self.load_lips()
         self._report_main_progress("Loading modules...")
-        self.load_modules()
+        #self.load_modules()
 
         # K1 doesn't actually use the RIMs in the Rims folder.
         #if self.game().is_k1():
         #    self.load_rims()
 
         self._report_main_progress("Loading streammusic...")
-        self.load_streammusic()
+        #self.load_streammusic()
         self._report_main_progress("Loading streamsounds...")
-        self.load_streamsounds()
+        #self.load_streamsounds()
         self._report_main_progress("Loading textures...")
         self.load_textures()
         self._report_main_progress("Loading saves...")
         self.load_saves()
         if self.game().is_k1():
             self._report_main_progress("Loading streamwaves...")
-            self.load_streamwaves()
+            #self.load_streamwaves()
         elif self.game().is_k2():
             self._report_main_progress("Loading streamvoice...")
-            self.load_streamvoice()
+            #self.load_streamvoice()
         self._report_main_progress("Loading override...")
-        self.load_override()
+        #self.load_override()
         if self.game().is_k1():
             patch_erf_path = self.path().joinpath("patch.erf")
             if patch_erf_path.safe_isfile():

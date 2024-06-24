@@ -33,6 +33,7 @@ class SelectModuleDialog(QDialog):
             - Sets up filtering of module list.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
 
         self._installation: HTInstallation = installation
 

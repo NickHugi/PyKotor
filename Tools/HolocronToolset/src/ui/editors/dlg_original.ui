@@ -1542,12 +1542,12 @@
   <customwidget>
    <class>FilterComboBox</class>
    <extends>QComboBox</extends>
-   <header location="global">toolset.gui.widgets.edit.combobox</header>
+   <header location="global">toolset.gui.common.widgets.combobox</header>
   </customwidget>
   <customwidget>
    <class>GFFFieldSpinBox</class>
    <extends>QSpinBox</extends>
-   <header location="global">toolset.gui.editors.dlg</header>
+   <header location="global">toolset.gui.widgets.edit.spinbox</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

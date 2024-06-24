@@ -163,9 +163,11 @@ class LazyCapsule(FileResource):
             - Returns True if a match is found, False otherwise.
         """
         query = ResourceIdentifier(resref, restype)
-        return next(
-            (resource for resource in self.resources() if resource == query),
-            False,
+        return bool(
+            next(
+                (resource for resource in self.resources() if resource == query),
+                False,
+            )
         )
 
     def info(

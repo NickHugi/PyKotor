@@ -54,6 +54,7 @@ class InsertInstanceDialog(QDialog):
             - Initializes location selector.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
         self._installation: HTInstallation = installation
         self._module: Module = module

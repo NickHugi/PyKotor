@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from qtpy import QtCore
 from qtpy.QtWidgets import QDialog
 
 from pykotor.resource.generics.dlg import DLGAnimation
@@ -22,6 +23,7 @@ class EditAnimationDialog(QDialog):
     ):
         animation: DLGAnimation = DLGAnimation() if animationArg is None else animationArg
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs.edit_animation import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415

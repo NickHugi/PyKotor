@@ -84,8 +84,6 @@ class HTInstallation(Installation):
         super().__init__(path, progress_callback=progress_callback)
 
         self.name: str = name
-
-        self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: QStandardItemModel | None = None
 
         self._tsl: bool | None = tsl
@@ -104,7 +102,6 @@ class HTInstallation(Installation):
 
         ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
         ht_installation._tsl = installation.game().is_k2()  # noqa: SLF001
-        ht_installation.mainWindow = mainWindow
         ht_installation.cacheCoreItems = None
         ht_installation._cache2da = {}  # noqa: SLF001
         ht_installation._cacheTpc = {}  # noqa: SLF001
@@ -201,7 +198,7 @@ class HTInstallation(Installation):
 
 
     # region Cache 2DA
-    def htGetCache2DA(self, resname: str) -> TwoDA:
+    def htGetCache2DA(self, resname: str) -> TwoDA | None:
         """Gets a 2DA resource from the cache or loads it if not present.
 
         Args:
@@ -222,6 +219,8 @@ class HTInstallation(Installation):
         resname = resname.lower()
         if resname not in self._cache2da:
             result = self.resource(resname, ResourceType.TwoDA, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            if result is None:
+                return None
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 

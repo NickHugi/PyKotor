@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QSizePolicy, QSpacerItem, QSpinBox, QTabWidget,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
-from toolset.gui.widgets.edit.combobox import FilterComboBox
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 

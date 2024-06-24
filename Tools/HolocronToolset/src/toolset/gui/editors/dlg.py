@@ -1,29 +1,34 @@
 from __future__ import annotations
 
+import gc
+import inspect
 import json
+import random
 import re
 import tempfile
+import uuid
+import weakref
 
 from collections import deque
+from copy import deepcopy
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Iterable, cast, overload
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, List, Mapping, Sequence, cast, overload
 
 import qtpy
 
-from qtpy import QtMultimedia
+from qtpy import QtCore, QtMultimedia
 from qtpy.QtCore import (
     QBuffer,
     QByteArray,
     QDataStream,
     QEvent,
     QIODevice,
-    QItemSelection,
     QItemSelectionModel,
     QMimeData,
     QModelIndex,
     QPoint,
+    QPropertyAnimation,
     QRect,
-    QRectF,
     QSettings,
     QSize,
     QTimer,
@@ -53,26 +58,29 @@ from qtpy.QtWidgets import (
     QAction,
     QActionGroup,
     QApplication,
-    QFormLayout,
+    QColorDialog,
+    QDialog,
+    QDockWidget,
     QHBoxLayout,
     QInputDialog,
     QLabel,
-    QLineEdit,
+    QListWidget,
     QListWidgetItem,
     QMenu,
-    QPlainTextEdit,
+    QMessageBox,
+    QPushButton,
     QSizePolicy,
-    QSpinBox,
     QStyle,
-    QStyleOptionViewItem,
     QStyledItemDelegate,
     QToolTip,
     QTreeView,
+    QTreeWidget,
     QUndoCommand,
     QVBoxLayout,
     QWidget,
     QWidgetAction,
 )
+from typing_extensions import Literal
 
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
@@ -93,37 +101,43 @@ from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.edit.combobox import FilterComboBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import QtKey, getQtKeyString
 from utility.logger_util import RobustRootLogger
 from utility.system.os_helper import remove_any
 
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    from qtpy.QtGui import QUndoStack
+else:
+    from qtpy.QtWidgets import QUndoStack
+
 if TYPE_CHECKING:
+
     import os
 
     from qtpy.QtCore import (
+        QItemSelection,
         QObject,
         QTemporaryFile,
     )
     from qtpy.QtGui import (
         QCloseEvent,
         QDragEnterEvent,
+        QDragLeaveEvent,
         QDragMoveEvent,
         QDropEvent,
         QFocusEvent,
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
-        QResizeEvent,
+        QShowEvent,
         QWheelEvent,
     )
     from qtpy.QtWidgets import (
-        QTextEdit,
+        QStyleOptionViewItem,
     )
     from typing_extensions import Self
 
-    from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.resource.generics.dlg import (
         DLGAnimation,
@@ -131,138 +145,16 @@ if TYPE_CHECKING:
     )
     from utility.system.path import PureWindowsPath
 
+_LINK_PARENT_NODE_PATH_ROLE = Qt.ItemDataRole.UserRole + 1
 _FUTURE_EXPAND_ROLE = Qt.ItemDataRole.UserRole + 3
-
-class TrieNode:
-    """A node in the trie structure."""
-    def __init__(self):
-        self.children = {}
-        self.is_end_of_word = False
-
-class Trie:
-    """The trie object containing the whole data structure."""
-    def __init__(self):
-        self.root = TrieNode()
-
-    def insert(self, text: str):
-        node = self.root
-        for char in text:
-            if char not in node.children:
-                node.children[char] = TrieNode()
-            node = node.children[char]
-        node.is_end_of_word = True  # This marks the end of a word
-
-    def search(self, prefix: str) -> bool:
-        node = self.root
-        for char in prefix:
-            if char not in node.children:
-                return False
-            node = node.children[char]
-        return True  # The prefix is valid if we successfully traverse the Trie
-
-    def rebuild(self, data_list):
-        self.root = TrieNode()  # Reset the Trie
-        for data in data_list:
-            self.insert(data)
-
-
-class GFFFieldSpinBox(QSpinBox):
-    def __init__(
-        self,
-        *args,
-        **kwargs,
-    ):
-        self._no_validate: bool = False
-        super().__init__(*args, **kwargs)
-        self.specialValueTextMapping: dict[int, str] = {0: "0", -1: "-1"}
-        self.setSpecialValueText(self.specialValueTextMapping[-1])
-
-    @property
-    def min_value(self) -> int:
-        return min(self.minimum(), *self.specialValueTextMapping.keys())
-
-    @min_value.setter
-    def min_value(self, value: int): ...
-
-    @property
-    def max_value(self) -> int:
-        return max(self.maximum(), *self.specialValueTextMapping.keys())
-
-    @max_value.setter
-    def max_value(self, value: int): ...
-
-    def fixup(self, text: str):
-        if text.isdigit() or (text and text[0] == "-" and text[1:].isdigit()):
-            value = int(text)
-            if value < self.min_value:
-                self.setValue(self.min_value)
-            elif value > self.max_value:
-                self.setValue(self.max_value)
-        else:
-            self.setValue(self.value())
-
-    def stepBy(self, steps: int):
-        current_value = self.value()
-        if current_value in self.specialValueTextMapping and steps > 0:
-            self.setValue(self.min_value)
-        elif current_value == self.min_value and steps < 0:
-            self.setValue(max(self.specialValueTextMapping.keys()))
-        else:
-            next_value = current_value + steps
-            if self.min_value <= next_value <= self.max_value:
-                super().stepBy(steps)
-            elif next_value < self.min_value:
-                self.setValue(-1)
-            else:
-                self.setValue(self.max_value)
-
-    @classmethod
-    def from_spinbox(
-        cls,
-        originalSpin: QSpinBox,
-        min_value: int = 0,
-        max_value: int = 100,
-    ) -> GFFFieldSpinBox:
-        """Is not perfect at realigning, but attempts to initialize a GFFFieldSpinBox from a pre-existing QSpinBox."""
-        if not isinstance(originalSpin, QSpinBox):
-            raise TypeError("The provided widget is not a QSpinBox.")
-
-        layout = originalSpin.parentWidget().layout()
-        row, role = None, None
-
-        if isinstance(layout, QFormLayout):
-            for r in range(layout.rowCount()):
-                if layout.itemAt(r, QFormLayout.ItemRole.FieldRole) and layout.itemAt(r, QFormLayout.ItemRole.FieldRole).widget() == originalSpin:
-                    row, role = r, QFormLayout.ItemRole.FieldRole
-
-                    break
-                if layout.itemAt(r, QFormLayout.ItemRole.LabelRole) and layout.itemAt(r, QFormLayout.ItemRole.LabelRole).widget() == originalSpin:
-                    row, role = r, QFormLayout.ItemRole.LabelRole
-
-                    break
-
-        parent = originalSpin.parent()
-        customSpin = cls(parent, min_value=min_value, max_value=max_value)
-
-        for i in range(originalSpin.metaObject().propertyCount()):
-            prop = originalSpin.metaObject().property(i)
-
-            if prop.isReadable() and prop.isWritable():
-                value = originalSpin.property(prop.name())
-                customSpin.setProperty(prop.name(), value)
-
-        if row is not None and role is not None:
-            layout.setWidget(row, role, customSpin)
-
-        originalSpin.deleteLater()
-
-        return customSpin
+_DLG_MIME_DATA_ROLE = Qt.ItemDataRole.UserRole + 5
+_MODEL_INSTANCE_ID_ROLE = Qt.ItemDataRole.UserRole + 6
+QT_STANDARD_ITEM_FORMAT = "application/x-qabstractitemmodeldatalist"
 
 
 class HTMLDelegate(QStyledItemDelegate):
-    def __init__(self, parent: DLGTreeView | None = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.dlgTreeView: DLGTreeView = parent
         self.text_size: int = 12
         self.max_height_percentage: float = 1.0  # 100%
         self.max_width_percentage: float = 1.0  # 100%
@@ -272,12 +164,10 @@ class HTMLDelegate(QStyledItemDelegate):
     def setVerticalSpacing(self, spacing: int):
         print(f"<SDM> [setVerticalSpacing scope] set vertical spacing from {self.verticalSpacing} to {spacing}")
         self.verticalSpacing = spacing
-        self.dlgTreeView.model().layoutChanged.emit()
 
     def setTextSize(self, size: int):
         print(f"<SDM> [setTextSize scope] set text size from {self.text_size} to {size}")
         self.text_size = size
-        self.dlgTreeView.model().layoutChanged.emit()
 
     def nudgeItem(
         self,
@@ -290,37 +180,31 @@ class HTMLDelegate(QStyledItemDelegate):
         print("<SDM> [nudgeItem scope] self.nudgedModelIndexes[index]: ", self.nudgedModelIndexes[index])
 
     def updateHtmlSizeAndSpacing(self, html: str, size: int) -> str:
-        #print("<SDM> [updateHtmlWithNewTextSize scope] original html: ", html)
         updatedHtml: str = re.sub(r"font-size:\d+pt;", f"font-size:{size}pt;", html)
-        #print("<SDM> [updateHtmlWithNewTextSize scope] updated_html: ", updatedHtml)
         return updatedHtml
 
-    def paint(
-        self,
-        painter: QPainter,
-        option: QStyleOptionViewItem,
-        index: QModelIndex,
-    ):
-        #print(f"HTMLDelegate.paint({painter}, {option}, {index})")
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         painter.save()
 
-        # Apply any nudge offsets
-        nudge_offset: tuple[int, int] = self.nudgedModelIndexes.get(index, (0, 0))
-        painter.translate(nudge_offset[0], nudge_offset[1])
+        # Apply nudge offsets
+        nudge_offset = self.nudgedModelIndexes.get(index, (0, 0))
+        painter.translate(*nudge_offset)
 
-        doc = QTextDocument()
-        display_data: str | None = index.data(Qt.DisplayRole)
-        if display_data is None:
+        display_data = index.data(Qt.DisplayRole)
+        if not display_data:
             painter.restore()
             return
-        doc.setHtml(self.updateHtmlSizeAndSpacing(display_data, self.text_size))
-        doc.setDefaultFont(option.font)  # Ensure the document uses the correct font settings
 
-        ctx = QTextDocument().documentLayout().PaintContext()
+        doc = QTextDocument()
+        doc.setHtml(self.updateHtmlSizeAndSpacing(display_data, self.text_size))
+        doc.setDefaultFont(option.font)
+        doc.setTextWidth(option.rect.width())
+
+        ctx = doc.documentLayout().PaintContext()
         ctx.palette = option.palette
 
-        # Handling selection highlighting
-        if option.state & QStyle.State_Selected:
+        # Handle selection highlighting
+        if bool(option.state & QStyle.StateFlag.State_Selected):
             highlight_color = option.palette.highlight().color()
             highlight_color.setAlpha(int(highlight_color.alpha() * 0.7))
             painter.fillRect(option.rect, highlight_color)
@@ -328,47 +212,50 @@ class HTMLDelegate(QStyledItemDelegate):
         else:
             ctx.palette.setColor(QPalette.Text, option.palette.text().color())
 
-        # Draw the text in the adjusted rectangle
-        ctx_rect = QRectF(option.rect)
-        doc.setTextWidth(ctx_rect.width())  # Ensure the width matches the column width
-        topleft = ctx_rect.topLeft()
-        centerleft = QPoint(int(topleft.x()), int(topleft.y() + self.verticalSpacing))
-        painter.translate(centerleft)  # Translate to start drawing at the top left of the rectangle
+        painter.translate(option.rect.topLeft())
         doc.documentLayout().draw(painter, ctx)
 
-        painter.restore()  # Restore the painter to its original state
+        painter.restore()
 
-    def sizeHint(
-        self,
-        option: QStyleOptionViewItem,
-        index: QModelIndex,
-    ) -> QSize:
-        #print(f"HTMLDelegate.sizeHint({option}, {index})")
-        if self.dlgTreeView:
-            window_width = self.dlgTreeView.viewport().width()
-            max_width = self.max_width_percentage * window_width
-        else:
-            max_width = 100  # Fallback width if dlgTreeView is not available
+    def parent(self) -> QWidget:
+        parent = super().parent()
+        assert isinstance(parent, QWidget), f"HTMLDelegate.parent() returned non-QWidget: '{parent.__class__.__name__}'"
+        return parent
 
-        html: str | None = index.data(Qt.DisplayRole)
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+        html: str | None = index.data(Qt.ItemDataRole.DisplayRole)
         if html is None:
             return super().sizeHint(option, index)
 
+        parentWidget = self.parent()
+        if isinstance(parentWidget, (QTreeView, QTreeWidget)):
+            # Calculate the depth of the index
+            depth = 0
+            parentIndex = index.parent()
+            while parentIndex.isValid():
+                depth += 1
+                parentIndex = parentIndex.parent()
+
+            # Calculate the total indentation
+            total_indentation = (depth+1) * parentWidget.indentation()
+            available_width = parentWidget.viewport().width() - total_indentation
+            view_height = parentWidget.viewport().height()
+        else:
+            available_width = parentWidget.width()
+            view_height = parentWidget.height()
+
         doc = QTextDocument()
         doc.setHtml(self.updateHtmlSizeAndSpacing(html, self.text_size))
-        doc.setTextWidth(max_width)
-        total_required_height = doc.size().height() + self.verticalSpacing * 2
+        doc.setTextWidth(available_width)
 
-        if self.dlgTreeView:
-            max_height = self.max_height_percentage * self.dlgTreeView.viewport().height()
-        else:
-            max_height = 200  # Fallback maximum height
+        total_required_height = doc.size().height() + self.verticalSpacing + self.text_size
+        max_height = self.max_height_percentage * view_height
 
-        return QSize(int(max_width), int(min(total_required_height, max_height)))
+        return QSize(int(doc.idealWidth()), int(min(total_required_height, max_height)))
 
 
 class RobustTreeView(QTreeView):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None=None):
         super().__init__(parent)
         self.text_size: int = 12
 
@@ -380,6 +267,7 @@ class RobustTreeView(QTreeView):
         self.setExpandsOnDoubleClick(True)
         self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
         self.setIndentation(20)
+        self.setWordWrap(True)
         #self.setGraphicsEffect(QGraphicsEffect.)
         #self.setAlternatingRowColors(True)
         self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
@@ -388,19 +276,21 @@ class RobustTreeView(QTreeView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
+        self.layoutChangedDebounceTimer = QTimer(self)
+        self.layoutChangedDebounceTimer.setSingleShot(True)
+        self.layoutChangedDebounceTimer.timeout.connect(lambda: self.model().layoutChanged.emit())
+
+    def debounceLayoutChanged(self, timeout: int = 100, *, preChangeEmit: bool = False):
+        self.viewport().update()
+        self.update()
+        if self.layoutChangedDebounceTimer.isActive():
+            self.layoutChangedDebounceTimer.stop()
+        elif preChangeEmit:
+            self.model().layoutAboutToBeChanged.emit()
+        self.layoutChangedDebounceTimer.start(timeout)
+
     def drawBranches(self, painter: QPainter, rect: QRect, index: QModelIndex):
         painter.save()
-
-        # Fix expander height/position
-        if self.itemDelegate():
-            item_size = self.itemDelegate().sizeHint(QStyleOptionViewItem(), index)
-            center_y = (
-                rect.top()
-                + (rect.height() - item_size.height()) // 2
-                + item_size.height() / 2
-                - rect.height() / 2
-            )
-            rect.moveTop(int(center_y))
 
         # Set pen color based on level
         pen_color = Qt.darkGray
@@ -451,11 +341,11 @@ class RobustTreeView(QTreeView):
     ) -> None:
         modifiers = event.modifiers()
         response = None
-        if modifiers & Qt.ControlModifier:
+        if bool(modifiers & Qt.KeyboardModifier.ControlModifier):
             response = self._wheel_changes_text_size(event)
-        if modifiers & Qt.ShiftModifier:
+        if bool(modifiers & Qt.KeyboardModifier.ShiftModifier):
             response = self._wheel_changes_item_spacing(event)
-        if modifiers & Qt.AltModifier:
+        if bool(modifiers & Qt.KeyboardModifier.AltModifier):
             response = self._wheel_changes_indent_size(event)
         if response is not True and self.hasAutoScroll():
             super().wheelEvent(event)
@@ -467,7 +357,7 @@ class RobustTreeView(QTreeView):
         self.text_size = max(1, self.text_size + (1 if delta > 0 else -1))
         if self.itemDelegate() is not None:
             self.itemDelegate().setTextSize(self.text_size)
-            self.viewport().update()
+            self.debounceLayoutChanged()
             return True
         return False
 
@@ -476,9 +366,8 @@ class RobustTreeView(QTreeView):
         if not delta:
             return False
         if self.itemDelegate() is not None:
-            new_spacing: int = max(0, self.itemDelegate().verticalSpacing + (1 if delta > 0 else -1))
-            self.itemDelegate().setVerticalSpacing(new_spacing)
-            self.viewport().update()
+            self.itemDelegate().setVerticalSpacing(max(0, self.itemDelegate().verticalSpacing + (1 if delta > 0 else -1)))
+            self.model().layoutChanged.emit()  # requires immediate update
             return True
         return False
 
@@ -488,10 +377,8 @@ class RobustTreeView(QTreeView):
         if not delta:
             return False
         if self.itemDelegate() is not None:
-            newIndentation = max(0, self.indentation() + (1 if delta > 0 else -1))
-            print(f"set indentation to {newIndentation}")
-            self.setIndentation(newIndentation)
-            self.viewport().update()
+            self.setIndentation(max(0, self.indentation() + (1 if delta > 0 else -1)))
+            self.debounceLayoutChanged()
             return True
         return False
 
@@ -501,6 +388,13 @@ class RobustTreeView(QTreeView):
             index = index.parent()
             depth += 1
         return depth
+
+    def model(self) -> QStandardItemModel:
+        model = super().model()
+        if model is None:
+            return None
+        assert isinstance(model, QStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
+        return model
 
     def getIdentifyingText(self, indexOrItem: QModelIndex | QStandardItem) -> str:
         if indexOrItem is None:
@@ -562,20 +456,20 @@ class MoveCommand(QUndoCommand):
         super().__init__(text)
         self.model: DLGStandardItemModel = model
         self.link: DLGLink = link
-        self.new_parent: DLGLink | None = new_parent
-        self.old_parent: DLGLink | None = old_parent
+        self.newParentItem: DLGLink | None = new_parent
+        self.oldParentItem: DLGLink | None = old_parent
 
     def redo(self) -> None:
-        if self.old_parent:
-            self.model._removeLinkFromParent(self.old_parent, self.link)
-        if self.new_parent:
-            self.model._insertLinkToParent(self.new_parent, [self.link], 0)
+        if self.oldParentItem:
+            self.model._removeLinkFromParent(self.oldParentItem, self.link)
+        if self.newParentItem:
+            self.model._insertLinkToParent(self.newParentItem, [self.link], 0)
 
     def undo(self) -> None:
-        if self.new_parent:
-            self.model._removeLinkFromParent(self.new_parent, self.link)
-        if self.old_parent:
-            self.model._insertLinkToParent(self.old_parent, [self.link], 0)
+        if self.newParentItem:
+            self.model._removeLinkFromParent(self.newParentItem, self.link)
+        if self.oldParentItem:
+            self.model._insertLinkToParent(self.oldParentItem, [self.link], 0)
 
 
 class RemoveCommand(QUndoCommand):
@@ -599,13 +493,321 @@ class RemoveCommand(QUndoCommand):
         self.model._insertLinkToParent(self.parent, self.links, 0)
 
 
+class DLGListWidgetItem(QListWidgetItem):
+    def __init__(
+        self,
+        *args,
+        link: DLGLink,
+        ref: weakref.ReferenceType[DLGLink] | None = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.link: DLGLink = link
+        self._link_ref: weakref.ReferenceType[DLGLink] | None = ref
+        #self._link_ref: weakref.ReferenceType[DLGLink] = weakref.ref(link)  # Store a weak reference to the link
+        self._data_cache: dict[int, Any] = {}
+        self.is_orphaned = False
+
+    #@property
+    #def link(self) -> DLGLink | None:
+    #    """Return the link, or None if the reference is no longer valid."""
+    #    return self._link_ref()
+
+    #@link.setter
+    #def link(self, new_link: DLGLink) -> None:
+    #    raise NotImplementedError("DLGStandardItem's cannot store strong references to DLGLink objects.")
+
+
+    def data(self, role: int = Qt.UserRole) -> Any:
+        """Returns the data for the role. Uses cache if the item has been deleted."""
+        if self.isDeleted():
+            return self._data_cache.get(role)
+        result = super().data(role)
+        self._data_cache[role] = result  # Update cache
+        return result
+
+    def setData(self, role: int, value: Any) -> None:
+        """Sets the data for the role and updates the cache."""
+        self._data_cache[role] = value  # Update cache
+        super().setData(role, value)
+
+    def isDeleted(self) -> bool:
+        """Determines if this object has been deleted.
+
+        Not sure what the proper method of doing so is, but this works fine.
+        """
+        try:
+            self.isHidden()
+            self.flags()
+            self.isSelected()
+        except RuntimeError as e:  # RuntimeError: wrapped C/C++ object of type DLGStandardItem has been deleted
+            RobustRootLogger.warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
+            return True
+        else:
+            return False
+
+
+class DLGListWidget(QListWidget):
+    itemSelectionChanged: ClassVar[QtCore.Signal] = QtCore.Signal()
+    currentRowChanged: ClassVar[QtCore.Signal] = QtCore.Signal()
+    currentTextChanged: ClassVar[QtCore.Signal] = QtCore.Signal()
+    currentItemChanged: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemChanged: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemEntered: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemActivated: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemDoubleClicked: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemClicked: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemPressed: ClassVar[QtCore.Signal] = QtCore.Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.editor: DLGEditor | None = None
+        self.draggedItem = None
+
+    def isPersistentEditorOpen(self, item: DLGListWidgetItem | None = None) -> bool:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return super().isPersistentEditorOpen(item)
+
+    def removeItemWidget(self, aItem: DLGListWidgetItem | None = None) -> None:  # type: ignore[override, misc]
+        assert isinstance(aItem, (DLGListWidgetItem, type(None)))
+        super().removeItemWidget(aItem)
+
+    def isSortingEnabled(self) -> bool:
+        return super().isSortingEnabled()
+
+    def setSortingEnabled(self, enable: bool) -> None:  # noqa: FBT001
+        super().setSortingEnabled(enable)
+
+    def event(self, e: QEvent) -> bool:
+        return super().event(e)
+
+    def itemFromIndex(self, index: QModelIndex) -> DLGListWidgetItem | None:
+        item = super().itemFromIndex(index)
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return item
+
+    def indexFromItem(self, item: DLGListWidgetItem | None = None) -> QModelIndex:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return super().indexFromItem(item)
+
+    def items(self, data: QMimeData) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
+        items = super().items(data)
+        return items
+
+    def supportedDropActions(self) -> Qt.DropActions:
+        supported = super().supportedDropActions()
+        ourSupported = Qt.DropAction.CopyAction | Qt.DropAction.MoveAction
+        print("We return move/copy action which is: ", int(ourSupported))
+        return supported
+
+    def dropMimeData(self, index: int, data: QMimeData, action: Qt.DropAction) -> bool:
+        print(f"DLGListWidget.dropMimeData(index={index}, data={data}, action={action})")
+        return super().dropMimeData(index, data, action)
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        print(f"DLGListWidget.dragEnterEvent(event={event}(source={event.__class__.__name__} instance))")
+        if event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
+            print("DLGListWidget.dragEnterEvent: mime data has our format")
+            event.accept()
+            event.setAccepted(True)
+            event.setDropAction(Qt.DropAction.CopyAction)
+        else:
+            print("DLGListWidget.dragEnterEvent: invalid mime data")
+            event.ignore()
+        super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        print(f"DLGListWidget.dragEnterEvent(event={event}(source={event.__class__.__name__} instance))")
+        if event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
+            print("DLGListWidget.dragMoveEvent: mime data has our format")
+            event.setDropAction(Qt.MoveAction)
+            event.accept()
+        else:
+            print("DLGListWidget.dragMoveEvent: invalid mime data")
+            event.ignore()
+        super().dragMoveEvent(event)
+
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
+        print(f"DLGListWidget.dragLeaveEvent(event={event}(source={event.__class__.__name__} instance))")
+        event.accept()
+        super().dragLeaveEvent(event)
+
+    def updateItem(self, item: DLGListWidgetItem, cached_paths: tuple[str, str, str] | None = None):
+        """Refreshes the item text and formatting based on the node data."""
+        assert self.editor is not None
+        link_parent_path, link_partial_path, node_path = self.editor.get_item_dlg_paths(item) if cached_paths is None else cached_paths
+        color = "red" if isinstance(item.link.node, DLGEntry) else "blue"
+        display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_parent_path or ''}\\{link_partial_path}</div>"
+        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
+        combined_display = f"""
+        <div class='link-container'>
+            {display_text_1}
+            {display_text_2}
+        </div>
+        """
+        item.setData(Qt.ItemDataRole.DisplayRole, combined_display)
+
+    def dropEvent(self, event: QDropEvent):
+        print(f"DLGListWidget.dropEvent(event={event}(source={event.__class__.__name__} instance))")
+        if event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
+            print("DLGListWidget.dropEvent: mime data has our format")
+            assert self.editor is not None
+            item_data = self.editor.ui.dialogTree.parseMimeData(event.mimeData())
+            link: DLGLink = DLGLink.from_dict(json.loads(item_data[0]["roles"][_DLG_MIME_DATA_ROLE]))
+            newItem = DLGListWidgetItem(link=link)
+            self.updateItem(newItem)
+            self.addItem(newItem)
+            self.update()
+            self.viewport().update()
+            event.accept()
+        else:
+            print("DLGListWidget.dropEvent: invalid mime data")
+            event.ignore()
+
+    def mimeData(self, items: Iterable[DLGListWidgetItem]) -> QMimeData:  # type: ignore[override, misc]
+        print(f"DLGListWidget.dropEvent: acquiring mime data for {len(list(items))} items")
+        return super().mimeData(items)
+
+    def scrollToItem(self, item: DLGListWidgetItem | None = None, *args) -> None:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        super().scrollToItem(item, *args)
+
+    def findItems(self, text: str, flags: Qt.MatchFlags) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
+        items = super().findItems(text, flags)
+        return items
+
+    def selectedItems(self) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
+        items = super().selectedItems()
+        return items
+
+    def closePersistentEditor(self, item: DLGListWidgetItem | None = None) -> None:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        super().closePersistentEditor(item)
+
+    def openPersistentEditor(self, item: DLGListWidgetItem | None = None) -> None:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        super().openPersistentEditor(item)
+
+    def editItem(self, item: DLGListWidgetItem | None = None) -> None:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        super().editItem(item)
+
+    def visualItemRect(self, item: DLGListWidgetItem | None = None) -> QRect:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return super().visualItemRect(item)
+
+    def setItemWidget(self, item: DLGListWidgetItem | None, widget: QWidget) -> None:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        super().setItemWidget(item, widget)
+
+    def itemWidget(self, item: DLGListWidgetItem | None = None) -> QWidget | None:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return super().itemWidget(item)
+
+    @overload
+    def itemAt(self, p: QPoint) -> DLGListWidgetItem | None: ...
+    @overload
+    def itemAt(self, ax: int, ay: int) -> DLGListWidgetItem | None: ...
+    def itemAt(self, *args) -> DLGListWidgetItem | None:  # type: ignore[override, misc]
+        item = super().itemAt(*args)
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return item
+
+    @overload
+    def setCurrentItem(self, item: DLGListWidgetItem | None = None) -> None: ...
+    @overload
+    def setCurrentItem(
+        self,
+        item: DLGListWidgetItem | None,
+        command: QtCore.QItemSelectionModel.SelectionFlags | QtCore.QItemSelectionModel.SelectionFlag | None,
+    ) -> None: ...
+    def setCurrentItem(
+        self,
+        item: DLGListWidgetItem | None = None,
+        command: QtCore.QItemSelectionModel.SelectionFlags | QtCore.QItemSelectionModel.SelectionFlag | None = None,
+    ) -> None:
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        if command is None:
+            super().setCurrentItem(item)
+        else:
+            super().setCurrentItem(item, command)
+
+    def currentItem(self) -> DLGListWidgetItem | None:
+        item = super().currentItem()
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return item
+
+    def takeItem(self, row: int) -> DLGListWidgetItem | None:
+        item = super().takeItem(row)
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return item
+
+    @overload
+    def addItem(self, aitem: DLGListWidgetItem | None = None) -> None: ...
+    @overload
+    def addItem(self, label: str | None = None) -> None: ...
+    def addItem(self, item: DLGListWidgetItem | str | None = None) -> None:  # type: ignore[override, misc]
+        if isinstance(item, (DLGListWidgetItem, type(None))):
+            super().addItem(item)
+        elif isinstance(item, (str, type(None))):
+            super().addItem(item)
+        else:
+            raise TypeError("Incorrect args passed to addItem")
+
+    @overload
+    def insertItem(self, row: int, item: DLGListWidgetItem | None = None) -> None: ...
+    @overload
+    def insertItem(self, row: int, label: str) -> None: ...
+    def insertItem(self, row: int, item: DLGListWidgetItem | str | None) -> None:  # type: ignore[override, misc]
+        if isinstance(item, (DLGListWidgetItem, type(None))):
+            super().insertItem(row, item)
+        elif isinstance(item, str):
+            super().insertItem(row, item)
+        else:
+            raise TypeError("Incorrect args passed to insertItem")
+
+    def row(self, item: DLGListWidgetItem | None = None) -> int:  # type: ignore[override, misc]
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return super().row(item)
+
+    def item(self, row: int) -> DLGListWidgetItem | None:
+        item = super().item(row)
+        assert isinstance(item, (DLGListWidgetItem, type(None)))
+        return item
+
+def find_strong_references(obj):
+    """Find names and locations of root variables or class attributes holding references to the object.
+
+    used temporarily to debug garbage collection of weakrefs
+    """
+    import objgraph
+    objgraph.show_backrefs([obj], filename="object_backrefs.png")
+    for referrer in gc.get_referrers(obj):
+        if inspect.isfunction(referrer) and "<lambda>" in referrer.__name__:
+            print(f"Lambda found: {referrer.__name__} in {referrer.__code__.co_filename} at line {referrer.__code__.co_firstlineno}")
+            print("Closure variables:", [cell.cell_contents for cell in referrer.__closure__])
+
+def debug_references(obj: Any):
+    find_strong_references(obj)
+
+
 class DLGStandardItem(QStandardItem):
     def __init__(self, *args, link: DLGLink, **kwargs):
         super().__init__(*args, **kwargs)
-        self.link: DLGLink = link
+        self._link_ref: weakref.ReferenceType[DLGLink] = weakref.ref(link)  # Store a weak reference to the link
+        self._data_cache: dict[int, Any] = {}
 
-    def parent(self) -> Self | DLGStandardItemModel | None:
-        return super().parent()
+    @property
+    def link(self) -> DLGLink | None:
+        """Return the link, or None if the reference is no longer valid."""
+        return self._link_ref()
+
+    @link.setter
+    def link(self, new_link: DLGLink) -> None:
+        raise NotImplementedError("DLGStandardItem's cannot store strong references to DLGLink objects.")
+
+    def parent(self) -> DLGStandardItem | None:  # type: ignore[override, misc]
+        return super().parent()  # type: ignore[return-value]
 
     def __eq__(self, other):
         if not isinstance(other, DLGStandardItem):
@@ -615,6 +817,20 @@ class DLGStandardItem(QStandardItem):
     def __hash__(self) -> int:
         return id(self)
 
+    def isDeleted(self) -> bool:
+        """Determines if this object has been deleted.
+
+        Not sure what the proper method of doing so is, but this works fine.
+        """
+        try:
+            self.model()
+            self.index()
+        except RuntimeError as e:  # RuntimeError: wrapped C/C++ object of type DLGStandardItem has been deleted
+            RobustRootLogger.warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
+            return True
+        else:
+            return False
+
     def model(self) -> DLGStandardItemModel:
         model = super().model()
         if model is None:
@@ -622,58 +838,84 @@ class DLGStandardItem(QStandardItem):
         assert isinstance(model, DLGStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
         return model
 
-    def appendRow(self, item: DLGStandardItem | QStandardItem | Iterable[DLGStandardItem | QStandardItem]) -> None:
-        if isinstance(item, Iterable):
-            item = item[0]  # multiple columns are not supported (yet)
-        assert isinstance(item, DLGStandardItem) or item.data(_FUTURE_EXPAND_ROLE)
+    def appendRow(self, item: DLGStandardItem) -> None:  # type: ignore[override, misc]
+        print(f"{self.__class__.__name__}.appendRow(item={item!r})")
+        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_FUTURE_EXPAND_ROLE)
+        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_FUTURE_EXPAND_ROLE)
         super().appendRow(item)
         if isinstance(item, DLGStandardItem) and self.model() and not self.model().signalsBlocked():
             self.model()._addLinkToParent(self, item)  # noqa: SLF001
 
-    def appendRows(self, items: Iterable[DLGStandardItem]) -> None:
+    def appendRows(self, items: Iterable[DLGStandardItem]) -> None:  # type: ignore[override]
+        print(f"{self.__class__.__name__}.appendRows(items={items!r})")
         for item in items:
             self.appendRow(item)
 
-    def insertRow(self, row: int, item: DLGStandardItem | QStandardItem | Iterable) -> None:
-        if isinstance(item, Iterable):
-            item = item[0]  # multiple columns are not supported (yet)
-        assert isinstance(item, DLGStandardItem) or item.data(_FUTURE_EXPAND_ROLE)
+    def insertRow(self, row: int, item: DLGStandardItem) -> None:  # type: ignore[override, misc]
+        print(f"{self.__class__.__name__}.insertRow(row={row}, item={item})")
+        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_FUTURE_EXPAND_ROLE)
         super().insertRow(row, item)
         if isinstance(item, DLGStandardItem) and self.model() and not self.model().signalsBlocked():
             self.model()._insertLinkToParent(self, item, row)  # noqa: SLF001
 
-    def insertRows(self, row: int, items: Iterable[Self]) -> None:
+    def insertRows(self, row: int, items: Iterable[Self]) -> None:  # type: ignore[override]
+        print(f"{self.__class__.__name__}.insertRows(row={row}, items={items})")
+        assert not isinstance(items, int), "Second arg cannot be a `count` in this implementation."
         for i, item in enumerate(items):
             self.insertRow(row + i, item)
 
     def removeRow(self, row: int) -> None:
+        print(f"{self.__class__.__name__}.removeRow(row={row})")
         self.takeRow(row)[0]
 
     def removeRows(self, row: int, count: int) -> None:
+        print(f"{self.__class__.__name__}.removeRows(row={row}, count={count})")
         for _ in range(count):
             self.removeRow(row)
 
-    def setChild(self, row: int, column: int, item: Self | QStandardItem) -> None:
-        assert isinstance(item, DLGStandardItem) or item.data(_FUTURE_EXPAND_ROLE)
-        super().setChild(row, column, item)
-        if isinstance(item, DLGStandardItem) and self.model() and not self.model().signalsBlocked():
-            self.model()._addLinkToParent(self, item, row)  # noqa: SLF001
+    def setChild(self, row: int, *args) -> None:
+        print(f"{self.__class__.__name__}.setChild(row={row}, args={args!r})")
+        if len(args) == 3:
+            item = args[1]
+        else:
+            item = args[0]
+        assert isinstance(item, DLGStandardItem) or cast(QStandardItem, item).data(_FUTURE_EXPAND_ROLE)
+        super().setChild(row, *args)
+        if (
+            isinstance(item, DLGStandardItem)
+            and self.model()
+            and not self.model().signalsBlocked()
+        ):
+            self.model()._addLinkToParent(self, item)  # noqa: SLF001
 
     def takeChild(self, row: int, column: int = 0) -> Self:
+        print(f"{self.__class__.__name__}.takeChild(row={row}, column={column})")
         item = super().takeChild(row, column)
         assert isinstance(item, DLGStandardItem) or item.data(_FUTURE_EXPAND_ROLE)
-        if isinstance(item, DLGStandardItem) and self.model() and not self.model().signalsBlocked():
+        if (
+            isinstance(item, DLGStandardItem)
+            and self.model()
+            and not self.model().signalsBlocked()
+            and not self.model()._isMoving
+        ):
             self.model()._removeLinkFromParent(self, item)  # noqa: SLF001
         return item
 
-    def takeRow(self, row: int) -> list[Self | QStandardItem]:
+    def takeRow(self, row: int) -> list[DLGStandardItem]:  # type: ignore[override]
+        print(f"{self.__class__.__name__}.takeRow(row={row})")
         items = super().takeRow(row)
-        if items and isinstance(items[0], DLGStandardItem) and self.model() and not self.model().signalsBlocked():
+        if (
+            items
+            and isinstance(items[0], DLGStandardItem)
+            and self.model()
+            and not self.model().signalsBlocked()
+            and not self.model()._isMoving
+        ):
             for item in items:
                 self.model()._removeLinkFromParent(self, item)  # noqa: SLF001
         return items
 
-    def takeColumn(self, column: int) -> list[Self | QStandardItem]:
+    def takeColumn(self, column: int) -> list[DLGStandardItem]:  # type: ignore[override]
         raise NotImplementedError("takeColumn is not supported in this model.")
         #items = super().takeColumn(column)
         #if self.model() and not self.model().signalsBlocked():
@@ -681,17 +923,32 @@ class DLGStandardItem(QStandardItem):
         #        self.model()._removeLinkFromParent(self, item)
         #return items
 
-    def setData(self, value: Any, role: int = Qt.UserRole + 1) -> None:
+    def data(self, role: int = Qt.ItemDataRole.UserRole) -> Any:
+        """Returns the data for the role. Uses cache if the item has been deleted."""
+        if self.isDeleted():
+            return self._data_cache.get(role)
+        result = super().data(role)
+        self._data_cache[role] = result  # Update cache
+        #print(f"{self.__class__.__name__}.data(role={role}) --> {result}")
+        return result
+
+    def setData(self, value: Any, role: int = Qt.ItemDataRole.UserRole) -> None:
+        """Sets the data for the role and updates the cache."""
+        #print(f"{self.__class__.__name__}.setData(value={value}, role={role})")
         super().setData(value, role)
+        self._data_cache[role] = value  # Update cache
+
         if self.model():
             self.model().itemChanged.emit(self)
 
     def clearData(self) -> None:
+        print(f"{self.__class__.__name__}.clearData()")
         super().clearData()
         if self.model():
             self.model().itemChanged.emit(self)
 
     def emitDataChanged(self) -> None:
+        print(f"{self.__class__.__name__}.emitDataChanged()")
         if self.model() is None:
             super().emitDataChanged()
             return
@@ -699,43 +956,100 @@ class DLGStandardItem(QStandardItem):
 
 
 class DLGStandardItemModel(QStandardItemModel):
+    # Signal emitted when item data has changed
+    #dataChanged: ClassVar[QtCore.Signal] = QtCore.Signal(QModelIndex, QModelIndex, list)  # list of roles changed
+
+    # Signal emitted when header data has changed
+    #headerDataChanged = QtCore.Signal(Qt.Orientation, int, int)  # orientation, first section, last section
+
+    # Signals for layout changes
+    #layoutChanged = QtCore.Signal(list, QStandardItemModel.LayoutChangeHint)  # list of parent indices, layout change hint
+    #layoutAboutToBeChanged = QtCore.Signal(list, QStandardItemModel.LayoutChangeHint)  # list of parent indices, layout change hint
+
+    # Signals for row operations
+    #rowsInserted = QtCore.Signal(QModelIndex, int, int)  # parent index, start row, end row
+    #rowsAboutToBeInserted = QtCore.Signal(QModelIndex, int, int)  # parent index, start row, end row
+    #rowsRemoved = QtCore.Signal(QModelIndex, int, int)  # parent index, start row, end row
+    #rowsAboutToBeRemoved = QtCore.Signal(QModelIndex, int, int)  # parent index, start row, end row
+    #rowsMoved = QtCore.Signal(QModelIndex, int, int, QModelIndex, int)  # source parent, start row, end row, destination parent, destination row
+    #rowsAboutToBeMoved = QtCore.Signal(QModelIndex, int, int, QModelIndex, int)  # source parent, start row, end row, destination parent, destination row
+
+    # Signals for column operations
+    #columnsInserted = QtCore.Signal(QModelIndex, int, int)  # parent index, start column, end column
+    #columnsAboutToBeInserted = QtCore.Signal(QModelIndex, int, int)  # parent index, start column, end column
+    #columnsRemoved = QtCore.Signal(QModelIndex, int, int)  # parent index, start column, end column
+    #columnsAboutToBeRemoved = QtCore.Signal(QModelIndex, int, int)  # parent index, start column, end column
+    #columnsMoved = QtCore.Signal(QModelIndex, int, int, QModelIndex, int)  # source parent, start column, end column, destination parent, destination column
+    #columnsAboutToBeMoved: ClassVar[QtCore.Signal] = QtCore.Signal(QModelIndex, int, int, QModelIndex, int)  # source parent, start column, end column, destination parent, destination column
+
+    # Signals for model reset
+    #modelReset: ClassVar[QtCore.Signal] = QtCore.Signal()  # No parameters
+    #modelAboutToBeReset: ClassVar[QtCore.Signal] = QtCore.Signal()  # No parameters
+
+    # Custom for this model.
+    coreDLGItemDataChanged: ClassVar[QtCore.Signal] = QtCore.Signal(QStandardItem)  # type: ignore[reportPrivateImportUsage]
+
     def __init__(self, parent: DLGTreeView):
         assert isinstance(parent, DLGTreeView)
         self.editor: DLGEditor | None = None
         self.treeView: DLGTreeView = parent
-        self.linkToItems: dict[DLGLink, list[DLGStandardItem]] = {}
-        self.nodeToItems: dict[DLGNode, list[DLGStandardItem]] = {}
+        self.linkToItems: weakref.WeakKeyDictionary[DLGLink, list[DLGStandardItem]] = weakref.WeakKeyDictionary()
+        self.nodeToItems: weakref.WeakKeyDictionary[DLGNode, list[DLGStandardItem]] = weakref.WeakKeyDictionary()
+        self.origToOrphanCopy: CopySyncDict = {}
         super().__init__(self.treeView)
         self.modelReset.connect(self.onModelReset)
+        self.coreDLGItemDataChanged.connect(self.onDialogItemDataChanged)
+        #self.itemChanged.connect(self.onItemChanged)
+        #self.dataChanged.connect(self.onItemChanged)
+        self._isMoving = False
 
-    def createIndex(self, row, column, data=None):
-        index = super().createIndex(row, column, data)
-        assert index.isValid(), f"Invalid index created: row={row}, column={column}, data={data}"
-        return index
+    def beginMoveRows(self, sourceParent: QModelIndex, sourceFirst: int, sourceLast: int, destinationParent: QModelIndex, destinationRow: int) -> bool:
+        self._isMoving = True
+        return super().beginMoveRows(sourceParent, sourceFirst, sourceLast, destinationParent, destinationRow)
 
-    def insertRows(self, row: int, count: int, parent: QModelIndex | None = None) -> bool:
-        if parent is None:
-            parent = QModelIndex()
-        self.beginInsertRows(parent, row, row + count - 1)
-        result = super().insertRows(row, count, parent)
+    def endMoveRows(self):
+        super().endMoveRows()
+        self._isMoving = False
+
+    # region Model Overrides
+    def insertRows(self, row: int, count: int, parentIndex: QModelIndex | None = None) -> bool:
+        print(f"{self.__class__.__name__}.insertRows(row={row}, count={count}, parentIndex={parentIndex})")
+        if parentIndex is None:
+            parentIndex = QModelIndex()
+        self.beginInsertRows(parentIndex, row, row + count - 1)
+        result = super().insertRows(row, count, parentIndex)
         self.endInsertRows()
         return result
 
-    def removeRows(self, row: int, count: int, parent: QModelIndex | None = None) -> bool:
-        self.beginRemoveRows(QModelIndex() if parent is None else parent, row, row + count - 1)
-        if parent is not None:
-            items = [self.itemFromIndex(self.index(r, 0, parent)) for r in range(row, row + count)]
+    def removeRows(self, row: int, count: int, parentIndex: QModelIndex | None = None) -> bool:
+        print(f"{self.__class__.__name__}.removeRows(row={row}, count={count}, parentIndex={parentIndex})")
+        self.beginRemoveRows(QModelIndex() if parentIndex is None else parentIndex, row, row + count - 1)
+        if parentIndex is not None:
+            items = [self.itemFromIndex(self.index(r, 0, parentIndex)) for r in range(row, row + count)]
         else:
             items = [self.itemFromIndex(self.index(r, 0)) for r in range(row, row + count)]
-        result = super().removeRows(row, count, parent)
+        # The items could be deleted at this point, so we only use the python object past this point.
+        result = super().removeRows(row, count, parentIndex)  # type: ignore[arg-type]
         self.endRemoveRows()
-        if not self.signalsBlocked():
+        if not self.signalsBlocked() and not self._isMoving:
             for item in items:
-                if item:
-                    self._removeLinkFromParent(self if parent is None else self.itemFromIndex(parent), item)
+                if not isinstance(item, DLGStandardItem):
+                    continue
+                parentItem = None
+                if parentIndex is not None:
+                    parentItem = self.itemFromIndex(parentIndex)
+                if parentItem is not None and not isinstance(parentItem, DLGStandardItem):
+                    continue
+                self._removeLinkFromParent(parentItem, item)
         return result
 
+    def appendRows(self, items: Iterable[DLGStandardItem], parent: QModelIndex | None = None) -> None:
+        print(f"{self.__class__.__name__}.appendRows(items={items}, parent={parent})")
+        for item in items:
+            self.appendRow(item, parent)  # type: ignore[call-overload]
+
     def removeRow(self, row: int, parent: QModelIndex | None = None) -> bool:
+        print(f"{self.__class__.__name__}.removeRow(row={row}, parent={parent})")
         self.beginRemoveRows(QModelIndex() if parent is None else parent, row, row)
         if parent is not None:
             result = super().removeRow(row, parent)  # internally will call self.removeRows
@@ -744,145 +1058,78 @@ class DLGStandardItemModel(QStandardItemModel):
         self.endRemoveRows()
         return result
 
+    def item(self, row: int, column: int) -> DLGStandardItem:  # type: ignore[override]
+        print(f"{self.__class__.__name__}.item(row={row}, column={column})")
+        return super().item(row, column)
+
     @overload
     def insertRow(self, row: int, items: Iterable[QStandardItem]) -> None: ...
-
     @overload
     def insertRow(self, arow: int, aitem: QStandardItem) -> None: ...
-
     @overload
     def insertRow(self, row: int, parent: QModelIndex = ...) -> bool: ...
-
-    def insertRow(
+    def insertRow(  # type: ignore[override, misc]
         self,
         row: int,
-        second_arg: Iterable[QStandardItem] | QStandardItem | QModelIndex,
+        toInsert: Iterable[QStandardItem] | QStandardItem | QModelIndex,
     ) -> bool | None:
-        if isinstance(second_arg, QModelIndex):
-            result = super().insertRow(row, second_arg)
+        print(f"{self.__class__.__name__}.insertRow(row={row}, toInsert={toInsert})")
+        result = super().insertRow(row, toInsert)
+        if isinstance(toInsert, Iterable):
             if not self.signalsBlocked():
-                parent_item = self.itemFromIndex(second_arg)
-                self._insertLinkToParent(self, parent_item, row)
-        elif isinstance(second_arg, (Iterable, QStandardItem)):
-            result = super().insertRow(row, second_arg)
+                for itemToInsert in toInsert:
+                    if not isinstance(itemToInsert, DLGStandardItem):
+                        continue
+                    if itemToInsert.link is None:
+                        continue
+                    parentItem = itemToInsert.parent()
+                    self._insertLinkToParent(parentItem, itemToInsert, row)
+        elif isinstance(toInsert, (QModelIndex, QStandardItem)):
             if not self.signalsBlocked():
-                self._insertLinkToParent(self, second_arg, row)
+                itemToInsert = toInsert if isinstance(toInsert, QStandardItem) else self.itemFromIndex(toInsert)
+                if not isinstance(itemToInsert, DLGStandardItem):
+                    return result
+                if itemToInsert.link is None:
+                    return result
+                parentItem = itemToInsert.parent()
+                self._insertLinkToParent(parentItem, itemToInsert, row)
         else:
             raise TypeError("Incorrect args passed to insertRow")
         return result
 
-    def takeItem(self, row: int, column: int) -> QStandardItem:
-        item = super().takeItem(row, column)
-        if not self.signalsBlocked():
-            self._removeLinkFromParent(self, item)
+    def takeItem(self, row: int, column: int) -> DLGStandardItem:  # type: ignore[override]
+        print(f"{self.__class__.__name__}.takeItem(row={row}, column={column})")
+        item = cast(DLGStandardItem, super().takeItem(row, column))
+        if not self.signalsBlocked() and not self._isMoving:
+            self._removeLinkFromParent(None, item)
         return item
 
-    def takeRow(self, row: int) -> list[QStandardItem]:
-        items = super().takeRow(row)
-        if items and not self.signalsBlocked():
-            for item in items:
-                if item:
-                    self._removeLinkFromParent(self, item)
-                    #self._updateCopies(item.link)
+    def takeRow(self, row: int) -> list[DLGStandardItem]:  # type: ignore[override]
+        print(f"{self.__class__.__name__}.takeRow(row={row})")
+        items = cast(List[DLGStandardItem], super().takeRow(row))
+        if not items:
+            return items
+        if self.signalsBlocked():
+            return items
+        if self._isMoving:
+            return items
+        for item in items:
+            if not isinstance(item, DLGStandardItem):
+                continue
+            self._removeLinkFromParent(None, item)
+            #self._updateCopies(item.link)
         return items
 
     @overload
-    def appendRow(self, items: Iterable[QStandardItem]) -> None: ...
-
+    def appendRow(self, items: Iterable[DLGStandardItem]) -> None: ...
     @overload
-    def appendRow(self, aitem: QStandardItem) -> None: ...
-
-    def appendRow(self, *args) -> None:
-        super().appendRow(args[0])
-
-    def appendRows(self, items: Iterable[DLGStandardItem], parent: QModelIndex | None = None) -> None:
-        for item in items:
-            self.appendRow(item, parent)
-
-    def _addLinkToParent(self, parent: DLGStandardItem, item: DLGStandardItem) -> None:
-        link = item.link
-        node = parent.link.node
-        node.links.append(link)
-        link.list_index = len(node.links) - 1
-        self.linkToItems.setdefault(link, []).append(item)
-        self.nodeToItems.setdefault(node, []).append(item)
-
-    def _insertLinkToParent(
-        self,
-        parent: DLGStandardItem | DLGStandardItemModel,
-        items: Iterable[DLGStandardItem] | DLGStandardItem,
-        row: int,
-    ) -> None:
-        if isinstance(items, Iterable):
-            for i, item in enumerate(items):
-                self._processLink(parent, item, row + i)
-        else:
-            self._processLink(parent, items, row)
-
-    def _processLink(
-        self,
-        parent: DLGStandardItem | DLGStandardItemModel,
-        item: DLGStandardItem,
-        row: int,
-    ) -> None:
-        print(f"SDM [_processLink scope] Adding #{item.link.node.list_index} to row {row}")
-        if isinstance(parent, DLGStandardItemModel):
-            links_list = parent.editor.core_dlg.starters
-        else:
-            links_list = parent.link.node.links
-            nodeToItems = self.nodeToItems.setdefault(parent.link.node, [])
-            if parent not in nodeToItems:
-                nodeToItems.append(parent)
-            linkToItems = self.linkToItems.setdefault(parent.link, [])
-            if parent not in linkToItems:
-                linkToItems.append(parent)
-        nodeToItems = self.nodeToItems.setdefault(item.link.node, [])
-        if item not in nodeToItems:
-            nodeToItems.append(item)
-        linkToItems = self.linkToItems.setdefault(item.link, [])
-        if item not in linkToItems:
-            linkToItems.append(item)
-        links_list.insert(row, item.link)
-        item.link.list_index = row
-        for i in range(row + 1, len(links_list)):
-            links_list[i].list_index = i
-
-    def _removeLinkFromParent(
-        self,
-        parent: DLGStandardItem | DLGStandardItemModel | None,
-        item: DLGStandardItem,
-    ) -> None:
-        if isinstance(parent, DLGStandardItemModel) or parent is None:
-            links_list = self.editor.core_dlg.starters
-        else:
-            links_list = parent.link.node.links
-        index = links_list.index(item.link)
-        print(f"SDM [_removeLinkFromParent scope] Removing #{item.link.node.list_index} from row {index}")
-        links_list.remove(item.link)
-        for i in range(index, len(links_list)):
-            links_list[i].list_index = i
-
-    def onModelReset(self):
-        print(f"{self.__class__.__name__}.onModelReset()")
-        self.linkToItems.clear()
-        self.nodeToItems.clear()
-
-    def resetModel(self):
-        print(f"{self.__class__.__name__}.resetModel()")
-        self.beginResetModel()
-        self.clear()
-        self.linkToItems.clear()
-        self.nodeToItems.clear()
-        self.endResetModel()
-
-    def setData(self, index: QModelIndex, value: Any, role: int = Qt.EditRole) -> bool:
-        print(f"{self.__class__.__name__}.onRowsRemoved(index={self.treeView.getIdentifyingText(index)}, value={value}, role={role})")
-        item = self.itemFromIndex(index)
-        if item is not None:
-            item.setData(value, role)
-            self.dataChanged.emit(index, index, [role])
-            return True
-        return False
+    def appendRow(self, aitem: DLGStandardItem) -> None: ...
+    def appendRow(self, *args) -> None:  # type: ignore[override, misc]
+        print(f"{self.__class__.__name__}.appendRow(args={args})")
+        itemToAppend: DLGStandardItem = args[0]
+        super().appendRow(itemToAppend)
+        if not self.signalsBlocked():
+            self._insertLinkToParent(None, itemToAppend, self.rowCount())
 
     def setHeaderData(self, section: int, orientation: Qt.Orientation, value: Any, role: int = Qt.EditRole) -> bool:
         if super().setHeaderData(section, orientation, value, role):
@@ -905,10 +1152,11 @@ class DLGStandardItemModel(QStandardItemModel):
         result = super().removeColumns(column, count, parent)
         self.endRemoveColumns()
         return result
+    # endregion
 
+    # region drag&drop
     def supportedDropActions(self) -> Qt.DropActions:
         return Qt.DropAction.CopyAction | Qt.DropAction.MoveAction
-
     def supportedDragActions(self) -> Qt.DropActions:
         return Qt.DropAction.CopyAction | Qt.DropAction.MoveAction
 
@@ -920,13 +1168,13 @@ class DLGStandardItemModel(QStandardItemModel):
         return Qt.ItemIsDropEnabled | defaultFlags
 
     def mimeTypes(self) -> list[str]:
-        return ["application/x-qabstractitemmodeldatalist", "application/x-pykotor-dlgbranch"]
+        return [QT_STANDARD_ITEM_FORMAT]
 
     def mimeData(self, indexes: Iterable[QModelIndex]) -> QMimeData:
         mimeData = QMimeData()
-        encodedDlgNodeData = QByteArray()
-        pykotorDlgStream = QDataStream(encodedDlgNodeData, QIODevice.OpenModeFlag.WriteOnly)
-        pykotorDlgStream.writeInt64(id(self))
+        listwidget_data = QByteArray()
+
+        stream_listwidget = QDataStream(listwidget_data, QIODevice.WriteOnly)
         for index in indexes:
             print("<SDM> [mimeData scope] index: ", self.treeView.getIdentifyingText(index))
             if not index.isValid():
@@ -934,8 +1182,19 @@ class DLGStandardItemModel(QStandardItemModel):
             item = self.itemFromIndex(index)
             if item is None:
                 continue
-            pykotorDlgStream.writeString(json.dumps(item.link.to_dict()).encode())
-        mimeData.setData("application/x-pykotor-dlgbranch", encodedDlgNodeData)
+            stream_listwidget.writeInt32(index.row())
+            stream_listwidget.writeInt32(index.column())
+            stream_listwidget.writeInt32(3)
+            stream_listwidget.writeInt32(int(Qt.ItemDataRole.DisplayRole))
+            stream_listwidget.writeQString(item.data(Qt.ItemDataRole.DisplayRole))
+            stream_listwidget.writeInt32(_DLG_MIME_DATA_ROLE)
+            stream_listwidget.writeBytes(json.dumps(item.link.to_dict()).encode())
+            stream_listwidget.writeInt32(_MODEL_INSTANCE_ID_ROLE)
+            stream_listwidget.writeInt64(id(self))
+            #stream_listwidget.writeInt32(int(_LINK_PARENT_NODE_PATH_ROLE))
+            #stream_listwidget.writeQString(item.data(_LINK_PARENT_NODE_PATH_ROLE))
+
+        mimeData.setData(QT_STANDARD_ITEM_FORMAT, listwidget_data)
         return mimeData
 
     def dropMimeData(  # noqa: PLR0913
@@ -947,64 +1206,247 @@ class DLGStandardItemModel(QStandardItemModel):
         parent: QModelIndex,
     ) -> bool:
         print(f"{self.__class__.__name__}.dropMimeData(data, action={action}, row={row}, column={column}, parent={parent})")
-        if not data.hasFormat("application/x-pykotor-dlgbranch"):
+        if not data.hasFormat(QT_STANDARD_ITEM_FORMAT):
             return False
-
-        print("<SDM> [dropMimeData scope] action: ", action)
         if action == Qt.DropAction.IgnoreAction:
             print(f"{self.__class__.__name__}.dropMimeData: action set to Qt.DropAction.IgnoreAction")
             return True
 
-        if not parent.isValid():
-            parent = self.index(0, 0, QModelIndex())
-            print("<SDM> [dropMimeData scope] fallback parent: ", self.treeView.getIdentifyingText(parent))
-        if not parent.isValid():
-            print("Fallback parent failed, exiting...")
-            return False
-
-        parentItem: DLGStandardItem | None = self.itemFromIndex(parent)
-        if parentItem is None:
-            return False
-
+        parentItem: DLGStandardItem | None = self.itemFromIndex(parent) if parent.isValid() else None
         try:
-            stream = QDataStream(data.data("application/x-pykotor-dlgbranch"), QIODevice.ReadOnly)
-            dlg_nodes_encoded: bytes = stream.readString()
-            dlg_nodes_json: str = dlg_nodes_encoded.decode()
-            print("<SDM> [dropMimeData scope] dlg_nodes_json: ", dlg_nodes_json)
-            dlg_nodes_dict: dict[str, Any] = json.loads(dlg_nodes_json)
-            print("<SDM> [dropMimeData scope] dlg_nodes_dict: ", dlg_nodes_dict)
+            parsedMimeData: dict[Literal["row", "column", "roles"], Any] = self.treeView.parseMimeData(data)[0]
+            dlg_nodes_json: str = parsedMimeData["roles"][_DLG_MIME_DATA_ROLE]
+            dlg_nodes_dict: dict[str | int, Any] = json.loads(dlg_nodes_json)
             deserialized_dlg_link: DLGLink = DLGLink.from_dict(dlg_nodes_dict)
-            print("<SDM> [dropMimeData scope] deserialized_dlg_link: ", deserialized_dlg_link)
-        except Exception:
-            RobustRootLogger.exception("Failed to deserialize dropped mime data of 'application/x-pykotor-dlgbranch' format.")
+            print("<SDM> [dropMimeData scope] deserialized_dlg_link: ", repr(deserialized_dlg_link))
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Failed to deserialize dropped mime data of '_DLG_MIME_DATA_ROLE' format.")
+            return True
         else:
-            self.pasteItem(parentItem, deserialized_dlg_link, asNewBranches=False)
+            self.pasteItem(parentItem, deserialized_dlg_link.node, asNewBranches=parsedMimeData["roles"][_MODEL_INSTANCE_ID_ROLE] == id(self))
 
         return True
+    # endregion
 
-    def itemFromIndex(self, index: QModelIndex) -> DLGStandardItem | None:
-        # sourcery skip: assign-if-exp, reintroduce-else
-        item: QStandardItem | DLGStandardItem = super().itemFromIndex(index)
-        if item.__class__ is QStandardItem:
-            return None
-        return cast(DLGStandardItem, item)
 
-    def isCopy(self, item: DLGStandardItem) -> bool:
-        """Determine if the item is already loaded into the tree, or if it's collapsed until onItemExpanded is called."""
-        if not item.hasChildren():
-            return False
-        return item.child(0, 0).data(_FUTURE_EXPAND_ROLE) is True
+    # region Model Signals
+    def onModelReset(self):
+        print(f"{self.__class__.__name__}.onModelReset()")
+        self.linkToItems.clear()
+        self.nodeToItems.clear()
 
-    def loadDLGItemRec(self, itemToLoad: DLGStandardItem):
-        alreadyListed = itemToLoad.link in self.linkToItems or itemToLoad.link.node in self.nodeToItems
+    def resetModel(self):
+        print(f"{self.__class__.__name__}.resetModel()")
+        self.beginResetModel()
+        self.clear()
+        self.onModelReset()
+        self.endResetModel()
+
+    def onDialogItemDataChanged(self, item: DLGStandardItem):
+        print(f"onDialogItemDataChanged(item={item!r})")
+        if item.link is None:
+            #del self.origToOrphanCopy[item._link_ref]
+            self.removeRow(item.row())
+        else:
+            print("onDialogItemDataChanged: link is valid")
+            # First take out and store the links/node
+            # So we can update our instance objects, without breaking the whole DAG.
+            internalLink = self.origToOrphanCopy[item._link_ref]
+            internalLinkedNode = internalLink.node
+            assert internalLinkedNode is not None
+            del internalLink.__dict__["node"]
+            tempLinks = internalLinkedNode.links
+            del internalLinkedNode.__dict__["links"]
+            # Call update, probably faster than assigning attrs manually.
+            internalLink.__dict__.update(item.link.__dict__)
+            internalLinkedNode.__dict__.update(item.link.node.__dict__)
+            internalLink.node = internalLinkedNode
+            internalLinkedNode.links = tempLinks
+            self.updateItem(item)
+            self._updateCopies(item.link, item)
+
+    def onOrphanedNode(self, shallow_link_copy: DLGLink, link_parent_path: str, *, immediateCheck: bool = False):
+        """Add a deleted node to the QListWidget in the leftDockWidget, if the passed link is the only reference."""
+        if not immediateCheck:
+            QTimer.singleShot(1000, lambda *args: self.onOrphanedNode(shallow_link_copy, link_parent_path, immediateCheck=True))
+            return
+        print(f"onOrphanedNode({shallow_link_copy}, {link_parent_path})")
+        assert self.editor is not None
+        assert shallow_link_copy.node is not None
+        print(f"Deleted the only link ({shallow_link_copy}) to node ({shallow_link_copy.node}), setting up the orphan view.")
+        item = DLGListWidgetItem(link=shallow_link_copy)
+        item.is_orphaned = True
+
+        # Build the HTML display
+        color = "red" if isinstance(shallow_link_copy.node, DLGEntry) else "blue"
+        link_path = ""
+        if link_parent_path is not None:
+            link_path += f"{link_parent_path}\\"
+        link_path += shallow_link_copy.partial_path()
+        node_path = shallow_link_copy.node.path()
+        display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_path}</div>"
+        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
+        combined_display = f"""
+        <div class='link-container'>
+            {display_text_1}
+            {display_text_2}
+        </div>
+        """
+        item.setData(Qt.ItemDataRole.DisplayRole, combined_display)
+        item.setData(_LINK_PARENT_NODE_PATH_ROLE, link_parent_path)
+        self.editor.orphanedNodesList.addItem(item)
+    # endregion
+
+    def insertLinkToParentAsItem(self, parent: DLGStandardItem | None, link: DLGLink, row: int = -1):
+        item = DLGStandardItem(link=link)
+        if parent is None:
+            self.insertRow(self.rowCount() if row == -1 else row, item)
+        else:
+            parent.insertRow(self.rowCount() if row == -1 else row, item)
+        self.updateItem(item)
+
+    def removeLink(self, item: DLGStandardItem | DLGListWidgetItem):
+        """Removes the link from the parent node."""
+        parent = item.parent()
+        item_row = item.row()
+        print("<SDM> [removeLink scope] item_row: %s", item_row)
+
+        if parent is None:
+            self.removeRow(item_row)
+        else:
+            assert isinstance(parent, DLGStandardItem)
+            print("<SDM> [removeLink scope] parent: %s", parent.text())
+            parent.removeRow(item_row)
+            self._updateCopies(parent.link, parent)
+
+    def _addLinkToParent(self, parent: DLGStandardItem, item: DLGStandardItem) -> None:
+        link = item.link
+        node = parent.link.node
+        assert node is not None
+        node.links.append(link)
+        link.list_index = len(node.links) - 1
+        linkToItems = self.linkToItems.setdefault(link, [])
+        if item not in linkToItems:
+            linkToItems.append(item)
+        nodeToItems = self.nodeToItems.setdefault(node, [])
+        if item not in nodeToItems:
+            nodeToItems.append(item)
+
+    def _insertLinkToParent(
+        self,
+        parent: DLGStandardItem | None,
+        items: Iterable[DLGStandardItem] | DLGStandardItem,
+        row: int,
+    ) -> None:
+        if isinstance(items, Iterable):
+            for i, item in enumerate(items):
+                self._processLink(parent, item, row + i)
+        else:
+            self._processLink(parent, items, row)
+
+    def _processLink(
+        self,
+        parentItem: DLGStandardItem | None,
+        item: DLGStandardItem,
+        row: int | None = None,
+    ) -> None:
+        assert item.link is not None
+        assert item.link.node is not None
+        assert self.editor is not None
+        index = (parentItem or self).rowCount() if row in (-1, None) else row
+        print(f"SDM [_processLink scope] Adding #{item.link.node.list_index} to row {index}")
+        if parentItem is None:
+            links_list = self.editor.core_dlg.starters
+        else:
+            assert parentItem.link is not None
+            assert parentItem.link.node is not None
+            links_list = parentItem.link.node.links
+        nodeToItems = self.nodeToItems.setdefault(item.link.node, [])
+        if item not in nodeToItems:
+            nodeToItems.append(item)
+        linkToItems = self.linkToItems.setdefault(item.link, [])
+        if item not in linkToItems:
+            linkToItems.append(item)
+        links_dict = {link: idx for idx, link in enumerate(links_list)}
+        current_index = links_dict.get(item.link)
+        if current_index is not None and current_index != index:
+            links_list.pop(current_index)
+            if current_index < index:
+                index -= 1
+        links_list.insert(index, item.link)
+        for i, link in enumerate(links_list):
+            link.list_index = i
+        if item._link_ref not in self.origToOrphanCopy:  # noqa: SLF001
+            copiedLink = self.get_copy(item.link)
+            if copiedLink is None:
+                RobustRootLogger().debug(f"Creating internal copy of {item.link!r} now.")
+                copiedLink = deepcopy(item.link)
+                self.origToOrphanCopy[item._link_ref] = copiedLink  # noqa: SLF001
+                parent_path = item.data(_LINK_PARENT_NODE_PATH_ROLE)
+                potential_orphan = item.link.node
+                weakref.finalize(potential_orphan, self.onOrphanedNode, copiedLink, parent_path)
+
+    def _removeLinkFromParent(
+        self,
+        parentItem: DLGStandardItem | None,
+        item: DLGStandardItem,
+    ) -> None:
+        assert self.editor is not None
+        assert item.link is not None
+        assert item.link.node is not None
+        if parentItem is None:
+            links_list = self.editor.core_dlg.starters
+        else:
+            assert parentItem.link is not None
+            assert parentItem.link.node is not None
+            links_list = parentItem.link.node.links
+        index = links_list.index(item.link)
+        RobustRootLogger().info(f"SDM [_removeLinkFromParent scope] Removing #{item.link.node.list_index} from row(link index) {index}")
+        links_list.remove(item.link)
+        for i in range(index, len(links_list)):
+            links_list[i].list_index = i
+
+    def get_copy(self, original: DLGLink) -> DLGLink | None:
+        """Retrieve the copy of the original object using the weak reference."""
+        assert self.editor is not None
+        for orig_ref, copiedLink in self.editor.model.origToOrphanCopy.items():
+            if orig_ref() is original:
+                return copiedLink
+        return None
+
+    def loadDLGItemRec(self, itemToLoad: DLGStandardItem, copiedLink: DLGLink | None = None):
+        """Loads a DLGLink recursively getting all its nested items integrated into the model.
+
+        Do NOT emit itemChanged or dataChanged after this function runs: we handle all of that here.
+        """
+        assert itemToLoad.link is not None
+        assert itemToLoad.link.node is not None
+        assert self.editor is not None
         self.linkToItems.setdefault(itemToLoad.link, []).append(itemToLoad)
         self.nodeToItems.setdefault(itemToLoad.link.node, []).append(itemToLoad)
 
-        self.treeView.setItemDisplayData(itemToLoad)
+        child_links_copy: Sequence[DLGLink | None] = [None]
+        if copiedLink is None:
+            copiedLink = self.get_copy(itemToLoad.link)
+            if copiedLink is None:
+                RobustRootLogger().warning(f"Missing internal copy: {itemToLoad.link!r}, creating one now.")
+                copiedLink = deepcopy(itemToLoad.link)
+                self.editor.model.origToOrphanCopy[weakref.ref(itemToLoad.link)] = copiedLink
+            child_links_copy = [None] * len(itemToLoad.link.node.links)
+        else:
+            assert copiedLink.node is not None
+            child_links_copy = copiedLink.node.links
+        parent_path = itemToLoad.data(_LINK_PARENT_NODE_PATH_ROLE)
+        potential_orphan = itemToLoad.link.node
+        weakref.finalize(potential_orphan, self.onOrphanedNode, copiedLink, parent_path)
+
+        self.updateItem(itemToLoad)
+        alreadyListed = itemToLoad.link in self.linkToItems or itemToLoad.link.node in self.nodeToItems
         if not alreadyListed:
-            for child_link in itemToLoad.link.node.links:
+            for child_link, child_link_copy in zip(itemToLoad.link.node.links, child_links_copy):
                 child_item = DLGStandardItem(link=child_link)
-                self.loadDLGItemRec(child_item)
+                self.loadDLGItemRec(child_item, child_link_copy)
+                child_item.setData(itemToLoad.link.node.path(), _LINK_PARENT_NODE_PATH_ROLE)
                 itemToLoad.appendRow(child_item)
         elif itemToLoad.link.node.links:
             self.setItemFutureExpand(itemToLoad)
@@ -1041,39 +1483,35 @@ class DLGStandardItemModel(QStandardItemModel):
 
         dummy_child.setData(True, _FUTURE_EXPAND_ROLE)
         # item.appendRow([dummy_child, QStandardItem(), QStandardItem()])
-        item.appendRow((dummy_child,))
+        item.appendRow(dummy_child)
+        self.treeView.collapse(item.index())
+        self.treeView.expand(item.index())
 
     def addRootNode(self):
         """Adds a root node to the dialog graph."""
-        self._coreAddNode(DLGEntry(), self.editor.core_dlg.starters, self)
-
-    def _coreAddNode(
-        self,
-        source: DLGNode,
-        targetLinks: list[DLGLink],
-        item: QStandardItem | QStandardItemModel,
-    ):
-        newLink = DLGLink(source)
+        assert self.editor is not None
+        source, targetLinks = DLGEntry(), self.editor.core_dlg.starters
+        newLink: DLGLink = DLGLink(source)
         print("<SDM> [_coreAddNode scope] newLink: ", newLink)
 
         newLink.list_index = len(targetLinks)
         print("<SDM> [_coreAddNode scope] newLink.list_index: ", newLink.list_index)
 
         targetLinks.append(newLink)
-        self.addChildToItem(item, newLink)
+        self.appendRow(DLGStandardItem(link=newLink))
 
-    def addChildToItem(self, parentItem: DLGStandardItem, link: DLGLink) -> DLGStandardItem:
+    def addChildToItem(self, parentItem: DLGStandardItem, link: DLGLink | None = None) -> DLGStandardItem:
         """Helper method to update the UI with the new link."""
+        if link is None:
+            link = DLGLink(DLGEntry() if isinstance(parentItem.link.node, DLGReply) else DLGReply())
         newItem = DLGStandardItem(link=link)
-        print("<SDM> [addChildToItem scope] newItem: ", newItem)
-
-        self.treeView.setItemDisplayData(newItem)
+        self.updateItem(newItem)
         parentItem.appendRow(newItem)
         return newItem
 
     def _linkCoreNodes(self, target: DLGNode, source: DLGNode) -> DLGLink:
         """Helper method to add a source node to a target node."""
-        newLink = DLGLink(source)
+        newLink: DLGLink = DLGLink(source)
         print("<SDM> [_linkCoreNodes scope] newLink: ", newLink)
 
         newLink.list_index = len(target.links)
@@ -1087,15 +1525,18 @@ class DLGStandardItemModel(QStandardItemModel):
 
     def pasteItem(
         self,
-        parentItem: DLGStandardItem | QStandardItemModel,
+        parentItem: DLGStandardItem | Self | None,
         pastedNode: DLGNode | None = None,
         *,
+        row: int | None = None,
         asNewBranches: bool = True,
     ):
         """Paste a node from the clipboard to the parent node."""
-        link: DLGLink = parentItem.link
-        parentNode: DLGNode = link.node
-        pastedNode: DLGNode = self.editor._copy if pastedNode is None else pastedNode
+        assert self.editor is not None
+        pastedNode = self.editor._copy if pastedNode is None else pastedNode  # noqa: SLF001
+        assert pastedNode is not None
+        if parentItem is None:
+            parentItem = self
         self.layoutAboutToBeChanged.emit()
         visited: set[int] = set()
         all_entries, all_replies = self._getAllIndices()
@@ -1103,9 +1544,13 @@ class DLGStandardItemModel(QStandardItemModel):
             new_index = self._getNewNodeListIndex(pastedNode, all_entries, all_replies)
             print(f"<SDM> [_integrateChildNodes scope] pastedNode.list_index: {pastedNode.list_index} --> {new_index}")
             pastedNode2 = DLGNode.from_dict(pastedNode.to_dict())
+            assert pastedNode == pastedNode2
+            assert id(pastedNode) != id(pastedNode2)
+            pastedNode2._hash_cache = hash(uuid.uuid4().hex)  # noqa: SLF001
             assert pastedNode != pastedNode2
             pastedNode = pastedNode2
             pastedNode.list_index = new_index
+
         queue: list[DLGNode] = [pastedNode]
         while queue:
             curNode = queue.pop(0)
@@ -1118,19 +1563,28 @@ class DLGStandardItemModel(QStandardItemModel):
                 print(f"<SDM> [_integrateChildNodes scope] curNode.list_index: {curNode.list_index} --> {new_index}")
                 curNode.list_index = new_index
 
-            queue.extend([link.node for link in curNode.links if hash(link.node) not in visited])
-        newLink = self._linkCoreNodes(parentNode, pastedNode)
+            queue.extend([link.node for link in curNode.links if hash(link.node) not in visited and link.node is not None])
+
+        if isinstance(parentItem, DLGStandardItem):
+            assert parentItem.link.node is not None
+            newLink = self._linkCoreNodes(parentItem.link.node, pastedNode)
+        else:
+            newLink = DLGLink(node=pastedNode, list_index=len(self.editor.core_dlg.starters))
+            self.editor.core_dlg.starters.append(newLink)
         # Update the model
-        self.blockSignals(True)
         newItem = DLGStandardItem(link=newLink)
-        parentItem.appendRow(newItem)
-        self.treeView.setItemDisplayData(newItem)
+        if row is not None:
+            parentItem.insertRow(row, newItem)
+        else:
+            parentItem.appendRow(newItem)
+        self.blockSignals(True)
+        self.updateItem(newItem)
         if pastedNode in self.nodeToItems:
             self.setItemFutureExpand(newItem)
         else:
-            self.editor.model.loadDLGItemRec(newItem)
-        if not isinstance(parentItem, DLGStandardItemModel):
-            self.treeView.setItemDisplayData(parentItem)
+            self.loadDLGItemRec(newItem)
+        if isinstance(parentItem, DLGStandardItem):
+            self.updateItem(parentItem)
             self._updateCopies(parentItem.link, parentItem)
         self.treeView.expand(newItem.index())
         self.blockSignals(False)
@@ -1145,14 +1599,11 @@ class DLGStandardItemModel(QStandardItemModel):
         replyIndices: set[int] | None = None,
     ) -> int:
         """Generate a new unique list index for the node."""
+        assert self.editor is not None
         if isinstance(node, DLGEntry):
             indices = {entry.list_index for entry in self.editor.core_dlg.all_entries()} if entryIndices is None else entryIndices
-            print("<SDM> [_getNewNodeListIndex scope] entry indices: ", indices, "length: ", len(indices))
-
         elif isinstance(node, DLGReply):
             indices = {reply.list_index for reply in self.editor.core_dlg.all_replies()} if replyIndices is None else replyIndices
-            print("<SDM> [_getNewNodeListIndex scope] reply indices: ", indices, "length: ", len(indices))
-
         else:
             raise TypeError(node.__class__.__name__)
         new_index = max(indices, default=-1) + 1
@@ -1163,113 +1614,127 @@ class DLGStandardItemModel(QStandardItemModel):
         indices.add(new_index)
         return new_index
 
+    def itemFromIndex(self, index: QModelIndex) -> DLGStandardItem | None:
+        item = super().itemFromIndex(index)
+        if item is None:
+            return None
+        assert isinstance(item, DLGStandardItem)
+        return item
+
     def _getAllIndices(self) -> tuple[set[int], set[int]]:
         """Get all list indices for entries and replies."""
+        assert self.editor is not None
         entryIndices = {entry.list_index for entry in self.editor.core_dlg.all_entries()}
-        print("<SDM> [_getAllIndices scope] entryIndices: ", entryIndices)
-
         replyIndices = {reply.list_index for reply in self.editor.core_dlg.all_replies()}
-        print("<SDM> [_getAllIndices scope] replyIndices: ", replyIndices)
-
         return entryIndices, replyIndices
 
     def deleteNodeEverywhere(self, node: DLGNode):
         """Removes all occurrences of a node and all links to it from the model and self.editor.core_dlg."""
+        assert self.editor is not None
+        self.layoutAboutToBeChanged.emit()
 
-        def removeNodeRecursive(item: DLGStandardItem, node_to_remove: DLGNode):
-            for i in range(item.rowCount() - 1, -1, -1):
-                child_item = item.child(i)
-                #print("<SDM> [removeNodeRecursive scope] child_item index info: ", self.treeView.getIdentifyingText(child_item.index()))
-                if child_item is not None:
-                    if child_item.data(_FUTURE_EXPAND_ROLE) or not isinstance(child_item, DLGStandardItem):
-                        continue
-                    #print("<SDM> [removeNodeRecursive scope] child_item.link.node: ", child_item.link.node)
-
-                    if child_item.link.node is node_to_remove:
-                        item.removeRow(i)
+        def removeLinksRecursive(node_to_remove: DLGNode, parentItem: DLGStandardItem | DLGStandardItemModel) -> tuple[DLGLink | None, str | None]:
+            assert self.editor is not None
+            last_link = None
+            link_parent_path = None
+            for i in reversed(range(parentItem.rowCount())):
+                child_item = parentItem.child(i, 0) if isinstance(parentItem, DLGStandardItem) else parentItem.item(i, 0)
+                if child_item is not None and not child_item.data(_FUTURE_EXPAND_ROLE) and isinstance(child_item, DLGStandardItem):
+                    if child_item.link.node == node_to_remove:
+                        link_parent_path = (
+                            f"StartingList\\{i}"
+                            if isinstance(parentItem, DLGStandardItemModel)
+                            else (
+                                "<should never happen>"
+                                if parentItem.link.node is None
+                                else parentItem.link.node.path()
+                            )
+                        )
+                        last_link = child_item.link
+                        sub_link, sub_link_paths = removeLinksRecursive(child_item.link.node, child_item)  # type: ignore[]
+                        if sub_link:
+                            last_link, link_parent_path = sub_link, sub_link_paths
+                        parentItem.removeRow(i)
                     else:
-                        removeNodeRecursive(child_item, node_to_remove)
+                        sub_link, sub_link_paths = removeLinksRecursive(node_to_remove, child_item)
+                        if sub_link:
+                            last_link, link_parent_path = sub_link, sub_link_paths
+            return last_link, link_parent_path
 
-        def removeNodeFromModel(model: QStandardItemModel, node_to_remove: DLGNode):
-            for i in range(model.rowCount() - 1, -1, -1):
-                item = model.item(i)
-                #print("<SDM> [removeNodeFromModel scope] item index info: ", self.treeView.getIdentifyingText(item.index()))
-
-                if item is not None:
-                    if item.data(_FUTURE_EXPAND_ROLE) or not isinstance(item, DLGStandardItem):
-                        continue
-                    lookupNode = item.link.node
-                    #print("<SDM> [removeNodeFromModel scope] lookupNode: ", lookupNode)
-                    if lookupNode == node_to_remove:
-                        model.removeRow(i)
-                    else:
-                        removeNodeRecursive(item, node_to_remove)
-
-        def removeLinksToNode(model: QStandardItemModel, node_to_remove: DLGNode):
-            for i in range(model.rowCount()):
-                item = model.item(i)
-                #print("<SDM> [removeLinksToNode scope] item index info: ", self.treeView.getIdentifyingText(item.index()))
-
-                removeLinksRecursive(item, node_to_remove)
-
-        def removeLinksRecursive(item: DLGStandardItem, node_to_remove: DLGNode):
-            for i in range(item.rowCount()):
-                child_item = item.child(i)
-                #if child_item.index().isValid():
-                #    print(f"removeLinksRecursive: invalid child item at '{i}': ", self.treeView.getIdentifyingText(child_item.index()))
-                #print("<SDM> [removeLinksRecursive scope] child_item index info: ", self.treeView.getIdentifyingText(child_item.index()))
-
-                if child_item is not None:
-                    if child_item.data(_FUTURE_EXPAND_ROLE) or not isinstance(child_item, DLGStandardItem):
-                        continue
-                    link: DLGLink | None = child_item.link
-
-                    if link is None:
-                        continue
-                    if link.node is node_to_remove:
-                        item.removeRow(i)
-                    removeLinksRecursive(child_item, node_to_remove)
-
-        removeNodeFromModel(self, node)
-        removeLinksToNode(self, node)
-
-        # Remove the node and any links to it from the _dlg.starters list
-        self.editor.core_dlg.starters = [link for link in self.editor.core_dlg.starters if link.node is not node]
-        for link in self.editor.core_dlg.starters:
-            link.node.links = [child_link for child_link in link.node.links if child_link.node is not node]
-        # Ensure all other links to this node are removed
-        for dlg_node in self.editor.core_dlg.all_entries() + self.editor.core_dlg.all_replies():
-            dlg_node.links = [child_link for child_link in dlg_node.links if child_link.node is not node]
+        last_link, link_parent_path = removeLinksRecursive(node, self)
+        assert last_link
+        assert link_parent_path
+        #self.onOrphanedNode(last_link, link_parent_path)
+        self.layoutChanged.emit()
 
     def deleteNode(self, item: DLGStandardItem):
         """Deletes a node from the DLG and ui tree model."""
         node = item.link.node
         print("<SDM> [deleteNode scope] node: ", node)
 
-        parent: DLGStandardItem | DLGStandardItemModel | None = item.parent()
+        parent: DLGStandardItem | None = item.parent()
         if parent is None:
             self.removeRow(item.row())
         else:
-            parentItem: DLGStandardItem | DLGStandardItemModel | None = parent
-            parentItem.removeRow(item.row())
+            parent.removeRow(item.row())
+            self._updateCopies(parent.link, parent)
 
-    def getNodeFromLinkItem(self, item: DLGStandardItem) -> DLGNode | None:
-        link: DLGLink = item.link
-        print("<SDM> [getNodeFromLinkItem scope] link: ", link)
+    def updateItem(self, item: DLGStandardItem):
+        """Refreshes the item text and formatting based on the node data."""
+        node: DLGNode | None = item.link.node
+        assert node is not None
+        color: QColor | None = None
+        if "(Light)" in GlobalSettings().selectedTheme:
+            if isinstance(node, DLGEntry):
+                color = QColor(255, 0, 0)  # if not _isCopy else QColor(210, 90, 90)
+                prefix = "E"
+            elif isinstance(node, DLGReply):
+                color = QColor(0, 0, 255)  # if not _isCopy else QColor(90, 90, 210)
+                prefix = "R"
+            else:
+                raise ValueError(f"node must be DLGEntry/DLGReply, but was instead {node.__class__.__name__}")
+        elif isinstance(node, DLGEntry):
+            color = QColor(255, 64, 64)  # if not _isCopy else QColor(255, 128, 128)
+            prefix = "E"
+        elif isinstance(node, DLGReply):
+            color = QColor(64, 180, 255)  # if not _isCopy else QColor(128, 200, 255)
+            prefix = "R"
+        else:
+            raise ValueError(f"node must be DLGEntry/DLGReply, but was instead {node.__class__.__name__}")
 
-        if link is None:
-            return None
+        color_hex = color.name() if color else "#000000"
+        list_prefix = f"<b>{prefix}{node.list_index}:</b> "
+        assert self.editor is not None
+        text = str(node.text) if self.editor._installation is None else self.editor._installation.string(node.text, "")  # noqa: SLF001
 
-        print("<SDM> [getNodeFromLinkItem scope] link.node: ", link.node)
+        if not node.links:
+            display_text = f"{text} <span style='color:{QColor(255, 127, 80).name()};'><b>[End Dialog]</b></span>"
+        elif not text and not text.strip():
+            if node.text.stringref != -1:
+                display_text = f"(stringref {node.text.stringref} not found in TLK)"
+            else:
+                display_text = "(continue)"
+        else:
+            display_text = text
 
-        assert link.node is not None
-        return link.node
+        # Add CSS styles for better spacing and appearance
+        formatted_text = f'<span style="color:{color_hex}; font-size:{self.treeView.text_size}pt;">{list_prefix}{display_text}</span>'
+        item.setData(formatted_text, Qt.DisplayRole)
+
+        if color:
+            item.setForeground(QBrush(color))
+
+    def isCopy(self, item: DLGStandardItem) -> bool:
+        """Determine if the item is already loaded into the tree, or if it's collapsed until onItemExpanded is called."""
+        if not item.hasChildren():
+            return False
+        return item.child(0, 0).data(_FUTURE_EXPAND_ROLE) is True
 
     def deleteSelectedNode(self):
         """Deletes the currently selected node from the tree."""
         if self.treeView.selectedIndexes():
-            index: QModelIndex = self.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
-            print("<SDM> [deleteSelectedNode scope] self.treeView.selectedIndexes()[0]: ", index)
+            index: QModelIndex = self.treeView.selectedIndexes()[0]
+            print("<SDM> [deleteSelectedNode scope] self.treeView.selectedIndexes()[0]: ", index.row())
 
             item: DLGStandardItem | None = self.itemFromIndex(index)
             print("<SDM> [deleteSelectedNode scope] item: ", item)
@@ -1284,68 +1749,80 @@ class DLGStandardItemModel(QStandardItemModel):
         targetParentItem: DLGStandardItem | None = None,
     ):
         """Move an item to a specific index within the model."""
+        assert self.editor is not None
         itemParent: DLGStandardItem | None = item.parent()
-        oldParent: QStandardItemModel | DLGStandardItem = self if itemParent is None else itemParent
-        targetParent: QStandardItemModel | DLGStandardItem = targetParentItem or oldParent
+        oldParent: DLGStandardItem | None = None if itemParent is None else itemParent
 
         # Early return if the move operation doesn't make sense
-        if targetParent == oldParent and new_index == item.row():
-            RobustRootLogger.info("Attempted to move item to the same position. Operation aborted.")
+        if targetParentItem is oldParent and new_index == item.row():
+            self.editor.blinkWindow()
+            RobustRootLogger().info("Attempted to move item to the same position. Operation aborted.")
             return
         if (
-            targetParent != oldParent
-            and not isinstance(targetParent, QStandardItemModel)
-            and not isinstance(oldParent, QStandardItemModel)
-            and targetParent.link.node == oldParent.link.node
+            targetParentItem is not oldParent
+            and targetParentItem is not None
+            and oldParent is not None
+            and targetParentItem.link.node == oldParent.link.node
         ):
-            RobustRootLogger.warning("Cannot drag into a different copy, aborting.")
+            self.editor.blinkWindow()
+            RobustRootLogger().warning("Cannot drag into a different copy, aborting.")
             return
+
+        # source and target items must be loaded.
         if (
-            not isinstance(oldParent, QStandardItemModel)
-            and oldParent.data(_FUTURE_EXPAND_ROLE)
-            or not isinstance(targetParent, QStandardItemModel)
-            and targetParent.data(_FUTURE_EXPAND_ROLE)
+            oldParent is not None and oldParent.data(_FUTURE_EXPAND_ROLE)
+            or targetParentItem is not None and targetParentItem.data(_FUTURE_EXPAND_ROLE)
         ):
-            RobustRootLogger.info("Cannot drag into a future expand dummy, aborting.")
+            self.editor.blinkWindow()
+            RobustRootLogger().info("Cannot drag into a future expand dummy, aborting.")
             return
 
         # Ensure copies are expanded first.
         if (
-            not isinstance(targetParent, QStandardItemModel)
-            and targetParent.hasChildren()
-            and targetParent.child(0, 0).data(_FUTURE_EXPAND_ROLE)
+            targetParentItem is not None
+            and targetParentItem.hasChildren()
+            and targetParentItem.child(0, 0).data(_FUTURE_EXPAND_ROLE)
         ):
-            if targetParent.index().isValid():
-                self.treeView.expand(targetParent.index())
+            if targetParentItem.index().isValid():
+                self.treeView.expand(targetParentItem.index())
             else:
-                self.editor._logger.error("targetParent '%s' at row %s is invalid, cannot move item.", targetParent.text(), targetParent.row())
+                assert self.editor is not None
+                self.editor._logger.error("targetParent '%s' at row %s is invalid, cannot move item.", targetParentItem.text(), targetParentItem.row())  # noqa: SLF001
                 return
 
-        if new_index < 0 or new_index > targetParent.rowCount():
-            RobustRootLogger.info("New row index %d out of bounds. Cancelling operation.", new_index)
+        if new_index < 0 or new_index > (targetParentItem or self).rowCount():
+            RobustRootLogger().info("New row index %d out of bounds. Cancelling operation.", new_index)
             return
 
         oldRow: int = item.row()
-        if oldParent == targetParent and new_index > oldRow:
+        if oldParent == targetParentItem and new_index > oldRow:
             new_index -= 1
 
-        itemToMove = oldParent.takeRow(oldRow)[0]
-        targetParent.insertRow(new_index, itemToMove)
-        if not isinstance(targetParent, DLGStandardItemModel):
-            self.treeView.setItemDisplayData(targetParent)
-            self._updateCopies(targetParent.link, targetParent)
+        # don't call this, i've no idea why this crashes, perhaps it's made for some other widget.
+        #self.beginMoveRows( QModelIndex() if oldParent is None else oldParent.index(), oldRow, oldRow, QModelIndex() if targetParentItem is None else targetParentItem.index(), new_index, )
+        self._isMoving = True
+        itemToMove = (oldParent or self).takeRow(oldRow)[0]
+        if targetParentItem is not None:
+            self.updateItem(targetParentItem)
+            targetParentItem.insertRow(new_index, itemToMove)
+            self._updateCopies(targetParentItem.link, targetParentItem)
+        else:
+            self.insertRow(new_index, itemToMove)
+        # don't call this, i've no idea why this crashes, perhaps it's made for some other widget.
+        #self.endMoveRows()
+        self._isMoving = False
+
 
     def _updateCopies(self, link: DLGLink, itemToIgnore: DLGStandardItem | None = None):
         if link.node in self.nodeToItems:
             items = self.nodeToItems[link.node]
-            print(f"Updating {len(items)} items containing node {link.node}")
+            print(f"Updating {len(items)} item(s) containing node {link.node}")
             for item in items:
                 if item is itemToIgnore:
                     continue
                 self.blockSignals(True)
-                self.treeView.setItemDisplayData(item)
-                if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):
-                    # Item has a future expand role, only update display data
+                self.updateItem(item)
+                if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):  # Item's children not loaded.
                     continue
                 item.removeRows(0, item.rowCount())
                 self.blockSignals(False)
@@ -1368,30 +1845,29 @@ class DLGStandardItemModel(QStandardItemModel):
         itemParent = item.parent()
         print("<SDM> [shiftItem scope] itemParent: ", itemParent)
 
-
-        parent = self if item.parent() is None else itemParent
-        print("<SDM> [shiftItem scope] parent: ", parent)
-
-
-        assert parent is not None
         newRow: int = oldRow + amount
         print("<SDM> [shiftItem scope] newRow: ", newRow)
-
 
         itemParentText = "" if itemParent is None else itemParent.text()
 
         print("Received item: '%s', row shift amount %s", itemText, amount)
         print("Attempting to change row index for '%s' from %s to %s in parent '%s'", itemText, oldRow, newRow, itemParentText)
 
-        if newRow >= parent.rowCount() or newRow < 0:
-            RobustRootLogger.info("New row index '%s' out of bounds. Already at the start/end of the branch. Cancelling operation.", newRow)
+        if newRow >= (itemParent or self).rowCount() or newRow < 0:
+            RobustRootLogger().info("New row index '%s' out of bounds. Already at the start/end of the branch. Cancelling operation.", newRow)
             return
 
-        itemToMove = parent.takeRow(oldRow)[0]
+        # don't call this, i've no idea why this crashes, perhaps it's made for some other widget.
+        #self.beginMoveRows( QModelIndex() if itemParent is None else itemParent.index(), oldRow, oldRow, QModelIndex() if itemParent is None else itemParent.index(), newRow if newRow > oldRow else newRow + 1 )
+        self._isMoving = True
+        itemToMove = (itemParent or self).takeRow(oldRow)[0]
         print("<SDM> [shiftItem scope] itemToMove: ", itemToMove)
 
         print("itemToMove '%s' taken from old position: '%s', moving to '%s'", itemToMove.text(), oldRow, newRow)
-        parent.insertRow(newRow, itemToMove)
+        (itemParent or self).insertRow(newRow, itemToMove)
+        # don't call this, i've no idea why this crashes, perhaps it's made for some other widget.
+        #self.endMoveRows()
+        self._isMoving = False
         selectionModel = self.treeView.selectionModel()
         if selectionModel is not None and not noSelectionUpdate:
             selectionModel.select(itemToMove.index(), QItemSelectionModel.ClearAndSelect)
@@ -1403,21 +1879,8 @@ class DLGStandardItemModel(QStandardItemModel):
         if isinstance(itemParent, DLGStandardItem):
             self._updateCopies(itemParent.link, itemParent)
 
-        RobustRootLogger.info("Moved link from %s to %s", oldRow, newRow)
-        self.treeView.viewport().update()
-
-    def removeLink(self, item: DLGStandardItem):
-        """Removes the link from the parent node."""
-        parent = item.parent()
-        item_row = item.row()
-        print("<SDM> [removeLink scope] item_row: %s", item_row)
-
-        if parent is None:
-            self.removeRow(item_row)
-        else:
-            print("<SDM> [removeLink scope] parent: %s", parent.text())
-            parent.removeRow(item_row)
-            self._updateCopies(parent.link, parent)
+        RobustRootLogger().info("Moved link from %s to %s", oldRow, newRow)
+        self.layoutChanged.emit()
 
 
 class DropPosition(Enum):
@@ -1489,6 +1952,8 @@ class DropTarget:
                 return False
             parentItem = view.model().itemFromIndex(rootItemIndex)
         dragged_node = dragged_link.node
+        assert dragged_node is not None
+        assert parentItem.link.node is not None
         node_types_match = view.bothNodesSameType(dragged_node, parentItem.link.node)
         if self.position is DropPosition.ON_TOP_OF:
             node_types_match = not node_types_match
@@ -1504,120 +1969,30 @@ class DropTarget:
 class DLGTreeView(RobustTreeView):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
+        self.override_drop_in_view: bool = True  # set to False to use the new logic (not recommended - untested)
         self.editor: DLGEditor | None = None
         self.dropIndicatorRect: QRect = QRect()
         self.maxDragTextSize: int = 40
         self.num_links: int = 0
         self.num_unique_nodes: int = 0
         self.draggedItem: DLGStandardItem | None = None
+        self.draggedLink: DLGLink | None = None
         self.dropTarget: DropTarget | None = None
         self.startPos: QPoint = QPoint()
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
         self.viewport().setAcceptDrops(True)
+        self.setWordWrap(True)
         self.setDropIndicatorShown(False)  # We have our own.
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         #self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove | QAbstractItemView.DragDropMode.DragDrop)
 
     def model(self) -> DLGStandardItemModel:
         model = super().model()
-        assert isinstance(model, DLGStandardItemModel)
+        if model is None:
+            return None
+        assert isinstance(model, DLGStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
         return model
-
-    def resizeEvent(self, event: QResizeEvent):
-        super().resizeEvent(event)
-        self.viewport().update()  # call our html delegate to recalc item sizing/spacing.
-
-    def setItemDisplayData(self, item: DLGStandardItem):
-        """Refreshes the item text and formatting based on the node data."""
-        node: DLGNode = item.link.node
-        #print("<SDM> [setItemDisplayData scope] DLGNode: ", node)
-
-        color: QColor | None = None
-        if GlobalSettings().selectedTheme == "Default (Light)":
-            if isinstance(node, DLGEntry):
-                color = QColor(255, 0, 0)  # if not _isCopy else QColor(210, 90, 90)
-                prefix = "E"
-            elif isinstance(node, DLGReply):
-                color = QColor(0, 0, 255)  # if not _isCopy else QColor(90, 90, 210)
-                prefix = "R"
-            else:
-                raise ValueError(f"node must be DLGEntry/DLGReply, but was instead {node.__class__.__name__}")
-        elif isinstance(node, DLGEntry):
-            color = QColor(255, 64, 64)  # if not _isCopy else QColor(255, 128, 128)
-            prefix = "E"
-        elif isinstance(node, DLGReply):
-            color = QColor(64, 180, 255)  # if not _isCopy else QColor(128, 200, 255)
-            prefix = "R"
-        else:
-            raise ValueError(f"node must be DLGEntry/DLGReply, but was instead {node.__class__.__name__}")
-
-        color_hex = color.name() if color else "#000000"
-        list_prefix = f"<b>{prefix}{node.list_index}:</b> "
-        text = str(node.text) if self.editor._installation is None else self.editor._installation.string(node.text, "")
-
-        if not node.links:
-            display_text = f"{text} <span style='color:{QColor(255, 127, 80).name()};'><b>[End Dialog]</b></span>"
-        else:
-            display_text = text if text.strip() else "(continue)"
-
-        # Add CSS styles for better spacing and appearance
-        formatted_text = f'<span style="color:{color_hex}; font-size:{self.text_size}pt;">{list_prefix}{display_text}</span>'
-        item.setData(formatted_text, Qt.DisplayRole)
-
-        if color:
-            item.setForeground(QBrush(color))
-
-    def draw_drag_icons(
-        self,
-        painter: QPainter,
-        center: QPoint,
-        radius: int,
-        color: QColor,
-        text: str,
-    ):
-        gradient = QRadialGradient(center, radius)
-        print("<SDM> [draw_drag_icons scope] gradient: ", gradient)
-
-        gradient.setColorAt(0, QColor(255, 255, 255, 200))
-        gradient.setColorAt(0.5, color.lighter())
-        gradient.setColorAt(1, color)
-        painter.setBrush(QBrush(gradient))
-        painter.setPen(Qt.NoPen)
-        painter.drawEllipse(center, radius, radius)
-
-        painter.setPen(QColor(0, 0, 0))
-        font = QFont("Arial", 10, QFont.Bold)
-        print("<SDM> [draw_drag_icons scope] font: ", font)
-
-        painter.setFont(font)
-        text_rect = QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
-        print("<SDM> [draw_drag_icons scope] text_rect: ", text_rect)
-
-        painter.drawText(text_rect, Qt.AlignCenter, text)
-
-        print(f"{self.__class__.__name__}.draw_drag_icons: Drawing drag icon at {center} with text {text}")  # noqa: SLF001
-
-    def calculate_links_and_nodes(self, root_node: DLGNode) -> tuple[int, int]:
-        queue: deque[DLGNode] = deque([root_node])
-        print("<SDM> [calculate_links_and_nodes scope] deque[DLGNode]: ", queue)
-
-        seen_nodes: set[DLGNode] = set()
-        print("<SDM> [calculate_links_and_nodes scope] seen_nodes: ", seen_nodes)
-
-        self.num_links = 0
-        self.num_unique_nodes = 0
-
-        while queue:
-            node: DLGNode = queue.popleft()
-            if node in seen_nodes:
-                continue
-            seen_nodes.add(node)
-            self.num_links += len(node.links)
-            queue.extend(link.node for link in node.links)
-
-        self.num_unique_nodes = len(seen_nodes)
-        print("<SDM> [calculate_links_and_nodes scope] self.num_unique_nodes: ", self.num_unique_nodes)
 
     def paintEvent(self, event: QPaintEvent):
         super().paintEvent(event)
@@ -1637,7 +2012,8 @@ class DLGTreeView(RobustTreeView):
         painter.end()
 
     def keyPressEvent(self, event: QKeyEvent):
-        print("<SDM> [DLGTreeView.keyPressEvent scope] key: %s", event.key())
+        print("<SDM> [DLGTreeView.keyPressEvent scope] key: %s", getQtKeyString(event.key()))
+        assert self.editor is not None
         self.editor.keyPressEvent(event, isTreeViewCall=True)
         super().keyPressEvent(event)
 
@@ -1648,17 +2024,17 @@ class DLGTreeView(RobustTreeView):
         ):
             self.startPos = event.pos()
             print("<SDM> [mousePressEvent scope] self.startPos: ", self.startPos)
-
-            print(f"DLGTreeView: set self.startPos to  ({self.startPos.x()}, {self.startPos.y()})")
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
         if (
-            event.buttons() & Qt.LeftButton
+            bool(event.buttons() & Qt.LeftButton)
             and not self.startPos.isNull()
             and (event.pos() - self.startPos).manhattanLength() >= QApplication.startDragDistance()
             and self.draggedItem is None
         ):
+            # finally figured out how to get qt to do this part.
+            # leave here in case we need again
             #if self.prepareDrag(self.indexAt(self.startPos)):
             #    print(f"{self.__class__.__name__}.mouseMoveEvent picked up a drag")
             #    self.performDrag()
@@ -1667,6 +2043,8 @@ class DLGTreeView(RobustTreeView):
             super().mouseMoveEvent(event)
         super().mouseMoveEvent(event)
 
+
+    # region Tree Drag&Drop
     def createDragPixmap(self, dragged_item: DLGStandardItem) -> QPixmap:
         pixmap = QPixmap(250, 70)
         pixmap.fill(Qt.GlobalColor.transparent)
@@ -1680,30 +2058,87 @@ class DLGTreeView(RobustTreeView):
         font = QFont("Arial", 11)
         painter.setFont(font)
         doc = QTextDocument()
-        doc.setHtml(dragged_item.text())
-        doc.setDefaultFont(QFont("Arial", 11))
-        doc.setTextWidth(230)
-        painter.translate(10, 50)
-        doc.drawContents(painter)  # Drawing the contents of the document
+        if not dragged_item.index().parent().isValid():
+            color = "red"
+            link_list_display = "StartingList"
+            node_list_display = "EntryList"
+        else:
+            color = "blue"
+            link_list_display = "EntriesList" if isinstance(dragged_item.link.node, DLGEntry) else "RepliesList"
+            node_list_display = "EntryList" if isinstance(dragged_item.link.node, DLGEntry) else "ReplyList"
+        display_text = f"{link_list_display}\\{dragged_item.link.list_index} --> {node_list_display}\\{dragged_item.link.node.list_index}"
+
+        # Set HTML content with color and text size
+        html_content = f"""
+        <div style="color: {color}; font-size: {self.text_size}pt;">
+            {display_text}
+        </div>
+        """
+        doc.setHtml(html_content)
+
+        # Adjust the document size and position
+        doc.setDefaultFont(font)
+        doc.setTextWidth(pixmap.width() - 20)  # Adjust text width as needed
+        painter.translate(10, 50)  # Adjust translation as needed
+
+        # Draw the document content
+        doc.drawContents(painter)
         painter.end()
+
         return pixmap
 
+    def draw_drag_icons(
+        self,
+        painter: QPainter,
+        center: QPoint,
+        radius: int,
+        color: QColor,
+        text: str,
+    ):
+        gradient = QRadialGradient(center, radius)
+        gradient.setColorAt(0, QColor(255, 255, 255, 200))
+        gradient.setColorAt(0.5, color.lighter())
+        gradient.setColorAt(1, color)
+        painter.setBrush(QBrush(gradient))
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(center, radius, radius)
+        painter.setPen(QColor(0, 0, 0))
+        painter.setFont(QFont("Arial", 10, QFont.Bold))
+        text_rect = QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
+        painter.drawText(text_rect, Qt.AlignCenter, text)
+        print(f"{self.__class__.__name__}.draw_drag_icons: Drawing drag icon at {center} with text {text}")  # noqa: SLF001
+
+    def calculate_links_and_nodes(self, root_node: DLGNode) -> tuple[int, int]:
+        queue: deque[DLGNode] = deque([root_node])
+        seen_nodes: set[DLGNode] = set()
+        self.num_links = 0
+        self.num_unique_nodes = 0
+
+        while queue:
+            node: DLGNode = queue.popleft()
+            assert node is not None
+            if node in seen_nodes:
+                continue
+            seen_nodes.add(node)
+            self.num_links += len(node.links)
+            queue.extend(link.node for link in node.links)
+
+        self.num_unique_nodes = len(seen_nodes)
+        print("<SDM> [calculate_links_and_nodes scope] self.num_unique_nodes: ", self.num_unique_nodes)
+        return self.num_links, self.num_unique_nodes
+
     def performDrag(self):
-        print("startDrag: Post-initiate drag operation, call drag.exec_()")
+        print("performDrag: Post-initiate drag operation, call drag.exec_()")
+        assert self.draggedItem is not None
+        draggedIndex = self.draggedItem.index()
         drag = QDrag(self)
-        mimeData = QMimeData()
-        encoded_data = QByteArray()
-        stream = QDataStream(encoded_data, QIODevice.WriteOnly)
-        stream.writeInt64(id(self.model()))
-        stream.writeString(json.dumps(self.draggedItem.link.to_dict()).encode())
-        mimeData.setData("application/x-pykotor-dlgbranch", encoded_data)
-        drag.setMimeData(mimeData)
+        drag.setMimeData(self.model().mimeData([draggedIndex]))
         pixmap = self.createDragPixmap(self.draggedItem)
         drag.setPixmap(pixmap)
-        item_top_left_global = self.mapToGlobal(self.visualRect(self.draggedItem.index()).topLeft())
+        item_top_left_global = self.mapToGlobal(self.visualRect(draggedIndex).topLeft())
         drag.setHotSpot(QPoint(pixmap.width() // 2, QCursor.pos().y() - item_top_left_global.y()))
         drag.exec_(self.model().supportedDragActions())
-        print("\nstartDrag: completely done")
+        print("\nperformDrag: completely done")
 
     def prepareDrag(self, index: QModelIndex | None = None, event: QDragEnterEvent | QDragMoveEvent | QDropEvent = None) -> bool:
         print(f"{self.__class__.__name__}.\nprepareDrag(index={index}, event={event})")
@@ -1711,26 +2146,38 @@ class DLGTreeView(RobustTreeView):
             return True
 
         if event:
-            mimeData = event.mimeData()
-            if mimeData.hasFormat("application/x-pykotor-dlgbranch"):
-                stream = QDataStream(mimeData.data("application/x-pykotor-dlgbranch"), QIODevice.ReadOnly)
-                if stream.readInt64() == id(self.model()):
-                    self.draggedItem = DLGLink.from_dict(json.loads(stream.readString().decode()))
-                    self.calculate_links_and_nodes(self.draggedItem.link.node)
-                    return True
-                #return False
+            print("prepareDrag: check for mimeData")
+            if not event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
+                print("prepareDrag: not our mimeData format.")
+                return False
+            if id(event.source()) == id(self.model()):
+                print("drag is happening from exact QTreeView instance.")
                 return True
+            item_data = self.parseMimeData(event.mimeData())
+            if item_data[0]["roles"][_MODEL_INSTANCE_ID_ROLE] != id(self.model()):
+                print("prepareDrag: drag event started in another window.")
+                return True
+            print("prepareDrag: drag originated from some list widget.")
+            deserialized_listwidget_link: DLGLink = DLGLink.from_dict(json.loads(item_data[0]["roles"][_DLG_MIME_DATA_ROLE]))
+            temp_item = DLGStandardItem(link=deserialized_listwidget_link)
+            self.model().updateItem(temp_item)
+            self.draggedItem = self.model().linkToItems.setdefault(deserialized_listwidget_link, [temp_item])[0]
+            assert self.draggedItem.link.node is not None
+            self.calculate_links_and_nodes(self.draggedItem.link.node)
+            return True
 
         if index is None:
             index = self.currentIndex()
 
         dragged_item = self.model().itemFromIndex(index)
+        assert isinstance(dragged_item, DLGStandardItem)
         if not dragged_item or not hasattr(dragged_item, "link") or dragged_item.link is None:
             print(f"{self.getIdentifyingText(index)}")
             print("Above item does not contain DLGLink information\n")
             return False
 
         self.draggedItem = dragged_item
+        assert self.draggedItem.link.node is not None
         self.calculate_links_and_nodes(self.draggedItem.link.node)
         return True
 
@@ -1750,70 +2197,105 @@ class DLGTreeView(RobustTreeView):
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         print(f"\ndragEnterEvent(event={event})")
-        if not event.mimeData().hasFormat("application/x-pykotor-dlgbranch"):
+        if not event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
             print("dragEnterEvent mimeData does not match our format, invalidating.")
             self.setInvalidDragDrop(event)
             return
         if not self.draggedItem:
-            RobustRootLogger.warning("dragEnterEvent called before prepareDrag, rectifying.")
-            if not self.prepareDrag():
+            RobustRootLogger().warning("dragEnterEvent called before prepareDrag, rectifying.")
+            if not self.prepareDrag(event=event):
                 print("dragEnterEvent: prepareDrag returned False, resetting the drag state.")
                 self.setInvalidDragDrop(event)
-                self.resetDragState(event)
+                self.resetDragState()
                 return
         self.setValidDragDrop(event)
 
     def dragMoveEvent(self, event: QDragMoveEvent):
         print(f"dragMoveEvent(event={event})")
-        if not event.mimeData().hasFormat("application/x-pykotor-dlgbranch"):
+        if not event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
             self.setInvalidDragDrop(event)
             super().dragMoveEvent(event)
             return
 
         print("<SDM> [dragMoveEvent scope], event mimedata matches our format.")
-        if self.draggedItem is None:
-            RobustRootLogger.warning("dragMoveEvent called before prepareDrag, rectifying now....")
-            if not self.prepareDrag():
+        if self.draggedItem is None and self.draggedLink is None:
+            RobustRootLogger().error("dragMoveEvent called before prepareDrag. This is an error/oversight: dragEnterEvent should have picked this up first. rectifying now....")
+            if not self.prepareDrag(event=event):
                 self.setInvalidDragDrop(event)
-                self.resetDragState()
+                super().dragMoveEvent(event)
                 return
+            self.draggedLink = self.getDraggedLinkFromMimeData(event.mimeData())
+            if self.draggedLink is None:
+                RobustRootLogger().error("Could not deserialize DLGLink from mime data despite it matching our format")
+                self.setInvalidDragDrop(event)
+                super().dragMoveEvent(event)
+                return
+        elif self.draggedItem is not None:
+            self.draggedLink = self.draggedItem.link
+
+        if self.dropTarget is not None:
+            self.itemDelegate().nudgedModelIndexes.clear()
 
         pos: QPoint = event.pos()
         self.dropTarget = DropTarget.determineDropTarget(self, pos)
         self.dropIndicatorRect = self.dropTarget.indicator_rect
-        if not self.dropTarget.is_valid_drop(self.draggedItem.link, self):
+        if not self.dropTarget.is_valid_drop(self.draggedLink, self):
             print(f"{self.__class__.__name__}.dragMoveEvent: Target at mouse position is not valid.")
             self.setInvalidDragDrop(event)
             super().dragMoveEvent(event)
             return
+        aboveIndex = self.model().index(self.dropTarget.row-1, 0, self.dropTarget.parentIndex)
+        hoverOverIndex = self.model().index(self.dropTarget.row, 0, self.dropTarget.parentIndex)
+        if (
+            self.dropTarget.position in (DropPosition.ABOVE, DropPosition.BELOW)
+            and self.draggedItem is not None
+            and (
+                self.draggedItem.isDeleted()
+                or hoverOverIndex is not self.draggedItem.index()
+            )
+        ):
+            self.itemDelegate().nudgeItem(hoverOverIndex, 0, int(self.itemDelegate().text_size/2))
+            self.itemDelegate().nudgeItem(aboveIndex, 0, int(-self.itemDelegate().text_size/2))
 
         self.setValidDragDrop(event)
         super().dragMoveEvent(event)
 
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
+        self.itemDelegate().nudgedModelIndexes.clear()
+
     def dropEvent(self, event: QDropEvent):
-        self.setInvalidDragDrop(event)  # always set invalid so qt won't try to handle it past this function
-        if not event.mimeData().hasFormat("application/x-pykotor-dlgbranch"):
+        if self.override_drop_in_view:
+            self.setInvalidDragDrop(event)  # always set invalid so qt won't try to handle it past this function
+        if not event.mimeData().hasFormat(QT_STANDARD_ITEM_FORMAT):
             print("<SDM> [dropEvent scope] event does not match our format")
             self.resetDragState()
             return
+        if self.dropTarget is None:
+            print("dropTarget is none in dropEvent")
+            self.resetDragState()
+            return
+
+        self.itemDelegate().nudgedModelIndexes.clear()
 
         if self.dropTarget.parentIndex.isValid():
             dropParent = self.model().itemFromIndex(self.dropTarget.parentIndex)
         else:
-            dropParent = self.model()
+            dropParent = None
 
         if not self.isItemFromCurrentModel(event):
-            print("<SDM> [dropEvent scope] not self.isItemFromCurrentModel(event), calling pasteItem")
-            dragged_link: DLGLink | None = self.getDraggedNodeFromMimeData(event.mimeData())
-            if dragged_link:
-                if not self.dropTarget.is_valid_drop(dragged_link, self):
-                    print("dropEvent: dropTarget is not valid (for a pasteItem)")
-                    self.resetDragState()
-                    return
-                self.model().pasteItem(dropParent, dragged_link.node, asNewBranches=False)
-                super().dropEvent(event)
-            else:
-                print("<SDM> [dropEvent scope] could not call pasteItem: dragged_node could not be deserialized from mime data.")
+            if self.override_drop_in_view:
+                print("<SDM> [dropEvent scope] not self.isItemFromCurrentModel(event), calling pasteItem")
+                dragged_link: DLGLink | None = self.getDraggedLinkFromMimeData(event.mimeData()) if self.draggedLink is None else self.draggedLink
+                if dragged_link:
+                    if not self.dropTarget.is_valid_drop(dragged_link, self):
+                        print("dropEvent: dropTarget is not valid (for a pasteItem)")
+                        self.resetDragState()
+                        return
+                    self.model().pasteItem(dropParent, dragged_link.node, row=self.dropTarget.row, asNewBranches=False)
+                    super().dropEvent(event)
+                else:
+                    print("<SDM> [dropEvent scope] could not call pasteItem: dragged_node could not be deserialized from mime data.")
+            super().dropEvent(event)
             self.resetDragState()
             return
 
@@ -1826,13 +2308,17 @@ class DLGTreeView(RobustTreeView):
             print("dropEvent: self.dropTarget is not valid (for a moveItemToIndex)")
             self.resetDragState()
             return
+        #if self.override_drop_in_view:
+        self.setInvalidDragDrop(event)
         new_index = self.dropTarget.row
         if self.dropTarget.position is DropPosition.ON_TOP_OF:
             new_index = 0
+        print("dropping our treeview item into another part of the treeview: call moveItemToIndex")
         self.model().moveItemToIndex(self.draggedItem, new_index, dropParent)
         super().dropEvent(event)
         parentIndexOfDrop = self.dropTarget.parentIndex
         droppedAtRow = self.dropTarget.row
+        dropPosition = self.dropTarget.position  # TODO: row-1 in setSelectionOnDrop, when position is BELOW.
         self.resetDragState()
         self.setAutoScroll(False)
         #self.setSelectionOnDrop(droppedAtRow, parentIndexOfDrop)
@@ -1855,18 +2341,50 @@ class DLGTreeView(RobustTreeView):
         self.setState(QAbstractItemView.State.DragSelectingState)
         QTimer.singleShot(0, lambda: self.setState(QAbstractItemView.State.NoState))
         QTimer.singleShot(0, lambda: self.viewport().update())
-        QTimer.singleShot(0, lambda: self.setAutoScroll(True))
 
-    def getDraggedNodeFromMimeData(self, mimeData: QMimeData) -> DLGLink | None:
+    def getDraggedLinkFromMimeData(self, mimeData: QMimeData) -> DLGLink | None:
         try:
-            encoded_data = mimeData.data("application/x-pykotor-dlgbranch")
-            stream = QDataStream(encoded_data, QIODevice.ReadOnly)
-            _model_id = stream.readInt64()
-            link_variant = stream.readString().decode()
-            return DLGLink.from_dict(json.loads(link_variant))
+            return DLGLink.from_dict(json.loads(self.parseMimeData(mimeData)[0]["roles"][_DLG_MIME_DATA_ROLE]))
         except Exception:  # noqa: BLE001
-            RobustRootLogger.exception("Failed to deserialize mime data node.")
-            return None
+            RobustRootLogger().exception("Failed to deserialize mime data node.")
+        return None
+
+    def isItemFromCurrentModel(self, event: QDropEvent) -> bool:
+        if not isinstance(event.source(), DLGTreeView):
+            print(f"isItemFromCurrentModel: Not our drag, QDropEvent.source() was of type '{event.source().__class__.__name__}'")
+            return False
+        return self.parseMimeData(event.mimeData())[0]["roles"][_MODEL_INSTANCE_ID_ROLE] == id(self.model())
+
+    @staticmethod
+    def parseMimeData(mimeData: QMimeData) -> list[dict[Literal["row", "column", "roles"], Any]]:
+        items: list[dict[Literal["row", "column", "roles"], Any]] = []
+        if mimeData.hasFormat(QT_STANDARD_ITEM_FORMAT):
+            encoded_data = mimeData.data(QT_STANDARD_ITEM_FORMAT)
+            stream = QDataStream(encoded_data, QIODevice.ReadOnly)
+
+            while not stream.atEnd():
+                item_data: dict[Literal["row", "column", "roles"], Any] = {}
+                item_data["row"] = stream.readInt32()
+                item_data["column"] = stream.readInt32()
+                numRoles = stream.readInt32()
+
+                roles: dict[int, Any] = {}
+                for _ in range(numRoles):
+                    role = stream.readInt32()
+                    if role == Qt.DisplayRole:
+                        roles[role] = stream.readQString()
+                    elif role == _DLG_MIME_DATA_ROLE:
+                        roles[role] = stream.readBytes().decode()
+                    elif role == _MODEL_INSTANCE_ID_ROLE:
+                        roles[role] = stream.readInt64()
+                    elif role == _LINK_PARENT_NODE_PATH_ROLE:
+                        roles[role] = stream.readQString()
+                    else:  # unknown role
+                        roles[role] = stream.readQVariant()
+                item_data["roles"] = roles
+                items.append(item_data)
+
+        return items
 
     @staticmethod
     def bothNodesSameType(dragged_node: DLGNode, target_node: DLGNode) -> bool:
@@ -1875,17 +2393,11 @@ class DLGTreeView(RobustTreeView):
             or isinstance(dragged_node, DLGEntry) and isinstance(target_node, DLGEntry)
         )
 
-    def isItemFromCurrentModel(self, event: QDropEvent) -> bool:
-        source = event.source()
-        if not isinstance(source, QTreeView):
-            print("isItemFromCurrentModel: Not our drag.")
-            return False
-        return source.model() == self.model()
-
     def resetDragState(self):
         print("<SDM> [resetDragState scope]")
         self.startPos = QPoint()
         self.draggedItem = None
+        self.draggedLink = None
         self.dropIndicatorRect = QRect()
         self.dropTarget = None
         self.unsetCursor()
@@ -1901,9 +2413,6 @@ class DLGTreeView(RobustTreeView):
         self.setCursor(Qt.CursorShape.ForbiddenCursor)
         self.viewport().update()
         QTimer.singleShot(0, lambda *args: self.setDragEnabled(True))
-        #QTimer.singleShot(0, self.setFocus)
-        #QTimer.singleShot(0, lambda *args: self.setAcceptDrops(True))
-        #QTimer.singleShot(0, lambda *args: self.viewport().setAcceptDrops(True))
 
     def setValidDragDrop(
         self,
@@ -1911,34 +2420,124 @@ class DLGTreeView(RobustTreeView):
     ):
         print("<SDM> [setValidDragDrop scope]")
         event.accept()
-        event.setDropAction(Qt.DropAction.MoveAction if self.isItemFromCurrentModel(event) else Qt.DropAction.CopyAction)
+        event.setDropAction(Qt.DropAction.MoveAction if self.isItemFromCurrentModel(event) else Qt.DropAction.CopyAction)  # DropAction's are unused currently: the view is handling the drop.
         self.setCursor(Qt.CursorShape.ArrowCursor)
-
-    def _selectDragOverIndex(self, curIndex: QModelIndex):
-        self.selectionModel().clearSelection()
-        self.isSelecting = True
-        selection: QItemSelection = QItemSelection()
-        drag_item = self.draggedItem
-        print("<SDM> [_selectDragOverIndex scope] drag_item: ", drag_item)
-
-        cur_item = self.model().itemFromIndex(curIndex)
-        print("<SDM> [_selectDragOverIndex scope] cur_item: ", cur_item)
-
-        selection.select(curIndex, curIndex)
-        selection.select(self.draggedItem.index(), self.draggedItem.index())
-
-        drag_item_text = drag_item.text() if drag_item is not None else "(None)"
-        cur_item_text = cur_item.text() if cur_item is not None else "(None)"
-
-        print("<SDM> [_selectDragOverIndex scope] [drag_item, cur_item] selection: [%s]", f"{drag_item_text}, {cur_item_text}")
-        self.selectionModel().select(selection, QItemSelectionModel.Select)
-        self.isSelecting = False
+    # endregion
 
 
 def install_immediate_tooltip(widget: QWidget, tooltip_text: str):
     widget.setToolTip(tooltip_text)
     widget.setMouseTracking(True)
-    widget.event = lambda event: QToolTip.showText(cast(QHoverEvent, event).pos(), widget.toolTip(), widget)
+    widget.event = lambda event: QToolTip.showText(cast(QHoverEvent, event).pos(), widget.toolTip(), widget)  # type: ignore[method-assign]
+
+
+class DLGLinkSync(DLGLink):
+    """Keeps a DLGLink object in sync with a copy just in case we devs forgot to call another endless required 'update' function somewhere."""
+    def __init__(self, *args, **kwargs):
+        self._syncer: CopySyncDict
+        raise RuntimeError("__init__ is not supported, __class__ must be set directly.")
+
+    def __getattr__(self, attr: str):
+        if attr == "_syncer":
+            return object.__getattribute__(self, "_syncer")
+        other = self._syncer.get(self)
+        return getattr(other, attr)
+
+    def __setattr__(self, attr: str, value: Any):
+        if attr == "_syncer":
+            object.__setattr__(self, attr, value)
+        else:
+            other = self._syncer.get(self)
+            setattr(other, attr, value)
+
+    def __delattr__(self, attr):
+        other = self._syncer.get(self)
+        delattr(other, attr)
+
+
+class CopySyncDict(weakref.WeakKeyDictionary):
+    """Implements weakkeydictionary in order to keep the keys and their values in sync, as perfect copies, treating them like the same object and providing more hash usability.
+
+    If someone is reading this, to save you some time, this class is wildly unnecessary.
+    It was added simply as a fallback in case we forgot to call an update function somewhere. This makes certain our copies have the same data.
+    Feel free to replace origToOrphanCopies with a regular dict.
+    """
+    def __init__(
+        self,
+        init_dict: Mapping[weakref.ReferenceType[DLGLink], DLGLink] | Iterable[tuple[weakref.ReferenceType[DLGLink], DLGLink]] | None = None,
+        *args,
+    ):
+        self._storage: dict[int, tuple[weakref.ReferenceType[DLGLink], DLGLink]] = {}
+        self._weak_key_map: dict[int, weakref.ReferenceType[DLGLink]] = {}
+        if init_dict is None:
+            super().__init__(None)
+            return
+        if init_dict is not None:
+            if isinstance(init_dict, Mapping):
+                for k, v in init_dict.items():
+                    if isinstance(k, tuple):
+                        k, v = k
+                    self[k] = v
+            else:
+                for k, v in init_dict:
+                    self[k] = v
+
+    def __setitem__(self, key: DLGLink | weakref.ReferenceType[DLGLink], value: DLGLinkSync | DLGLink):
+        if isinstance(key, weakref.ReferenceType):
+            ref = key
+            key = key()
+            if key is None:
+                raise ValueError("Ref passed to CopySyncDict is already garbage collected.")
+            key_hash = hash(key)
+        else:
+            key_hash = hash(key)
+            ref = weakref.ref(key, self._remove_key(key_hash))
+        value.__class__ = DLGLinkSync
+        object.__setattr__(value, "_syncer", self)
+        self._storage[key_hash] = (ref, value)
+        self._weak_key_map[key_hash] = ref
+
+    def __getitem__(self, key: DLGLink) -> DLGLink[Any]:
+        key_hash = hash(key)
+        if key_hash in self._storage:
+            return self._storage[key_hash][1]
+        raise KeyError(key)
+
+    def __delitem__(self, key: DLGLink):
+        key_hash = hash(key)
+        del super()[self._storage[key_hash][0]]
+        del self._storage[key_hash]
+        del self._weak_key_map[key_hash]
+
+    def get(self, key: DLGLink, default: DLGLink = None) -> DLGLink:  # type: ignore[override]
+        lookupOrig, lookupCopy = self._storage.get(hash(key), (None, None))
+        if lookupOrig is None:
+            return default  # copy would also be None
+        lookup = lookupOrig()
+        if lookup is None:
+            if lookupCopy is None:
+                return default
+            return lookupCopy
+        return lookup
+
+    def _remove_key(self, key_hash: int) -> Callable[..., None]:
+        def remove(_):
+            del self[self._storage[key_hash][1]]
+        return remove
+
+    def values(self) -> Generator[Any, None, None]:
+        return (item for _, item in self._storage.values())
+
+    def items(self) -> Generator[tuple[weakref.ReferenceType[DLGLink], DLGLink], None, None]:
+        yield from self._storage.values()
+
+    def replaceCopy(self, link: DLGLink):
+        linkHash = link._hash_cache  # noqa: SLF001
+        self._storage[linkHash] = (self._weak_key_map[linkHash], link)
+
+    def get_original(self, key: DLGLink) -> weakref.ReferenceType[DLGLink]:
+        return self._storage[hash(key)][0]
+
 
 
 class DLGEditor(Editor):
@@ -1960,45 +2559,63 @@ class DLGEditor(Editor):
         self._installation: HTInstallation
 
         if qtpy.API_NAME == "PySide2":
-            from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside2.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         elif qtpy.API_NAME == "PySide6":
-            from toolset.uic.pyside6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyside6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         elif qtpy.API_NAME == "PyQt5":
-            from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt5.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         elif qtpy.API_NAME == "PyQt6":
-            from toolset.uic.pyqt6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
+            from toolset.uic.pyqt6.editors.dlg import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415  # type: ignore[assignment]
         else:
             raise ImportError(f"Unsupported Qt bindings: {qtpy.API_NAME}")
 
         self._copy: DLGNode | None = None
         self._focused: bool = False
+        self.undoStack: QUndoStack = QUndoStack()
 
-        self.ui = Ui_MainWindow()
+        self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setupDLGTreeMVC()
-
         self.dlg_settings: DLGSettings = DLGSettings()
+        self.ui.dialogTree.text_size = self.dlg_settings.fontSize(self.ui.dialogTree.text_size)
+
         self._setupMenus()
         self._setupSignals()
         if installation:
             self._setupInstallation(installation)
 
+        self.tips: list[str] = [
+            "Use the 'View' menu to customize dlg editor settings.",
+            "Tip: Drag and Drop is supported, even between different DLGs!",
+            "Tip: Hold CTRL and scroll to change the text size.",
+            "Tip: Hold ALT and scroll to change the indentation.",
+            "Tip: Hold SHIFT and scroll to change the vertical spacing.",
+            "Tip: 'Delete all references' will delete all EntriesList/RepliesList/StartingList links to the node, leaving it orphaned.",
+            "Tip: Drag any tree item to the left dockpanel to pin it for easy access"
+        ]
+        self.tipLabel: QLabel = QLabel()
+        self.tipLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        font = self.tipLabel.font()
+        font.setPointSize(10)
+        self.tipLabel.setFont(font)
+        self.tipsStartFromRightSide: bool = False
+        self.statusBar().addPermanentWidget(self.tipLabel, 1)
+        self.timer: QTimer = QTimer(self)
+        self.timer.timeout.connect(self.showScrollingTip)
+        self.timer.start(15000)
+
         self.voIdEditTimer: QTimer = QTimer(self)
-        self.core_dlg: DLG = DLG()
-
-        self.ui.textEdit.mouseDoubleClickEvent = self.editText
-        install_immediate_tooltip(self.ui.textEdit, "Double click to edit.")
-        if GlobalSettings().selectedTheme != "Default (Light)":
-            self.ui.textEdit.setStyleSheet(f"{self.ui.textEdit.styleSheet()} QPlainTextEdit {{color: black;}}")
-
+        self.core_dlg: DLG = DLG(blank_node=False)
         self.buffer: QBuffer = QBuffer()
         self.player: QMediaPlayer = QMediaPlayer(self)
-        self.tempFile: QTemporaryFile | None = None
 
-        self.uiDataLoadedForSelection: bool = False
-        self.ui.splitter.setSizes([99999999, 1])
-        #self.ui.horizontalLayout.setStretch(0, 1)  # verticalLayout part
-        #self.ui.horizontalLayout.setStretch(1, 3)  # tabWidget part
+        self.tempFile: QTemporaryFile | None = None
+        self.dialog_references = None
+        self.reference_history: list[tuple[list[DLGStandardItem], str]] = []
+        self.current_reference_index = -1
+        self.setupLeftDockWidget()
+
+        self.uiDataForSelectionIsLoaded: bool = False
         self.new()
         self.keysDown: set[int] = set()
 
@@ -2008,48 +2625,54 @@ class DLGEditor(Editor):
         self.voIdEditTimer.timeout.connect(self.populateComboboxOnVoIdEditFinished)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-    def _saveSetting(self, key: str, value: Any):  # noqa: C901
-        """Helper method to save settings."""
-        if key == "Text Elide Mode":
-            self.dlg_settings.setTextElideMode(value)
-        elif key == "Focus Policy":
-            self.dlg_settings.setFocusPolicy(value)
-        elif key == "Layout Direction":
-            self.dlg_settings.setLayoutDirection(value)
-        elif key == "Scroll Mode":
-            self.dlg_settings.setVerticalScrollMode(value)
-        elif key == "Uniform Row Heights":
-            self.dlg_settings.setUniformRowHeights(value)
-        elif key == "Animations":
-            self.dlg_settings.setAnimations(value)
-        elif key == "Auto Scroll (internal)":
-            self.dlg_settings.setAutoScroll(value)
-        elif key == "Expand Items on Double Click":
-            self.dlg_settings.setExpandsOnDoubleClick(value)
-        elif key == "Auto Fill Background":
-            self.dlg_settings.setAutoFillBackground(value)
-        elif key == "Alternating Row Colors":
-            self.dlg_settings.setAlternatingRowColors(value)
-        elif key == "Branch Indent":
-            self.dlg_settings.setIndentation(value)
+    def showEvent(self, event: QShowEvent):
+        super().showEvent(event)
+        QTimer.singleShot(50, lambda *args: self.setSecondaryWidgetPosition(self.ui.rightDockWidget, "right"))  # type: ignore[arg-type]
+        QTimer.singleShot(0, lambda *args: self.showScrollingTip())
+
+    def showScrollingTip(self):
+        tip = random.choice(self.tips)  # noqa: S311
+        self.tipLabel.setText(tip)
+        self.tipLabel.adjustSize()  # Adjust size to fit the text
+        self.startTooltipUIAnimation()
+
+    def startTooltipUIAnimation(self):
+        if self.tipsStartFromRightSide:
+            start_x = -self.tipLabel.width()
+            end_x = self.statusBar().width()
+        else:
+            start_x = self.statusBar().width()
+            end_x = -self.tipLabel.width()
+
+        self.tipLabel.setGeometry(start_x, 0, self.tipLabel.width(), self.statusBar().height())
+        self.animation = QPropertyAnimation(self.tipLabel, b"geometry")
+        self.animation.setDuration(15000)
+        self.animation.setStartValue(QRect(start_x, 0, self.tipLabel.width(), self.statusBar().height()))
+        self.animation.setEndValue(QRect(end_x, 0, self.tipLabel.width(), self.statusBar().height()))
+        self.animation.finished.connect(self.toggleScrollbarTipDirection)
+        self.animation.start()
+
+    def toggleScrollbarTipDirection(self):
+        self.tipsStartFromRightSide = not self.tipsStartFromRightSide
+        self.animation.disconnect()
+        self.startTooltipUIAnimation()
 
     def setupDLGTreeMVC(self):
         # self.model.setHorizontalHeaderLabels(["Dialog", "Children", "Copies"])
-        self.treeView: DLGTreeView = self.ui.dialogTree
         self.model: DLGStandardItemModel = DLGStandardItemModel(self.ui.dialogTree)
         self.model.editor = self
-        self.treeView.editor = self
-        self.treeView.setModel(self.model)
-        self.treeView.setItemDelegate(HTMLDelegate(self.treeView))
+        self.ui.dialogTree.editor = self
+        self.ui.dialogTree.setModel(self.model)
+        self.ui.dialogTree.setItemDelegate(HTMLDelegate(self.ui.dialogTree))
         # self.ui.dialogTree.header().setSectionResizeMode(0, QHeaderView.Stretch)
         # self.ui.dialogTree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         # self.ui.dialogTree.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
-        self.verify_hierarchy(self.treeView)
+        self.verify_hierarchy(self.ui.dialogTree)
         self.verify_hierarchy(self.model)
 
-    def verify_hierarchy(self, widget: QWidget, level: int = 0):
-        parent: QWidget = widget
+    def verify_hierarchy(self, widget: QObject, level: int = 0):
+        parent: QObject = widget
         while parent is not None:
             print(f"Level {level}: Checking parent {parent.__class__.__name__} with name {parent.objectName()}")
             if isinstance(parent, DLGEditor):
@@ -2146,6 +2769,7 @@ Should return 1 or 0, representing a boolean.
 
         self.ui.dialogTree.expanded.connect(self.onItemExpanded)
         self.ui.dialogTree.customContextMenuRequested.connect(self.onTreeContextMenu)
+        self.ui.dialogTree.doubleClicked.connect(self.editText)
         self.ui.dialogTree.selectionModel().selectionChanged.connect(self.onSelectionChanged)
 
         self.ui.actionReloadTree.triggered.connect(lambda: self._loadDLG(self.core_dlg))
@@ -2159,6 +2783,152 @@ Should return 1 or 0, representing a boolean.
         self.ui.editAnimButton.clicked.connect(self.onEditAnimClicked)
         self._setupViewMenu()
 
+    def setupLeftDockWidget(self):
+        self.leftDockWidget = QDockWidget("Orphaned Nodes and Pinned Items", self)
+        self.leftDockWidgetContainer = QWidget()
+        self.leftDockLayout = QVBoxLayout(self.leftDockWidgetContainer)
+
+        # Orphaned Nodes List
+        self.orphanedNodesList = DLGListWidget()
+        self.orphanedNodesList.editor = self
+        self.orphanedNodesList.setWordWrap(True)
+        self.orphanedNodesList.setItemDelegate(HTMLDelegate(self.orphanedNodesList))
+        self.orphanedNodesList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.orphanedNodesList.customContextMenuRequested.connect(lambda xy: self.onListContextMenu(xy, self.orphanedNodesList))
+        # orphans is drag only. Someone please explain why there's a billion functions that need to be called to disable/enable drag/drop.
+        self.orphanedNodesList.setDragEnabled(True)
+        self.orphanedNodesList.setAcceptDrops(False)
+        self.orphanedNodesList.viewport().setAcceptDrops(False)
+        self.orphanedNodesList.setDropIndicatorShown(False)
+        self.orphanedNodesList.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)
+
+        # Pinned Items List
+        self.pinnedItemsList = DLGListWidget()
+        self.pinnedItemsList.editor = self
+        self.pinnedItemsList.setWordWrap(True)
+        self.pinnedItemsList.setItemDelegate(HTMLDelegate(self.pinnedItemsList))
+        self.pinnedItemsList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.pinnedItemsList.customContextMenuRequested.connect(lambda xy: self.onListContextMenu(xy, self.pinnedItemsList))
+        self.pinnedItemsList.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.pinnedItemsList.setAcceptDrops(True)
+        self.pinnedItemsList.viewport().setAcceptDrops(True)
+        self.pinnedItemsList.setDragEnabled(True)
+        self.pinnedItemsList.setDefaultDropAction(Qt.MoveAction)
+        self.pinnedItemsList.setDropIndicatorShown(True)
+        self.pinnedItemsList.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+
+        # Add both lists to the layout
+        self.leftDockLayout.addWidget(QLabel("Orphaned Nodes"))
+        self.leftDockLayout.addWidget(self.orphanedNodesList)
+        self.leftDockLayout.addWidget(QLabel("Pinned Items"))
+        self.leftDockLayout.addWidget(self.pinnedItemsList)
+
+        # Set the container as the widget for the dock
+        self.leftDockWidget.setWidget(self.leftDockWidgetContainer)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.leftDockWidget)
+        self.setStyleSheet(self.get_stylesheet())
+
+        def mimeData(items: Iterable[DLGListWidgetItem], listWidget: DLGListWidget) -> QMimeData:
+            mimeData = QMimeData()
+            listwidget_data = QByteArray()
+
+            stream_listwidget = QDataStream(listwidget_data, QIODevice.WriteOnly)
+            for item in items:
+                index = listWidget.indexFromItem(item)
+                stream_listwidget.writeInt32(index.row())
+                stream_listwidget.writeInt32(index.column())
+                stream_listwidget.writeInt32(3)
+                stream_listwidget.writeInt32(int(Qt.DisplayRole))
+                stream_listwidget.writeQString(item.data(Qt.DisplayRole))
+                stream_listwidget.writeInt32(_DLG_MIME_DATA_ROLE)
+                stream_listwidget.writeBytes(json.dumps(item.link.to_dict()).encode())
+                stream_listwidget.writeInt32(_MODEL_INSTANCE_ID_ROLE)
+                stream_listwidget.writeInt64(id(self))
+
+            mimeData.setData(QT_STANDARD_ITEM_FORMAT, listwidget_data)
+            return mimeData
+
+        def leftDockWidgetStartDrag(supportedActions: Qt.DropActions, sourceWidget: DLGListWidget):
+            selected_items: list[DLGListWidgetItem] = sourceWidget.selectedItems()
+            if not selected_items:
+                self.blinkWindow()
+                print("No selected items being dragged?")
+                return
+
+            drag = QDrag(sourceWidget)
+            drag.setMimeData(mimeData(selected_items, sourceWidget))
+            drag.exec_(supportedActions)
+
+        self.orphanedNodesList.startDrag = lambda supportedActions: leftDockWidgetStartDrag(supportedActions, self.orphanedNodesList)
+        self.pinnedItemsList.startDrag = lambda supportedActions: leftDockWidgetStartDrag(supportedActions, self.pinnedItemsList)
+
+    def get_stylesheet(self) -> str:
+        return """
+        .link-container:hover .link-hover-text {
+            display: block;
+        }
+        .link-container:hover .link-text {
+            display: none;
+        }
+        .link-hover-text {
+            display: none;
+        }
+        """
+
+    def restoreOrphanedNode(self, link: DLGLink):
+        print(f"restoreOrphanedNodes(link={link})")
+        selectedOrphanItem = self.orphanedNodesList.currentItem()
+        if selectedOrphanItem is None:
+            print("restoreOrphanedNodes: No leftDockWidget selected item.")
+            self.blinkWindow()
+            return
+        selectedTreeIndexes = self.ui.dialogTree.selectedIndexes()
+        if not selectedTreeIndexes or not selectedTreeIndexes[0]:
+            print("restoreOrphanedNodes: no selected indexes")
+            self.blinkWindow()
+            return
+        selectedTreeItem: DLGStandardItem | None = cast(DLGStandardItem, self.model.itemFromIndex(selectedTreeIndexes[0]))
+        if selectedTreeItem is None:
+            print("restoreOrphanedNodes: selected index was not a standard item.")
+            self.blinkWindow()
+            return
+        oldLinkToCurrentOrphan: DLGLink = selectedOrphanItem.link
+        oldLinkPath = selectedOrphanItem.data(_LINK_PARENT_NODE_PATH_ROLE)
+        if isinstance(oldLinkToCurrentOrphan.node, type(selectedTreeItem.link.node)):
+            targetParent = selectedTreeItem.parent()
+            intendedLinkListIndexRow = selectedTreeItem.row()
+        else:
+            targetParent = selectedTreeItem
+            intendedLinkListIndexRow = 0
+        new_link_path = f"StartingList\\{intendedLinkListIndexRow}" if targetParent is None else targetParent.link.node.path()
+        link_parent_path, link_partial_path, linked_to_path = self.get_item_dlg_paths(selectedOrphanItem)
+        link_full_path = f"{link_parent_path}\\{link_partial_path}"
+        confirm_message = f"The orphan '{linked_to_path}' (originally linked from {link_full_path}) will be newly linked from {new_link_path} with this action. Continue?"
+        reply = QMessageBox.question(self, "Restore Orphaned Node", confirm_message, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            print(f"orphan '{linked_to_path}' (originally linked from {oldLinkPath}) is to be linked from {new_link_path}")
+            self.model.insertLinkToParentAsItem(targetParent, oldLinkToCurrentOrphan, intendedLinkListIndexRow)
+
+            intendedLinkListIndexRow = self.orphanedNodesList.row(selectedOrphanItem)
+            self.orphanedNodesList.takeItem(intendedLinkListIndexRow)
+            if self.orphanedNodesList.count() == 0:
+                self.leftDockWidget.setVisible(False)
+
+    def deleteOrphanedNodePermanently(self, link: DLGLink):
+        print(f"deleteOrphanedNodePermanently(link={link})")
+        selectedOrphanItem: DLGListWidgetItem | None = self.orphanedNodesList.currentItem()
+        if selectedOrphanItem is None:
+            print("deleteOrphanedNodePermanently: No leftDockWidget selected item.")
+            self.blinkWindow()
+            return
+        self.orphanedNodesList.takeItem(self.orphanedNodesList.row(selectedOrphanItem))
+        object.__setattr__(link, "__class__", DLGLink)
+        link.node = None
+        self.orphanedNodesList.viewport().update()
+        self.orphanedNodesList.update()
+        self.orphanedNodesList.model().layoutChanged.emit()
+
     def _setupViewMenu(self):
         viewMenu = self.ui.menubar.addMenu("View")
 
@@ -2167,101 +2937,193 @@ Should return 1 or 0, representing a boolean.
                                      self.ui.dialogTree.textElideMode,
                                      self.ui.dialogTree.setTextElideMode,
                                      options={
-                                        "Elide Left": Qt.ElideLeft,
-                                        "Elide Right": Qt.ElideRight,
-                                        "Elide Middle": Qt.ElideMiddle,
-                                        "Elide None": Qt.ElideNone
+                                        "Elide Left": Qt.TextElideMode.ElideLeft,
+                                        "Elide Right": Qt.TextElideMode.ElideRight,
+                                        "Elide Middle": Qt.TextElideMode.ElideMiddle,
+                                        "Elide None": Qt.TextElideMode.ElideNone
                                      },
-                                     settings_key="textElideMode",
-                                     default_value=self.ui.dialogTree.textElideMode())
+                                     settings_key="textElideMode")
 
         self._addExclusiveMenuAction(viewMenu, "Focus Policy",
                                      self.ui.dialogTree.focusPolicy,
                                      self.ui.dialogTree.setFocusPolicy,
                                      options={
-                                        "No Focus": Qt.NoFocus,
-                                        "Tab Focus": Qt.TabFocus,
-                                        "Click Focus": Qt.ClickFocus,
-                                        "Strong Focus": Qt.StrongFocus,
-                                        "Wheel Focus": Qt.WheelFocus
+                                        "No Focus": Qt.FocusPolicy.NoFocus,
+                                        "Tab Focus": Qt.FocusPolicy.TabFocus,
+                                        "Click Focus": Qt.FocusPolicy.ClickFocus,
+                                        "Strong Focus": Qt.FocusPolicy.StrongFocus,
+                                        "Wheel Focus": Qt.FocusPolicy.WheelFocus
                                      },
-                                     settings_key="focusPolicy",
-                                     default_value=self.ui.dialogTree.focusPolicy())
+                                     settings_key="focusPolicy")
 
         self._addExclusiveMenuAction(viewMenu, "Layout Direction",
                                      self.ui.dialogTree.layoutDirection,
                                      self.ui.dialogTree.setLayoutDirection,
                                      options={
-                                        "Left to Right": Qt.LeftToRight,
-                                        "Right to Left": Qt.RightToLeft
+                                        "Left to Right": Qt.LayoutDirection.LeftToRight,
+                                        "Right to Left": Qt.LayoutDirection.RightToLeft
                                      },
-                                     settings_key="layoutDirection",
-                                     default_value=self.ui.dialogTree.layoutDirection())
+                                     settings_key="layoutDirection")
 
         self._addExclusiveMenuAction(viewMenu, "Scroll Mode",
                                      self.ui.dialogTree.verticalScrollMode,
                                      self.ui.dialogTree.setVerticalScrollMode,
                                      options={
-                                        "Scroll Per Item": QAbstractItemView.ScrollPerItem,
-                                        "Scroll Per Pixel": QAbstractItemView.ScrollPerPixel
+                                        "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
+                                        "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel
                                      },
-                                     settings_key="verticalScrollMode",
-                                     default_value=self.ui.dialogTree.verticalScrollMode())
+                                     settings_key="verticalScrollMode")
 
-        # Adding boolean options
+        # boolean options
         self._addMenuAction(viewMenu, "Uniform Row Heights",
                             self.ui.dialogTree.uniformRowHeights,
                             self.ui.dialogTree.setUniformRowHeights,
-                            settings_key="uniformRowHeights",
-                            default_value=self.ui.dialogTree.uniformRowHeights())
+                            settings_key="uniformRowHeights")
 
         self._addMenuAction(viewMenu, "Animations",
                             self.ui.dialogTree.isAnimated,
                             self.ui.dialogTree.setAnimated,
-                            settings_key="animations",
-                            default_value=self.ui.dialogTree.isAnimated())
+                            settings_key="animations")
 
         self._addMenuAction(viewMenu, "Auto Scroll (internal)",
                             self.ui.dialogTree.hasAutoScroll,
                             self.ui.dialogTree.setAutoScroll,
-                            settings_key="autoScroll",
-                            default_value=self.ui.dialogTree.hasAutoScroll())
+                            settings_key="autoScroll")
 
         self._addMenuAction(viewMenu, "Expand Items on Double Click",
                             self.ui.dialogTree.expandsOnDoubleClick,
                             self.ui.dialogTree.setExpandsOnDoubleClick,
-                            settings_key="expandsOnDoubleClick",
-                            default_value=self.ui.dialogTree.expandsOnDoubleClick())
+                            settings_key="expandsOnDoubleClick")
 
         self._addMenuAction(viewMenu, "Auto Fill Background",
                             self.ui.dialogTree.autoFillBackground,
                             self.ui.dialogTree.setAutoFillBackground,
-                            settings_key="autoFillBackground",
-                            default_value=self.ui.dialogTree.autoFillBackground())
+                            settings_key="autoFillBackground")
 
         self._addMenuAction(viewMenu, "Alternating Row Colors",
                             self.ui.dialogTree.alternatingRowColors,
                             self.ui.dialogTree.setAlternatingRowColors,
-                            settings_key="alternatingRowColors",
-                            default_value=self.ui.dialogTree.alternatingRowColors())
+                            settings_key="alternatingRowColors")
 
-        # Adding int options
+        # int options
         viewMenu.addSeparator()
-        self._addMenuAction(viewMenu, "Branch Indent",
+        self._addMenuAction(viewMenu, "Tree Indentation",
                             self.ui.dialogTree.indentation,
                             self.ui.dialogTree.setIndentation,
-                            param_type=int,
                             settings_key="indentation",
-                            default_value=self.ui.dialogTree.indentation())
+                            param_type=int)
 
-        # Adding actions for updates and repaints
-        viewMenu.addSeparator()
+        self._addMenuAction(viewMenu, "Font Size",
+                            lambda: self.ui.dialogTree.text_size,
+                            lambda x: setattr(self.ui.dialogTree, "text_size", x),
+                            settings_key="fontSize",
+                            param_type=int)
+
+        self._addMenuAction(viewMenu, "Vertical Spacing",
+                            lambda: self.ui.dialogTree.itemDelegate().verticalSpacing,
+                            lambda x: self.ui.dialogTree.itemDelegate().setVerticalSpacing(x),
+                            settings_key="verticalSpacing",
+                            param_type=int)
+
+        # Option for TSL state handling
+        self._addExclusiveMenuAction(viewMenu, "TSL Widget Handling",
+                                     lambda: "Default",
+                                     self.setTSLWidgetHandling,
+                                     options={
+                                        "Enable": "Enable",
+                                        "Disable": "Disable",
+                                        "Show": "Show",
+                                        "Hide": "Hide",
+                                        "Default": "Default"
+                                     },
+                                     settings_key="TSLWidgetHandling")
+
+        # Main Refresh Menu
         refreshMenu = viewMenu.addMenu("Refresh")
-        self._addSimpleAction(refreshMenu, "Viewport Refresh (queue)", self.ui.dialogTree.viewport().update)
-        self._addSimpleAction(refreshMenu, "Viewport Refresh (instant)", self.ui.dialogTree.viewport().repaint)
-        self._addSimpleAction(refreshMenu, "Tree Refresh (queued)", self.ui.dialogTree.repaint)
-        self._addSimpleAction(refreshMenu, "Tree Refresh (instant)", self.ui.dialogTree.update)
-        self._addSimpleAction(refreshMenu, "DLGEditor.model.layoutChanged.emit()", self.ui.dialogTree.model().layoutChanged.emit)
+
+        # Submenu for Tree related actions
+        treeMenu = refreshMenu.addMenu("Tree")
+        self._addSimpleAction(treeMenu, "Repaint", self.ui.dialogTree.repaint)
+        self._addSimpleAction(treeMenu, "Update", self.ui.dialogTree.update)
+        self._addSimpleAction(treeMenu, "Resize Column To Contents", lambda: self.ui.dialogTree.resizeColumnToContents(0))
+        self._addSimpleAction(treeMenu, "Update Geometries", self.ui.dialogTree.updateGeometries)
+        self._addSimpleAction(treeMenu, "Reset", self.ui.dialogTree.reset)
+
+        # Submenu for Viewport related actions
+        viewportMenu = refreshMenu.addMenu("Viewport")
+        self._addSimpleAction(viewportMenu, "Repaint", self.ui.dialogTree.viewport().repaint)
+        self._addSimpleAction(viewportMenu, "Update", self.ui.dialogTree.viewport().repaint)  # Note: Both actions were the same and labeled differently, corrected to reflect actual function.
+
+        # Submenu for Model related actions
+        modelMenu = refreshMenu.addMenu("Model")
+        self._addSimpleAction(modelMenu, "Emit Layout Changed", lambda: self.ui.dialogTree.model().layoutChanged.emit())
+
+        # Submenu for Window related actions
+        windowMenu = refreshMenu.addMenu("Window")
+        self._addSimpleAction(windowMenu, "Repaint", lambda: self.repaint)
+
+    def setTSLWidgetHandling(self, state: str):
+        self.dlg_settings.set("TSLWidgetHandling", state)
+        widgets_to_handle = [
+            self.ui.script1Param1Spin, self.ui.script1Param2Spin, self.ui.script1Param3Spin, self.ui.script1Param4Spin,
+            self.ui.script1Param5Spin, self.ui.script1Param6Edit, self.ui.script2ResrefEdit, self.ui.script2Param1Spin,
+            self.ui.script2Param2Spin, self.ui.script2Param3Spin, self.ui.script2Param4Spin, self.ui.script2Param5Spin,
+            self.ui.script2Param6Edit, self.ui.condition1Param1Spin, self.ui.condition1Param2Spin, self.ui.condition1Param3Spin,
+            self.ui.condition1Param4Spin, self.ui.condition1Param5Spin, self.ui.condition1Param6Edit, self.ui.condition1NotCheckbox,
+            self.ui.condition2ResrefEdit, self.ui.condition2Param1Spin, self.ui.condition2Param2Spin, self.ui.condition2Param3Spin,
+            self.ui.condition2Param4Spin, self.ui.condition2Param5Spin, self.ui.condition2Param6Edit, self.ui.condition2NotCheckbox,
+            self.ui.emotionSelect, self.ui.expressionSelect, self.ui.nodeUnskippableCheckbox, self.ui.nodeIdSpin,
+            self.ui.alienRaceNodeSpin, self.ui.postProcSpin, self.ui.logicSpin
+        ]
+        for widget in widgets_to_handle:
+            self.handleWidgetWithTSL(widget, state)
+        shouldShow = state in ("Show", "Enabled")
+        self.ui.script2Label.setHidden(shouldShow)
+        self.ui.conditional2Label.setHidden(shouldShow)
+        self.ui.emotionLabel.setHidden(shouldShow)
+        self.ui.expressionLabel.setHidden(shouldShow)
+        self.ui.label_30.setHidden(shouldShow)
+        self.ui.label_31.setHidden(shouldShow)
+        self.ui.label_32.setHidden(shouldShow)
+        self.ui.label_34.setHidden(shouldShow)
+
+    def handleWidgetWithTSL(self, widget: QWidget, state: str):
+        """Customizes widget behavior based on TSL state."""
+        widget.show()
+        widget.setEnabled(True)
+        if state == "Enable":
+            widget.setEnabled(True)
+        elif state == "Disable":
+            widget.setEnabled(False)
+        elif state == "Show":
+            widget.show()
+        elif state == "Hide":
+            widget.hide()
+        elif state == "Default":
+            widget.setEnabled(self._installation.tsl)
+            if not self._installation.tsl:
+                widget.setToolTip("This widget is only available in KOTOR II.")
+            else:
+                widget.setToolTip("")
+
+    def _addColorMenuAction(
+        self,
+        menu: QMenu,
+        title: str,
+        current_color_func: Callable[[], QColor],
+        set_func: Callable[[QColor], Any],
+        settings_key: str,
+    ):
+        action = QAction(title, self)
+        action.triggered.connect(lambda: self._handleColorAction(set_func, title, settings_key))
+        menu.addAction(action)
+
+    def _handleColorAction(self, set_func: Callable[[QColor], Any], title: str, settings_key: str):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            set_func(color)
+            self.dlg_settings.set(settings_key, color.name())
+
 
     def _addSimpleAction(self, menu: QMenu, title: str, func: Callable[[], Any]):
         action = QAction(title, self)
@@ -2274,10 +3136,9 @@ Should return 1 or 0, representing a boolean.
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
-        param_type: type = bool,
-        settings_key: str | None = None,
-        default_value: Any = None,
+        settings_key: str,
         options: dict | None = None,
+        param_type: type = bool,
     ):
         action = QAction(title, self)
         if param_type is bool:
@@ -2299,8 +3160,7 @@ Should return 1 or 0, representing a boolean.
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
         options: dict,
-        settings_key: str | None = None,
-        default_value: Any = None,
+        settings_key: str,
     ):
         subMenu = menu.addMenu(title)
         actionGroup = QActionGroup(self)
@@ -2342,6 +3202,7 @@ Should return 1 or 0, representing a boolean.
         dlg: DLG = read_dlg(data)
         print("<SDM> [load scope] dlg: ", dlg)
 
+        self.orphanedNodesList.clear()
         self._loadDLG(dlg)
         self.refreshStuntList()
 
@@ -2354,12 +3215,25 @@ Should return 1 or 0, representing a boolean.
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
         self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.skippable)
+        self.ui.skippableCheckbox.setToolTip("Determines whether the user can skip any dialog node in this file or not.")
         self.ui.animatedCutCheckbox.setChecked(bool(dlg.animated_cut))
         self.ui.oldHitCheckbox.setChecked(dlg.old_hit_check)
         self.ui.unequipHandsCheckbox.setChecked(dlg.unequip_hands)
         self.ui.unequipAllCheckbox.setChecked(dlg.unequip_items)
         self.ui.entryDelaySpin.setValue(dlg.delay_entry)
         self.ui.replyDelaySpin.setValue(dlg.delay_reply)
+        relevant_script_resnames = sorted(
+            {
+                res.resname().lower()
+                for res in self._installation.getRelevantResources(ResourceType.NCS, self._filepath)
+            }
+        )
+        self.ui.script2ResrefEdit.populateComboBox(relevant_script_resnames)
+        self.ui.condition2ResrefEdit.populateComboBox(relevant_script_resnames)
+        self.ui.script1ResrefEdit.populateComboBox(relevant_script_resnames)
+        self.ui.condition1ResrefEdit.populateComboBox(relevant_script_resnames)
+        self.ui.onEndEdit.populateComboBox(relevant_script_resnames)
+        self.ui.onAbortEdit.populateComboBox(relevant_script_resnames)
 
     def restartVoIdEditTimer(self):
         """Restarts the timer whenever text is changed."""
@@ -2371,6 +3245,8 @@ Should return 1 or 0, representing a boolean.
 
         The editors the game devs themselves used probably did something like this
         """
+        if not hasattr(self, "all_voices"):
+            return
         print("voIdEditTimer debounce finished, populate voiceComboBox with new VO_ID filter...")
         vo_id = self.core_dlg.vo_id
         if vo_id and vo_id.strip():
@@ -2384,13 +3260,15 @@ Should return 1 or 0, representing a boolean.
     def _loadDLG(self, dlg: DLG):
         """Loads a dialog tree into the UI view."""
         print("<SDM> [_loadDLG scope] GlobalSettings().selectedTheme: ", GlobalSettings().selectedTheme)
-        if GlobalSettings().selectedTheme == "Default (Light)":
+        if "(Light)" in GlobalSettings().selectedTheme:
             self.ui.dialogTree.setStyleSheet("")
         self._focused = False
         self.core_dlg = dlg
+        self.model.origToOrphanCopy = CopySyncDict(
+            {weakref.ref(orig): copiedLink for orig, copiedLink in zip(dlg.starters, deepcopy(dlg).starters)},
+        )
         self.populateComboboxOnVoIdEditFinished()
 
-        self.model.beginResetModel()
         self.model.resetModel()
         assert self.model.rowCount() == 0 and self.model.columnCount() == 0, "Model is not empty after resetModel"  # noqa: PT018
         self.model.blockSignals(True)
@@ -2398,9 +3276,11 @@ Should return 1 or 0, representing a boolean.
             item = DLGStandardItem(link=start)
             self.model.loadDLGItemRec(item)
             self.model.appendRow(item)
+        self.orphanedNodesList.reset()
         self.model.blockSignals(False)
-        self.model.endResetModel()
         assert self.model.rowCount() != 0, "Model is empty after _loadDLG!"  # noqa: PT018
+        assert self.model.linkToItems, "linkToItems is empty in the model"
+        assert self.model.nodeToItems, "nodeToItems is empty in the model"
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a dialogue from UI components."""
@@ -2454,18 +3334,15 @@ Should return 1 or 0, representing a boolean.
 
     def new(self):
         super().new()
+        self.orphanedNodesList.clear()
         self._loadDLG(DLG())
-
-    def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
-        widget.setEnabled(installation.tsl)
-        if not installation.tsl:
-            widget.setToolTip("This widget is only available in KOTOR II.")
 
     def _setupInstallation(self, installation: HTInstallation):
         """Sets up the installation for the UI."""
         self._installation = installation
         print("<SDM> [_setupInstallation scope] self._installation: ", self._installation)
 
+        installation.setupFileContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         if installation.game().is_k1():
             required: list[str] = [HTInstallation.TwoDA_VIDEO_EFFECTS, HTInstallation.TwoDA_DIALOG_ANIMS]
 
@@ -2477,27 +3354,10 @@ Should return 1 or 0, representing a boolean.
                 HTInstallation.TwoDA_DIALOG_ANIMS,
             ]
 
-        installation.htBatchCache2DA(required)
-
-        all_installation_script_resnames = sorted(
-            {res.resname() for res in installation if res.restype() is ResourceType.NCS},
-            key=str.lower
-        )
-        self._setupTslInstallDefs(installation)
-        if installation.tsl:
-            self.ui.script2ResrefEdit.populateComboBox(all_installation_script_resnames)
-            self.ui.condition2ResrefEdit.populateComboBox(all_installation_script_resnames)
-
-        self.ui.cameraEffectSelect.clear()
-        self.ui.cameraEffectSelect.addItem("[None]", None)
         self.all_voices = sorted({res.resname() for res in installation._streamwaves}, key=str.lower)  # noqa: SLF001
-        all_streamsounds = sorted({res.resname() for res in installation._streamsounds}, key=str.lower)  # noqa: SLF001
-        self.ui.soundComboBox.populateComboBox(all_streamsounds)
-        self.ui.script1ResrefEdit.populateComboBox(all_installation_script_resnames)
-        self.ui.condition1ResrefEdit.populateComboBox(all_installation_script_resnames)
-        self.ui.onEndEdit.populateComboBox(all_installation_script_resnames)
-        self.ui.onAbortEdit.populateComboBox(all_installation_script_resnames)
-        installation.setupFileContextMenu(self.ui.script1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.htBatchCache2DA(required)
+        self._setupTslInstallDefs(installation)
+        self.ui.soundComboBox.populateComboBox(sorted({res.resname() for res in installation._streamsounds}, key=str.lower))  # noqa: SLF001
         installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3])
         installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3])
         installation.setupFileContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -2511,123 +3371,63 @@ Should return 1 or 0, representing a boolean.
             [ResourceType.WAV, ResourceType.MP3],
             [SearchLocation.SOUND, SearchLocation.VOICE],
         )
+        installation.setupFileContextMenu(self.ui.onEndEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onAbortEdit, [ResourceType.NSS, ResourceType.NCS])
 
         videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
-        for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
+        if videoEffects:
+            self.ui.cameraEffectSelect.clear()
+            self.ui.cameraEffectSelect.setPlaceholderText("[None]")
+            self.ui.cameraEffectSelect.setItems(
+                [
+                    label.replace("VIDEO_EFFECT_", "").replace("_", " ").title()
+                    for label in videoEffects.get_column("label")
+                ],
+                cleanupStrings=False,
+                ignoreBlanks=True,
+            )
+            self.ui.emotionSelect.setContext(videoEffects, installation, HTInstallation.TwoDA_VIDEO_EFFECTS)
 
     def _setupTslInstallDefs(self, installation: HTInstallation):
         """Set up UI elements for TSL installation selection."""
-        self.handleWidgetWithTSL(self.ui.script1Param1Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script1Param2Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script1Param3Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script1Param4Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script1Param5Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script1Param6Edit, installation)
-
-        self.handleWidgetWithTSL(self.ui.script2ResrefEdit, installation)
-        self.handleWidgetWithTSL(self.ui.script2Param1Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script2Param2Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script2Param3Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script2Param4Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script2Param5Spin, installation)
-        self.handleWidgetWithTSL(self.ui.script2Param6Edit, installation)
-
-        self.handleWidgetWithTSL(self.ui.condition1Param1Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition1Param2Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition1Param3Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition1Param4Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition1Param5Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition1Param6Edit, installation)
-        self.handleWidgetWithTSL(self.ui.condition1NotCheckbox, installation)
-
-        self.handleWidgetWithTSL(self.ui.condition2ResrefEdit, installation)
-        self.handleWidgetWithTSL(self.ui.condition2Param1Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition2Param2Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition2Param3Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition2Param4Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition2Param5Spin, installation)
-        self.handleWidgetWithTSL(self.ui.condition2Param6Edit, installation)
-        self.handleWidgetWithTSL(self.ui.condition2NotCheckbox, installation)
-
-        self.handleWidgetWithTSL(self.ui.emotionSelect, installation)
-        self.handleWidgetWithTSL(self.ui.expressionSelect, installation)
-
-        self.handleWidgetWithTSL(self.ui.nodeUnskippableCheckbox, installation)
-        self.handleWidgetWithTSL(self.ui.nodeIdSpin, installation)
-        self.handleWidgetWithTSL(self.ui.alienRaceNodeSpin, installation)
-        self.handleWidgetWithTSL(self.ui.postProcSpin, installation)
-        self.handleWidgetWithTSL(self.ui.logicSpin, installation)
-
-        self.handleWidgetWithTSL(self.ui.emotionSelect, installation)
-        self.handleWidgetWithTSL(self.ui.expressionSelect, installation)
-        self.handleWidgetWithTSL(self.ui.script2ResrefEdit, installation)
-        self.handleWidgetWithTSL(self.ui.condition2ResrefEdit, installation)
-
-        if installation.tsl:
-            emotions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
+        emotions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
+        if emotions:
             self.ui.emotionSelect.clear()
             self.ui.emotionSelect.setItems(emotions.get_column("label"))
             self.ui.emotionSelect.setContext(emotions, installation, HTInstallation.TwoDA_EMOTIONS)
 
-            expressions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
+        expressions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
+        if expressions:
             self.ui.expressionSelect.clear()
             self.ui.expressionSelect.setItems(expressions.get_column("label"))
             self.ui.expressionSelect.setContext(expressions, installation, HTInstallation.TwoDA_EXPRESSIONS)
 
-            installation.setupFileContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
-            installation.setupFileContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.script2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.condition2ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
 
     def editText(self, e: QMouseEvent | None = None):
         """Edits the text of the selected dialog node."""
         indexes: list[QModelIndex] = self.ui.dialogTree.selectionModel().selectedIndexes()
-        if indexes:
-            item: DLGStandardItem | None = self.model.itemFromIndex(indexes[0])
-            assert item is not None, "self.model.itemFromIndex(indexes[0]) should not return None here in editText"
+        if not indexes:
+            self.blinkWindow()
+            return
+        item: DLGStandardItem | None = self.model.itemFromIndex(indexes[0])
+        assert item is not None, "self.model.itemFromIndex(indexes[0]) should not return None here in editText"
 
-            dialog = LocalizedStringDialog(self, self._installation, item.link.node.text)
-            if dialog.exec_():
-                item.link.node.text = dialog.locstring
-                print("<SDM> [editText scope] item.link.node.text: ", item.link.node.text)
+        dialog = LocalizedStringDialog(self, self._installation, item.link.node.text)
+        if dialog.exec_():
+            item.link.node.text = dialog.locstring
+            print("<SDM> [editText scope] item.link.node.text: ", item.link.node.text)
 
-                self.treeView.setItemDisplayData(item)
-                self._loadLocstring(self.ui.textEdit, item.link.node.text)
-
-    def _loadLocstring(self, textbox: QPlainTextEdit | QTextEdit, locstring: LocalizedString):
-        setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
-
-        className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
-
-        textbox.locstring = locstring  # type: ignore[reportAttributeAccessIssue]
-        print("<SDM> [_loadLocstring scope] textbox.locstring: ", textbox.locstring)
-
-        theme = GlobalSettings().selectedTheme
-        print("<SDM> [_loadLocstring scope] theme: ", theme)
-
-        print("<SDM> [_loadLocstring scope] locstring.stringref: ", locstring.stringref)
-        if locstring.stringref == -1:
-            text = str(locstring)
-            print("<SDM> [_loadLocstring scope] text: ", text)
-
-            setText("" if text == "-1" else text)
-            # Check theme condition for setting stylesheet
-            if theme == "Default (Light)":
-                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white;}}")
-            else:
-                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white; color: black;}}")
-        else:
-            setText(self._installation.talktable().string(locstring.stringref))
-            # Check theme condition for setting stylesheet
-            if theme == "Default (Light)":
-                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded;}}")
-            else:
-                textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
+            self.model.updateItem(item)
 
     def copyPath(self, node_or_link: DLGNode | DLGLink):
         """Copies the node path to the user's clipboard."""
         paths: list[PureWindowsPath] = self.core_dlg.find_paths(node_or_link)
 
         if not paths:
+            print("No paths available.")
+            self.blinkWindow()
             return
 
         if len(paths) == 1:
@@ -2659,7 +3459,7 @@ Should return 1 or 0, representing a boolean.
     def expandToRoot(self, item: DLGStandardItem):
         parent: DLGStandardItem | None = item.parent()
         while parent is not None:
-            self.ui.dialogTree.expand(parent.index())  # type: ignore[arg-type]
+            self.ui.dialogTree.expand(parent.index())
             parent = parent.parent()
             #print("<SDM> [expandToRoot scope] parent: ", parent)
 
@@ -2717,8 +3517,8 @@ Should return 1 or 0, representing a boolean.
                     audioOutput = QtMultimedia.QAudioOutput(self)
                     print("<SDM> [set_media scope] audioOutput: ", audioOutput)
 
-                    self.player.setAudioOutput(audioOutput)
-                    self.player.setSource(QUrl.fromLocalFile(tempFile.name))
+                    self.player.setAudioOutput(audioOutput)  # type: ignore[attr-name]
+                    self.player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]
                     audioOutput.setVolume(1)
                     self.player.play()
                     self.player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
@@ -2758,7 +3558,7 @@ Should return 1 or 0, representing a boolean.
 
     def focusOnNode(self, link: DLGLink) -> DLGStandardItem:
         """Focuses the dialog tree on a specific link node."""
-        if GlobalSettings().selectedTheme == "Default (Light)":
+        if "(Light)" in GlobalSettings().selectedTheme:
             self.ui.dialogTree.setStyleSheet("QTreeView { background: #FFFFEE; }")
         self.model.clear()
         self._focused = True
@@ -2779,6 +3579,7 @@ Should return 1 or 0, representing a boolean.
 
         def saveItemsRecursively(index: QModelIndex):
             if not index.isValid():
+                self.blinkWindow()
                 return
             if self.ui.dialogTree.isExpanded(index):
                 expanded_items.append(index)
@@ -2791,7 +3592,7 @@ Should return 1 or 0, representing a boolean.
     def saveScrollPosition(self) -> int:
         return self.ui.dialogTree.verticalScrollBar().value()
 
-    def saveSelectedItem(self) -> QModelIndex:
+    def saveSelectedItem(self) -> QModelIndex | None:
         selection_model: QItemSelectionModel = self.ui.dialogTree.selectionModel()
         if selection_model.hasSelection():
             return selection_model.currentIndex()
@@ -2811,32 +3612,43 @@ Should return 1 or 0, representing a boolean.
 
     def updateTreeView(self):
         expanded_items = self.saveExpandedItems()
-        print("<SDM> [updateTreeView scope] expanded_items: %s", expanded_items)
-
+        print("<SDM> [updateTreeView scope] expanded_items: %s", len(expanded_items))
         scroll_position = self.saveScrollPosition()
-        print("<SDM> [updateTreeView scope] scroll_position: %s", scroll_position)
-
         selected_index = self.saveSelectedItem()
-        print("<SDM> [updateTreeView scope] selected_index: %s", selected_index)
-
         self.ui.dialogTree.reset()
 
         self.restoreExpandedItems(expanded_items)
         self.restoreScrollPosition(scroll_position)
         self.restoreSelectedItem(selected_index)
 
+    def onListContextMenu(self, point: QPoint, sourceWidget: DLGListWidget):
+        """Displays context menu for tree items."""
+        item: DLGListWidgetItem | None = sourceWidget.itemAt(point)
+        if item is not None:
+            menu = self._getLinkContextMenu(sourceWidget, item)
+        else:
+            menu = QMenu(sourceWidget)
+        if sourceWidget is self.orphanedNodesList:
+            restoreAction = menu.addAction("Restore Node")
+            deletePermanentlyAction = menu.addAction("Delete Permanently")
+
+            restoreAction.triggered.connect(lambda: self.restoreOrphanedNode(item.link))
+            deletePermanentlyAction.triggered.connect(lambda: self.deleteOrphanedNodePermanently(item.link))
+
+        menu.popup(sourceWidget.viewport().mapToGlobal(point))
+
     def onTreeContextMenu(self, point: QPoint):
         """Displays context menu for tree items."""
         index: QModelIndex = self.ui.dialogTree.indexAt(point)
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
         if item is not None:
-            self._setContextMenuActions(item, point)
+            menu = self._getLinkContextMenu(self.ui.dialogTree, item)
         elif not self._focused:
             menu = QMenu(self)
             print("<SDM> [onTreeContextMenu scope] menu: ", menu)
 
             menu.addAction("Add Entry").triggered.connect(self.model.addRootNode)
-            menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
+        menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def setExpandRecursively(  # noqa: PLR0913
         self,
@@ -2846,6 +3658,7 @@ Should return 1 or 0, representing a boolean.
         expand: bool,
         maxdepth: int = 6,
         depth: int = 0,
+        isRoot: bool = True,
     ):
         """Recursively expand/collapse all children of the given item."""
         if depth > maxdepth >= 0:
@@ -2855,13 +3668,15 @@ Should return 1 or 0, representing a boolean.
             return
         if not isinstance(item, DLGStandardItem):
             return  # future expand dummy
+        if item.link is None or item.link.node is None:
+            return
         link: DLGLink = item.link
         if link.node in seenNodes:
             return
         seenNodes.add(link.node)
         if expand:
             self.ui.dialogTree.expand(itemIndex)
-        else:
+        elif not isRoot:
             self.ui.dialogTree.collapse(itemIndex)
         for row in range(item.rowCount()):
             childItem: DLGStandardItem = item.child(row)
@@ -2870,40 +3685,58 @@ Should return 1 or 0, representing a boolean.
             childIndex: QModelIndex = childItem.index()
             if not childIndex.isValid():
                 continue
-            self.setExpandRecursively(childItem, seenNodes, expand=expand, maxdepth=maxdepth, depth=depth + 1)
+            self.setExpandRecursively(childItem, seenNodes, expand=expand, maxdepth=maxdepth, depth=depth + 1, isRoot=False)
 
-    def _setContextMenuActions(self, item: DLGStandardItem, point: QPoint):
+    def _getLinkContextMenu(
+        self,
+        sourceWidget: QWidget,
+        item: DLGStandardItem,
+    ) -> QMenu:
         """Sets context menu actions for a dialog tree item."""
         self._checkClipboardForJsonNode()
-        link: DLGLink = item.link
-        node: DLGNode = link.node
-        node_type = "Entry" if isinstance(node, DLGEntry) else "Reply"
+        notAnOrphan = sourceWidget is not self.orphanedNodesList
+        isListWidgetMenu = isinstance(sourceWidget, DLGListWidget)
+        assert item.link is not None
+        assert item.link.node is not None
+        node_type = "Entry" if isinstance(item.link.node, DLGEntry) else "Reply"
 
-        menu = QMenu(self)
+        menu = QMenu(sourceWidget)
+        editTextAction = menu.addAction("Edit Text")
+        editTextAction.triggered.connect(self.editText)
+        editTextAction.setShortcut(QKeySequence(QtKey.Key_Enter | QtKey.Key_Return))
         focusAction = menu.addAction("Focus")
 
-        focusAction.triggered.connect(lambda: self.focusOnNode(link))
-        focusAction.setShortcut(QKeySequence(QtKey.Key_Enter | QtKey.Key_Return))
-        if not node.links:
+        focusAction.triggered.connect(lambda: self.focusOnNode(item.link))
+        focusAction.setShortcut(QKeySequence(QtKey.Key_F))
+        if not item.link.node.links:
             focusAction.setEnabled(False)
+        focusAction.setVisible(notAnOrphan)
+
+        findReferencesAction = menu.addAction("Find References")
+        findReferencesAction.triggered.connect(lambda: self.findReferences(item))
+        findReferencesAction.setVisible(notAnOrphan)
+
         # Expand/Collapse All Children Action (non copies)
         menu.addSeparator()
         expandAllChildrenAction = menu.addAction("Expand All Children")
         expandAllChildrenAction.triggered.connect(lambda: self.setExpandRecursively(item, set(), expand=True))
         expandAllChildrenAction.setShortcut(QKeySequence(Qt.ShiftModifier | QtKey.Key_Return))
+        expandAllChildrenAction.setVisible(not isListWidgetMenu)
         collapseAllChildrenAction = menu.addAction("Collapse All Children")
         collapseAllChildrenAction.triggered.connect(lambda: self.setExpandRecursively(item, set(), expand=False))
         collapseAllChildrenAction.setShortcut(QKeySequence(Qt.ShiftModifier | Qt.AltModifier | Qt.Key_Return))
-        menu.addSeparator()
+        collapseAllChildrenAction.setVisible(not isListWidgetMenu)
+        if not isListWidgetMenu:
+            menu.addSeparator()
 
         # Play Actions
         playMenu = menu.addMenu("Play")
         # Hook into the mousePressEvent of the QMenu
-        playMenu.mousePressEvent = lambda event: (self._playNodeSound(node), QMenu.mousePressEvent(playMenu, event))
+        playMenu.mousePressEvent = lambda event: (self._playNodeSound(item.link.node), QMenu.mousePressEvent(playMenu, event))  # type: ignore[method-assign]
         playSoundAction = playMenu.addAction("Play Sound")
-        playSoundAction.triggered.connect(lambda: self.playSound(str(node.sound)) and None or None)
+        playSoundAction.triggered.connect(lambda: self.playSound(str(item.link.node.sound)) and None or None)
         playVoiceAction = playMenu.addAction("Play Voice")
-        playVoiceAction.triggered.connect(lambda: self.playSound(str(node.vo_resref)) and None or None)
+        playVoiceAction.triggered.connect(lambda: self.playSound(str(item.link.node.vo_resref)) and None or None)
         if not self.ui.soundComboBox.currentText().strip():
             playSoundAction.setEnabled(False)
         if not self.ui.voiceComboBox.currentText().strip():
@@ -2914,20 +3747,21 @@ Should return 1 or 0, representing a boolean.
 
         # Copy Actions
         copyNodeAction = menu.addAction(f"Copy {node_type} to Clipboard")
-        copyNodeAction.triggered.connect(lambda: self.model.copyNode(node))
+        copyNodeAction.triggered.connect(lambda: self.model.copyNode(item.link.node))
         copyNodeAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_C))
         copyGffPathAction = menu.addAction("Copy GFF Path")
-        copyGffPathAction.triggered.connect(lambda: self.copyPath(node))
+        copyGffPathAction.triggered.connect(lambda: self.copyPath(item.link.node))
         copyGffPathAction.setShortcut(QKeySequence(Qt.ControlModifier | Qt.AltModifier | QtKey.Key_C))
+        copyGffPathAction.setVisible(notAnOrphan)
         menu.addSeparator()
 
         # Paste Actions
         pasteLinkAction = menu.addAction("Paste from Clipboard as Link")
         pasteNewAction = menu.addAction("Paste from Clipboard as Deep Copy")
-        if isinstance(self._copy, DLGEntry) and isinstance(node, DLGReply):
+        if isinstance(self._copy, DLGEntry) and isinstance(item.link.node, DLGReply):
             pasteLinkAction.setText("Paste Entry from Clipboard as Link")
             pasteNewAction.setText("Paste Entry from Clipboard as Deep Copy")
-        elif isinstance(self._copy, DLGReply) and isinstance(node, DLGEntry):
+        elif isinstance(self._copy, DLGReply) and isinstance(item.link.node, DLGEntry):
             pasteLinkAction.setText("Paste Reply from Clipboard as Link")
             pasteNewAction.setText("Paste Reply from Clipboard as Deep Copy")
         else:
@@ -2935,8 +3769,10 @@ Should return 1 or 0, representing a boolean.
             pasteNewAction.setEnabled(False)
         pasteLinkAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_V))
         pasteLinkAction.triggered.connect(lambda: self.model.pasteItem(item, asNewBranches=False))
+        pasteLinkAction.setVisible(notAnOrphan)
         pasteNewAction.setShortcut(QKeySequence(Qt.ControlModifier | Qt.ShiftModifier | QtKey.Key_V))
         pasteNewAction.triggered.connect(lambda: self.model.pasteItem(item, asNewBranches=True))
+        pasteNewAction.setVisible(notAnOrphan)
         menu.addSeparator()
 
         # Add/Insert Actions
@@ -2947,44 +3783,49 @@ Should return 1 or 0, representing a boolean.
         moveUpAction = menu.addAction("Move Up")
         moveUpAction.triggered.connect(lambda: self.model.shiftItem(item, -1))
         moveUpAction.setShortcut(QKeySequence(Qt.ShiftModifier | QtKey.Key_Up))
+        moveUpAction.setVisible(not isListWidgetMenu)
         moveDownAction = menu.addAction("Move Down")
         moveDownAction.triggered.connect(lambda: self.model.shiftItem(item, 1))
         moveDownAction.setShortcut(QKeySequence(Qt.ShiftModifier | QtKey.Key_Down))
+        moveDownAction.setVisible(not isListWidgetMenu)
         menu.addSeparator()
 
         # Remove/Delete Actions
         removeLinkAction = menu.addAction(f"Remove Simple Link to {node_type}")
         removeLinkAction.setShortcut(QtKey.Key_Delete)
         removeLinkAction.triggered.connect(lambda: self.model.removeLink(item))
-        deleteItemAction = menu.addAction("Delete Selected")
-        deleteItemAction.triggered.connect(lambda: self.model.deleteNode(item))
-        deleteItemAction.setShortcut(QKeySequence(Qt.ShiftModifier | QtKey.Key_Delete))
+        removeLinkAction.setVisible(not isListWidgetMenu)
         menu.addSeparator()
 
-        # Create a custom styled action for "Delete ALL References"
-        deleteAllReferencesAction = QWidgetAction(self)
-        deleteAllReferencesWidget = QWidget()
-        layout = QHBoxLayout()
-        deleteAllReferencesLabel = QLabel(f"Delete ALL References to {node_type}")
-        deleteAllReferencesLabel.setStyleSheet("""
-            QLabel {
-                color: red;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            QLabel:hover {
-                background-color: #d3d3d3;
-            }
-        """)
-        layout.addWidget(deleteAllReferencesLabel)
-        layout.setContentsMargins(40, 10, 40, 10)
-        deleteAllReferencesWidget.setLayout(layout)
-        deleteAllReferencesAction.setDefaultWidget(deleteAllReferencesWidget)
-        deleteAllReferencesAction.triggered.connect(lambda: self.model.deleteNodeEverywhere(node))
+        useLargeDeleteButton = False  # seems to have broken the context menu after we introduced global QFont sizes.
+        if useLargeDeleteButton:
+            # Create a custom styled action for "Delete ALL References"
+            deleteAllReferencesAction = QWidgetAction(self)
+            deleteAllReferencesWidget = QWidget()
+            layout = QHBoxLayout()
+            deleteAllReferencesLabel = QLabel(f"Delete ALL References to {node_type}")
+            deleteAllReferencesLabel.setStyleSheet("""
+                QLabel {
+                    color: red;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                QLabel:hover {
+                    background-color: #d3d3d3;
+                }
+            """)
+            layout.addWidget(deleteAllReferencesLabel)
+            layout.setContentsMargins(35, 10, 35, 10)
+            deleteAllReferencesWidget.setLayout(layout)
+            deleteAllReferencesAction.setDefaultWidget(deleteAllReferencesWidget)
+        else:
+            deleteAllReferencesAction = QAction(f"Delete ALL References to {node_type}", menu)  # type: ignore[assignment]
+        deleteAllReferencesAction.triggered.connect(lambda: self.model.deleteNodeEverywhere(item.link.node))
         deleteAllReferencesAction.setShortcut(QKeySequence(Qt.ControlModifier | Qt.ShiftModifier | Qt.Key_Delete))
+        deleteAllReferencesAction.setVisible(notAnOrphan)
         menu.addAction(deleteAllReferencesAction)
 
-        menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
+        return menu
 
     def _playNodeSound(self, node: DLGEntry | DLGReply):
         if str(node.sound).strip():
@@ -2994,6 +3835,63 @@ Should return 1 or 0, representing a boolean.
         else:
             self.blinkWindow()
 
+    def findReferences(self, item: DLGStandardItem | DLGListWidgetItem):
+        node = item.link.node
+        assert node is not None
+        referenceItems: list[DLGStandardItem] = [item for link in self.core_dlg.getAllNodeReferences(node) for item in self.model.linkToItems[link]]
+        self.reference_history = self.reference_history[:self.current_reference_index + 1]
+        item_html = item.data(Qt.ItemDataRole.DisplayRole)
+        self.reference_history.append((referenceItems, item_html))
+        self.current_reference_index += 1
+        self.show_reference_dialog(referenceItems, item_html)
+
+    def get_item_dlg_paths(self, item: DLGStandardItem | DLGListWidgetItem) -> tuple[str, str, str]:
+        link_parent_path = item.data(_LINK_PARENT_NODE_PATH_ROLE)
+        link_path = item.link.partial_path()
+        linked_to_path = item.link.node.path()
+        return link_parent_path, link_path, linked_to_path
+
+    def build_link_display_html(self, path: str, node_info: str, color: str) -> str:
+        display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{path}</div>"
+        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_info}</div>"
+        combined_display = f"""
+        <div class='link-container'>
+            {display_text_1}
+            {display_text_2}
+        </div>
+        """
+        return combined_display
+
+    def show_reference_dialog(self, references: list[DLGStandardItem], item_html: str):
+        if self.dialog_references is None:
+            self.dialog_references = ReferenceChooserDialog(references, self, item_html)
+            self.dialog_references.itemChosen.connect(self.onReferenceChosen)
+        else:
+            self.dialog_references.update_references(references, item_html)
+        if self.dialog_references.isHidden():
+            self.dialog_references.show()
+
+    def onReferenceChosen(self, item: DLGListWidgetItem):
+        link = item.link
+        self.jumpToNode(link)
+
+    def jumpToNode(self, link: DLGLink):
+        item = self.model.linkToItems[link][0]
+        self.expandToRoot(item)
+        self.ui.dialogTree.setCurrentIndex(item.index())
+
+    def navigate_back(self):
+        if self.current_reference_index > 0:
+            self.current_reference_index -= 1
+            references, item_html = self.reference_history[self.current_reference_index]
+            self.show_reference_dialog(references, item_html)
+
+    def navigate_forward(self):
+        if self.current_reference_index < len(self.reference_history) - 1:
+            self.current_reference_index += 1
+            references, item_html = self.reference_history[self.current_reference_index]
+            self.show_reference_dialog(references, item_html)
+
     # region Events
     def focusOutEvent(self, e: QFocusEvent):
         self.keysDown.clear()  # Clears the set when focus is lost
@@ -3001,74 +3899,20 @@ Should return 1 or 0, representing a boolean.
         print("dlgedit.focusOutEvent: clearing all keys/buttons held down.")
 
     def closeEvent(self, event: QCloseEvent):
-        self.player.stop()
         super().closeEvent(event)
+        self.player.stop()
+        if self.ui.rightDockWidget.isVisible():
+            self.ui.rightDockWidget.close()
+        if self.ui.topDockWidget.isVisible():
+            self.ui.topDockWidget.close()
+        #self.saveWidgetStates()
 
-    def keyPressEvent(
-        self,
-        event: QKeyEvent,
-        *,
-        isTreeViewCall: bool = False,
-    ):
-        if not isTreeViewCall:
-            self.ui.dialogTree.keyPressEvent(event)  # this'll call us back immediately, just ensures we don't get called twice for the same event.
-            return
-        super().keyPressEvent(event)
-        key = event.key()
-        print("<SDM> [DLGEditor.keyPressEvent scope] key: %s", key)
+    def saveWidgetStates(self):
+        """Iterates over child widgets and saves their geometry and state."""
+        for widget in self.findChildren(QWidget):
+            self.dlg_settings.setWidgetGeometry(widget)
 
-        if event.isAutoRepeat() or key in self.keysDown:
-            return  # Ignore auto-repeat events and prevent multiple executions on single key
-        selectedIndex: QModelIndex = self.ui.dialogTree.currentIndex()
-        if not selectedIndex.isValid():
-            return
-
-        selectedItem: DLGStandardItem | None = self.model.itemFromIndex(selectedIndex)
-        if selectedItem is None:
-            if key == QtKey.Key_Insert:
-                print("<SDM> [keyPressEvent scope insert1] key: %s", key)
-                self.model.addRootNode()
-            return
-        print(f"DLGEditor.keyPressEvent: {getQtKeyString(key)}, held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
-        node = selectedItem.link.node
-        print("<SDM> [keyPressEvent scope] node: %s", node)
-        if node is None:
-            return
-
-        if not self.keysDown:
-            self.keysDown.add(key)
-            if key in (QtKey.Key_Insert,):
-                self.model.addChildToItem(selectedItem, node)
-            elif key in (QtKey.Key_Delete, QtKey.Key_Backspace):
-                self.model.removeLink(selectedItem)
-            elif key in (QtKey.Key_Enter, QtKey.Key_Return):
-                self.focusOnNode(selectedItem.link)
-            elif key == QtKey.Key_Insert:
-                print("<SDM> [keyPressEvent insert2 scope] key: %s", key)
-
-                self.model.addChildToItem(selectedItem)
-            elif key == QtKey.Key_P:
-                print("<SDM> [keyPressEvent play scope] key: %s", key)
-
-                if self.ui.soundComboBox.currentText().strip():
-                    self.playSound(self.ui.soundComboBox.currentText().strip())
-                elif self.ui.voiceComboBox.currentText().strip():
-                    self.playSound(self.ui.voiceComboBox.currentText().strip())
-                else:
-                    self.blinkWindow()
-            return
-
-        self.keysDown.add(key)
-        if self.keysDown in (
-            {QtKey.Key_Shift, QtKey.Key_Return},
-            {QtKey.Key_Shift, QtKey.Key_Enter},
-        ):
-            self.setExpandRecursively(selectedItem, set(), expand=True)
-        elif self.keysDown in (
-            {QtKey.Key_Shift, QtKey.Key_Return, QtKey.Key_Alt},
-            {QtKey.Key_Shift, QtKey.Key_Enter, QtKey.Key_Alt},
-        ):
-            self.setExpandRecursively(selectedItem, set(), expand=False, maxdepth=-1)
+    def _handleShiftItemKeybind(self, selectedIndex: QModelIndex, selectedItem: DLGStandardItem):
         if self.keysDown in (
             {QtKey.Key_Shift, QtKey.Key_Up},
             {QtKey.Key_Shift, QtKey.Key_Up, QtKey.Key_Alt},
@@ -3089,6 +3933,84 @@ Should return 1 or 0, representing a boolean.
             if newIndex.isValid():
                 self.ui.dialogTree.setCurrentIndex(newIndex)
             self.model.shiftItem(selectedItem, 1, noSelectionUpdate=True)
+
+    def keyPressEvent(
+        self,
+        event: QKeyEvent,
+        *,
+        isTreeViewCall: bool = False,
+    ):  # sourcery skip: extract-duplicate-method
+        if not isTreeViewCall:
+            if not self.ui.dialogTree.hasFocus():
+                print(f"<SDM> [DLGEditor.keyPressEvent scope] passthrough key {getQtKeyString(event.key())}: dialogTree does not have focus.")
+                super().keyPressEvent(event)
+                return
+            self.ui.dialogTree.keyPressEvent(event)  # this'll call us back immediately, just ensures we don't get called twice for the same event.
+            return
+        super().keyPressEvent(event)
+        key = event.key()
+        print("<SDM> [DLGEditor.keyPressEvent scope] key: ", getQtKeyString(event.key()), f"held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
+        selectedIndex: QModelIndex = self.ui.dialogTree.currentIndex()
+        if not selectedIndex.isValid():
+            return
+
+        selectedItem: DLGStandardItem | None = self.model.itemFromIndex(selectedIndex)
+        if selectedItem is None:
+            if key == QtKey.Key_Insert:
+                print("<SDM> [keyPressEvent scope insert1] key: ", key)
+                self.model.addRootNode()
+            return
+
+        if event.isAutoRepeat() or key in self.keysDown:
+            print("DLGEditor.keyPressEvent: event is auto repeat and/or key already in keysDown set.")
+            if key in (QtKey.Key_Up, QtKey.Key_Down):
+                self.keysDown.add(key)
+                self._handleShiftItemKeybind(selectedIndex, selectedItem)
+            return  # Ignore auto-repeat events and prevent multiple executions on single key
+        print(f"DLGEditor.keyPressEvent: {getQtKeyString(key)}, held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
+        assert selectedItem.link is not None
+        assert selectedItem.link.node is not None
+        node = selectedItem.link.node
+        print("<SDM> [keyPressEvent scope] node: ", node)
+        if node is None:
+            self.blinkWindow()
+            return
+
+        if not self.keysDown:
+            self.keysDown.add(key)
+            if key in (QtKey.Key_Delete, QtKey.Key_Backspace):
+                self.model.removeLink(selectedItem)
+            elif key in (QtKey.Key_Enter, QtKey.Key_Return):
+                self.editText()
+            elif key == QtKey.Key_F:
+                self.focusOnNode(selectedItem.link)
+            elif key == QtKey.Key_Insert:
+                print("<SDM> [keyPressEvent insert2 scope] key: ", key)
+
+                self.model.addChildToItem(selectedItem)
+            elif key == QtKey.Key_P:
+                print("<SDM> [keyPressEvent play scope] key: ", key)
+
+                if self.ui.soundComboBox.currentText().strip():
+                    self.playSound(self.ui.soundComboBox.currentText().strip())
+                elif self.ui.voiceComboBox.currentText().strip():
+                    self.playSound(self.ui.voiceComboBox.currentText().strip())
+                else:
+                    self.blinkWindow()
+            return
+
+        self.keysDown.add(key)
+        self._handleShiftItemKeybind(selectedIndex, selectedItem)
+        if self.keysDown in (
+            {QtKey.Key_Shift, QtKey.Key_Return},
+            {QtKey.Key_Shift, QtKey.Key_Enter},
+        ):
+            self.setExpandRecursively(selectedItem, set(), expand=True)
+        elif self.keysDown in (
+            {QtKey.Key_Shift, QtKey.Key_Return, QtKey.Key_Alt},
+            {QtKey.Key_Shift, QtKey.Key_Enter, QtKey.Key_Alt},
+        ):
+            self.setExpandRecursively(selectedItem, set(), expand=False, maxdepth=-1)
         elif QtKey.Key_Control in self.keysDown:
             if QtKey.Key_C in self.keysDown:
                 if QtKey.Key_Alt in self.keysDown:
@@ -3126,89 +4048,96 @@ Should return 1 or 0, representing a boolean.
 
     def onSelectionChanged(self, selection: QItemSelection):
         """Updates UI fields based on selected dialog node."""
-        self.uiDataLoadedForSelection = False
+        self.uiDataForSelectionIsLoaded = False
         selectionIndices = selection.indexes()
         print("<SDM> [onSelectionChanged scope] selectionIndices:\n", ",\n".join([self.model.itemFromIndex(index).text() for index in selectionIndices if self.model.itemFromIndex(index) is not None]))
-        if selectionIndices:
-            item: DLGStandardItem | None = self.model.itemFromIndex(selectionIndices[0])
-            link: DLGLink = item.link
-            node: DLGNode | None = link.node
+        if not selectionIndices:
+            self.uiDataForSelectionIsLoaded = True
+            return
+        item: DLGStandardItem | None = self.model.itemFromIndex(selectionIndices[0])
+        if item is None:
+            self.uiDataForSelectionIsLoaded = True
+            return
 
-            if isinstance(node, DLGEntry):
-                self.ui.speakerEdit.setEnabled(True)
-                self.ui.speakerEdit.setText(node.speaker)
-            elif isinstance(node, DLGReply):
-                self.ui.speakerEdit.setEnabled(False)
-                self.ui.speakerEdit.setText("")
+        assert item.link is not None
+        assert item.link.node is not None
+        if isinstance(item.link.node, DLGEntry):
+            self.ui.speakerEdit.setEnabled(True)
+            self.ui.speakerEdit.setText(item.link.node.speaker)
+        elif isinstance(item.link.node, DLGReply):
+            self.ui.speakerEdit.setEnabled(False)
+            self.ui.speakerEdit.setText("")
+        else:
+            raise ValueError(f"node was type {item.link.node.__class__.__name__} ({item.link.node}), expected DLGEntry/DLGReply")
 
-            self.ui.listenerEdit.setText(node.listener)
-            self._loadLocstring(self.ui.textEdit, node.text)
+        self.ui.listenerEdit.setText(item.link.node.listener)
 
-            self.ui.script1ResrefEdit.setComboBoxText(str(node.script1))
-            self.ui.script1Param1Spin.setValue(node.script1_param1)
-            self.ui.script1Param2Spin.setValue(node.script1_param2)
-            self.ui.script1Param3Spin.setValue(node.script1_param3)
-            self.ui.script1Param4Spin.setValue(node.script1_param4)
-            self.ui.script1Param5Spin.setValue(node.script1_param5)
-            self.ui.script1Param6Edit.setText(node.script1_param6)
+        self.ui.script1ResrefEdit.setComboBoxText(str(item.link.node.script1))
+        self.ui.script1Param1Spin.setValue(item.link.node.script1_param1)
+        self.ui.script1Param2Spin.setValue(item.link.node.script1_param2)
+        self.ui.script1Param3Spin.setValue(item.link.node.script1_param3)
+        self.ui.script1Param4Spin.setValue(item.link.node.script1_param4)
+        self.ui.script1Param5Spin.setValue(item.link.node.script1_param5)
+        self.ui.script1Param6Edit.setText(item.link.node.script1_param6)
 
-            self.ui.script2ResrefEdit.setComboBoxText(str(node.script2))
-            self.ui.script2Param1Spin.setValue(node.script2_param1)
-            self.ui.script2Param2Spin.setValue(node.script2_param2)
-            self.ui.script2Param3Spin.setValue(node.script2_param3)
-            self.ui.script2Param4Spin.setValue(node.script2_param4)
-            self.ui.script2Param5Spin.setValue(node.script2_param5)
-            self.ui.script2Param6Edit.setText(node.script2_param6)
+        self.ui.script2ResrefEdit.setComboBoxText(str(item.link.node.script2))
+        self.ui.script2Param1Spin.setValue(item.link.node.script2_param1)
+        self.ui.script2Param2Spin.setValue(item.link.node.script2_param2)
+        self.ui.script2Param3Spin.setValue(item.link.node.script2_param3)
+        self.ui.script2Param4Spin.setValue(item.link.node.script2_param4)
+        self.ui.script2Param5Spin.setValue(item.link.node.script2_param5)
+        self.ui.script2Param6Edit.setText(item.link.node.script2_param6)
 
-            self.ui.condition1ResrefEdit.setComboBoxText(str(link.active1))
-            self.ui.condition1Param1Spin.setValue(link.active1_param1)
-            self.ui.condition1Param2Spin.setValue(link.active1_param2)
-            self.ui.condition1Param3Spin.setValue(link.active1_param3)
-            self.ui.condition1Param4Spin.setValue(link.active1_param4)
-            self.ui.condition1Param5Spin.setValue(link.active1_param5)
-            self.ui.condition1Param6Edit.setText(link.active1_param6)
-            self.ui.condition1NotCheckbox.setChecked(link.active1_not)
-            self.ui.condition2ResrefEdit.setComboBoxText(str(link.active2))
-            self.ui.condition2Param1Spin.setValue(link.active2_param1)
-            self.ui.condition2Param2Spin.setValue(link.active2_param2)
-            self.ui.condition2Param3Spin.setValue(link.active2_param3)
-            self.ui.condition2Param4Spin.setValue(link.active2_param4)
-            self.ui.condition2Param5Spin.setValue(link.active2_param5)
-            self.ui.condition2Param6Edit.setText(link.active2_param6)
-            self.ui.condition2NotCheckbox.setChecked(link.active2_not)
+        self.ui.condition1ResrefEdit.setComboBoxText(str(item.link.active1))
+        self.ui.condition1Param1Spin.setValue(item.link.active1_param1)
+        self.ui.condition1Param2Spin.setValue(item.link.active1_param2)
+        self.ui.condition1Param3Spin.setValue(item.link.active1_param3)
+        self.ui.condition1Param4Spin.setValue(item.link.active1_param4)
+        self.ui.condition1Param5Spin.setValue(item.link.active1_param5)
+        self.ui.condition1Param6Edit.setText(item.link.active1_param6)
+        self.ui.condition1NotCheckbox.setChecked(item.link.active1_not)
+        self.ui.condition2ResrefEdit.setComboBoxText(str(item.link.active2))
+        self.ui.condition2Param1Spin.setValue(item.link.active2_param1)
+        self.ui.condition2Param2Spin.setValue(item.link.active2_param2)
+        self.ui.condition2Param3Spin.setValue(item.link.active2_param3)
+        self.ui.condition2Param4Spin.setValue(item.link.active2_param4)
+        self.ui.condition2Param5Spin.setValue(item.link.active2_param5)
+        self.ui.condition2Param6Edit.setText(item.link.active2_param6)
+        self.ui.condition2NotCheckbox.setChecked(item.link.active2_not)
 
-            self.refreshAnimList()
-            self.ui.emotionSelect.setCurrentIndex(node.emotion_id)
-            self.ui.expressionSelect.setCurrentIndex(node.facial_id)
-            self.ui.soundComboBox.setComboBoxText(str(node.sound))
-            self.ui.soundCheckbox.setChecked(node.sound_exists)
-            self.ui.voiceComboBox.setComboBoxText(str(node.vo_resref))
+        self.refreshAnimList()
+        self.ui.emotionSelect.setCurrentIndex(item.link.node.emotion_id)
+        self.ui.expressionSelect.setCurrentIndex(item.link.node.facial_id)
+        self.ui.soundComboBox.setComboBoxText(str(item.link.node.sound))
+        self.ui.soundCheckbox.setChecked(item.link.node.sound_exists)
+        self.ui.voiceComboBox.setComboBoxText(str(item.link.node.vo_resref))
 
-            self.ui.plotIndexSpin.setValue(node.plot_index)
-            self.ui.plotXpSpin.setValue(node.plot_xp_percentage)
-            self.ui.questEdit.setText(node.quest)
-            self.ui.questEntrySpin.setValue(node.quest_entry or 0)
+        self.ui.plotIndexSpin.setValue(item.link.node.plot_index)
+        print("plot xp percentage: ", item.link.node.plot_xp_percentage)
+        self.ui.plotXpSpin.setValue(int(item.link.node.plot_xp_percentage * 100))
+        self.ui.questEdit.setText(item.link.node.quest)
+        self.ui.questEntrySpin.setValue(item.link.node.quest_entry or 0)
 
-            self.ui.cameraIdSpin.setValue(-1 if node.camera_id is None else node.camera_id)
+        self.ui.cameraIdSpin.setValue(-1 if item.link.node.camera_id is None else item.link.node.camera_id)
 
-            self.ui.cameraAnimSpin.min_value = 1200
-            self.ui.cameraAnimSpin.max_value = 65534
-            self.ui.cameraAnimSpin.setValue(-1 if node.camera_anim is None else node.camera_anim)
+        self.ui.cameraAnimSpin.min_value = 1200
+        self.ui.cameraAnimSpin.max_value = 65534
+        self.ui.cameraAnimSpin.setValue(-1 if item.link.node.camera_anim is None else item.link.node.camera_anim)
 
-            self.ui.cameraAngleSelect.setCurrentIndex(0 if node.camera_angle is None else node.camera_angle)
-            self.ui.cameraEffectSelect.setCurrentIndex(0 if node.camera_effect is None else int(node.camera_effect) + 1)
+        self.ui.cameraAngleSelect.setCurrentIndex(0 if item.link.node.camera_angle is None else item.link.node.camera_angle)
+        self.ui.cameraEffectSelect.setCurrentIndex(0 if item.link.node.camera_effect is None else int(item.link.node.camera_effect) + 1)
 
-            self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
-            self.ui.nodeIdSpin.setValue(node.node_id)
-            self.ui.alienRaceNodeSpin.setValue(node.alien_race_node)
-            self.ui.postProcSpin.setValue(node.post_proc_node)
-            self.ui.delaySpin.setValue(node.delay)
-            self.ui.logicSpin.setValue(link.logic)
-            self.ui.waitFlagSpin.setValue(node.wait_flags)
-            self.ui.fadeTypeSpin.setValue(node.fade_type)
+        self.ui.nodeUnskippableCheckbox.setChecked(item.link.node.unskippable)
+        self.ui.nodeIdSpin.setValue(item.link.node.node_id)
+        self.ui.alienRaceNodeSpin.setValue(item.link.node.alien_race_node)
+        self.ui.postProcSpin.setValue(item.link.node.post_proc_node)
+        self.ui.delaySpin.setValue(item.link.node.delay)
+        self.ui.logicSpin.setValue(item.link.logic)
+        self.ui.waitFlagSpin.setValue(item.link.node.wait_flags)
+        self.ui.fadeTypeSpin.setValue(item.link.node.fade_type)
 
-            self.ui.commentsEdit.setPlainText(node.comment)
-        self.uiDataLoadedForSelection = True
+        self.ui.commentsEdit.setPlainText(item.link.node.comment)
+        self.uiDataForSelectionIsLoaded = True
 
     def onNodeUpdate(self):
         """Updates node properties based on UI selections."""
@@ -3216,8 +4145,7 @@ Should return 1 or 0, representing a boolean.
         if not selectedIndices:
             print("onNodeUpdate: no selected indices, early return")
             return
-        if not self.uiDataLoadedForSelection:
-            print("onNodeUpdate: acceptUpdates is False, early return")
+        if not self.uiDataForSelectionIsLoaded:
             return
         index: QModelIndex = selectedIndices[0]
         if not index.isValid():
@@ -3225,82 +4153,83 @@ Should return 1 or 0, representing a boolean.
             return
         print("<SDM> [onNodeUpdate scope] selectedIndices: %s", [self.ui.dialogTree.getIdentifyingText(indx) for indx in selectedIndices])
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
-        link: DLGLink = item.link
-        node: DLGNode | None = link.node
-        node.listener = self.ui.listenerEdit.text()
-        if isinstance(node, DLGEntry):
-            node.speaker = self.ui.speakerEdit.text()
-        node.script1 = ResRef(self.ui.script1ResrefEdit.currentText())
-        node.script1_param1 = self.ui.script1Param1Spin.value()
-        node.script1_param2 = self.ui.script1Param2Spin.value()
-        node.script1_param3 = self.ui.script1Param3Spin.value()
-        node.script1_param4 = self.ui.script1Param4Spin.value()
-        node.script1_param5 = self.ui.script1Param5Spin.value()
-        node.script1_param6 = self.ui.script1Param6Edit.text()
-        node.script2 = ResRef(self.ui.script2ResrefEdit.currentText())
-        node.script2_param1 = self.ui.script2Param1Spin.value()
-        node.script2_param2 = self.ui.script2Param2Spin.value()
-        node.script2_param3 = self.ui.script2Param3Spin.value()
-        node.script2_param4 = self.ui.script2Param4Spin.value()
-        node.script2_param5 = self.ui.script2Param5Spin.value()
-        node.script2_param6 = self.ui.script2Param6Edit.text()
+        assert item.link is not None
+        assert item.link.node is not None
+        item.link.node.listener = self.ui.listenerEdit.text()
+        if isinstance(item.link.node, DLGEntry):
+            item.link.node.speaker = self.ui.speakerEdit.text()
+        item.link.node.script1 = ResRef(self.ui.script1ResrefEdit.currentText())
+        item.link.node.script1_param1 = self.ui.script1Param1Spin.value()
+        item.link.node.script1_param2 = self.ui.script1Param2Spin.value()
+        item.link.node.script1_param3 = self.ui.script1Param3Spin.value()
+        item.link.node.script1_param4 = self.ui.script1Param4Spin.value()
+        item.link.node.script1_param5 = self.ui.script1Param5Spin.value()
+        item.link.node.script1_param6 = self.ui.script1Param6Edit.text()
+        item.link.node.script2 = ResRef(self.ui.script2ResrefEdit.currentText())
+        item.link.node.script2_param1 = self.ui.script2Param1Spin.value()
+        item.link.node.script2_param2 = self.ui.script2Param2Spin.value()
+        item.link.node.script2_param3 = self.ui.script2Param3Spin.value()
+        item.link.node.script2_param4 = self.ui.script2Param4Spin.value()
+        item.link.node.script2_param5 = self.ui.script2Param5Spin.value()
+        item.link.node.script2_param6 = self.ui.script2Param6Edit.text()
 
-        link.active1 = ResRef(self.ui.condition1ResrefEdit.currentText())
-        link.active1_param1 = self.ui.condition1Param1Spin.value()
-        link.active1_param2 = self.ui.condition1Param2Spin.value()
-        link.active1_param3 = self.ui.condition1Param3Spin.value()
-        link.active1_param4 = self.ui.condition1Param4Spin.value()
-        link.active1_param5 = self.ui.condition1Param5Spin.value()
-        link.active1_param6 = self.ui.condition1Param6Edit.text()
-        link.active1_not = self.ui.condition1NotCheckbox.isChecked()
-        link.active2 = ResRef(self.ui.condition2ResrefEdit.currentText())
-        link.active2_param1 = self.ui.condition2Param1Spin.value()
-        link.active2_param2 = self.ui.condition2Param2Spin.value()
-        link.active2_param3 = self.ui.condition2Param3Spin.value()
-        link.active2_param4 = self.ui.condition2Param4Spin.value()
-        link.active2_param5 = self.ui.condition2Param5Spin.value()
-        link.active2_param6 = self.ui.condition2Param6Edit.text()
-        link.active2_not = self.ui.condition2NotCheckbox.isChecked()
-        link.logic = bool(self.ui.logicSpin.value())
+        item.link.active1 = ResRef(self.ui.condition1ResrefEdit.currentText())
+        item.link.active1_param1 = self.ui.condition1Param1Spin.value()
+        item.link.active1_param2 = self.ui.condition1Param2Spin.value()
+        item.link.active1_param3 = self.ui.condition1Param3Spin.value()
+        item.link.active1_param4 = self.ui.condition1Param4Spin.value()
+        item.link.active1_param5 = self.ui.condition1Param5Spin.value()
+        item.link.active1_param6 = self.ui.condition1Param6Edit.text()
+        item.link.active1_not = self.ui.condition1NotCheckbox.isChecked()
+        item.link.active2 = ResRef(self.ui.condition2ResrefEdit.currentText())
+        item.link.active2_param1 = self.ui.condition2Param1Spin.value()
+        item.link.active2_param2 = self.ui.condition2Param2Spin.value()
+        item.link.active2_param3 = self.ui.condition2Param3Spin.value()
+        item.link.active2_param4 = self.ui.condition2Param4Spin.value()
+        item.link.active2_param5 = self.ui.condition2Param5Spin.value()
+        item.link.active2_param6 = self.ui.condition2Param6Edit.text()
+        item.link.active2_not = self.ui.condition2NotCheckbox.isChecked()
+        item.link.logic = bool(self.ui.logicSpin.value())
 
-        node.emotion_id = self.ui.emotionSelect.currentIndex()
-        node.facial_id = self.ui.expressionSelect.currentIndex()
-        node.sound = ResRef(self.ui.soundComboBox.currentText())
-        node.sound_exists = self.ui.soundCheckbox.isChecked()
-        node.vo_resref = ResRef(self.ui.voiceComboBox.currentText())
+        item.link.node.emotion_id = self.ui.emotionSelect.currentIndex()
+        item.link.node.facial_id = self.ui.expressionSelect.currentIndex()
+        item.link.node.sound = ResRef(self.ui.soundComboBox.currentText())
+        item.link.node.sound_exists = self.ui.soundCheckbox.isChecked()
+        item.link.node.vo_resref = ResRef(self.ui.voiceComboBox.currentText())
 
-        node.plot_index = self.ui.plotIndexSpin.value()
-        node.plot_xp_percentage = self.ui.plotXpSpin.value()
-        node.quest = self.ui.questEdit.text()
-        node.quest_entry = self.ui.questEntrySpin.value()
+        item.link.node.plot_index = self.ui.plotIndexSpin.value()
+        item.link.node.plot_xp_percentage = self.ui.plotXpSpin.value() / 100
+        item.link.node.quest = self.ui.questEdit.text()
+        item.link.node.quest_entry = self.ui.questEntrySpin.value()
 
-        node.camera_id = self.ui.cameraIdSpin.value()
-        node.camera_anim = self.ui.cameraAnimSpin.value()
-        node.camera_angle = self.ui.cameraAngleSelect.currentIndex()
-        node.camera_effect = self.ui.cameraEffectSelect.currentData()
-        if node.camera_id >= 0 and node.camera_angle == 0:
+        item.link.node.camera_id = self.ui.cameraIdSpin.value()
+        item.link.node.camera_anim = self.ui.cameraAnimSpin.value()
+        item.link.node.camera_angle = self.ui.cameraAngleSelect.currentIndex()
+        item.link.node.camera_effect = self.ui.cameraEffectSelect.currentData()
+        if item.link.node.camera_id >= 0 and item.link.node.camera_angle == 0:
             self.ui.cameraAngleSelect.setCurrentIndex(6)
-        elif node.camera_id == -1 and node.camera_angle == 7:
+        elif item.link.node.camera_id == -1 and item.link.node.camera_angle == 7:
             self.ui.cameraAngleSelect.setCurrentIndex(0)
 
-        node.unskippable = self.ui.nodeUnskippableCheckbox.isChecked()
-        node.node_id = self.ui.nodeIdSpin.value()
-        node.alien_race_node = self.ui.alienRaceNodeSpin.value()
-        node.post_proc_node = self.ui.postProcSpin.value()
-        node.delay = self.ui.delaySpin.value()
-        node.wait_flags = self.ui.waitFlagSpin.value()
-        node.fade_type = self.ui.fadeTypeSpin.value()
-        node.comment = self.ui.commentsEdit.toPlainText()
-        self.model._updateCopies(link, item)  # noqa: SLF001
+        item.link.node.unskippable = self.ui.nodeUnskippableCheckbox.isChecked()
+        item.link.node.node_id = self.ui.nodeIdSpin.value()
+        item.link.node.alien_race_node = self.ui.alienRaceNodeSpin.value()
+        item.link.node.post_proc_node = self.ui.postProcSpin.value()
+        item.link.node.delay = self.ui.delaySpin.value()
+        item.link.node.wait_flags = self.ui.waitFlagSpin.value()
+        item.link.node.fade_type = self.ui.fadeTypeSpin.value()
+        item.link.node.comment = self.ui.commentsEdit.toPlainText()
+        self.model._updateCopies(item.link, item)  # noqa: SLF001
+        self.model.coreDLGItemDataChanged.emit(item)
 
     def onItemExpanded(self, index: QModelIndex):
+        #self.ui.dialogTree.model().layoutAboutToBeChanged.emit()
         item = self.model.itemFromIndex(index)
         if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):
             self._fullyLoadFutureExpandItem(item, index)
         if item.parent() is None:
             self.setExpandRecursively(item, set(), expand=True)
-        index = self.model.indexFromItem(item)
-        self.model.dataChanged.emit(index, index)
+        self.ui.dialogTree.debounceLayoutChanged(preChangeEmit=False)
 
     def _fullyLoadFutureExpandItem(self, item: DLGStandardItem, sourceIndex: QModelIndex):
         item.removeRow(0)  # Remove the placeholder
@@ -3325,31 +4254,22 @@ Should return 1 or 0, representing a boolean.
 
     def onRemoveStuntClicked(self):
         selected = self.ui.stuntList.selectedItems()
-        print("<SDM> [onRemoveStuntClicked scope] selected: ", selected)
-
+        print("<SDM> [onRemoveStuntClicked scope] selected: ", selected, "len: ", len(selected))
         if selected:
-            item: QListWidgetItem = selected[0]
-            print("<SDM> [onRemoveStuntClicked scope] selectedItem: ", item)
-
-            stunt: DLGStunt = item.data(Qt.ItemDataRole.UserRole)
+            stunt: DLGStunt = selected[0].data(Qt.ItemDataRole.UserRole)
             print("<SDM> [onRemoveStuntClicked scope] DLGStunt: ", stunt)
             self.core_dlg.stunts.remove(stunt)
             self.refreshStuntList()
 
     def onEditStuntClicked(self):
         selected = self.ui.stuntList.selectedItems()
-        print("<SDM> [onEditStuntClicked scope] selected: ", selected)
+        print("<SDM> [onEditStuntClicked scope] selected: ", selected, "len: ", len(selected))
 
         if selected:
-            item: QListWidgetItem = selected[0]
-            print("<SDM> [onEditStuntClicked scope] QListWidgetItem: ", item)
-
-            stunt: DLGStunt = item.data(Qt.ItemDataRole.UserRole)
+            stunt: DLGStunt = selected[0].data(Qt.ItemDataRole.UserRole)
             print("<SDM> [onEditStuntClicked scope] DLGStunt: ", stunt)
 
             dialog = CutsceneModelDialog(self, stunt)
-            print("<SDM> [onEditStuntClicked scope] dialog: ", dialog)
-
             if dialog.exec_():
                 stunt.stunt_model = dialog.stunt().stunt_model
                 print("<SDM> [onEditStuntClicked scope] stunt.stunt_model: ", stunt.stunt_model)
@@ -3440,6 +4360,161 @@ Should return 1 or 0, representing a boolean.
                 self.ui.animsList.addItem(item)
 
 
+class ReferenceChooserDialog(QDialog):
+    itemChosen: ClassVar[QtCore.Signal] = QtCore.Signal()
+
+    def __init__(self, references: list[DLGStandardItem], parent: DLGEditor, item_text: str):
+        assert isinstance(parent, DLGEditor)
+        super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowTitle("Node References")
+
+        layout = QVBoxLayout(self)
+        self.label = QLabel()
+        self.editor: DLGEditor = parent
+        self.label.setTextFormat(Qt.TextFormat.RichText)
+        self.listWidget = DLGListWidget(self)
+        self.listWidget.setItemDelegate(HTMLDelegate(self.listWidget))
+        layout.addWidget(self.listWidget)
+
+        max_width = 0
+        for treeItem in references:
+            if treeItem.link is None:
+                continue
+            item = DLGListWidgetItem(link=self.editor.model.origToOrphanCopy[treeItem.link], ref=treeItem._link_ref)
+            link_parent_path, link_partial_path, node_path = self.editor.get_item_dlg_paths(item)
+
+            # Build the HTML display
+            color = "red" if isinstance(item.link.node, DLGEntry) else "blue"
+            display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_parent_path}\\{link_partial_path}</div>"
+            display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
+            combined_display = f"""
+            <div class='link-container'>
+                {display_text_1}
+                {display_text_2}
+            </div>
+            """
+            item.setData(Qt.ItemDataRole.DisplayRole, combined_display)
+            self.listWidget.addItem(item)
+            max_width = max(max_width, self.calculate_html_width(combined_display))
+
+        buttonLayout = QHBoxLayout()
+        self.backButton = QPushButton()
+        self.backButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowBack))
+        self.forwardButton = QPushButton()
+        self.forwardButton.setIcon(self.style().standardIcon(QStyle.SP_ArrowForward))
+        okButton = QPushButton("OK")
+        cancelButton = QPushButton("Cancel")
+        buttonLayout.addWidget(self.backButton)
+        buttonLayout.addWidget(self.forwardButton)
+        buttonLayout.addWidget(okButton)
+        buttonLayout.addWidget(cancelButton)
+
+        layout.addLayout(buttonLayout)
+
+        okButton.clicked.connect(self.accept)
+        cancelButton.clicked.connect(self.reject)
+        self.backButton.clicked.connect(self.go_back)
+        self.forwardButton.clicked.connect(self.go_forward)
+
+        self.listWidget.itemClicked.connect(lambda: cast(DLGEditor, self.parent()).jumpToNode(self.listWidget.currentItem().link))
+        #self.listWidget.itemDoubleClicked.connect(self.accept)
+
+        self.setStyleSheet(self.get_stylesheet())
+        self.adjustSize()
+        self.setMinimumSize(self.height(), self.width() + 50)
+        self.forwardButton.setEnabled(False)
+        self.update_item_sizes()
+        self.update_references(references, item_text)
+
+    def parent(self) -> DLGEditor:
+        parent = super().parent()
+        assert isinstance(parent, DLGEditor)
+        return parent
+
+    def update_item_sizes(self):
+        for i in range(self.listWidget.count()):
+            item: DLGListWidgetItem | None = self.listWidget.item(i)
+            if item is None:
+                RobustRootLogger().warning(f"ReferenceChooser.update_item_sizes({i}): Item was None unexpectedly.")
+                continue
+            item.setSizeHint(self.listWidget.itemDelegate().sizeHint(self.listWidget.viewOptions(), self.listWidget.indexFromItem(item)))
+
+    def calculate_html_width(self, html: str) -> int:
+        doc = QTextDocument()
+        doc.setHtml(html)
+        return int(doc.idealWidth())
+
+    def get_stylesheet(self) -> str:
+        font_size = self.parent().ui.dialogTree.text_size
+        return f"""
+        QListWidget {{
+            font-size: {font_size}pt;
+            margin: 10px;
+        }}
+        QPushButton {{
+            font-size: {font_size}pt;
+            padding: 5px 10px;
+        }}
+        QDialog {{
+            background-color: #f0f0f0;
+        }}
+        .link-container:hover .link-hover-text {{
+            display: block;
+        }}
+        .link-container:hover .link-text {{
+            display: none;
+        }}
+        .link-hover-text {{
+            display: none;
+        }}
+        """
+
+    def accept(self):
+        selectedItem = self.listWidget.currentItem()
+        if selectedItem:
+            self.itemChosen.emit(selectedItem)
+        super().accept()
+
+    def go_back(self):
+        self.parent().navigate_back()
+        self.update_button_states()
+
+    def go_forward(self):
+        self.parent().navigate_forward()
+        self.update_button_states()
+
+    def update_references(self, referenceItems: list[DLGStandardItem], item_text: str):
+        self.label.setText(item_text)
+        self.listWidget.clear()
+        for item in referenceItems:
+            if item.link is None:
+                continue
+            link_parent_path, link_partial_path, node_path = self.editor.get_item_dlg_paths(item)
+            color = "red" if isinstance(item.link.node, DLGEntry) else "blue"
+            display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_parent_path}\\{link_partial_path}</div>"
+            display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
+            combined_display = f"""
+            <div class='link-container'>
+                {display_text_1}
+                {display_text_2}
+            </div>
+            """
+            item.setData(combined_display, Qt.ItemDataRole.DisplayRole)
+            item.setData(link_parent_path, _LINK_PARENT_NODE_PATH_ROLE)
+            self.listWidget.addItem(DLGListWidgetItem(link=self.editor.model.origToOrphanCopy[item._link_ref], ref=item._link_ref))
+        self.update_item_sizes()
+        self.adjustSize()
+        assert referenceItems, "no references?"
+        self.setWindowTitle(f"Node References: {self.editor.get_item_dlg_paths(referenceItems[-1])[2]}")
+        self.update_button_states()
+
+    def update_button_states(self):
+        parent = self.parent()
+        self.backButton.setEnabled(parent.current_reference_index > 0)
+        self.forwardButton.setEnabled(parent.current_reference_index < len(parent.reference_history) - 1)
+
+
 class DLGSettings:
     def __init__(self):
         self.settings = QSettings("HolocronToolsetV3", "DLGEditor")
@@ -3516,31 +4591,8 @@ class DLGSettings:
     def setIndentation(self, value: int):
         self.set("indentation", value)
 
+    def fontSize(self, default: int) -> int:
+        return self.get("fontSize", default)
 
-if __name__ == "__main__":
-    app = QApplication([])
-    window = QWidget()
-    layout = QVBoxLayout(window)
-
-    combo_box = FilterComboBox()
-    combo_box.populateComboBox(
-        [
-            "item1",
-            "item2",
-            "item3",
-            "item4",
-            "nm35aabast06005_",
-            "nbtn14stun01003_",
-            "nbtn14stun01004_",
-            "nbtn14stun01005_",
-            "nstn57c01001009_",
-            "nstn57c01001014_",
-            "nglobebeast06890",
-        ]
-    )
-    layout.addWidget(combo_box)
-    combo_box.set_button_delegate("Play", lambda x: x)
-
-    window.setLayout(layout)
-    window.show()
-    app.exec_()
+    def setFontSize(self, value: int):
+        self.set("fontSize", value)

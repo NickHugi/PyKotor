@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QDialogBu
     QListWidgetItem, QPushButton, QSizePolicy, QSpacerItem,
     QVBoxLayout, QWidget)
 
+from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():

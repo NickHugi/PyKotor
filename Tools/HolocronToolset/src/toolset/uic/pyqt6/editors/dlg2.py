@@ -660,8 +660,9 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionReloadTree.setText(_translate("MainWindow", "Reload Tree"))
         self.actionUnfocus.setText(_translate("MainWindow", "Unfocus Tree"))
-from toolset.gui.editors.dlg import DLGTreeView, GFFFieldSpinBox
-from toolset.gui.widgets.edit.combobox import FilterComboBox
+from toolset.gui.editors.dlg import DLGTreeView
+from toolset.gui.widgets.edit.spinbox import GFFFieldSpinBox
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 
 from toolset.rcc import resources_rc_pyqt6

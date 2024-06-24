@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from qtpy import QtCore
 from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtWidgets import QDialog
 
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 class WaypointDialog(QDialog):
     def __init__(self, parent: QWidget, waypoint: GITWaypoint, installation: HTInstallation):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs.instance.waypoint import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415

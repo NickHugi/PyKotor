@@ -144,7 +144,8 @@ class GFFEditor(Editor):
         self.model.setColumnCount(1)
 
         rootNode = QStandardItem("[ROOT]")
-        rootNode.setForeground(QBrush(QColor(0x660000)))
+        self.applyPalette(rootNode, GFFFieldType.Struct)
+        #rootNode.setForeground(QBrush(QColor(0x660000)))
         self.model.appendRow(rootNode)
         self._load_struct(rootNode, gff.root)
 
@@ -174,15 +175,18 @@ class GFFEditor(Editor):
             childNode.setData(label, _LABEL_NODE_ROLE)
 
             if ftype == GFFFieldType.List:
-                childNode.setForeground(QBrush(QColor(0x000088)))
+                self.applyPalette(childNode, GFFFieldType.List)
+                #childNode.setForeground(QBrush(QColor(0x000088)))
                 self._load_list(childNode, value)
             elif ftype == GFFFieldType.Struct:
-                childNode.setForeground(QBrush(QColor(0x660000)))
+                self.applyPalette(childNode, GFFFieldType.Struct)
+                #childNode.setForeground(QBrush(QColor(0x660000)))
                 childNode.setData(value.struct_id, _VALUE_NODE_ROLE)
                 self._load_struct(childNode, value)
             else:
                 childNode.setData(value, _VALUE_NODE_ROLE)
 
+            self.applyPalette(node, GFFFieldType.Struct)
             self.refreshItemText(childNode)
             node.appendRow(childNode)
 
@@ -204,11 +208,14 @@ class GFFEditor(Editor):
         """
         for gffStruct in gffList:
             childNode = QStandardItem("")
-            childNode.setForeground(QBrush(QColor(0x660000)))
+            self.applyPalette(childNode, GFFFieldType.Struct)
+            #childNode.setForeground(QBrush(QColor(0x660000)))
             childNode.setData(gffStruct.struct_id, _VALUE_NODE_ROLE)
             node.appendRow(childNode)
             self.refreshItemText(childNode)
             self._load_struct(childNode, gffStruct)
+
+        self.applyPalette(node, GFFFieldType.List)
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a GFF file from the model.
@@ -324,7 +331,8 @@ class GFFEditor(Editor):
         self.model.setColumnCount(1)
 
         rootNode = QStandardItem("[ROOT]")
-        rootNode.setForeground(QBrush(QColor(0x660000)))
+        self.applyPalette(rootNode, GFFFieldType.Struct)
+        #rootNode.setForeground(QBrush(QColor(0x660000)))
         self.model.appendRow(rootNode)
 
     def selectionChanged(self, selected: QItemSelectionRange):
@@ -627,13 +635,14 @@ class GFFEditor(Editor):
             text = f'{label.ljust(16)} {"[List]".ljust(17)} = {item.rowCount()}'
         else:
             text = f'{label.ljust(16)} {f"[{ftype.name}]".ljust(17)} = {value}'
+        self.applyPalette(item, ftype)
 
-        if ftype == GFFFieldType.Struct or ftype is None:
-            item.setForeground(QBrush(QColor(0x660000)))
-        elif ftype == GFFFieldType.List:
-            item.setForeground(QBrush(QColor(0x000088)))
-        else:
-            item.setForeground(QBrush(QColor(0x000000)))
+        #if ftype == GFFFieldType.Struct or ftype is None:
+        #    item.setForeground(QBrush(QColor(0x660000)))
+        #elif ftype == GFFFieldType.List:
+        #    item.setForeground(QBrush(QColor(0x000088)))
+        #else:
+        #    item.setForeground(QBrush(QColor(0x000000)))
 
         item.setText(text)
 
@@ -876,6 +885,52 @@ class GFFEditor(Editor):
             self.ui.tlkTextEdit.setPlainText(text)
         else:
             self.ui.tlkTextEdit.setPlainText("")
+
+    def adjustColor(self, base_color, hue_shift=0, saturation_factor=1.0, value_factor=1.0) -> QColor:
+        color = QColor(base_color)
+        h, s, v, a = color.getHsv()
+
+        # Calculate new HSV values
+        h = (h + hue_shift) % 360
+        s = min(max(int(s * saturation_factor), 0), 255)
+        v = min(max(int(v * value_factor), 0), 255)
+
+        # Ensure HSV values are within valid ranges
+        if h < 0 or h > 359:
+            h = max(0, min(h, 359))
+        if s < 0 or s > 255:
+            s = max(0, min(s, 255))
+        if v < 0 or v > 255:
+            v = max(0, min(v, 255))
+
+        color.setHsv(h, s, v, a)
+        return color
+
+    def applyPalette(self, item, ftype):
+        palette = self.palette()
+        number_base_color = palette.highlight().color()
+        field_type_colors = {
+            GFFFieldType.UInt8: self.adjustColor(number_base_color, saturation_factor=1.0, value_factor=1.0),
+            GFFFieldType.Int8: self.adjustColor(number_base_color, saturation_factor=0.8, value_factor=0.9),
+            GFFFieldType.UInt16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=1.0, value_factor=1.0),
+            GFFFieldType.Int16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=0.8, value_factor=0.9),
+            GFFFieldType.UInt32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=1.0, value_factor=1.2),
+            GFFFieldType.Int32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=0.9, value_factor=1.1),
+            GFFFieldType.UInt64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=1.0, value_factor=1.0),
+            GFFFieldType.Int64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=0.8, value_factor=0.9),
+            GFFFieldType.Single: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=1.0, value_factor=1.0),
+            GFFFieldType.Double: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=0.8, value_factor=0.9),
+            GFFFieldType.ResRef: palette.windowText().color(),
+            GFFFieldType.String: palette.text().color(),
+            GFFFieldType.LocalizedString: palette.buttonText().color(),
+            GFFFieldType.Vector3: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.1),
+            GFFFieldType.Vector4: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.3),
+            GFFFieldType.Struct: palette.brightText().color(),
+            GFFFieldType.List: self.adjustColor(palette.highlight().color(), hue_shift=120, saturation_factor=0.8, value_factor=1.1),
+            GFFFieldType.Binary: palette.midlight().color(),
+        }
+        if ftype in field_type_colors:
+            item.setForeground(QBrush(field_type_colors[ftype]))
 
 
 class GFFSortFilterProxyModel(QSortFilterProxyModel):

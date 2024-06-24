@@ -4,11 +4,13 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from qtpy import QtCore
 from qtpy.QtWidgets import QDialog
 
 from toolset.config import LOCAL_PROGRAM_INFO
 
 if TYPE_CHECKING:
+    from qtpy.QtGui import QShowEvent
     from qtpy.QtWidgets import QWidget
 
 
@@ -27,6 +29,8 @@ class About(QDialog):
             - Replaces the version placeholder in the about text with the actual version.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs import about  # pylint: disable=C0415  # noqa: PLC0415
@@ -45,3 +49,6 @@ class About(QDialog):
         self.ui.closeButton.clicked.connect(self.close)
 
         self.ui.aboutLabel.setText(self.ui.aboutLabel.text().replace("X.X.X", LOCAL_PROGRAM_INFO["currentVersion"]))
+
+    def showEvent(self, event: QShowEvent):
+        self.setFixedSize(self.size())

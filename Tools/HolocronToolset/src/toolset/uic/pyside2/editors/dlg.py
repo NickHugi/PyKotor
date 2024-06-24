@@ -12,18 +12,23 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
-from toolset.gui.editors.dlg import DLGTreeView
-from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
-from toolset.gui.widgets.edit.combobox import FilterComboBox
-from toolset.gui.editors.dlg import GFFFieldSpinBox
+from toolset.gui.common.widgets.combobox import FilterComboBox
+from toolset.gui.editors.dlg import DLGTreeView
+from toolset.gui.widgets.edit.spinbox import GFFFieldSpinBox
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1135, 647)
+        MainWindow.resize(866, 773)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
+        MainWindow.setSizePolicy(sizePolicy)
+        MainWindow.setMinimumSize(QSize(300, 0))
         self.actionNew = QAction(MainWindow)
         self.actionNew.setObjectName(u"actionNew")
         self.actionOpen = QAction(MainWindow)
@@ -43,881 +48,865 @@ class Ui_MainWindow(object):
         self.actionUnfocus.setEnabled(False)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.gridLayout_2 = QGridLayout(self.centralwidget)
-        self.gridLayout_2.setObjectName(u"gridLayout_2")
-        self.splitter = QSplitter(self.centralwidget)
-        self.splitter.setObjectName(u"splitter")
-        self.splitter.setOrientation(Qt.Vertical)
-        self.dialogTree = DLGTreeView(self.splitter)
+        self.verticalLayout_main = QVBoxLayout(self.centralwidget)
+        self.verticalLayout_main.setSpacing(6)
+        self.verticalLayout_main.setObjectName(u"verticalLayout_main")
+        self.verticalLayout_main.setContentsMargins(2, 2, 2, 2)
+        self.horizontalLayout_main = QHBoxLayout()
+        self.horizontalLayout_main.setSpacing(0)
+        self.horizontalLayout_main.setObjectName(u"horizontalLayout_main")
+        self.dialogTree = DLGTreeView(self.centralwidget)
         self.dialogTree.setObjectName(u"dialogTree")
         self.dialogTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.dialogTree.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.dialogTree.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.dialogTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.splitter.addWidget(self.dialogTree)
+        self.dialogTree.setWordWrap(True)
         self.dialogTree.header().setVisible(False)
-        self.layoutWidget = QWidget(self.splitter)
-        self.layoutWidget.setObjectName(u"layoutWidget")
-        self.horizontalLayout = QHBoxLayout(self.layoutWidget)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout = QVBoxLayout()
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.label = QLabel(self.layoutWidget)
-        self.label.setObjectName(u"label")
 
-        self.verticalLayout.addWidget(self.label)
+        self.horizontalLayout_main.addWidget(self.dialogTree)
 
-        self.speakerEdit = QLineEdit(self.layoutWidget)
-        self.speakerEdit.setObjectName(u"speakerEdit")
 
-        self.verticalLayout.addWidget(self.speakerEdit)
+        self.verticalLayout_main.addLayout(self.horizontalLayout_main)
 
-        self.label_21 = QLabel(self.layoutWidget)
+        self.gridLayout = QGridLayout()
+        self.gridLayout.setSpacing(5)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.gridLayout.setContentsMargins(5, 0, 0, 0)
+        self.questEdit = QLineEdit(self.centralwidget)
+        self.questEdit.setObjectName(u"questEdit")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.questEdit.sizePolicy().hasHeightForWidth())
+        self.questEdit.setSizePolicy(sizePolicy1)
+        self.questEdit.setMinimumSize(QSize(150, 0))
+        self.questEdit.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.questEdit, 0, 3, 1, 1)
+
+        self.plotXpSpin = GFFFieldSpinBox(self.centralwidget)
+        self.plotXpSpin.setObjectName(u"plotXpSpin")
+        sizePolicy1.setHeightForWidth(self.plotXpSpin.sizePolicy().hasHeightForWidth())
+        self.plotXpSpin.setSizePolicy(sizePolicy1)
+        self.plotXpSpin.setMinimumSize(QSize(150, 0))
+        self.plotXpSpin.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.plotXpSpin, 2, 1, 1, 1)
+
+        self.label_25 = QLabel(self.centralwidget)
+        self.label_25.setObjectName(u"label_25")
+
+        self.gridLayout.addWidget(self.label_25, 1, 2, 1, 1, Qt.AlignRight)
+
+        self.label_24 = QLabel(self.centralwidget)
+        self.label_24.setObjectName(u"label_24")
+
+        self.gridLayout.addWidget(self.label_24, 0, 2, 1, 1, Qt.AlignRight)
+
+        self.listenerEdit = QLineEdit(self.centralwidget)
+        self.listenerEdit.setObjectName(u"listenerEdit")
+        sizePolicy1.setHeightForWidth(self.listenerEdit.sizePolicy().hasHeightForWidth())
+        self.listenerEdit.setSizePolicy(sizePolicy1)
+        self.listenerEdit.setMinimumSize(QSize(150, 0))
+        self.listenerEdit.setMaximumSize(QSize(250, 16777215))
+
+        self.gridLayout.addWidget(self.listenerEdit, 0, 1, 1, 1)
+
+        self.label_21 = QLabel(self.centralwidget)
         self.label_21.setObjectName(u"label_21")
 
-        self.verticalLayout.addWidget(self.label_21)
+        self.gridLayout.addWidget(self.label_21, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.listenerEdit = QLineEdit(self.layoutWidget)
-        self.listenerEdit.setObjectName(u"listenerEdit")
+        self.speakerEdit = QLineEdit(self.centralwidget)
+        self.speakerEdit.setObjectName(u"speakerEdit")
+        sizePolicy1.setHeightForWidth(self.speakerEdit.sizePolicy().hasHeightForWidth())
+        self.speakerEdit.setSizePolicy(sizePolicy1)
+        self.speakerEdit.setMinimumSize(QSize(150, 0))
+        self.speakerEdit.setMaximumSize(QSize(250, 16777215))
 
-        self.verticalLayout.addWidget(self.listenerEdit)
+        self.gridLayout.addWidget(self.speakerEdit, 1, 1, 1, 1)
 
-        self.label_2 = QLabel(self.layoutWidget)
-        self.label_2.setObjectName(u"label_2")
+        self.questEntrySpin = GFFFieldSpinBox(self.centralwidget)
+        self.questEntrySpin.setObjectName(u"questEntrySpin")
+        self.questEntrySpin.setMinimumSize(QSize(150, 0))
+        self.questEntrySpin.setMaximumSize(QSize(250, 16777215))
 
-        self.verticalLayout.addWidget(self.label_2)
+        self.gridLayout.addWidget(self.questEntrySpin, 1, 3, 1, 1)
 
-        self.textEdit = QPlainTextEdit(self.layoutWidget)
-        self.textEdit.setObjectName(u"textEdit")
-        self.textEdit.setReadOnly(True)
+        self.label = QLabel(self.centralwidget)
+        self.label.setObjectName(u"label")
 
-        self.verticalLayout.addWidget(self.textEdit)
+        self.gridLayout.addWidget(self.label, 1, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.label_23 = QLabel(self.centralwidget)
+        self.label_23.setObjectName(u"label_23")
+
+        self.gridLayout.addWidget(self.label_23, 2, 0, 1, 1, Qt.AlignRight)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer, 1, 4, 1, 1)
+
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer_2, 0, 4, 1, 1)
+
+        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout.addItem(self.horizontalSpacer_3, 2, 4, 1, 1)
 
 
-        self.horizontalLayout.addLayout(self.verticalLayout)
+        self.verticalLayout_main.addLayout(self.gridLayout)
 
-        self.tabWidget = QTabWidget(self.layoutWidget)
-        self.tabWidget.setObjectName(u"tabWidget")
-        self.fileTab = QWidget()
-        self.fileTab.setObjectName(u"fileTab")
-        self.horizontalLayout_11 = QHBoxLayout(self.fileTab)
-        self.horizontalLayout_11.setObjectName(u"horizontalLayout_11")
-        self.formLayout_6 = QFormLayout()
-        self.formLayout_6.setObjectName(u"formLayout_6")
-        self.label_37 = QLabel(self.fileTab)
-        self.label_37.setObjectName(u"label_37")
-
-        self.formLayout_6.setWidget(0, QFormLayout.LabelRole, self.label_37)
-
-        self.onEndEdit = FilterComboBox(self.fileTab)
-        self.onEndEdit.setObjectName(u"onEndEdit")
-
-        self.formLayout_6.setWidget(0, QFormLayout.FieldRole, self.onEndEdit)
-
-        self.label_38 = QLabel(self.fileTab)
-        self.label_38.setObjectName(u"label_38")
-
-        self.formLayout_6.setWidget(1, QFormLayout.LabelRole, self.label_38)
-
-        self.onAbortEdit = FilterComboBox(self.fileTab)
-        self.onAbortEdit.setObjectName(u"onAbortEdit")
-
-        self.formLayout_6.setWidget(1, QFormLayout.FieldRole, self.onAbortEdit)
-
-        self.label_39 = QLabel(self.fileTab)
-        self.label_39.setObjectName(u"label_39")
-
-        self.formLayout_6.setWidget(2, QFormLayout.LabelRole, self.label_39)
-
-        self.voIdEdit = QLineEdit(self.fileTab)
-        self.voIdEdit.setObjectName(u"voIdEdit")
-        self.voIdEdit.setMaxLength(16)
-
-        self.formLayout_6.setWidget(2, QFormLayout.FieldRole, self.voIdEdit)
-
-        self.label_40 = QLabel(self.fileTab)
-        self.label_40.setObjectName(u"label_40")
-
-        self.formLayout_6.setWidget(3, QFormLayout.LabelRole, self.label_40)
-
-        self.ambientTrackEdit = QLineEdit(self.fileTab)
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.topDockWidget = QDockWidget(MainWindow)
+        self.topDockWidget.setObjectName(u"topDockWidget")
+        self.topDockWidget.setMinimumSize(QSize(82, 146))
+        self.topDockWidgetContents = QWidget()
+        self.topDockWidgetContents.setObjectName(u"topDockWidgetContents")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.topDockWidgetContents.sizePolicy().hasHeightForWidth())
+        self.topDockWidgetContents.setSizePolicy(sizePolicy2)
+        self.layoutWidget = QWidget(self.topDockWidgetContents)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.layoutWidget.setGeometry(QRect(0, 8, 851, 113))
+        self.topGridLayout = QGridLayout(self.layoutWidget)
+        self.topGridLayout.setObjectName(u"topGridLayout")
+        self.topGridLayout.setContentsMargins(6, 0, 0, 0)
+        self.ambientTrackEdit = QLineEdit(self.layoutWidget)
         self.ambientTrackEdit.setObjectName(u"ambientTrackEdit")
-        self.ambientTrackEdit.setMaxLength(16)
 
-        self.formLayout_6.setWidget(3, QFormLayout.FieldRole, self.ambientTrackEdit)
+        self.topGridLayout.addWidget(self.ambientTrackEdit, 1, 5, 1, 1)
 
-        self.label_41 = QLabel(self.fileTab)
-        self.label_41.setObjectName(u"label_41")
+        self.label_39 = QLabel(self.layoutWidget)
+        self.label_39.setObjectName(u"label_39")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.label_39.sizePolicy().hasHeightForWidth())
+        self.label_39.setSizePolicy(sizePolicy3)
 
-        self.formLayout_6.setWidget(4, QFormLayout.LabelRole, self.label_41)
+        self.topGridLayout.addWidget(self.label_39, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.cameraModelEdit = QLineEdit(self.fileTab)
-        self.cameraModelEdit.setObjectName(u"cameraModelEdit")
-        self.cameraModelEdit.setMaxLength(16)
-
-        self.formLayout_6.setWidget(4, QFormLayout.FieldRole, self.cameraModelEdit)
-
-        self.label_42 = QLabel(self.fileTab)
-        self.label_42.setObjectName(u"label_42")
-
-        self.formLayout_6.setWidget(5, QFormLayout.LabelRole, self.label_42)
-
-        self.label_43 = QLabel(self.fileTab)
+        self.label_43 = QLabel(self.layoutWidget)
         self.label_43.setObjectName(u"label_43")
+        sizePolicy3.setHeightForWidth(self.label_43.sizePolicy().hasHeightForWidth())
+        self.label_43.setSizePolicy(sizePolicy3)
 
-        self.formLayout_6.setWidget(6, QFormLayout.LabelRole, self.label_43)
+        self.topGridLayout.addWidget(self.label_43, 3, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
 
-        self.conversationSelect = QComboBox(self.fileTab)
+        self.conversationSelect = QComboBox(self.layoutWidget)
         self.conversationSelect.addItem("")
         self.conversationSelect.addItem("")
         self.conversationSelect.addItem("")
         self.conversationSelect.addItem("")
         self.conversationSelect.addItem("")
         self.conversationSelect.setObjectName(u"conversationSelect")
+        self.conversationSelect.setMinimumSize(QSize(160, 0))
 
-        self.formLayout_6.setWidget(5, QFormLayout.FieldRole, self.conversationSelect)
+        self.topGridLayout.addWidget(self.conversationSelect, 2, 1, 1, 1)
 
-        self.computerSelect = QComboBox(self.fileTab)
+        self.computerSelect = QComboBox(self.layoutWidget)
         self.computerSelect.addItem("")
         self.computerSelect.addItem("")
         self.computerSelect.setObjectName(u"computerSelect")
+        self.computerSelect.setMinimumSize(QSize(160, 0))
 
-        self.formLayout_6.setWidget(6, QFormLayout.FieldRole, self.computerSelect)
+        self.topGridLayout.addWidget(self.computerSelect, 3, 1, 1, 1)
 
+        self.onAbortEdit = FilterComboBox(self.layoutWidget)
+        self.onAbortEdit.setObjectName(u"onAbortEdit")
+        self.onAbortEdit.setMinimumSize(QSize(160, 0))
 
-        self.horizontalLayout_11.addLayout(self.formLayout_6)
+        self.topGridLayout.addWidget(self.onAbortEdit, 1, 1, 1, 1)
 
-        self.verticalLayout_11 = QVBoxLayout()
-        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
-        self.verticalLayout_10 = QVBoxLayout()
-        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
-        self.skippableCheckbox = QCheckBox(self.fileTab)
-        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
+        self.label_37 = QLabel(self.layoutWidget)
+        self.label_37.setObjectName(u"label_37")
+        sizePolicy3.setHeightForWidth(self.label_37.sizePolicy().hasHeightForWidth())
+        self.label_37.setSizePolicy(sizePolicy3)
 
-        self.verticalLayout_10.addWidget(self.skippableCheckbox)
+        self.topGridLayout.addWidget(self.label_37, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.animatedCutCheckbox = QCheckBox(self.fileTab)
-        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
+        self.label_42 = QLabel(self.layoutWidget)
+        self.label_42.setObjectName(u"label_42")
+        sizePolicy3.setHeightForWidth(self.label_42.sizePolicy().hasHeightForWidth())
+        self.label_42.setSizePolicy(sizePolicy3)
 
-        self.verticalLayout_10.addWidget(self.animatedCutCheckbox)
+        self.topGridLayout.addWidget(self.label_42, 2, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
 
-        self.oldHitCheckbox = QCheckBox(self.fileTab)
-        self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
+        self.label_40 = QLabel(self.layoutWidget)
+        self.label_40.setObjectName(u"label_40")
 
-        self.verticalLayout_10.addWidget(self.oldHitCheckbox)
+        self.topGridLayout.addWidget(self.label_40, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.unequipHandsCheckbox = QCheckBox(self.fileTab)
-        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
+        self.label_38 = QLabel(self.layoutWidget)
+        self.label_38.setObjectName(u"label_38")
+        sizePolicy.setHeightForWidth(self.label_38.sizePolicy().hasHeightForWidth())
+        self.label_38.setSizePolicy(sizePolicy)
 
-        self.verticalLayout_10.addWidget(self.unequipHandsCheckbox)
+        self.topGridLayout.addWidget(self.label_38, 1, 0, 1, 1, Qt.AlignVCenter)
 
-        self.unequipAllCheckbox = QCheckBox(self.fileTab)
-        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
+        self.voIdEdit = QLineEdit(self.layoutWidget)
+        self.voIdEdit.setObjectName(u"voIdEdit")
 
-        self.verticalLayout_10.addWidget(self.unequipAllCheckbox)
+        self.topGridLayout.addWidget(self.voIdEdit, 0, 5, 1, 1)
 
+        self.onEndEdit = FilterComboBox(self.layoutWidget)
+        self.onEndEdit.setObjectName(u"onEndEdit")
+        self.onEndEdit.setMinimumSize(QSize(160, 0))
+        self.onEndEdit.setMaximumSize(QSize(160, 16777215))
 
-        self.verticalLayout_11.addLayout(self.verticalLayout_10)
+        self.topGridLayout.addWidget(self.onEndEdit, 0, 1, 1, 1)
 
-        self.formLayout_7 = QFormLayout()
-        self.formLayout_7.setObjectName(u"formLayout_7")
-        self.label_44 = QLabel(self.fileTab)
+        self.label_44 = QLabel(self.layoutWidget)
         self.label_44.setObjectName(u"label_44")
 
-        self.formLayout_7.setWidget(0, QFormLayout.LabelRole, self.label_44)
+        self.topGridLayout.addWidget(self.label_44, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.entryDelaySpin = GFFFieldSpinBox(self.fileTab)
-        self.entryDelaySpin.setObjectName(u"entryDelaySpin")
-        self.entryDelaySpin.setMinimum(-2147483648)
-        self.entryDelaySpin.setMaximum(2147483647)
-
-        self.formLayout_7.setWidget(0, QFormLayout.FieldRole, self.entryDelaySpin)
-
-        self.label_45 = QLabel(self.fileTab)
-        self.label_45.setObjectName(u"label_45")
-
-        self.formLayout_7.setWidget(1, QFormLayout.LabelRole, self.label_45)
-
-        self.replyDelaySpin = GFFFieldSpinBox(self.fileTab)
+        self.replyDelaySpin = GFFFieldSpinBox(self.layoutWidget)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
+        sizePolicy.setHeightForWidth(self.replyDelaySpin.sizePolicy().hasHeightForWidth())
+        self.replyDelaySpin.setSizePolicy(sizePolicy)
         self.replyDelaySpin.setMinimum(-2147483648)
         self.replyDelaySpin.setMaximum(2147483647)
 
-        self.formLayout_7.setWidget(1, QFormLayout.FieldRole, self.replyDelaySpin)
+        self.topGridLayout.addWidget(self.replyDelaySpin, 0, 3, 1, 1)
 
+        self.label_45 = QLabel(self.layoutWidget)
+        self.label_45.setObjectName(u"label_45")
 
-        self.verticalLayout_11.addLayout(self.formLayout_7)
+        self.topGridLayout.addWidget(self.label_45, 1, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
+        self.entryDelaySpin = GFFFieldSpinBox(self.layoutWidget)
+        self.entryDelaySpin.setObjectName(u"entryDelaySpin")
+        sizePolicy.setHeightForWidth(self.entryDelaySpin.sizePolicy().hasHeightForWidth())
+        self.entryDelaySpin.setSizePolicy(sizePolicy)
+        self.entryDelaySpin.setMinimum(-2147483648)
+        self.entryDelaySpin.setMaximum(2147483647)
 
-        self.horizontalLayout_11.addLayout(self.verticalLayout_11)
+        self.topGridLayout.addWidget(self.entryDelaySpin, 1, 3, 1, 1)
 
-        self.verticalLayout_12 = QVBoxLayout()
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
-        self.label_46 = QLabel(self.fileTab)
-        self.label_46.setObjectName(u"label_46")
+        self.skippableCheckbox = QCheckBox(self.layoutWidget)
+        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
+        sizePolicy.setHeightForWidth(self.skippableCheckbox.sizePolicy().hasHeightForWidth())
+        self.skippableCheckbox.setSizePolicy(sizePolicy)
 
-        self.verticalLayout_12.addWidget(self.label_46)
+        self.topGridLayout.addWidget(self.skippableCheckbox, 2, 2, 1, 1, Qt.AlignLeft)
 
-        self.stuntList = QListWidget(self.fileTab)
-        self.stuntList.setObjectName(u"stuntList")
+        self.unequipHandsCheckbox = QCheckBox(self.layoutWidget)
+        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
 
-        self.verticalLayout_12.addWidget(self.stuntList)
+        self.topGridLayout.addWidget(self.unequipHandsCheckbox, 3, 2, 1, 1, Qt.AlignLeft)
 
-        self.horizontalLayout_13 = QHBoxLayout()
-        self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
-        self.addStuntButton = QPushButton(self.fileTab)
-        self.addStuntButton.setObjectName(u"addStuntButton")
+        self.unequipAllCheckbox = QCheckBox(self.layoutWidget)
+        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
+        sizePolicy.setHeightForWidth(self.unequipAllCheckbox.sizePolicy().hasHeightForWidth())
+        self.unequipAllCheckbox.setSizePolicy(sizePolicy)
 
-        self.horizontalLayout_13.addWidget(self.addStuntButton)
+        self.topGridLayout.addWidget(self.unequipAllCheckbox, 3, 3, 1, 1, Qt.AlignLeft)
 
-        self.removeStuntButton = QPushButton(self.fileTab)
-        self.removeStuntButton.setObjectName(u"removeStuntButton")
+        self.animatedCutCheckbox = QCheckBox(self.layoutWidget)
+        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
+        sizePolicy.setHeightForWidth(self.animatedCutCheckbox.sizePolicy().hasHeightForWidth())
+        self.animatedCutCheckbox.setSizePolicy(sizePolicy)
 
-        self.horizontalLayout_13.addWidget(self.removeStuntButton)
+        self.topGridLayout.addWidget(self.animatedCutCheckbox, 2, 3, 1, 1, Qt.AlignLeft)
 
-        self.editStuntButton = QPushButton(self.fileTab)
-        self.editStuntButton.setObjectName(u"editStuntButton")
+        self.label_41 = QLabel(self.layoutWidget)
+        self.label_41.setObjectName(u"label_41")
+        sizePolicy3.setHeightForWidth(self.label_41.sizePolicy().hasHeightForWidth())
+        self.label_41.setSizePolicy(sizePolicy3)
 
-        self.horizontalLayout_13.addWidget(self.editStuntButton)
+        self.topGridLayout.addWidget(self.label_41, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
+        self.cameraModelEdit = QLineEdit(self.layoutWidget)
+        self.cameraModelEdit.setObjectName(u"cameraModelEdit")
 
-        self.verticalLayout_12.addLayout(self.horizontalLayout_13)
+        self.topGridLayout.addWidget(self.cameraModelEdit, 2, 5, 1, 1)
 
+        self.oldHitCheckbox = QCheckBox(self.layoutWidget)
+        self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
 
-        self.horizontalLayout_11.addLayout(self.verticalLayout_12)
+        self.topGridLayout.addWidget(self.oldHitCheckbox, 3, 5, 1, 1, Qt.AlignLeft)
 
-        self.tabWidget.addTab(self.fileTab, "")
-        self.scriptsTab = QWidget()
-        self.scriptsTab.setObjectName(u"scriptsTab")
-        self.verticalLayout_3 = QVBoxLayout(self.scriptsTab)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.horizontalLayout_6 = QHBoxLayout()
-        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
-        self.label_16 = QLabel(self.scriptsTab)
-        self.label_16.setObjectName(u"label_16")
-        self.label_16.setMinimumSize(QSize(80, 0))
+        self.topDockWidget.setWidget(self.topDockWidgetContents)
+        MainWindow.addDockWidget(Qt.TopDockWidgetArea, self.topDockWidget)
+        self.rightDockWidget = QDockWidget(MainWindow)
+        self.rightDockWidget.setObjectName(u"rightDockWidget")
+        self.rightDockWidget.setMinimumSize(QSize(310, 100))
+        self.rightDockWidget.setFloating(True)
+        self.rightDockWidget.setAllowedAreas(Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        self.scrollArea_rightDock = QScrollArea()
+        self.scrollArea_rightDock.setObjectName(u"scrollArea_rightDock")
+        self.scrollArea_rightDock.setWidgetResizable(True)
+        self.scrollAreaWidgetContents = QWidget()
+        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 291, 1141))
+        self.verticalLayout_rightDock = QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout_rightDock.setSpacing(0)
+        self.verticalLayout_rightDock.setObjectName(u"verticalLayout_rightDock")
+        self.verticalLayout_rightDock.setContentsMargins(2, 0, 2, 0)
+        self.verticalLayout_scripts = QVBoxLayout()
+        self.verticalLayout_scripts.setSpacing(0)
+        self.verticalLayout_scripts.setObjectName(u"verticalLayout_scripts")
+        self.verticalLayout_scripts.setContentsMargins(0, 0, 0, 0)
+        self.commentsEdit = QPlainTextEdit(self.scrollAreaWidgetContents)
+        self.commentsEdit.setObjectName(u"commentsEdit")
 
-        self.horizontalLayout_6.addWidget(self.label_16)
+        self.verticalLayout_scripts.addWidget(self.commentsEdit)
 
-        self.label_5 = QLabel(self.scriptsTab)
-        self.label_5.setObjectName(u"label_5")
-
-        self.horizontalLayout_6.addWidget(self.label_5)
-
-        self.label_6 = QLabel(self.scriptsTab)
-        self.label_6.setObjectName(u"label_6")
-        self.label_6.setMinimumSize(QSize(85, 0))
-
-        self.horizontalLayout_6.addWidget(self.label_6)
-
-        self.label_7 = QLabel(self.scriptsTab)
-        self.label_7.setObjectName(u"label_7")
-        self.label_7.setMinimumSize(QSize(85, 0))
-
-        self.horizontalLayout_6.addWidget(self.label_7)
-
-        self.label_8 = QLabel(self.scriptsTab)
-        self.label_8.setObjectName(u"label_8")
-        self.label_8.setMinimumSize(QSize(85, 0))
-
-        self.horizontalLayout_6.addWidget(self.label_8)
-
-        self.label_9 = QLabel(self.scriptsTab)
-        self.label_9.setObjectName(u"label_9")
-        self.label_9.setMinimumSize(QSize(85, 0))
-
-        self.horizontalLayout_6.addWidget(self.label_9)
-
-        self.label_10 = QLabel(self.scriptsTab)
-        self.label_10.setObjectName(u"label_10")
-        self.label_10.setMinimumSize(QSize(85, 0))
-
-        self.horizontalLayout_6.addWidget(self.label_10)
-
-        self.label_11 = QLabel(self.scriptsTab)
-        self.label_11.setObjectName(u"label_11")
-
-        self.horizontalLayout_6.addWidget(self.label_11)
-
-        self.horizontalSpacer_6 = QSpacerItem(19, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
-
-        self.horizontalLayout_6.addItem(self.horizontalSpacer_6)
-
-        self.horizontalLayout_6.setStretch(1, 3)
-        self.horizontalLayout_6.setStretch(2, 1)
-        self.horizontalLayout_6.setStretch(3, 1)
-        self.horizontalLayout_6.setStretch(4, 1)
-        self.horizontalLayout_6.setStretch(5, 1)
-        self.horizontalLayout_6.setStretch(6, 1)
-        self.horizontalLayout_6.setStretch(7, 2)
-
-        self.verticalLayout_3.addLayout(self.horizontalLayout_6)
-
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.script1Label = QLabel(self.scriptsTab)
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setSpacing(2)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.script1Label = QLabel(self.scrollAreaWidgetContents)
         self.script1Label.setObjectName(u"script1Label")
+        sizePolicy3.setHeightForWidth(self.script1Label.sizePolicy().hasHeightForWidth())
+        self.script1Label.setSizePolicy(sizePolicy3)
         self.script1Label.setMinimumSize(QSize(80, 0))
+        self.script1Label.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout_2.addWidget(self.script1Label)
+        self.horizontalLayout.addWidget(self.script1Label, 0, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.script1ResrefEdit = FilterComboBox(self.scriptsTab)
+        self.script1ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.script1ResrefEdit.setObjectName(u"script1ResrefEdit")
+        self.script1ResrefEdit.setMinimumSize(QSize(150, 0))
+        self.script1ResrefEdit.setMaximumSize(QSize(16777215, 16777215))
 
-        self.horizontalLayout_2.addWidget(self.script1ResrefEdit)
+        self.horizontalLayout.addWidget(self.script1ResrefEdit)
 
-        self.script1Param1Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.horizontalSpacer_4 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer_4)
+
+
+        self.verticalLayout_scripts.addLayout(self.horizontalLayout)
+
+        self.horizontalLayout_script1Params = QHBoxLayout()
+        self.horizontalLayout_script1Params.setSpacing(0)
+        self.horizontalLayout_script1Params.setObjectName(u"horizontalLayout_script1Params")
+        self.script1Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param1Spin.setObjectName(u"script1Param1Spin")
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.script1Param1Spin.sizePolicy().hasHeightForWidth())
         self.script1Param1Spin.setSizePolicy(sizePolicy)
-        self.script1Param1Spin.setMinimum(-2147483647)
+        self.script1Param1Spin.setMinimumSize(QSize(30, 0))
+        self.script1Param1Spin.setMinimum(-2147483648)
         self.script1Param1Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_2.addWidget(self.script1Param1Spin)
+        self.horizontalLayout_script1Params.addWidget(self.script1Param1Spin)
 
-        self.script1Param2Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script1Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param2Spin.setObjectName(u"script1Param2Spin")
         sizePolicy.setHeightForWidth(self.script1Param2Spin.sizePolicy().hasHeightForWidth())
         self.script1Param2Spin.setSizePolicy(sizePolicy)
-        self.script1Param2Spin.setMinimum(-2147483647)
+        self.script1Param2Spin.setMinimumSize(QSize(30, 0))
+        self.script1Param2Spin.setMinimum(-2147483648)
         self.script1Param2Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_2.addWidget(self.script1Param2Spin)
+        self.horizontalLayout_script1Params.addWidget(self.script1Param2Spin)
 
-        self.script1Param3Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script1Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param3Spin.setObjectName(u"script1Param3Spin")
         sizePolicy.setHeightForWidth(self.script1Param3Spin.sizePolicy().hasHeightForWidth())
         self.script1Param3Spin.setSizePolicy(sizePolicy)
-        self.script1Param3Spin.setMinimum(-2147483647)
+        self.script1Param3Spin.setMinimumSize(QSize(30, 0))
+        self.script1Param3Spin.setMinimum(-2147483648)
         self.script1Param3Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_2.addWidget(self.script1Param3Spin)
+        self.horizontalLayout_script1Params.addWidget(self.script1Param3Spin)
 
-        self.script1Param4Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script1Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param4Spin.setObjectName(u"script1Param4Spin")
         sizePolicy.setHeightForWidth(self.script1Param4Spin.sizePolicy().hasHeightForWidth())
         self.script1Param4Spin.setSizePolicy(sizePolicy)
-        self.script1Param4Spin.setMinimum(-2147483647)
+        self.script1Param4Spin.setMinimumSize(QSize(30, 0))
+        self.script1Param4Spin.setMinimum(-2147483648)
         self.script1Param4Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_2.addWidget(self.script1Param4Spin)
+        self.horizontalLayout_script1Params.addWidget(self.script1Param4Spin)
 
-        self.script1Param5Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script1Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script1Param5Spin.setObjectName(u"script1Param5Spin")
         sizePolicy.setHeightForWidth(self.script1Param5Spin.sizePolicy().hasHeightForWidth())
         self.script1Param5Spin.setSizePolicy(sizePolicy)
-        self.script1Param5Spin.setMinimum(-2147483647)
-        self.script1Param5Spin.setMaximum(2147483647)
+        self.script1Param5Spin.setMinimumSize(QSize(30, 0))
 
-        self.horizontalLayout_2.addWidget(self.script1Param5Spin)
+        self.horizontalLayout_script1Params.addWidget(self.script1Param5Spin)
 
-        self.script1Param6Edit = QLineEdit(self.scriptsTab)
+        self.horizontalSpacer_9 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_script1Params.addItem(self.horizontalSpacer_9)
+
+        self.script1Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.script1Param6Edit.setObjectName(u"script1Param6Edit")
+        self.script1Param6Edit.setMinimumSize(QSize(0, 0))
 
-        self.horizontalLayout_2.addWidget(self.script1Param6Edit)
+        self.horizontalLayout_script1Params.addWidget(self.script1Param6Edit)
 
-        self.horizontalSpacer_4 = QSpacerItem(19, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
-        self.horizontalLayout_2.addItem(self.horizontalSpacer_4)
+        self.verticalLayout_scripts.addLayout(self.horizontalLayout_script1Params)
 
-        self.horizontalLayout_2.setStretch(1, 3)
-        self.horizontalLayout_2.setStretch(2, 1)
-        self.horizontalLayout_2.setStretch(3, 1)
-        self.horizontalLayout_2.setStretch(4, 1)
-        self.horizontalLayout_2.setStretch(5, 1)
-        self.horizontalLayout_2.setStretch(6, 1)
-        self.horizontalLayout_2.setStretch(7, 2)
-
-        self.verticalLayout_3.addLayout(self.horizontalLayout_2)
-
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.script2Label = QLabel(self.scriptsTab)
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setSpacing(2)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.script2Label = QLabel(self.scrollAreaWidgetContents)
         self.script2Label.setObjectName(u"script2Label")
+        sizePolicy3.setHeightForWidth(self.script2Label.sizePolicy().hasHeightForWidth())
+        self.script2Label.setSizePolicy(sizePolicy3)
         self.script2Label.setMinimumSize(QSize(80, 0))
+        self.script2Label.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout_3.addWidget(self.script2Label)
+        self.horizontalLayout_2.addWidget(self.script2Label, 0, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.script2ResrefEdit = FilterComboBox(self.scriptsTab)
+        self.script2ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.script2ResrefEdit.setObjectName(u"script2ResrefEdit")
+        self.script2ResrefEdit.setMinimumSize(QSize(150, 0))
+        self.script2ResrefEdit.setMaximumSize(QSize(16777215, 16777215))
 
-        self.horizontalLayout_3.addWidget(self.script2ResrefEdit)
+        self.horizontalLayout_2.addWidget(self.script2ResrefEdit)
 
-        self.script2Param1Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.horizontalSpacer_5 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_2.addItem(self.horizontalSpacer_5)
+
+
+        self.verticalLayout_scripts.addLayout(self.horizontalLayout_2)
+
+        self.horizontalLayout_script2Params = QHBoxLayout()
+        self.horizontalLayout_script2Params.setSpacing(0)
+        self.horizontalLayout_script2Params.setObjectName(u"horizontalLayout_script2Params")
+        self.script2Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param1Spin.setObjectName(u"script2Param1Spin")
         sizePolicy.setHeightForWidth(self.script2Param1Spin.sizePolicy().hasHeightForWidth())
         self.script2Param1Spin.setSizePolicy(sizePolicy)
-        self.script2Param1Spin.setMinimum(-2147483647)
+        self.script2Param1Spin.setMinimumSize(QSize(30, 0))
+        self.script2Param1Spin.setMinimum(-2147483648)
         self.script2Param1Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_3.addWidget(self.script2Param1Spin)
+        self.horizontalLayout_script2Params.addWidget(self.script2Param1Spin)
 
-        self.script2Param2Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script2Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param2Spin.setObjectName(u"script2Param2Spin")
         sizePolicy.setHeightForWidth(self.script2Param2Spin.sizePolicy().hasHeightForWidth())
         self.script2Param2Spin.setSizePolicy(sizePolicy)
-        self.script2Param2Spin.setMinimum(-2147483647)
+        self.script2Param2Spin.setMinimumSize(QSize(30, 0))
+        self.script2Param2Spin.setMinimum(-2147483648)
         self.script2Param2Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_3.addWidget(self.script2Param2Spin)
+        self.horizontalLayout_script2Params.addWidget(self.script2Param2Spin)
 
-        self.script2Param3Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script2Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param3Spin.setObjectName(u"script2Param3Spin")
         sizePolicy.setHeightForWidth(self.script2Param3Spin.sizePolicy().hasHeightForWidth())
         self.script2Param3Spin.setSizePolicy(sizePolicy)
-        self.script2Param3Spin.setMinimum(-2147483647)
+        self.script2Param3Spin.setMinimumSize(QSize(30, 0))
+        self.script2Param3Spin.setMinimum(-2147483648)
         self.script2Param3Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_3.addWidget(self.script2Param3Spin)
+        self.horizontalLayout_script2Params.addWidget(self.script2Param3Spin)
 
-        self.script2Param4Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script2Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param4Spin.setObjectName(u"script2Param4Spin")
         sizePolicy.setHeightForWidth(self.script2Param4Spin.sizePolicy().hasHeightForWidth())
         self.script2Param4Spin.setSizePolicy(sizePolicy)
-        self.script2Param4Spin.setMinimum(-2147483647)
+        self.script2Param4Spin.setMinimumSize(QSize(30, 0))
+        self.script2Param4Spin.setMinimum(-2147483648)
         self.script2Param4Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_3.addWidget(self.script2Param4Spin)
+        self.horizontalLayout_script2Params.addWidget(self.script2Param4Spin)
 
-        self.script2Param5Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.script2Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.script2Param5Spin.setObjectName(u"script2Param5Spin")
         sizePolicy.setHeightForWidth(self.script2Param5Spin.sizePolicy().hasHeightForWidth())
         self.script2Param5Spin.setSizePolicy(sizePolicy)
-        self.script2Param5Spin.setMinimum(-2147483647)
+        self.script2Param5Spin.setMinimumSize(QSize(30, 0))
+        self.script2Param5Spin.setMinimum(-2147483648)
         self.script2Param5Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_3.addWidget(self.script2Param5Spin)
+        self.horizontalLayout_script2Params.addWidget(self.script2Param5Spin)
 
-        self.script2Param6Edit = QLineEdit(self.scriptsTab)
+        self.horizontalSpacer_8 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_script2Params.addItem(self.horizontalSpacer_8)
+
+        self.script2Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.script2Param6Edit.setObjectName(u"script2Param6Edit")
 
-        self.horizontalLayout_3.addWidget(self.script2Param6Edit)
+        self.horizontalLayout_script2Params.addWidget(self.script2Param6Edit)
 
-        self.horizontalSpacer_5 = QSpacerItem(19, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
-        self.horizontalLayout_3.addItem(self.horizontalSpacer_5)
+        self.verticalLayout_scripts.addLayout(self.horizontalLayout_script2Params)
 
-        self.horizontalLayout_3.setStretch(1, 3)
-        self.horizontalLayout_3.setStretch(2, 1)
-        self.horizontalLayout_3.setStretch(3, 1)
-        self.horizontalLayout_3.setStretch(4, 1)
-        self.horizontalLayout_3.setStretch(5, 1)
-        self.horizontalLayout_3.setStretch(6, 1)
-        self.horizontalLayout_3.setStretch(7, 2)
 
-        self.verticalLayout_3.addLayout(self.horizontalLayout_3)
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_scripts)
 
-        self.horizontalLayout_4 = QHBoxLayout()
-        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
-        self.conditional1Label = QLabel(self.scriptsTab)
+        self.verticalLayout_conditions = QVBoxLayout()
+        self.verticalLayout_conditions.setSpacing(2)
+        self.verticalLayout_conditions.setObjectName(u"verticalLayout_conditions")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setSpacing(2)
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.conditional1Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional1Label.setObjectName(u"conditional1Label")
+        sizePolicy3.setHeightForWidth(self.conditional1Label.sizePolicy().hasHeightForWidth())
+        self.conditional1Label.setSizePolicy(sizePolicy3)
         self.conditional1Label.setMinimumSize(QSize(80, 0))
 
-        self.horizontalLayout_4.addWidget(self.conditional1Label)
+        self.horizontalLayout_3.addWidget(self.conditional1Label, 0, Qt.AlignVCenter)
 
-        self.condition1ResrefEdit = FilterComboBox(self.scriptsTab)
+        self.condition1ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.condition1ResrefEdit.setObjectName(u"condition1ResrefEdit")
+        self.condition1ResrefEdit.setMinimumSize(QSize(150, 0))
+        self.condition1ResrefEdit.setMaximumSize(QSize(16777215, 16777215))
 
-        self.horizontalLayout_4.addWidget(self.condition1ResrefEdit)
+        self.horizontalLayout_3.addWidget(self.condition1ResrefEdit)
 
-        self.condition1Param1Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition1NotCheckbox = QCheckBox(self.scrollAreaWidgetContents)
+        self.condition1NotCheckbox.setObjectName(u"condition1NotCheckbox")
+
+        self.horizontalLayout_3.addWidget(self.condition1NotCheckbox)
+
+        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_3.addItem(self.horizontalSpacer_6)
+
+
+        self.verticalLayout_conditions.addLayout(self.horizontalLayout_3)
+
+        self.horizontalLayout_condition1Params = QHBoxLayout()
+        self.horizontalLayout_condition1Params.setSpacing(0)
+        self.horizontalLayout_condition1Params.setObjectName(u"horizontalLayout_condition1Params")
+        self.condition1Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param1Spin.setObjectName(u"condition1Param1Spin")
         sizePolicy.setHeightForWidth(self.condition1Param1Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param1Spin.setSizePolicy(sizePolicy)
-        self.condition1Param1Spin.setMinimum(-2147483647)
+        self.condition1Param1Spin.setMinimumSize(QSize(30, 0))
+        self.condition1Param1Spin.setMinimum(-2147483648)
         self.condition1Param1Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_4.addWidget(self.condition1Param1Spin)
+        self.horizontalLayout_condition1Params.addWidget(self.condition1Param1Spin)
 
-        self.condition1Param2Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition1Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param2Spin.setObjectName(u"condition1Param2Spin")
         sizePolicy.setHeightForWidth(self.condition1Param2Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param2Spin.setSizePolicy(sizePolicy)
-        self.condition1Param2Spin.setMinimum(-2147483647)
+        self.condition1Param2Spin.setMinimumSize(QSize(30, 0))
+        self.condition1Param2Spin.setMinimum(-2147483648)
         self.condition1Param2Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_4.addWidget(self.condition1Param2Spin)
+        self.horizontalLayout_condition1Params.addWidget(self.condition1Param2Spin)
 
-        self.condition1Param3Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition1Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param3Spin.setObjectName(u"condition1Param3Spin")
         sizePolicy.setHeightForWidth(self.condition1Param3Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param3Spin.setSizePolicy(sizePolicy)
-        self.condition1Param3Spin.setMinimum(-2147483647)
+        self.condition1Param3Spin.setMinimumSize(QSize(30, 0))
+        self.condition1Param3Spin.setMinimum(-2147483648)
         self.condition1Param3Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_4.addWidget(self.condition1Param3Spin)
+        self.horizontalLayout_condition1Params.addWidget(self.condition1Param3Spin)
 
-        self.condition1Param4Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition1Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param4Spin.setObjectName(u"condition1Param4Spin")
         sizePolicy.setHeightForWidth(self.condition1Param4Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param4Spin.setSizePolicy(sizePolicy)
-        self.condition1Param4Spin.setMinimum(-2147483647)
+        self.condition1Param4Spin.setMinimumSize(QSize(30, 0))
+        self.condition1Param4Spin.setMinimum(-2147483648)
         self.condition1Param4Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_4.addWidget(self.condition1Param4Spin)
+        self.horizontalLayout_condition1Params.addWidget(self.condition1Param4Spin)
 
-        self.condition1Param5Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition1Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition1Param5Spin.setObjectName(u"condition1Param5Spin")
         sizePolicy.setHeightForWidth(self.condition1Param5Spin.sizePolicy().hasHeightForWidth())
         self.condition1Param5Spin.setSizePolicy(sizePolicy)
-        self.condition1Param5Spin.setMinimum(-2147483647)
+        self.condition1Param5Spin.setMinimumSize(QSize(30, 0))
+        self.condition1Param5Spin.setMinimum(-2147483648)
         self.condition1Param5Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_4.addWidget(self.condition1Param5Spin)
+        self.horizontalLayout_condition1Params.addWidget(self.condition1Param5Spin)
 
-        self.condition1Param6Edit = QLineEdit(self.scriptsTab)
+        self.condition1Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.condition1Param6Edit.setObjectName(u"condition1Param6Edit")
 
-        self.horizontalLayout_4.addWidget(self.condition1Param6Edit)
+        self.horizontalLayout_condition1Params.addWidget(self.condition1Param6Edit)
 
-        self.condition1NotCheckbox = QCheckBox(self.scriptsTab)
-        self.condition1NotCheckbox.setObjectName(u"condition1NotCheckbox")
 
-        self.horizontalLayout_4.addWidget(self.condition1NotCheckbox)
+        self.verticalLayout_conditions.addLayout(self.horizontalLayout_condition1Params)
 
-        self.horizontalLayout_4.setStretch(1, 3)
-        self.horizontalLayout_4.setStretch(2, 1)
-        self.horizontalLayout_4.setStretch(3, 1)
-        self.horizontalLayout_4.setStretch(4, 1)
-        self.horizontalLayout_4.setStretch(5, 1)
-        self.horizontalLayout_4.setStretch(6, 1)
-        self.horizontalLayout_4.setStretch(7, 2)
-
-        self.verticalLayout_3.addLayout(self.horizontalLayout_4)
-
-        self.horizontalLayout_5 = QHBoxLayout()
-        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.conditional2Label = QLabel(self.scriptsTab)
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setSpacing(2)
+        self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
+        self.conditional2Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional2Label.setObjectName(u"conditional2Label")
+        sizePolicy3.setHeightForWidth(self.conditional2Label.sizePolicy().hasHeightForWidth())
+        self.conditional2Label.setSizePolicy(sizePolicy3)
         self.conditional2Label.setMinimumSize(QSize(80, 0))
 
-        self.horizontalLayout_5.addWidget(self.conditional2Label)
+        self.horizontalLayout_4.addWidget(self.conditional2Label, 0, Qt.AlignVCenter)
 
-        self.condition2ResrefEdit = FilterComboBox(self.scriptsTab)
+        self.condition2ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.condition2ResrefEdit.setObjectName(u"condition2ResrefEdit")
+        self.condition2ResrefEdit.setMinimumSize(QSize(150, 0))
+        self.condition2ResrefEdit.setMaximumSize(QSize(16777215, 16777215))
 
-        self.horizontalLayout_5.addWidget(self.condition2ResrefEdit)
+        self.horizontalLayout_4.addWidget(self.condition2ResrefEdit)
 
-        self.condition2Param1Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition2NotCheckbox = QCheckBox(self.scrollAreaWidgetContents)
+        self.condition2NotCheckbox.setObjectName(u"condition2NotCheckbox")
+
+        self.horizontalLayout_4.addWidget(self.condition2NotCheckbox)
+
+        self.horizontalSpacer_7 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_4.addItem(self.horizontalSpacer_7)
+
+
+        self.verticalLayout_conditions.addLayout(self.horizontalLayout_4)
+
+        self.horizontalLayout_9 = QHBoxLayout()
+        self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
+        self.horizontalLayout_9.setContentsMargins(-1, -1, -1, 0)
+
+        self.verticalLayout_conditions.addLayout(self.horizontalLayout_9)
+
+        self.horizontalLayout_condition2Params = QHBoxLayout()
+        self.horizontalLayout_condition2Params.setSpacing(0)
+        self.horizontalLayout_condition2Params.setObjectName(u"horizontalLayout_condition2Params")
+        self.condition2Param1Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param1Spin.setObjectName(u"condition2Param1Spin")
         sizePolicy.setHeightForWidth(self.condition2Param1Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param1Spin.setSizePolicy(sizePolicy)
-        self.condition2Param1Spin.setMinimum(-2147483647)
+        self.condition2Param1Spin.setMinimumSize(QSize(30, 0))
+        self.condition2Param1Spin.setMinimum(-2147483648)
         self.condition2Param1Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_5.addWidget(self.condition2Param1Spin)
+        self.horizontalLayout_condition2Params.addWidget(self.condition2Param1Spin)
 
-        self.condition2Param2Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition2Param2Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param2Spin.setObjectName(u"condition2Param2Spin")
         sizePolicy.setHeightForWidth(self.condition2Param2Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param2Spin.setSizePolicy(sizePolicy)
-        self.condition2Param2Spin.setMinimum(-2147483647)
+        self.condition2Param2Spin.setMinimumSize(QSize(30, 0))
+        self.condition2Param2Spin.setMinimum(-2147483648)
         self.condition2Param2Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_5.addWidget(self.condition2Param2Spin)
+        self.horizontalLayout_condition2Params.addWidget(self.condition2Param2Spin)
 
-        self.condition2Param3Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition2Param3Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param3Spin.setObjectName(u"condition2Param3Spin")
         sizePolicy.setHeightForWidth(self.condition2Param3Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param3Spin.setSizePolicy(sizePolicy)
-        self.condition2Param3Spin.setMinimum(-2147483647)
+        self.condition2Param3Spin.setMinimumSize(QSize(30, 0))
+        self.condition2Param3Spin.setMinimum(-2147483648)
         self.condition2Param3Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_5.addWidget(self.condition2Param3Spin)
+        self.horizontalLayout_condition2Params.addWidget(self.condition2Param3Spin)
 
-        self.condition2Param4Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition2Param4Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param4Spin.setObjectName(u"condition2Param4Spin")
         sizePolicy.setHeightForWidth(self.condition2Param4Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param4Spin.setSizePolicy(sizePolicy)
-        self.condition2Param4Spin.setMinimum(-2147483647)
+        self.condition2Param4Spin.setMinimumSize(QSize(30, 0))
+        self.condition2Param4Spin.setMinimum(-2147483648)
         self.condition2Param4Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_5.addWidget(self.condition2Param4Spin)
+        self.horizontalLayout_condition2Params.addWidget(self.condition2Param4Spin)
 
-        self.condition2Param5Spin = GFFFieldSpinBox(self.scriptsTab)
+        self.condition2Param5Spin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.condition2Param5Spin.setObjectName(u"condition2Param5Spin")
         sizePolicy.setHeightForWidth(self.condition2Param5Spin.sizePolicy().hasHeightForWidth())
         self.condition2Param5Spin.setSizePolicy(sizePolicy)
-        self.condition2Param5Spin.setMinimum(-2147483647)
+        self.condition2Param5Spin.setMinimumSize(QSize(30, 0))
+        self.condition2Param5Spin.setMinimum(-2147483648)
         self.condition2Param5Spin.setMaximum(2147483647)
 
-        self.horizontalLayout_5.addWidget(self.condition2Param5Spin)
+        self.horizontalLayout_condition2Params.addWidget(self.condition2Param5Spin)
 
-        self.condition2Param6Edit = QLineEdit(self.scriptsTab)
+        self.condition2Param6Edit = QLineEdit(self.scrollAreaWidgetContents)
         self.condition2Param6Edit.setObjectName(u"condition2Param6Edit")
 
-        self.horizontalLayout_5.addWidget(self.condition2Param6Edit)
+        self.horizontalLayout_condition2Params.addWidget(self.condition2Param6Edit)
 
-        self.condition2NotCheckbox = QCheckBox(self.scriptsTab)
-        self.condition2NotCheckbox.setObjectName(u"condition2NotCheckbox")
 
-        self.horizontalLayout_5.addWidget(self.condition2NotCheckbox)
+        self.verticalLayout_conditions.addLayout(self.horizontalLayout_condition2Params)
 
-        self.horizontalLayout_5.setStretch(1, 3)
-        self.horizontalLayout_5.setStretch(2, 1)
-        self.horizontalLayout_5.setStretch(3, 1)
-        self.horizontalLayout_5.setStretch(4, 1)
-        self.horizontalLayout_5.setStretch(5, 1)
-        self.horizontalLayout_5.setStretch(6, 1)
-        self.horizontalLayout_5.setStretch(7, 2)
 
-        self.verticalLayout_3.addLayout(self.horizontalLayout_5)
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_conditions)
 
-        self.verticalSpacer = QSpacerItem(20, 95, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_3.addItem(self.verticalSpacer)
-
-        self.tabWidget.addTab(self.scriptsTab, "")
-        self.animsTab = QWidget()
-        self.animsTab.setObjectName(u"animsTab")
-        self.horizontalLayout_12 = QHBoxLayout(self.animsTab)
-        self.horizontalLayout_12.setObjectName(u"horizontalLayout_12")
-        self.horizontalLayout_7 = QHBoxLayout()
-        self.horizontalLayout_7.setObjectName(u"horizontalLayout_7")
-        self.verticalLayout_5 = QVBoxLayout()
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-        self.label_12 = QLabel(self.animsTab)
+        self.verticalLayout_anims = QVBoxLayout()
+        self.verticalLayout_anims.setSpacing(2)
+        self.verticalLayout_anims.setObjectName(u"verticalLayout_anims")
+        self.label_12 = QLabel(self.scrollAreaWidgetContents)
         self.label_12.setObjectName(u"label_12")
+        self.label_12.setLayoutDirection(Qt.LeftToRight)
+        self.label_12.setAlignment(Qt.AlignCenter)
 
-        self.verticalLayout_5.addWidget(self.label_12)
+        self.verticalLayout_anims.addWidget(self.label_12, 0, Qt.AlignVCenter)
 
-        self.animsList = QListWidget(self.animsTab)
+        self.animsList = QListWidget(self.scrollAreaWidgetContents)
         self.animsList.setObjectName(u"animsList")
 
-        self.verticalLayout_5.addWidget(self.animsList)
+        self.verticalLayout_anims.addWidget(self.animsList)
 
-
-        self.horizontalLayout_7.addLayout(self.verticalLayout_5)
-
-        self.verticalLayout_4 = QVBoxLayout()
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.addAnimButton = QPushButton(self.animsTab)
+        self.horizontalLayout_animsButtons = QHBoxLayout()
+        self.horizontalLayout_animsButtons.setObjectName(u"horizontalLayout_animsButtons")
+        self.addAnimButton = QPushButton(self.scrollAreaWidgetContents)
         self.addAnimButton.setObjectName(u"addAnimButton")
 
-        self.verticalLayout_4.addWidget(self.addAnimButton)
+        self.horizontalLayout_animsButtons.addWidget(self.addAnimButton)
 
-        self.removeAnimButton = QPushButton(self.animsTab)
+        self.removeAnimButton = QPushButton(self.scrollAreaWidgetContents)
         self.removeAnimButton.setObjectName(u"removeAnimButton")
 
-        self.verticalLayout_4.addWidget(self.removeAnimButton)
+        self.horizontalLayout_animsButtons.addWidget(self.removeAnimButton)
 
-        self.editAnimButton = QPushButton(self.animsTab)
+        self.editAnimButton = QPushButton(self.scrollAreaWidgetContents)
         self.editAnimButton.setObjectName(u"editAnimButton")
 
-        self.verticalLayout_4.addWidget(self.editAnimButton)
-
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_4.addItem(self.verticalSpacer_3)
+        self.horizontalLayout_animsButtons.addWidget(self.editAnimButton)
 
 
-        self.horizontalLayout_7.addLayout(self.verticalLayout_4)
+        self.verticalLayout_anims.addLayout(self.horizontalLayout_animsButtons)
 
-
-        self.horizontalLayout_12.addLayout(self.horizontalLayout_7)
-
-        self.verticalLayout_7 = QVBoxLayout()
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
-        self.formLayout = QFormLayout()
-        self.formLayout.setObjectName(u"formLayout")
-        self.label_17 = QLabel(self.animsTab)
-        self.label_17.setObjectName(u"label_17")
-
-        self.formLayout.setWidget(0, QFormLayout.LabelRole, self.label_17)
-
-        self.emotionSelect = ComboBox2DA(self.animsTab)
+        self.formLayout_anims = QFormLayout()
+        self.formLayout_anims.setObjectName(u"formLayout_anims")
+        self.emotionSelect = ComboBox2DA(self.scrollAreaWidgetContents)
         self.emotionSelect.setObjectName(u"emotionSelect")
 
-        self.formLayout.setWidget(0, QFormLayout.FieldRole, self.emotionSelect)
+        self.formLayout_anims.setWidget(0, QFormLayout.FieldRole, self.emotionSelect)
 
-        self.label_18 = QLabel(self.animsTab)
-        self.label_18.setObjectName(u"label_18")
+        self.expressionLabel = QLabel(self.scrollAreaWidgetContents)
+        self.expressionLabel.setObjectName(u"expressionLabel")
 
-        self.formLayout.setWidget(1, QFormLayout.LabelRole, self.label_18)
+        self.formLayout_anims.setWidget(1, QFormLayout.LabelRole, self.expressionLabel)
 
-        self.expressionSelect = ComboBox2DA(self.animsTab)
+        self.expressionSelect = ComboBox2DA(self.scrollAreaWidgetContents)
         self.expressionSelect.setObjectName(u"expressionSelect")
 
-        self.formLayout.setWidget(1, QFormLayout.FieldRole, self.expressionSelect)
+        self.formLayout_anims.setWidget(1, QFormLayout.FieldRole, self.expressionSelect)
+
+        self.emotionLabel = QLabel(self.scrollAreaWidgetContents)
+        self.emotionLabel.setObjectName(u"emotionLabel")
+        self.emotionLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.formLayout_anims.setWidget(0, QFormLayout.LabelRole, self.emotionLabel)
 
 
-        self.verticalLayout_7.addLayout(self.formLayout)
+        self.verticalLayout_anims.addLayout(self.formLayout_anims)
 
-        self.line = QFrame(self.animsTab)
-        self.line.setObjectName(u"line")
-        self.line.setFrameShape(QFrame.HLine)
-        self.line.setFrameShadow(QFrame.Sunken)
-
-        self.verticalLayout_7.addWidget(self.line)
-
-        self.formLayout_2 = QFormLayout()
-        self.formLayout_2.setObjectName(u"formLayout_2")
-        self.label_19 = QLabel(self.animsTab)
+        self.formLayout_sound = QFormLayout()
+        self.formLayout_sound.setObjectName(u"formLayout_sound")
+        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(0, 0, -1, -1)
+        self.label_19 = QLabel(self.scrollAreaWidgetContents)
         self.label_19.setObjectName(u"label_19")
+        sizePolicy.setHeightForWidth(self.label_19.sizePolicy().hasHeightForWidth())
+        self.label_19.setSizePolicy(sizePolicy)
 
-        self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.label_19)
+        self.verticalLayout_2.addWidget(self.label_19, 0, Qt.AlignHCenter)
 
-        self.verticalLayout_6 = QVBoxLayout()
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-        self.soundComboBox = FilterComboBox(self.animsTab)
+        self.soundCheckbox = QCheckBox(self.scrollAreaWidgetContents)
+        self.soundCheckbox.setObjectName(u"soundCheckbox")
+        self.soundCheckbox.setMaximumSize(QSize(250, 16777215))
+
+        self.verticalLayout_2.addWidget(self.soundCheckbox, 0, Qt.AlignHCenter|Qt.AlignTop)
+
+
+        self.formLayout_sound.setLayout(0, QFormLayout.LabelRole, self.verticalLayout_2)
+
+        self.verticalLayout_sound = QVBoxLayout()
+        self.verticalLayout_sound.setSpacing(4)
+        self.verticalLayout_sound.setObjectName(u"verticalLayout_sound")
+        self.soundComboBox = FilterComboBox(self.scrollAreaWidgetContents)
         self.soundComboBox.setObjectName(u"soundComboBox")
 
-        self.verticalLayout_6.addWidget(self.soundComboBox)
+        self.verticalLayout_sound.addWidget(self.soundComboBox)
 
-        self.soundButton = QPushButton(self.animsTab)
+        self.soundButton = QPushButton(self.scrollAreaWidgetContents)
         self.soundButton.setObjectName(u"soundButton")
 
-        self.verticalLayout_6.addWidget(self.soundButton)
+        self.verticalLayout_sound.addWidget(self.soundButton)
 
 
-        self.formLayout_2.setLayout(0, QFormLayout.FieldRole, self.verticalLayout_6)
+        self.formLayout_sound.setLayout(0, QFormLayout.FieldRole, self.verticalLayout_sound)
 
-        self.label_20 = QLabel(self.animsTab)
-        self.label_20.setObjectName(u"label_20")
-
-        self.formLayout_2.setWidget(1, QFormLayout.LabelRole, self.label_20)
-
-        self.verticalLayout_8 = QVBoxLayout()
-        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
-        self.voiceComboBox = FilterComboBox(self.animsTab)
+        self.verticalLayout_voice = QVBoxLayout()
+        self.verticalLayout_voice.setObjectName(u"verticalLayout_voice")
+        self.voiceComboBox = FilterComboBox(self.scrollAreaWidgetContents)
         self.voiceComboBox.setObjectName(u"voiceComboBox")
 
-        self.verticalLayout_8.addWidget(self.voiceComboBox)
+        self.verticalLayout_voice.addWidget(self.voiceComboBox)
 
-        self.voiceButton = QPushButton(self.animsTab)
+        self.voiceButton = QPushButton(self.scrollAreaWidgetContents)
         self.voiceButton.setObjectName(u"voiceButton")
 
-        self.verticalLayout_8.addWidget(self.voiceButton)
+        self.verticalLayout_voice.addWidget(self.voiceButton)
 
 
-        self.formLayout_2.setLayout(1, QFormLayout.FieldRole, self.verticalLayout_8)
+        self.formLayout_sound.setLayout(2, QFormLayout.FieldRole, self.verticalLayout_voice)
 
-        self.soundCheckbox = QCheckBox(self.animsTab)
-        self.soundCheckbox.setObjectName(u"soundCheckbox")
+        self.label_20 = QLabel(self.scrollAreaWidgetContents)
+        self.label_20.setObjectName(u"label_20")
 
-        self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.soundCheckbox)
-
-
-        self.verticalLayout_7.addLayout(self.formLayout_2)
-
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_7.addItem(self.verticalSpacer_2)
+        self.formLayout_sound.setWidget(2, QFormLayout.LabelRole, self.label_20)
 
 
-        self.horizontalLayout_12.addLayout(self.verticalLayout_7)
+        self.verticalLayout_anims.addLayout(self.formLayout_sound)
 
-        self.tabWidget.addTab(self.animsTab, "")
-        self.journalTab = QWidget()
-        self.journalTab.setObjectName(u"journalTab")
-        self.horizontalLayout_8 = QHBoxLayout(self.journalTab)
-        self.horizontalLayout_8.setObjectName(u"horizontalLayout_8")
-        self.formLayout_3 = QFormLayout()
-        self.formLayout_3.setObjectName(u"formLayout_3")
-        self.label_22 = QLabel(self.journalTab)
+
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_anims)
+
+        self.verticalLayout_journal = QVBoxLayout()
+        self.verticalLayout_journal.setObjectName(u"verticalLayout_journal")
+        self.label_22 = QLabel(self.scrollAreaWidgetContents)
         self.label_22.setObjectName(u"label_22")
 
-        self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_22)
+        self.verticalLayout_journal.addWidget(self.label_22)
 
-        self.plotIndexSpin = GFFFieldSpinBox(self.journalTab)
+        self.plotIndexSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.plotIndexSpin.setObjectName(u"plotIndexSpin")
-        self.plotIndexSpin.setMinimum(-1)
-        self.plotIndexSpin.setMaximum(10000)
+        self.plotIndexSpin.setMinimum(-2147483648)
+        self.plotIndexSpin.setMaximum(2147483647)
 
-        self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.plotIndexSpin)
-
-        self.label_23 = QLabel(self.journalTab)
-        self.label_23.setObjectName(u"label_23")
-
-        self.formLayout_3.setWidget(1, QFormLayout.LabelRole, self.label_23)
-
-        self.label_24 = QLabel(self.journalTab)
-        self.label_24.setObjectName(u"label_24")
-
-        self.formLayout_3.setWidget(2, QFormLayout.LabelRole, self.label_24)
-
-        self.label_25 = QLabel(self.journalTab)
-        self.label_25.setObjectName(u"label_25")
-
-        self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.label_25)
-
-        self.questEntrySpin = GFFFieldSpinBox(self.journalTab)
-        self.questEntrySpin.setObjectName(u"questEntrySpin")
-        self.questEntrySpin.setMinimum(-2147483648)
-        self.questEntrySpin.setMaximum(2147483647)
-
-        self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.questEntrySpin)
-
-        self.plotXpSpin = QDoubleSpinBox(self.journalTab)
-        self.plotXpSpin.setObjectName(u"plotXpSpin")
-
-        self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.plotXpSpin)
-
-        self.questEdit = QLineEdit(self.journalTab)
-        self.questEdit.setObjectName(u"questEdit")
-
-        self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.questEdit)
+        self.verticalLayout_journal.addWidget(self.plotIndexSpin)
 
 
-        self.horizontalLayout_8.addLayout(self.formLayout_3)
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_journal)
 
-        self.horizontalSpacer = QSpacerItem(516, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_8.addItem(self.horizontalSpacer)
-
-        self.horizontalLayout_8.setStretch(0, 1)
-        self.horizontalLayout_8.setStretch(1, 2)
-        self.tabWidget.addTab(self.journalTab, "")
-        self.cameraTab = QWidget()
-        self.cameraTab.setObjectName(u"cameraTab")
-        self.horizontalLayout_9 = QHBoxLayout(self.cameraTab)
-        self.horizontalLayout_9.setObjectName(u"horizontalLayout_9")
-        self.formLayout_4 = QFormLayout()
-        self.formLayout_4.setObjectName(u"formLayout_4")
-        self.label_26 = QLabel(self.cameraTab)
+        self.verticalLayout_camera = QVBoxLayout()
+        self.verticalLayout_camera.setObjectName(u"verticalLayout_camera")
+        self.label_26 = QLabel(self.scrollAreaWidgetContents)
         self.label_26.setObjectName(u"label_26")
 
-        self.formLayout_4.setWidget(0, QFormLayout.LabelRole, self.label_26)
+        self.verticalLayout_camera.addWidget(self.label_26)
 
-        self.cameraIdSpin = GFFFieldSpinBox(self.cameraTab)
+        self.cameraIdSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.cameraIdSpin.setObjectName(u"cameraIdSpin")
-        self.cameraIdSpin.setMinimum(-1)
-        self.cameraIdSpin.setMaximum(10000)
+        self.cameraIdSpin.setMinimum(-2147483648)
+        self.cameraIdSpin.setMaximum(2147483647)
 
-        self.formLayout_4.setWidget(0, QFormLayout.FieldRole, self.cameraIdSpin)
+        self.verticalLayout_camera.addWidget(self.cameraIdSpin)
 
-        self.label_27 = QLabel(self.cameraTab)
+        self.label_27 = QLabel(self.scrollAreaWidgetContents)
         self.label_27.setObjectName(u"label_27")
 
-        self.formLayout_4.setWidget(1, QFormLayout.LabelRole, self.label_27)
+        self.verticalLayout_camera.addWidget(self.label_27)
 
-        self.label_28 = QLabel(self.cameraTab)
+        self.cameraAnimSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
+        self.cameraAnimSpin.setObjectName(u"cameraAnimSpin")
+
+        self.verticalLayout_camera.addWidget(self.cameraAnimSpin)
+
+        self.label_28 = QLabel(self.scrollAreaWidgetContents)
         self.label_28.setObjectName(u"label_28")
 
-        self.formLayout_4.setWidget(2, QFormLayout.LabelRole, self.label_28)
+        self.verticalLayout_camera.addWidget(self.label_28)
 
-        self.cameraAnimSpin = GFFFieldSpinBox(self.cameraTab)
-        self.cameraAnimSpin.setObjectName(u"cameraAnimSpin")
-        self.cameraAnimSpin.setMinimum(-1)
-        self.cameraAnimSpin.setMaximum(65534)
-
-        self.formLayout_4.setWidget(1, QFormLayout.FieldRole, self.cameraAnimSpin)
-
-        self.label_29 = QLabel(self.cameraTab)
-        self.label_29.setObjectName(u"label_29")
-
-        self.formLayout_4.setWidget(3, QFormLayout.LabelRole, self.label_29)
-
-        self.cameraEffectSelect = QComboBox(self.cameraTab)
-        self.cameraEffectSelect.setObjectName(u"cameraEffectSelect")
-
-        self.formLayout_4.setWidget(3, QFormLayout.FieldRole, self.cameraEffectSelect)
-
-        self.cameraAngleSelect = QComboBox(self.cameraTab)
+        self.cameraAngleSelect = QComboBox(self.scrollAreaWidgetContents)
         self.cameraAngleSelect.addItem("")
         self.cameraAngleSelect.addItem("")
         self.cameraAngleSelect.addItem("")
@@ -927,149 +916,149 @@ class Ui_MainWindow(object):
         self.cameraAngleSelect.addItem("")
         self.cameraAngleSelect.setObjectName(u"cameraAngleSelect")
 
-        self.formLayout_4.setWidget(2, QFormLayout.FieldRole, self.cameraAngleSelect)
+        self.verticalLayout_camera.addWidget(self.cameraAngleSelect)
+
+        self.label_29 = QLabel(self.scrollAreaWidgetContents)
+        self.label_29.setObjectName(u"label_29")
+
+        self.verticalLayout_camera.addWidget(self.label_29)
+
+        self.cameraEffectSelect = ComboBox2DA(self.scrollAreaWidgetContents)
+        self.cameraEffectSelect.setObjectName(u"cameraEffectSelect")
+
+        self.verticalLayout_camera.addWidget(self.cameraEffectSelect)
 
 
-        self.horizontalLayout_9.addLayout(self.formLayout_4)
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_camera)
 
-        self.horizontalSpacer_2 = QSpacerItem(324, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_9.addItem(self.horizontalSpacer_2)
-
-        self.horizontalLayout_9.setStretch(0, 1)
-        self.horizontalLayout_9.setStretch(1, 1)
-        self.tabWidget.addTab(self.cameraTab, "")
-        self.otherTab = QWidget()
-        self.otherTab.setObjectName(u"otherTab")
-        self.horizontalLayout_10 = QHBoxLayout(self.otherTab)
-        self.horizontalLayout_10.setObjectName(u"horizontalLayout_10")
-        self.verticalLayout_9 = QVBoxLayout()
-        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
-        self.nodeUnskippableCheckbox = QCheckBox(self.otherTab)
+        self.verticalLayout_other = QVBoxLayout()
+        self.verticalLayout_other.setObjectName(u"verticalLayout_other")
+        self.nodeUnskippableCheckbox = QCheckBox(self.scrollAreaWidgetContents)
         self.nodeUnskippableCheckbox.setObjectName(u"nodeUnskippableCheckbox")
 
-        self.verticalLayout_9.addWidget(self.nodeUnskippableCheckbox)
+        self.verticalLayout_other.addWidget(self.nodeUnskippableCheckbox)
 
-        self.formLayout_5 = QFormLayout()
-        self.formLayout_5.setObjectName(u"formLayout_5")
-        self.label_30 = QLabel(self.otherTab)
+        self.formLayout_other = QFormLayout()
+        self.formLayout_other.setObjectName(u"formLayout_other")
+        self.formLayout_other.setHorizontalSpacing(2)
+        self.formLayout_other.setVerticalSpacing(2)
+        self.label_30 = QLabel(self.scrollAreaWidgetContents)
         self.label_30.setObjectName(u"label_30")
 
-        self.formLayout_5.setWidget(0, QFormLayout.LabelRole, self.label_30)
+        self.formLayout_other.setWidget(0, QFormLayout.LabelRole, self.label_30)
 
-        self.nodeIdSpin = GFFFieldSpinBox(self.otherTab)
+        self.nodeIdSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.nodeIdSpin.setObjectName(u"nodeIdSpin")
-        self.nodeIdSpin.setMaximum(999999)
 
-        self.formLayout_5.setWidget(0, QFormLayout.FieldRole, self.nodeIdSpin)
+        self.formLayout_other.setWidget(0, QFormLayout.FieldRole, self.nodeIdSpin)
 
-        self.label_31 = QLabel(self.otherTab)
+        self.label_31 = QLabel(self.scrollAreaWidgetContents)
         self.label_31.setObjectName(u"label_31")
 
-        self.formLayout_5.setWidget(1, QFormLayout.LabelRole, self.label_31)
+        self.formLayout_other.setWidget(1, QFormLayout.LabelRole, self.label_31)
 
-        self.alienRaceNodeSpin = GFFFieldSpinBox(self.otherTab)
+        self.alienRaceNodeSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.alienRaceNodeSpin.setObjectName(u"alienRaceNodeSpin")
-        self.alienRaceNodeSpin.setMinimum(-1)
-        self.alienRaceNodeSpin.setMaximum(2147483647)
 
-        self.formLayout_5.setWidget(1, QFormLayout.FieldRole, self.alienRaceNodeSpin)
+        self.formLayout_other.setWidget(1, QFormLayout.FieldRole, self.alienRaceNodeSpin)
 
-        self.label_32 = QLabel(self.otherTab)
+        self.label_32 = QLabel(self.scrollAreaWidgetContents)
         self.label_32.setObjectName(u"label_32")
 
-        self.formLayout_5.setWidget(2, QFormLayout.LabelRole, self.label_32)
+        self.formLayout_other.setWidget(2, QFormLayout.LabelRole, self.label_32)
 
-        self.postProcSpin = GFFFieldSpinBox(self.otherTab)
+        self.postProcSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.postProcSpin.setObjectName(u"postProcSpin")
-        self.postProcSpin.setMinimum(-1)
-        self.postProcSpin.setMaximum(2147483647)
 
-        self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.postProcSpin)
+        self.formLayout_other.setWidget(2, QFormLayout.FieldRole, self.postProcSpin)
 
-        self.label_33 = QLabel(self.otherTab)
+        self.label_33 = QLabel(self.scrollAreaWidgetContents)
         self.label_33.setObjectName(u"label_33")
 
-        self.formLayout_5.setWidget(3, QFormLayout.LabelRole, self.label_33)
+        self.formLayout_other.setWidget(3, QFormLayout.LabelRole, self.label_33)
 
-        self.delaySpin = GFFFieldSpinBox(self.otherTab)
+        self.delaySpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.delaySpin.setObjectName(u"delaySpin")
-        self.delaySpin.setMinimum(-1)
-        self.delaySpin.setMaximum(2147483647)
 
-        self.formLayout_5.setWidget(3, QFormLayout.FieldRole, self.delaySpin)
+        self.formLayout_other.setWidget(3, QFormLayout.FieldRole, self.delaySpin)
 
-        self.label_34 = QLabel(self.otherTab)
+        self.label_34 = QLabel(self.scrollAreaWidgetContents)
         self.label_34.setObjectName(u"label_34")
 
-        self.formLayout_5.setWidget(4, QFormLayout.LabelRole, self.label_34)
+        self.formLayout_other.setWidget(4, QFormLayout.LabelRole, self.label_34)
 
-        self.logicSpin = GFFFieldSpinBox(self.otherTab)
+        self.logicSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.logicSpin.setObjectName(u"logicSpin")
-        self.logicSpin.setMinimum(-1)
-        self.logicSpin.setMaximum(2147483647)
 
-        self.formLayout_5.setWidget(4, QFormLayout.FieldRole, self.logicSpin)
+        self.formLayout_other.setWidget(4, QFormLayout.FieldRole, self.logicSpin)
 
-        self.label_35 = QLabel(self.otherTab)
+        self.label_35 = QLabel(self.scrollAreaWidgetContents)
         self.label_35.setObjectName(u"label_35")
 
-        self.formLayout_5.setWidget(5, QFormLayout.LabelRole, self.label_35)
+        self.formLayout_other.setWidget(5, QFormLayout.LabelRole, self.label_35)
 
-        self.waitFlagSpin = GFFFieldSpinBox(self.otherTab)
+        self.waitFlagSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.waitFlagSpin.setObjectName(u"waitFlagSpin")
-        self.waitFlagSpin.setMinimum(-1)
-        self.waitFlagSpin.setMaximum(2147483647)
 
-        self.formLayout_5.setWidget(5, QFormLayout.FieldRole, self.waitFlagSpin)
+        self.formLayout_other.setWidget(5, QFormLayout.FieldRole, self.waitFlagSpin)
 
-        self.label_36 = QLabel(self.otherTab)
+        self.label_36 = QLabel(self.scrollAreaWidgetContents)
         self.label_36.setObjectName(u"label_36")
 
-        self.formLayout_5.setWidget(6, QFormLayout.LabelRole, self.label_36)
+        self.formLayout_other.setWidget(6, QFormLayout.LabelRole, self.label_36)
 
-        self.fadeTypeSpin = GFFFieldSpinBox(self.otherTab)
+        self.fadeTypeSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.fadeTypeSpin.setObjectName(u"fadeTypeSpin")
-        self.fadeTypeSpin.setMinimum(-1)
-        self.fadeTypeSpin.setMaximum(2147483647)
 
-        self.formLayout_5.setWidget(6, QFormLayout.FieldRole, self.fadeTypeSpin)
+        self.formLayout_other.setWidget(6, QFormLayout.FieldRole, self.fadeTypeSpin)
 
 
-        self.verticalLayout_9.addLayout(self.formLayout_5)
+        self.verticalLayout_other.addLayout(self.formLayout_other)
 
 
-        self.horizontalLayout_10.addLayout(self.verticalLayout_9)
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_other)
 
-        self.horizontalSpacer_3 = QSpacerItem(324, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.verticalLayout_stunts = QVBoxLayout()
+        self.verticalLayout_stunts.setObjectName(u"verticalLayout_stunts")
+        self.label_46 = QLabel(self.scrollAreaWidgetContents)
+        self.label_46.setObjectName(u"label_46")
 
-        self.horizontalLayout_10.addItem(self.horizontalSpacer_3)
+        self.verticalLayout_stunts.addWidget(self.label_46)
 
-        self.horizontalLayout_10.setStretch(0, 1)
-        self.horizontalLayout_10.setStretch(1, 1)
-        self.tabWidget.addTab(self.otherTab, "")
-        self.commentsTab = QWidget()
-        self.commentsTab.setObjectName(u"commentsTab")
-        self.gridLayout = QGridLayout(self.commentsTab)
-        self.gridLayout.setObjectName(u"gridLayout")
-        self.commentsEdit = QPlainTextEdit(self.commentsTab)
-        self.commentsEdit.setObjectName(u"commentsEdit")
+        self.stuntList = QListWidget(self.scrollAreaWidgetContents)
+        self.stuntList.setObjectName(u"stuntList")
 
-        self.gridLayout.addWidget(self.commentsEdit, 0, 0, 1, 1)
+        self.verticalLayout_stunts.addWidget(self.stuntList)
 
-        self.tabWidget.addTab(self.commentsTab, "")
+        self.horizontalLayout_stuntButtons = QHBoxLayout()
+        self.horizontalLayout_stuntButtons.setObjectName(u"horizontalLayout_stuntButtons")
+        self.addStuntButton = QPushButton(self.scrollAreaWidgetContents)
+        self.addStuntButton.setObjectName(u"addStuntButton")
 
-        self.horizontalLayout.addWidget(self.tabWidget)
+        self.horizontalLayout_stuntButtons.addWidget(self.addStuntButton)
 
-        self.horizontalLayout.setStretch(0, 3)
-        self.splitter.addWidget(self.layoutWidget)
+        self.removeStuntButton = QPushButton(self.scrollAreaWidgetContents)
+        self.removeStuntButton.setObjectName(u"removeStuntButton")
 
-        self.gridLayout_2.addWidget(self.splitter, 0, 0, 1, 1)
+        self.horizontalLayout_stuntButtons.addWidget(self.removeStuntButton)
 
-        MainWindow.setCentralWidget(self.centralwidget)
+        self.editStuntButton = QPushButton(self.scrollAreaWidgetContents)
+        self.editStuntButton.setObjectName(u"editStuntButton")
+
+        self.horizontalLayout_stuntButtons.addWidget(self.editStuntButton)
+
+
+        self.verticalLayout_stunts.addLayout(self.horizontalLayout_stuntButtons)
+
+
+        self.verticalLayout_rightDock.addLayout(self.verticalLayout_stunts)
+
+        self.scrollArea_rightDock.setWidget(self.scrollAreaWidgetContents)
+        self.rightDockWidget.setWidget(self.scrollArea_rightDock)
+        MainWindow.addDockWidget(Qt.RightDockWidgetArea, self.rightDockWidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1135, 22))
+        self.menubar.setGeometry(QRect(0, 0, 866, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuTools = QMenu(self.menubar)
@@ -1090,9 +1079,6 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(4)
-
-
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
 
@@ -1106,15 +1092,13 @@ class Ui_MainWindow(object):
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.actionReloadTree.setText(QCoreApplication.translate("MainWindow", u"Reload Tree", None))
         self.actionUnfocus.setText(QCoreApplication.translate("MainWindow", u"Unfocus Tree", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
+        self.label_25.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
+        self.label_24.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
         self.label_21.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Text:", None))
-        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends Script:", None))
-        self.label_38.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts Script:", None))
+        self.label.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
+        self.label_23.setText(QCoreApplication.translate("MainWindow", u"Plot XP (percent)", None))
+        self.topDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Globals", None))
         self.label_39.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
-        self.label_40.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
-        self.label_41.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
-        self.label_42.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
         self.label_43.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
         self.conversationSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Human", None))
         self.conversationSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Computer", None))
@@ -1125,54 +1109,53 @@ class Ui_MainWindow(object):
         self.computerSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Modern", None))
         self.computerSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Ancient", None))
 
-        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
-        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
-        self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
-        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
-        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
+        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends Script:", None))
+        self.label_42.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
+        self.label_40.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
+        self.label_38.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts Script:", None))
         self.label_44.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
         self.label_45.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
-        self.label_46.setText(QCoreApplication.translate("MainWindow", u"Cutscene Model:", None))
-        self.addStuntButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
-        self.removeStuntButton.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
-        self.editStuntButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.fileTab), QCoreApplication.translate("MainWindow", u"This File", None))
-        self.label_16.setText("")
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"ResRef", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"P1", None))
-        self.label_7.setText(QCoreApplication.translate("MainWindow", u"P2", None))
-        self.label_8.setText(QCoreApplication.translate("MainWindow", u"P3", None))
-        self.label_9.setText(QCoreApplication.translate("MainWindow", u"P4", None))
-        self.label_10.setText(QCoreApplication.translate("MainWindow", u"P5", None))
-        self.label_11.setText(QCoreApplication.translate("MainWindow", u"P6", None))
+        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
+        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
+        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
+        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
+        self.label_41.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
+        self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
+        self.rightDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"Node Fields", None))
+        self.commentsEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Comments", None))
         self.script1Label.setText(QCoreApplication.translate("MainWindow", u"Script #1:", None))
         self.script2Label.setText(QCoreApplication.translate("MainWindow", u"Script #2:", None))
         self.conditional1Label.setText(QCoreApplication.translate("MainWindow", u"Conditional #1:", None))
-        self.condition1NotCheckbox.setText("")
+        self.condition1NotCheckbox.setText(QCoreApplication.translate("MainWindow", u"Not", None))
+#if QT_CONFIG(tooltip)
+        self.condition1Param2Spin.setToolTip(QCoreApplication.translate("MainWindow", u"Param2", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.condition1Param3Spin.setToolTip(QCoreApplication.translate("MainWindow", u"Param3", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.condition1Param4Spin.setToolTip(QCoreApplication.translate("MainWindow", u"Param4", None))
+#endif // QT_CONFIG(tooltip)
         self.conditional2Label.setText(QCoreApplication.translate("MainWindow", u"Conditional #2:", None))
-        self.condition2NotCheckbox.setText("")
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.scriptsTab), QCoreApplication.translate("MainWindow", u"Scripts", None))
+        self.condition2NotCheckbox.setText(QCoreApplication.translate("MainWindow", u"Not", None))
         self.label_12.setText(QCoreApplication.translate("MainWindow", u"Current Animations", None))
         self.addAnimButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
         self.removeAnimButton.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.editAnimButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
-        self.label_17.setText(QCoreApplication.translate("MainWindow", u"Emotion:", None))
-        self.label_18.setText(QCoreApplication.translate("MainWindow", u"Expression:", None))
+        self.expressionLabel.setText(QCoreApplication.translate("MainWindow", u"Expression:", None))
+        self.emotionLabel.setText(QCoreApplication.translate("MainWindow", u"Emotion:", None))
         self.label_19.setText(QCoreApplication.translate("MainWindow", u"Sound:", None))
+#if QT_CONFIG(tooltip)
+        self.soundCheckbox.setToolTip(QCoreApplication.translate("MainWindow", u"'SoundExists' field", None))
+#endif // QT_CONFIG(tooltip)
+        self.soundCheckbox.setText(QCoreApplication.translate("MainWindow", u"Exists", None))
         self.soundButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
-        self.label_20.setText(QCoreApplication.translate("MainWindow", u"Voice:", None))
         self.voiceButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
-        self.soundCheckbox.setText(QCoreApplication.translate("MainWindow", u"Enabled", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.animsTab), QCoreApplication.translate("MainWindow", u"Animations", None))
+        self.label_20.setText(QCoreApplication.translate("MainWindow", u"Voice:", None))
         self.label_22.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
-        self.label_23.setText(QCoreApplication.translate("MainWindow", u"Plot XP Percentage:", None))
-        self.label_24.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
-        self.label_25.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.journalTab), QCoreApplication.translate("MainWindow", u"Journal", None))
         self.label_26.setText(QCoreApplication.translate("MainWindow", u"Camera ID:", None))
         self.label_27.setText(QCoreApplication.translate("MainWindow", u"Camera Animation:", None))
         self.label_28.setText(QCoreApplication.translate("MainWindow", u"Camera Angle:", None))
-        self.label_29.setText(QCoreApplication.translate("MainWindow", u"Camera Video Effect:", None))
         self.cameraAngleSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Auto", None))
         self.cameraAngleSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Face", None))
         self.cameraAngleSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Shoulder", None))
@@ -1181,7 +1164,7 @@ class Ui_MainWindow(object):
         self.cameraAngleSelect.setItemText(5, QCoreApplication.translate("MainWindow", u"No Change", None))
         self.cameraAngleSelect.setItemText(6, QCoreApplication.translate("MainWindow", u"Static Camera", None))
 
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.cameraTab), QCoreApplication.translate("MainWindow", u"Camera", None))
+        self.label_29.setText(QCoreApplication.translate("MainWindow", u"Camera Video Effect:", None))
         self.nodeUnskippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Node Unskippable", None))
         self.label_30.setText(QCoreApplication.translate("MainWindow", u"Node ID:", None))
         self.label_31.setText(QCoreApplication.translate("MainWindow", u"Alien Race Node:", None))
@@ -1190,8 +1173,13 @@ class Ui_MainWindow(object):
         self.label_34.setText(QCoreApplication.translate("MainWindow", u"Logic:", None))
         self.label_35.setText(QCoreApplication.translate("MainWindow", u"Wait Flags:", None))
         self.label_36.setText(QCoreApplication.translate("MainWindow", u"Fade Type:", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.otherTab), QCoreApplication.translate("MainWindow", u"Other", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.commentsTab), QCoreApplication.translate("MainWindow", u"Comments", None))
+        self.label_46.setText(QCoreApplication.translate("MainWindow", u"Cutscene Model:", None))
+#if QT_CONFIG(tooltip)
+        self.stuntList.setToolTip(QCoreApplication.translate("MainWindow", u"Stunt List", None))
+#endif // QT_CONFIG(tooltip)
+        self.addStuntButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
+        self.removeStuntButton.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
+        self.editStuntButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
     # retranslateUi

@@ -13,7 +13,7 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 from toolset.gui.widgets.renderer.model import ModelRenderer
-from toolset.gui.widgets.edit.combobox import FilterComboBox
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 

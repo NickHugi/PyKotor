@@ -54,6 +54,11 @@
         <string>Misc</string>
        </property>
       </item>
+      <item>
+       <property name="text">
+        <string>Application</string>
+       </property>
+      </item>
      </widget>
      <widget class="QStackedWidget" name="settingsStack">
       <property name="sizePolicy">
@@ -63,12 +68,19 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="installationsPage">
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="0">
          <widget class="InstallationsWidget" name="installationsWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="applicationSettingsPage">
+       <layout class="QGridLayout" name="gridLayout_26">
+        <item row="0" column="0">
+         <widget class="ApplicationSettingsWidget" name="applicationSettingsWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -119,6 +131,12 @@
    <class>InstallationsWidget</class>
    <extends>QWidget</extends>
    <header location="global">toolset.gui.widgets.settings.installations</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ApplicationSettingsWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.settings.application</header>
    <container>1</container>
   </customwidget>
   <customwidget>

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, NoReturn
 import markdown
 import requests
 
+from qtpy import QtCore
 from qtpy.QtCore import QThread, Qt
 from qtpy.QtGui import QFont, QIcon
 from qtpy.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton, QStyle, QTextEdit, QVBoxLayout
@@ -73,6 +74,7 @@ def run_progress_dialog(
 class UpdateDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
         self.remoteInfo: dict[str, Any] = {}
         self.releases: list[GithubRelease] = []
         self.forksCache: dict[str, list[GithubRelease]] = {}

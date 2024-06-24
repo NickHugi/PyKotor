@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from qtpy import QtCore
 from qtpy.QtWidgets import QDialog
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 class LocalizedStringDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs.locstring import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415

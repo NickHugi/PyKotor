@@ -275,6 +275,8 @@ class BetterMessageBox(QtWidgets.QDialog):
         **kwargs,
     ):
         super().__init__(parent, *args, **kwargs)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+
         self.setWindowTitle(title)
         self.icon: QtWidgets.QStyle.StandardPixmap = ICON_MAP.get(icon, icon)
         self.buttons: list[QtWidgets.QPushButton] = MessageBoxButton.standardbuttons_to_qpushbuttons(buttons)

@@ -57,6 +57,18 @@
       },
     },
     {
+      "name": "Toolset: Compile UI",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/Tools/HolocronToolset/src/ui/convertui.py",
+      "console": "integratedTerminal",
+      "pythonArgs": [
+        "-Xfrozen_modules=off",
+        "-Xdev"
+      ],
+      "justMyCode": false,
+    },
+    {
       "name": "Run HoloPatcher",
       "type": "debugpy",
       "request": "launch",

@@ -12,6 +12,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):

@@ -9,8 +9,10 @@ from qtpy.QtCore import QSize, QSortFilterProxyModel, QThread
 from qtpy.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import (
     QAction,
+    QApplication,
     QDialog,
     QFrame,
+    QMainWindow,
     QMenu,
     QProgressBar,
     QTableWidget,
@@ -76,7 +78,7 @@ class InventoryEditor(QDialog):
         Args:
         ----
             parent (QWidget): Parent widget
-            installation (HTInstallation): Homeworld installation
+            installation (HTInstallation): Toolset installation
             capsules (Sequence[LazyCapsule]): List of capsules
             folders (list[str]): List of folders
             inventory (list[InventoryItem]): List of inventory items
@@ -95,6 +97,7 @@ class InventoryEditor(QDialog):
             6. Connects signals.
         """
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinimizeButtonHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs.inventory import Ui_Dialog  # noqa: PLC0415  # pylint: disable=C0415
@@ -748,6 +751,8 @@ class ItemBuilderDialog(QDialog):  # FIXME(th3w1zard1): There is UI code used in
         capsules: list[Capsule],
     ):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+
 
         self._progressBar = QProgressBar(self)
         self._progressBar.setMaximum(0)
@@ -760,7 +765,16 @@ class ItemBuilderDialog(QDialog):  # FIXME(th3w1zard1): There is UI code used in
 
         self.setWindowTitle("Building Item Lists...")
 
-        self.coreModel = ItemModel(installation.mainWindow)
+        main_window = next(
+            (
+                widget
+                for widget in QApplication.topLevelWidgets()
+                if isinstance(widget, QMainWindow)
+                and widget.__class__.__name__ == "ToolWindow"
+            ),
+            None,
+        )
+        self.coreModel = ItemModel(main_window)
         self.modulesModel = ItemModel(parent)
         self.overrideModel = ItemModel(parent)
         self._tlk: TLK = read_tlk(CaseAwarePath(installation.path(), "dialog.tlk"))
@@ -964,6 +978,7 @@ class ItemModel(QStandardItemModel):
 class SetItemResRefDialog(QDialog):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
+        self.setWindowFlag(QtCore.Qt.WindowType.WindowContextHelpButtonHint, False)
 
         from editors import ui_setitemresref  # TODO: ??
 
