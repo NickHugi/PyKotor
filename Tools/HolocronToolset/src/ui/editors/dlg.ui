@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>866</width>
+    <width>854</width>
     <height>773</height>
    </rect>
   </property>
@@ -52,21 +52,9 @@
         <property name="contextMenuPolicy">
          <enum>Qt::CustomContextMenu</enum>
         </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOn</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOn</enum>
-        </property>
         <property name="editTriggers">
          <set>QAbstractItemView::NoEditTriggers</set>
         </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-        <attribute name="headerVisible">
-         <bool>false</bool>
-        </attribute>
        </widget>
       </item>
      </layout>
@@ -111,7 +99,7 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="GFFFieldSpinBox" name="plotXpSpin">
+       <widget class="QDoubleSpinBox" name="plotXpSpin">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -214,7 +202,7 @@
        </widget>
       </item>
       <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="speakerEditLabel">
         <property name="text">
          <string>Speaker Tag:</string>
         </property>
@@ -223,7 +211,7 @@
       <item row="2" column="0" alignment="Qt::AlignRight">
        <widget class="QLabel" name="plotXpPercentLabel">
         <property name="text">
-         <string>Plot XP (percent)</string>
+         <string>Plot XP Percentage</string>
         </property>
        </widget>
       </item>
@@ -266,320 +254,19 @@
         </property>
        </spacer>
       </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="plotIndexLabel">
+        <property name="text">
+         <string>Plot Index:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="ComboBox2DA" name="plotIndexCombo"/>
+      </item>
      </layout>
     </item>
    </layout>
-  </widget>
-  <widget class="QDockWidget" name="topDockWidget">
-   <property name="minimumSize">
-    <size>
-     <width>82</width>
-     <height>146</height>
-    </size>
-   </property>
-   <property name="windowTitle">
-    <string>File Globals</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>4</number>
-   </attribute>
-   <widget class="QWidget" name="topDockWidgetContents">
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <widget class="QWidget" name="layoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>8</y>
-       <width>851</width>
-       <height>113</height>
-      </rect>
-     </property>
-     <layout class="QGridLayout" name="topGridLayout">
-      <property name="leftMargin">
-       <number>6</number>
-      </property>
-      <item row="1" column="5">
-       <widget class="QLineEdit" name="ambientTrackEdit"/>
-      </item>
-      <item row="0" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="voiceOverIDLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Voiceover ID:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-       <widget class="QLabel" name="computerTypeLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Computer Type:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="conversationSelect">
-        <property name="minimumSize">
-         <size>
-          <width>160</width>
-          <height>0</height>
-         </size>
-        </property>
-        <item>
-         <property name="text">
-          <string>Human</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Computer</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Type 3</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Type 4</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Type 5</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="computerSelect">
-        <property name="minimumSize">
-         <size>
-          <width>160</width>
-          <height>0</height>
-         </size>
-        </property>
-        <item>
-         <property name="text">
-          <string>Modern</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Ancient</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="FilterComboBox" name="onAbortEdit">
-        <property name="minimumSize">
-         <size>
-          <width>160</width>
-          <height>0</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="convoEndsScriptLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Conversation Ends Script:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-       <widget class="QLabel" name="convoTypeLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Conversation Type:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="ambientTrackLabel">
-        <property name="text">
-         <string>Ambient Track:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0" alignment="Qt::AlignVCenter">
-       <widget class="QLabel" name="convoAbortsScriptLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Conversation Aborts Script:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="5">
-       <widget class="QLineEdit" name="voIdEdit"/>
-      </item>
-      <item row="0" column="1">
-       <widget class="FilterComboBox" name="onEndEdit">
-        <property name="minimumSize">
-         <size>
-          <width>160</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>160</width>
-          <height>16777215</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="delayEntryLabel">
-        <property name="text">
-         <string>Delay before entry:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="GFFFieldSpinBox" name="replyDelaySpin">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimum">
-         <number>-2147483648</number>
-        </property>
-        <property name="maximum">
-         <number>2147483647</number>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="delayReplyLabel">
-        <property name="text">
-         <string>Delay before reply:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="3">
-       <widget class="GFFFieldSpinBox" name="entryDelaySpin">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimum">
-         <number>-2147483648</number>
-        </property>
-        <property name="maximum">
-         <number>2147483647</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2" alignment="Qt::AlignLeft">
-       <widget class="QCheckBox" name="skippableCheckbox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Skippable</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="2" alignment="Qt::AlignLeft">
-       <widget class="QCheckBox" name="unequipHandsCheckbox">
-        <property name="text">
-         <string>Unequip Hands</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="3" alignment="Qt::AlignLeft">
-       <widget class="QCheckBox" name="unequipAllCheckbox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Unequip All</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="3" alignment="Qt::AlignLeft">
-       <widget class="QCheckBox" name="animatedCutCheckbox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Animated Cut</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="cameraModelLabel">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Camera Model:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="5">
-       <widget class="QLineEdit" name="cameraModelEdit"/>
-      </item>
-      <item row="3" column="5" alignment="Qt::AlignLeft">
-       <widget class="QCheckBox" name="oldHitCheckbox">
-        <property name="text">
-         <string>Old Hit Check</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </widget>
   </widget>
   <widget class="QDockWidget" name="rightDockWidget">
    <property name="minimumSize">
@@ -609,8 +296,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>291</width>
-       <height>1141</height>
+       <width>337</width>
+       <height>1097</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_rightDock">
@@ -660,12 +347,6 @@
           </property>
           <item alignment="Qt::AlignRight|Qt::AlignVCenter">
            <widget class="QLabel" name="script1Label">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="minimumSize">
              <size>
               <width>80</width>
@@ -852,12 +533,6 @@
           </property>
           <item alignment="Qt::AlignRight|Qt::AlignVCenter">
            <widget class="QLabel" name="script2Label">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="minimumSize">
              <size>
               <width>80</width>
@@ -1050,12 +725,6 @@
           </property>
           <item alignment="Qt::AlignVCenter">
            <widget class="QLabel" name="conditional1Label">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="minimumSize">
              <size>
               <width>80</width>
@@ -1241,12 +910,6 @@
           </property>
           <item alignment="Qt::AlignVCenter">
            <widget class="QLabel" name="conditional2Label">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="minimumSize">
              <size>
               <width>80</width>
@@ -1582,25 +1245,7 @@
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_journal">
-        <item>
-         <widget class="QLabel" name="plotIndexLabel">
-          <property name="text">
-           <string>Plot Index:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="GFFFieldSpinBox" name="plotIndexSpin">
-          <property name="minimum">
-           <number>-2147483648</number>
-          </property>
-          <property name="maximum">
-           <number>2147483647</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <layout class="QVBoxLayout" name="verticalLayout_journal"/>
       </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_camera">
@@ -1691,7 +1336,7 @@
       </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_other">
-        <item>
+        <item alignment="Qt::AlignHCenter">
          <widget class="QCheckBox" name="nodeUnskippableCheckbox">
           <property name="text">
            <string>Node Unskippable</string>
@@ -1832,7 +1477,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>866</width>
+     <width>854</width>
      <height>22</height>
     </rect>
    </property>
@@ -1857,6 +1502,308 @@
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
+  </widget>
+  <widget class="QDockWidget" name="topDockWidget">
+   <property name="minimumSize">
+    <size>
+     <width>684</width>
+     <height>148</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>File Globals</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="QWidget" name="topDockWidgetContents">
+    <layout class="QGridLayout" name="topGridLayout">
+     <property name="leftMargin">
+      <number>6</number>
+     </property>
+     <item row="1" column="5">
+      <widget class="FilterComboBox" name="ambientTrackCombo"/>
+     </item>
+     <item row="0" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
+      <widget class="QLabel" name="voiceOverIDLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Voiceover ID:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+      <widget class="QLabel" name="computerTypeLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Computer Type:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="conversationSelect">
+       <property name="minimumSize">
+        <size>
+         <width>160</width>
+         <height>0</height>
+        </size>
+       </property>
+       <item>
+        <property name="text">
+         <string>Human</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Computer</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Type 3</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Type 4</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Type 5</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="computerSelect">
+       <property name="minimumSize">
+        <size>
+         <width>160</width>
+         <height>0</height>
+        </size>
+       </property>
+       <item>
+        <property name="text">
+         <string>Modern</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Ancient</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="FilterComboBox" name="onAbortCombo">
+       <property name="minimumSize">
+        <size>
+         <width>160</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
+      <widget class="QLabel" name="convoEndsScriptLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Conversation Ends:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+      <widget class="QLabel" name="convoTypeLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Conversation Type:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
+      <widget class="QLabel" name="ambientTrackLabel">
+       <property name="text">
+        <string>Ambient Track:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" alignment="Qt::AlignVCenter">
+      <widget class="QLabel" name="convoAbortsScriptLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Conversation Aborts:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="5">
+      <widget class="QLineEdit" name="voIdEdit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="FilterComboBox" name="onEndEdit">
+       <property name="minimumSize">
+        <size>
+         <width>160</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>160</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
+      <widget class="QLabel" name="delayEntryLabel">
+       <property name="text">
+        <string>Delay before entry:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="GFFFieldSpinBox" name="replyDelaySpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimum">
+        <number>-2147483648</number>
+       </property>
+       <property name="maximum">
+        <number>2147483647</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
+      <widget class="QLabel" name="delayReplyLabel">
+       <property name="text">
+        <string>Delay before reply:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="3">
+      <widget class="GFFFieldSpinBox" name="entryDelaySpin">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimum">
+        <number>-2147483648</number>
+       </property>
+       <property name="maximum">
+        <number>2147483647</number>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2" alignment="Qt::AlignLeft">
+      <widget class="QCheckBox" name="skippableCheckbox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Skippable</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2" alignment="Qt::AlignLeft">
+      <widget class="QCheckBox" name="unequipHandsCheckbox">
+       <property name="text">
+        <string>Unequip Hands</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="3" alignment="Qt::AlignLeft">
+      <widget class="QCheckBox" name="unequipAllCheckbox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Unequip All</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="3" alignment="Qt::AlignLeft">
+      <widget class="QCheckBox" name="animatedCutCheckbox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Animated Cut</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
+      <widget class="QLabel" name="cameraModelLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Camera Model:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="5">
+      <widget class="QLineEdit" name="cameraModelEdit"/>
+     </item>
+     <item row="3" column="4">
+      <widget class="QCheckBox" name="oldHitCheckbox">
+       <property name="text">
+        <string>Old Hit Check</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <action name="actionNew">
    <property name="text">

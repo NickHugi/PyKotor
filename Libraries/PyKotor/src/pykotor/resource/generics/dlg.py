@@ -521,9 +521,9 @@ class DLGNode:
         self.script1_param4: int = 0
         self.script1_param5: int = 0
         self.script1_param6: str = ""
-        self.script2_param1: int = 0
 
         self.script2: ResRef = ResRef.from_blank()
+        self.script2_param1: int = 0
         self.script2_param2: int = 0
         self.script2_param3: int = 0
         self.script2_param4: int = 0
@@ -849,31 +849,81 @@ class DLGLink(Generic[T]):
             "key": link_key,
             "node": self.node.to_dict(node_map) if self.node else None,
             "link_list_index": self.list_index,
+            "data": {},
         }
+
+        for key, value in self.__dict__.items():
+            if key.startswith("__"):
+                continue
+            if key in ("node", "list_index", "_hash_cache"):
+                continue
+            if isinstance(value, bool):
+                link_dict["data"][key] = {"value": int(value), "py_type": "bool"}
+            elif isinstance(value, int):
+                link_dict["data"][key] = {"value": value, "py_type": "int"}
+            elif isinstance(value, float):
+                link_dict["data"][key] = {"value": value, "py_type": "float"}
+            elif isinstance(value, str):
+                link_dict["data"][key] = {"value": value, "py_type": "str"}
+            elif isinstance(value, ResRef):
+                link_dict["data"][key] = {"value": str(value), "py_type": "ResRef"}
+            elif isinstance(value, Color):
+                link_dict["data"][key] = {"value": value.bgr_integer(), "py_type": "Color"}
+            elif isinstance(value, LocalizedString):
+                link_dict["data"][key] = {"value": value.to_dict(), "py_type": "LocalizedString"}
+            elif isinstance(value, list):
+                link_dict["data"][key] = {"value": value, "py_type": "list"}
+            elif value is None:
+                link_dict["data"][key] = {"value": None, "py_type": "None"}
+            else:
+                raise ValueError(f"Unsupported type: {type(value)} for key: {key}")
         node_map[link_key] = link_dict
 
         return link_dict
 
     @classmethod
-    def from_dict(cls, data: dict[str | int, Any], node_map: dict[str | int, Any] | None = None) -> Self:
+    def from_dict(cls, link_dict: dict[str | int, Any], node_map: dict[str | int, Any] | None = None) -> Self:
         if node_map is None:
             node_map = {}
 
-        if "ref" in data:
-            return node_map[data["ref"]]
+        if "ref" in link_dict:
+            return node_map[link_dict["ref"]]
 
-        link_key = data["key"]
-
+        link_key = link_dict["key"]
         if link_key in node_map:
             return node_map[link_key]
 
         link = cls()
         link._hash_cache = int(link_key)  # noqa: SLF001
-        link.list_index = data.get("link_list_index", -1)
+        link.list_index = link_dict.get("link_list_index", -1)
+        for key, value in cast(Dict[str, dict], link_dict["data"]).items():
+            if value is None:
+                continue
+            py_type = value.get("py_type")
+            actual_value: Any = value.get("value")
+
+            if py_type == "str":
+                setattr(link, key, actual_value)
+            elif py_type == "int":
+                setattr(link, key, int(actual_value))
+            elif py_type == "float":
+                setattr(link, key, float(actual_value))
+            elif py_type == "bool":
+                setattr(link, key, bool(actual_value))
+            elif py_type == "ResRef":
+                setattr(link, key, ResRef(actual_value))
+            elif py_type == "Color":
+                setattr(link, key, Color.from_bgr_integer(actual_value))
+            elif py_type == "list":
+                setattr(link, key, actual_value)
+            elif py_type == "None" or actual_value == "None":
+                setattr(link, key, None)
+            else:
+                raise ValueError(f"Unsupported type: {py_type} for key: {key}")
         node_map[link_key] = link
 
-        if data["node"]:
-            link.node = DLGNode.from_dict(data["node"], node_map)
+        if link_dict["node"]:
+            link.node = DLGNode.from_dict(link_dict["node"], node_map)
 
         return link
 

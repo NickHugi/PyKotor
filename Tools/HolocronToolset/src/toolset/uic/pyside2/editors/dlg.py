@@ -22,7 +22,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(866, 773)
+        MainWindow.resize(854, 773)
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -58,11 +58,7 @@ class Ui_MainWindow(object):
         self.dialogTree = DLGTreeView(self.centralwidget)
         self.dialogTree.setObjectName(u"dialogTree")
         self.dialogTree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.dialogTree.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.dialogTree.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.dialogTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.dialogTree.setWordWrap(True)
-        self.dialogTree.header().setVisible(False)
 
         self.horizontalLayout_main.addWidget(self.dialogTree)
 
@@ -85,7 +81,7 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.questEdit, 0, 3, 1, 1)
 
-        self.plotXpSpin = GFFFieldSpinBox(self.centralwidget)
+        self.plotXpSpin = QDoubleSpinBox(self.centralwidget)
         self.plotXpSpin.setObjectName(u"plotXpSpin")
         sizePolicy1.setHeightForWidth(self.plotXpSpin.sizePolicy().hasHeightForWidth())
         self.plotXpSpin.setSizePolicy(sizePolicy1)
@@ -134,10 +130,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.questEntrySpin, 1, 3, 1, 1)
 
-        self.label = QLabel(self.centralwidget)
-        self.label.setObjectName(u"label")
+        self.speakerEditLabel = QLabel(self.centralwidget)
+        self.speakerEditLabel.setObjectName(u"speakerEditLabel")
 
-        self.gridLayout.addWidget(self.label, 1, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.gridLayout.addWidget(self.speakerEditLabel, 1, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
         self.plotXpPercentLabel = QLabel(self.centralwidget)
         self.plotXpPercentLabel.setObjectName(u"plotXpPercentLabel")
@@ -156,184 +152,20 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addItem(self.horizontalSpacer_3, 2, 4, 1, 1)
 
+        self.plotIndexLabel = QLabel(self.centralwidget)
+        self.plotIndexLabel.setObjectName(u"plotIndexLabel")
+
+        self.gridLayout.addWidget(self.plotIndexLabel, 2, 2, 1, 1)
+
+        self.plotIndexCombo = ComboBox2DA(self.centralwidget)
+        self.plotIndexCombo.setObjectName(u"plotIndexCombo")
+
+        self.gridLayout.addWidget(self.plotIndexCombo, 2, 3, 1, 1)
+
 
         self.verticalLayout_main.addLayout(self.gridLayout)
 
         MainWindow.setCentralWidget(self.centralwidget)
-        self.topDockWidget = QDockWidget(MainWindow)
-        self.topDockWidget.setObjectName(u"topDockWidget")
-        self.topDockWidget.setMinimumSize(QSize(82, 146))
-        self.topDockWidgetContents = QWidget()
-        self.topDockWidgetContents.setObjectName(u"topDockWidgetContents")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.topDockWidgetContents.sizePolicy().hasHeightForWidth())
-        self.topDockWidgetContents.setSizePolicy(sizePolicy2)
-        self.layoutWidget = QWidget(self.topDockWidgetContents)
-        self.layoutWidget.setObjectName(u"layoutWidget")
-        self.layoutWidget.setGeometry(QRect(0, 8, 851, 113))
-        self.topGridLayout = QGridLayout(self.layoutWidget)
-        self.topGridLayout.setObjectName(u"topGridLayout")
-        self.topGridLayout.setContentsMargins(6, 0, 0, 0)
-        self.ambientTrackEdit = QLineEdit(self.layoutWidget)
-        self.ambientTrackEdit.setObjectName(u"ambientTrackEdit")
-
-        self.topGridLayout.addWidget(self.ambientTrackEdit, 1, 5, 1, 1)
-
-        self.voiceOverIDLabel = QLabel(self.layoutWidget)
-        self.voiceOverIDLabel.setObjectName(u"voiceOverIDLabel")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.voiceOverIDLabel.sizePolicy().hasHeightForWidth())
-        self.voiceOverIDLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.voiceOverIDLabel, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.computerTypeLabel = QLabel(self.layoutWidget)
-        self.computerTypeLabel.setObjectName(u"computerTypeLabel")
-        sizePolicy3.setHeightForWidth(self.computerTypeLabel.sizePolicy().hasHeightForWidth())
-        self.computerTypeLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.computerTypeLabel, 3, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
-
-        self.conversationSelect = QComboBox(self.layoutWidget)
-        self.conversationSelect.addItem("")
-        self.conversationSelect.addItem("")
-        self.conversationSelect.addItem("")
-        self.conversationSelect.addItem("")
-        self.conversationSelect.addItem("")
-        self.conversationSelect.setObjectName(u"conversationSelect")
-        self.conversationSelect.setMinimumSize(QSize(160, 0))
-
-        self.topGridLayout.addWidget(self.conversationSelect, 2, 1, 1, 1)
-
-        self.computerSelect = QComboBox(self.layoutWidget)
-        self.computerSelect.addItem("")
-        self.computerSelect.addItem("")
-        self.computerSelect.setObjectName(u"computerSelect")
-        self.computerSelect.setMinimumSize(QSize(160, 0))
-
-        self.topGridLayout.addWidget(self.computerSelect, 3, 1, 1, 1)
-
-        self.onAbortEdit = FilterComboBox(self.layoutWidget)
-        self.onAbortEdit.setObjectName(u"onAbortEdit")
-        self.onAbortEdit.setMinimumSize(QSize(160, 0))
-
-        self.topGridLayout.addWidget(self.onAbortEdit, 1, 1, 1, 1)
-
-        self.convoEndsScriptLabel = QLabel(self.layoutWidget)
-        self.convoEndsScriptLabel.setObjectName(u"convoEndsScriptLabel")
-        sizePolicy3.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
-        self.convoEndsScriptLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.convoEndsScriptLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.convoTypeLabel = QLabel(self.layoutWidget)
-        self.convoTypeLabel.setObjectName(u"convoTypeLabel")
-        sizePolicy3.setHeightForWidth(self.convoTypeLabel.sizePolicy().hasHeightForWidth())
-        self.convoTypeLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.convoTypeLabel, 2, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
-
-        self.ambientTrackLabel = QLabel(self.layoutWidget)
-        self.ambientTrackLabel.setObjectName(u"ambientTrackLabel")
-
-        self.topGridLayout.addWidget(self.ambientTrackLabel, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.convoAbortsScriptLabel = QLabel(self.layoutWidget)
-        self.convoAbortsScriptLabel.setObjectName(u"convoAbortsScriptLabel")
-        sizePolicy.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
-        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy)
-
-        self.topGridLayout.addWidget(self.convoAbortsScriptLabel, 1, 0, 1, 1, Qt.AlignVCenter)
-
-        self.voIdEdit = QLineEdit(self.layoutWidget)
-        self.voIdEdit.setObjectName(u"voIdEdit")
-
-        self.topGridLayout.addWidget(self.voIdEdit, 0, 5, 1, 1)
-
-        self.onEndEdit = FilterComboBox(self.layoutWidget)
-        self.onEndEdit.setObjectName(u"onEndEdit")
-        self.onEndEdit.setMinimumSize(QSize(160, 0))
-        self.onEndEdit.setMaximumSize(QSize(160, 16777215))
-
-        self.topGridLayout.addWidget(self.onEndEdit, 0, 1, 1, 1)
-
-        self.delayEntryLabel = QLabel(self.layoutWidget)
-        self.delayEntryLabel.setObjectName(u"delayEntryLabel")
-
-        self.topGridLayout.addWidget(self.delayEntryLabel, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.replyDelaySpin = GFFFieldSpinBox(self.layoutWidget)
-        self.replyDelaySpin.setObjectName(u"replyDelaySpin")
-        sizePolicy.setHeightForWidth(self.replyDelaySpin.sizePolicy().hasHeightForWidth())
-        self.replyDelaySpin.setSizePolicy(sizePolicy)
-        self.replyDelaySpin.setMinimum(-2147483648)
-        self.replyDelaySpin.setMaximum(2147483647)
-
-        self.topGridLayout.addWidget(self.replyDelaySpin, 0, 3, 1, 1)
-
-        self.delayReplyLabel = QLabel(self.layoutWidget)
-        self.delayReplyLabel.setObjectName(u"delayReplyLabel")
-
-        self.topGridLayout.addWidget(self.delayReplyLabel, 1, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.entryDelaySpin = GFFFieldSpinBox(self.layoutWidget)
-        self.entryDelaySpin.setObjectName(u"entryDelaySpin")
-        sizePolicy.setHeightForWidth(self.entryDelaySpin.sizePolicy().hasHeightForWidth())
-        self.entryDelaySpin.setSizePolicy(sizePolicy)
-        self.entryDelaySpin.setMinimum(-2147483648)
-        self.entryDelaySpin.setMaximum(2147483647)
-
-        self.topGridLayout.addWidget(self.entryDelaySpin, 1, 3, 1, 1)
-
-        self.skippableCheckbox = QCheckBox(self.layoutWidget)
-        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
-        sizePolicy.setHeightForWidth(self.skippableCheckbox.sizePolicy().hasHeightForWidth())
-        self.skippableCheckbox.setSizePolicy(sizePolicy)
-
-        self.topGridLayout.addWidget(self.skippableCheckbox, 2, 2, 1, 1, Qt.AlignLeft)
-
-        self.unequipHandsCheckbox = QCheckBox(self.layoutWidget)
-        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
-
-        self.topGridLayout.addWidget(self.unequipHandsCheckbox, 3, 2, 1, 1, Qt.AlignLeft)
-
-        self.unequipAllCheckbox = QCheckBox(self.layoutWidget)
-        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
-        sizePolicy.setHeightForWidth(self.unequipAllCheckbox.sizePolicy().hasHeightForWidth())
-        self.unequipAllCheckbox.setSizePolicy(sizePolicy)
-
-        self.topGridLayout.addWidget(self.unequipAllCheckbox, 3, 3, 1, 1, Qt.AlignLeft)
-
-        self.animatedCutCheckbox = QCheckBox(self.layoutWidget)
-        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
-        sizePolicy.setHeightForWidth(self.animatedCutCheckbox.sizePolicy().hasHeightForWidth())
-        self.animatedCutCheckbox.setSizePolicy(sizePolicy)
-
-        self.topGridLayout.addWidget(self.animatedCutCheckbox, 2, 3, 1, 1, Qt.AlignLeft)
-
-        self.cameraModelLabel = QLabel(self.layoutWidget)
-        self.cameraModelLabel.setObjectName(u"cameraModelLabel")
-        sizePolicy3.setHeightForWidth(self.cameraModelLabel.sizePolicy().hasHeightForWidth())
-        self.cameraModelLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.cameraModelLabel, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.cameraModelEdit = QLineEdit(self.layoutWidget)
-        self.cameraModelEdit.setObjectName(u"cameraModelEdit")
-
-        self.topGridLayout.addWidget(self.cameraModelEdit, 2, 5, 1, 1)
-
-        self.oldHitCheckbox = QCheckBox(self.layoutWidget)
-        self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
-
-        self.topGridLayout.addWidget(self.oldHitCheckbox, 3, 5, 1, 1, Qt.AlignLeft)
-
-        self.topDockWidget.setWidget(self.topDockWidgetContents)
-        MainWindow.addDockWidget(Qt.TopDockWidgetArea, self.topDockWidget)
         self.rightDockWidget = QDockWidget(MainWindow)
         self.rightDockWidget.setObjectName(u"rightDockWidget")
         self.rightDockWidget.setMinimumSize(QSize(310, 100))
@@ -344,7 +176,7 @@ class Ui_MainWindow(object):
         self.scrollArea_rightDock.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 291, 1141))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 337, 1097))
         self.verticalLayout_rightDock = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_rightDock.setSpacing(0)
         self.verticalLayout_rightDock.setObjectName(u"verticalLayout_rightDock")
@@ -363,8 +195,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.script1Label = QLabel(self.scrollAreaWidgetContents)
         self.script1Label.setObjectName(u"script1Label")
-        sizePolicy3.setHeightForWidth(self.script1Label.sizePolicy().hasHeightForWidth())
-        self.script1Label.setSizePolicy(sizePolicy3)
         self.script1Label.setMinimumSize(QSize(80, 0))
         self.script1Label.setAlignment(Qt.AlignCenter)
 
@@ -453,8 +283,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.script2Label = QLabel(self.scrollAreaWidgetContents)
         self.script2Label.setObjectName(u"script2Label")
-        sizePolicy3.setHeightForWidth(self.script2Label.sizePolicy().hasHeightForWidth())
-        self.script2Label.setSizePolicy(sizePolicy3)
         self.script2Label.setMinimumSize(QSize(80, 0))
         self.script2Label.setAlignment(Qt.AlignCenter)
 
@@ -550,8 +378,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.conditional1Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional1Label.setObjectName(u"conditional1Label")
-        sizePolicy3.setHeightForWidth(self.conditional1Label.sizePolicy().hasHeightForWidth())
-        self.conditional1Label.setSizePolicy(sizePolicy3)
         self.conditional1Label.setMinimumSize(QSize(80, 0))
 
         self.horizontalLayout_3.addWidget(self.conditional1Label, 0, Qt.AlignVCenter)
@@ -641,8 +467,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.conditional2Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional2Label.setObjectName(u"conditional2Label")
-        sizePolicy3.setHeightForWidth(self.conditional2Label.sizePolicy().hasHeightForWidth())
-        self.conditional2Label.setSizePolicy(sizePolicy3)
         self.conditional2Label.setMinimumSize(QSize(80, 0))
 
         self.horizontalLayout_4.addWidget(self.conditional2Label, 0, Qt.AlignVCenter)
@@ -862,18 +686,6 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_journal = QVBoxLayout()
         self.verticalLayout_journal.setObjectName(u"verticalLayout_journal")
-        self.plotIndexLabel = QLabel(self.scrollAreaWidgetContents)
-        self.plotIndexLabel.setObjectName(u"plotIndexLabel")
-
-        self.verticalLayout_journal.addWidget(self.plotIndexLabel)
-
-        self.plotIndexSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
-        self.plotIndexSpin.setObjectName(u"plotIndexSpin")
-        self.plotIndexSpin.setMinimum(-2147483648)
-        self.plotIndexSpin.setMaximum(2147483647)
-
-        self.verticalLayout_journal.addWidget(self.plotIndexSpin)
-
 
         self.verticalLayout_rightDock.addLayout(self.verticalLayout_journal)
 
@@ -936,7 +748,7 @@ class Ui_MainWindow(object):
         self.nodeUnskippableCheckbox = QCheckBox(self.scrollAreaWidgetContents)
         self.nodeUnskippableCheckbox.setObjectName(u"nodeUnskippableCheckbox")
 
-        self.verticalLayout_other.addWidget(self.nodeUnskippableCheckbox)
+        self.verticalLayout_other.addWidget(self.nodeUnskippableCheckbox, 0, Qt.AlignHCenter)
 
         self.formLayout_other = QFormLayout()
         self.formLayout_other.setObjectName(u"formLayout_other")
@@ -1058,12 +870,186 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(Qt.RightDockWidgetArea, self.rightDockWidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 866, 22))
+        self.menubar.setGeometry(QRect(0, 0, 854, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuTools = QMenu(self.menubar)
         self.menuTools.setObjectName(u"menuTools")
         MainWindow.setMenuBar(self.menubar)
+        self.topDockWidget = QDockWidget(MainWindow)
+        self.topDockWidget.setObjectName(u"topDockWidget")
+        self.topDockWidget.setMinimumSize(QSize(684, 148))
+        self.topDockWidgetContents = QWidget()
+        self.topDockWidgetContents.setObjectName(u"topDockWidgetContents")
+        self.topGridLayout = QGridLayout(self.topDockWidgetContents)
+        self.topGridLayout.setObjectName(u"topGridLayout")
+        self.topGridLayout.setContentsMargins(6, -1, -1, -1)
+        self.ambientTrackCombo = FilterComboBox(self.topDockWidgetContents)
+        self.ambientTrackCombo.setObjectName(u"ambientTrackCombo")
+
+        self.topGridLayout.addWidget(self.ambientTrackCombo, 1, 5, 1, 1)
+
+        self.voiceOverIDLabel = QLabel(self.topDockWidgetContents)
+        self.voiceOverIDLabel.setObjectName(u"voiceOverIDLabel")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.voiceOverIDLabel.sizePolicy().hasHeightForWidth())
+        self.voiceOverIDLabel.setSizePolicy(sizePolicy2)
+
+        self.topGridLayout.addWidget(self.voiceOverIDLabel, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.computerTypeLabel = QLabel(self.topDockWidgetContents)
+        self.computerTypeLabel.setObjectName(u"computerTypeLabel")
+        sizePolicy2.setHeightForWidth(self.computerTypeLabel.sizePolicy().hasHeightForWidth())
+        self.computerTypeLabel.setSizePolicy(sizePolicy2)
+
+        self.topGridLayout.addWidget(self.computerTypeLabel, 3, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
+
+        self.conversationSelect = QComboBox(self.topDockWidgetContents)
+        self.conversationSelect.addItem("")
+        self.conversationSelect.addItem("")
+        self.conversationSelect.addItem("")
+        self.conversationSelect.addItem("")
+        self.conversationSelect.addItem("")
+        self.conversationSelect.setObjectName(u"conversationSelect")
+        self.conversationSelect.setMinimumSize(QSize(160, 0))
+
+        self.topGridLayout.addWidget(self.conversationSelect, 2, 1, 1, 1)
+
+        self.computerSelect = QComboBox(self.topDockWidgetContents)
+        self.computerSelect.addItem("")
+        self.computerSelect.addItem("")
+        self.computerSelect.setObjectName(u"computerSelect")
+        self.computerSelect.setMinimumSize(QSize(160, 0))
+
+        self.topGridLayout.addWidget(self.computerSelect, 3, 1, 1, 1)
+
+        self.onAbortCombo = FilterComboBox(self.topDockWidgetContents)
+        self.onAbortCombo.setObjectName(u"onAbortCombo")
+        self.onAbortCombo.setMinimumSize(QSize(160, 0))
+
+        self.topGridLayout.addWidget(self.onAbortCombo, 1, 1, 1, 1)
+
+        self.convoEndsScriptLabel = QLabel(self.topDockWidgetContents)
+        self.convoEndsScriptLabel.setObjectName(u"convoEndsScriptLabel")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoEndsScriptLabel.setSizePolicy(sizePolicy3)
+
+        self.topGridLayout.addWidget(self.convoEndsScriptLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.convoTypeLabel = QLabel(self.topDockWidgetContents)
+        self.convoTypeLabel.setObjectName(u"convoTypeLabel")
+        sizePolicy3.setHeightForWidth(self.convoTypeLabel.sizePolicy().hasHeightForWidth())
+        self.convoTypeLabel.setSizePolicy(sizePolicy3)
+
+        self.topGridLayout.addWidget(self.convoTypeLabel, 2, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
+
+        self.ambientTrackLabel = QLabel(self.topDockWidgetContents)
+        self.ambientTrackLabel.setObjectName(u"ambientTrackLabel")
+
+        self.topGridLayout.addWidget(self.ambientTrackLabel, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.convoAbortsScriptLabel = QLabel(self.topDockWidgetContents)
+        self.convoAbortsScriptLabel.setObjectName(u"convoAbortsScriptLabel")
+        sizePolicy3.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy3)
+
+        self.topGridLayout.addWidget(self.convoAbortsScriptLabel, 1, 0, 1, 1, Qt.AlignVCenter)
+
+        self.voIdEdit = QLineEdit(self.topDockWidgetContents)
+        self.voIdEdit.setObjectName(u"voIdEdit")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.voIdEdit.sizePolicy().hasHeightForWidth())
+        self.voIdEdit.setSizePolicy(sizePolicy4)
+
+        self.topGridLayout.addWidget(self.voIdEdit, 0, 5, 1, 1)
+
+        self.onEndEdit = FilterComboBox(self.topDockWidgetContents)
+        self.onEndEdit.setObjectName(u"onEndEdit")
+        self.onEndEdit.setMinimumSize(QSize(160, 0))
+        self.onEndEdit.setMaximumSize(QSize(160, 16777215))
+
+        self.topGridLayout.addWidget(self.onEndEdit, 0, 1, 1, 1)
+
+        self.delayEntryLabel = QLabel(self.topDockWidgetContents)
+        self.delayEntryLabel.setObjectName(u"delayEntryLabel")
+
+        self.topGridLayout.addWidget(self.delayEntryLabel, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.replyDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
+        self.replyDelaySpin.setObjectName(u"replyDelaySpin")
+        sizePolicy.setHeightForWidth(self.replyDelaySpin.sizePolicy().hasHeightForWidth())
+        self.replyDelaySpin.setSizePolicy(sizePolicy)
+        self.replyDelaySpin.setMinimum(-2147483648)
+        self.replyDelaySpin.setMaximum(2147483647)
+
+        self.topGridLayout.addWidget(self.replyDelaySpin, 0, 3, 1, 1)
+
+        self.delayReplyLabel = QLabel(self.topDockWidgetContents)
+        self.delayReplyLabel.setObjectName(u"delayReplyLabel")
+
+        self.topGridLayout.addWidget(self.delayReplyLabel, 1, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.entryDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
+        self.entryDelaySpin.setObjectName(u"entryDelaySpin")
+        sizePolicy.setHeightForWidth(self.entryDelaySpin.sizePolicy().hasHeightForWidth())
+        self.entryDelaySpin.setSizePolicy(sizePolicy)
+        self.entryDelaySpin.setMinimum(-2147483648)
+        self.entryDelaySpin.setMaximum(2147483647)
+
+        self.topGridLayout.addWidget(self.entryDelaySpin, 1, 3, 1, 1)
+
+        self.skippableCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
+        sizePolicy.setHeightForWidth(self.skippableCheckbox.sizePolicy().hasHeightForWidth())
+        self.skippableCheckbox.setSizePolicy(sizePolicy)
+
+        self.topGridLayout.addWidget(self.skippableCheckbox, 2, 2, 1, 1, Qt.AlignLeft)
+
+        self.unequipHandsCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
+
+        self.topGridLayout.addWidget(self.unequipHandsCheckbox, 3, 2, 1, 1, Qt.AlignLeft)
+
+        self.unequipAllCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
+        sizePolicy.setHeightForWidth(self.unequipAllCheckbox.sizePolicy().hasHeightForWidth())
+        self.unequipAllCheckbox.setSizePolicy(sizePolicy)
+
+        self.topGridLayout.addWidget(self.unequipAllCheckbox, 3, 3, 1, 1, Qt.AlignLeft)
+
+        self.animatedCutCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
+        sizePolicy.setHeightForWidth(self.animatedCutCheckbox.sizePolicy().hasHeightForWidth())
+        self.animatedCutCheckbox.setSizePolicy(sizePolicy)
+
+        self.topGridLayout.addWidget(self.animatedCutCheckbox, 2, 3, 1, 1, Qt.AlignLeft)
+
+        self.cameraModelLabel = QLabel(self.topDockWidgetContents)
+        self.cameraModelLabel.setObjectName(u"cameraModelLabel")
+        sizePolicy2.setHeightForWidth(self.cameraModelLabel.sizePolicy().hasHeightForWidth())
+        self.cameraModelLabel.setSizePolicy(sizePolicy2)
+
+        self.topGridLayout.addWidget(self.cameraModelLabel, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.cameraModelEdit = QLineEdit(self.topDockWidgetContents)
+        self.cameraModelEdit.setObjectName(u"cameraModelEdit")
+
+        self.topGridLayout.addWidget(self.cameraModelEdit, 2, 5, 1, 1)
+
+        self.oldHitCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
+
+        self.topGridLayout.addWidget(self.oldHitCheckbox, 3, 4, 1, 1)
+
+        self.topDockWidget.setWidget(self.topDockWidgetContents)
+        MainWindow.addDockWidget(Qt.TopDockWidgetArea, self.topDockWidget)
 
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
@@ -1095,32 +1081,9 @@ class Ui_MainWindow(object):
         self.questEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
         self.questLabel.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
         self.listenerTagLabel.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
-        self.plotXpPercentLabel.setText(QCoreApplication.translate("MainWindow", u"Plot XP (percent)", None))
-        self.topDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Globals", None))
-        self.voiceOverIDLabel.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
-        self.computerTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
-        self.conversationSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Human", None))
-        self.conversationSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Computer", None))
-        self.conversationSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Type 3", None))
-        self.conversationSelect.setItemText(3, QCoreApplication.translate("MainWindow", u"Type 4", None))
-        self.conversationSelect.setItemText(4, QCoreApplication.translate("MainWindow", u"Type 5", None))
-
-        self.computerSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Modern", None))
-        self.computerSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Ancient", None))
-
-        self.convoEndsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends Script:", None))
-        self.convoTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
-        self.ambientTrackLabel.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
-        self.convoAbortsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts Script:", None))
-        self.delayEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
-        self.delayReplyLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
-        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
-        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
-        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
-        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
-        self.cameraModelLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
-        self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
+        self.speakerEditLabel.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
+        self.plotXpPercentLabel.setText(QCoreApplication.translate("MainWindow", u"Plot XP Percentage", None))
+        self.plotIndexLabel.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
         self.rightDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"Node Fields", None))
         self.commentsEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Comments", None))
         self.script1Label.setText(QCoreApplication.translate("MainWindow", u"Script #1:", None))
@@ -1152,7 +1115,6 @@ class Ui_MainWindow(object):
         self.soundButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
         self.voiceButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
         self.voiceLabel.setText(QCoreApplication.translate("MainWindow", u"Voice:", None))
-        self.plotIndexLabel.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
         self.cameraIdLabel.setText(QCoreApplication.translate("MainWindow", u"Camera ID:", None))
         self.cameraAnimLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Animation:", None))
         self.cameraAngleLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Angle:", None))
@@ -1182,6 +1144,30 @@ class Ui_MainWindow(object):
         self.editStuntButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
+        self.topDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Globals", None))
+        self.voiceOverIDLabel.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
+        self.computerTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
+        self.conversationSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Human", None))
+        self.conversationSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Computer", None))
+        self.conversationSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Type 3", None))
+        self.conversationSelect.setItemText(3, QCoreApplication.translate("MainWindow", u"Type 4", None))
+        self.conversationSelect.setItemText(4, QCoreApplication.translate("MainWindow", u"Type 5", None))
+
+        self.computerSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Modern", None))
+        self.computerSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Ancient", None))
+
+        self.convoEndsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends:", None))
+        self.convoTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
+        self.ambientTrackLabel.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
+        self.convoAbortsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts:", None))
+        self.delayEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
+        self.delayReplyLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
+        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
+        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
+        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
+        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
+        self.cameraModelLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
+        self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
     # retranslateUi
 
 
