@@ -438,20 +438,22 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
         assert logger is not None
         return object.__getattribute__(logger, attr_name)
 
-    def __init__(self, use_level: logging._Level = logging.DEBUG):
+    def __init__(self):
         self.listener: QueueListener
         cls = object.__getattribute__(self, "__class__")
         if not object.__getattribute__(cls, "_logger"):
-            type.__setattr__(cls, "_logger", object.__getattribute__(self, "_setup_logger")(use_level))
-            self.listener_thread = threading.Thread(target=object.__getattribute__(self, "_start_listener"))
-            object.__getattribute__(self, "listener_thread").daemon = True
+            type.__setattr__(cls, "_logger", object.__getattribute__(self, "_setup_logger")())
+            listener_thread = threading.Thread(target=object.__getattribute__(self, "_start_listener"))
+            listener_thread.daemon = True
+            self.listener_thread = listener_thread
 
     def _setup_logger(
         self,
-        use_level: logging._Level = logging.INFO,
     ) -> logging.Logger:
         logger = logging.getLogger()
         if not logger.handlers:
+            from utility.misc import is_debug_mode
+            use_level = logging.DEBUG if is_debug_mode() else logging.INFO
             logger.setLevel(use_level)
 
             cur_process: BaseProcess = multiprocessing.current_process()
@@ -487,10 +489,11 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             exception_formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
             # Handler for everything (DEBUG and above)
-            everything_handler = RotatingFileHandler(str(log_dir / everything_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
-            everything_handler.setLevel(logging.DEBUG)
-            everything_handler.setFormatter(default_formatter)
-            logger.addHandler(everything_handler)
+            if use_level == logging.DEBUG:
+                everything_handler = RotatingFileHandler(str(log_dir / everything_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
+                everything_handler.setLevel(logging.DEBUG)
+                everything_handler.setFormatter(default_formatter)
+                logger.addHandler(everything_handler)
 
             # Handler for INFO and WARNING
             info_warning_handler = RotatingFileHandler(str(log_dir / info_warning_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
@@ -513,7 +516,7 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             exception_handler.addFilter(LogLevelFilter(logging.ERROR))
             logger.addHandler(exception_handler)
             object.__setattr__(self, "_orig_log_func", logger._log)
-            #logger._log = object.__getattribute__(self, "_log")  # doesn't properly work
+            logger._log = object.__getattribute__(self, "_log")  # doesn't properly work
 
             # Adding handlers to the queue listener
             #object.__setattr__(self, "listener", QueueListener(object.__getattribute__(self, "_queue"), console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler))
