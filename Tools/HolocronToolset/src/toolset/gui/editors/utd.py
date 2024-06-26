@@ -131,8 +131,8 @@ class UTDEditor(Editor):
         required: list[str] = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
         installation.htBatchCache2DA(required)
 
-        appearances: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        appearances: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
+        factions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
 
         self.ui.appearanceSelect.setContext(appearances, self._installation, HTInstallation.TwoDA_DOORS)
         self.ui.factionSelect.setContext(factions, self._installation, HTInstallation.TwoDA_FACTIONS)
@@ -368,7 +368,7 @@ class UTDEditor(Editor):
             3. If not found, prompts to create a new file in the override folder
             4. If found or created, opens the resource editor window.
         """
-        resname = self.ui.conversationEdit.text()
+        resname = self.ui.conversationEdit.currentText()
         data, filepath = None, None
 
         if not resname or not resname.strip():
