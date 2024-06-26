@@ -187,7 +187,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     font = app.font()
-    font.setPixelSize(15)
+    font.setPointSize(13)
     app.setFont(font)
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
     # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl
