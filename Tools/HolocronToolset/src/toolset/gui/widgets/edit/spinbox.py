@@ -10,51 +10,80 @@ class GFFFieldSpinBox(QSpinBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.specialValueTextMapping = {0: "0", -1: "-1"}
-        self.setMinimum(-2147483647)
+        self.min_value = self.minimum()
+        self.setMinimum(-2147483647+1)
         self.setMaximum(2147483647)
         self.setSpecialValueText(self.specialValueTextMapping.get(self.value(), ""))
 
         self.lastOperation = None
         self.cachedValue = None
-
-        # Connect the custom signal
         self.applyFinalValue.connect(self._apply_final_value)
+
+    def true_minimum(self) -> int:
+        special_min = min(self.specialValueTextMapping.keys(), default=self.minimum())
+        return min(self.minimum(), special_min, self.min_value)
+
+    def true_maximum(self) -> int:
+        special_max = max(self.specialValueTextMapping.keys(), default=self.maximum())
+        return max(self.maximum(), special_max)
 
     def stepBy(self, steps: int):
         self.lastOperation = "stepBy"
         current_value = self.value()
         if steps > 0:
-            # Determine the step up logic
-            self.cachedValue = current_value + 1  # Customize this as needed
+            self.cachedValue = self._next_value(current_value, steps)
         elif steps < 0:
-            # Determine the step down logic
-            self.cachedValue = current_value - 1  # Customize this as needed
-
-        # Emit to handle in valueChanged or final application
+            self.cachedValue = self._next_value(current_value, steps)
         self.applyFinalValue.emit(self.cachedValue)
+
+    def _next_value(self, current_value: int, steps: int) -> int:
+        tentative_next_value = current_value + steps
+        true_min = self.true_minimum()
+        if tentative_next_value < true_min:
+            return true_min
+        max_val = self.maximum()
+        if tentative_next_value > max_val:
+            return max_val
+
+        special_values: list[int] = sorted(self.specialValueTextMapping.keys())
+        if steps > 0:
+            for sv in special_values:
+                if sv > current_value and sv <= tentative_next_value:
+                    return sv
+            if self.min_value > tentative_next_value:
+                return self.min_value
+            return min(tentative_next_value, max_val)
+        if self.min_value <= tentative_next_value:
+            return tentative_next_value
+        sv = -1
+        for sv in reversed(special_values):
+            if sv <= tentative_next_value:
+                return sv
+        return sv
 
     def textChanged(self, text: str):
         self.lastOperation = "textChanged"
-        # Parse the text and set the cached value accordingly
         try:
             self.cachedValue = int(text)
         except ValueError:
-            self.cachedValue = self.value()  # fallback to current if invalid
+            self.cachedValue = self.value()
 
     def _apply_final_value(self, value):
-        # Apply the final value calculated from either stepBy or textChanged
-        if value < self.minimum():
-            value = self.minimum()
-        elif value > self.maximum():
-            value = self.maximum()
-        super().setValue(value)  # Use super to avoid recursion with valueChanged signal
+        if value < self.true_minimum():
+            value = self.true_minimum()
+        elif value > self.true_maximum():
+            value = self.true_maximum()
+        super().setValue(value)
         self.valueChanged.emit(value)
+
+    def setMinimum(self, value: int):
+        self.min_value = value
+        super().setMinimum(min(-2, value))
 
     def onValueChanged(self, value):
         if self.lastOperation in ("stepBy", "textChanged"):
-            print("GFFFieldSpinBox: Confirm and finalize value application")
             self.applyFinalValue.emit(self.cachedValue)
-        self.lastOperation = None  # Reset after handling
+        self.lastOperation = None
 
     @classmethod
     def from_spinbox(
