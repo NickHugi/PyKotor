@@ -925,7 +925,7 @@ class GFFEditor(Editor):
             GFFFieldType.LocalizedString: palette.buttonText().color(),
             GFFFieldType.Vector3: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.1),
             GFFFieldType.Vector4: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.3),
-            GFFFieldType.Struct: palette.brightText().color(),
+            GFFFieldType.Struct: QColor("darkGreen"),
             GFFFieldType.List: self.adjustColor(palette.highlight().color(), hue_shift=120, saturation_factor=0.8, value_factor=1.1),
             GFFFieldType.Binary: palette.midlight().color(),
         }
