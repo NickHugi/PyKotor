@@ -324,20 +324,20 @@ class UTPEditor(Editor):
         utp.key_name = self.ui.keyEdit.text()
 
         # Scripts
-        utp.on_closed = ResRef(self.ui.onClosedEdit.text())
-        utp.on_damaged = ResRef(self.ui.onDamagedEdit.text())
-        utp.on_death = ResRef(self.ui.onDeathEdit.text())
-        utp.on_end_dialog = ResRef(self.ui.onEndConversationEdit.text())
-        utp.on_open_failed = ResRef(self.ui.onOpenFailedEdit.text())
-        utp.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        utp.on_inventory = ResRef(self.ui.onInventoryEdit.text())
-        utp.on_melee_attack = ResRef(self.ui.onMeleeAttackEdit.text())
-        utp.on_force_power = ResRef(self.ui.onSpellEdit.text())
-        utp.on_open = ResRef(self.ui.onOpenEdit.text())
-        utp.on_lock = ResRef(self.ui.onLockEdit.text())
-        utp.on_unlock = ResRef(self.ui.onUnlockEdit.text())
-        utp.on_used = ResRef(self.ui.onUsedEdit.text())
-        utp.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        utp.on_closed = ResRef(self.ui.onClosedEdit.currentText())
+        utp.on_damaged = ResRef(self.ui.onDamagedEdit.currentText())
+        utp.on_death = ResRef(self.ui.onDeathEdit.currentText())
+        utp.on_end_dialog = ResRef(self.ui.onEndConversationEdit.currentText())
+        utp.on_open_failed = ResRef(self.ui.onOpenFailedEdit.currentText())
+        utp.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utp.on_inventory = ResRef(self.ui.onInventoryEdit.currentText())
+        utp.on_melee_attack = ResRef(self.ui.onMeleeAttackEdit.currentText())
+        utp.on_force_power = ResRef(self.ui.onSpellEdit.currentText())
+        utp.on_open = ResRef(self.ui.onOpenEdit.currentText())
+        utp.on_lock = ResRef(self.ui.onLockEdit.currentText())
+        utp.on_unlock = ResRef(self.ui.onUnlockEdit.currentText())
+        utp.on_used = ResRef(self.ui.onUsedEdit.currentText())
+        utp.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
 
         # Comments
         utp.comment = self.ui.commentsEdit.toPlainText()
@@ -356,6 +356,9 @@ class UTPEditor(Editor):
         self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
     def changeName(self):
+        if self._installation is None:
+            self.blinkWindow()
+            return
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
             self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
@@ -407,8 +410,10 @@ class UTPEditor(Editor):
             - Initializes InventoryEditor with the capsules and other data
             - Runs editor and updates inventory if changes were made.
         """
+        if self._installation is None:
+            self.blinkWindow()
+            return
         capsules: list[Capsule] = []
-
         with suppress(Exception):
             root = Module.find_root(self._filepath)
             moduleNames: list[str] = [path for path in self._installation.module_names() if root in path and path != self._filepath]
@@ -461,8 +466,11 @@ class UTPEditor(Editor):
             - If both resources exist, set them on the preview renderer
             - If not, clear out any existing model from the preview
         """
-        self.setFixedSize(674, 457)
+        if self._installation is None:
+            self.blinkWindow()
+            return
 
+        self.setFixedSize(674, 457)
         data, _ = self.build()
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
         if not modelname or not modelname.strip():

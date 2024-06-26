@@ -255,11 +255,11 @@ class UTEEditor(Editor):
             ute.creatures.append(creature)
 
         # Scripts
-        ute.on_entered = ResRef(self.ui.onEnterEdit.text())
-        ute.on_exit = ResRef(self.ui.onExitEdit.text())
-        ute.on_exhausted = ResRef(self.ui.onExhaustedEdit.text())
-        ute.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        ute.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        ute.on_entered = ResRef(self.ui.onEnterEdit.currentText())
+        ute.on_exit = ResRef(self.ui.onExitEdit.currentText())
+        ute.on_exhausted = ResRef(self.ui.onExhaustedEdit.currentText())
+        ute.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        ute.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
 
         # Comments
         ute.comment = self.ui.commentsEdit.toPlainText()

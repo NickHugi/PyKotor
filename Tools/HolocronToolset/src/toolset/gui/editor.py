@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 import tempfile
 
 from abc import abstractmethod
@@ -424,6 +425,7 @@ class Editor(QMainWindow):
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            self.blinkWindow()
             RobustRootLogger().critical("Failed to write to file", exc_info=True)
             msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
             msgBox.setDetailedText(format_exception_with_variables(e))
@@ -717,6 +719,7 @@ class Editor(QMainWindow):
     def revert(self):
         if self._revert is None:
             print("No data to revert from")
+            self.blinkWindow()
             return
         assert self._filepath is not None, assert_with_variable_trace(self._filepath is not None)
         assert self._resname is not None, assert_with_variable_trace(self._resname is not None)
@@ -763,6 +766,8 @@ class Editor(QMainWindow):
     def blinkWindow(self):
         self.setWindowOpacity(0.7)
         QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
+        with suppress(Exception):
+            self.playSound("dr_metal_lock")
 
     def play_byte_source_media(self, data: bytes | None) -> bool:
         if qtpy.API_NAME in ["PyQt5", "PySide2"]:
