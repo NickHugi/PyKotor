@@ -76,7 +76,6 @@ class HTInstallation(Installation):
         self,
         path: str,
         name: str,
-        mainWindow: QWidget | None = None,
         *,
         tsl: bool | None = None,
         progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None

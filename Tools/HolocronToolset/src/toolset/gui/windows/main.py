@@ -20,6 +20,7 @@ from qtpy.QtCore import (
     QFile,
     QTextStream,
     QThread,
+    QTimer,
     Qt,
 )
 from qtpy.QtGui import (
@@ -124,8 +125,11 @@ if TYPE_CHECKING:
         QCloseEvent,
         QKeyEvent,
         QMouseEvent,
+        QShowEvent,
     )
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import (
+        QWidget,
+    )
     from typing_extensions import Literal
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
@@ -146,26 +150,28 @@ def run_module_designer(
     from toolset.__main__ import main_init
     main_init()
     app = QApplication([])
-    print("<SDM> [run_module_designer scope] app: ", app)
-
     designerUi = ModuleDesigner(
         None,
         HTInstallation(active_path, active_name, tsl=active_tsl),
         CaseAwarePath(module_path) if module_path is not None else None,
     )
-    print("<SDM> [run_module_designer scope] designerUi: ", designerUi)
+    # Standardized resource path format
+    icon_path = ":/images/icons/sith.png"
 
+    # Debugging: Check if the resource path is accessible
+    if not QPixmap(icon_path).isNull():
+        designerUi.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
+        designerUi.setWindowIcon(QIcon(QPixmap(icon_path)))
+        cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
+    else:
+        print(f"Failed to load HT main window icon from {icon_path}")
     addWindow(designerUi, show=False)
     sys.exit(app.exec_())
 
 
 class ToolWindow(QMainWindow):
     moduleFilesUpdated = QtCore.Signal(object, object)
-    print("<SDM> [run_module_designer scope] moduleFilesUpdated: ", moduleFilesUpdated)
-
     overrideFilesUpdate = QtCore.Signal(object, object)
-    print("<SDM> [run_module_designer scope] overrideFilesUpdate: ", overrideFilesUpdate)
-
 
     def __init__(self):
         """Initializes the main window.
@@ -246,15 +252,21 @@ class ToolWindow(QMainWindow):
             print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
 
+    def showEvent(self, event: QShowEvent):
         # Set minimum size based on the current size
-        self.setMinimumSize(self.size())
+        super().showEvent(event)
+        self.adjustSize()
+        self.setMinimumSize(
+            self.size().width() + QApplication.font().pointSize() * 2,
+            self.size().height(),
+        )
 
     def setupModulesTab(self):
         modulesResourceList = self.ui.modulesWidget.ui
         modulesSectionCombo = modulesResourceList.sectionCombo
         refreshButton = modulesResourceList.refreshButton
         designerButton = self.ui.specialActionButton
-        self.collectButton = QPushButton("Collect...")
+        self.collectButton = QPushButton("Collect...", self)
 
         # Remove from original layouts
         modulesResourceList.horizontalLayout_2.removeWidget(modulesSectionCombo)
@@ -262,12 +274,11 @@ class ToolWindow(QMainWindow):
         modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)
 
         # Set size policies
-        modulesSectionCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        refreshButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        designerButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.collectButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        modulesSectionCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # type: ignore[arg-type]
+        refreshButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
+        designerButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
+        self.collectButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         modulesSectionCombo.setMinimumWidth(250)
-        modulesSectionCombo.setMaximumHeight(68)
 
         # Create a new layout to stack Designer and Refresh buttons
         stackButtonLayout = QVBoxLayout()
@@ -296,8 +307,6 @@ class ToolWindow(QMainWindow):
         """
         modulesSectionCombo.setStyleSheet(merged_stylesheet)
         modulesSectionCombo.setMaxVisibleItems(18)
-
-        # Expandable actions for the 'Collect...' button
         def create_more_actions_menu() -> QMenu:
             menu = QMenu()
             menu.addAction("Room Textures").triggered.connect(self.extractModuleRoomTextures)
@@ -368,20 +377,21 @@ class ToolWindow(QMainWindow):
         self.ui.savesWidget.requestOpenResource.connect(self.onOpenResources)
         self.ui.resourceTabs.currentChanged.connect(self.onTabChanged)
 
-        def openModuleDesigner() -> ModuleDesigner:
+        def openModuleDesigner() -> ModuleDesigner | None:
             assert self.active is not None
 
             # Uncomment this block to start Module Designer in new process
-            #import multiprocessing
-            #module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
-            #print("<SDM> [openModuleDesigner scope] module_path: ", module_path)
+            import multiprocessing
+            module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
+            print("<SDM> [openModuleDesigner scope] module_path: ", module_path)
 
-            #process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
-            #print("<SDM> [openModuleDesigner scope] process: ", process)
+            process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
+            print("<SDM> [openModuleDesigner scope] process: ", process)
 
-            #process.start()
-            #BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
-            #return
+            process.start()
+            BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
+            QTimer.singleShot(500, self.debounceModuleDesignerLoad)
+            return None
 
             designerUi = (
                 ModuleDesigner(
@@ -768,7 +778,7 @@ class ToolWindow(QMainWindow):
             print(f"onModuleReload: can't reload module '{moduleFile}', invalid name")
             return
         resources: list[FileResource] = self.active.module_resources(moduleFile)
-        print("<SDM> [onModuleReload scope] resources: ", resources)
+        print("<SDM> [onModuleReload scope] resources: ", len(resources))
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
         # dropdown menu.
@@ -939,8 +949,7 @@ class ToolWindow(QMainWindow):
         self.ui.gameCombo.setCurrentIndex(index)
 
         if index == 0:
-            print("<SDM> [changeActiveInstallation scope] index: ", index)
-
+            print("<SDM> [unset installation scope]. index: ", index)
             self.unsetInstallation()
             return
 
@@ -955,7 +964,7 @@ class ToolWindow(QMainWindow):
 
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if not path or not path.strip() or not Path(path).safe_isdir():
+        if not path or not path.strip() or not CaseAwarePath(path).safe_isdir():
             if path and path.strip():
                 QMessageBox(QMessageBox.Icon.Warning, f"Installation '{path}' not found", "Select another path now.").exec_()
             path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}", "Knights of the Old Republic II" if tsl else "swkotor")
@@ -963,7 +972,7 @@ class ToolWindow(QMainWindow):
 
 
         # If the user still has not set a path, then return them to the [None] option.
-        if not path:
+        if not path or not path.strip():
             print("User did not choose a path for this installation.")
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
@@ -976,18 +985,17 @@ class ToolWindow(QMainWindow):
             print("<SDM> [changeActiveInstallation scope] self.active: ", self.active)
 
         else:
-
-            loader = None
+            loader: AsyncLoader | None = None
             def load_task() -> HTInstallation:
                 profiler = None
                 if self.settings.profileToolset and cProfile is not None:
                     profiler = cProfile.Profile()
                     profiler.enable()
                 progress_callback = None
-                if loader._realtime_progress:  # noqa: SLF001
+                if loader is not None and loader._realtime_progress:  # noqa: SLF001
                     def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
                         loader._worker.progress.emit(data, mtype)  # noqa: SLF001
-                new_active = HTInstallation(path, name, self, tsl=tsl, progress_callback=progress_callback)
+                new_active = HTInstallation(path, name, tsl=tsl, progress_callback=progress_callback)
                 if self.settings.profileToolset and profiler:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
@@ -1189,7 +1197,7 @@ class ToolWindow(QMainWindow):
         searchedInstallation: HTInstallation,
     ):
         resultsDialog = FileResults(self, results_list, searchedInstallation)
-        print("<SDM> [handleSearchCompleted scope] resultsDialog: ", resultsDialog)
+        print("<SDM> [handleSearchCompleted scope] results_list: ", len(results_list))
 
         resultsDialog.setModal(False)
         addWindow(resultsDialog, show=False)
@@ -1229,23 +1237,17 @@ class ToolWindow(QMainWindow):
     def mouseMoveEvent(self, event: QMouseEvent):
         if event.buttons() == Qt.MouseButton.LeftButton:
             # This code is responsible for allowing the window to be drag-moved from any point, not just the title bar.
-            currPos = self.mapToGlobal(self.pos())
-            globalPos = event.globalPos()
-            if getattr(self, "_mouseMovePos", None) is None:
+            mouseMovePos = getattr(self, "_mouseMovePos", None)
+            if mouseMovePos is None:
                 return
-            diff = globalPos - self._mouseMovePos
-            newPos = self.mapFromGlobal(currPos + diff)
-            self.move(newPos)
+            globalPos = event.globalPos()
+            self.move(self.mapFromGlobal(self.mapToGlobal(self.pos()) + (globalPos - mouseMovePos)))
             self._mouseMovePos = globalPos
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             self._mousePressPos = event.globalPos()
             print("<SDM> [mousePressEvent scope] self._mousePressPos: ", self._mousePressPos)
-
-            self._mouseMovePos = event.globalPos()
-            print("<SDM> [mousePressEvent scope] self._mouseMovePos: ", self._mouseMovePos)
-
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -1390,13 +1392,32 @@ class ToolWindow(QMainWindow):
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
+    def debounceModuleDesignerLoad(self):
+        """Prevents users from spamming the start button, which could easily result in a bad crash."""
+        self.moduleDesignerLoadProcessed = True
+
     def openModuleDesigner(self):
         if self.active is None:
             QMessageBox(QMessageBox.Icon.Information, "No installation loaded.", "Load an installation before opening the Module Designer.").exec_()
             return
-        #run_module_designer(str(self.active.path()), self.active.name, self.active.tsl)
-        designer = ModuleDesigner(None, self.active)
-        addWindow(designer, show=False)
+        if getattr(self, "moduleDesignerLoadProcessed", True):
+            self.moduleDesignerLoadProcessed = False
+
+            # Uncomment this block to start Module Designer in new process
+            import multiprocessing
+            module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
+            print("<SDM> [openModuleDesigner scope] module_path: ", module_path)
+
+            process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
+            print("<SDM> [openModuleDesigner scope] process: ", process)
+
+            process.start()
+            QTimer.singleShot(500, self.debounceModuleDesignerLoad)
+            BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
+        else:
+            return
+        #designer = ModuleDesigner(None, self.active)
+        #addWindow(designer, show=False)
 
     def openSettingsDialog(self):
         """Opens the Settings dialog and refresh installation combo list if changes."""
@@ -1799,7 +1820,7 @@ class ToolWindow(QMainWindow):
 
         for installation in self.settings.installations().values():
             self.ui.gameCombo.addItem(installation.name)
-        self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)  # without above disconnect, would NOT call changeActiveInstallation
+        self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
     def unsetInstallation(self):
 
