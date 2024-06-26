@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy.QtGui import QColor, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QMenu, QShortcut, QTreeView
+from qtpy.QtWidgets import QMenu, QMessageBox, QShortcut, QTreeView
 
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
@@ -108,7 +108,7 @@ class JRLEditor(Editor):
         # programmatically, otherwise values bleed into other items when onSelectionChanged() fires.
         self.ui.categoryNameEdit.editingFinished.connect(self.onValueUpdated)
         self.ui.categoryTag.editingFinished.connect(self.onValueUpdated)
-        self.ui.categoryPlotSpin.editingFinished.connect(self.onValueUpdated)
+        self.ui.categoryPlotSelect.currentIndexChanged.connect(self.onValueUpdated)
         self.ui.categoryPlanetSelect.activated.connect(self.onValueUpdated)
         self.ui.categoryPrioritySelect.activated.connect(self.onValueUpdated)
         self.ui.categoryCommentEdit.keyReleased.connect(self.onValueUpdated)
@@ -122,10 +122,23 @@ class JRLEditor(Editor):
         self._installation = installation
         self.ui.categoryNameEdit.setInstallation(installation)
 
-        planets: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        planets: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+        if planets is None:
+            QMessageBox(QMessageBox.Icon.Warning, "Missing 2DA", f"'{HTInstallation.TwoDA_PLANETS}.2da' is missing from your installation. Please reinstall your game, this should be in the read-only bifs.").exec_()
+            return
+
+        plot2DA: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLOT)
+        if plot2DA:
+            self.ui.categoryPlotSelect.clear()
+            self.ui.categoryPlotSelect.setPlaceholderText("[None]")
+            self.ui.categoryPlotSelect.setItems(
+                [cell.title() for cell in plot2DA.get_column("label")],
+                cleanupStrings=True,
+            )
+            self.ui.categoryPlotSelect.setContext(plot2DA, installation, HTInstallation.TwoDA_PLOT)
 
         self.ui.categoryPlanetSelect.clear()
-        self.ui.categoryPlanetSelect.addItem("[None]", -1)
+        self.ui.categoryPlanetSelect.setPlaceholderText("[None]")
         for row in planets:
             text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)
@@ -300,7 +313,7 @@ class JRLEditor(Editor):
         if isinstance(data, JRLQuest):  # sourcery skip: extract-method
             data.name = self.ui.categoryNameEdit.locstring()
             data.tag = self.ui.categoryTag.text()
-            data.plot_index = self.ui.categoryPlotSpin.value()
+            data.plot_index = self.ui.categoryPlotSelect.value()
             data.planet_id = self.ui.categoryPlanetSelect.currentIndex() - 1
             data.priority = JRLQuestPriority(self.ui.categoryPrioritySelect.currentIndex())
             data.comment = self.ui.categoryCommentEdit.toPlainText()
@@ -341,7 +354,7 @@ class JRLEditor(Editor):
                 self.ui.questPages.setCurrentIndex(0)
                 self.ui.categoryNameEdit.setLocstring(data.name)
                 self.ui.categoryTag.setText(data.tag)
-                self.ui.categoryPlotSpin.setValue(data.plot_index)
+                self.ui.categoryPlotSelect.setCurrentIndex(data.plot_index)
                 self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
                 self.ui.categoryPrioritySelect.setCurrentIndex(data.priority.value)
                 self.ui.categoryCommentEdit.setPlainText(data.comment)

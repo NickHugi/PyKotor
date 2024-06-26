@@ -94,14 +94,7 @@
             <widget class="ComboBox2DA" name="categoryPlanetSelect"/>
            </item>
            <item row="2" column="1">
-            <widget class="QSpinBox" name="categoryPlotSpin">
-             <property name="minimum">
-              <number>-2147483648</number>
-             </property>
-             <property name="maximum">
-              <number>2147483647</number>
-             </property>
-            </widget>
+            <widget class="ComboBox2DA" name="categoryPlotSelect"/>
            </item>
            <item row="4" column="0">
             <widget class="QLabel" name="label_4">
