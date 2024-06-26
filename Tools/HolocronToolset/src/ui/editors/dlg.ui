@@ -133,14 +133,14 @@
        </widget>
       </item>
       <item row="1" column="2" alignment="Qt::AlignRight">
-       <widget class="QLabel" name="label_25">
+       <widget class="QLabel" name="questEntryLabel">
         <property name="text">
          <string>Quest Entry:</string>
         </property>
        </widget>
       </item>
       <item row="0" column="2" alignment="Qt::AlignRight">
-       <widget class="QLabel" name="label_24">
+       <widget class="QLabel" name="questLabel">
         <property name="text">
          <string>Quest:</string>
         </property>
@@ -169,7 +169,7 @@
        </widget>
       </item>
       <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_21">
+       <widget class="QLabel" name="listenerTagLabel">
         <property name="text">
          <string>Listener Tag:</string>
         </property>
@@ -221,7 +221,7 @@
        </widget>
       </item>
       <item row="2" column="0" alignment="Qt::AlignRight">
-       <widget class="QLabel" name="label_23">
+       <widget class="QLabel" name="plotXpPercentLabel">
         <property name="text">
          <string>Plot XP (percent)</string>
         </property>
@@ -307,7 +307,7 @@
        <widget class="QLineEdit" name="ambientTrackEdit"/>
       </item>
       <item row="0" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_39">
+       <widget class="QLabel" name="voiceOverIDLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -320,7 +320,7 @@
        </widget>
       </item>
       <item row="3" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_43">
+       <widget class="QLabel" name="computerTypeLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -398,7 +398,7 @@
        </widget>
       </item>
       <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_37">
+       <widget class="QLabel" name="convoEndsScriptLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -411,7 +411,7 @@
        </widget>
       </item>
       <item row="2" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_42">
+       <widget class="QLabel" name="convoTypeLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -424,14 +424,14 @@
        </widget>
       </item>
       <item row="1" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_40">
+       <widget class="QLabel" name="ambientTrackLabel">
         <property name="text">
          <string>Ambient Track:</string>
         </property>
        </widget>
       </item>
       <item row="1" column="0" alignment="Qt::AlignVCenter">
-       <widget class="QLabel" name="label_38">
+       <widget class="QLabel" name="convoAbortsScriptLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -463,7 +463,7 @@
        </widget>
       </item>
       <item row="0" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_44">
+       <widget class="QLabel" name="delayEntryLabel">
         <property name="text">
          <string>Delay before entry:</string>
         </property>
@@ -486,7 +486,7 @@
        </widget>
       </item>
       <item row="1" column="2" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_45">
+       <widget class="QLabel" name="delayReplyLabel">
         <property name="text">
          <string>Delay before reply:</string>
         </property>
@@ -555,7 +555,7 @@
        </widget>
       </item>
       <item row="2" column="4" alignment="Qt::AlignRight|Qt::AlignVCenter">
-       <widget class="QLabel" name="label_41">
+       <widget class="QLabel" name="cameraModelLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -1431,7 +1431,7 @@
          <number>2</number>
         </property>
         <item alignment="Qt::AlignVCenter">
-         <widget class="QLabel" name="label_12">
+         <widget class="QLabel" name="curAnimsLabel">
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
@@ -1509,7 +1509,7 @@
              <number>0</number>
             </property>
             <item alignment="Qt::AlignHCenter">
-             <widget class="QLabel" name="label_19">
+             <widget class="QLabel" name="soundLabel">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -1571,7 +1571,7 @@
            </layout>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label_20">
+           <widget class="QLabel" name="voiceLabel">
             <property name="text">
              <string>Voice:</string>
             </property>
@@ -1584,7 +1584,7 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_journal">
         <item>
-         <widget class="QLabel" name="label_22">
+         <widget class="QLabel" name="plotIndexLabel">
           <property name="text">
            <string>Plot Index:</string>
           </property>
@@ -1605,7 +1605,7 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_camera">
         <item>
-         <widget class="QLabel" name="label_26">
+         <widget class="QLabel" name="cameraIdLabel">
           <property name="text">
            <string>Camera ID:</string>
           </property>
@@ -1622,7 +1622,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_27">
+         <widget class="QLabel" name="cameraAnimLabel">
           <property name="text">
            <string>Camera Animation:</string>
           </property>
@@ -1632,7 +1632,7 @@
          <widget class="GFFFieldSpinBox" name="cameraAnimSpin"/>
         </item>
         <item>
-         <widget class="QLabel" name="label_28">
+         <widget class="QLabel" name="cameraAngleLabel">
           <property name="text">
            <string>Camera Angle:</string>
           </property>
@@ -1678,7 +1678,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_29">
+         <widget class="QLabel" name="cameraVidEffectLabel">
           <property name="text">
            <string>Camera Video Effect:</string>
           </property>
@@ -1707,7 +1707,7 @@
            <number>2</number>
           </property>
           <item row="0" column="0">
-           <widget class="QLabel" name="label_30">
+           <widget class="QLabel" name="nodeIdLabel">
             <property name="text">
              <string>Node ID:</string>
             </property>
@@ -1717,7 +1717,7 @@
            <widget class="GFFFieldSpinBox" name="nodeIdSpin"/>
           </item>
           <item row="1" column="0">
-           <widget class="QLabel" name="label_31">
+           <widget class="QLabel" name="alienRaceNodeLabel">
             <property name="text">
              <string>Alien Race Node:</string>
             </property>
@@ -1727,7 +1727,7 @@
            <widget class="GFFFieldSpinBox" name="alienRaceNodeSpin"/>
           </item>
           <item row="2" column="0">
-           <widget class="QLabel" name="label_32">
+           <widget class="QLabel" name="postProcNodeLabel">
             <property name="text">
              <string>Post Proc Node:</string>
             </property>
@@ -1737,7 +1737,7 @@
            <widget class="GFFFieldSpinBox" name="postProcSpin"/>
           </item>
           <item row="3" column="0">
-           <widget class="QLabel" name="label_33">
+           <widget class="QLabel" name="delayNodeLabel">
             <property name="text">
              <string>Delay:</string>
             </property>
@@ -1747,7 +1747,7 @@
            <widget class="GFFFieldSpinBox" name="delaySpin"/>
           </item>
           <item row="4" column="0">
-           <widget class="QLabel" name="label_34">
+           <widget class="QLabel" name="logicLabel">
             <property name="text">
              <string>Logic:</string>
             </property>
@@ -1757,7 +1757,7 @@
            <widget class="GFFFieldSpinBox" name="logicSpin"/>
           </item>
           <item row="5" column="0">
-           <widget class="QLabel" name="label_35">
+           <widget class="QLabel" name="waitFlagsLabel">
             <property name="text">
              <string>Wait Flags:</string>
             </property>
@@ -1767,7 +1767,7 @@
            <widget class="GFFFieldSpinBox" name="waitFlagSpin"/>
           </item>
           <item row="6" column="0">
-           <widget class="QLabel" name="label_36">
+           <widget class="QLabel" name="fadeTypeLabel">
             <property name="text">
              <string>Fade Type:</string>
             </property>
@@ -1783,7 +1783,7 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_stunts">
         <item>
-         <widget class="QLabel" name="label_46">
+         <widget class="QLabel" name="cutsceneModelLabel">
           <property name="text">
            <string>Cutscene Model:</string>
           </property>

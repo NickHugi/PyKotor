@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from abc import abstractmethod
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
@@ -64,33 +66,36 @@ class NoScrollEventFilter(QObject):
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Type.Wheel and isinstance(obj, QWidget):
             parent_widget = obj.parent()
-            while parent_widget and (not isinstance(parent_widget, self.parent().__class__) or self.parent().__class__ == QObject):
+            self_parent = self.parent()
+            while parent_widget is not None and (
+                not isinstance(parent_widget, self_parent.__class__)
+                or self_parent.__class__ == QObject
+            ):
                 parent_widget = parent_widget.parent()
             if parent_widget:
                 QApplication.sendEvent(parent_widget, event)
             return True
         return super().eventFilter(obj, event)
 
-    @classmethod
-    def installEventFilters(
-        cls,
-        parent_widget: QWidget,
-        event_filter: QObject,
-        include_types: list[type[QWidget]] | None = None
+    def setup_filter(
+        self,
+        include_types: list[type[QWidget]] | None = None,
+        parent_widget: QObject | QWidget | None = None,
     ) -> None:
         """Recursively install event filters on all child widgets."""
         if include_types is None:
             include_types = [QComboBox, QSlider, QSpinBox, QGroupBox, QAbstractSpinBox, QDoubleSpinBox]
 
+        parent_widget = self.parent() if parent_widget is None else parent_widget
         for widget in parent_widget.findChildren(QWidget):
             if not widget.objectName():
-                widget.setObjectName(widget.__class__.__name__)
+                widget.setObjectName(widget.__class__.__name__ + uuid.uuid4().hex[6:])
             if isinstance(widget, tuple(include_types)):
                 #RobustRootLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
-                widget.installEventFilter(event_filter)
+                widget.installEventFilter(self)
             #else:
             #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
-            cls.installEventFilters(widget, event_filter, include_types)
+            self.setup_filter(include_types, widget)
 
 
 class HoverEventFilter(QObject):

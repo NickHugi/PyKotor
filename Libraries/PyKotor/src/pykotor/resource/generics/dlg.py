@@ -4,7 +4,7 @@ import sys
 import uuid
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Dict, Generic, Sequence, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Dict, Generator, Generic, Sequence, TypeVar, cast
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -814,6 +814,16 @@ class DLGLink(Generic[T]):
         self.active2_param4: int = 0
         self.active2_param5: int = 0
         self.active2_param6: str = ""
+
+    def __iter__(self) -> Generator[Self, Any, None]:
+        """Iterate over nested links without recursion."""
+        stack: Sequence[Self] = [self]
+        while stack:
+            current = stack.pop()
+            yield current
+            if not current.node:
+                continue
+            stack.extend(current.node.links)
 
     def __repr__(self) -> str:
         return (f"{self.__class__.__name__}(link_list_index={self.list_index}, comment={self.comment})")

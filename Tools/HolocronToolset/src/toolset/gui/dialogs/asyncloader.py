@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from qtpy import QtCore
 from qtpy.QtCore import QThread, QTimer, Qt
-from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
+from qtpy.QtGui import QWindowStateChangeEvent
+from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
 
 from toolset.gui.common.widgets.progressbar import AnimatedProgressBar
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
@@ -16,8 +17,8 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
 
+    from qtpy.QtCore import QEvent
     from qtpy.QtGui import QCloseEvent
-    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
 T = TypeVar("T")
@@ -192,6 +193,17 @@ class AsyncLoader(QDialog, Generic[T]):
             self._worker.progress.connect(self._onProgress)
         if startImmediately:
             self.startWorker()
+
+    def changeEvent(self, event: QEvent):
+        if event.type() == QtCore.QEvent.WindowStateChange:
+            self_parent = self.parent()
+            if isinstance(self_parent, QWidget) and isinstance(event, QWindowStateChangeEvent):
+                if self_parent.isMinimized():
+                    self.setWindowState(self.windowState() | QtCore.Qt.WindowMinimized)
+                elif bool(event.oldState() & QtCore.Qt.WindowMinimized):
+                    self.setWindowState(self.windowState() & ~QtCore.Qt.WindowMinimized)
+
+        super().changeEvent(event)
 
     def startWorker(self):
         self._worker.start()

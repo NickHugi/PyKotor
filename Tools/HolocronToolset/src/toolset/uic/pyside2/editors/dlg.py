@@ -94,15 +94,15 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.plotXpSpin, 2, 1, 1, 1)
 
-        self.label_25 = QLabel(self.centralwidget)
-        self.label_25.setObjectName(u"label_25")
+        self.questEntryLabel = QLabel(self.centralwidget)
+        self.questEntryLabel.setObjectName(u"questEntryLabel")
 
-        self.gridLayout.addWidget(self.label_25, 1, 2, 1, 1, Qt.AlignRight)
+        self.gridLayout.addWidget(self.questEntryLabel, 1, 2, 1, 1, Qt.AlignRight)
 
-        self.label_24 = QLabel(self.centralwidget)
-        self.label_24.setObjectName(u"label_24")
+        self.questLabel = QLabel(self.centralwidget)
+        self.questLabel.setObjectName(u"questLabel")
 
-        self.gridLayout.addWidget(self.label_24, 0, 2, 1, 1, Qt.AlignRight)
+        self.gridLayout.addWidget(self.questLabel, 0, 2, 1, 1, Qt.AlignRight)
 
         self.listenerEdit = QLineEdit(self.centralwidget)
         self.listenerEdit.setObjectName(u"listenerEdit")
@@ -113,10 +113,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.listenerEdit, 0, 1, 1, 1)
 
-        self.label_21 = QLabel(self.centralwidget)
-        self.label_21.setObjectName(u"label_21")
+        self.listenerTagLabel = QLabel(self.centralwidget)
+        self.listenerTagLabel.setObjectName(u"listenerTagLabel")
 
-        self.gridLayout.addWidget(self.label_21, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.gridLayout.addWidget(self.listenerTagLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
         self.speakerEdit = QLineEdit(self.centralwidget)
         self.speakerEdit.setObjectName(u"speakerEdit")
@@ -139,10 +139,10 @@ class Ui_MainWindow(object):
 
         self.gridLayout.addWidget(self.label, 1, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.label_23 = QLabel(self.centralwidget)
-        self.label_23.setObjectName(u"label_23")
+        self.plotXpPercentLabel = QLabel(self.centralwidget)
+        self.plotXpPercentLabel.setObjectName(u"plotXpPercentLabel")
 
-        self.gridLayout.addWidget(self.label_23, 2, 0, 1, 1, Qt.AlignRight)
+        self.gridLayout.addWidget(self.plotXpPercentLabel, 2, 0, 1, 1, Qt.AlignRight)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -181,22 +181,22 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.ambientTrackEdit, 1, 5, 1, 1)
 
-        self.label_39 = QLabel(self.layoutWidget)
-        self.label_39.setObjectName(u"label_39")
+        self.voiceOverIDLabel = QLabel(self.layoutWidget)
+        self.voiceOverIDLabel.setObjectName(u"voiceOverIDLabel")
         sizePolicy3 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.label_39.sizePolicy().hasHeightForWidth())
-        self.label_39.setSizePolicy(sizePolicy3)
+        sizePolicy3.setHeightForWidth(self.voiceOverIDLabel.sizePolicy().hasHeightForWidth())
+        self.voiceOverIDLabel.setSizePolicy(sizePolicy3)
 
-        self.topGridLayout.addWidget(self.label_39, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.voiceOverIDLabel, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.label_43 = QLabel(self.layoutWidget)
-        self.label_43.setObjectName(u"label_43")
-        sizePolicy3.setHeightForWidth(self.label_43.sizePolicy().hasHeightForWidth())
-        self.label_43.setSizePolicy(sizePolicy3)
+        self.computerTypeLabel = QLabel(self.layoutWidget)
+        self.computerTypeLabel.setObjectName(u"computerTypeLabel")
+        sizePolicy3.setHeightForWidth(self.computerTypeLabel.sizePolicy().hasHeightForWidth())
+        self.computerTypeLabel.setSizePolicy(sizePolicy3)
 
-        self.topGridLayout.addWidget(self.label_43, 3, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.computerTypeLabel, 3, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
 
         self.conversationSelect = QComboBox(self.layoutWidget)
         self.conversationSelect.addItem("")
@@ -223,31 +223,31 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.onAbortEdit, 1, 1, 1, 1)
 
-        self.label_37 = QLabel(self.layoutWidget)
-        self.label_37.setObjectName(u"label_37")
-        sizePolicy3.setHeightForWidth(self.label_37.sizePolicy().hasHeightForWidth())
-        self.label_37.setSizePolicy(sizePolicy3)
+        self.convoEndsScriptLabel = QLabel(self.layoutWidget)
+        self.convoEndsScriptLabel.setObjectName(u"convoEndsScriptLabel")
+        sizePolicy3.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoEndsScriptLabel.setSizePolicy(sizePolicy3)
 
-        self.topGridLayout.addWidget(self.label_37, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.convoEndsScriptLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.label_42 = QLabel(self.layoutWidget)
-        self.label_42.setObjectName(u"label_42")
-        sizePolicy3.setHeightForWidth(self.label_42.sizePolicy().hasHeightForWidth())
-        self.label_42.setSizePolicy(sizePolicy3)
+        self.convoTypeLabel = QLabel(self.layoutWidget)
+        self.convoTypeLabel.setObjectName(u"convoTypeLabel")
+        sizePolicy3.setHeightForWidth(self.convoTypeLabel.sizePolicy().hasHeightForWidth())
+        self.convoTypeLabel.setSizePolicy(sizePolicy3)
 
-        self.topGridLayout.addWidget(self.label_42, 2, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.convoTypeLabel, 2, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
 
-        self.label_40 = QLabel(self.layoutWidget)
-        self.label_40.setObjectName(u"label_40")
+        self.ambientTrackLabel = QLabel(self.layoutWidget)
+        self.ambientTrackLabel.setObjectName(u"ambientTrackLabel")
 
-        self.topGridLayout.addWidget(self.label_40, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.ambientTrackLabel, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.label_38 = QLabel(self.layoutWidget)
-        self.label_38.setObjectName(u"label_38")
-        sizePolicy.setHeightForWidth(self.label_38.sizePolicy().hasHeightForWidth())
-        self.label_38.setSizePolicy(sizePolicy)
+        self.convoAbortsScriptLabel = QLabel(self.layoutWidget)
+        self.convoAbortsScriptLabel.setObjectName(u"convoAbortsScriptLabel")
+        sizePolicy.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy)
 
-        self.topGridLayout.addWidget(self.label_38, 1, 0, 1, 1, Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.convoAbortsScriptLabel, 1, 0, 1, 1, Qt.AlignVCenter)
 
         self.voIdEdit = QLineEdit(self.layoutWidget)
         self.voIdEdit.setObjectName(u"voIdEdit")
@@ -261,10 +261,10 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.onEndEdit, 0, 1, 1, 1)
 
-        self.label_44 = QLabel(self.layoutWidget)
-        self.label_44.setObjectName(u"label_44")
+        self.delayEntryLabel = QLabel(self.layoutWidget)
+        self.delayEntryLabel.setObjectName(u"delayEntryLabel")
 
-        self.topGridLayout.addWidget(self.label_44, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.delayEntryLabel, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
         self.replyDelaySpin = GFFFieldSpinBox(self.layoutWidget)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
@@ -275,10 +275,10 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.replyDelaySpin, 0, 3, 1, 1)
 
-        self.label_45 = QLabel(self.layoutWidget)
-        self.label_45.setObjectName(u"label_45")
+        self.delayReplyLabel = QLabel(self.layoutWidget)
+        self.delayReplyLabel.setObjectName(u"delayReplyLabel")
 
-        self.topGridLayout.addWidget(self.label_45, 1, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.delayReplyLabel, 1, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
         self.entryDelaySpin = GFFFieldSpinBox(self.layoutWidget)
         self.entryDelaySpin.setObjectName(u"entryDelaySpin")
@@ -315,12 +315,12 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.animatedCutCheckbox, 2, 3, 1, 1, Qt.AlignLeft)
 
-        self.label_41 = QLabel(self.layoutWidget)
-        self.label_41.setObjectName(u"label_41")
-        sizePolicy3.setHeightForWidth(self.label_41.sizePolicy().hasHeightForWidth())
-        self.label_41.setSizePolicy(sizePolicy3)
+        self.cameraModelLabel = QLabel(self.layoutWidget)
+        self.cameraModelLabel.setObjectName(u"cameraModelLabel")
+        sizePolicy3.setHeightForWidth(self.cameraModelLabel.sizePolicy().hasHeightForWidth())
+        self.cameraModelLabel.setSizePolicy(sizePolicy3)
 
-        self.topGridLayout.addWidget(self.label_41, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.cameraModelLabel, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
         self.cameraModelEdit = QLineEdit(self.layoutWidget)
         self.cameraModelEdit.setObjectName(u"cameraModelEdit")
@@ -739,12 +739,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_anims = QVBoxLayout()
         self.verticalLayout_anims.setSpacing(2)
         self.verticalLayout_anims.setObjectName(u"verticalLayout_anims")
-        self.label_12 = QLabel(self.scrollAreaWidgetContents)
-        self.label_12.setObjectName(u"label_12")
-        self.label_12.setLayoutDirection(Qt.LeftToRight)
-        self.label_12.setAlignment(Qt.AlignCenter)
+        self.curAnimsLabel = QLabel(self.scrollAreaWidgetContents)
+        self.curAnimsLabel.setObjectName(u"curAnimsLabel")
+        self.curAnimsLabel.setLayoutDirection(Qt.LeftToRight)
+        self.curAnimsLabel.setAlignment(Qt.AlignCenter)
 
-        self.verticalLayout_anims.addWidget(self.label_12, 0, Qt.AlignVCenter)
+        self.verticalLayout_anims.addWidget(self.curAnimsLabel, 0, Qt.AlignVCenter)
 
         self.animsList = QListWidget(self.scrollAreaWidgetContents)
         self.animsList.setObjectName(u"animsList")
@@ -802,12 +802,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.verticalLayout_2.setContentsMargins(0, 0, -1, -1)
-        self.label_19 = QLabel(self.scrollAreaWidgetContents)
-        self.label_19.setObjectName(u"label_19")
-        sizePolicy.setHeightForWidth(self.label_19.sizePolicy().hasHeightForWidth())
-        self.label_19.setSizePolicy(sizePolicy)
+        self.soundLabel = QLabel(self.scrollAreaWidgetContents)
+        self.soundLabel.setObjectName(u"soundLabel")
+        sizePolicy.setHeightForWidth(self.soundLabel.sizePolicy().hasHeightForWidth())
+        self.soundLabel.setSizePolicy(sizePolicy)
 
-        self.verticalLayout_2.addWidget(self.label_19, 0, Qt.AlignHCenter)
+        self.verticalLayout_2.addWidget(self.soundLabel, 0, Qt.AlignHCenter)
 
         self.soundCheckbox = QCheckBox(self.scrollAreaWidgetContents)
         self.soundCheckbox.setObjectName(u"soundCheckbox")
@@ -849,10 +849,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_sound.setLayout(2, QFormLayout.FieldRole, self.verticalLayout_voice)
 
-        self.label_20 = QLabel(self.scrollAreaWidgetContents)
-        self.label_20.setObjectName(u"label_20")
+        self.voiceLabel = QLabel(self.scrollAreaWidgetContents)
+        self.voiceLabel.setObjectName(u"voiceLabel")
 
-        self.formLayout_sound.setWidget(2, QFormLayout.LabelRole, self.label_20)
+        self.formLayout_sound.setWidget(2, QFormLayout.LabelRole, self.voiceLabel)
 
 
         self.verticalLayout_anims.addLayout(self.formLayout_sound)
@@ -862,10 +862,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_journal = QVBoxLayout()
         self.verticalLayout_journal.setObjectName(u"verticalLayout_journal")
-        self.label_22 = QLabel(self.scrollAreaWidgetContents)
-        self.label_22.setObjectName(u"label_22")
+        self.plotIndexLabel = QLabel(self.scrollAreaWidgetContents)
+        self.plotIndexLabel.setObjectName(u"plotIndexLabel")
 
-        self.verticalLayout_journal.addWidget(self.label_22)
+        self.verticalLayout_journal.addWidget(self.plotIndexLabel)
 
         self.plotIndexSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.plotIndexSpin.setObjectName(u"plotIndexSpin")
@@ -879,10 +879,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_camera = QVBoxLayout()
         self.verticalLayout_camera.setObjectName(u"verticalLayout_camera")
-        self.label_26 = QLabel(self.scrollAreaWidgetContents)
-        self.label_26.setObjectName(u"label_26")
+        self.cameraIdLabel = QLabel(self.scrollAreaWidgetContents)
+        self.cameraIdLabel.setObjectName(u"cameraIdLabel")
 
-        self.verticalLayout_camera.addWidget(self.label_26)
+        self.verticalLayout_camera.addWidget(self.cameraIdLabel)
 
         self.cameraIdSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.cameraIdSpin.setObjectName(u"cameraIdSpin")
@@ -891,20 +891,20 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_camera.addWidget(self.cameraIdSpin)
 
-        self.label_27 = QLabel(self.scrollAreaWidgetContents)
-        self.label_27.setObjectName(u"label_27")
+        self.cameraAnimLabel = QLabel(self.scrollAreaWidgetContents)
+        self.cameraAnimLabel.setObjectName(u"cameraAnimLabel")
 
-        self.verticalLayout_camera.addWidget(self.label_27)
+        self.verticalLayout_camera.addWidget(self.cameraAnimLabel)
 
         self.cameraAnimSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.cameraAnimSpin.setObjectName(u"cameraAnimSpin")
 
         self.verticalLayout_camera.addWidget(self.cameraAnimSpin)
 
-        self.label_28 = QLabel(self.scrollAreaWidgetContents)
-        self.label_28.setObjectName(u"label_28")
+        self.cameraAngleLabel = QLabel(self.scrollAreaWidgetContents)
+        self.cameraAngleLabel.setObjectName(u"cameraAngleLabel")
 
-        self.verticalLayout_camera.addWidget(self.label_28)
+        self.verticalLayout_camera.addWidget(self.cameraAngleLabel)
 
         self.cameraAngleSelect = QComboBox(self.scrollAreaWidgetContents)
         self.cameraAngleSelect.addItem("")
@@ -918,10 +918,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_camera.addWidget(self.cameraAngleSelect)
 
-        self.label_29 = QLabel(self.scrollAreaWidgetContents)
-        self.label_29.setObjectName(u"label_29")
+        self.cameraVidEffectLabel = QLabel(self.scrollAreaWidgetContents)
+        self.cameraVidEffectLabel.setObjectName(u"cameraVidEffectLabel")
 
-        self.verticalLayout_camera.addWidget(self.label_29)
+        self.verticalLayout_camera.addWidget(self.cameraVidEffectLabel)
 
         self.cameraEffectSelect = ComboBox2DA(self.scrollAreaWidgetContents)
         self.cameraEffectSelect.setObjectName(u"cameraEffectSelect")
@@ -942,70 +942,70 @@ class Ui_MainWindow(object):
         self.formLayout_other.setObjectName(u"formLayout_other")
         self.formLayout_other.setHorizontalSpacing(2)
         self.formLayout_other.setVerticalSpacing(2)
-        self.label_30 = QLabel(self.scrollAreaWidgetContents)
-        self.label_30.setObjectName(u"label_30")
+        self.nodeIdLabel = QLabel(self.scrollAreaWidgetContents)
+        self.nodeIdLabel.setObjectName(u"nodeIdLabel")
 
-        self.formLayout_other.setWidget(0, QFormLayout.LabelRole, self.label_30)
+        self.formLayout_other.setWidget(0, QFormLayout.LabelRole, self.nodeIdLabel)
 
         self.nodeIdSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.nodeIdSpin.setObjectName(u"nodeIdSpin")
 
         self.formLayout_other.setWidget(0, QFormLayout.FieldRole, self.nodeIdSpin)
 
-        self.label_31 = QLabel(self.scrollAreaWidgetContents)
-        self.label_31.setObjectName(u"label_31")
+        self.alienRaceNodeLabel = QLabel(self.scrollAreaWidgetContents)
+        self.alienRaceNodeLabel.setObjectName(u"alienRaceNodeLabel")
 
-        self.formLayout_other.setWidget(1, QFormLayout.LabelRole, self.label_31)
+        self.formLayout_other.setWidget(1, QFormLayout.LabelRole, self.alienRaceNodeLabel)
 
         self.alienRaceNodeSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.alienRaceNodeSpin.setObjectName(u"alienRaceNodeSpin")
 
         self.formLayout_other.setWidget(1, QFormLayout.FieldRole, self.alienRaceNodeSpin)
 
-        self.label_32 = QLabel(self.scrollAreaWidgetContents)
-        self.label_32.setObjectName(u"label_32")
+        self.postProcNodeLabel = QLabel(self.scrollAreaWidgetContents)
+        self.postProcNodeLabel.setObjectName(u"postProcNodeLabel")
 
-        self.formLayout_other.setWidget(2, QFormLayout.LabelRole, self.label_32)
+        self.formLayout_other.setWidget(2, QFormLayout.LabelRole, self.postProcNodeLabel)
 
         self.postProcSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.postProcSpin.setObjectName(u"postProcSpin")
 
         self.formLayout_other.setWidget(2, QFormLayout.FieldRole, self.postProcSpin)
 
-        self.label_33 = QLabel(self.scrollAreaWidgetContents)
-        self.label_33.setObjectName(u"label_33")
+        self.delayNodeLabel = QLabel(self.scrollAreaWidgetContents)
+        self.delayNodeLabel.setObjectName(u"delayNodeLabel")
 
-        self.formLayout_other.setWidget(3, QFormLayout.LabelRole, self.label_33)
+        self.formLayout_other.setWidget(3, QFormLayout.LabelRole, self.delayNodeLabel)
 
         self.delaySpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.delaySpin.setObjectName(u"delaySpin")
 
         self.formLayout_other.setWidget(3, QFormLayout.FieldRole, self.delaySpin)
 
-        self.label_34 = QLabel(self.scrollAreaWidgetContents)
-        self.label_34.setObjectName(u"label_34")
+        self.logicLabel = QLabel(self.scrollAreaWidgetContents)
+        self.logicLabel.setObjectName(u"logicLabel")
 
-        self.formLayout_other.setWidget(4, QFormLayout.LabelRole, self.label_34)
+        self.formLayout_other.setWidget(4, QFormLayout.LabelRole, self.logicLabel)
 
         self.logicSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.logicSpin.setObjectName(u"logicSpin")
 
         self.formLayout_other.setWidget(4, QFormLayout.FieldRole, self.logicSpin)
 
-        self.label_35 = QLabel(self.scrollAreaWidgetContents)
-        self.label_35.setObjectName(u"label_35")
+        self.waitFlagsLabel = QLabel(self.scrollAreaWidgetContents)
+        self.waitFlagsLabel.setObjectName(u"waitFlagsLabel")
 
-        self.formLayout_other.setWidget(5, QFormLayout.LabelRole, self.label_35)
+        self.formLayout_other.setWidget(5, QFormLayout.LabelRole, self.waitFlagsLabel)
 
         self.waitFlagSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.waitFlagSpin.setObjectName(u"waitFlagSpin")
 
         self.formLayout_other.setWidget(5, QFormLayout.FieldRole, self.waitFlagSpin)
 
-        self.label_36 = QLabel(self.scrollAreaWidgetContents)
-        self.label_36.setObjectName(u"label_36")
+        self.fadeTypeLabel = QLabel(self.scrollAreaWidgetContents)
+        self.fadeTypeLabel.setObjectName(u"fadeTypeLabel")
 
-        self.formLayout_other.setWidget(6, QFormLayout.LabelRole, self.label_36)
+        self.formLayout_other.setWidget(6, QFormLayout.LabelRole, self.fadeTypeLabel)
 
         self.fadeTypeSpin = GFFFieldSpinBox(self.scrollAreaWidgetContents)
         self.fadeTypeSpin.setObjectName(u"fadeTypeSpin")
@@ -1020,10 +1020,10 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_stunts = QVBoxLayout()
         self.verticalLayout_stunts.setObjectName(u"verticalLayout_stunts")
-        self.label_46 = QLabel(self.scrollAreaWidgetContents)
-        self.label_46.setObjectName(u"label_46")
+        self.cutsceneModelLabel = QLabel(self.scrollAreaWidgetContents)
+        self.cutsceneModelLabel.setObjectName(u"cutsceneModelLabel")
 
-        self.verticalLayout_stunts.addWidget(self.label_46)
+        self.verticalLayout_stunts.addWidget(self.cutsceneModelLabel)
 
         self.stuntList = QListWidget(self.scrollAreaWidgetContents)
         self.stuntList.setObjectName(u"stuntList")
@@ -1092,14 +1092,14 @@ class Ui_MainWindow(object):
         self.actionExit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.actionReloadTree.setText(QCoreApplication.translate("MainWindow", u"Reload Tree", None))
         self.actionUnfocus.setText(QCoreApplication.translate("MainWindow", u"Unfocus Tree", None))
-        self.label_25.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
-        self.label_24.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
-        self.label_21.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
+        self.questEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Quest Entry:", None))
+        self.questLabel.setText(QCoreApplication.translate("MainWindow", u"Quest:", None))
+        self.listenerTagLabel.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
-        self.label_23.setText(QCoreApplication.translate("MainWindow", u"Plot XP (percent)", None))
+        self.plotXpPercentLabel.setText(QCoreApplication.translate("MainWindow", u"Plot XP (percent)", None))
         self.topDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Globals", None))
-        self.label_39.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
-        self.label_43.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
+        self.voiceOverIDLabel.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
+        self.computerTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
         self.conversationSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Human", None))
         self.conversationSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Computer", None))
         self.conversationSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Type 3", None))
@@ -1109,17 +1109,17 @@ class Ui_MainWindow(object):
         self.computerSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Modern", None))
         self.computerSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Ancient", None))
 
-        self.label_37.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends Script:", None))
-        self.label_42.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
-        self.label_40.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
-        self.label_38.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts Script:", None))
-        self.label_44.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
-        self.label_45.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
+        self.convoEndsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends Script:", None))
+        self.convoTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
+        self.ambientTrackLabel.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
+        self.convoAbortsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts Script:", None))
+        self.delayEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
+        self.delayReplyLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
         self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
         self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
         self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
         self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
-        self.label_41.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
+        self.cameraModelLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
         self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
         self.rightDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"Node Fields", None))
         self.commentsEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Comments", None))
@@ -1138,24 +1138,24 @@ class Ui_MainWindow(object):
 #endif // QT_CONFIG(tooltip)
         self.conditional2Label.setText(QCoreApplication.translate("MainWindow", u"Conditional #2:", None))
         self.condition2NotCheckbox.setText(QCoreApplication.translate("MainWindow", u"Not", None))
-        self.label_12.setText(QCoreApplication.translate("MainWindow", u"Current Animations", None))
+        self.curAnimsLabel.setText(QCoreApplication.translate("MainWindow", u"Current Animations", None))
         self.addAnimButton.setText(QCoreApplication.translate("MainWindow", u"Add", None))
         self.removeAnimButton.setText(QCoreApplication.translate("MainWindow", u"Remove", None))
         self.editAnimButton.setText(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.expressionLabel.setText(QCoreApplication.translate("MainWindow", u"Expression:", None))
         self.emotionLabel.setText(QCoreApplication.translate("MainWindow", u"Emotion:", None))
-        self.label_19.setText(QCoreApplication.translate("MainWindow", u"Sound:", None))
+        self.soundLabel.setText(QCoreApplication.translate("MainWindow", u"Sound:", None))
 #if QT_CONFIG(tooltip)
         self.soundCheckbox.setToolTip(QCoreApplication.translate("MainWindow", u"'SoundExists' field", None))
 #endif // QT_CONFIG(tooltip)
         self.soundCheckbox.setText(QCoreApplication.translate("MainWindow", u"Exists", None))
         self.soundButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
         self.voiceButton.setText(QCoreApplication.translate("MainWindow", u"Play", None))
-        self.label_20.setText(QCoreApplication.translate("MainWindow", u"Voice:", None))
-        self.label_22.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
-        self.label_26.setText(QCoreApplication.translate("MainWindow", u"Camera ID:", None))
-        self.label_27.setText(QCoreApplication.translate("MainWindow", u"Camera Animation:", None))
-        self.label_28.setText(QCoreApplication.translate("MainWindow", u"Camera Angle:", None))
+        self.voiceLabel.setText(QCoreApplication.translate("MainWindow", u"Voice:", None))
+        self.plotIndexLabel.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
+        self.cameraIdLabel.setText(QCoreApplication.translate("MainWindow", u"Camera ID:", None))
+        self.cameraAnimLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Animation:", None))
+        self.cameraAngleLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Angle:", None))
         self.cameraAngleSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Auto", None))
         self.cameraAngleSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Face", None))
         self.cameraAngleSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Shoulder", None))
@@ -1164,16 +1164,16 @@ class Ui_MainWindow(object):
         self.cameraAngleSelect.setItemText(5, QCoreApplication.translate("MainWindow", u"No Change", None))
         self.cameraAngleSelect.setItemText(6, QCoreApplication.translate("MainWindow", u"Static Camera", None))
 
-        self.label_29.setText(QCoreApplication.translate("MainWindow", u"Camera Video Effect:", None))
+        self.cameraVidEffectLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Video Effect:", None))
         self.nodeUnskippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Node Unskippable", None))
-        self.label_30.setText(QCoreApplication.translate("MainWindow", u"Node ID:", None))
-        self.label_31.setText(QCoreApplication.translate("MainWindow", u"Alien Race Node:", None))
-        self.label_32.setText(QCoreApplication.translate("MainWindow", u"Post Proc Node:", None))
-        self.label_33.setText(QCoreApplication.translate("MainWindow", u"Delay:", None))
-        self.label_34.setText(QCoreApplication.translate("MainWindow", u"Logic:", None))
-        self.label_35.setText(QCoreApplication.translate("MainWindow", u"Wait Flags:", None))
-        self.label_36.setText(QCoreApplication.translate("MainWindow", u"Fade Type:", None))
-        self.label_46.setText(QCoreApplication.translate("MainWindow", u"Cutscene Model:", None))
+        self.nodeIdLabel.setText(QCoreApplication.translate("MainWindow", u"Node ID:", None))
+        self.alienRaceNodeLabel.setText(QCoreApplication.translate("MainWindow", u"Alien Race Node:", None))
+        self.postProcNodeLabel.setText(QCoreApplication.translate("MainWindow", u"Post Proc Node:", None))
+        self.delayNodeLabel.setText(QCoreApplication.translate("MainWindow", u"Delay:", None))
+        self.logicLabel.setText(QCoreApplication.translate("MainWindow", u"Logic:", None))
+        self.waitFlagsLabel.setText(QCoreApplication.translate("MainWindow", u"Wait Flags:", None))
+        self.fadeTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Fade Type:", None))
+        self.cutsceneModelLabel.setText(QCoreApplication.translate("MainWindow", u"Cutscene Model:", None))
 #if QT_CONFIG(tooltip)
         self.stuntList.setToolTip(QCoreApplication.translate("MainWindow", u"Stunt List", None))
 #endif // QT_CONFIG(tooltip)
