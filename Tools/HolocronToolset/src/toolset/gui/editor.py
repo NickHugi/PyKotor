@@ -772,6 +772,7 @@ class Editor(QMainWindow):
                 self.buffer.setData(data)
                 self.buffer.open(QIODevice.OpenModeFlag.ReadOnly)
                 self.player.setMedia(QMediaContent(), self.buffer)
+                QTimer.singleShot(0, self.player.play)  # IMPORTANT!! in pyqt5/pyside2, ONLY works when singleShot from a timer. No idea why.
             else:
                 self.blinkWindow()
                 return False
@@ -790,17 +791,16 @@ class Editor(QMainWindow):
                 self.player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]
                 audioOutput.setVolume(1)  # IMPORTANT!! volume starts off at 0% otherwise.
                 self.player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
-
+                self.player.play()
             else:
                 self.blinkWindow()
                 return False
-            self.player.play()
             return True
         raise RuntimeError(f"Unsupported QT_API value: {qtpy.API_NAME}")
 
     def playSound(self, resname: str) -> bool:
         """Plays a sound resource."""
-        if not resname or not resname.strip():
+        if not resname or not resname.strip() or self._installation is None:
             self.blinkWindow()
             return False
 
