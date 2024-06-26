@@ -769,9 +769,9 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         constants: list[str] = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
 
         rules: list[tuple[str, int, QTextCharFormat]] = []
-        rules += [(r"\b%s\b" % w, 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
-        rules += [(r"\b%s\b" % w, 0, self.styles["function"]) for w in functions]
-        rules += [(r"\b%s\b" % w, 0, self.styles["constant"]) for w in constants]
+        rules += [(rf"\b{w}\b", 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
+        rules += [(rf"\b{w}\b", 0, self.styles["function"]) for w in functions]
+        rules += [(rf"\b{w}\b", 0, self.styles["constant"]) for w in constants]
         rules += [(o, 0, self.styles["operator"]) for o in SyntaxHighlighter.OPERATORS]
         rules += [(o, 0, self.styles["brace"]) for o in SyntaxHighlighter.BRACES]
 
