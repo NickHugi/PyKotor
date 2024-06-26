@@ -1436,17 +1436,22 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             QMessageBox(QMessageBox.Icon.Information, "No installation loaded.", "Load an installation before opening the Journal Editor.").exec_()
             return
-        journal_resources = self.active.resources(
-            "global",
-            ResourceType.JRL,
+        jrl_ident = ResourceIdentifier("global", ResourceType.JRL)
+        journal_resources = self.active.locations(
+            [jrl_ident],
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )
         print("<SDM> [openActiveJournal scope] journal_resources: ", journal_resources)
 
-        if not journal_resources:
+        if not journal_resources or not journal_resources.get(jrl_ident):
             QMessageBox(QMessageBox.Icon.Critical, "global.jrl not found", "Could not open the journal editor: 'global.jrl' not found.").exec_()
             return
-        dialog = FileSelectionWindow(journal_resources, self.active)
+        relevant = journal_resources[jrl_ident]
+        if len(relevant) > 1:
+            dialog = FileSelectionWindow(relevant, self.active)
+        else:
+            jrl_resource = relevant[0].as_file_resource()
+            openResourceEditor(jrl_resource.filepath(), jrl_resource.resname(), jrl_resource.restype(), jrl_resource.data(), self.active, self)
         addWindow(dialog)
 
     def openFileSearchDialog(self):
