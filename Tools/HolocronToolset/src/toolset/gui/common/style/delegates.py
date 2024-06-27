@@ -51,13 +51,13 @@ class HTMLDelegate(QStyledItemDelegate):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.text_size: int = 12
-        self.verticalSpacing: int = 0  # Default vertical spacing between items
+        self.customVerticalSpacing: int = 0  # Default vertical spacing between items
         self.nudgedModelIndexes: dict[QModelIndex, tuple[int, int]] = {}
         self.max_wraps: int = 3  # Maximum number of lines to wrap text
 
     def setVerticalSpacing(self, spacing: int):
-        print(f"<SDM> [setVerticalSpacing scope] set vertical spacing from {self.verticalSpacing} to {spacing}")
-        self.verticalSpacing = spacing
+        print(f"<SDM> [setVerticalSpacing scope] set vertical spacing from {self.customVerticalSpacing} to {spacing}")
+        self.customVerticalSpacing = spacing
 
     def setTextSize(self, size: int):
         print(f"<SDM> [setTextSize scope] set text size from {self.text_size} to {size}")
@@ -133,5 +133,16 @@ class HTMLDelegate(QStyledItemDelegate):
         else:
             available_width, available_height = parentWidget.width(), parentWidget.height()
 
-        doc = self.createTextDocument(html, option.font, available_width)
-        return QSize(int(doc.idealWidth()), int(min(doc.size().height() + self.verticalSpacing + self.text_size, available_height)))
+        # Create document to find natural size
+        doc = self.createTextDocument(html, option.font, available_height)
+        naturalWidth = int(doc.idealWidth())
+        naturalHeight = int(doc.size().height())
+
+        # Adjust for golden ratio, but prevent excessive white space
+        golden_ratio = 1.618
+        min_width = naturalHeight * golden_ratio
+        max_height = naturalWidth / golden_ratio
+        adjusted_width = max(naturalWidth, available_width)
+        adjusted_height = min(naturalHeight, max_height)
+
+        return QSize(int(adjusted_width), int(adjusted_height + self.customVerticalSpacing))
