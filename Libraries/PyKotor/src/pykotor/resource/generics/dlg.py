@@ -492,7 +492,7 @@ class DLGNode:
         self.fade_type: int = 0
         self.listener: str = ""
         self.plot_index: int = 0
-        self.plot_xp_percentage: float = 0.0
+        self.plot_xp_percentage: float = 1.0
         self.quest: str = ""
         self.script1: ResRef = ResRef.from_blank()
         self.sound: ResRef = ResRef.from_blank()
@@ -1002,12 +1002,12 @@ def construct_dlg(
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
         node.quest = gff_struct.acquire("Quest", "")
         node.plot_index = gff_struct.acquire("PlotIndex", -1)
-        node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 0.0)
+        node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 1.0)
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
         node.fade_type = gff_struct.acquire("FadeType", 0)
         node.sound_exists = gff_struct.acquire("SoundExists", default=False)
-        node.vo_text_changed = gff_struct.acquire("Changed", default=False)
+        node.vo_text_changed = gff_struct.acquire("VOTextChanged", default=False)
 
         anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
         for anim_struct in anim_list:
@@ -1054,7 +1054,7 @@ def construct_dlg(
         if gff_struct.exists("CamHeightOffset"):
             node.camera_height = gff_struct.acquire("CamHeightOffset", 0.0)
         if gff_struct.exists("CamVidEffect"):
-            node.camera_effect = gff_struct.acquire("CamVidEffect", 0)
+            node.camera_effect = gff_struct.acquire("CamVidEffect", -1)
         if gff_struct.exists("TarHeightOffset"):
             node.target_height = gff_struct.acquire("TarHeightOffset", 0.0)
         if gff_struct.exists("FadeColor"):
