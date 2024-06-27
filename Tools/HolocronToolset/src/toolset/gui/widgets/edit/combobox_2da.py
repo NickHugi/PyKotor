@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from qtpy import QtCore
+from qtpy.QtGui import QColor, QPainter, QPen
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
@@ -11,6 +12,7 @@ from utility.error_handling import universal_simplify_exception
 if TYPE_CHECKING:
     from PyQt5.QtGui import QStandardItemModel
     from qtpy.QtCore import QPoint
+    from qtpy.QtGui import QPaintEvent
     from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -33,6 +35,13 @@ class ComboBox2DA(QComboBox):
         self._this2DA: TwoDA | None = None
         self._installation: HTInstallation | None = None
         self._resname: str | None = None
+
+    def paintEvent(self, event: QPaintEvent):
+        super().paintEvent(event)
+        if super().currentIndex() == -1:
+            painter = QPainter(self)
+            painter.setPen(QPen(QColor(0, 0, 0)))
+            painter.drawText(self.rect(), QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft, self.placeholderText())
 
     def currentIndex(self) -> int:
         """Returns the row index from the currently selected item: This is NOT the index into the combobox like it would be with a normal QCombobox.
