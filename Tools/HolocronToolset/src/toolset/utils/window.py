@@ -172,19 +172,19 @@ def openResourceEditor(
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTCEditor(None, installation, mainWindow=parentWindow)
+            editor = UTCEditor(None, installation)
 
     if restype.target_type() in {ResourceType.UTP, ResourceType.BTP}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTPEditor(None, installation, mainWindow=parentWindow)
+            editor = UTPEditor(None, installation)
 
     if restype.target_type() in {ResourceType.UTD, ResourceType.BTD}:
         if installation is None or not gff_specialized:
             editor = GFFEditor(None, installation)
         else:
-            editor = UTDEditor(None, installation, mainWindow=parentWindow)
+            editor = UTDEditor(None, installation)
 
     if restype.target_type() is ResourceType.UTS:
         if installation is None or not gff_specialized:  # noqa: SIM108
