@@ -96,7 +96,7 @@ class HTInstallation(Installation):
         return self._tsl
 
     @classmethod
-    def from_base_instance(cls, installation: Installation, mainWindow: QWidget) -> Self:
+    def from_base_instance(cls, installation: Installation) -> Self:
         ht_installation = cast(cls, installation)
 
         ht_installation.name = f"NonHTInit_{installation.__class__.__name__}_{id(installation)}"
