@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import qtpy
 
@@ -58,11 +58,15 @@ class ApplicationSettingsWidget(SettingsWidget):
         for attr in dir(self.settings.__class__):
             if not attr.startswith("AA_"):
                 continue
+            if attr in self.settings.REQUIRES_RESTART:
+                checkbox = QCheckBox(attr.replace("AA_", "").replace("_", " ") + " *")
+                checkbox.setToolTip("Requires app restart!")
+            else:
+                checkbox = QCheckBox(attr.replace("AA_", "").replace("_", " "))
             checkBoxName = f"{attr}CheckBox"
-            checkbox = QCheckBox(attr.replace("AA_", "").replace("_", " "))
             checkbox.setObjectName(checkBoxName)
-            aa_layout.addWidget(checkbox)  # type: ignore[arg-type]
             self._registercheckbox(checkbox, checkBoxName)
+            aa_layout.addWidget(checkbox)  # type: ignore[arg-type]
 
     def setupValues(self):
         """Set up the initial values for the settings."""
@@ -93,17 +97,6 @@ class ApplicationSettingsWidget(SettingsWidget):
             print(f"Corrupted setting: {attr_name}, cannot set state of '{state}' ({state!r}) expected a bool instead.")
             return
         setattr(self.settings, attr_name, bool(state))
-        if attr_name in {
-            "AA_PluginApplication",
-            "AA_UseDesktopOpenGL",
-            "AA_UseOpenGLES",
-            "AA_UseSoftwareOpenGL",
-            "AA_ShareOpenGLContexts",
-            "AA_EnableHighDpiScaling",
-            "AA_DisableHighDpiScaling",
-        }:
-            QMessageBox(QMessageBox.Icon.Warning, "App restart required", f"The attribute<br><br>'{attr_name}'<br><br> has been set, but a restart is required for changes to take effect.").exec_()
-            return
         app = QApplication.instance()
         assert isinstance(app, QApplication)
         attrToSet = getattr(QtCore.Qt.ApplicationAttribute, attr_name)
@@ -113,6 +106,16 @@ class ApplicationSettingsWidget(SettingsWidget):
 class ApplicationSettings(Settings):
     def __init__(self):
         super().__init__("Application")
+
+    REQUIRES_RESTART: ClassVar[dict[str, QtCore.Qt.ApplicationAttribute]] = {
+        "AA_PluginApplication": QtCore.Qt.ApplicationAttribute.AA_PluginApplication,
+        "AA_UseDesktopOpenGL": QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL,
+        "AA_UseOpenGLES": QtCore.Qt.ApplicationAttribute.AA_UseOpenGLES,
+        "AA_UseSoftwareOpenGL": QtCore.Qt.ApplicationAttribute.AA_UseSoftwareOpenGL,
+        "AA_ShareOpenGLContexts": QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts,
+        "AA_EnableHighDpiScaling": QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling,
+        "AA_DisableHighDpiScaling": QtCore.Qt.ApplicationAttribute.AA_DisableHighDpiScaling,
+    }
 
     # region Application Attributes
     AA_ImmediateWidgetCreation = Settings.addSetting(
@@ -165,7 +168,7 @@ class ApplicationSettings(Settings):
     )
     AA_UseHighDpiPixmaps = Settings.addSetting(
         "AA_UseHighDpiPixmaps",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps),
+        True, #QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps),
     )
     AA_ForceRasterWidgets = Settings.addSetting(
         "AA_ForceRasterWidgets",
@@ -193,11 +196,11 @@ class ApplicationSettings(Settings):
     )
     AA_EnableHighDpiScaling = Settings.addSetting(
         "AA_EnableHighDpiScaling",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling),
+        True,  # QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling),
     )
     AA_DisableHighDpiScaling = Settings.addSetting(
         "AA_DisableHighDpiScaling",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_DisableHighDpiScaling),
+        False, # QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_DisableHighDpiScaling),
     )
     AA_PluginApplication = Settings.addSetting(
         "AA_PluginApplication",

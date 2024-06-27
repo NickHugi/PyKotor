@@ -138,6 +138,7 @@ def last_resort_cleanup():
     RobustRootLogger().debug("Shutdown process started...")
 
 def main_init():
+    sys.excepthook = onAppCrash
     if multiprocessing.current_process() == "MainProcess":
         multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
 
@@ -177,38 +178,28 @@ def main_init():
 if __name__ == "__main__":
     main_init()
 
-    from qtpy.QtCore import QSettings, QThread, Qt
+    from qtpy.QtCore import QThread, Qt
     from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication, QMessageBox
 
+    from toolset.gui.widgets.settings.application import ApplicationSettings
+
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, False)
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseDesktopOpenGL, True)
-
     # Some application settings must be set before the app starts.
     # These ones are accessible through the in-app settings window widget.
-    app_settings = QSettings("HolocronToolsetV3", "Application")
-    for attr_name, attr_value in (
-        ("AA_PluginApplication", Qt.ApplicationAttribute.AA_PluginApplication),
-        ("AA_UseDesktopOpenGL", Qt.ApplicationAttribute.AA_UseDesktopOpenGL),
-        ("AA_UseOpenGLES", Qt.ApplicationAttribute.AA_UseOpenGLES),
-        ("AA_UseSoftwareOpenGL", Qt.ApplicationAttribute.AA_UseSoftwareOpenGL),
-        ("AA_ShareOpenGLContexts", Qt.ApplicationAttribute.AA_ShareOpenGLContexts),
-        ("AA_EnableHighDpiScaling", Qt.ApplicationAttribute.AA_EnableHighDpiScaling),
-        ("AA_DisableHighDpiScaling", Qt.ApplicationAttribute.AA_DisableHighDpiScaling),
-    ):
-        QApplication.setAttribute(attr_value, app_settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
+    settings_widget = ApplicationSettings()
+    for attr_name, attr_value in settings_widget.REQUIRES_RESTART.items():
+        QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
     app = QApplication(sys.argv)
+    # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl!
+
+    for attr_name, attr_value in settings_widget.__class__.__dict__.items():
+        if not attr_name.startswith("AA_"):
+            continue
+        QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
     app.setFont(QFont("Roboto", 13))
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
-    # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl
-    # app.setAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity, False)
-    app.setAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation, False)
-    app.setAttribute(Qt.ApplicationAttribute.AA_CompressHighFrequencyEvents, False)
-    app.setAttribute(Qt.ApplicationAttribute.AA_CompressTabletEvents, False)
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
-    app.setAttribute(Qt.ApplicationAttribute.AA_ImmediateWidgetCreation, True)
     app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
@@ -216,7 +207,6 @@ if __name__ == "__main__":
 
     app.thread().setPriority(QThread.Priority.HighestPriority)
 
-    sys.excepthook = onAppCrash
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox
         msgBox = QMessageBox()
