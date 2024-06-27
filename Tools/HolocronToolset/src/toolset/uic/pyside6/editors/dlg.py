@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         self.plotIndexLabel = QLabel(self.centralwidget)
         self.plotIndexLabel.setObjectName(u"plotIndexLabel")
 
-        self.gridLayout.addWidget(self.plotIndexLabel, 2, 2, 1, 1)
+        self.gridLayout.addWidget(self.plotIndexLabel, 2, 2, 1, 1, Qt.AlignRight)
 
         self.plotIndexCombo = ComboBox2DA(self.centralwidget)
         self.plotIndexCombo.setObjectName(u"plotIndexCombo")
@@ -388,7 +388,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.conditional1Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional1Label.setObjectName(u"conditional1Label")
-        self.conditional1Label.setMinimumSize(QSize(80, 0))
+        self.conditional1Label.setMinimumSize(QSize(90, 0))
 
         self.horizontalLayout_3.addWidget(self.conditional1Label, 0, Qt.AlignVCenter)
 
@@ -477,7 +477,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.conditional2Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional2Label.setObjectName(u"conditional2Label")
-        self.conditional2Label.setMinimumSize(QSize(80, 0))
+        self.conditional2Label.setMinimumSize(QSize(90, 0))
 
         self.horizontalLayout_4.addWidget(self.conditional2Label, 0, Qt.AlignVCenter)
 
@@ -1093,6 +1093,9 @@ class Ui_MainWindow(object):
         self.listenerTagLabel.setText(QCoreApplication.translate("MainWindow", u"Listener Tag:", None))
         self.speakerEditLabel.setText(QCoreApplication.translate("MainWindow", u"Speaker Tag:", None))
         self.plotXpPercentLabel.setText(QCoreApplication.translate("MainWindow", u"Plot XP Percentage", None))
+#if QT_CONFIG(whatsthis)
+        self.plotIndexLabel.setWhatsThis(QCoreApplication.translate("MainWindow", u"GFF Field \"PlotIndex\" Int32", None))
+#endif // QT_CONFIG(whatsthis)
         self.plotIndexLabel.setText(QCoreApplication.translate("MainWindow", u"Plot Index:", None))
         self.rightDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"Node Fields", None))
         self.commentsEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Comments", None))

@@ -254,8 +254,11 @@
         </property>
        </spacer>
       </item>
-      <item row="2" column="2">
+      <item row="2" column="2" alignment="Qt::AlignRight">
        <widget class="QLabel" name="plotIndexLabel">
+        <property name="whatsThis">
+         <string>GFF Field &quot;PlotIndex&quot; Int32</string>
+        </property>
         <property name="text">
          <string>Plot Index:</string>
         </property>
@@ -727,7 +730,7 @@
            <widget class="QLabel" name="conditional1Label">
             <property name="minimumSize">
              <size>
-              <width>80</width>
+              <width>90</width>
               <height>0</height>
              </size>
             </property>
@@ -912,7 +915,7 @@
            <widget class="QLabel" name="conditional2Label">
             <property name="minimumSize">
              <size>
-              <width>80</width>
+              <width>90</width>
               <height>0</height>
              </size>
             </property>

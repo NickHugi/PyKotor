@@ -145,7 +145,7 @@ class GraphWidget(QGraphicsView):
             if link.node in visited:
                 continue
             visited.add(link.node)
-            angle = random.uniform(0, 360)
+            angle = random.uniform(0, 360)  # noqa: S311
             child_x = x + child_radius * math.cos(math.radians(angle))
             child_y = y + child_radius * math.sin(math.radians(angle))
 

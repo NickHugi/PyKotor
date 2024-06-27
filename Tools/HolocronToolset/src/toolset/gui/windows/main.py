@@ -257,7 +257,7 @@ class ToolWindow(QMainWindow):
         super().showEvent(event)
         self.adjustSize()
         self.setMinimumSize(
-            self.size().width() + QApplication.font().pointSize() * 2,
+            self.size().width() + QApplication.font().pointSize() * 4,
             self.size().height(),
         )
 

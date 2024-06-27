@@ -34,17 +34,7 @@
          <property name="title">
           <string>AA Settings</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <!-- Add placeholder checkboxes for AA settings -->
-          <item>
-           <widget class="QCheckBox" name="AA_ImmediateWidgetCreationCheckBox">
-            <property name="text">
-             <string>Immediate Widget Creation</string>
-            </property>
-           </widget>
-          </item>
-          <!-- Add other AA settings checkboxes as needed -->
-         </layout>
+         <layout class="QVBoxLayout" name="verticalLayout_3"/>
         </widget>
        </item>
        <item>

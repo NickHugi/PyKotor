@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy.QtCore import QSortFilterProxyModel
+from qtpy.QtCore import QSortFilterProxyModel, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
 from qtpy.QtWidgets import QAction, QApplication, QMessageBox
 
@@ -18,7 +18,7 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QModelIndex, QPersistentModelIndex
+    from qtpy.QtCore import QModelIndex
     from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
@@ -72,12 +72,13 @@ class TwoDAEditor(Editor):
 
         self.verticalHeaderOption: VerticalHeaderOption = VerticalHeaderOption.NONE
         self.verticalHeaderColumn: str = ""
+        vertHeader = self.ui.twodaTable.verticalHeader()
 
         self.model.itemChanged.connect(self.resetVerticalHeaders)
 
         self.new()
-        if "(Dark)" in GlobalSettings().selectedTheme:
-            self.ui.twodaTable.verticalHeader().setStyleSheet("""
+        if vertHeader is not None and "(Dark)" in GlobalSettings().selectedTheme:
+            vertHeader.setStyleSheet("""
                 QHeaderView::section {
                     color: rgba(255, 255, 255, 0.0);  /* Transparent text */
                     background-color: #333333;  /* Dark background */
@@ -218,10 +219,10 @@ class TwoDAEditor(Editor):
         self.model.setColumnCount(len(headers))
         self.model.setHorizontalHeaderLabels(headers)
 
-        # Disconnect the model to improve performance during updates
-        self.ui.twodaTable.setModel(None)
+        # Disconnect the model to improve performance during updates (especially for appearance.2da)
+        self.ui.twodaTable.setModel(None)  # type: ignore[arg-type]
 
-        items = []
+        items: list[list[QStandardItem]] = []
         for i, row in enumerate(twoda):
             label_item = QStandardItem(str(twoda.get_label(i)))
             font = label_item.font()
@@ -229,9 +230,7 @@ class TwoDAEditor(Editor):
             label_item.setFont(font)
             label_item.setBackground(self.palette().midlight())
             row_items = [label_item]
-            row_items.extend(
-                QStandardItem(row.get_string(header)) for header in headers[1:]
-            )
+            row_items.extend(QStandardItem(row.get_string(header)) for header in headers[1:])
             items.append(row_items)
 
         for i, row_items in enumerate(items):
@@ -239,7 +238,7 @@ class TwoDAEditor(Editor):
 
         self.resetVerticalHeaders()
         self.proxyModel.setSourceModel(self.model)
-        self.ui.twodaTable.setModel(self.proxyModel)
+        self.ui.twodaTable.setModel(self.proxyModel)  # type: ignore[arg-type]
 
         # Resize columns after model is populated
         for i in range(len(headers)):
@@ -250,28 +249,22 @@ class TwoDAEditor(Editor):
 
     def _reconstruct_menu(self, headers):
         self.ui.menuSetRowHeader.clear()
-
-        # Adding standard options with specific method connections
         action = QAction("None", self)
         action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.NONE))
-        self.ui.menuSetRowHeader.addAction(action)
+        self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
 
         action = QAction("Row Index", self)
         action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_INDEX))
-        self.ui.menuSetRowHeader.addAction(action)
+        self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
 
         action = QAction("Row Label", self)
         action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_LABEL))
-        self.ui.menuSetRowHeader.addAction(action)
-
+        self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
         self.ui.menuSetRowHeader.addSeparator()
-
-        # Adding actions for each header with a lambda to capture the current header value
         for header in headers[1:]:
             action = QAction(header, self)
-            # Correct use of lambda to ensure 'header' is captured correctly at each iteration
             action.triggered.connect(lambda _=None, h=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, h))
-            self.ui.menuSetRowHeader.addAction(action)
+            self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a 2D array from a table model.
@@ -283,16 +276,7 @@ class TwoDAEditor(Editor):
 
         Returns:
         -------
-            tuple[bytes, bytes]: A tuple containing the 2DA data and an empty string
-
-        Processing Logic:
-        ----------------
-            - Initialize an empty TwoDA object
-            - Add column headers from the table model's horizontal header
-            - Add a row for each row in the table model
-            - Set the row label and cell values from the corresponding items in the table model
-            - Serialize the TwoDA to a byte array
-            - Return the byte array and an empty string.
+            tuple[bytes, bytes]: A tuple containing the 2DA data and an unused empty bytes placeholder.
         """
         twoda = TwoDA()
 
@@ -330,7 +314,7 @@ class TwoDAEditor(Editor):
         # Select the row in the table view
         index = self.proxyModel.mapFromSource(self.model.index(row, 0))
         self.ui.twodaTable.setCurrentIndex(index)
-        self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.EnsureVisible)
+        self.ui.twodaTable.scrollTo(index, self.ui.twodaTable.EnsureVisible)  # type: ignore[arg-type]
 
         # Optionally, select the entire row
         self.ui.twodaTable.selectRow(index.row())
@@ -346,6 +330,8 @@ class TwoDAEditor(Editor):
         self.ui.filterBox.setVisible(visible)
         if visible:
             self.doFilter(self.ui.filterEdit.text())
+            self.ui.filterEdit.setFocus()
+            self.ui.filterEdit.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # type: ignore[arg-type]
         else:
             self.doFilter("")
 
@@ -370,7 +356,9 @@ class TwoDAEditor(Editor):
         right = -1
 
         for index in self.ui.twodaTable.selectedIndexes():
-            mapped_index = self.proxyModel.mapToSource(index)
+            if not index.isValid():
+                continue
+            mapped_index = self.proxyModel.mapToSource(index)  # type: ignore[arg-type]
 
             top = min([top, mapped_index.row()])
             bottom = max([bottom, mapped_index.row()])
@@ -407,8 +395,14 @@ class TwoDAEditor(Editor):
                 - Increments the row.
         """
         rows: list[str] = QApplication.clipboard().text().split("\n")
+        selectedIndexes = self.ui.twodaTable.selectedIndexes()
+        if not selectedIndexes:
+            return
+        selectedIndex = self.ui.twodaTable.selectedIndexes()[0]
+        if not selectedIndex.isValid():
+            return
 
-        topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
+        topLeftIndex = self.proxyModel.mapToSource(selectedIndex)  # type: ignore[arg-type]
         topLeftItem: QStandardItem | None = self.model.itemFromIndex(topLeftIndex)
 
         _top, left = y, x = topLeftItem.row(), topLeftItem.column()
@@ -518,8 +512,10 @@ class TwoDAEditor(Editor):
             - Populate headers list with appropriate values
             - Set vertical header item for each row using headers list values
         """
+        vertHeader = self.ui.twodaTable.verticalHeader()
+        assert vertHeader is not None
         if GlobalSettings().selectedTheme == "Default (Light)":
-            self.ui.twodaTable.verticalHeader().setStyleSheet("")
+            vertHeader.setStyleSheet("")
         headers: list[str] = []
 
         if self.verticalHeaderOption == VerticalHeaderOption.ROW_INDEX:
@@ -534,9 +530,9 @@ class TwoDAEditor(Editor):
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
             if GlobalSettings().selectedTheme == "Default (Light)":
-                self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
+                vertHeader.setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
             elif GlobalSettings().selectedTheme == "Fusion (Dark)":
-                self.ui.twodaTable.verticalHeader().setStyleSheet("""
+                vertHeader.setStyleSheet("""
                     QHeaderView::section {
                         color: rgba(255, 255, 255, 0.0);  /* Transparent text */
                         background-color: #333333;  /* Dark background */
@@ -600,7 +596,7 @@ class SortFilterProxyModel(QSortFilterProxyModel):
     def filterAcceptsRow(
         self,
         sourceRow: int,
-        sourceParent: QModelIndex | QPersistentModelIndex,
+        sourceParent: QModelIndex,
     ) -> bool:
         """Filters rows based on regular expression pattern match.
 
@@ -623,12 +619,19 @@ class SortFilterProxyModel(QSortFilterProxyModel):
             - If any cell matches, return True
         - If no cells match, return False
         """
-        pattern: str = self.filterRegExp().pattern().lower()
-        if not self.filterRegExp().pattern():
+        pattern: str = self.filterRegExp().pattern()
+        if not pattern:
             return True
-        for i in range(self.sourceModel().columnCount()):
-            index = self.sourceModel().index(sourceRow, i, sourceParent)
-            if self.sourceModel().data(index) is not None and pattern in self.sourceModel().data(index).lower():
+        caseInsensPattern = pattern.lower()
+        srcModel = self.sourceModel()
+        for i in range(srcModel.columnCount()):
+            index = srcModel.index(sourceRow, i, sourceParent)
+            if not index.isValid():
+                continue
+            data: str = srcModel.data(index)
+            if data is None:
+                continue
+            if caseInsensPattern in data.lower():
                 return True
         return False
 

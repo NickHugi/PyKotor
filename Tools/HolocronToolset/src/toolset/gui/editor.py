@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from contextlib import suppress
 import tempfile
 
 from abc import abstractmethod
+from contextlib import suppress
 from typing import TYPE_CHECKING, Callable
 
 import qtpy
@@ -82,7 +82,6 @@ class Editor(QMainWindow):
         readSupported: list[ResourceType],
         writeSupported: list[ResourceType],
         installation: HTInstallation | None = None,
-        mainWindow: QMainWindow | QWidget | None = None,
     ):
         """Initializes the editor.
 
@@ -764,10 +763,10 @@ class Editor(QMainWindow):
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
 
     def blinkWindow(self):
-        self.setWindowOpacity(0.7)
-        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
         with suppress(Exception):
             self.playSound("dr_metal_lock")
+        self.setWindowOpacity(0.7)
+        QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
 
     def play_byte_source_media(self, data: bytes | None) -> bool:
         if qtpy.API_NAME in ["PyQt5", "PySide2"]:

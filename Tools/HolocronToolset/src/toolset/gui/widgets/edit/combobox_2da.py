@@ -85,10 +85,9 @@ class ComboBox2DA(QComboBox):
             row = self.count()
         assert isinstance(text, str), f"text '{text}' ({text.__class__.__name__}) is not a str"
         assert isinstance(row, int), f"row '{row}' ({row.__class__.__name__}) is not an int"
-        display_text = f"{text} [{row}]"
+        display_text = text if text.startswith("[Modded Entry #") else f"{text} [{row}]"
         super().addItem(display_text)
 
-        # Do NOT pass the row here!
         self.setItemData(self.count() - 1, row, _ROW_INDEX_DATA_ROLE)
         self.setItemData(self.count() - 1, text, _REAL_2DA_TEXT_ROLE)
 
@@ -150,16 +149,15 @@ class ComboBox2DA(QComboBox):
         self.enableSort() if self._sortAlphabetically else self.disableSort()
 
     def updateToolTip(self):
+        rowIndexDisplay = (f"<b>Row Index:</b> {self.currentIndex()}<br>" if self.currentIndex() != -1 else "")
         if self._resname and self._this2DA:
             tooltip_text = (
                 f"<b>Filename:</b> {self._resname}.2da<br>"
-                f"<b>Row Index:</b> {self.currentIndex()}<br>"
-                "<br><i>Right-click for more options.</i>"
+                f"{rowIndexDisplay}<br><i>Right-click for more options.</i>"
             )
         else:
             tooltip_text = (
-                f"<b>Row Index:</b> {self.currentIndex()}<br>"
-                "<br><i>Right-click for more options.</i>"
+                f"{rowIndexDisplay}<br><i>Right-click for more options.</i>"
             )
         self.setToolTip(tooltip_text)
 

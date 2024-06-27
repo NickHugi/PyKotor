@@ -55,7 +55,7 @@ class CloneModuleDialog(QDialog):
             - Loads available modules into the dropdown.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint))
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs import clone_module  # noqa: PLC0415  # pylint: disable=C0415

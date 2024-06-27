@@ -15,10 +15,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QFormLayout, QGroupBox,
-    QHBoxLayout, QLabel, QLineEdit, QListWidget,
-    QListWidgetItem, QPushButton, QScrollArea, QSizePolicy,
-    QSpinBox, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QFormLayout, QGroupBox, QHBoxLayout,
+    QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QPushButton, QScrollArea, QSizePolicy, QSpinBox,
+    QVBoxLayout, QWidget)
 
 class Ui_ApplicationSettingsWidget(object):
     def setupUi(self, ApplicationSettingsWidget):
@@ -39,11 +39,6 @@ class Ui_ApplicationSettingsWidget(object):
         self.groupBoxAASettings.setObjectName(u"groupBoxAASettings")
         self.verticalLayout_3 = QVBoxLayout(self.groupBoxAASettings)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.AA_ImmediateWidgetCreationCheckBox = QCheckBox(self.groupBoxAASettings)
-        self.AA_ImmediateWidgetCreationCheckBox.setObjectName(u"AA_ImmediateWidgetCreationCheckBox")
-
-        self.verticalLayout_3.addWidget(self.AA_ImmediateWidgetCreationCheckBox)
-
 
         self.verticalLayout_2.addWidget(self.groupBoxAASettings)
 
@@ -173,7 +168,6 @@ class Ui_ApplicationSettingsWidget(object):
     def retranslateUi(self, ApplicationSettingsWidget):
         ApplicationSettingsWidget.setWindowTitle(QCoreApplication.translate("ApplicationSettingsWidget", u"Application Settings", None))
         self.groupBoxAASettings.setTitle(QCoreApplication.translate("ApplicationSettingsWidget", u"AA Settings", None))
-        self.AA_ImmediateWidgetCreationCheckBox.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Immediate Widget Creation", None))
         self.groupBoxCacheSettings.setTitle(QCoreApplication.translate("ApplicationSettingsWidget", u"Cache Settings", None))
         self.labelCacheSize.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Cache Size:", None))
         self.labelCacheDirectory.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Cache Directory:", None))

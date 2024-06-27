@@ -38,7 +38,7 @@ class FileSearcher(QDialog):
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.dialogs import search  # noqa: PLC0415  # pylint: disable=C0415

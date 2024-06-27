@@ -87,7 +87,7 @@ class GitHubFileSelector(QDialog):
         parent: QWidget | None = None
     ):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint))
         self.setWindowTitle("Select a GitHub Repository File")
         self.setMinimumSize(600, 400)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
