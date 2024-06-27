@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtWidgets import QApplication, QCheckBox, QMessageBox, QVBoxLayout
+from qtpy.QtWidgets import QApplication, QCheckBox, QMessageBox
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
-from utility.system.path import Path
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
@@ -52,13 +51,11 @@ class ApplicationSettingsWidget(SettingsWidget):
         self.populateAAGrpBox()
         self.setupValues()
         self.ui.resetAttributesButton.clicked.connect(self.resetAttributes)
-        self.ui.resetCacheSettingsButton.clicked.connect(self.resetCacheSettings)
-        self.ui.resetFilePathsButton.clicked.connect(self.resetFilePaths)
 
     def populateAAGrpBox(self):
         """Populate the AA Settings group box with checkboxes."""
         aa_layout = self.ui.groupBoxAASettings.layout()
-        for attr in dir(ApplicationSettings):
+        for attr in dir(self.settings.__class__):
             if not attr.startswith("AA_"):
                 continue
             checkBoxName = f"{attr}CheckBox"
@@ -70,38 +67,18 @@ class ApplicationSettingsWidget(SettingsWidget):
     def setupValues(self):
         """Set up the initial values for the settings."""
         self._setupAttributes()
-        self._setupCacheSettings()
-        self._setupFilePaths()
 
     def _setupAttributes(self):
-        for attr in [widget for widget in dir(self.ui) if widget.endswith("CheckBox")]:
-            checkbox: QCheckBox = getattr(self.ui, attr)
-            setting_attr = attr.replace("CheckBox", "", 1)
-            checkbox.setChecked(getattr(self.settings, setting_attr))
-            checkbox.stateChanged.connect(lambda state, name=setting_attr: setattr(self.settings, name, bool(state)))
-
-    def _setupCacheSettings(self):
-        self.ui.cacheSizeSpinBox.setValue(self.settings.cacheSize)
-        self.ui.cacheDirectoryLineEdit.setText(self.settings.cacheDirectory)
-
-    def _setupFilePaths(self):
-        self.ui.logFilePathLineEdit.setText(self.settings.logFilePath)
-        self.ui.tempFilePathLineEdit.setText(self.settings.tempFilePath)
+        for attr_name in [widget for widget in dir(self.ui) if widget.endswith("CheckBox")]:
+            checkbox: QCheckBox = getattr(self.ui, attr_name)
+            setting_attr_name: str = attr_name.replace("CheckBox", "", 1)
+            checkbox.setChecked(getattr(self.settings, setting_attr_name))
+            checkbox.stateChanged.connect(lambda state, name=setting_attr_name: setattr(self.settings, name, bool(state)))
 
     def resetAttributes(self):
         for attr in [widget for widget in dir(self) if "CheckBox" in widget]:
-            self.settings.reset_setting(attr[:-10])
+            self._reset_and_get_default(attr[:-10])
         self._setupAttributes()
-
-    def resetCacheSettings(self):
-        self.settings.reset_setting("cacheSize")
-        self.settings.reset_setting("cacheDirectory")
-        self._setupCacheSettings()
-
-    def resetFilePaths(self):
-        self.settings.reset_setting("logFilePath")
-        self.settings.reset_setting("tempFilePath")
-        self._setupFilePaths()
 
     def _registercheckbox(self, widget: QCheckBox, widgetName: str):
         attrName = widgetName.replace("CheckBox", "", 1)
@@ -110,10 +87,6 @@ class ApplicationSettingsWidget(SettingsWidget):
 
     def save(self):
         super().save()
-        self.settings.cacheSize = self.ui.cacheSizeSpinBox.value()
-        self.settings.cacheDirectory = self.ui.cacheDirectoryLineEdit.text()
-        self.settings.logFilePath = self.ui.logFilePathLineEdit.text()
-        self.settings.tempFilePath = self.ui.tempFilePathLineEdit.text()
 
     def saveApplicationAttribute(self, state: object, attr_name: str):
         if state not in (0, 2):
@@ -277,25 +250,9 @@ class ApplicationSettings(Settings):
     # endregion
 
     # region Cache Settings
-    cacheSize = Settings.addSetting(
-        "cacheSize",
-        1024 * 1024 * 100,  # 100 MB
-    )
-    cacheDirectory = Settings.addSetting(
-        "cacheDirectory",
-        str(Path.home() / ".myapp" / "cache"),
-    )
     # endregion
 
     # region File Paths
-    logFilePath = Settings.addSetting(
-        "logFilePath",
-        str(Path.home() / ".myapp" / "logs" / "app.log"),
-    )
-    tempFilePath = Settings.addSetting(
-        "tempFilePath",
-        str(Path.home() / ".myapp" / "temp"),
-    )
     # endregion
 
     # region Performance Settings

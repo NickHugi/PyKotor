@@ -32,136 +32,44 @@
        <item>
         <widget class="QGroupBox" name="groupBoxAASettings">
          <property name="title">
-          <string>AA Settings</string>
+          <string>Experimental settings (may cause app crashes)</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3"/>
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBoxCacheSettings">
-         <property name="title">
-          <string>Cache Settings</string>
-         </property>
-         <layout class="QFormLayout" name="formLayoutCacheSettings">
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelCacheSize">
-            <property name="text">
-             <string>Cache Size:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="cacheSizeSpinBox"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelCacheDirectory">
-            <property name="text">
-             <string>Cache Directory:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="cacheDirectoryLineEdit"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBoxEnvironmentVariables">
-         <property name="title">
-          <string>Environment Variables</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayoutEnvironmentVariables">
-          <item>
-           <widget class="QListWidget" name="environmentVariablesListWidget"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBoxFilePaths">
-         <property name="title">
-          <string>File Paths</string>
-         </property>
-         <layout class="QFormLayout" name="formLayoutFilePaths">
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelLogFilePath">
-            <property name="text">
-             <string>Log File Path:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="logFilePathLineEdit"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelTempFilePath">
-            <property name="text">
-             <string>Temp File Path:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="tempFilePathLineEdit"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBoxPerformanceSettings">
-         <property name="title">
-          <string>Performance Settings</string>
-         </property>
-         <layout class="QFormLayout" name="formLayoutPerformanceSettings">
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelMaxThreads">
-            <property name="text">
-             <string>Max Threads:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="maxThreadsSpinBox"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayoutButtons">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <widget class="QPushButton" name="resetAttributesButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+             <horstretch>10</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>50</height>
+            </size>
+           </property>
            <property name="text">
             <string>Reset Attributes</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="resetCacheSettingsButton">
-           <property name="text">
-            <string>Reset Cache Settings</string>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="resetEnvironmentVariablesButton">
-           <property name="text">
-            <string>Reset Environment Variables</string>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="resetFilePathsButton">
-           <property name="text">
-            <string>Reset File Paths</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="resetPerformanceSettingsButton">
-           <property name="text">
-            <string>Reset Performance Settings</string>
-           </property>
-          </widget>
+          </spacer>
          </item>
         </layout>
        </item>
