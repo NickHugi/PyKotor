@@ -177,18 +177,30 @@ def main_init():
 if __name__ == "__main__":
     main_init()
 
-    from qtpy.QtCore import QThread, Qt
+    from qtpy.QtCore import QSettings, QThread, Qt
+    from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, False)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseDesktopOpenGL, True)
 
-    app = QApplication(sys.argv)
+    # Some application settings must be set before the app starts.
+    # These ones are accessible through the in-app settings window widget.
+    app_settings = QSettings("HolocronToolsetV3", "Application")
+    for attr_name, attr_value in (
+        ("AA_PluginApplication", Qt.ApplicationAttribute.AA_PluginApplication),
+        ("AA_UseDesktopOpenGL", Qt.ApplicationAttribute.AA_UseDesktopOpenGL),
+        ("AA_UseOpenGLES", Qt.ApplicationAttribute.AA_UseOpenGLES),
+        ("AA_UseSoftwareOpenGL", Qt.ApplicationAttribute.AA_UseSoftwareOpenGL),
+        ("AA_ShareOpenGLContexts", Qt.ApplicationAttribute.AA_ShareOpenGLContexts),
+        ("AA_EnableHighDpiScaling", Qt.ApplicationAttribute.AA_EnableHighDpiScaling),
+        ("AA_DisableHighDpiScaling", Qt.ApplicationAttribute.AA_DisableHighDpiScaling),
+    ):
+        QApplication.setAttribute(attr_value, app_settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
-    font = app.font()
-    font.setPointSize(13)
-    app.setFont(font)
+    app = QApplication(sys.argv)
+    app.setFont(QFont("Roboto", 13))
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
     # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl
     # app.setAttribute(Qt.ApplicationAttribute.AA_DontCheckOpenGLContextThreadAffinity, False)
