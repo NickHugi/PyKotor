@@ -61,7 +61,7 @@ class UTCEditorTest(TestCase):
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         from toolset.gui.editors.utc import UTCEditor

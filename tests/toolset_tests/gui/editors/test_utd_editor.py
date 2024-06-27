@@ -64,7 +64,7 @@ class UTDEditorTest(TestCase):
         from toolset.data.installation import HTInstallation
 
         # Make sure to configure this environment path before testing!
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         from toolset.gui.editors.utd import UTDEditor

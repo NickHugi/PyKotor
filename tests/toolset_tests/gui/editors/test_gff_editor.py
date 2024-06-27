@@ -133,7 +133,7 @@ class GFFEditorTest(TestCase):
         if cls.K1_INSTALLATION is None:
             from toolset.data.installation import HTInstallation
 
-            cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
+            cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
         return cls.K1_INSTALLATION
 
     @classmethod
@@ -141,7 +141,7 @@ class GFFEditorTest(TestCase):
         if cls.TSL_INSTALLATION is None:
             from toolset.data.installation import HTInstallation
 
-            cls.TSL_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+            cls.TSL_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
         return cls.TSL_INSTALLATION
 
     def setUp(self):

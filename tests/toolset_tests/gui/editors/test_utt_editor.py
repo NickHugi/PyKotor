@@ -63,8 +63,8 @@ class UTTEditorTest(TestCase):
         from toolset.gui.editors.utt import UTTEditor
 
         cls.UTTEditor = UTTEditor
-        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
-        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
+        # cls.K1_INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
+        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=False)
 
     def setUp(self):
         from toolset.gui.editors.utt import UTTEditor

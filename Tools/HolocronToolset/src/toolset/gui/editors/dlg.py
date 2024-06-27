@@ -179,7 +179,7 @@ class RobustTreeView(QTreeView):
         self.layoutChangedDebounceTimer.timeout.connect(lambda: self.model().layoutChanged.emit())
 
     def fix_horizontal_scroll_bar(self):
-        self.setColumnWidth(0, 2000)
+        #self.setColumnWidth(0, 2000)
         header = self.header()
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         header.setStretchLastSection(False)
@@ -242,11 +242,13 @@ class RobustTreeView(QTreeView):
     ) -> None:
         modifiers = event.modifiers()
         response = None
-        if bool(modifiers & Qt.KeyboardModifier.ControlModifier):
-            response = self._wheel_changes_text_size(event)
-        if bool(modifiers & Qt.KeyboardModifier.ShiftModifier):
+        if bool(modifiers & Qt.KeyboardModifier.ShiftModifier) and bool(modifiers & Qt.KeyboardModifier.ControlModifier):
             response = self._wheel_changes_item_spacing(event)
-        if bool(modifiers & Qt.KeyboardModifier.AltModifier):
+        elif bool(modifiers & Qt.KeyboardModifier.ControlModifier):
+            response = self._wheel_changes_text_size(event)
+        elif bool(modifiers & Qt.KeyboardModifier.ShiftModifier):
+            response = self._wheel_changes_horizontal_scroll(event)
+        elif bool(modifiers & Qt.KeyboardModifier.AltModifier):
             response = self._wheel_changes_indent_size(event)
         if response is not True and self.hasAutoScroll():
             super().wheelEvent(event)
@@ -262,6 +264,16 @@ class RobustTreeView(QTreeView):
             return True
         return False
 
+    def _wheel_changes_horizontal_scroll(self, event: QWheelEvent) -> bool:
+        delta: int = event.angleDelta().y()
+        if not delta:
+            return True
+        delta = -1 if delta > 0 else 1
+        if self.verticalScrollMode() == self.ScrollPerItem:
+            delta *= self.text_size
+        self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta)
+        return True
+
     def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().y()
         if not delta:
@@ -273,7 +285,7 @@ class RobustTreeView(QTreeView):
         return False
 
     def _wheel_changes_indent_size(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().x()  # inversed due to AltModifier
+        delta: int = event.angleDelta().x()  # same as y() in the other funcs but returned in x() due to AltModifier I guess. Not in the documentation.
         print(f"wheel changes indent delta: {delta}")
         if not delta:
             return False

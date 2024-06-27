@@ -64,7 +64,7 @@ class TLKEditorTest(TestCase):
         cls.TLKEditor = TLKEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         self.app = QApplication([])

@@ -65,7 +65,7 @@ class AREEditorTest(TestCase):
         cls.AREEditor = AREEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         self.app = QApplication([])

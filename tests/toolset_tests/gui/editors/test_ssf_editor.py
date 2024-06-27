@@ -65,7 +65,7 @@ class SSFEditorTest(TestCase):
         cls.SSFEditor = SSFEditor
         from toolset.data.installation import HTInstallation
 
-        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=False, mainWindow=None)
+        cls.INSTALLATION = HTInstallation(K2_PATH, "", tsl=False)
 
     def setUp(self):
         self.app = QApplication([])

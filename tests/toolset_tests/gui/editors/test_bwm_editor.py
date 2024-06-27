@@ -64,8 +64,8 @@ class BWMEditorTest(TestCase):
         cls.BWMEditor = BWMEditor
         from toolset.data.installation import HTInstallation
 
-        # cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False, mainWindow=None)
-        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True, mainWindow=None)
+        # cls.INSTALLATION = HTInstallation(K1_PATH, "", tsl=False)
+        cls.K2_INSTALLATION = HTInstallation(K2_PATH, "", tsl=True)
 
     def setUp(self):
         self.app = QApplication([])

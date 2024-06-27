@@ -195,7 +195,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl!
 
-    for attr_name, attr_value in settings_widget.__class__.__dict__.items():
+    for attr_name, attr_value in settings_widget.__dict__.items():
         if not attr_name.startswith("AA_"):
             continue
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
