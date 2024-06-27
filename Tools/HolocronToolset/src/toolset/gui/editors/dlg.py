@@ -160,7 +160,7 @@ class RobustTreeView(QTreeView):
         self.setTextElideMode(Qt.TextElideMode.ElideNone)
         self.setAnimated(True)
         self.setAutoExpandDelay(2000)
-        self.setAutoScroll(True)
+        self.setAutoScroll(False)
         self.setExpandsOnDoubleClick(True)
         self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
         self.setIndentation(20)
@@ -184,7 +184,7 @@ class RobustTreeView(QTreeView):
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         header.setStretchLastSection(False)
         header.setMinimumSectionSize(self.geometry().width())
-        header.setDefaultSectionSize(self.geometry().width() * 2)
+        header.setDefaultSectionSize(self.geometry().width() * 5)
 
     def debounceLayoutChanged(self, timeout: int = 100, *, preChangeEmit: bool = False):
         self.viewport().update()
@@ -250,7 +250,9 @@ class RobustTreeView(QTreeView):
             response = self._wheel_changes_horizontal_scroll(event)
         elif bool(modifiers & Qt.KeyboardModifier.AltModifier):
             response = self._wheel_changes_indent_size(event)
-        if response is not True and self.hasAutoScroll():
+        elif not int(modifiers):  # would be zero if there are no modifiers.
+            response = self._wheel_changes_vertical_scroll(event)
+        if response is not True:
             super().wheelEvent(event)
 
     def _wheel_changes_text_size(self, event: QWheelEvent) -> bool:
@@ -268,10 +270,25 @@ class RobustTreeView(QTreeView):
         delta: int = event.angleDelta().y()
         if not delta:
             return True
-        delta = -1 if delta > 0 else 1
-        if self.verticalScrollMode() == self.ScrollPerItem:
-            delta *= self.text_size
+        if self.horizontalScrollMode() == self.ScrollPerItem:
+            delta = self.indentation() * (1 if delta > 0 else -1)
+        else:
+            delta = -self.text_size if delta > 0 else self.text_size
         self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta)
+        return True
+
+    def _wheel_changes_vertical_scroll(self, event: QWheelEvent) -> bool:
+        delta: int = event.angleDelta().y()
+        print("wheelVerticalScroll, delta: ", delta)
+        if not delta:
+            return True
+        vertScrollBar = self.verticalScrollBar()
+        if self.verticalScrollMode() == self.ScrollPerItem:
+            action = vertScrollBar.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderSingleStepAdd
+            vertScrollBar.triggerAction(action)
+        else:
+            scrollStep = -self.text_size if delta > 0 else self.text_size
+            vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
         return True
 
     def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
@@ -279,7 +296,9 @@ class RobustTreeView(QTreeView):
         if not delta:
             return False
         if self.itemDelegate() is not None:
-            self.itemDelegate().setVerticalSpacing(max(0, self.itemDelegate().customVerticalSpacing + (1 if delta > 0 else -1)))
+            single_step = (1 if delta > 0 else -1)
+            newVerticalSpacing = max(0, self.itemDelegate().customVerticalSpacing + single_step)
+            self.itemDelegate().setVerticalSpacing(newVerticalSpacing)
             self.model().layoutChanged.emit()  # requires immediate update
             return True
         return False
@@ -302,7 +321,7 @@ class RobustTreeView(QTreeView):
         assert isinstance(model, QStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
         return model
 
-    def getIdentifyingText(self, indexOrItem: QModelIndex | QStandardItem) -> str:
+    def getIdentifyingText(self, indexOrItem: QModelIndex | QStandardItem | None) -> str:
         if indexOrItem is None:
             return "(None)"
         if isinstance(indexOrItem, QStandardItem):
@@ -2531,9 +2550,8 @@ class DLGEditor(Editor):
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
         self.setWindowFlags(
             Qt.Window |
-            Qt.CustomizeWindowHint |
             Qt.WindowTitleHint |
-            Qt.WindowContextHelpButtonHint |
+            Qt.WindowMinMaxButtonsHint |
             Qt.WindowCloseButtonHint
         )
         self._installation: HTInstallation
@@ -2763,7 +2781,7 @@ Should return 1 or 0, representing a boolean.
 
         self.ui.dialogTree.expanded.connect(self.onItemExpanded)
         self.ui.dialogTree.customContextMenuRequested.connect(self.onTreeContextMenu)
-        self.ui.dialogTree.doubleClicked.connect(lambda _e: self.ui.dialogTree.selectionModel().selectedIndexes())
+        self.ui.dialogTree.doubleClicked.connect(lambda _e: self.editText(indexes=self.ui.dialogTree.selectionModel().selectedIndexes()))
         self.ui.dialogTree.selectionModel().selectionChanged.connect(self.onSelectionChanged)
 
         self.ui.actionReloadTree.triggered.connect(lambda: self._loadDLG(self.core_dlg))
@@ -3140,7 +3158,19 @@ Should return 1 or 0, representing a boolean.
 
         self._addExclusiveMenuAction(
             settingsMenu,
-            "Scroll Mode",
+            "Horizontal Scroll Mode",
+            self.ui.dialogTree.horizontalScrollMode,
+            self.ui.dialogTree.setHorizontalScrollMode,
+            options={
+                "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
+                "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
+            },
+            settings_key="horizontalScrollMode",
+        )
+
+        self._addExclusiveMenuAction(
+            settingsMenu,
+            "Vertical Scroll Mode",
             self.ui.dialogTree.verticalScrollMode,
             self.ui.dialogTree.setVerticalScrollMode,
             options={
@@ -3149,11 +3179,6 @@ Should return 1 or 0, representing a boolean.
             },
             settings_key="verticalScrollMode",
         )
-
-        self._addMenuAction(settingsMenu, "Auto Scroll (internal)",
-                            self.ui.dialogTree.hasAutoScroll,
-                            self.ui.dialogTree.setAutoScroll,
-                            settings_key="autoScroll")
 
         self._addMenuAction(settingsMenu, "Auto Fill Background",
                             self.ui.dialogTree.autoFillBackground,
@@ -3547,6 +3572,7 @@ Should return 1 or 0, representing a boolean.
         self._setupTslInstallDefs(installation)
         self.ui.soundComboBox.populateComboBox(self.all_sounds)  # noqa: SLF001
         self.ui.ambientTrackCombo.populateComboBox(self.all_sounds)
+        self.ui.ambientTrackCombo.set_button_delegate("Play", lambda text: self.playSound(text))
         installation.setupFileContextMenu(self.ui.ambientTrackCombo, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.voiceComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
