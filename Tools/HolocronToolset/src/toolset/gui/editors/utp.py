@@ -39,8 +39,6 @@ class UTPEditor(Editor):
         self,
         parent: QWidget | None,
         installation: HTInstallation = None,
-        *,
-        mainWindow: QWidget | QMainWindow | None = None,
     ):
         """Initialize Placeable Editor.
 
@@ -48,7 +46,6 @@ class UTPEditor(Editor):
         ----
             parent: {QWidget}: Parent widget
             installation: {HTInstallation}: HTInstallation object
-            mainwindow: {QWidget}: MainWindow object
 
         Processing Logic:
         ----------------

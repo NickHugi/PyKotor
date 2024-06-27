@@ -32,8 +32,6 @@ class UTSEditor(Editor):
         self,
         parent: QWidget | None,
         installation: HTInstallation = None,
-        *,
-        mainwindow: QWidget | QObject | None = None,
     ):
         """Initialize the Sound Editor window.
 

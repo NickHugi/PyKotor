@@ -267,7 +267,7 @@ class RobustTreeView(QTreeView):
         if not delta:
             return False
         if self.itemDelegate() is not None:
-            self.itemDelegate().setVerticalSpacing(max(0, self.itemDelegate().verticalSpacing + (1 if delta > 0 else -1)))
+            self.itemDelegate().setVerticalSpacing(max(0, self.itemDelegate().customVerticalSpacing + (1 if delta > 0 else -1)))
             self.model().layoutChanged.emit()  # requires immediate update
             return True
         return False
@@ -2546,10 +2546,11 @@ class DLGEditor(Editor):
         self.setupDLGTreeMVC()
         self.dlg_settings: DLGSettings = DLGSettings()
         self.whatsThisToggle: bool = False
+        self.original_tooltips: dict[QWidget, str] = {}
         self.ui.dialogTree.text_size = self.dlg_settings.fontSize(self.ui.dialogTree.text_size)
 
-        self._setupMenus()
         self._setupSignals()
+        self.setupPostUIElements()
         if installation:
             self._setupInstallation(installation)
 
@@ -2580,12 +2581,10 @@ class DLGEditor(Editor):
         self.dialog_references = None
         self.reference_history: list[tuple[list[weakref.ref[DLGLink]], str]] = []
         self.current_reference_index = -1
-        self.setupLeftDockWidget()
+        self._setupMenus()
 
         self.nodeLoadedIntoUI: bool = False
-        self.new()
         self.keysDown: set[int] = set()
-        self.original_tooltips: dict[QWidget, str] = {}
 
         # Debounce timer to delay a cpu-intensive task.
         self.voIdEditTimer.setSingleShot(True)
@@ -2593,6 +2592,7 @@ class DLGEditor(Editor):
         self.voIdEditTimer.timeout.connect(self.populateComboboxOnVoIdEditFinished)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setAllWhatsThis()
+        self.new()
 
     def setupExtraTooltipMode(self, widget: QWidget | None = None):
         if widget is None:
@@ -2765,6 +2765,9 @@ Should return 1 or 0, representing a boolean.
         self.ui.addAnimButton.clicked.connect(self.onAddAnimClicked)
         self.ui.removeAnimButton.clicked.connect(self.onRemoveAnimClicked)
         self.ui.editAnimButton.clicked.connect(self.onEditAnimClicked)
+
+    def setupPostUIElements(self):
+        self.setupLeftDockWidget()
         self._setupViewMenu()
         self.noScrollEventFilter = NoScrollEventFilter(self)
         self.noScrollEventFilter.setup_filter()
@@ -3157,7 +3160,7 @@ Should return 1 or 0, representing a boolean.
                             param_type=int)
 
         self._addMenuAction(settingsMenu, "Vertical Spacing",
-                            lambda: self.ui.dialogTree.itemDelegate().verticalSpacing,
+                            lambda: self.ui.dialogTree.itemDelegate().customVerticalSpacing,
                             lambda x: self.ui.dialogTree.itemDelegate().setVerticalSpacing(x),
                             settings_key="verticalSpacing",
                             param_type=int)

@@ -93,7 +93,6 @@ class Editor(QMainWindow):
             readSupported: list[ResourceType]: The supported resource types for reading
             writeSupported: list[ResourceType]: The supported resource types for writing
             installation: HTInstallation | None: The installation context
-            mainwindow: QMainWindow | None: The main window
 
         Initializes editor properties:
             - Sets up title, icon and parent widget
