@@ -16,7 +16,7 @@ utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
 if utility_path.exists():
     update_sys_path(utility_path)
 
-from utility.system.path import ChDir, Path  # noqa: E402
+from utility.system.path import Path  # noqa: E402
 
 # Working dir should always be 'toolset' when running this script.
 TOOLSET_DIR = Path(file_absolute_path.parents[1], "toolset")
