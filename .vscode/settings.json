@@ -1,5 +1,4 @@
 {
-  "justMyCode": false,
   "python.analysis.inlayHints.callArgumentNames": "off",
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.variableTypes": false,
@@ -10,9 +9,9 @@
     "justMyCode": true,
     "debugStdLib": false,
   },
-  "debug.allowBreakpointsEverywhere": false,
+  "debug.allowBreakpointsEverywhere": true,
   "debugStdLib": true,
-  "python.analysis.enablePytestSupport": false,
+  "python.analysis.enablePytestSupport": true,
   "python.analysis.extraPaths": [
     "./Tools/BatchPatcher/src",
     "./Tools/GuiDuplicator/src",
@@ -31,7 +30,7 @@
   },
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "python.testing.promptToConfigure": true,
-  "python.testing.pytestEnabled": false,
+  "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": true,
   "python.testing.unittestArgs": [
     "-v",
