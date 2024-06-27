@@ -134,13 +134,12 @@ class HTMLDelegate(QStyledItemDelegate):
             available_width, available_height = parentWidget.width(), parentWidget.height()
 
         # Create document to find natural size
-        doc = self.createTextDocument(html, option.font, available_height)
+        doc = self.createTextDocument(html, option.font, available_width)
         naturalWidth = int(doc.idealWidth())
         naturalHeight = int(doc.size().height())
 
         # Adjust for golden ratio, but prevent excessive white space
         golden_ratio = 1.618
-        min_width = naturalHeight * golden_ratio
         max_height = naturalWidth / golden_ratio
         adjusted_width = max(naturalWidth, available_width)
         adjusted_height = min(naturalHeight, max_height)
