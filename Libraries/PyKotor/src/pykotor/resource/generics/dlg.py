@@ -586,14 +586,14 @@ class DLGNode:
         if node_key in node_map:
             return {"type": self.__class__.__name__, "ref": node_key}
 
-        node_dict = {"type": self.__class__.__name__, "key": node_key, "data": {}}
+        node_dict: dict[str | int, Any] = {"type": self.__class__.__name__, "key": node_key, "data": {}}
         node_map[node_key] = node_dict
 
         for key, value in self.__dict__.items():
             if key.startswith("__"):
                 continue
             if key == "links":
-                links = value
+                links: list[DLGLink] = value
                 node_dict["data"][key] = {"value": [link.to_dict(node_map) for link in links], "py_type": "list"}
             elif isinstance(value, bool):
                 node_dict["data"][key] = {"value": int(value), "py_type": "bool"}
@@ -610,7 +610,7 @@ class DLGNode:
             elif isinstance(value, LocalizedString):
                 node_dict["data"][key] = {"value": value.to_dict(), "py_type": "LocalizedString"}
             elif key == "animations":
-                anims = value
+                anims: list[DLGAnimation] = value
                 node_dict["data"][key] = {"value": [anim.to_dict() for anim in anims], "py_type": "list"}
             elif isinstance(value, list):
                 node_dict["data"][key] = {"value": value, "py_type": "list"}
@@ -622,7 +622,10 @@ class DLGNode:
         return node_dict
 
     @staticmethod
-    def from_dict(data: dict[str | int, Any], node_map: dict[str | int, Any] | None = None) -> DLGEntry | DLGReply:  # noqa: C901, PLR0912
+    def from_dict(
+        data: dict[str | int, Any],
+        node_map: dict[str | int, Any] | None = None,
+    ) -> DLGEntry | DLGReply:  # noqa: C901, PLR0912
         if node_map is None:
             node_map = {}
 

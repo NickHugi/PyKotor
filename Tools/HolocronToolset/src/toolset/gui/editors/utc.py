@@ -31,7 +31,7 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtWidgets import QMainWindow, QWidget
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString

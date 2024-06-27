@@ -20,7 +20,6 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QObject
     from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QWidget
 

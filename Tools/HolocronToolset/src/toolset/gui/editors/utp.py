@@ -28,7 +28,7 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtWidgets import QMainWindow, QWidget
+    from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult
     from pykotor.resource.formats.twoda.twoda_data import TwoDA

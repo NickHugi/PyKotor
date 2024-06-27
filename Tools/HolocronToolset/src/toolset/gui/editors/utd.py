@@ -23,7 +23,6 @@ from toolset.utils.window import openResourceEditor
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QObject
     from qtpy.QtWidgets import QWidget
 
     from pykotor.extract.file import ResourceResult

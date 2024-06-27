@@ -17,7 +17,7 @@ from toolset.utils.window import addWindow
 if TYPE_CHECKING:
 
     from qtpy.QtGui import QStandardItemModel
-    from qtpy.QtWidgets import QPlainTextEdit, QWidget
+    from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
 
     from pykotor.extract.file import FileResource, LocationResult

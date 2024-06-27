@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 
 from typing import TYPE_CHECKING
@@ -134,14 +135,14 @@ class HTMLDelegate(QStyledItemDelegate):
             available_width, available_height = parentWidget.width(), parentWidget.height()
 
         # Create document to find natural size
-        doc = self.createTextDocument(html, option.font, available_width)
+        doc = self.createTextDocument(html, option.font, available_height)
         naturalWidth = int(doc.idealWidth())
         naturalHeight = int(doc.size().height())
 
-        # Adjust for golden ratio, but prevent excessive white space
-        golden_ratio = 1.618
-        max_height = naturalWidth / golden_ratio
-        adjusted_width = max(naturalWidth, available_width)
+        ratio = 1.4  # visually looks better than the golden ratio.
+        min_width = naturalHeight * ratio
+        max_height = naturalWidth / ratio
+        adjusted_width = max(naturalWidth, min_width)
         adjusted_height = min(naturalHeight, max_height)
 
         return QSize(int(adjusted_width), int(adjusted_height + self.customVerticalSpacing))

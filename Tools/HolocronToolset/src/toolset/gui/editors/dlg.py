@@ -8,7 +8,7 @@ import uuid
 import weakref
 
 from collections import deque
-from copy import copy, deepcopy
+from copy import copy
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, List, Mapping, Sequence, cast, overload
 
@@ -18,7 +18,6 @@ from qtpy import QtCore
 from qtpy.QtCore import (
     QByteArray,
     QDataStream,
-    QEvent,
     QIODevice,
     QItemSelectionModel,
     QMimeData,
@@ -58,7 +57,6 @@ from qtpy.QtWidgets import (
     QDockWidget,
     QDoubleSpinBox,
     QHBoxLayout,
-    QHeaderView,
     QInputDialog,
     QLabel,
     QLineEdit,
@@ -72,7 +70,6 @@ from qtpy.QtWidgets import (
     QSpinBox,
     QStyle,
     QToolTip,
-    QTreeView,
     QVBoxLayout,
     QWidget,
     QWidgetAction,
@@ -95,6 +92,7 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.common.style.delegates import HTMLDelegate
+from toolset.gui.common.widgets.tree import RobustTreeView
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -129,9 +127,7 @@ if TYPE_CHECKING:
         QKeyEvent,
         QMouseEvent,
         QPaintEvent,
-        QResizeEvent,
         QShowEvent,
-        QWheelEvent,
     )
     from typing_extensions import Self
 
@@ -149,203 +145,6 @@ _FUTURE_EXPAND_ROLE = Qt.ItemDataRole.UserRole + 3
 _DLG_MIME_DATA_ROLE = Qt.ItemDataRole.UserRole + 4
 _MODEL_INSTANCE_ID_ROLE = Qt.ItemDataRole.UserRole + 5
 QT_STANDARD_ITEM_FORMAT = "application/x-qabstractitemmodeldatalist"
-
-
-class RobustTreeView(QTreeView):
-    def __init__(self, parent: QWidget | None=None):
-        super().__init__(parent)
-        self.text_size: int = 12
-
-        self.setUniformRowHeights(False)
-        self.setTextElideMode(Qt.TextElideMode.ElideNone)
-        self.setAnimated(True)
-        self.setAutoExpandDelay(2000)
-        self.setAutoScroll(False)
-        self.setExpandsOnDoubleClick(True)
-        self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
-        self.setIndentation(20)
-        self.setWordWrap(True)
-        self.fix_horizontal_scroll_bar()
-        #self.setGraphicsEffect(QGraphicsEffect.)
-        self.setAlternatingRowColors(False)
-        self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
-        self.setAutoFillBackground(True)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-
-        self.layoutChangedDebounceTimer = QTimer(self)
-        self.layoutChangedDebounceTimer.setSingleShot(True)
-        self.layoutChangedDebounceTimer.timeout.connect(lambda: self.model().layoutChanged.emit())
-
-    def fix_horizontal_scroll_bar(self):
-        #self.setColumnWidth(0, 2000)
-        header = self.header()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setStretchLastSection(False)
-        header.setMinimumSectionSize(self.geometry().width())
-        header.setDefaultSectionSize(self.geometry().width() * 5)
-
-    def debounceLayoutChanged(self, timeout: int = 100, *, preChangeEmit: bool = False):
-        self.viewport().update()
-        self.update()
-        if self.layoutChangedDebounceTimer.isActive():
-            self.layoutChangedDebounceTimer.stop()
-        elif preChangeEmit:
-            self.model().layoutAboutToBeChanged.emit()
-        self.layoutChangedDebounceTimer.start(timeout)
-
-    def drawBranches(self, painter: QPainter, rect: QRect, index: QModelIndex):
-        painter.save()
-
-        # Set pen color based on level
-        pen_color = Qt.darkGray
-        pen = QPen(pen_color, 2, Qt.SolidLine)  # Increase line thickness and set color
-        painter.setPen(pen)
-
-        painter.restore()
-        super().drawBranches(painter, rect, index)
-
-    def drawCircle(self, painter: QPainter, center_x: int, center_y: int, radius: int):
-        circle_rect = QRect(center_x - radius, center_y - radius, 2 * radius, 2 * radius)
-        painter.setBrush(Qt.GlobalColor.white)  # Fill the circle with white color
-        painter.drawEllipse(circle_rect)
-
-        # Draw useful information inside the circle
-        random_number = 5
-        font = painter.font()
-        font.setPointSize(8)
-        painter.setFont(font)
-        painter.drawText(circle_rect, Qt.AlignCenter, str(random_number))
-
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() in (QEvent.Scroll, QEvent.ScrollPrepare):
-            return True  # block automated scroll events
-        return super().eventFilter(obj, event)
-
-    def itemDelegate(self, *args) -> HTMLDelegate:
-        delegate = super().itemDelegate(*args)
-        assert isinstance(delegate, HTMLDelegate)
-        return delegate
-
-    def setItemDelegate(self, delegate: HTMLDelegate):
-        assert isinstance(delegate, HTMLDelegate)
-        super().setItemDelegate(delegate)
-
-    def resizeEvent(self, event: QResizeEvent):
-        super().resizeEvent(event)
-        self.debounceLayoutChanged()
-
-    def wheelEvent(
-        self,
-        event: QWheelEvent,
-    ) -> None:
-        modifiers = event.modifiers()
-        response = None
-        if bool(modifiers & Qt.KeyboardModifier.ShiftModifier) and bool(modifiers & Qt.KeyboardModifier.ControlModifier):
-            response = self._wheel_changes_item_spacing(event)
-        elif bool(modifiers & Qt.KeyboardModifier.ControlModifier):
-            response = self._wheel_changes_text_size(event)
-        elif bool(modifiers & Qt.KeyboardModifier.ShiftModifier):
-            response = self._wheel_changes_horizontal_scroll(event)
-        elif bool(modifiers & Qt.KeyboardModifier.AltModifier):
-            response = self._wheel_changes_indent_size(event)
-        elif not int(modifiers):  # would be zero if there are no modifiers.
-            response = self._wheel_changes_vertical_scroll(event)
-        if response is not True:
-            super().wheelEvent(event)
-
-    def _wheel_changes_text_size(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().y()
-        if not delta:
-            return False
-        self.text_size = max(1, self.text_size + (1 if delta > 0 else -1))
-        if self.itemDelegate() is not None:
-            self.itemDelegate().setTextSize(self.text_size)
-            self.debounceLayoutChanged()
-            return True
-        return False
-
-    def _wheel_changes_horizontal_scroll(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().y()
-        if not delta:
-            return True
-        if self.horizontalScrollMode() == self.ScrollPerItem:
-            delta = self.indentation() * (1 if delta > 0 else -1)
-        else:
-            delta = -self.text_size if delta > 0 else self.text_size
-        self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta)
-        return True
-
-    def _wheel_changes_vertical_scroll(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().y()
-        print("wheelVerticalScroll, delta: ", delta)
-        if not delta:
-            return True
-        vertScrollBar = self.verticalScrollBar()
-        if self.verticalScrollMode() == self.ScrollPerItem:
-            action = vertScrollBar.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderSingleStepAdd
-            vertScrollBar.triggerAction(action)
-        else:
-            scrollStep = -self.text_size if delta > 0 else self.text_size
-            vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
-        return True
-
-    def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().y()
-        if not delta:
-            return False
-        if self.itemDelegate() is not None:
-            single_step = (1 if delta > 0 else -1)
-            newVerticalSpacing = max(0, self.itemDelegate().customVerticalSpacing + single_step)
-            self.itemDelegate().setVerticalSpacing(newVerticalSpacing)
-            self.model().layoutChanged.emit()  # requires immediate update
-            return True
-        return False
-
-    def _wheel_changes_indent_size(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().x()  # same as y() in the other funcs but returned in x() due to AltModifier I guess. Not in the documentation.
-        print(f"wheel changes indent delta: {delta}")
-        if not delta:
-            return False
-        if self.itemDelegate() is not None:
-            self.setIndentation(max(0, self.indentation() + (1 if delta > 0 else -1)))
-            self.debounceLayoutChanged()
-            return True
-        return False
-
-    def model(self) -> QStandardItemModel | None:
-        model = super().model()
-        if model is None:
-            return None
-        assert isinstance(model, QStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
-        return model
-
-    def getIdentifyingText(self, indexOrItem: QModelIndex | QStandardItem | None) -> str:
-        if indexOrItem is None:
-            return "(None)"
-        if isinstance(indexOrItem, QStandardItem):
-            try:
-                indexOrItem = indexOrItem.index()
-            except RuntimeError as e: # wrapped C/C++ object of type x has been deleted
-                return str(e)
-        if not isinstance(indexOrItem, QModelIndex):
-            return f"(Unknown index/item: {indexOrItem})"
-        if not indexOrItem.isValid():
-            return f"(invalid index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
-
-        item = self.model().itemFromIndex(indexOrItem)
-        if item is None:
-            return f"(no item associated with index at row '{indexOrItem.row()}', column '{indexOrItem.column()}')"
-
-        text = item.text().strip()
-        parent_count = 0
-        current_index = indexOrItem.parent()
-        while current_index.isValid():
-            parent_count += 1
-            current_index = current_index.parent()
-
-        return f"Item/Index at Row: {indexOrItem.row()}, Column: {indexOrItem.column()}, Ancestors: {parent_count}\nText for above item: {text}\n"
 
 
 class DLGListWidgetItem(QListWidgetItem):
@@ -1513,7 +1312,6 @@ class DLGStandardItemModel(QStandardItemModel):
             parentItem = self
 
         self.layoutAboutToBeChanged.emit()
-        visited: set[int] = set()
         all_entries: set[int] = {entry.list_index for entry in self.editor.core_dlg.all_entries()}
         all_replies: set[int] = {reply.list_index for reply in self.editor.core_dlg.all_replies()}
         if asNewBranches:
@@ -1530,30 +1328,31 @@ class DLGStandardItemModel(QStandardItemModel):
 
         assert pastedLink.node is not None
         queue: list[DLGNode] = [pastedLink.node]
+        visited: set[DLGNode] = set()
         while queue:
             curNode = queue.pop(0)
-            nodeHash = hash(curNode)
-            if nodeHash in visited:
+            if curNode in visited:
                 continue
-            visited.add(nodeHash)
-            if not asNewBranches and curNode not in self.nodeToItems:
+            visited.add(curNode)
+            if asNewBranches or curNode not in self.nodeToItems:
                 new_index = self._getNewNodeListIndex(curNode, all_entries, all_replies)
                 print(f"<SDM> [_integrateChildNodes scope] curNode.list_index: {curNode.list_index} --> {new_index}")
                 curNode.list_index = new_index
 
-            queue.extend([link.node for link in curNode.links if hash(link.node) not in visited and link.node is not None])
+            queue.extend(
+                [
+                    link.node
+                    for link in curNode.links
+                    if link.node is not None
+                ]
+            )
 
-        if isinstance(parentItem, DLGStandardItem):
-            assert parentItem.link is not None
-            assert parentItem.link.node is not None
-            pastedLink.is_child = True
-            parentItem.link.node.links.append(pastedLink)
-        else:
-            pastedLink.is_child = False
-            pastedLink.list_index=len(self.editor.core_dlg.starters)
-            self.editor.core_dlg.starters.append(pastedLink)
+        if asNewBranches:
+            for node in list(visited):
+                node._hash_cache = hash(uuid.uuid4().hex)  # noqa: SLF001
+
         newItem = DLGStandardItem(link=pastedLink)
-        if row is not None:
+        if row not in (-1, None):
             parentItem.insertRow(row, newItem)
         else:
             parentItem.appendRow(newItem)
@@ -1627,7 +1426,7 @@ class DLGStandardItemModel(QStandardItemModel):
                 else:
                     removeLinksRecursive(node_to_remove, child_item)
 
-        last_link, link_parent_path = removeLinksRecursive(node, self)
+        removeLinksRecursive(node, self)
         self.layoutChanged.emit()
 
     def deleteNode(self, item: DLGStandardItem):
@@ -1718,8 +1517,8 @@ class DLGStandardItemModel(QStandardItemModel):
         if (
             targetParentItem is not sourceParentItem
             and targetParentItem is not None
-            and targetParentItem.link is not None
             and sourceParentItem is not None
+            and targetParentItem.link is not None
             and sourceParentItem.link is not None
             and targetParentItem.link.node == sourceParentItem.link.node
         ):
@@ -1746,7 +1545,7 @@ class DLGStandardItemModel(QStandardItemModel):
                 self.treeView.expand(targetParentItem.index())
             else:
                 assert self.editor is not None
-                self.editor._logger.error("targetParent '%s' at row %s is invalid, cannot move item.", targetParentItem.text(), targetParentItem.row())  # noqa: SLF001
+                self.editor._logger.error("targetParentItem at row %s is invalid, cannot move item.", targetParentItem.row())  # noqa: SLF001
                 return
 
         if new_index < 0 or new_index > (targetParentItem or self).rowCount():
@@ -1754,7 +1553,7 @@ class DLGStandardItemModel(QStandardItemModel):
             return
 
         oldRow: int = item.row()
-        if sourceParentItem == targetParentItem and new_index > oldRow:
+        if sourceParentItem is targetParentItem and new_index > oldRow:
             new_index -= 1
 
         # don't call this, i've no idea why this crashes, perhaps it's made for some other widget.
@@ -1762,6 +1561,7 @@ class DLGStandardItemModel(QStandardItemModel):
         self._isMoving = True
         itemToMove = (sourceParentItem or self).takeRow(oldRow)[0]
         if targetParentItem is not None:
+            assert targetParentItem.link is not None
             self.updateItemData(targetParentItem)
             targetParentItem.insertRow(new_index, itemToMove)
             self._updateCopies(targetParentItem.link, targetParentItem)
@@ -1773,20 +1573,26 @@ class DLGStandardItemModel(QStandardItemModel):
 
 
     def _updateCopies(self, link: DLGLink, itemToIgnore: DLGStandardItem | None = None):
+        if link.node is None:
+            assert self.editor is not None
+            self.editor.blinkWindow()
+            return
+        if link.node not in self.nodeToItems:
+            return
+
         item = None
-        if link.node in self.nodeToItems:
-            items = self.nodeToItems[link.node]
-            print(f"Updating {len(items)} item(s) containing node {link.node}")
-            for item in items:
-                if item is itemToIgnore:
-                    continue
-                self.blockSignals(True)
-                self.updateItemData(item)
-                if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):  # Item's children not loaded.
-                    continue
-                item.removeRows(0, item.rowCount())
-                self.blockSignals(False)
-                self.setItemFutureExpand(item)
+        items = self.nodeToItems[link.node]
+        print(f"Updating {len(items)} total item(s) containing node {link.node}")
+        for item in items:
+            if item is itemToIgnore:
+                continue
+            self.blockSignals(True)
+            self.updateItemData(item)
+            if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):  # Item's children not loaded.
+                continue
+            item.removeRows(0, item.rowCount())
+            self.blockSignals(False)
+            self.setItemFutureExpand(item)
 
     def shiftItem(
         self,
@@ -1837,6 +1643,7 @@ class DLGStandardItemModel(QStandardItemModel):
         print("<SDM> [shiftItem scope] itemParent: ", itemParent)
         print("Item new parent after move: '%s'", itemParent.text() if itemParent else "Root")
         if isinstance(itemParent, DLGStandardItem):
+            assert itemParent.link is not None
             self._updateCopies(itemParent.link, itemParent)
 
         RobustRootLogger().info("Moved link from %s to %s", oldRow, newRow)
@@ -1913,6 +1720,7 @@ class DropTarget:
             parentItem = view.model().itemFromIndex(rootItemIndex)
         dragged_node = dragged_link.node
         assert dragged_node is not None
+        assert parentItem is not None
         assert parentItem.link is not None
         assert parentItem.link.node is not None
         node_types_match = view.bothNodesSameType(dragged_node, parentItem.link.node)
@@ -2087,7 +1895,7 @@ class DLGTreeView(RobustTreeView):
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         #self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove | QAbstractItemView.DragDropMode.DragDrop)
 
-    def model(self) -> DLGStandardItemModel:
+    def model(self) -> DLGStandardItemModel | None:
         model = super().model()
         if model is None:
             return None
@@ -2167,22 +1975,19 @@ class DLGTreeView(RobustTreeView):
             assert dragged_item.link is not None
             link_list_display = "EntriesList" if isinstance(dragged_item.link.node, DLGEntry) else "RepliesList"
             node_list_display = "EntryList" if isinstance(dragged_item.link.node, DLGEntry) else "ReplyList"
+        assert dragged_item.link is not None
+        assert dragged_item.link.node is not None
         display_text = f"{link_list_display}\\{dragged_item.link.list_index} --> {node_list_display}\\{dragged_item.link.node.list_index}"
 
-        # Set HTML content with color and text size
         html_content = f"""
         <div style="color: {color}; font-size: {self.text_size}pt;">
             {display_text}
         </div>
         """
         doc.setHtml(html_content)
-
-        # Adjust the document size and position
         doc.setDefaultFont(font)
-        doc.setTextWidth(pixmap.width() - 20)  # Adjust text width as needed
-        painter.translate(10, 50)  # Adjust translation as needed
-
-        # Draw the document content
+        doc.setTextWidth(pixmap.width() - 20)
+        painter.translate(10, 50)
         doc.drawContents(painter)
         painter.end()
 
@@ -2222,7 +2027,7 @@ class DLGTreeView(RobustTreeView):
                 continue
             seen_nodes.add(node)
             self.num_links += len(node.links)
-            queue.extend(link.node for link in node.links)
+            queue.extend(link.node for link in node.links if link.node is not None)
 
         self.num_unique_nodes = len(seen_nodes)
         print("<SDM> [calculate_links_and_nodes scope] self.num_unique_nodes: ", self.num_unique_nodes)
@@ -2585,13 +2390,14 @@ class DLGEditor(Editor):
             self._setupInstallation(installation)
 
         self.tips: list[str] = [
-            "Use the 'View' menu to customize dlg editor settings.",
+            "Use the 'View' and 'Settings' menu to customize dlg editor settings. All of your changes will be saved for next time you load the editor.",
             "Tip: Drag and Drop is supported, even between different DLGs!",
             "Tip: Hold CTRL and scroll to change the text size.",
             "Tip: Hold ALT and scroll to change the indentation.",
-            "Tip: Hold SHIFT and scroll to change the vertical spacing.",
+            "Tip: Hold CTRL+SHIFT and scroll to change the vertical spacing.",
             "Tip: 'Delete all references' will delete all EntriesList/RepliesList/StartingList links to the node, leaving it orphaned.",
-            "Tip: Drag any tree item to the left dockpanel to pin it for easy access"
+            "Tip: Drag any tree item to the left dockpanel to pin it for easy access",
+            "Tip: Orphaned Nodes will automatically be added to the top left list and can be easily reintegrated by dragging back in."
         ]
         self.tipLabel: QLabel = QLabel()
         self.tipLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
@@ -2622,6 +2428,7 @@ class DLGEditor(Editor):
         self.voIdEditTimer.timeout.connect(self.populateComboboxOnVoIdEditFinished)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setAllWhatsThis()
+        self.setupExtraTooltipMode()
         self.new()
 
     def setupExtraTooltipMode(self, widget: QWidget | None = None):
@@ -2629,12 +2436,16 @@ class DLGEditor(Editor):
             widget = self
         for child in widget.findChildren(QWidget):
             whats_this_text = child.whatsThis()
-            if whats_this_text and whats_this_text.strip():
-                if child not in self.original_tooltips:
-                    self.original_tooltips[child] = child.toolTip()
-                original_tooltip = self.original_tooltips[child]
-                new_tooltip = f"{child.whatsThis()}<br><br>{original_tooltip}"
-                child.setToolTip(new_tooltip)
+            if not whats_this_text or not whats_this_text.strip():
+                continue
+            if child not in self.original_tooltips:
+                self.original_tooltips[child] = child.toolTip()
+            original_tooltip = self.original_tooltips[child]
+            if not original_tooltip.lower().startswith("<html>"):
+                original_tooltip = f"<html>{original_tooltip}</html>"
+            new_tooltip = f"{whats_this_text}<br><br>{original_tooltip}"
+
+            child.setToolTip(new_tooltip)
 
     def revertTooltips(self):
         for widget, original_tooltip in self.original_tooltips.items():
@@ -3100,6 +2911,14 @@ Should return 1 or 0, representing a boolean.
 
         self._addMenuAction(
             viewMenu,
+            "Show/Hide Branch Connectors",
+            self.ui.dialogTree.branchConnectorsDrawn,
+            self.ui.dialogTree.drawConnectors,
+            settings_key="drawBranchConnectors",
+        )
+
+        self._addMenuAction(
+            viewMenu,
             "Animations",
             self.ui.dialogTree.isAnimated,
             self.ui.dialogTree.setAnimated,
@@ -3179,6 +2998,11 @@ Should return 1 or 0, representing a boolean.
             },
             settings_key="verticalScrollMode",
         )
+
+        self._addMenuAction(settingsMenu, "Auto Scroll (internal)",
+                            self.ui.dialogTree.hasAutoScroll,
+                            self.ui.dialogTree.setAutoScroll,
+                            settings_key="autoScroll")
 
         self._addMenuAction(settingsMenu, "Auto Fill Background",
                             self.ui.dialogTree.autoFillBackground,
@@ -3416,7 +3240,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
         self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.skippable)
-        self.ui.skippableCheckbox.setToolTip("Determines whether the user can skip any dialog node in this file or not.")
+        self.ui.skippableCheckbox.setToolTip("Should the user be allowed to skip dialog lines/cutscenes in this file?")
         self.ui.animatedCutCheckbox.setChecked(bool(dlg.animated_cut))
         self.ui.oldHitCheckbox.setChecked(dlg.old_hit_check)
         self.ui.unequipHandsCheckbox.setChecked(dlg.unequip_hands)
@@ -3465,11 +3289,14 @@ Should return 1 or 0, representing a boolean.
             self.ui.dialogTree.setStyleSheet("")
         self._focused = False
         self.core_dlg = dlg
-        self.model.origToOrphanCopy = CopySyncDict({weakref.ref(orig): copiedLink for orig, copiedLink in zip(dlg.starters, deepcopy(dlg).starters)})
+        self.model.origToOrphanCopy = {
+            weakref.ref(origLink): copiedLink
+            for origLink, copiedLink in zip(dlg.starters, [DLGLink.from_dict(link.to_dict()) for link in dlg.starters])
+        }
         self.populateComboboxOnVoIdEditFinished()
 
         self.model.resetModel()
-        assert self.model.rowCount() == 0 and self.model.columnCount() == 0, "Model is not empty after resetModel"  # noqa: PT018
+        assert self.model.rowCount() == 0 and self.model.columnCount() == 0, "Model is not empty after resetModel() call!"  # noqa: PT018
         self.model.blockSignals(True)
         for start in dlg.starters:  # descending order - matches what the game does.
             item = DLGStandardItem(link=start)
@@ -3479,9 +3306,9 @@ Should return 1 or 0, representing a boolean.
         self.orphanedNodesList.clear()
         self.orphanedNodesList.model().layoutChanged.emit()
         self.model.blockSignals(False)
-        assert self.model.rowCount() != 0, "Model is empty after _loadDLG!"  # noqa: PT018
-        assert self.model.linkToItems, "linkToItems is empty in the model"
-        assert self.model.nodeToItems, "nodeToItems is empty in the model"
+        assert self.model.rowCount() != 0, "Model is empty after _loadDLG(dlg: DLG) call!"  # noqa: PT018
+        assert self.model.linkToItems, "linkToItems is empty in the model somehow!"
+        assert self.model.nodeToItems, "nodeToItems is empty in the model somehow!"
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a dialogue from UI components."""
@@ -3837,6 +3664,7 @@ Should return 1 or 0, representing a boolean.
         if item.link is None or item.link.node is None:
             return
         link: DLGLink = item.link
+        assert link.node is not None
         if link.node in seenNodes:
             return
         seenNodes.add(link.node)
@@ -4091,7 +3919,7 @@ Should return 1 or 0, representing a boolean.
     def saveWidgetStates(self):
         """Iterates over child widgets and saves their geometry and state."""
         for widget in self.findChildren(QWidget):
-            self.dlg_settings.setWidgetGeometry(widget)
+            self.setWidgetGeometry(widget)
 
     def _handleShiftItemKeybind(self, selectedIndex: QModelIndex, selectedItem: DLGStandardItem):
         if self.keysDown in (
@@ -4620,6 +4448,8 @@ Should return 1 or 0, representing a boolean.
     def _fullyLoadFutureExpandItem(self, item: DLGStandardItem, sourceIndex: QModelIndex):
         item.removeRow(0)  # Remove the placeholder
         self.model.blockSignals(True)
+        assert item.link is not None
+        assert item.link.node is not None
         self.model.beginInsertRows(sourceIndex, 0, len(item.link.node.links)-1)
         for child_link in item.link.node.links:
             child_item = DLGStandardItem(link=child_link)
@@ -4698,6 +4528,8 @@ Should return 1 or 0, representing a boolean.
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
         dialog = EditAnimationDialog(self, self._installation)
         if dialog.exec_():
+            assert item.link is not None
+            assert item.link.node is not None
             item.link.node.animations.append(dialog.animation())
             self.refreshAnimList()
 
@@ -4713,8 +4545,14 @@ Should return 1 or 0, representing a boolean.
         index: QModelIndex = selectedTreeIndexes[0]
         print("<SDM> [onAddAnimClicked scope] QModelIndex: ", self.ui.dialogTree.getIdentifyingText(index))
         item: DLGStandardItem | None = self.model.itemFromIndex(index)
-        animItem: QListWidgetItem = selectedAnimItems[0]
+        if item is None:
+            print("onRemoveAnimClicked: itemFromIndex returned None")
+            self.blinkWindow()
+            return
+        animItem: QListWidgetItem = selectedAnimItems[0]  # type: ignore[arg-type]
         anim: DLGAnimation = animItem.data(Qt.ItemDataRole.UserRole)
+        assert item.link is not None
+        assert item.link.node is not None
         item.link.node.animations.remove(anim)
         self.refreshAnimList()
 
@@ -4727,7 +4565,7 @@ Should return 1 or 0, representing a boolean.
         if not selectedAnimItems:
             QMessageBox(QMessageBox.Icon.Information, "No animations selected", "Select an existing animation from the above list first.").exec_()
             return
-        animItem: QListWidgetItem = selectedAnimItems[0]
+        animItem: QListWidgetItem = selectedAnimItems[0]  # type: ignore[arg-type]
         anim: DLGAnimation = animItem.data(Qt.ItemDataRole.UserRole)
         dialog = EditAnimationDialog(self, self._installation, anim)
         if dialog.exec_():
@@ -4742,6 +4580,9 @@ Should return 1 or 0, representing a boolean.
     def refreshAnimList(self):
         """Refreshes the animations list."""
         self.ui.animsList.clear()
+        animations_2da: TwoDA | None= self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
+        if animations_2da is None:
+            print(f"refreshAnimList: {HTInstallation.TwoDA_DIALOG_ANIMS}.2da not found.")
 
         for index in self.ui.dialogTree.selectedIndexes():
             print("<SDM> [onAddAnimClicked scope] QModelIndex: ", self.ui.dialogTree.getIdentifyingText(index))
@@ -4750,7 +4591,6 @@ Should return 1 or 0, representing a boolean.
             item: DLGStandardItem | None = self.model.itemFromIndex(index)
             if item is None or item.link is None or item.link.node is None:
                 continue
-            animations_2da: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
             for anim in item.link.node.animations:
                 name: str = str(anim.animation_id)
                 if animations_2da.get_height() > anim.animation_id:
@@ -4797,18 +4637,9 @@ class ReferenceChooserDialog(QDialog):
                 link_parent_path = ""
 
             # Build the HTML display
-            color = "red" if isinstance(item.link.node, DLGEntry) else "blue"
-            display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_parent_path}{link_partial_path}</div>"
-            display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
-            combined_display = f"""
-            <div class='link-container'>
-                {display_text_1}
-                {display_text_2}
-            </div>
-            """
-            item.setData(Qt.ItemDataRole.DisplayRole, combined_display)
+            self.listWidget.updateItem(item)
             self.listWidget.addItem(item)
-            max_width = max(max_width, self.calculate_html_width(combined_display))
+            max_width = max(max_width, self.calculate_html_width(item.data(Qt.ItemDataRole.DisplayRole)))
 
         buttonLayout = QHBoxLayout()
         self.backButton = QPushButton()

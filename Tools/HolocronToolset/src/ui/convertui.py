@@ -16,7 +16,7 @@ utility_path = file_absolute_path.parents[4] / "Libraries" / "Utility" / "src"
 if utility_path.exists():
     update_sys_path(utility_path)
 
-from utility.system.path import Path  # noqa: E402
+from utility.system.path import ChDir, Path  # noqa: E402
 
 # Working dir should always be 'toolset' when running this script.
 TOOLSET_DIR = Path(file_absolute_path.parents[1], "toolset")
@@ -84,7 +84,7 @@ def compile_ui(qt_version: str, *, ignore_timestamp: bool = False):
 
 
 def compile_qrc(qt_version: str, *, ignore_timestamp: bool = False):
-    qrc_source: Path = Path(QRC_SOURCE_PATH).resolve()
+    qrc_source: Path = QRC_SOURCE_PATH.resolve()
     qrc_target = Path(QRC_TARGET_PATH, f"resources_rc_{qt_version}.py").resolve()
 
     if not qrc_target.parent.safe_isdir():

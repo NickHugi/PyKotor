@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, ClassVar
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtWidgets import QApplication, QCheckBox, QMessageBox
+from qtpy.QtWidgets import QApplication, QCheckBox
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
