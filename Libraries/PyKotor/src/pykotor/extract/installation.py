@@ -143,7 +143,7 @@ class Installation:
         multithread: bool = False,
         progress_callback: Callable[[int | str, Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]], Any] | None = None
     ):
-        self.use_multithreading: bool = multithread
+        self.use_multithreading: bool = multithread  # Tested. Slower on my machine (th3w1zard1)
 
         self._log: Logger = RobustRootLogger()
         self._path: CaseAwarePath = CaseAwarePath.pathify(path)
@@ -484,7 +484,7 @@ class Installation:
             return {}
 
         self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
-        files_iter = path.safe_rglob("*") if recurse else path.safe_iterdir()
+        files_iter = r_path.safe_rglob("*") if recurse else r_path.safe_iterdir()
 
         resources_dict: dict[str, list[FileResource]] = {}
 
