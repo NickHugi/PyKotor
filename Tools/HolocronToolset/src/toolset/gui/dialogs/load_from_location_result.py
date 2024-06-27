@@ -1188,7 +1188,7 @@ if __name__ == "__main__":
     search.append(installation._modules["danm13.mod"][3])
 
     window = FileSelectionWindow(search, installation)
-    HTInstallation.from_base_instance(installation, window)
+    HTInstallation.from_base_instance(installation)
     window.show()
     window.activateWindow()
     app.exec_()
