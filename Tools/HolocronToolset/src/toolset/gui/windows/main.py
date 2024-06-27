@@ -524,13 +524,13 @@ class ToolWindow(QMainWindow):
         app.setPalette(app.style().standardPalette())
         for widget in app.allWidgets():
             widget.setStyleSheet("")
-        if not self.settings.selectedTheme or self.settings.selectedTheme == "Default (Light)":
+        if not self.settings.selectedTheme or self.settings.selectedTheme == "Native (Light)":
             app.setStyle(self.original_style)
             app.setPalette(self.original_palette)
         elif self.settings.selectedTheme == "Fusion (Light)":
             app.setStyle("Fusion")
             app.setPalette(self.original_palette)
-        elif self.settings.selectedTheme == "Default (Dark)":
+        elif self.settings.selectedTheme == "Native (Dark)":
             self.setStyleSheet("""
     QMenuBar {
         background-color: #353535;

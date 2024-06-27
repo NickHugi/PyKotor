@@ -686,12 +686,12 @@
   </action>
   <action name="defaultLight">
    <property name="text">
-    <string>Default (Light)</string>
+    <string>Native (Light)</string>
    </property>
   </action>
   <action name="defaultDark">
    <property name="text">
-    <string>Default (Dark)</string>
+    <string>Native (Dark)</string>
    </property>
   </action>
   <action name="fusionLight">

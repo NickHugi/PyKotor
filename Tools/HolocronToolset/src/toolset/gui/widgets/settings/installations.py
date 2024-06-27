@@ -290,7 +290,7 @@ class GlobalSettings(Settings):
     )
     selectedTheme = Settings.addSetting(
         "selectedTheme",
-        "Default (Light)",  # Default theme
+        "Fusion (Light)",  # Default theme
     )
     moduleSortOption = Settings.addSetting(
         "moduleSortOption",
