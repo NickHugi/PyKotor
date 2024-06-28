@@ -801,7 +801,7 @@ class Editor(QMainWindow):
             return True
         raise RuntimeError(f"Unsupported QT_API value: {qtpy.API_NAME}")
 
-    def playSound(self, resname: str) -> bool:
+    def playSound(self, resname: str, order: list[SearchLocation] | None = None) -> bool:
         """Plays a sound resource."""
         if not resname or not resname.strip() or self._installation is None:
             self.blinkWindow()
@@ -811,7 +811,7 @@ class Editor(QMainWindow):
 
         data: bytes | None = self._installation.sound(
             resname,
-            [
+            order if order is not None else [
                 SearchLocation.MUSIC,
                 SearchLocation.VOICE,
                 SearchLocation.SOUND,
