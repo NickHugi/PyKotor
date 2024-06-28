@@ -3523,7 +3523,6 @@ Should return 1 or 0, representing a boolean.
 
     def _checkClipboardForJsonNode(self):
         clipboard_text = QApplication.clipboard().text()
-        print("<SDM> [_checkClipboardForJsonNode scope] clipboard_text: ", clipboard_text)
 
         try:
             node_data = json.loads(clipboard_text)
