@@ -164,7 +164,7 @@ class RobustTreeView(QTreeView):
 
     def _wheel_changes_vertical_scroll(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().y()
-        print("wheelVerticalScroll, delta: ", delta)
+        #print("wheelVerticalScroll, delta: ", delta)
         if not delta:
             return True
         vertScrollBar = self.verticalScrollBar()
@@ -199,7 +199,7 @@ class RobustTreeView(QTreeView):
 
     def _wheel_changes_indent_size(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().x()  # same as y() in the other funcs but returned in x() due to AltModifier I guess. Not in the documentation.
-        print(f"wheel changes indent delta: {delta}")
+        #print(f"wheel changes indent delta: {delta}")
         if not delta:
             return False
         if self.itemDelegate() is not None:
