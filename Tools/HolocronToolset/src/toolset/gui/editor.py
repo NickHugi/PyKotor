@@ -761,9 +761,10 @@ class Editor(QMainWindow):
             else:
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
 
-    def blinkWindow(self):
-        with suppress(Exception):
-            self.playSound("dr_metal_lock")
+    def blinkWindow(self, *, sound: bool = True):
+        if sound:
+            with suppress(Exception):
+                self.playSound("dr_metal_lock")
         self.setWindowOpacity(0.7)
         QTimer.singleShot(125, lambda: self.setWindowOpacity(1))
 
@@ -804,7 +805,7 @@ class Editor(QMainWindow):
     def playSound(self, resname: str, order: list[SearchLocation] | None = None) -> bool:
         """Plays a sound resource."""
         if not resname or not resname.strip() or self._installation is None:
-            self.blinkWindow()
+            self.blinkWindow(sound=False)
             return False
 
         self.player.stop()
@@ -820,7 +821,7 @@ class Editor(QMainWindow):
             ],
         )
         if not data:
-            self.blinkWindow()
+            self.blinkWindow(sound=False)
         return self.play_byte_source_media(data)
 
     def removeTempAudioFile(
