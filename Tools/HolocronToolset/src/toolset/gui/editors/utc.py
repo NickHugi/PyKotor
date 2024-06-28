@@ -102,7 +102,7 @@ class UTCEditor(Editor):
         self.new()
 
         # Connect the new context menu and tooltip actions
-        self.ui.portraitPicture.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.portraitPicture.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
         self.ui.portraitPicture.customContextMenuRequested.connect(self._portraitContextMenu)
         self.ui.portraitPicture.setToolTip(self._generatePortraitTooltip(asHtml=True))
 
@@ -152,8 +152,7 @@ class UTCEditor(Editor):
 
         contextMenu.exec_(self.ui.portraitPicture.mapToGlobal(position))
 
-    # TODO Rename this here and in `_generatePortraitTooltip` and `_portraitContextMenu`
-    def _getPortraitResRef(self):
+    def _getPortraitResRef(self) -> str:
         index = self.ui.portraitSelect.currentIndex()
         alignment = self.ui.alignmentSlider.value()
         portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)

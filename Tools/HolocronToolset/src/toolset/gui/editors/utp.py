@@ -58,7 +58,7 @@ class UTPEditor(Editor):
             7. Update 3D preview and call new() to initialize editor.
         """
         supported = [ResourceType.UTP, ResourceType.BTP]
-        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainWindow)
+        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._placeables2DA = installation.htGetCache2DA("placeables")
