@@ -340,7 +340,7 @@ def debug_reload_pymodules():
                 safe_object_setattr(loaded_module, "__mtime__", last_file_modified_time)
             if last_file_modified_time <= current_mtime:
                 continue  # No changes on disk, skip reloading
-            logic_to_use = -1
+            logic_to_use = 0
             if logic_to_use < 1:
                 reloaded_module = importlib.reload(loaded_module)
                 safe_object_setattr(reloaded_module, "__mtime__", last_file_modified_time)
