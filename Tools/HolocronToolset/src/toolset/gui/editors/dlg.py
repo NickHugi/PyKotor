@@ -2396,6 +2396,7 @@ class DLGEditor(Editor):
         self.tips: list[str] = [
             "Use the 'View' and 'Settings' menu to customize dlg editor settings. All of your changes will be saved for next time you load the editor.",
             "Tip: Drag and Drop is supported, even between different DLGs!",
+            "Tip: Accidentally closed something? Right click the Menu to reopen the dock panels.",
             "Tip: Hold CTRL and scroll to change the text size.",
             "Tip: Hold ALT and scroll to change the indentation.",
             "Tip: Hold CTRL+SHIFT and scroll to change the vertical spacing.",
@@ -3288,8 +3289,8 @@ Should return 1 or 0, representing a boolean.
             self.blinkWindow()
             return
         print("voIdEditTimer debounce finished, populate voiceComboBox with new VO_ID filter...")
-        if self.core_dlg.vo_id and self.core_dlg.vo_id.strip():
-            vo_id_lower = self.core_dlg.vo_id.lower()
+        vo_id_lower = self.ui.voIdEdit.text().strip().lower()
+        if vo_id_lower:
             filtered_voices = [voice for voice in self.all_voices if vo_id_lower in voice.lower()]
             print(f"filtered {len(self.all_voices)} voices to {len(filtered_voices)} by substring vo_id '{vo_id_lower}'")
         else:
@@ -4352,7 +4353,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.computerSelect.setWhatsThis("Field: ComputerType\nType: Int32")
         self.ui.onAbortCombo.setWhatsThis("Field: EndConverAbort\nType: ResRef")
         self.ui.convoEndsScriptLabel.setWhatsThis("Label for Conversation Ends script")
-        self.ui.convoTypeLabel.setWhatsThis("Label for Conversation Type field")
+        self.ui.convoTypeLabel.setWhatsThis("Label for Conversation Type field\nBIF dialogs use Type 3.")
         self.ui.ambientTrackLabel.setWhatsThis("Label for Ambient Track field")
         self.ui.convoAbortsScriptLabel.setWhatsThis("Label for Conversation Aborts script")
         self.ui.voIdEdit.setWhatsThis("Field: VO_ID\nType: String")
