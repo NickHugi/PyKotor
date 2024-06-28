@@ -226,8 +226,8 @@ class FilterComboBox(QComboBox):
         old_width = self.width()
         max_width = old_width
         delegate = self.itemDelegate()
-        max_items_to_measure = 20
-        extra_padding = 25
+        max_items_to_measure = 1000
+        extra_padding = 50
         for i in range(min(self.model().rowCount(), max_items_to_measure)):
             item_width = delegate.sizeHint(QStyleOptionViewItem(), self.model().index(i, 0)).width()
             if item_width > max_width:
