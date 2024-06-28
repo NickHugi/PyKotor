@@ -10,9 +10,8 @@ from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 from utility.error_handling import universal_simplify_exception
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QStandardItemModel
     from qtpy.QtCore import QPoint
-    from qtpy.QtGui import QPaintEvent
+    from qtpy.QtGui import QPaintEvent, QStandardItemModel
     from qtpy.QtWidgets import QWidget
 
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -30,6 +29,7 @@ class ComboBox2DA(QComboBox):
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
         self.currentIndexChanged.connect(self.onCurrentIndexChanged)
+        self.setToolTip("<i>Right click for more options</i>")
 
         self._sortAlphabetically: bool = False
         self._this2DA: TwoDA | None = None
@@ -41,7 +41,9 @@ class ComboBox2DA(QComboBox):
         if super().currentIndex() == -1:
             painter = QPainter(self)
             painter.setPen(QPen(QColor(0, 0, 0)))
-            painter.drawText(self.rect(), QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft, self.placeholderText())
+            text_rect = self.rect().adjusted(2, 0, 0, 0)
+            painter.drawText(text_rect, QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft, self.placeholderText())
+            painter.end()
 
     def currentIndex(self) -> int:
         """Returns the row index from the currently selected item: This is NOT the index into the combobox like it would be with a normal QCombobox.
