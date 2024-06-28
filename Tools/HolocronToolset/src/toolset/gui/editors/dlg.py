@@ -3415,6 +3415,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.soundComboBox.populateComboBox(self.all_sounds)  # noqa: SLF001
         self.ui.ambientTrackCombo.populateComboBox(self.all_sounds + self.all_music)
         self.ui.ambientTrackCombo.set_button_delegate("Play", lambda text: self.playSound(text))
+        installation.setupFileContextMenu(self.ui.cameraModelSelect, [ResourceType.MDL], [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
         installation.setupFileContextMenu(self.ui.ambientTrackCombo, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.voiceComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
