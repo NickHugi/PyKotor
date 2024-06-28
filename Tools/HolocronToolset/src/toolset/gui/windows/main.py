@@ -1400,24 +1400,8 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             QMessageBox(QMessageBox.Icon.Information, "No installation loaded.", "Load an installation before opening the Module Designer.").exec_()
             return
-        if getattr(self, "moduleDesignerLoadProcessed", True):
-            self.moduleDesignerLoadProcessed = False
-
-            # Uncomment this block to start Module Designer in new process
-            import multiprocessing
-            module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
-            print("<SDM> [openModuleDesigner scope] module_path: ", module_path)
-
-            process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
-            print("<SDM> [openModuleDesigner scope] process: ", process)
-
-            process.start()
-            QTimer.singleShot(500, self.debounceModuleDesignerLoad)
-            BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
-        else:
-            return
-        #designer = ModuleDesigner(None, self.active)
-        #addWindow(designer, show=False)
+        designer = ModuleDesigner(None, self.active)
+        addWindow(designer, show=False)
 
     def openSettingsDialog(self):
         """Opens the Settings dialog and refresh installation combo list if changes."""
