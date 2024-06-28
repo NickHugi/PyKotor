@@ -812,6 +812,7 @@ class Editor(QMainWindow):
         data: bytes | None = self._installation.sound(
             resname,
             [
+                SearchLocation.MUSIC,
                 SearchLocation.VOICE,
                 SearchLocation.SOUND,
                 SearchLocation.OVERRIDE,
