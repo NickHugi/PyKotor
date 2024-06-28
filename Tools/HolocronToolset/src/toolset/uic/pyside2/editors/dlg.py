@@ -176,7 +176,7 @@ class Ui_MainWindow(object):
         self.scrollArea_rightDock.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 337, 1097))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 348, 1026))
         self.verticalLayout_rightDock = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_rightDock.setSpacing(0)
         self.verticalLayout_rightDock.setObjectName(u"verticalLayout_rightDock")
@@ -195,7 +195,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.script1Label = QLabel(self.scrollAreaWidgetContents)
         self.script1Label.setObjectName(u"script1Label")
-        self.script1Label.setMinimumSize(QSize(80, 0))
+        self.script1Label.setMinimumSize(QSize(100, 0))
         self.script1Label.setAlignment(Qt.AlignCenter)
 
         self.horizontalLayout.addWidget(self.script1Label, 0, Qt.AlignRight|Qt.AlignVCenter)
@@ -283,10 +283,10 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.script2Label = QLabel(self.scrollAreaWidgetContents)
         self.script2Label.setObjectName(u"script2Label")
-        self.script2Label.setMinimumSize(QSize(80, 0))
+        self.script2Label.setMinimumSize(QSize(100, 0))
         self.script2Label.setAlignment(Qt.AlignCenter)
 
-        self.horizontalLayout_2.addWidget(self.script2Label, 0, Qt.AlignRight|Qt.AlignVCenter)
+        self.horizontalLayout_2.addWidget(self.script2Label, 0, Qt.AlignLeft|Qt.AlignVCenter)
 
         self.script2ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.script2ResrefEdit.setObjectName(u"script2ResrefEdit")
@@ -378,9 +378,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
         self.conditional1Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional1Label.setObjectName(u"conditional1Label")
-        self.conditional1Label.setMinimumSize(QSize(90, 0))
+        sizePolicy2 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.conditional1Label.sizePolicy().hasHeightForWidth())
+        self.conditional1Label.setSizePolicy(sizePolicy2)
+        self.conditional1Label.setMinimumSize(QSize(100, 0))
 
-        self.horizontalLayout_3.addWidget(self.conditional1Label, 0, Qt.AlignVCenter)
+        self.horizontalLayout_3.addWidget(self.conditional1Label, 0, Qt.AlignLeft|Qt.AlignVCenter)
 
         self.condition1ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.condition1ResrefEdit.setObjectName(u"condition1ResrefEdit")
@@ -467,9 +472,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.conditional2Label = QLabel(self.scrollAreaWidgetContents)
         self.conditional2Label.setObjectName(u"conditional2Label")
-        self.conditional2Label.setMinimumSize(QSize(90, 0))
+        sizePolicy2.setHeightForWidth(self.conditional2Label.sizePolicy().hasHeightForWidth())
+        self.conditional2Label.setSizePolicy(sizePolicy2)
+        self.conditional2Label.setMinimumSize(QSize(100, 0))
 
-        self.horizontalLayout_4.addWidget(self.conditional2Label, 0, Qt.AlignVCenter)
+        self.horizontalLayout_4.addWidget(self.conditional2Label, 0, Qt.AlignLeft|Qt.AlignVCenter)
 
         self.condition2ResrefEdit = FilterComboBox(self.scrollAreaWidgetContents)
         self.condition2ResrefEdit.setObjectName(u"condition2ResrefEdit")
@@ -870,7 +877,7 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(Qt.RightDockWidgetArea, self.rightDockWidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 854, 22))
+        self.menubar.setGeometry(QRect(0, 0, 854, 21))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuTools = QMenu(self.menubar)
@@ -878,34 +885,12 @@ class Ui_MainWindow(object):
         MainWindow.setMenuBar(self.menubar)
         self.topDockWidget = QDockWidget(MainWindow)
         self.topDockWidget.setObjectName(u"topDockWidget")
-        self.topDockWidget.setMinimumSize(QSize(684, 148))
+        self.topDockWidget.setMinimumSize(QSize(717, 148))
         self.topDockWidgetContents = QWidget()
         self.topDockWidgetContents.setObjectName(u"topDockWidgetContents")
         self.topGridLayout = QGridLayout(self.topDockWidgetContents)
         self.topGridLayout.setObjectName(u"topGridLayout")
         self.topGridLayout.setContentsMargins(6, -1, -1, -1)
-        self.ambientTrackCombo = FilterComboBox(self.topDockWidgetContents)
-        self.ambientTrackCombo.setObjectName(u"ambientTrackCombo")
-
-        self.topGridLayout.addWidget(self.ambientTrackCombo, 1, 5, 1, 1)
-
-        self.voiceOverIDLabel = QLabel(self.topDockWidgetContents)
-        self.voiceOverIDLabel.setObjectName(u"voiceOverIDLabel")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.voiceOverIDLabel.sizePolicy().hasHeightForWidth())
-        self.voiceOverIDLabel.setSizePolicy(sizePolicy2)
-
-        self.topGridLayout.addWidget(self.voiceOverIDLabel, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.computerTypeLabel = QLabel(self.topDockWidgetContents)
-        self.computerTypeLabel.setObjectName(u"computerTypeLabel")
-        sizePolicy2.setHeightForWidth(self.computerTypeLabel.sizePolicy().hasHeightForWidth())
-        self.computerTypeLabel.setSizePolicy(sizePolicy2)
-
-        self.topGridLayout.addWidget(self.computerTypeLabel, 3, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
-
         self.conversationSelect = QComboBox(self.topDockWidgetContents)
         self.conversationSelect.addItem("")
         self.conversationSelect.addItem("")
@@ -917,71 +902,6 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.conversationSelect, 2, 1, 1, 1)
 
-        self.computerSelect = QComboBox(self.topDockWidgetContents)
-        self.computerSelect.addItem("")
-        self.computerSelect.addItem("")
-        self.computerSelect.setObjectName(u"computerSelect")
-        self.computerSelect.setMinimumSize(QSize(160, 0))
-
-        self.topGridLayout.addWidget(self.computerSelect, 3, 1, 1, 1)
-
-        self.onAbortCombo = FilterComboBox(self.topDockWidgetContents)
-        self.onAbortCombo.setObjectName(u"onAbortCombo")
-        self.onAbortCombo.setMinimumSize(QSize(160, 0))
-
-        self.topGridLayout.addWidget(self.onAbortCombo, 1, 1, 1, 1)
-
-        self.convoEndsScriptLabel = QLabel(self.topDockWidgetContents)
-        self.convoEndsScriptLabel.setObjectName(u"convoEndsScriptLabel")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
-        self.convoEndsScriptLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.convoEndsScriptLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.convoTypeLabel = QLabel(self.topDockWidgetContents)
-        self.convoTypeLabel.setObjectName(u"convoTypeLabel")
-        sizePolicy3.setHeightForWidth(self.convoTypeLabel.sizePolicy().hasHeightForWidth())
-        self.convoTypeLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.convoTypeLabel, 2, 0, 1, 1, Qt.AlignHCenter|Qt.AlignVCenter)
-
-        self.ambientTrackLabel = QLabel(self.topDockWidgetContents)
-        self.ambientTrackLabel.setObjectName(u"ambientTrackLabel")
-
-        self.topGridLayout.addWidget(self.ambientTrackLabel, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
-        self.convoAbortsScriptLabel = QLabel(self.topDockWidgetContents)
-        self.convoAbortsScriptLabel.setObjectName(u"convoAbortsScriptLabel")
-        sizePolicy3.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
-        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy3)
-
-        self.topGridLayout.addWidget(self.convoAbortsScriptLabel, 1, 0, 1, 1, Qt.AlignVCenter)
-
-        self.voIdEdit = QLineEdit(self.topDockWidgetContents)
-        self.voIdEdit.setObjectName(u"voIdEdit")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.voIdEdit.sizePolicy().hasHeightForWidth())
-        self.voIdEdit.setSizePolicy(sizePolicy4)
-
-        self.topGridLayout.addWidget(self.voIdEdit, 0, 5, 1, 1)
-
-        self.onEndEdit = FilterComboBox(self.topDockWidgetContents)
-        self.onEndEdit.setObjectName(u"onEndEdit")
-        self.onEndEdit.setMinimumSize(QSize(160, 0))
-        self.onEndEdit.setMaximumSize(QSize(160, 16777215))
-
-        self.topGridLayout.addWidget(self.onEndEdit, 0, 1, 1, 1)
-
-        self.delayEntryLabel = QLabel(self.topDockWidgetContents)
-        self.delayEntryLabel.setObjectName(u"delayEntryLabel")
-
-        self.topGridLayout.addWidget(self.delayEntryLabel, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
-
         self.replyDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
         sizePolicy.setHeightForWidth(self.replyDelaySpin.sizePolicy().hasHeightForWidth())
@@ -990,6 +910,46 @@ class Ui_MainWindow(object):
         self.replyDelaySpin.setMaximum(2147483647)
 
         self.topGridLayout.addWidget(self.replyDelaySpin, 0, 3, 1, 1)
+
+        self.voIdEdit = QLineEdit(self.topDockWidgetContents)
+        self.voIdEdit.setObjectName(u"voIdEdit")
+        sizePolicy2.setHeightForWidth(self.voIdEdit.sizePolicy().hasHeightForWidth())
+        self.voIdEdit.setSizePolicy(sizePolicy2)
+
+        self.topGridLayout.addWidget(self.voIdEdit, 0, 5, 1, 1)
+
+        self.convoTypeLabel = QLabel(self.topDockWidgetContents)
+        self.convoTypeLabel.setObjectName(u"convoTypeLabel")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.convoTypeLabel.sizePolicy().hasHeightForWidth())
+        self.convoTypeLabel.setSizePolicy(sizePolicy3)
+
+        self.topGridLayout.addWidget(self.convoTypeLabel, 2, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.skippableCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
+
+        self.topGridLayout.addWidget(self.skippableCheckbox, 2, 2, 1, 1, Qt.AlignLeft)
+
+        self.unequipAllCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
+
+        self.topGridLayout.addWidget(self.unequipAllCheckbox, 3, 3, 1, 1, Qt.AlignLeft)
+
+        self.convoEndsScriptLabel = QLabel(self.topDockWidgetContents)
+        self.convoEndsScriptLabel.setObjectName(u"convoEndsScriptLabel")
+        sizePolicy3.setHeightForWidth(self.convoEndsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoEndsScriptLabel.setSizePolicy(sizePolicy3)
+
+        self.topGridLayout.addWidget(self.convoEndsScriptLabel, 0, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.onAbortCombo = FilterComboBox(self.topDockWidgetContents)
+        self.onAbortCombo.setObjectName(u"onAbortCombo")
+        self.onAbortCombo.setMinimumSize(QSize(160, 0))
+
+        self.topGridLayout.addWidget(self.onAbortCombo, 1, 1, 1, 1)
 
         self.delayReplyLabel = QLabel(self.topDockWidgetContents)
         self.delayReplyLabel.setObjectName(u"delayReplyLabel")
@@ -1005,48 +965,98 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.entryDelaySpin, 1, 3, 1, 1)
 
-        self.skippableCheckbox = QCheckBox(self.topDockWidgetContents)
-        self.skippableCheckbox.setObjectName(u"skippableCheckbox")
-        sizePolicy.setHeightForWidth(self.skippableCheckbox.sizePolicy().hasHeightForWidth())
-        self.skippableCheckbox.setSizePolicy(sizePolicy)
+        self.onEndEdit = FilterComboBox(self.topDockWidgetContents)
+        self.onEndEdit.setObjectName(u"onEndEdit")
+        self.onEndEdit.setMinimumSize(QSize(160, 0))
+        self.onEndEdit.setMaximumSize(QSize(160, 16777215))
 
-        self.topGridLayout.addWidget(self.skippableCheckbox, 2, 2, 1, 1, Qt.AlignLeft)
+        self.topGridLayout.addWidget(self.onEndEdit, 0, 1, 1, 1)
 
-        self.unequipHandsCheckbox = QCheckBox(self.topDockWidgetContents)
-        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
+        self.convoAbortsScriptLabel = QLabel(self.topDockWidgetContents)
+        self.convoAbortsScriptLabel.setObjectName(u"convoAbortsScriptLabel")
+        sizePolicy3.setHeightForWidth(self.convoAbortsScriptLabel.sizePolicy().hasHeightForWidth())
+        self.convoAbortsScriptLabel.setSizePolicy(sizePolicy3)
 
-        self.topGridLayout.addWidget(self.unequipHandsCheckbox, 3, 2, 1, 1, Qt.AlignLeft)
-
-        self.unequipAllCheckbox = QCheckBox(self.topDockWidgetContents)
-        self.unequipAllCheckbox.setObjectName(u"unequipAllCheckbox")
-        sizePolicy.setHeightForWidth(self.unequipAllCheckbox.sizePolicy().hasHeightForWidth())
-        self.unequipAllCheckbox.setSizePolicy(sizePolicy)
-
-        self.topGridLayout.addWidget(self.unequipAllCheckbox, 3, 3, 1, 1, Qt.AlignLeft)
-
-        self.animatedCutCheckbox = QCheckBox(self.topDockWidgetContents)
-        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
-        sizePolicy.setHeightForWidth(self.animatedCutCheckbox.sizePolicy().hasHeightForWidth())
-        self.animatedCutCheckbox.setSizePolicy(sizePolicy)
-
-        self.topGridLayout.addWidget(self.animatedCutCheckbox, 2, 3, 1, 1, Qt.AlignLeft)
-
-        self.cameraModelLabel = QLabel(self.topDockWidgetContents)
-        self.cameraModelLabel.setObjectName(u"cameraModelLabel")
-        sizePolicy2.setHeightForWidth(self.cameraModelLabel.sizePolicy().hasHeightForWidth())
-        self.cameraModelLabel.setSizePolicy(sizePolicy2)
-
-        self.topGridLayout.addWidget(self.cameraModelLabel, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+        self.topGridLayout.addWidget(self.convoAbortsScriptLabel, 1, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
         self.cameraModelSelect = FilterComboBox(self.topDockWidgetContents)
         self.cameraModelSelect.setObjectName(u"cameraModelSelect")
 
         self.topGridLayout.addWidget(self.cameraModelSelect, 2, 5, 1, 1)
 
+        self.ambientTrackLabel = QLabel(self.topDockWidgetContents)
+        self.ambientTrackLabel.setObjectName(u"ambientTrackLabel")
+
+        self.topGridLayout.addWidget(self.ambientTrackLabel, 1, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.computerTypeLabel = QLabel(self.topDockWidgetContents)
+        self.computerTypeLabel.setObjectName(u"computerTypeLabel")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.computerTypeLabel.sizePolicy().hasHeightForWidth())
+        self.computerTypeLabel.setSizePolicy(sizePolicy4)
+
+        self.topGridLayout.addWidget(self.computerTypeLabel, 3, 0, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.delayEntryLabel = QLabel(self.topDockWidgetContents)
+        self.delayEntryLabel.setObjectName(u"delayEntryLabel")
+
+        self.topGridLayout.addWidget(self.delayEntryLabel, 0, 2, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.voiceOverIDLabel = QLabel(self.topDockWidgetContents)
+        self.voiceOverIDLabel.setObjectName(u"voiceOverIDLabel")
+
+        self.topGridLayout.addWidget(self.voiceOverIDLabel, 0, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.unequipHandsCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.unequipHandsCheckbox.setObjectName(u"unequipHandsCheckbox")
+
+        self.topGridLayout.addWidget(self.unequipHandsCheckbox, 3, 2, 1, 1, Qt.AlignLeft)
+
+        self.cameraModelLabel = QLabel(self.topDockWidgetContents)
+        self.cameraModelLabel.setObjectName(u"cameraModelLabel")
+
+        self.topGridLayout.addWidget(self.cameraModelLabel, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
+
+        self.ambientTrackCombo = FilterComboBox(self.topDockWidgetContents)
+        self.ambientTrackCombo.setObjectName(u"ambientTrackCombo")
+
+        self.topGridLayout.addWidget(self.ambientTrackCombo, 1, 5, 1, 1)
+
+        self.animatedCutCheckbox = QCheckBox(self.topDockWidgetContents)
+        self.animatedCutCheckbox.setObjectName(u"animatedCutCheckbox")
+
+        self.topGridLayout.addWidget(self.animatedCutCheckbox, 2, 3, 1, 1, Qt.AlignLeft)
+
+        self.computerSelect = QComboBox(self.topDockWidgetContents)
+        self.computerSelect.addItem("")
+        self.computerSelect.addItem("")
+        self.computerSelect.setObjectName(u"computerSelect")
+        self.computerSelect.setMinimumSize(QSize(160, 0))
+
+        self.topGridLayout.addWidget(self.computerSelect, 3, 1, 1, 1)
+
         self.oldHitCheckbox = QCheckBox(self.topDockWidgetContents)
         self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")
 
-        self.topGridLayout.addWidget(self.oldHitCheckbox, 3, 4, 1, 1)
+        self.topGridLayout.addWidget(self.oldHitCheckbox, 3, 4, 1, 1, Qt.AlignLeft)
+
+        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.topGridLayout.addItem(self.horizontalSpacer_10, 2, 6, 1, 1)
+
+        self.horizontalSpacer_11 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.topGridLayout.addItem(self.horizontalSpacer_11, 1, 6, 1, 1)
+
+        self.horizontalSpacer_12 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.topGridLayout.addItem(self.horizontalSpacer_12, 0, 6, 1, 1)
+
+        self.horizontalSpacer_13 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.topGridLayout.addItem(self.horizontalSpacer_13, 3, 6, 1, 1)
 
         self.topDockWidget.setWidget(self.topDockWidgetContents)
         MainWindow.addDockWidget(Qt.TopDockWidgetArea, self.topDockWidget)
@@ -1148,28 +1158,28 @@ class Ui_MainWindow(object):
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
         self.topDockWidget.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Globals", None))
-        self.voiceOverIDLabel.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
-        self.computerTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
         self.conversationSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Human", None))
         self.conversationSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Computer", None))
         self.conversationSelect.setItemText(2, QCoreApplication.translate("MainWindow", u"Type 3", None))
         self.conversationSelect.setItemText(3, QCoreApplication.translate("MainWindow", u"Type 4", None))
         self.conversationSelect.setItemText(4, QCoreApplication.translate("MainWindow", u"Type 5", None))
 
+        self.convoTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
+        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
+        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
+        self.convoEndsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends:", None))
+        self.delayReplyLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
+        self.convoAbortsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts:", None))
+        self.ambientTrackLabel.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
+        self.computerTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Computer Type:", None))
+        self.delayEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
+        self.voiceOverIDLabel.setText(QCoreApplication.translate("MainWindow", u"Voiceover ID:", None))
+        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
+        self.cameraModelLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
+        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
         self.computerSelect.setItemText(0, QCoreApplication.translate("MainWindow", u"Modern", None))
         self.computerSelect.setItemText(1, QCoreApplication.translate("MainWindow", u"Ancient", None))
 
-        self.convoEndsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Ends:", None))
-        self.convoTypeLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Type:", None))
-        self.ambientTrackLabel.setText(QCoreApplication.translate("MainWindow", u"Ambient Track:", None))
-        self.convoAbortsScriptLabel.setText(QCoreApplication.translate("MainWindow", u"Conversation Aborts:", None))
-        self.delayEntryLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before entry:", None))
-        self.delayReplyLabel.setText(QCoreApplication.translate("MainWindow", u"Delay before reply:", None))
-        self.skippableCheckbox.setText(QCoreApplication.translate("MainWindow", u"Skippable", None))
-        self.unequipHandsCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip Hands", None))
-        self.unequipAllCheckbox.setText(QCoreApplication.translate("MainWindow", u"Unequip All", None))
-        self.animatedCutCheckbox.setText(QCoreApplication.translate("MainWindow", u"Animated Cut", None))
-        self.cameraModelLabel.setText(QCoreApplication.translate("MainWindow", u"Camera Model:", None))
         self.oldHitCheckbox.setText(QCoreApplication.translate("MainWindow", u"Old Hit Check", None))
     # retranslateUi
 

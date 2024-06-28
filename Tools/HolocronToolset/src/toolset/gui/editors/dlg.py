@@ -701,7 +701,7 @@ class DLGStandardItemModel(QStandardItemModel):
         self.treeView: DLGTreeView = parent
         self.linkToItems: weakref.WeakKeyDictionary[DLGLink, list[DLGStandardItem]] = weakref.WeakKeyDictionary()
         self.nodeToItems: weakref.WeakKeyDictionary[DLGNode, list[DLGStandardItem]] = weakref.WeakKeyDictionary()
-        self.origToOrphanCopy: CopySyncDict
+        self.origToOrphanCopy: dict[weakref.ReferenceType[DLGLink], DLGLink]
         super().__init__(self.treeView)
         self.modelReset.connect(self.onModelReset)
         self.coreDLGItemDataChanged.connect(self.onDialogItemDataChanged)
@@ -1047,6 +1047,7 @@ class DLGStandardItemModel(QStandardItemModel):
             parent.removeRow(item_row)
             self.updateItemData(parent)
             self._updateCopies(parent.link, parent)
+        self.layoutChanged.emit()
 
     def _addLinkToParent(self, parent: DLGStandardItem, item: DLGStandardItem) -> None:
         assert item.link is not None
@@ -1099,11 +1100,12 @@ class DLGStandardItemModel(QStandardItemModel):
         if item not in linkToItems:
             linkToItems.append(item)
         current_index = {link: idx for idx, link in enumerate(links_list)}.get(item.link)
-        if current_index is not None and current_index != index:
-            links_list.pop(current_index)
-            if current_index < index:
-                index -= 1
-        links_list.insert(index, item.link)
+        if current_index != index:
+            if current_index is not None:
+                links_list.pop(current_index)
+                if current_index < index:
+                    index -= 1
+            links_list.insert(index, item.link)
         for i, link in enumerate(links_list):
             link.list_index = i
         copiedLink = self.origToOrphanCopy.get(item._link_ref)
@@ -1120,22 +1122,17 @@ class DLGStandardItemModel(QStandardItemModel):
             if copyLink in seenLinks:
                 return
             seenLinks.add(copyLink)
+            assert origLink is not copyLink
+            assert origLink.node is not None
+            assert copyLink.node is not None
             self.origToOrphanCopy[weakref.ref(origLink)] = copyLink
             for childOrigLink, childCopyLink in zip(origLink.node.links, copyLink.node.links):
                 register_deepcopies(childOrigLink, childCopyLink, seenLinks)
-            parent_path = origLink.node.path()
-            weakref.finalize(origLink.node, self.onOrphanedNode, copyLink, parent_path)
+            if not any(info.weakref() is origLink.node for info in weakref.finalize._registry.values()):
+                #print(f"_processLink: Creating finalizer for {potential_orphan!r}")
+                weakref.finalize(origLink.node, self.onOrphanedNode, copyLink, origLink.node.path())
 
         register_deepcopies(item.link, copiedLink)
-
-        parent_path = item.data(_LINK_PARENT_NODE_PATH_ROLE)
-        potential_orphan = item.link.node
-
-        # Ensure there is no existing finalizer for the potential orphan node
-        finalize_registry = weakref.finalize._registry
-        if not any(info.weakref() is potential_orphan for info in finalize_registry.values()):
-            #print(f"_processLink: Creating finalizer for {potential_orphan!r}")
-            weakref.finalize(potential_orphan, self.onOrphanedNode, copiedLink, parent_path)
 
     def _removeLinkFromParent(
         self,
@@ -1180,9 +1177,7 @@ class DLGStandardItemModel(QStandardItemModel):
             if copyLink in seenLinks:
                 return None
             seenLinks.add(copyLink)
-            if origLink is copyLink:
-                print(f"Creating new original link (from copy): {copyLink}")
-                origLink = copy(copyLink)
+            assert origLink is not copyLink
             orig_link_ref = weakref.ref(origLink)
             self.origToOrphanCopy[orig_link_ref] = copyLink
             for childOrigLink, childCopyLink in zip(origLink.node.links, copyLink.node.links):
@@ -1193,7 +1188,7 @@ class DLGStandardItemModel(QStandardItemModel):
         if copiedLink is None:
             copiedLink = self.origToOrphanCopy.get(itemToLoad._link_ref)
             if copiedLink is None:
-                #RobustRootLogger().info(f"Creating new internal copy of {itemToLoad.link!r}")
+                RobustRootLogger().info(f"Creating new internal copy of {itemToLoad.link!r}")
                 copiedLink = DLGLink.from_dict(itemToLoad.link.to_dict())
                 register_deepcopies(itemToLoad.link, copiedLink)
             child_links_copy = [None] * len(itemToLoad.link.node.links)
@@ -1257,22 +1252,19 @@ class DLGStandardItemModel(QStandardItemModel):
     def addRootNode(self):
         """Adds a root node to the dialog graph."""
         assert self.editor is not None
-        source, targetLinks = DLGEntry(), self.editor.core_dlg.starters
-        newLink: DLGLink = DLGLink(source)
-        print("<SDM> [_coreAddNode scope] newLink: ", newLink)
-
-        newLink.list_index = len(targetLinks)
-        print("<SDM> [_coreAddNode scope] newLink.list_index: ", newLink.list_index)
-
-        targetLinks.append(newLink)
+        newLink: DLGLink = DLGLink(DLGEntry())
         newLink.node.list_index = self._getNewNodeListIndex(newLink.node)
         self.appendRow(DLGStandardItem(link=newLink))
+        print("<SDM> [_coreAddNode scope] newLink: ", newLink)
+        print("<SDM> [_coreAddNode scope] newLink.list_index: ", newLink.list_index)
+        print("<SDM> [_coreAddNode scope] newLink.node.list_index: ", newLink.node.list_index)
 
     def addChildToItem(self, parentItem: DLGStandardItem, link: DLGLink | None = None) -> DLGStandardItem:
         """Helper method to update the UI with the new link."""
         if link is None:
-            link = DLGLink(DLGEntry() if isinstance(parentItem.link.node, DLGReply) else DLGReply())
-            link.node.list_index = self._getNewNodeListIndex(link.node)
+            newNode = DLGEntry() if isinstance(parentItem.link.node, DLGReply) else DLGReply()
+            newNode.list_index = self._getNewNodeListIndex(newNode)
+            link = DLGLink(newNode)
         newItem = DLGStandardItem(link=link)
         self.updateItemData(newItem)
         parentItem.appendRow(newItem)
@@ -1354,13 +1346,13 @@ class DLGStandardItemModel(QStandardItemModel):
         else:
             parentLinksList = parentItem.link.node.links
         newItem = DLGStandardItem(link=pastedLink)
-        self.blockSignals(True)
         if row not in (-1, None, parentItem.rowCount()):
-            parentLinksList.insert(row, pastedLink)
+            #parentLinksList.insert(row, pastedLink)
             parentItem.insertRow(row, newItem)
         else:
-            parentLinksList.append(pastedLink)
+            #parentLinksList.append(pastedLink)
             parentItem.appendRow(newItem)
+        self.blockSignals(True)
         self.updateItemData(newItem)
         if pastedLink in self.linkToItems:
             self.setItemFutureExpand(newItem)
@@ -2402,6 +2394,7 @@ class DLGEditor(Editor):
             "Use the 'View' and 'Settings' menu to customize dlg editor settings. All of your changes will be saved for next time you load the editor.",
             "Tip: Drag and Drop is supported, even between different DLGs!",
             "Tip: Accidentally closed something? Right click the Menu to reopen the dock panels.",
+            "Tip: All Entry nodes must contain at least one Reply node, even a blank one is required to end the dialog."
             "Tip: Hold CTRL and scroll to change the text size.",
             "Tip: Hold ALT and scroll to change the indentation.",
             "Tip: Hold CTRL+SHIFT and scroll to change the vertical spacing.",
@@ -2468,7 +2461,7 @@ class DLGEditor(Editor):
         super().showEvent(event)
         #QTimer.singleShot(50, lambda *args: self.setSecondaryWidgetPosition(self.ui.rightDockWidget, "right"))  # type: ignore[arg-type]
         QTimer.singleShot(0, lambda *args: self.showScrollingTip())
-        self.adjustSize()
+        self.resize(self.width()+200, self.height())
 
     def showScrollingTip(self):
         tip = random.choice(self.tips)  # noqa: S311
@@ -3640,8 +3633,8 @@ Should return 1 or 0, representing a boolean.
             if item is not None:
                 restoreAction = menu.addAction("Insert Orphaned at Selected Point")
                 restoreAction.triggered.connect(lambda: self.restoreOrphanedNode(item.link))
-            else:
-                menu.addAction("Clear orphans list.").triggered.connect(sourceWidget.clear)
+                menu.addSeparator()
+            menu.addAction("Clear orphans list.").triggered.connect(sourceWidget.clear)
         elif item is None and isinstance(sourceWidget, DLGListWidget):
             menu.addAction("Clear List").triggered.connect(sourceWidget.clear)
 
@@ -3849,6 +3842,12 @@ Should return 1 or 0, representing a boolean.
         else:
             self.blinkWindow()
 
+    def get_link_ref(self, link: DLGLink):
+        for ref, copiedLink in self.model.origToOrphanCopy.items():
+            if copiedLink == link:
+                return ref
+        raise KeyError(repr(link))
+
     def findReferences(self, item: DLGStandardItem | DLGListWidgetItem):
         assert item.link is not None
         assert item.link.node is not None
@@ -3856,7 +3855,7 @@ Should return 1 or 0, representing a boolean.
         self.reference_history = self.reference_history[:self.current_reference_index + 1]
         item_html = item.data(Qt.ItemDataRole.DisplayRole)
         self.current_reference_index += 1
-        references = [self.model.origToOrphanCopy.get_link_ref(link) for link in self.core_dlg.getAllNodeReferences(node)]
+        references = [self.get_link_ref(link) for link in self.core_dlg.getAllNodeReferences(node)]
         self.reference_history.append((references, item_html))
         self.show_reference_dialog(references, item_html)
 
@@ -4232,7 +4231,7 @@ Should return 1 or 0, representing a boolean.
         updateLabel(self.ui.voiceLabel, self.ui.voiceComboBox, "")
         updateLabel(self.ui.cameraIdLabel, self.ui.cameraIdSpin, -1)
         updateLabel(self.ui.cameraAnimLabel, self.ui.cameraAnimSpin, (0, -1))
-        updateLabel(self.ui.cameraVidEffectLabel, self.ui.cameraEffectSelect, 0)
+        updateLabel(self.ui.cameraVidEffectLabel, self.ui.cameraEffectSelect, -1)
         updateLabel(self.ui.cameraAngleLabel, self.ui.cameraAngleSelect, "Auto")
         updateLabel(self.ui.nodeIdLabel, self.ui.nodeIdSpin, (0, -1))
         updateLabel(self.ui.alienRaceNodeLabel, self.ui.alienRaceNodeSpin, 0)
