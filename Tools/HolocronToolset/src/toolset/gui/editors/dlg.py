@@ -1045,6 +1045,7 @@ class DLGStandardItemModel(QStandardItemModel):
             assert parent.link is not None
             print("<SDM> [removeLink scope] parent: %s", parent.text())
             parent.removeRow(item_row)
+            self.updateItemData(parent)
             self._updateCopies(parent.link, parent)
 
     def _addLinkToParent(self, parent: DLGStandardItem, item: DLGStandardItem) -> None:
@@ -1105,10 +1106,8 @@ class DLGStandardItemModel(QStandardItemModel):
         links_list.insert(index, item.link)
         for i, link in enumerate(links_list):
             link.list_index = i
-        if item._link_ref in self.origToOrphanCopy:  # noqa: SLF001
-            return
         copiedLink = self.origToOrphanCopy.get(item._link_ref)
-        if copiedLink() is not None:
+        if copiedLink is not None:
             return
         RobustRootLogger().debug(f"Creating internal copy of {item.link!r} now.")
         copiedLink = DLGLink.from_dict(item.link.to_dict())
@@ -1308,8 +1307,6 @@ class DLGStandardItemModel(QStandardItemModel):
         pastedLink = self.editor._copy if pastedLink is None else pastedLink  # noqa: SLF001
         assert pastedLink is not None
         assert pastedLink.node is not None
-        if parentItem is None:
-            parentItem = self
 
         self.layoutAboutToBeChanged.emit()
         all_entries: set[int] = {entry.list_index for entry in self.editor.core_dlg.all_entries()}
@@ -1351,12 +1348,19 @@ class DLGStandardItemModel(QStandardItemModel):
             for node in list(visited):
                 node._hash_cache = hash(uuid.uuid4().hex)  # noqa: SLF001
 
+        if parentItem is None:
+            parentItem = self
+            parentLinksList = self.editor.core_dlg.starters
+        else:
+            parentLinksList = parentItem.link.node.links
         newItem = DLGStandardItem(link=pastedLink)
-        if row not in (-1, None):
+        self.blockSignals(True)
+        if row not in (-1, None, parentItem.rowCount()):
+            parentLinksList.insert(row, pastedLink)
             parentItem.insertRow(row, newItem)
         else:
+            parentLinksList.append(pastedLink)
             parentItem.appendRow(newItem)
-        self.blockSignals(True)
         self.updateItemData(newItem)
         if pastedLink in self.linkToItems:
             self.setItemFutureExpand(newItem)
@@ -2046,7 +2050,7 @@ class DLGTreeView(RobustTreeView):
         drag.exec_(self.model().supportedDragActions())
         print("\nperformDrag: completely done")
 
-    def prepareDrag(self, index: QModelIndex | None = None, event: QDragEnterEvent | QDragMoveEvent | QDropEvent = None) -> bool:
+    def prepareDrag(self, index: QModelIndex | None = None, event: QDragEnterEvent | QDragMoveEvent | QDropEvent | None = None) -> bool:
         print(f"{self.__class__.__name__}.\nprepareDrag(index={index}, event={event})")
         if self.draggedItem is not None:
             return True
@@ -2126,7 +2130,10 @@ class DLGTreeView(RobustTreeView):
             return
 
         print("<SDM> [dragMoveEvent scope], event mimedata matches our format.")
-        if self.draggedItem is None and self.draggedLink is None:
+        if self.draggedItem is not None:
+            assert self.draggedItem.link is not None
+            self.draggedLink = self.draggedItem.link
+        elif self.draggedLink is None:
             RobustRootLogger().error("dragMoveEvent called before prepareDrag. This is an error/oversight: dragEnterEvent should have picked this up first. rectifying now....")
             if not self.prepareDrag(event=event):
                 self.setInvalidDragDrop(event)
@@ -2138,9 +2145,6 @@ class DLGTreeView(RobustTreeView):
                 self.setInvalidDragDrop(event)
                 super().dragMoveEvent(event)
                 return
-        else:
-            assert self.draggedItem.link is not None
-            self.draggedLink = self.draggedItem.link
 
         if self.dropTarget is not None:
             self.itemDelegate().nudgedModelIndexes.clear()
@@ -2438,12 +2442,14 @@ class DLGEditor(Editor):
             whats_this_text = child.whatsThis()
             if not whats_this_text or not whats_this_text.strip():
                 continue
+            if "<br>" in child.toolTip():  # FIXME: existing html tooltips for some reason become plaintext when setToolTip is called more than once.
+                continue
             if child not in self.original_tooltips:
                 self.original_tooltips[child] = child.toolTip()
             original_tooltip = self.original_tooltips[child]
-            if not original_tooltip.lower().startswith("<html>"):
-                original_tooltip = f"<html>{original_tooltip}</html>"
-            new_tooltip = f"{whats_this_text}<br><br>{original_tooltip}"
+            new_tooltip = whats_this_text
+            if original_tooltip and original_tooltip.strip():
+                new_tooltip += f"\n\n{original_tooltip}"
 
             child.setToolTip(new_tooltip)
 
@@ -2941,6 +2947,12 @@ Should return 1 or 0, representing a boolean.
             settings_key="alternatingRowColors",
         )
 
+        self._addMenuAction(viewMenu, "Tree Indentation",
+                            self.ui.dialogTree.indentation,
+                            self.ui.dialogTree.setIndentation,
+                            settings_key="indentation",
+                            param_type=int)
+
         self._addColorMenuAction(
             viewMenu,
             "Set Entry Text Color",
@@ -3049,13 +3061,6 @@ Should return 1 or 0, representing a boolean.
 
         # Advanced Menu: Miscellaneous advanced settings
         advancedMenu = viewMenu.addMenu("Advanced")
-        self._addMenuAction(advancedMenu, "Tree Indentation",
-                            self.ui.dialogTree.indentation,
-                            self.ui.dialogTree.setIndentation,
-                            settings_key="indentation",
-                            param_type=int)
-
-        # Refresh Menu: Refresh/Update actions
         refreshMenu = advancedMenu.addMenu("Refresh")
         treeMenu = refreshMenu.addMenu("TreeView")
         self._addSimpleAction(treeMenu, "Repaint", self.ui.dialogTree.repaint)
@@ -3082,6 +3087,8 @@ Should return 1 or 0, representing a boolean.
 
         windowMenu = refreshMenu.addMenu("Window")
         self._addSimpleAction(windowMenu, "Repaint", lambda: self.repaint)
+
+        #self.dlg_settings.loadAll(self)
 
 
     def setTSLWidgetHandling(self, state: str):
@@ -3921,27 +3928,32 @@ Should return 1 or 0, representing a boolean.
         for widget in self.findChildren(QWidget):
             self.setWidgetGeometry(widget)
 
-    def _handleShiftItemKeybind(self, selectedIndex: QModelIndex, selectedItem: DLGStandardItem):
+    def _handleShiftItemKeybind(self, selectedIndex: QModelIndex, selectedItem: DLGStandardItem, key: QtKey):
+        aboveIndex = self.ui.dialogTree.indexAbove(selectedIndex)
+        belowIndex = self.ui.dialogTree.indexBelow(selectedIndex)
         if self.keysDown in (
             {QtKey.Key_Shift, QtKey.Key_Up},
             {QtKey.Key_Shift, QtKey.Key_Up, QtKey.Key_Alt},
         ):
-            newIndex = self.ui.dialogTree.indexAbove(selectedIndex)
-            print("<SDM> [keyPressEvent scope] newIndex: %s", newIndex)
+            print("<SDM> [_handleShiftItemKeybind scope] aboveIndex: %s", aboveIndex)
 
-            if newIndex.isValid():
-                self.ui.dialogTree.setCurrentIndex(newIndex)
+            if aboveIndex.isValid():
+                self.ui.dialogTree.setCurrentIndex(aboveIndex)
             self.model.shiftItem(selectedItem, -1, noSelectionUpdate=True)
-        if self.keysDown in (
+        elif self.keysDown in (
             {QtKey.Key_Shift, QtKey.Key_Down},
             {QtKey.Key_Shift, QtKey.Key_Down, QtKey.Key_Alt},
         ):
-            newIndex = self.ui.dialogTree.indexBelow(selectedIndex)
-            print("<SDM> [keyPressEvent scope] newIndex: %s", newIndex)
+            belowIndex = self.ui.dialogTree.indexBelow(selectedIndex)
+            print("<SDM> [_handleShiftItemKeybind scope] belowIndex: %s", belowIndex)
 
-            if newIndex.isValid():
-                self.ui.dialogTree.setCurrentIndex(newIndex)
+            if belowIndex.isValid():
+                self.ui.dialogTree.setCurrentIndex(belowIndex)
             self.model.shiftItem(selectedItem, 1, noSelectionUpdate=True)
+        elif aboveIndex.isValid() and key in (QtKey.Key_Up,) and not self.ui.dialogTree.visualRect(aboveIndex).contains(self.ui.dialogTree.viewport().rect()):
+            self.ui.dialogTree.scrollSingleStep("up")
+        elif belowIndex.isValid() and key in (QtKey.Key_Down,) and not self.ui.dialogTree.visualRect(belowIndex).contains(self.ui.dialogTree.viewport().rect()):
+            self.ui.dialogTree.scrollSingleStep("down")
 
     def keyPressEvent(
         self,
@@ -3974,7 +3986,7 @@ Should return 1 or 0, representing a boolean.
             print("DLGEditor.keyPressEvent: event is auto repeat and/or key already in keysDown set.")
             if key in (QtKey.Key_Up, QtKey.Key_Down):
                 self.keysDown.add(key)
-                self._handleShiftItemKeybind(selectedIndex, selectedItem)
+                self._handleShiftItemKeybind(selectedIndex, selectedItem, key)
             return  # Ignore auto-repeat events and prevent multiple executions on single key
         print(f"DLGEditor.keyPressEvent: {getQtKeyString(key)}, held: {'+'.join([getQtKeyString(k) for k in iter(self.keysDown)])}")
         assert selectedItem.link is not None
@@ -4009,7 +4021,7 @@ Should return 1 or 0, representing a boolean.
             return
 
         self.keysDown.add(key)
-        self._handleShiftItemKeybind(selectedIndex, selectedItem)
+        self._handleShiftItemKeybind(selectedIndex, selectedItem, key)
         if self.keysDown in (
             {QtKey.Key_Shift, QtKey.Key_Return},
             {QtKey.Key_Shift, QtKey.Key_Enter},
@@ -4247,7 +4259,6 @@ Should return 1 or 0, representing a boolean.
         self.ui.actionReloadTree.setWhatsThis("Reload the dialogue tree")
         self.ui.actionUnfocus.setWhatsThis("Unfocus the current selection")
 
-        self.ui.dialogTree.setWhatsThis("The dialogue tree view")
         self.ui.questEdit.setWhatsThis("Field: Quest\nType: String")
         self.ui.plotXpSpin.setWhatsThis("Field: PlotXPPercentage\nType: Float")
         self.ui.questEntryLabel.setWhatsThis("Label for Quest Entry field")
@@ -4292,19 +4303,19 @@ Should return 1 or 0, representing a boolean.
         self.ui.condition2Param4Spin.setWhatsThis("Field: Param4b\nType: Int32")
         self.ui.condition2Param5Spin.setWhatsThis("Field: Param5b\nType: Int32")
         self.ui.condition2Param6Edit.setWhatsThis("Field: ParamStrB\nType: String")
-        self.ui.condition1NotCheckbox.setWhatsThis("Field: Not\nType: Boolean")
-        self.ui.condition2NotCheckbox.setWhatsThis("Field: Not2\nType: Boolean")
+        self.ui.condition1NotCheckbox.setWhatsThis("Field: Not\nType: UInt8 (boolean)")
+        self.ui.condition2NotCheckbox.setWhatsThis("Field: Not2\nType: UInt8 (boolean)")
         self.ui.emotionSelect.setWhatsThis("Field: Emotion\nType: Int32")
         self.ui.expressionSelect.setWhatsThis("Field: FacialAnim\nType: Int32")
         self.ui.nodeIdSpin.setWhatsThis("Field: NodeID\nType: Int32")
-        self.ui.nodeUnskippableCheckbox.setWhatsThis("Field: NodeUnskippable\nType: Boolean")
+        self.ui.nodeUnskippableCheckbox.setWhatsThis("Field: NodeUnskippable\nType: UInt8 (boolean)")
         self.ui.postProcSpin.setWhatsThis("Field: PostProcNode\nType: Int32")
         self.ui.alienRaceNodeSpin.setWhatsThis("Field: AlienRaceNode\nType: Int32")
         self.ui.delaySpin.setWhatsThis("Field: Delay\nType: Int32")
         self.ui.logicSpin.setWhatsThis("Field: Logic\nType: Int32")
         self.ui.waitFlagSpin.setWhatsThis("Field: WaitFlags\nType: Int32")
         self.ui.fadeTypeSpin.setWhatsThis("Field: FadeType\nType: Int32")
-        self.ui.soundCheckbox.setWhatsThis("Field: SoundExists\nType: Boolean")
+        self.ui.soundCheckbox.setWhatsThis("Field: SoundExists\nType: UInt8 (boolean)")
         self.ui.soundComboBox.setWhatsThis("Field: Sound\nType: ResRef")
         self.ui.soundButton.setWhatsThis("Play the selected sound")
         self.ui.voiceComboBox.setWhatsThis("Field: VO_ResRef\nType: ResRef")
@@ -4323,7 +4334,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.removeStuntButton.setWhatsThis("Remove the selected stunt")
         self.ui.editStuntButton.setWhatsThis("Edit the selected stunt")
         self.ui.cameraModelEdit.setWhatsThis("Field: CameraModel\nType: ResRef")
-        self.ui.oldHitCheckbox.setWhatsThis("Field: OldHitCheck\nType: Boolean")
+        self.ui.oldHitCheckbox.setWhatsThis("Field: OldHitCheck\nType: UInt8 (boolean)")
 
         self.ui.ambientTrackCombo.setWhatsThis("Field: AmbientTrack\nType: ResRef")
         self.ui.voiceOverIDLabel.setWhatsThis("Label for Voiceover ID field")
@@ -4341,9 +4352,9 @@ Should return 1 or 0, representing a boolean.
         self.ui.replyDelaySpin.setWhatsThis("Field: DelayReply\nType: Int32")
         self.ui.delayReplyLabel.setWhatsThis("Label for Delay Reply field")
         self.ui.entryDelaySpin.setWhatsThis("Field: DelayEntry\nType: Int32")
-        self.ui.skippableCheckbox.setWhatsThis("Field: Skippable\nType: Boolean")
-        self.ui.unequipHandsCheckbox.setWhatsThis("Field: UnequipHItem\nType: Boolean")
-        self.ui.unequipAllCheckbox.setWhatsThis("Field: UnequipItems\nType: Boolean")
+        self.ui.skippableCheckbox.setWhatsThis("Field: Skippable\nType: UInt8 (boolean)")
+        self.ui.unequipHandsCheckbox.setWhatsThis("Field: UnequipHItem\nType: UInt8 (boolean)")
+        self.ui.unequipAllCheckbox.setWhatsThis("Field: UnequipItems\nType: UInt8 (boolean)")
         self.ui.animatedCutCheckbox.setWhatsThis("Field: AnimatedCut\nType: Int32")
 
     def onNodeUpdate(self):

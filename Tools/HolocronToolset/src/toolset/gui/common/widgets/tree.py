@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy.QtCore import (
-    QAbstractProxyModel,
     QEvent,
     QModelIndex,
     QRect,
@@ -13,7 +12,6 @@ from qtpy.QtCore import (
     Qt,
 )
 from qtpy.QtGui import (
-    QPen,
     QStandardItem,
     QStandardItemModel,
 )
@@ -32,7 +30,6 @@ else:
 
 if TYPE_CHECKING:
 
-
     from qtpy.QtCore import (
         QObject,
     )
@@ -44,6 +41,7 @@ if TYPE_CHECKING:
     from qtpy.QtWidgets import (
         QWidget,
     )
+    from typing_extensions import Literal
 
 
 class RobustTreeView(QTreeView):
@@ -177,6 +175,15 @@ class RobustTreeView(QTreeView):
             scrollStep = -self.text_size if delta > 0 else self.text_size
             vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
         return True
+
+    def scrollSingleStep(self, direction: Literal["up", "down"]):
+        vertScrollBar = self.verticalScrollBar()
+        if self.verticalScrollMode() == QAbstractItemView.ScrollPerItem:
+            action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
+            vertScrollBar.triggerAction(action)
+        else:
+            scrollStep = -self.text_size if direction == "up" else self.text_size
+            vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
 
     def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().y()
