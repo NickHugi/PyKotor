@@ -205,6 +205,8 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.openInventory)
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
+        self.ui.class1LevelSpin.setToolTip("Class Level")
+        self.ui.class2LevelSpin.setToolTip("Class Level")
 
         self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.alignmentSlider.valueChanged.connect(self.update3dPreview)
