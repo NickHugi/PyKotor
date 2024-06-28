@@ -1038,10 +1038,10 @@ class Ui_MainWindow(object):
 
         self.topGridLayout.addWidget(self.cameraModelLabel, 2, 4, 1, 1, Qt.AlignRight|Qt.AlignVCenter)
 
-        self.cameraModelEdit = QLineEdit(self.topDockWidgetContents)
-        self.cameraModelEdit.setObjectName(u"cameraModelEdit")
+        self.cameraModelSelect = FilterComboBox(self.topDockWidgetContents)
+        self.cameraModelSelect.setObjectName(u"cameraModelSelect")
 
-        self.topGridLayout.addWidget(self.cameraModelEdit, 2, 5, 1, 1)
+        self.topGridLayout.addWidget(self.cameraModelSelect, 2, 5, 1, 1)
 
         self.oldHitCheckbox = QCheckBox(self.topDockWidgetContents)
         self.oldHitCheckbox.setObjectName(u"oldHitCheckbox")

@@ -3243,7 +3243,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.voIdEdit.setText(dlg.vo_id)
         self.ui.voIdEdit.textChanged.connect(self.restartVoIdEditTimer)
         self.ui.ambientTrackCombo.setComboBoxText(str(dlg.ambient_track))
-        self.ui.cameraModelEdit.setText(str(dlg.camera_model))
+        self.ui.cameraModelSelect.setComboBoxText(str(dlg.camera_model))
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
         self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.skippable)
@@ -3266,6 +3266,13 @@ Should return 1 or 0, representing a boolean.
         self.ui.condition1ResrefEdit.populateComboBox(relevant_script_resnames)
         self.ui.onEndEdit.populateComboBox(relevant_script_resnames)
         self.ui.onAbortCombo.populateComboBox(relevant_script_resnames)
+        relevant_model_resnames = sorted(
+            {
+                res.resname().lower()
+                for res in self._installation.getRelevantResources(ResourceType.MDL, self._filepath)
+            }
+        )
+        self.ui.cameraModelSelect.populateComboBox(relevant_model_resnames)
 
     def restartVoIdEditTimer(self):
         """Restarts the timer whenever text is changed."""
@@ -3331,7 +3338,7 @@ Should return 1 or 0, representing a boolean.
         self.core_dlg.ambient_track = ResRef(self.ui.ambientTrackCombo.currentText())
         print("<SDM> [build scope] self.editor.core_dlg.ambient_track: ", self.core_dlg.ambient_track)
 
-        self.core_dlg.camera_model = ResRef(self.ui.cameraModelEdit.text())
+        self.core_dlg.camera_model = ResRef(self.ui.cameraModelSelect.currentText())
         print("<SDM> [build scope] self.editor.core_dlg.camera_model: ", self.core_dlg.camera_model)
 
         self.core_dlg.conversation_type = DLGConversationType(self.ui.conversationSelect.currentIndex())
@@ -3402,10 +3409,11 @@ Should return 1 or 0, representing a boolean.
 
         self.all_voices = sorted({res.resname() for res in installation._streamwaves}, key=str.lower)  # noqa: SLF001
         self.all_sounds = sorted({res.resname() for res in installation._streamsounds}, key=str.lower)  # noqa: SLF001
+        self.all_music = sorted({res.resname() for res in installation._streammusic}, key=str.lower)  # noqa: SLF001
         installation.htBatchCache2DA(required)
         self._setupTslInstallDefs(installation)
         self.ui.soundComboBox.populateComboBox(self.all_sounds)  # noqa: SLF001
-        self.ui.ambientTrackCombo.populateComboBox(self.all_sounds)
+        self.ui.ambientTrackCombo.populateComboBox(self.all_sounds + self.all_music)
         self.ui.ambientTrackCombo.set_button_delegate("Play", lambda text: self.playSound(text))
         installation.setupFileContextMenu(self.ui.ambientTrackCombo, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
@@ -4333,7 +4341,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.addStuntButton.setWhatsThis("Add a new stunt")
         self.ui.removeStuntButton.setWhatsThis("Remove the selected stunt")
         self.ui.editStuntButton.setWhatsThis("Edit the selected stunt")
-        self.ui.cameraModelEdit.setWhatsThis("Field: CameraModel\nType: ResRef")
+        self.ui.cameraModelSelect.setWhatsThis("Field: CameraModel\nType: ResRef")
         self.ui.oldHitCheckbox.setWhatsThis("Field: OldHitCheck\nType: UInt8 (boolean)")
 
         self.ui.ambientTrackCombo.setWhatsThis("Field: AmbientTrack\nType: ResRef")
@@ -4850,3 +4858,33 @@ class DLGSettings:
 
     def setFontSize(self, value: int):
         self.set("fontSize", value)
+
+    def showVerboseHoverHints(self, default: bool) -> bool:
+        return self.get("showVerboseHoverHints", default)
+
+    def setShowVerboseHoverHints(self, value: bool):
+        self.set("showVerboseHoverHints", value)
+
+    def tslWidgetHandling(self, default: str) -> str:
+        return self.get("TSLWidgetHandling", default)
+
+    def setTslWidgetHandling(self, value: str):
+        self.set("TSLWidgetHandling", value)
+
+    def loadAll(self, editor: DLGEditor):
+        editor.ui.dialogTree.setTextElideMode(self.get("textElideMode", editor.ui.dialogTree.textElideMode()))
+        editor.ui.dialogTree.setFocusPolicy(self.get("focusPolicy", editor.ui.dialogTree.focusPolicy()))
+        editor.ui.dialogTree.setLayoutDirection(self.get("layoutDirection", editor.ui.dialogTree.layoutDirection()))
+        editor.ui.dialogTree.setVerticalScrollMode(self.get("verticalScrollMode", editor.ui.dialogTree.verticalScrollMode()))
+        editor.ui.dialogTree.setUniformRowHeights(self.get("uniformRowHeights", editor.ui.dialogTree.uniformRowHeights()))
+        editor.ui.dialogTree.setAnimated(self.get("animations", editor.ui.dialogTree.isAnimated()))
+        editor.ui.dialogTree.setAutoScroll(self.get("autoScroll", editor.ui.dialogTree.hasAutoScroll()))
+        editor.ui.dialogTree.setExpandsOnDoubleClick(self.get("expandsOnDoubleClick", editor.ui.dialogTree.expandsOnDoubleClick()))
+        editor.ui.dialogTree.setAutoFillBackground(self.get("autoFillBackground", editor.ui.dialogTree.autoFillBackground()))
+        editor.ui.dialogTree.setAlternatingRowColors(self.get("alternatingRowColors", editor.ui.dialogTree.alternatingRowColors()))
+        editor.ui.dialogTree.setIndentation(self.get("indentation", editor.ui.dialogTree.indentation()))
+        editor.ui.dialogTree.text_size = self.get("fontSize", editor.ui.dialogTree.text_size)
+        editor.ui.dialogTree.itemDelegate().setVerticalSpacing(self.get("verticalSpacing", editor.ui.dialogTree.itemDelegate().customVerticalSpacing))
+        self.setTslWidgetHandling(self.get("TSLWidgetHandling", "Default"))
+        if self.get("showVerboseHoverHints", False):
+            editor.setupExtraTooltipMode()
