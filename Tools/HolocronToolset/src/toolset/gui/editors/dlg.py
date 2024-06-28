@@ -3526,12 +3526,8 @@ Should return 1 or 0, representing a boolean.
 
         try:
             node_data = json.loads(clipboard_text)
-            print("<SDM> [_checkClipboardForJsonNode scope] node_data: ", node_data)
-
             if isinstance(node_data, dict) and "type" in node_data:
                 self._copy = DLGLink.from_dict(node_data)
-                print("<SDM> [_checkClipboardForJsonNode scope] self._copy: ", self._copy)
-
         except json.JSONDecodeError:
             ...
         except Exception:
