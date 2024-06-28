@@ -121,7 +121,7 @@ class CustomListView(QListView):
     def __init__(self, parent: FilterComboBox):
         self.combobox: FilterComboBox = parent
         super().__init__(parent)
-        self.button_text: str
+        self.button_text: str = ""
         self.button_callback: Callable[[str], Any]
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -131,6 +131,9 @@ class CustomListView(QListView):
             super().keyPressEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
+        if not self.button_text:
+            super().mousePressEvent(event)
+            return
         viewport_pos = self.viewport().mapFromGlobal(event.globalPos())
         index = self.indexAt(viewport_pos)
         if index.isValid():
@@ -181,8 +184,9 @@ class FilterComboBox(QComboBox):
         self.filterLineEdit.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.filterLineEdit.hide()
         self.filterLineEdit.keyPressEvent = lambda event: filterLineEditKeyPressEvent(self.filterLineEdit, event, self)  # type: ignore[method-assign, assignment]
-        self.setView(CustomListView(self))
-        self.view().combobox = self
+        mainView = CustomListView(self)
+        mainView.combobox = self
+        self.setView(mainView)
         line_edit_height = self.filterLineEdit.height()
         margins = self.view().viewportMargins()
         self.view().setViewportMargins(margins.left(), margins.top()+line_edit_height, margins.right(), margins.bottom())
