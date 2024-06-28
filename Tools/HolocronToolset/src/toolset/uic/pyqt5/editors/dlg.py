@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.rightDockWidget = QtWidgets.QDockWidget(MainWindow)
         self.rightDockWidget.setMinimumSize(QtCore.QSize(310, 100))
-        self.rightDockWidget.setFloating(True)
+        self.rightDockWidget.setFloating(False)
         self.rightDockWidget.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
         self.rightDockWidget.setObjectName("rightDockWidget")
         self.scrollArea_rightDock = QtWidgets.QScrollArea()

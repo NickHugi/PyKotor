@@ -1719,8 +1719,13 @@ class DropTarget:
         else:
             rootItemIndex = view.model().index(self.row, 0)
             if not rootItemIndex.isValid():
-                print(f"Root item at row '{self.row}' is invalid.")
-                return False
+                if self.position is DropPosition.BELOW:
+                    aboveTestIndex = view.model().index(min(0, self.row-1), 0)
+                    if aboveTestIndex.isValid():
+                        rootItemIndex = aboveTestIndex
+                else:
+                    print(f"Root item at row '{self.row}' is invalid.")
+                    return False
             parentItem = view.model().itemFromIndex(rootItemIndex)
         dragged_node = dragged_link.node
         assert dragged_node is not None
@@ -2461,13 +2466,14 @@ class DLGEditor(Editor):
 
     def showEvent(self, event: QShowEvent):
         super().showEvent(event)
-        QTimer.singleShot(50, lambda *args: self.setSecondaryWidgetPosition(self.ui.rightDockWidget, "right"))  # type: ignore[arg-type]
+        #QTimer.singleShot(50, lambda *args: self.setSecondaryWidgetPosition(self.ui.rightDockWidget, "right"))  # type: ignore[arg-type]
         QTimer.singleShot(0, lambda *args: self.showScrollingTip())
+        self.adjustSize()
 
     def showScrollingTip(self):
         tip = random.choice(self.tips)  # noqa: S311
         self.tipLabel.setText(tip)
-        self.tipLabel.adjustSize()  # Adjust size to fit the text
+        self.tipLabel.adjustSize()
         self.startTooltipUIAnimation()
 
     def startTooltipUIAnimation(self):
@@ -3056,7 +3062,7 @@ Should return 1 or 0, representing a boolean.
 
         self._addMenuAction(settingsMenu, "Show/Hide Extra ToolTips on Hover",
                             lambda: self.whatsThisToggle,
-                            lambda value: self.setupExtraTooltipMode(),
+                            lambda _value: self.setupExtraTooltipMode(),
                             settings_key="showVerboseHoverHints",
                             param_type=bool)
 
