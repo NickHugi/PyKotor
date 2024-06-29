@@ -521,7 +521,6 @@ class ToolWindow(QMainWindow):
 
         app.setStyle("")
         app.setStyleSheet("")
-        app.setPalette(app.style().standardPalette())
         for widget in app.allWidgets():
             widget.setStyleSheet("")
         if not self.settings.selectedTheme or self.settings.selectedTheme == "Native":
@@ -529,7 +528,7 @@ class ToolWindow(QMainWindow):
             app.setPalette(self.original_palette)
         elif self.settings.selectedTheme == "Fusion (Light)":
             app.setStyle("Fusion")
-            app.setPalette(self.original_palette)
+            app.setPalette(app.style().standardPalette())
         elif self.settings.selectedTheme == "Fusion (Dark)":
             app.setStyle("Fusion")
             self._applyCustomDarkPalette()
@@ -538,6 +537,9 @@ class ToolWindow(QMainWindow):
             file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
             app.setStyleSheet(QTextStream(file).readAll())
             file.close()
+        else:
+            self.settings.reset_setting("selectedTheme")
+            self.toggle_stylesheet(self.settings.selectedTheme)
         print(f"Theme changed to: '{self.settings.selectedTheme}'. Native style: {self.original_style}")
         self.show()
 
