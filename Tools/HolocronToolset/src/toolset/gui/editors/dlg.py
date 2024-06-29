@@ -1243,11 +1243,9 @@ class DLGStandardItemModel(QStandardItemModel):
 
         This prevents infinite recursion while still giving the impression that multiple copies are in fact the same.
         """
-        dummy_child = QStandardItem("Loading...")
+        dummy_child = QStandardItem("Click this text to load.")
         dummy_child.setData(True, _FUTURE_EXPAND_ROLE)
         item.appendRow(dummy_child)
-        self.treeView.collapse(item.index())
-        self.treeView.expand(item.index())
 
     def addRootNode(self):
         """Adds a root node to the dialog graph."""
@@ -1362,7 +1360,7 @@ class DLGStandardItemModel(QStandardItemModel):
             assert parentItem.link is not None
             self.updateItemData(parentItem)
             self._updateCopies(parentItem.link, parentItem)
-        self.treeView.expand(newItem.index())
+        QTimer.singleShot(0, lambda *args: self.treeView.expand(newItem.index()))
         self.blockSignals(False)
         self.layoutChanged.emit()
         self.treeView.viewport().update()
@@ -1394,7 +1392,11 @@ class DLGStandardItemModel(QStandardItemModel):
         item = super().itemFromIndex(index)
         if item is None:
             return None
-        assert isinstance(item, DLGStandardItem)
+        if not isinstance(item, DLGStandardItem):
+            parentItem = item.parent()
+            assert parentItem is not None
+            self.treeView.collapse(parentItem.index())
+            self.treeView.expand(parentItem.index())
         return item
 
     def deleteNodeEverywhere(self, node: DLGNode):
@@ -1582,6 +1584,8 @@ class DLGStandardItemModel(QStandardItemModel):
         for item in items:
             if item is itemToIgnore:
                 continue
+            if item.link is None:
+                continue  # shouldn't be happening, but i can't find the source of the problem (observed in removeLink)
             self.blockSignals(True)
             self.updateItemData(item)
             if item.hasChildren() and item.child(0, 0).data(_FUTURE_EXPAND_ROLE):  # Item's children not loaded.
@@ -3299,7 +3303,7 @@ Should return 1 or 0, representing a boolean.
     def _loadDLG(self, dlg: DLG):
         """Loads a dialog tree into the UI view."""
         print("<SDM> [_loadDLG scope] GlobalSettings().selectedTheme: ", GlobalSettings().selectedTheme)
-        if "(Light)" in GlobalSettings().selectedTheme:
+        if "(Light)" in GlobalSettings().selectedTheme or GlobalSettings().selectedTheme == "Native":
             self.ui.dialogTree.setStyleSheet("")
         self._focused = False
         self.core_dlg = dlg
@@ -3557,7 +3561,7 @@ Should return 1 or 0, representing a boolean.
         """Focuses the dialog tree on a specific link node."""
         if link is None:
             return None
-        if "(Light)" in GlobalSettings().selectedTheme:
+        if "(Light)" in GlobalSettings().selectedTheme or GlobalSettings().selectedTheme == "Native":
             self.ui.dialogTree.setStyleSheet("QTreeView { background: #FFFFEE; }")
         self.model.clear()
         self._focused = True
@@ -3769,6 +3773,9 @@ Should return 1 or 0, representing a boolean.
             elif isinstance(self._copy.node, DLGReply) and isinstance(item.link.node, DLGEntry):
                 pasteLinkAction.setText("Paste Reply from Clipboard as Link")
                 pasteNewAction.setText("Paste Reply from Clipboard as Deep Copy")
+            else:
+                pasteLinkAction.setEnabled(False)
+                pasteNewAction.setEnabled(False)
         else:
             pasteLinkAction.setEnabled(False)
             pasteNewAction.setEnabled(False)

@@ -342,7 +342,6 @@
      <string>Theme</string>
     </property>
     <addaction name="defaultLight"/>
-    <addaction name="defaultDark"/>
     <addaction name="fusionLight"/>
     <addaction name="fusionDark"/>
     <addaction name="breezeDark"/>
@@ -686,12 +685,7 @@
   </action>
   <action name="defaultLight">
    <property name="text">
-    <string>Native (Light)</string>
-   </property>
-  </action>
-  <action name="defaultDark">
-   <property name="text">
-    <string>Native (Dark)</string>
+    <string>Native</string>
    </property>
   </action>
   <action name="fusionLight">

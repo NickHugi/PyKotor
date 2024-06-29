@@ -95,14 +95,14 @@ class LocalizedStringLineEdit(QWidget):
             text = str(locstring)
             self.ui.locstringText.setText(text if text != "-1" else "")
             # Check theme condition for setting stylesheet
-            if theme == "Native (Light)":
+            if theme in ("Native", "Fusion (Light)"):
                 self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white;}}")
             else:
                 self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: white; color: black;}}")
         else:
             self.ui.locstringText.setText(self._installation.talktable().string(locstring.stringref))
             # Check theme condition for setting stylesheet
-            if theme == "Native (Light)":
+            if theme in ("Native", "Fusion (Light)"):
                 self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded;}}")
             else:
                 self.ui.locstringText.setStyleSheet(f"{self.ui.locstringText.styleSheet()} QLineEdit {{background-color: #fffded; color: black;}}")

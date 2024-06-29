@@ -102,10 +102,8 @@ class HTMLDelegate(QStyledItemDelegate):
         if bool(option.state & QStyle.StateFlag.State_Selected):
             highlight_color = option.palette.highlight().color()
             if not option.widget.hasFocus():
-                highlight_color = QColor(0, 120, 215)
-                highlight_color.setAlpha(int(highlight_color.alpha() * 0.4))
-            else:
-                highlight_color.setAlpha(int(highlight_color.alpha() * 0.7))
+                highlight_color = QColor(100, 100, 100)  # Grey color
+            highlight_color.setAlpha(int(highlight_color.alpha() * 0.4))
             painter.fillRect(option.rect, highlight_color)
             ctx.palette.setColor(QPalette.Text, option.palette.highlightedText().color())
         else:

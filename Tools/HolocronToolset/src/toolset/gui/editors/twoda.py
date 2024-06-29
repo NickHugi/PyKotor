@@ -514,7 +514,7 @@ class TwoDAEditor(Editor):
         """
         vertHeader = self.ui.twodaTable.verticalHeader()
         assert vertHeader is not None
-        if GlobalSettings().selectedTheme == "Native (Light)":
+        if GlobalSettings().selectedTheme in ("Native", "Fusion (Light)"):
             vertHeader.setStyleSheet("")
         headers: list[str] = []
 
@@ -529,7 +529,7 @@ class TwoDAEditor(Editor):
                     columnIndex = i
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
-            if GlobalSettings().selectedTheme == "Native (Light)":
+            if GlobalSettings().selectedTheme in ("Native", "Fusion (Light)"):
                 vertHeader.setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }" "QHeaderView::section:checked { color: #000000; }")
             elif GlobalSettings().selectedTheme == "Fusion (Dark)":
                 vertHeader.setStyleSheet("""

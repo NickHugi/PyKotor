@@ -749,14 +749,14 @@ class Editor(QMainWindow):
             text = str(locstring)
             setText(text if text != "-1" else "")
             # Check theme condition for setting stylesheet
-            if theme == "Native (Light)":
+            if theme in ("Native", "Fusion (Light)"):
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white;}}")
             else:
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: white; color: black;}}")
         elif self._installation is not None:
             setText(self._installation.talktable().string(locstring.stringref))
             # Check theme condition for setting stylesheet
-            if theme == "Native (Light)":
+            if theme in ("Native", "Fusion (Light)"):
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded;}}")
             else:
                 textbox.setStyleSheet(f"{textbox.styleSheet()} {className} {{background-color: #fffded; color: black;}}")
