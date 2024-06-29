@@ -2398,7 +2398,6 @@ class DLGEditor(Editor):
             "Use the 'View' and 'Settings' menu to customize dlg editor settings. All of your changes will be saved for next time you load the editor.",
             "Tip: Drag and Drop is supported, even between different DLGs!",
             "Tip: Accidentally closed something? Right click the Menu to reopen the dock panels.",
-            "Tip: All Entry nodes must contain at least one Reply node, even a blank one is required to end the dialog."
             "Tip: Hold CTRL and scroll to change the text size.",
             "Tip: Hold ALT and scroll to change the indentation.",
             "Tip: Hold CTRL+SHIFT and scroll to change the vertical spacing.",
