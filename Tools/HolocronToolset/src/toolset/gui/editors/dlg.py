@@ -1002,24 +1002,7 @@ class DLGStandardItemModel(QStandardItemModel):
         print(f"Deleted the only link ({shallow_link_copy}) to node ({shallow_link_copy.node}), setting up the orphan view.")
         item = DLGListWidgetItem(link=shallow_link_copy)
         item.is_orphaned = True
-
-        # Build the HTML display
-        color = "red" if isinstance(shallow_link_copy.node, DLGEntry) else "blue"
-        link_path = ""
-        if link_parent_path is not None:
-            link_path += f"{link_parent_path}\\"
-        link_path += shallow_link_copy.partial_path()
-        node_path = shallow_link_copy.node.path()
-        display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_path}</div>"
-        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
-        combined_display = f"""
-        <div class='link-container'>
-            {display_text_1}
-            {display_text_2}
-        </div>
-        """
-        item.setData(Qt.ItemDataRole.DisplayRole, combined_display)
-        item.setData(_LINK_PARENT_NODE_PATH_ROLE, link_parent_path)
+        self.editor.orphanedNodesList.updateItem(item)
         self.editor.orphanedNodesList.addItem(item)
     # endregion
 
@@ -1397,6 +1380,10 @@ class DLGStandardItemModel(QStandardItemModel):
             assert parentItem is not None
             self.treeView.collapse(parentItem.index())
             self.treeView.expand(parentItem.index())
+        item = super().itemFromIndex(index)
+        if item is None:
+            return None
+        assert isinstance(item, DLGStandardItem)
         return item
 
     def deleteNodeEverywhere(self, node: DLGNode):
@@ -2157,6 +2144,7 @@ class DLGTreeView(RobustTreeView):
             print(f"{self.__class__.__name__}.dragMoveEvent: Target at mouse position is not valid.")
             self.setInvalidDragDrop(event)
             super().dragMoveEvent(event)
+            self.unsetCursor()
             return
         aboveIndex = self.model().index(self.dropTarget.row-1, 0, self.dropTarget.parentIndex)
         hoverOverIndex = self.model().index(self.dropTarget.row, 0, self.dropTarget.parentIndex)
