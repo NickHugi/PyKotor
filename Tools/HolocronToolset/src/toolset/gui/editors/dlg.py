@@ -3842,11 +3842,14 @@ Should return 1 or 0, representing a boolean.
         else:
             self.blinkWindow()
 
-    def get_link_ref(self, link: DLGLink):
+    def get_link_ref(self, link: DLGLink) -> weakref.ReferenceType[DLGLink[Any]]:
         for ref, copiedLink in self.model.origToOrphanCopy.items():
             if copiedLink == link:
                 return ref
-        raise KeyError(repr(link))
+        copiedLink = DLGLink.from_dict(link.to_dict())
+        orig_link_ref = weakref.ref(link)
+        self.model.origToOrphanCopy[orig_link_ref] = copiedLink
+        return orig_link_ref
 
     def findReferences(self, item: DLGStandardItem | DLGListWidgetItem):
         assert item.link is not None
@@ -3894,7 +3897,7 @@ Should return 1 or 0, representing a boolean.
             RobustRootLogger().error(f"{link!r} has already been deleted from the tree.")
             return
         if link not in self.model.linkToItems:
-            print("Nowhere to jump - orphaned node has no existing links in the tree.")
+            print("Nowhere to jump - Either an orphan, or item not loaded.")
             return
         item = self.model.linkToItems[link][0]
         index = item.index()
