@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections import deque
 import uuid
 
+from collections import deque
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Dict, Generator, Generic, Sequence, TypeVar, cast
 
@@ -716,8 +716,8 @@ class DLGLink(Generic[T]):
         active2_param6: "ParamStrB" field. KotOR 2 Only.
     """
 
-    def partial_path(self) -> str:
-        if self.is_child:
+    def partial_path(self, *, is_starter: bool) -> str:
+        if is_starter:
             p1 = "EntriesList" if isinstance(self.node, DLGEntry) else "RepliesList"
         else:
             p1 = "StartingList"
@@ -725,7 +725,7 @@ class DLGLink(Generic[T]):
 
     def __init__(
         self,
-        node: DLGNode | None = None,
+        node: DLGNode,
         list_index: int = -1,
     ):
         self._hash_cache = hash(uuid.uuid4().hex)
@@ -1124,7 +1124,7 @@ def construct_dlg(
                 RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid EntryList node, omitting...")
             else:
                 link = DLGLink(node, link_list_index)
-                link.is_child = bool(link_struct.acquire("IsChild", 0))
+                link.is_child = bool(link_struct.acquire("IsChild", default=False))
                 link.comment = link_struct.acquire("LinkComment", "")
 
                 reply.links.append(link)
