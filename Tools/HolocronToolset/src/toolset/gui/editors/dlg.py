@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import random
+import re
 import uuid
 import weakref
 
@@ -52,6 +53,7 @@ from qtpy.QtWidgets import (
     QCheckBox,
     QColorDialog,
     QComboBox,
+    QCompleter,
     QDialog,
     QDockWidget,
     QDoubleSpinBox,
@@ -514,12 +516,12 @@ def identify_reference_path(obj, max_depth=10):
             ref_type = type(ref).__name__
             ref_id = id(ref)
             ref_info = f"Type={ref_type}, ID={ref_id}"
-            
+
             # Try to get more information about the object's definition
             try:
-                if hasattr(ref, '__name__'):
+                if hasattr(ref, "__name__"):
                     ref_info += f", Name={ref.__name__}"
-                if hasattr(ref, '__module__'):
+                if hasattr(ref, "__module__"):
                     ref_info += f", Module={ref.__module__}"
 
                 # Source file and line number
@@ -534,7 +536,7 @@ def identify_reference_path(obj, max_depth=10):
                 else:
                     ref_info += ", Source info not applicable"
             except Exception as e:
-                ref_info += f", Detail unavailable ({str(e)})"
+                ref_info += f", Detail unavailable ({e!s})"
 
             print(ref_info)
         print("\n")
@@ -2692,30 +2694,55 @@ Should return 1 or 0, representing a boolean.
         self.go_to_button = QPushButton("Go", self.go_to_bar)
         self.go_to_layout.addWidget(self.go_to_input)
         self.go_to_layout.addWidget(self.go_to_button)
-        self.ui.verticalLayout_main.insertWidget(0, self.go_to_bar)
+        self.ui.verticalLayout_main.insertWidget(0, self.go_to_bar)  # type: ignore[arg-type]
 
         # Find bar
         self.find_bar = QWidget(self)
         self.find_bar.setVisible(False)
         self.find_layout = QHBoxLayout(self.find_bar)
         self.find_input = QLineEdit(self.find_bar)
-        self.find_button = QPushButton("Find Next", self.find_bar)
+        self.find_button = QPushButton("", self.find_bar)
+        self.find_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward))
+        self.back_button = QPushButton("", self.find_bar)
+        self.back_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack))
         self.results_label = QLabel(self.find_bar)
         self.find_layout.addWidget(self.find_input)
+        self.find_layout.addWidget(self.back_button)
         self.find_layout.addWidget(self.find_button)
         self.find_layout.addWidget(self.results_label)
-        self.ui.verticalLayout_main.insertWidget(0, self.find_bar)
+        self.ui.verticalLayout_main.insertWidget(0, self.find_bar)  # type: ignore[arg-type]
+        self.setup_completer()
 
-        # Connect buttons
+        # Connect signals
         self.go_to_button.clicked.connect(self.handle_go_to)
         self.find_button.clicked.connect(self.handle_find)
+        self.back_button.clicked.connect(self.handle_back)
+        self.find_input.returnPressed.connect(self.handle_find)
 
         self.search_results = []
         self.current_result_index = 0
 
-        # Connect buttons
-        self.go_to_button.clicked.connect(self.handle_go_to)
-        self.find_button.clicked.connect(self.handle_find)
+    def setup_completer(self):
+        temp_entry = DLGEntry()
+        temp_link = DLGLink(temp_entry)
+        entry_attributes: set[str] = {
+            attr[0]
+            for attr in temp_entry.__dict__.items()
+            if not attr[0].startswith("_") and not callable(attr[1]) and not isinstance(attr[1], list)
+        }
+        link_attributes: set[str] = {
+            attr[0]
+            for attr in temp_link.__dict__.items()
+            if not attr[0].startswith("_") and not callable(attr[1]) and not isinstance(attr[1], (DLGEntry, DLGReply))
+        }
+        suggestions: list[str] = [f"{key}:" for key in [*entry_attributes, *link_attributes]]
+
+        self.find_input_completer = QCompleter(suggestions, self.find_input)
+        self.find_input_completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self.find_input_completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        self.find_input_completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        self.find_input_completer.setMaxVisibleItems(10)
+        self.find_input.setCompleter(self.find_input_completer)
 
     def show_go_to_bar(self):
         self.go_to_bar.setVisible(True)
@@ -2743,56 +2770,122 @@ Should return 1 or 0, representing a boolean.
         self.highlight_result(self.search_results[self.current_result_index])
         self.update_results_label()
 
+    def handle_back(self):
+        if not self.search_results:
+            return
+        self.current_result_index = (self.current_result_index - 1 + len(self.search_results)) % len(self.search_results)
+        self.highlight_result(self.search_results[self.current_result_index])
+        self.update_results_label()
+
     def custom_go_to_function(self, input_text: str):
         ...  # TODO(th3w1zard1): allow quick jumps to EntryList/ReplyList nodes.
 
-    def find_item_matching_display_text(self, input_text: str) -> list[DLGStandardItem]:
-        current_index: QModelIndex = self.ui.dialogTree.currentIndex()
-        if not current_index.isValid():
-            return []
-        current_item: QStandardItem | None = self.model.itemFromIndex(current_index)
-        if current_item is None:
-            return []
+    def parse_query(self, input_text: str) -> list[tuple[str, str | None, Literal["AND", "OR", None]]]:
+        pattern = r'("[^"]*"|\S+)'
+        tokens: list[str] = re.findall(pattern, input_text)
+        normalized_tokens: list[str] = []
 
-        matching_items: list[DLGStandardItem | QStandardItem] = []
-        input_text = input_text.lower()
+        for token in tokens:
+            if token.startswith('"') and token.endswith('"'):
+                normalized_tokens.append(token[1:-1])
+            else:
+                normalized_tokens.extend(re.split(r"\s+", token))
+
+        conditions: list[tuple[str, str | None, Literal["AND", "OR", None]]] = []
+        operator: Literal["AND", "OR", None] = None
+        i = 0
+
+        while i < len(normalized_tokens):
+            token = normalized_tokens[i].upper()
+            if token in ("AND", "OR"):
+                operator = token
+                i += 1
+                continue
+
+            next_index = i + 1 if i + 1 < len(normalized_tokens) else None
+            if ":" in normalized_tokens[i]:
+                try:
+                    key, sep, value = normalized_tokens[i].partition(":")
+                    if value == "":
+                        conditions.append((key.strip().lower(), None, operator))
+                    else:
+                        conditions.append((key.strip().lower(), value.strip().lower() if value else None, operator))
+                finally:
+                    operator = None
+            elif next_index and normalized_tokens[next_index].upper() in ("AND", "OR"):
+                conditions.append((normalized_tokens[i], "", operator))
+                operator = None
+            elif not next_index:
+                conditions.append((normalized_tokens[i], "", operator))
+                operator = None
+
+            i += 1
+
+        return conditions
+
+    def find_item_matching_display_text(self, input_text: str) -> list[QStandardItem]:
+        conditions = self.parse_query(input_text)
+        matching_items: list[QStandardItem] = []
+
+        def condition_matches(condition: tuple[str, str | None, Literal["AND", "OR", None]], item: QStandardItem) -> bool:
+            key, value, operator = condition
+            if not isinstance(item, DLGStandardItem) or item.link is None:
+                return False
+            sentinel = object()
+            link_value = getattr(item.link, key, sentinel)
+            node_value = getattr(item.link.node, key, sentinel)
+
+            def check_value(attr_value: Any, search_value: str | None) -> bool:
+                if attr_value is sentinel:
+                    return False
+                if search_value is None:  # This indicates a truthiness check
+                    return bool(attr_value) and attr_value not in (0xFFFFFFFF, -1)
+                if isinstance(attr_value, int):
+                    try:
+                        return attr_value == int(search_value)
+                    except ValueError:
+                        return False
+                elif isinstance(attr_value, bool):
+                    if search_value.lower() in ["true", "1"]:
+                        return attr_value is True
+                    if search_value.lower() in ["false", "0"]:
+                        return attr_value is False
+                return search_value.lower() in str(attr_value).lower()
+
+            if check_value(link_value, value) or check_value(node_value, value):
+                return True
+            return False
+
+        def evaluate_conditions(item: QStandardItem) -> bool:
+            item_text = item.text().lower()
+            if input_text.lower() in item_text:
+                return True
+            result = not conditions
+            for condition in conditions:
+                if condition[2] == "AND":
+                    result = result and condition_matches(condition, item)
+                elif condition[2] == "OR":
+                    result = result or condition_matches(condition, item)
+                else:
+                    result = condition_matches(condition, item)
+            return result
 
         def search_item(item: QStandardItem):
-            if input_text in item.text().lower():
+            if evaluate_conditions(item):
                 matching_items.append(item)
             for row in range(item.rowCount()):
-                search_item(item.child(row))
+                child_item = item.child(row)
+                if child_item:
+                    search_item(child_item)
 
-        root = self.model.invisibleRootItem()
-        for row in range(root.rowCount()):
-            childItem = root.child(row)
-            if not isinstance(childItem, DLGStandardItem):
-                continue
-            search_item(childItem)
-        if not matching_items:
-            return []
+        def search_children(parent_item: QStandardItem):
+            for row in range(parent_item.rowCount()):
+                child_item = parent_item.child(row)
+                search_item(child_item)
+                search_children(child_item)
 
-        current_row = current_index.row()
-        current_parent = current_item.parent()
-        next_item = None
-        for item in matching_items:
-            if not isinstance(item, DLGStandardItem):
-                continue
-            item_index = self.model.indexFromItem(item)
-            if not item_index.isValid():
-                continue
-            item_parent = item.parent()
-            if item_parent == current_parent and item_index.row() > current_row:
-                next_item = item
-                break
-            if item_parent is None and current_parent is None and item_index.row() > current_row:
-                next_item = item
-                break
-        if not next_item:
-            next_item = matching_items[0]
-        if not isinstance(next_item, DLGStandardItem):
-            return []
-        return [next_item]
+        search_children(self.model.invisibleRootItem())
+        return list({*matching_items})
 
     def highlight_result(self, item: QStandardItem):
         index = self.model.indexFromItem(item)
@@ -3935,7 +4028,7 @@ Should return 1 or 0, representing a boolean.
     def get_item_dlg_paths(self, item: DLGStandardItem | DLGListWidgetItem) -> tuple[str, str, str]:
         link_parent_path = item.data(_LINK_PARENT_NODE_PATH_ROLE)
         assert item.link is not None
-        link_path = item.link.partial_path()
+        link_path = item.link.partial_path(is_starter=item.link in self.core_dlg.starters)
         assert item.link.node is not None
         linked_to_path = item.link.node.path()
         return link_parent_path, link_path, linked_to_path
@@ -4812,18 +4905,8 @@ class ReferenceChooserDialog(QDialog):
                 continue
             if link.node is None:
                 continue
-            link_partial_path, node_path = link.partial_path(), link.node.path()
-            color = "red" if isinstance(link.node, DLGEntry) else "blue"
-            display_text_1 = f"<div class='link-text' style='color:{color};text-align:center;'>{link_partial_path}</div>"
-            display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
-            combined_display = f"""
-            <div class='link-container'>
-                {display_text_1}
-                {display_text_2}
-            </div>
-            """
             listItem = DLGListWidgetItem(link=link, ref=linkref)
-            listItem.setData(Qt.ItemDataRole.DisplayRole, combined_display)
+            self.listWidget.updateItem(listItem)
             self.listWidget.addItem(listItem)
         self.update_item_sizes()
         self.adjustSize()
