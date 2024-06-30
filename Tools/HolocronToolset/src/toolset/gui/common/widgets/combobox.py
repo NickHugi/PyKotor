@@ -27,8 +27,6 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from toolset.utils.misc import getQtKeyString
-
 if TYPE_CHECKING:
     from qtpy.QtCore import (
         QModelIndex,

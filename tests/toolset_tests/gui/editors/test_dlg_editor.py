@@ -22,7 +22,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
         self.editor = DLGEditor(None, None)
         self.treeView: DLGTreeView = self.editor.ui.dialogTree
         self.model: DLGStandardItemModel = self.editor.ui.dialogTree.model()
-        self.editor.core_dlg = DLG(blank_node=False)
+        self.editor.core_dlg = DLG()
 
     def tearDown(self):
         self.model = None
@@ -35,7 +35,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
 
     def create_complex_tree(self) -> DLG:
         # Create the DLG structure with entries and replies
-        dlg = DLG(blank_node=False)
+        dlg = DLG()
         entries = [DLGEntry(comment=f"E{i}") for i in range(5)]
         replies = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
 

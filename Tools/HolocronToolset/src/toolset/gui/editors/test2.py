@@ -180,7 +180,7 @@ def main():
 
 def create_complex_tree() -> DLG:
     # Create the DLG structure with entries and replies
-    dlg = DLG(blank_node=False)
+    dlg = DLG()
     entries = [DLGEntry(comment=f"E{i}") for i in range(5)]
     replies = [DLGReply(text=LocalizedString.from_english(f"R{i}")) for i in range(5, 10)]
 
