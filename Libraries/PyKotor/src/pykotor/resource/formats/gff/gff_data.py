@@ -351,7 +351,11 @@ class _GFFField:
         value: Any,
     ):
         self._field_type: GFFFieldType = field_type
-        self._value: Any = value
+        self._value: Any
+        if field_type in self.INTEGER_TYPES:
+            self._value: Any = int(value)
+        else:
+            self._value = value
 
     def field_type(
         self,
