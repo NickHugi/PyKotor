@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import sys
+from collections import deque
 import uuid
 
 from enum import IntEnum
@@ -55,31 +55,9 @@ class DLG:
 
     def __init__(
         self,
-        blank_node: bool = True,
     ):
-        """Initializes a DLGNode object.
-
-        Args:
-        ----
-            blank_node (bool): Whether to add a blank starter node
-
-        Processing Logic:
-        ----------------
-            1. Initializes starter and stunt lists
-            2. Sets default values for node properties
-            3. Adds a blank starter node if blank_node is True
-            4. Sets deprecated properties for backwards compatibility.
-        """
         self.starters: list[DLGLink] = []
         self.stunts: list[DLGStunt] = []
-
-        if blank_node:
-            # Add bare minimum to be openable by DLGEditor
-            starter: DLGLink = DLGLink()
-            entry = DLGEntry()
-            entry.text.set_data(Language.ENGLISH, Gender.MALE, "")
-            starter.node = entry
-            self.starters.append(starter)
 
         self.ambient_track: ResRef = ResRef.from_blank()
         self.animated_cut: int = 0
@@ -104,63 +82,6 @@ class DLG:
         # Deprecated:
         self.delay_entry: int = 0
         self.delay_reply: int = 0
-    def to_dict(self, node_map: dict[str, Any] | None = None) -> dict:
-        """Converts the DLG object to a dictionary representation."""
-        if node_map is None:
-            node_map = {}
-
-        data = {"type": self.__class__.__name__}
-
-        for key, value in self.__dict__.items():
-            if key.startswith("__"):
-                continue
-            if key in self.__class__.__dict__:
-                continue
-            if isinstance(value, list):
-                data[key] = [getattr(v, "to_dict", lambda _: v)(node_map) for v in value]
-            elif isinstance(value, bool):
-                data[key] = int(value)
-            elif isinstance(value, (int, float, str)):
-                data[key] = value
-            elif hasattr(value, "to_dict"):
-                data[key] = value.to_dict(node_map)
-            else:
-                data[key] = value
-
-        return data
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any], node_map=None) -> Self:
-        """Creates a DLG object from a dictionary representation."""
-        if node_map is None:
-            node_map = {}
-
-        dlg = cls(blank_node=False)
-        current_module = sys.modules[__name__]
-
-        for key, value in data.items():
-            if key == "type":
-                continue
-            if isinstance(value, list):
-                list_items: list[Any] = []
-                for v in value:
-                    if isinstance(v, dict) and "type" in v:
-                        class_type: DLGLink | DLGStunt = getattr(current_module, v["type"])
-                        list_items.append(class_type.from_dict(v, node_map))
-                    else:
-                        list_items.append(v)
-                setattr(dlg, key, list_items)
-            elif key in dlg.__dict__:
-                attr_type = type(getattr(dlg, key))
-                if attr_type is bool:
-                    setattr(dlg, key, bool(value))
-                elif isinstance(value, dict) and "type" in value:
-                    class_type = getattr(current_module, value["type"])
-                    setattr(dlg, key, class_type.from_dict(value, node_map))
-                else:
-                    setattr(dlg, key, value)
-
-        return dlg
 
     def find_paths(self, target: DLGEntry | DLGReply | DLGLink) -> list[PureWindowsPath]:
         paths: list[PureWindowsPath] = []
@@ -496,7 +417,7 @@ class DLGNode:
         self.quest: str = ""
         self.script1: ResRef = ResRef.from_blank()
         self.sound: ResRef = ResRef.from_blank()
-        self.sound_exists: bool = False
+        self.sound_exists: int = 0
         self.text: LocalizedString = LocalizedString.from_invalid()
         self.vo_resref: ResRef = ResRef.from_blank()
         self.wait_flags: int = 0
@@ -561,7 +482,25 @@ class DLGNode:
         target_links: list[DLGLink],
         source: DLGNode,
     ):
-        target_links.append(DLGLink(source))
+        target_links.append(DLGLink(source, len(target_links)))
+
+    def calculate_links_and_nodes(self) -> tuple[int, int]:
+        queue: deque[DLGNode] = deque([self])
+        seen_nodes: set[DLGNode] = set()
+        num_links = 0
+        num_unique_nodes = 0
+
+        while queue:
+            node: DLGNode = queue.popleft()
+            assert node is not None
+            if node in seen_nodes:
+                continue
+            seen_nodes.add(node)
+            num_links += len(node.links)
+            queue.extend(link.node for link in node.links if link.node is not None)
+
+        num_unique_nodes = len(seen_nodes)
+        return num_links, num_unique_nodes
 
     def shift_item(
         self,
@@ -829,7 +768,9 @@ class DLGLink(Generic[T]):
             stack.extend(current.node.links)
 
     def __repr__(self) -> str:
-        return (f"{self.__class__.__name__}(link_list_index={self.list_index}, comment={self.comment})")
+        comment_str = str(self.comment)
+        comment_display = comment_str[:30] if len(comment_str) > 30 else comment_str
+        return (f"{self.__class__.__name__}(link_list_index={self.list_index}, comment={comment_display})")
 
     def __eq__(self, other):
         if self.__class__ is not other.__class__:
@@ -896,7 +837,7 @@ class DLGLink(Generic[T]):
         if link_key in node_map:
             return node_map[link_key]
 
-        link = cls()
+        link = object.__new__(cls)
         link._hash_cache = int(link_key)  # noqa: SLF001
         link.list_index = link_dict.get("link_list_index", -1)
         for key, value in cast(Dict[str, dict], link_dict["data"]).items():
@@ -958,7 +899,7 @@ class DLGStunt:
         return {"participant": self.participant, "stunt_model": str(self.stunt_model), "_hash_cache": self._hash_cache}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] | None = None, node_map: dict[str | int, Any] | None = None) -> Self:
+    def from_dict(cls, data: dict[str, Any], node_map: dict[str | int, Any] | None = None) -> Self:
         stunt = cls()
         stunt.participant = data.get("participant", "")
         stunt.stunt_model = ResRef(data.get("stunt_model", ""))
@@ -1005,11 +946,11 @@ def construct_dlg(
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
         node.quest = gff_struct.acquire("Quest", "")
         node.plot_index = gff_struct.acquire("PlotIndex", -1)
-        node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 1.0)
+        node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 0.0)
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
         node.fade_type = gff_struct.acquire("FadeType", 0)
-        node.sound_exists = gff_struct.acquire("SoundExists", default=False)
+        node.sound_exists = gff_struct.acquire("SoundExists", 0)
         node.vo_text_changed = gff_struct.acquire("VOTextChanged", default=False)
 
         anim_list: GFFList = gff_struct.acquire("AnimList", GFFList())
@@ -1096,7 +1037,7 @@ def construct_dlg(
         link.active2_param5 = gff_struct.acquire("Param5b", 0)
         link.active2_param6 = gff_struct.acquire("ParamStrB", "")
 
-    dlg = DLG(blank_node=False)
+    dlg = DLG()
 
     root: GFFStruct = gff.root
 
@@ -1133,15 +1074,14 @@ def construct_dlg(
 
     starting_list: GFFList = root.acquire("StartingList", GFFList())
     for link_list_index, link_struct in enumerate(starting_list):
-        link: DLGLink = DLGLink()
-        link.list_index = link_list_index
         node_struct_id = link_struct.acquire("Index", 0)
         try:
-            link.node = all_entries[node_struct_id]
+            node = all_entries[node_struct_id]
         except IndexError:
             context_link_msg = f"(StartingList/{link_list_index})"  # noqa: SLF001
             RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
         else:
+            link: DLGLink = DLGLink(node, link_list_index)
             dlg.starters.append(link)
             construct_link(link_struct, link)
 
@@ -1154,16 +1094,15 @@ def construct_dlg(
 
         replies_list: GFFList = entry_struct.acquire("RepliesList", GFFList())
         for link_list_index, link_struct in enumerate(replies_list):
-            link = DLGLink()
-            link.list_index = link_list_index
             node_struct_id = link_struct.acquire("Index", 0)
             try:
-                link.node = all_replies[node_struct_id]
+                node = all_replies[node_struct_id]
             except IndexError:
                 context_link_msg = f"(EntryList/{node_list_index}/RepliesList/{link_list_index})"  # noqa: SLF001
                 RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
             else:
-                link.is_child = bool(link_struct.acquire("IsChild", 0))
+                link = DLGLink(node, link_list_index)
+                link.is_child = bool(link_struct.acquire("IsChild", default=False))
                 link.comment = link_struct.acquire("LinkComment", "")
 
                 entry.links.append(link)
@@ -1177,15 +1116,14 @@ def construct_dlg(
 
         entries_list: GFFList = reply_struct.acquire("EntriesList", GFFList())
         for link_list_index, link_struct in enumerate(entries_list):
-            link = DLGLink()
-            link.list_index = link_list_index
             node_struct_id = link_struct.acquire("Index", 0)
             try:
-                link.node = all_entries[node_struct_id]
+                node = all_entries[node_struct_id]
             except IndexError:
                 context_link_msg = f"(ReplyList/{node_list_index}/EntriesList/{link_list_index})"  # noqa: SLF001
                 RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid EntryList node, omitting...")
             else:
+                link = DLGLink(node, link_list_index)
                 link.is_child = bool(link_struct.acquire("IsChild", 0))
                 link.comment = link_struct.acquire("LinkComment", "")
 
