@@ -70,6 +70,7 @@ from qtpy.QtWidgets import (
     QSizePolicy,
     QSpinBox,
     QStyle,
+    QTextEdit,
     QToolTip,
     QVBoxLayout,
     QWidget,
@@ -2466,8 +2467,13 @@ class DLGEditor(Editor):
             "Tip: Hold ALT and scroll to change the indentation.",
             "Tip: Hold CTRL+SHIFT and scroll to change the vertical spacing.",
             "Tip: 'Delete all references' will delete all EntriesList/RepliesList/StartingList links to the node, leaving it orphaned.",
-            "Tip: Drag any tree item to the left dockpanel to pin it for easy access",
-            "Tip: Orphaned Nodes will automatically be added to the top left list and can be easily reintegrated by dragging back in."
+            "Tip: Drag any item to the left dockpanel to pin it for easy access",
+            "Tip: Orphaned Nodes will automatically be added to the top left list, drag back in to reintegrate."
+            "Tip: Use ':' after an attribute name in the search bar to filter items by specific properties, e.g., 'is_child:1'.",
+            "Tip: Combine keywords with AND/OR in the search bar to refine your search results, such as 'script1:k_swg AND listener:PLAYER'",
+            "Tip: Use double quotes to search for exact phrases in item descriptions, such as '\"urgent task\"'.",
+            "Tip: Search for attributes without a value after ':' to find items where any non-null property exists, e.g., 'assigned:'.",
+            "TIp: Double-Click me to view all tips."
         ]
         self.tipLabel: QLabel = QLabel()
         self.tipLabel.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
@@ -2479,6 +2485,10 @@ class DLGEditor(Editor):
         self.timer: QTimer = QTimer(self)
         self.timer.timeout.connect(self.showScrollingTip)
         self.timer.start(15000)
+
+        self.tipLabel.mouseDoubleClickEvent = self.showAllTips
+        self.tipLabel.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tipLabel.customContextMenuRequested.connect(self.showAllTips)
 
         self.voIdEditTimer: QTimer = QTimer(self)
         self.core_dlg: DLG = DLG()
@@ -2556,6 +2566,31 @@ class DLGEditor(Editor):
         self.tipsStartFromRightSide = not self.tipsStartFromRightSide
         self.statusbar_animation.disconnect()
         self.startTooltipUIAnimation()
+
+    def showAllTips(self, event):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("All Tips")
+        layout = QVBoxLayout(dialog)
+
+        text_edit = QTextEdit(dialog)
+        text_edit.setReadOnly(True)
+        text_edit.setFont(QFont("Arial", 10))
+        text_edit.setHtml("<ul>" + "".join(f"<li>{tip}</li>" for tip in self.tips) + "</ul>")
+        layout.addWidget(text_edit)
+
+        close_button = QPushButton("Close", dialog)
+        close_button.clicked.connect(dialog.accept)
+        close_button.setFont(QFont("Arial", 10))
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+        fixed_width = 800  # Adjust this value as needed
+        dialog.setFixedWidth(fixed_width)
+        dialog.setSizeGripEnabled(True)
+        dialog.exec_()
 
     def setupDLGTreeMVC(self):
         self.model: DLGStandardItemModel = DLGStandardItemModel(self.ui.dialogTree)
@@ -3037,6 +3072,7 @@ Should return 1 or 0, representing a boolean.
     def _setupViewMenu(self):
         viewMenu = self.ui.menubar.addMenu("View")
         settingsMenu = self.ui.menubar.addMenu("Settings")
+        self.ui.menubar.addAction("Help").triggered.connect(self.showAllTips)
 
         # View Menu: Display-related settings
         self._addExclusiveMenuAction(
