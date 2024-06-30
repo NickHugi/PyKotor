@@ -232,8 +232,7 @@ class TestDLGEntrySerialization(unittest.TestCase):
     def test_dlg_entry_serialization_with_links(self):
         entry = DLGEntry()
         entry.comment = "Entry with links"
-        link = DLGLink()
-        link.list_index = 1
+        link = DLGLink(entry, 1)
         entry.links.append(link)
 
         serialized = entry.to_dict()
@@ -376,8 +375,7 @@ class TestDLGReplySerialization(unittest.TestCase):
     def test_dlg_reply_serialization_with_links(self):
         reply = DLGReply()
         reply.text = LocalizedString.from_english("Reply with links")
-        link = DLGLink()
-        link.list_index = 2
+        link = DLGLink(reply, 2)
         reply.links.append(link)
 
         serialized = reply.to_dict()
@@ -515,140 +513,6 @@ class TestDLGReplySerialization(unittest.TestCase):
         self.assertEqual(deserialized.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.links[0].node.text.get(Language.ENGLISH, Gender.MALE), "R224")
 
 
-class TestDLGLinkSerialization(unittest.TestCase):
-    def test_dlg_link_serialization_basic(self):
-        link = DLGLink()
-        link.list_index = 3
-
-        serialized = link.to_dict()
-        deserialized = DLGLink.from_dict(serialized)
-
-        self.assertEqual(link.list_index, deserialized.list_index)
-
-    def test_dlg_link_serialization_with_node(self):
-        # sourcery skip: class-extract-method
-        link = DLGLink()
-        entry = DLGEntry()
-        entry.comment = "Linked entry"
-        link.node = entry
-
-        serialized = link.to_dict()
-        deserialized = DLGLink.from_dict(serialized)
-
-        self.assertEqual(link.node.comment, deserialized.node.comment)
-
-    def test_dlg_link_serialization_all_attributes(self):
-        link = DLGLink()
-        link.link_index = 5
-        reply = DLGReply()
-        reply.text = LocalizedString.from_english("Linked reply")
-        link.node = reply
-
-        serialized = link.to_dict()
-        deserialized = DLGLink.from_dict(serialized)
-
-        self.assertEqual(link.link_index, deserialized.link_index)
-        self.assertEqual(link.node.text, deserialized.node.text)
-
-    def test_dlg_link_with_nested_entries_and_replies(self):
-        entry1 = DLGEntry(comment="E248")
-        entry2 = DLGEntry(comment="E221")
-
-        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
-        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
-        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
-
-        link1 = DLGLink(node=reply1)
-        link2 = DLGLink(node=entry2)
-        link3 = DLGLink(node=reply2)
-        link4 = DLGLink(node=reply3)
-
-        entry1.links.append(link1)
-        reply1.links.extend([link2, link3])
-        entry2.links.append(link4)  # Reuse R249
-
-        serialized = link1.to_dict()
-        deserialized = DLGLink.from_dict(serialized)
-
-        self.assertEqual(link1.node.text, deserialized.node.text)
-        self.assertEqual(len(deserialized.node.links), 2)
-        self.assertEqual(deserialized.node.links[0].node.comment, "E221")
-        self.assertEqual(deserialized.node.links[1].node.text, "R223")
-        self.assertEqual(len(deserialized.node.links[1].node.links), 1)
-        self.assertEqual(deserialized.node.links[1].node.links[0].node.comment, "E248")
-
-    def test_dlg_link_with_circular_references(self):
-        entry1 = DLGEntry(comment="E248")
-        entry2 = DLGEntry(comment="E221")
-
-        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
-        reply2 = DLGReply(text=LocalizedString.from_english("R249"))
-
-        link1 = DLGLink(node=reply1)
-        link2 = DLGLink(node=entry2)
-        link3 = DLGLink(node=reply2)
-        link4 = DLGLink(node=entry1)  # Circular reference
-
-        entry1.links.append(link1)
-        reply1.links.append(link2)
-        entry2.links.append(link3)  # Reuse R249
-        reply2.links.append(link4)
-
-        serialized = link1.to_dict()
-        deserialized = DLGLink.from_dict(serialized)
-
-        self.assertEqual(link1.node.text, deserialized.node.text)
-        self.assertEqual(len(deserialized.node.links), 1)
-        self.assertEqual(deserialized.node.links[0].node.comment, "E221")
-        self.assertEqual(len(deserialized.node.links[0].node.links), 1)
-        self.assertEqual(deserialized.node.links[0].node.links[0].node.text, "R249")
-        self.assertEqual(len(deserialized.node.links[0].node.links[0].node.links), 1)
-        self.assertEqual(deserialized.node.links[0].node.links[0].node.links[0].node.comment, "E248")
-
-    def test_dlg_link_with_multiple_levels(self):
-        entry1 = DLGEntry(comment="E248")
-        entry2 = DLGEntry(comment="E221")
-        entry3 = DLGEntry(comment="E250")
-
-        reply1 = DLGReply(text=LocalizedString.from_english("R222"))
-        reply2 = DLGReply(text=LocalizedString.from_english("R223"))
-        reply3 = DLGReply(text=LocalizedString.from_english("R249"))
-        reply4 = DLGReply(text=LocalizedString.from_english("R225"))
-        reply5 = DLGReply(text=LocalizedString.from_english("R224"))
-
-        link1 = DLGLink(node=reply1)
-        link2 = DLGLink(node=entry2)
-        link3 = DLGLink(node=reply2)
-        link4 = DLGLink(node=reply3)
-        link5 = DLGLink(node=entry3)
-        link6 = DLGLink(node=reply4)
-        link7 = DLGLink(node=reply5)
-
-        entry1.links.append(link1)
-        reply1.links.append(link3)
-        reply1.links.append(link2)
-        entry2.links.append(link4)  # Reuse R249
-        reply3.links.append(link5)
-        entry3.links.append(link6)
-        reply4.links.append(link7)
-
-        serialized = link1.to_dict()
-        deserialized = DLGLink.from_dict(serialized)
-
-        self.assertEqual(link1.node.text, deserialized.node.text)
-        self.assertEqual(len(deserialized.node.links), 2)
-        self.assertEqual(deserialized.node.links[0].node.text, "R223")
-        self.assertEqual(deserialized.node.links[1].node.comment, "E221")
-        self.assertEqual(len(deserialized.node.links[1].node.links), 1)
-        self.assertEqual(deserialized.node.links[1].node.links[0].node.text, "R249")
-        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links), 1)
-        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.comment, "E250")
-        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links[0].node.links), 1)
-        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.text, "R225")
-        self.assertEqual(len(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.links), 1)
-        self.assertEqual(deserialized.node.links[1].node.links[0].node.links[0].node.links[0].node.links[0].node.text, "R224")
-
-
 class TestDLGAnimationSerialization(unittest.TestCase):
     def test_dlg_animation_serialization_basic(self):
         animation = DLGAnimation()
@@ -717,7 +581,7 @@ class TestDLGStuntSerialization(unittest.TestCase):
 
 class TestDLGLinkSerialization(unittest.TestCase):
     def test_dlg_link_serialization_basic(self):
-        link = DLGLink()
+        link = DLGLink(DLGEntry())
         link.list_index = 3
 
         serialized = link.to_dict()
@@ -726,10 +590,9 @@ class TestDLGLinkSerialization(unittest.TestCase):
         self.assertEqual(link.list_index, deserialized.list_index)
 
     def test_dlg_link_serialization_with_node(self):
-        link = DLGLink()
         entry = DLGEntry()
         entry.comment = "Linked entry"
-        link.node = entry
+        link = DLGLink(entry)
 
         serialized = link.to_dict()
         deserialized = DLGLink.from_dict(serialized)
@@ -737,10 +600,9 @@ class TestDLGLinkSerialization(unittest.TestCase):
         self.assertEqual(link.node.comment, deserialized.node.comment)
 
     def test_dlg_link_serialization_all_attributes(self):
-        link = DLGLink()
-        link.list_index = 5
         reply = DLGReply()
         reply.text = "Linked reply"
+        link = DLGLink(reply, 5)
         link.node = reply
 
         serialized = link.to_dict()
