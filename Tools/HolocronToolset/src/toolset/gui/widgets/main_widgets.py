@@ -432,11 +432,13 @@ class ResourceList(MainWindowList):
 class ResourceProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.filter_string: str = ""
 
     def setFilterString(self, filter_string: str):
         self.filter_string = filter_string.lower()
+        if not filter_string or not filter_string.strip():
+            return
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
