@@ -4,7 +4,7 @@ import multiprocessing
 
 from abc import abstractmethod
 from time import sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import qtpy
 
@@ -49,6 +49,8 @@ class MainWindowList(QWidget):
 class ResourceList(MainWindowList):
     requestReload = QtCore.Signal(object)
     requestRefresh = QtCore.Signal()
+
+    HORIZONTAL_HEADER_LABELS: ClassVar[list[str]] = ["ResRef", "Type"]
 
     def __init__(self, parent: QWidget):
         """Initializes the ResourceList widget.
@@ -109,7 +111,7 @@ class ResourceList(MainWindowList):
         self.ui.resourceTree.collapsed.connect(self.onTreeItemCollapsed)
 
         # Install event filter on the viewport
-        viewport: QWidget = self.ui.resourceTree.viewport()
+        viewport: QWidget | None = self.ui.resourceTree.viewport()  # type: ignore[arg-type]
         assert viewport is not None
         viewport.installEventFilter(self)  # type: ignore[arg-type]
         self.setMouseTracking(True)
@@ -118,6 +120,16 @@ class ResourceList(MainWindowList):
         self.tooltipTimer = QTimer(self)
         self.tooltipTimer.setSingleShot(True)
         self.tooltipTimer.timeout.connect(self.showTooltip)
+
+    def toggleFlatten(self):
+        """Toggle the flatten state of the tree view."""
+        if self.flattened:
+            self.unflattenTree()
+        else:
+            self.flattenTree()
+        self.flattened = not self.flattened
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
 
     def onHeaderContextMenu(self, point: QPoint):
         """Show context menu for the header."""
@@ -141,19 +153,19 @@ class ResourceList(MainWindowList):
         auto_fit_columns_action.setChecked(self.autoResizeEnabled)
         auto_fit_columns_action.triggered.connect(self.toggleAutoFitColumns)
 
-        # Toggle Row Highlighting
-        #toggle_row_highlighting_action = menu.addAction("Toggle Row Highlighting")
-        #toggle_row_highlighting_action.triggered.connect(self.toggleRowHighlighting)
+        # Alternate Row Colors
+        alternate_row_colors_action = menu.addAction("Alternate Row Colors")
+        alternate_row_colors_action.setCheckable(True)
+        alternate_row_colors_action.setChecked(self.ui.resourceTree.alternatingRowColors())
+        alternate_row_colors_action.triggered.connect(self.ui.resourceTree.setAlternatingRowColors)
 
-        header: QHeaderView = self.ui.resourceTree.header()
+        header: QHeaderView | None = self.ui.resourceTree.header()  # type: ignore[arg-type]
         assert header is not None
         menu.exec_(header.mapToGlobal(point))
 
     def toggleFlatten(self):
         """Toggle the flatten state of the tree view."""
         if self.flattened:
-            #self.onRefreshClicked()  # Use if the unflattenTree ever breaks again.
-            # FIXME(th3w1zard1): unflattenTree completely broken, use onRefreshClicked instead.
             self.unflattenTree()
         else:
             self.flattenTree()
@@ -179,10 +191,6 @@ class ResourceList(MainWindowList):
 
     def unflattenTree(self):
         """Restore the original tree structure."""
-        #resources = [
-        #    getattr(self.modulesModel.item(i, 0), "resource", None)
-        #    for i in range(self.modulesModel.rowCount())
-        #]
         resources = []
         for i in range(self.modulesModel.rowCount()):
             item: QStandardItem = self.modulesModel.item(i, 0)
@@ -191,6 +199,7 @@ class ResourceList(MainWindowList):
                 resources.append(resource)
         self._clearModulesModel()
         self.setResources(resources, clearExisting=False)
+
     def _clearModulesModel(self):
         self.modulesModel.clear()
         self.modulesModel.setColumnCount(2)
@@ -244,16 +253,6 @@ class ResourceList(MainWindowList):
     def onTreeItemCollapsed(self, index):
         if self.autoResizeEnabled:
             self.autoFitColumns()
-
-    def toggleRowHighlighting(self):
-        """Toggle row highlighting in the tree view."""
-        current_palette = self.ui.resourceTree.palette()
-        if current_palette.alternateBase().color() == current_palette.base().color():
-            alternate_color = current_palette.highlight().color().lighter(150)
-            current_palette.setColor(current_palette.AlternateBase, alternate_color)
-        else:
-            current_palette.setColor(current_palette.AlternateBase, current_palette.base().color())
-        self.ui.resourceTree.setPalette(current_palette)
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if event.type() == QtCore.QEvent.MouseMove and obj is self.ui.resourceTree.viewport():
