@@ -4,15 +4,32 @@ import tempfile
 
 from abc import abstractmethod
 from contextlib import suppress
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QBuffer, QIODevice, QTimer, QUrl, Qt
+from qtpy.QtCore import QBuffer, QIODevice, QPoint, QTimer, QUrl, Qt
 from qtpy.QtGui import QGuiApplication, QIcon, QPixmap
 from qtpy.QtMultimedia import QMediaPlayer
-from qtpy.QtWidgets import QApplication, QDockWidget, QFileDialog, QLineEdit, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QShortcut
+from qtpy.QtWidgets import (
+    QApplication,
+    QDockWidget,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QShortcut,
+    QSlider,
+    QStyle,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -32,7 +49,7 @@ from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
 from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from ui import stylesheet_resources  # noqa: F401
+from ui import stylesheet_resources  # noqa: PLC0415, F401, I001  # pylint: disable=C0415
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
 from utility.logger_util import RobustRootLogger, remove_any
 from utility.system.path import Path
@@ -51,15 +68,194 @@ else:
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QTemporaryFile
-    from qtpy.QtGui import QShowEvent
-    from qtpy.QtWidgets import QWidget
+    from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer
+    from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
+    from qtpy.QtGui import QFocusEvent, QMouseEvent, QShowEvent
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
     from toolset.data.installation import HTInstallation
     from utility.system.path import PurePath
+
+
+class MediaPlayerWidget(QWidget):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.buffer: QBuffer = QBuffer(self)
+        self.player: QMediaPlayer = QMediaPlayer(self)
+        self.setupMediaPlayer()
+        self._setupSignals()
+
+        self.hideWidget()
+
+    def setupMediaPlayer(self):
+        self.speed_levels: list[float] = [1, 1.25, 1.5, 2, 5, 10]
+        self.current_speed_index: int = 0
+
+        self.playPauseButton: QPushButton = QPushButton(self)
+        self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+        self.playPauseButton.setFixedSize(24, 24)
+
+        self.stopButton: QPushButton = QPushButton(self)
+        self.stopButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaStop))
+        self.stopButton.setFixedSize(24, 24)
+
+        self.muteButton: QPushButton = QPushButton(self)
+        self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
+        self.muteButton.setFixedSize(24, 24)
+
+        buttonLayout: QHBoxLayout = QHBoxLayout()
+        for button in [self.playPauseButton, self.stopButton, self.muteButton]:
+            buttonLayout.addWidget(button)
+            buttonLayout.setAlignment(button, Qt.AlignmentFlag.AlignBottom)
+        self.timeLabel: QLabel = QLabel("00:00 / 00:00", self)
+        self.setupTimeSlider()
+
+        buttonLayout.addWidget(self.timeLabel)
+        buttonLayout.addWidget(self.timeSlider, 1)
+
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.setSpacing(0)
+        cast(QVBoxLayout, self.parent().layout()).addLayout(buttonLayout)
+        self.hideWidget()
+
+    def setupTimeSlider(self):
+        self.timeSlider: QSlider = QSlider(Qt.Orientation.Horizontal, self)
+        self.timeSlider.setMouseTracking(True)
+        self.dragPosition = QPoint()
+
+        def sliderMousePressEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
+            if ev.button() == Qt.LeftButton:
+                self.player.pause()
+                self.dragPosition = ev.pos()  # Store click position
+                ev.accept()
+            super(QSlider, slider).mousePressEvent(ev)
+        def sliderMouseMoveEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
+            if ev.buttons() == Qt.LeftButton and not self.dragPosition.isNull():
+                value = int((ev.pos().x() / slider.width()) * slider.maximum())
+                slider.setValue(value)
+                self.player.setPosition(value)
+                ev.accept()
+            super(QSlider, slider).mouseMoveEvent(ev)
+        def sliderMouseReleaseEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
+            if ev.button() == Qt.LeftButton and not self.dragPosition.isNull():
+                # Set the final value and clear dragPosition
+                value = int((ev.pos().x() / slider.width()) * slider.maximum())
+                slider.setValue(value)
+                self.player.setPosition(value)
+                self.player.play()
+                self.dragPosition = QPoint()  # Reset drag position
+                ev.accept()
+            super(QSlider, slider).mouseReleaseEvent(ev)
+        def sliderFocusOutEvent(ev: QFocusEvent, slider: QSlider = self.timeSlider):
+            if not self.dragPosition.isNull():
+                value = int((self.dragPosition.x() / slider.width()) * slider.maximum())
+                slider.setValue(value)
+                self.player.setPosition(value)
+                self.player.play()
+                ev.accept()
+            super(QSlider, slider).focusOutEvent(ev)
+        self.timeSlider.mouseMoveEvent = sliderMouseMoveEvent  # type: ignore[method-override]
+        self.timeSlider.mousePressEvent = sliderMousePressEvent  # type: ignore[method-override]
+        self.timeSlider.mouseReleaseEvent = sliderMouseReleaseEvent  # type: ignore[method-override]
+        self.timeSlider.focusOutEvent = sliderFocusOutEvent  # type: ignore[method-override]
+
+    def playPauseButtonClick(self):
+        if self.player.state() == QMediaPlayer.State.PlayingState:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+            self.player.pause()
+        else:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))
+            self.player.play()
+
+    def _setupSignals(self):
+        self.player.mediaStatusChanged.connect(self.mediaStateChanged)
+        self.player.positionChanged.connect(self.positionChanged)
+        self.player.durationChanged.connect(self.durationChanged)
+        self.player.stateChanged.connect(self.stateChanged)
+
+        self.playPauseButton.clicked.connect(self.playPauseButtonClick)
+        self.stopButton.clicked.connect(self.player.stop)
+        self.muteButton.clicked.connect(self.toggleMute)
+
+    def stateChanged(self, state: QMediaPlayer.MediaStatus):
+        if state == QMediaPlayer.State.PlayingState:
+            self.showWidget()
+
+    def format_time(self, msecs: int) -> str:
+        secs = msecs // 1000
+        mins = secs // 60
+        hrs = mins // 60
+        return f"{hrs:02}:{mins % 60:02}:{secs % 60:02}"
+
+    def mediaStateChanged(self, state: QMediaPlayer.MediaStatus):
+        if state == QMediaPlayer.MediaStatus.EndOfMedia:
+            self.timeSlider.setValue(self.timeSlider.maximum())
+            self.hideWidget()
+        if state == QMediaPlayer.State.PlayingState:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))
+        else:
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+
+    def changePlaybackSpeed(self, direction: int):
+        """Some qt bug prevents this from working properly. Requires a start and a play in order to take effect."""
+        self.current_speed_index = max(0, min(len(self.speed_levels) - 1, self.current_speed_index + direction))
+        newRate = self.speed_levels[self.current_speed_index]
+        wasPlaying = self.player.state() == QMediaPlayer.State.PlayingState
+        currentPosition = self.player.position()
+        self.player.setPlaybackRate(newRate)
+        self.player.setPosition(currentPosition)
+        if wasPlaying:
+            self.player.play()
+
+    def toggleMute(self):
+        self.player.setMuted(not self.player.isMuted())
+        if self.player.isMuted():
+            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolumeMuted))
+        else:
+            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
+
+    def positionChanged(self, position: int):
+        if not self.timeSlider.isSliderDown():
+            self.timeSlider.setValue(position)
+        current_time = self.format_time(position)
+        total_time = self.format_time(self.timeSlider.maximum())
+        self.timeLabel.setText(f"{current_time} / {total_time}")
+
+    def durationChanged(self, duration: int):
+        self.timeSlider.setRange(0, duration)
+        total_time = self.format_time(duration)
+        current_time = self.format_time(self.timeSlider.value())
+        self.timeLabel.setText(f"{current_time} / {total_time}")
+
+    def showWidget(self):
+        self.show()
+        self.playPauseButton.show()
+        self.stopButton.show()
+        self.muteButton.show()
+        self.timeLabel.show()
+        self.timeSlider.show()
+
+    def hideWidget(self):
+        self.hide()
+        self.playPauseButton.hide()
+        self.stopButton.hide()
+        self.muteButton.hide()
+        self.timeLabel.hide()
+        self.timeSlider.hide()
+
+    def setVisible(self, visible: bool):  # noqa: FBT001
+        """Override to control visibility based on player state."""
+        if self.player.state() == QMediaPlayer.State.PlayingState:
+            return
+        super().setVisible(visible)
+
+    def showEvent(self, event: QShowEvent):
+        """Override to prevent showing unless playing."""
+        if self.player.state() != QMediaPlayer.State.PlayingState:
+            return
+        super().showEvent(event)
 
 
 # TODO: Creating a child editor from this class is not intuitive, document the requirements at some point.
@@ -131,6 +327,14 @@ class Editor(QMainWindow):
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 
+        self.statusBarContainer = QWidget()
+        self.statusBarContainerLayout: QVBoxLayout = QVBoxLayout()
+        self.statusBarContainer.setLayout(self.statusBarContainerLayout)
+        self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self.statusBarContainer)
+        #self.statusBarContainerLayout.addWidget(self.mediaPlayer)
+        self.statusBar().addWidget(self.statusBarContainer, 1)
+        self.statusBar().setFixedHeight(self.statusBar().minimumSizeHint().height()+5)
+
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
             self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
@@ -146,9 +350,6 @@ class Editor(QMainWindow):
         for resource in readSupported:
             self._openFilter += f"{resource.category} File (*.{resource.extension});;"
         self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
-        self.buffer: QBuffer = QBuffer()
-        self.player: QMediaPlayer = QMediaPlayer(self)
-        self.tempMediaFile: QTemporaryFile | None = None
 
 
     def showEvent(self, event: QShowEvent):
@@ -157,7 +358,7 @@ class Editor(QMainWindow):
             self.size().width() + QApplication.font().pointSize() * 2,
             self.size().height(),
         )
-        QTimer.singleShot(0, lambda event=event: self.adjustPosition(event))
+        #QTimer.singleShot(0, lambda event=event: self.adjustPosition(event))
 
     def adjustPosition(self, event: QShowEvent | None = None):  # sourcery skip: extract-method
         if event is not None:
@@ -319,13 +520,12 @@ class Editor(QMainWindow):
 
     def getOpenedFileName(self) -> str:
         if self._filepath is not None and self._filepath.name and self._restype is not None:
-            if is_bif_file(self._filepath) or is_capsule_file(self._filepath):
-                orig_filename = f"{self._resname or ''}.{self._restype.extension}"
-            else:
-                orig_filename = self._filepath.name
-        else:
-            orig_filename = ""
-        return orig_filename
+            return (
+                f"{self._resname or ''}.{self._restype.extension}"
+                if is_bif_file(self._filepath) or is_capsule_file(self._filepath)
+                else self._filepath.name
+            )
+        return ""
 
     def saveAs(self):
         """Saves the file with the selected filepath.
@@ -343,19 +543,25 @@ class Editor(QMainWindow):
         filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", self.getOpenedFileName(), self._saveFilter, "")
         if not filepath_str:
             return
+        error_msg, e, invalid = "", None, False
         try:
-            identifier = ResourceIdentifier.from_path(filepath_str).validate()
+            identifier = ResourceIdentifier.from_path(filepath_str)
+            if identifier.restype.is_invalid:
+                invalid = True
         except ValueError as e:
+            invalid = True
             RobustRootLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+        if invalid:
             msgBox = QMessageBox(
                 QMessageBox.Icon.Critical,
                 "Invalid filename/extension",
-                f"Check the filename and try again. Could not save!<br><br>{error_msg}",
+                f"Check the filename and try again. Could not save!{f'<br><br>{error_msg}' if error_msg else ''}",
                 parent=None,
                 flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
             )
-            msgBox.setDetailedText(format_exception_with_variables(e))
+            if error_msg:
+                msgBox.setDetailedText(format_exception_with_variables(e))
             msgBox.exec_()
             return
 
@@ -570,7 +776,7 @@ class Editor(QMainWindow):
                 write_erf(child_erf_or_rim, data) if isinstance(child_erf_or_rim, ERF) else write_rim(child_erf_or_rim, data)
             this_erf_or_rim.set_data(child_capsule_path.stem, ResourceType.from_extension(child_capsule_path.suffix), bytes(data))
 
-        print(f"Finally saving '{c_filepath}'")
+        print(f"All nested capsules saved, finally saving physical file '{c_filepath}'")
         write_erf(this_erf_or_rim, c_filepath) if isinstance(this_erf_or_rim, ERF) else write_rim(this_erf_or_rim, c_filepath)
         self.savedFile.emit(str(c_filepath), self._resname, self._restype, data)
 
@@ -774,35 +980,40 @@ class Editor(QMainWindow):
         if qtpy.API_NAME in ["PyQt5", "PySide2"]:
             from qtpy.QtMultimedia import QMediaContent
             if data:
-                self.buffer = QBuffer(self)
-                self.buffer.setData(data)
-                self.buffer.open(QIODevice.OpenModeFlag.ReadOnly)
-                self.player.setMedia(QMediaContent(), self.buffer)
-                QTimer.singleShot(0, self.player.play)  # IMPORTANT!! in pyqt5/pyside2, ONLY works when singleShot from a timer. No idea why.
+                self.mediaPlayer.buffer = buffer = QBuffer(self)
+                buffer.setData(data)
+                buffer.open(QIODevice.OpenModeFlag.ReadOnly)
+                self.mediaPlayer.player.setMedia(QMediaContent(), buffer)
+                QTimer.singleShot(0, self.mediaPlayer.player.play)  # IMPORTANT!! in pyqt5/pyside2, ONLY works when singleShot from a timer. No idea why.
             else:
                 self.blinkWindow()
                 return False
             return True
 
         if qtpy.API_NAME in ["PyQt6", "PySide6"]:
-            from qtpy.QtMultimedia import QAudioOutput
             if data:
-                tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-                tempFile.write(data)
-                tempFile.flush()
-                tempFile.seek(0)
-                tempFile.close()
-                audioOutput = QAudioOutput(self)  # type: ignore[reportCallIssue]
-                self.player.setAudioOutput(audioOutput)  # type: ignore[attr-name]
-                self.player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]
-                audioOutput.setVolume(1)  # IMPORTANT!! volume starts off at 0% otherwise.
-                self.player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
-                self.player.play()
+                self._play_byte_data_qt6(data)
             else:
                 self.blinkWindow()
                 return False
             return True
         raise RuntimeError(f"Unsupported QT_API value: {qtpy.API_NAME}")
+
+    def _play_byte_data_qt6(self, data: bytes):
+        from qtpy.QtMultimedia import QAudioOutput
+        tempFile = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+        tempFile.write(data)
+        tempFile.flush()
+        tempFile.seek(0)
+        tempFile.close()
+
+        player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.mediaPlayer.player)
+        audioOutput = QAudioOutput(self)  # type: ignore[reportCallIssue]
+        player.setAudioOutput(audioOutput)  # type: ignore[attr-name]
+        player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]
+        audioOutput.setVolume(1)  # IMPORTANT!! volume starts off at 0% otherwise.
+        player.mediaStatusChanged.connect(lambda status, file_name=tempFile.name: self.removeTempAudioFile(status, file_name))
+        player.play()
 
     def playSound(self, resname: str, order: list[SearchLocation] | None = None) -> bool:
         """Plays a sound resource."""
@@ -810,7 +1021,7 @@ class Editor(QMainWindow):
             self.blinkWindow(sound=False)
             return False
 
-        self.player.stop()
+        self.mediaPlayer.player.stop()
 
         data: bytes | None = self._installation.sound(
             resname,
@@ -834,7 +1045,7 @@ class Editor(QMainWindow):
         print("<SDM> [removeTempAudioFile scope] status: ", status)
         if status == QMediaPlayer.MediaStatus.EndOfMedia:
             try:
-                self.player.stop()
+                self.mediaPlayer.player.stop()
                 QTimer.singleShot(33, lambda: remove_any(filePathStr))
             except OSError:
                 self._logger.exception(f"Error removing temporary file {filePathStr}")
