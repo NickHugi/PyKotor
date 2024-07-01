@@ -1,4 +1,15 @@
 <RCC>
+  <qresource prefix="themes">
+    <file>other/AMOLED.qss</file>
+    <file>other/aqua.qss</file>
+    <file>other/ConsoleStyle.qss</file>
+    <file>other/ElegantDark.qss</file>
+    <file>other/MacOS.qss</file>
+    <file>other/ManjaroMix.qss</file>
+    <file>other/MaterialDark.qss</file>
+    <file>other/NeonButtons.qss</file>
+    <file>other/Ubuntu.qss</file>
+  </qresource>
   <qresource prefix="images">
     <file>common/sound-icon.png</file>
     <file>common/voice-icon.png</file>

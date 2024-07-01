@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
 from typing import TYPE_CHECKING, Any, cast
 
+import qdarkstyle
 import qtpy
 
 from qtpy import QtCore
@@ -338,7 +339,7 @@ class ToolWindow(QMainWindow):
             return self.focusHandler.eventFilter(obj, event)
         return super().eventFilter(obj, event)
 
-    def _setupSignals(self):
+    def _setupSignals(self):  # sourcery skip: remove-unreachable-code
         """Connects signals to slots for UI interactions.
 
         Args:
@@ -512,36 +513,67 @@ class ToolWindow(QMainWindow):
 
         openResourceEditor(file, resource.resname(), resource.restype(), resource.data(), self.active, self)
 
+    def reset_theme(self, app: QApplication):
+        # Reset the application stylesheet
+        app.setStyleSheet("")
+        app.setStyle("")
+        app_style = app.style()
+        app.setPalette(app_style.standardPalette())
+        for widget in app.allWidgets():
+            widget.setStyleSheet("")
+            widget.setPalette(app_style.standardPalette())
+            widget.update()
+
     def toggle_stylesheet(self, theme: QAction | str):
         app = QApplication.instance()
         assert isinstance(app, QApplication), "No Qt Application found or not a QApplication instance."
 
         print("<SDM> [toggle_stylesheet scope] self.settings.selectedTheme: ", self.settings.selectedTheme)
         self.settings.selectedTheme = theme.text() if isinstance(theme, QAction) else theme
+        self.reset_theme(app)
 
-        app.setStyle("")
-        app.setStyleSheet("")
-        for widget in app.allWidgets():
-            widget.setStyleSheet("")
-        if not self.settings.selectedTheme or self.settings.selectedTheme == "Native":
-            app.setStyle(self.original_style)
-            app.setPalette(self.original_palette)
-        elif self.settings.selectedTheme == "Fusion (Light)":
+        if self.settings.selectedTheme == "Fusion (Light)":
             app.setStyle("Fusion")
             app.setPalette(app.style().standardPalette())
         elif self.settings.selectedTheme == "Fusion (Dark)":
             app.setStyle("Fusion")
             self._applyCustomDarkPalette()
+        elif self.settings.selectedTheme == "AMOLED":
+            self._load_stylesheet_from_file(":/themes/other/AMOLED.qss", app)
+        elif self.settings.selectedTheme == "Aqua":
+            self._load_stylesheet_from_file(":/themes/other/aqua.qss", app)
+        elif self.settings.selectedTheme == "ConsoleStyle":
+            self._load_stylesheet_from_file(":/themes/other/ConsoleStyle.qss", app)
+        elif self.settings.selectedTheme == "ElegantDark":
+            self._load_stylesheet_from_file(":/themes/other/ElegantDark.qss", app)
+        elif self.settings.selectedTheme == "MacOS":
+            self._load_stylesheet_from_file(":/themes/other/MacOS.qss", app)
+        elif self.settings.selectedTheme == "ManjaroMix":
+            self._load_stylesheet_from_file(":/themes/other/ManjaroMix.qss", app)
+        elif self.settings.selectedTheme == "MaterialDark":
+            self._load_stylesheet_from_file(":/themes/other/MaterialDark.qss", app)
+        elif self.settings.selectedTheme == "NeonButtons":
+            self._load_stylesheet_from_file(":/themes/other/NeonButtons.qss", app, dark=False)
+        elif self.settings.selectedTheme == "Ubuntu":
+            self._load_stylesheet_from_file(":/themes/other/Ubuntu.qss", app)
         elif self.settings.selectedTheme == "Breeze (Dark)":
-            file = QFile(":/dark/stylesheet.qss")
-            file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
-            app.setStyleSheet(QTextStream(file).readAll())
-            file.close()
-        else:
+            self._load_stylesheet_from_file(":/dark/stylesheet.qss", app)
+        elif self.settings.selectedTheme != "Native":
             self.settings.reset_setting("selectedTheme")
             self.toggle_stylesheet(self.settings.selectedTheme)
-        print(f"Theme changed to: '{self.settings.selectedTheme}'. Native style: {self.original_style}")
+        else:
+            app.setStyle(self.original_style)
+            app.setPalette(app.style().standardPalette())
+        print(f"Theme changed to: '{self.settings.selectedTheme}'. Native style name: {self.original_style}")
         self.show()
+
+    def _load_stylesheet_from_file(self, qt_path: str, app: QApplication, *, dark: bool = True):
+        file = QFile(qt_path)
+        file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
+        app.setStyleSheet(QTextStream(file).readAll())
+        file.close()
+        if dark:
+            self._applyCustomDarkPalette()
 
     def _applyCustomDarkPalette(self):
         dark_palette = QPalette()
@@ -1195,51 +1227,51 @@ class ToolWindow(QMainWindow):
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
 
         dialogIconPath = f":/images/icons/k{version}/dialog.png"
-        self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
+        self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewDLG.setEnabled(self.active is not None)
 
         tlkIconPath = f":/images/icons/k{version}/tlk.png"
-        self.ui.actionNewTLK.setIcon(QIcon(QPixmap(tlkIconPath)))
+        self.ui.actionNewTLK.setIcon(QIcon(QPixmap(tlkIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewTLK.setEnabled(True)
 
         scriptIconPath = f":/images/icons/k{version}/script.png"
-        self.ui.actionNewNSS.setIcon(QIcon(QPixmap(scriptIconPath)))
+        self.ui.actionNewNSS.setIcon(QIcon(QPixmap(scriptIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewNSS.setEnabled(self.active is not None)
 
         creatureIconPath = f":/images/icons/k{version}/creature.png"
-        self.ui.actionNewUTC.setIcon(QIcon(QPixmap(creatureIconPath)))
+        self.ui.actionNewUTC.setIcon(QIcon(QPixmap(creatureIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTC.setEnabled(self.active is not None)
 
         placeableIconPath = f":/images/icons/k{version}/placeable.png"
-        self.ui.actionNewUTP.setIcon(QIcon(QPixmap(placeableIconPath)))
+        self.ui.actionNewUTP.setIcon(QIcon(QPixmap(placeableIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTP.setEnabled(self.active is not None)
 
         doorIconPath = f":/images/icons/k{version}/door.png"
-        self.ui.actionNewUTD.setIcon(QIcon(QPixmap(doorIconPath)))
+        self.ui.actionNewUTD.setIcon(QIcon(QPixmap(doorIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTD.setEnabled(self.active is not None)
 
         itemIconPath = f":/images/icons/k{version}/item.png"
-        self.ui.actionNewUTI.setIcon(QIcon(QPixmap(itemIconPath)))
+        self.ui.actionNewUTI.setIcon(QIcon(QPixmap(itemIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTI.setEnabled(self.active is not None)
 
         soundIconPath = f":/images/icons/k{version}/sound.png"
-        self.ui.actionNewUTS.setIcon(QIcon(QPixmap(soundIconPath)))
+        self.ui.actionNewUTS.setIcon(QIcon(QPixmap(soundIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTS.setEnabled(self.active is not None)
 
         triggerIconPath = f":/images/icons/k{version}/trigger.png"
-        self.ui.actionNewUTT.setIcon(QIcon(QPixmap(triggerIconPath)))
+        self.ui.actionNewUTT.setIcon(QIcon(QPixmap(triggerIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTT.setEnabled(self.active is not None)
 
         merchantIconPath = f":/images/icons/k{version}/merchant.png"
-        self.ui.actionNewUTM.setIcon(QIcon(QPixmap(merchantIconPath)))
+        self.ui.actionNewUTM.setIcon(QIcon(QPixmap(merchantIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTM.setEnabled(self.active is not None)
 
         waypointIconPath = f":/images/icons/k{version}/waypoint.png"
-        self.ui.actionNewUTW.setIcon(QIcon(QPixmap(waypointIconPath)))
+        self.ui.actionNewUTW.setIcon(QIcon(QPixmap(waypointIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTW.setEnabled(self.active is not None)
 
         encounterIconPath = f":/images/icons/k{version}/encounter.png"
-        self.ui.actionNewUTE.setIcon(QIcon(QPixmap(encounterIconPath)))
+        self.ui.actionNewUTE.setIcon(QIcon(QPixmap(encounterIconPath)))  # type: ignore[arg-type]
         self.ui.actionNewUTE.setEnabled(self.active is not None)
 
         self.ui.actionEditTLK.setEnabled(self.active is not None)
