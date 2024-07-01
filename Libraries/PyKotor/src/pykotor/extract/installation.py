@@ -709,7 +709,18 @@ class Installation:
         self,
     ):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources_list(self._find_resource_folderpath(("streamwaves", "streamvoice")), recurse=True)
+        files: list[FileResource] = []
+        stack: list[str] = [str(self._find_resource_folderpath(("streamwaves", "streamvoice")))]
+
+        while stack:
+            current_dir = stack.pop()
+            with os.scandir(current_dir) as it:
+                for entry in it:
+                    if entry.is_file():
+                        files.append(FileResource.from_path(entry.path))
+                    elif entry.is_dir():
+                        stack.append(entry.path)
+        self._streamwaves = files
 
     def load_streamvoice(
         self,
