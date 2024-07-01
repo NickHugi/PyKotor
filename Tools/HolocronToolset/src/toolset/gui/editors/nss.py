@@ -279,36 +279,43 @@ class NSSEditor(Editor):
             try:
                 self._handle_user_ncs(data, resref)
             except ValueError as e:
-                error_occurred = True
-                QMessageBox(QMessageBox.Icon.Critical, "Decompilation/Download Failed", str(universal_simplify_exception(e))).exec_()
-                if is_debug_mode():
-                    raise
+                error_occurred = self._handle_exc_debug_mode(
+                    "Decompilation/Download Failed", e
+                )
             except NoConfigurationSetError as e:
-                error_occurred = True
-                QMessageBox(QMessageBox.Icon.Critical, "Filepath is not set", str(universal_simplify_exception(e))).exec_()
-                if is_debug_mode():
-                    raise
+                error_occurred = self._handle_exc_debug_mode("Filepath is not set", e)
             finally:
                 if error_occurred:
                     self.new()
+
+    def _handle_exc_debug_mode(self, arg0, e):
+        QMessageBox(
+            QMessageBox.Icon.Critical, arg0, str(universal_simplify_exception(e))
+        ).exec_()
+        if is_debug_mode():
+            raise
+        result = True
+        return result
 
     def _handle_user_ncs(self, data: dict[str, str], resname: str) -> None:
         box = QMessageBox(
             QMessageBox.Icon.Question,
             "Decompile or Download",
             f"Would you like to decompile this script, or download it from the <a href='{self.sourcerepo_url}'>Vanilla Source Repository</a>?",
-            buttons=QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+            buttons=QMessageBox.Yes | QMessageBox.Ok | QMessageBox.Cancel,
         )
         box.setDefaultButton(QMessageBox.Cancel)
         box.button(QMessageBox.Yes).setText("Decompile")
-        box.button(QMessageBox.No).setText("Download")
+        box.button(QMessageBox.Ok).setText("Download")
         choice = box.exec_()
         print(f"User chose {choice} in the decompile/download messagebox.")
 
         if choice == QMessageBox.Yes:
             source = decompileScript(data, self._installation.path(), tsl=self._installation.tsl)
-        else:
+        elif choice == QMessageBox.Ok:
             source = self._download_and_load_remote_script(resname)
+        else:
+            return
         self.ui.codeEdit.setPlainText(source)
         self._is_decompiled = True
 
