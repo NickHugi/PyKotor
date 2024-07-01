@@ -51,6 +51,7 @@ else:
 if TYPE_CHECKING:
     import os
 
+    from qtpy.QtCore import QTemporaryFile
     from qtpy.QtGui import QShowEvent
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
@@ -147,6 +148,7 @@ class Editor(QMainWindow):
         self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
         self.buffer: QBuffer = QBuffer()
         self.player: QMediaPlayer = QMediaPlayer(self)
+        self.tempMediaFile: QTemporaryFile | None = None
 
 
     def showEvent(self, event: QShowEvent):
@@ -164,7 +166,7 @@ class Editor(QMainWindow):
         window_geometry = self.geometry()
         x = (screen_geometry.width() - window_geometry.width()) // 2
         y = (screen_geometry.height() - window_geometry.height()) // 2
-        self.move(x, y)
+        self.move(x, y-50)
 
         main_window = next(
             (
@@ -193,7 +195,7 @@ class Editor(QMainWindow):
                 new_x = screen_geometry.left()
             if new_y < screen_geometry.top():
                 new_y = screen_geometry.top()
-            self.move(new_x, new_y)
+            self.move(new_x, new_y-50)
             main_geometry = main_window.geometry()
             editor_geometry = self.geometry()
             if editor_geometry.intersects(main_geometry):

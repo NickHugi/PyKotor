@@ -730,7 +730,7 @@ class DLGLink(Generic[T]):
     ):
         self._hash_cache = hash(uuid.uuid4().hex)
         self.active1: ResRef = ResRef.from_blank()
-        self.node: DLGNode | None = node
+        self.node: DLGNode = node
         self.list_index: int = list_index
 
         # not in StartingList

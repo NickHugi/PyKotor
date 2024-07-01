@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="images">
+    <file>common/sound-icon.png</file>
+    <file>common/voice-icon.png</file>
     <file>common/stylesheet-vline.png</file>
     <file>common/stylesheet-branch-more.png</file>
     <file>common/stylesheet-branch-end.png</file>

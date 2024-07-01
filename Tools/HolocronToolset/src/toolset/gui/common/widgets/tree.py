@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import qtpy
-
 from qtpy.QtCore import (
     QEvent,
     QModelIndex,
@@ -22,11 +20,6 @@ from qtpy.QtWidgets import (
 )
 
 from toolset.gui.common.style.delegates import HTMLDelegate
-
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    pass
-else:
-    pass
 
 if TYPE_CHECKING:
 
@@ -54,7 +47,7 @@ class RobustTreeView(QTreeView):
         self.setAnimated(True)
         self.setAutoExpandDelay(2000)
         self.setAutoScroll(False)
-        self.setExpandsOnDoubleClick(True)
+        #self.setExpandsOnDoubleClick(True)
         self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
         self.setIndentation(20)
         self.setWordWrap(True)
@@ -71,7 +64,7 @@ class RobustTreeView(QTreeView):
         self.layoutChangedDebounceTimer.setSingleShot(True)
         self.layoutChangedDebounceTimer.timeout.connect(lambda: self.model().layoutChanged.emit())
         self.branch_connectors_enabled: bool = False
-        self.original_stylesheet = self.styleSheet()
+        self.original_stylesheet: str = self.styleSheet()
 
     def fix_horizontal_scroll_bar(self):
         #self.setColumnWidth(0, 2000)
@@ -80,7 +73,7 @@ class RobustTreeView(QTreeView):
         header.setStretchLastSection(False)
         header.setMinimumSectionSize(self.geometry().width() * 5)
         header.setDefaultSectionSize(self.geometry().width() * 10)
-        header.hide()  # Hide the header
+        header.hide()
 
     def debounceLayoutChanged(self, timeout: int = 100, *, preChangeEmit: bool = False):
         self.viewport().update()
@@ -177,6 +170,10 @@ class RobustTreeView(QTreeView):
         return True
 
     def scrollSingleStep(self, direction: Literal["up", "down"]):
+        """A simple working function that will scroll a single step.
+
+        Determines what a 'single step' is by checking `self.verticalScrollMode()`
+        """
         vertScrollBar = self.verticalScrollBar()
         if self.verticalScrollMode() == QAbstractItemView.ScrollPerItem:
             action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
@@ -193,12 +190,12 @@ class RobustTreeView(QTreeView):
             single_step = (1 if delta > 0 else -1)
             newVerticalSpacing = max(0, self.itemDelegate().customVerticalSpacing + single_step)
             self.itemDelegate().setVerticalSpacing(newVerticalSpacing)
-            self.model().layoutChanged.emit()  # requires immediate update
+            self.model().layoutChanged.emit()  # Requires immediate update
             return True
         return False
 
     def _wheel_changes_indent_size(self, event: QWheelEvent) -> bool:
-        delta: int = event.angleDelta().x()  # same as y() in the other funcs but returned in x() due to AltModifier I guess. Not in the documentation.
+        delta: int = event.angleDelta().x()  # Same as y() in the other funcs but returned in x() due to AltModifier I guess. Not in the documentation.
         #print(f"wheel changes indent delta: {delta}")
         if not delta:
             return False

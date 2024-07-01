@@ -2,24 +2,36 @@ from __future__ import annotations
 
 import re
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 import qtpy
 
 from qtpy.QtCore import (
+    QEvent,
+    QPoint,
+    QRect,
     QSize,
     Qt,
 )
 from qtpy.QtGui import (
+    QBrush,
     QColor,
+    QFont,
+    QIcon,
+    QMouseEvent,
+    QPainter,
     QPalette,
+    QPen,
+    QPixmap,
     QTextDocument,
 )
 from qtpy.QtWidgets import (
+    QApplication,
     QListView,
     QListWidget,
     QStyle,
     QStyledItemDelegate,
+    QToolTip,
     QTreeView,
     QTreeWidget,
     QWidget,
@@ -34,11 +46,8 @@ if TYPE_CHECKING:
 
 
     from qtpy.QtCore import (
+        QAbstractItemModel,
         QModelIndex,
-    )
-    from qtpy.QtGui import (
-        QFont,
-        QPainter,
     )
     from qtpy.QtWidgets import (
         QStyleOptionViewItem,
@@ -47,21 +56,25 @@ if TYPE_CHECKING:
 
 FONT_SIZE_REPLACE_RE = re.compile(r"font-size:\d+pt;")
 
+_ICONS_DATA_ROLE = Qt.ItemDataRole.UserRole + 10
+
 
 class HTMLDelegate(QStyledItemDelegate):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.text_size: int = 12
-        self.customVerticalSpacing: int = 0  # Default vertical spacing between items
+        self.customVerticalSpacing: int = 0
         self.nudgedModelIndexes: dict[QModelIndex, tuple[int, int]] = {}
-        self.max_wraps: int = 3  # Maximum number of lines to wrap text
+
+    def parent(self) -> QWidget:
+        parent = super().parent()
+        assert isinstance(parent, QWidget), f"HTMLDelegate.parent() returned non-QWidget: '{parent.__class__.__name__}'"
+        return parent
 
     def setVerticalSpacing(self, spacing: int):
-        print(f"<SDM> [setVerticalSpacing scope] set vertical spacing from {self.customVerticalSpacing} to {spacing}")
         self.customVerticalSpacing = spacing
 
     def setTextSize(self, size: int):
-        print(f"<SDM> [setTextSize scope] set text size from {self.text_size} to {size}")
         self.text_size = size
 
     def nudgeItem(
@@ -72,7 +85,6 @@ class HTMLDelegate(QStyledItemDelegate):
     ):
         """Manually set the nudge offset for an item."""
         self.nudgedModelIndexes[index] = (x, y)
-        print("<SDM> [nudgeItem scope] self.nudgedModelIndexes[index]: ", self.nudgedModelIndexes[index])
 
     def createTextDocument(self, html: str, font: QFont, width: int) -> QTextDocument:
         """Create and return a configured QTextDocument."""
@@ -82,10 +94,113 @@ class HTMLDelegate(QStyledItemDelegate):
         doc.setTextWidth(width)
         return doc
 
+    def draw_badge(
+        self,
+        painter: QPainter,
+        center: QPoint,
+        radius: int,
+        text: str,
+    ):
+        painter.save()
+
+        # Use a simple, flat color background with a subtle border for clarity
+        background_color = QColor(255, 255, 255)  # White background for the badge
+        border_color = QColor(200, 200, 200)  # Light grey border for some subtle distinction
+
+        # Prepare to draw the badge with a simple filled circle and a border
+        painter.setBrush(QBrush(background_color))
+        painter.setPen(QPen(border_color, 2))  # Adjust border thickness here
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        # Draw the badge
+        painter.drawEllipse(center, radius, radius)
+
+        # Text settings
+        text_color = QColor(0, 0, 0)  # Black color for the text to ensure it stands out
+        painter.setPen(QPen(text_color))
+        painter.setFont(QFont("Arial", max(10, self.text_size - 1), QFont.Bold))  # Ensure the font size is appropriate
+
+        # Calculate text rectangle for proper alignment
+        text_rect = QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
+        painter.drawText(text_rect, Qt.AlignCenter, text)
+
+        painter.restore()
+
+    def process_icons(
+        self,
+        painter: QPainter | None,
+        option: QStyleOptionViewItem,
+        index: QModelIndex,
+        event: QMouseEvent | None = None,
+        *,
+        show_tooltip: bool = False,
+        execute_action: bool = False,
+    ) -> tuple[int, bool]:
+        icon_data: dict = index.data(_ICONS_DATA_ROLE)
+        icon_width_total = 0
+        handled_click = False
+        if icon_data:
+            icon_size = int(self.text_size * 1.5)
+            icon_spacing = icon_data["spacing"]
+            columns = icon_data["columns"]
+            icons: list[tuple[Any, Callable, str]] = icon_data["icons"]
+
+            left_icon_info = icon_data.get("left_badge")
+            if (execute_action or show_tooltip) and left_icon_info:
+                icons.append((None, left_icon_info["action"], left_icon_info["tooltip_callable"]()))
+            start_x = option.rect.left()
+            start_y = option.rect.top() + icon_spacing
+            icon_width_total = columns * (icon_size + icon_spacing) - icon_spacing
+
+            for i, (iconSerialized, action, tooltip) in enumerate(icons):
+                if isinstance(iconSerialized, QStyle.StandardPixmap):
+                    icon = QApplication.style().standardIcon(iconSerialized)
+                elif isinstance(iconSerialized, str):
+                    pixmap = QPixmap(iconSerialized)
+                    scaled_pixmap = pixmap.scaled(icon_size, icon_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    icon = QIcon(scaled_pixmap)
+                else:
+                    icon = None
+                col = i % columns
+                row = i // columns
+                x_offset = start_x + (icon_size + icon_spacing) * col
+                y_offset = start_y + (icon_size + icon_spacing) * row
+
+                icon_rect = QRect(x_offset, y_offset, icon_size, icon_size)
+
+                if painter and icon is not None:
+                    icon.paint(painter, icon_rect)
+
+                if event:
+                    posForMouseEvent = event.pos()
+                    if icon_rect.contains(posForMouseEvent):
+                        if show_tooltip:
+                            QToolTip.showText(event.globalPos(), tooltip, self.parent())
+                            return icon_width_total, True
+
+                        if execute_action and action:
+                            action()
+                            handled_click = True
+
+            if left_icon_info:
+                left_text = left_icon_info["text_callable"]()
+                radius = int(icon_width_total / 2)
+
+                center_x = start_x + radius
+                center_y = option.rect.bottom() - radius - icon_spacing
+
+                center = QPoint(center_x, center_y)
+                if painter:
+                    self.draw_badge(painter, center, radius, left_text)
+
+        if show_tooltip:
+            QToolTip.hideText()
+
+        return icon_width_total, handled_click
+
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex):
         painter.save()
 
-        # Apply nudge offsets
         nudge_offset = self.nudgedModelIndexes.get(index, (0, 0))
         painter.translate(*nudge_offset)
 
@@ -94,30 +209,27 @@ class HTMLDelegate(QStyledItemDelegate):
             painter.restore()
             return
 
-        doc = self.createTextDocument(display_data, option.font, option.rect.width())
-        ctx = doc.documentLayout().PaintContext()
-        ctx.palette = option.palette
+        icon_width_total, _ = self.process_icons(painter, option, index)
 
-        # Handle selection highlighting
-        if bool(option.state & QStyle.StateFlag.State_Selected):
-            highlight_color = option.palette.highlight().color()
-            if not option.widget.hasFocus():
-                highlight_color = QColor(100, 100, 100)  # Grey color
-            highlight_color.setAlpha(int(highlight_color.alpha() * 0.4))
-            painter.fillRect(option.rect, highlight_color)
-            ctx.palette.setColor(QPalette.Text, option.palette.highlightedText().color())
-        else:
-            ctx.palette.setColor(QPalette.Text, option.palette.text().color())
-
-        painter.translate(option.rect.topLeft())
-        doc.documentLayout().draw(painter, ctx)
+        new_rect = option.rect.adjusted(icon_width_total, 0, 0, 0)
+        display_data = index.data(Qt.DisplayRole)
+        if display_data:
+            doc = self.createTextDocument(display_data, option.font, new_rect.width())
+            ctx = doc.documentLayout().PaintContext()
+            ctx.palette = option.palette
+            if bool(option.state & QStyle.StateFlag.State_Selected):
+                highlight_color = option.palette.highlight().color()
+                if not option.widget.hasFocus():
+                    highlight_color = QColor(100, 100, 100)  # Grey color
+                highlight_color.setAlpha(int(highlight_color.alpha() * 0.4))
+                painter.fillRect(new_rect, highlight_color)  # Fill only new_rect for highlighting
+                ctx.palette.setColor(QPalette.Text, option.palette.highlightedText().color())
+            else:
+                ctx.palette.setColor(QPalette.Text, option.palette.text().color())
+            painter.translate(new_rect.topLeft())
+            doc.documentLayout().draw(painter, ctx)
 
         painter.restore()
-
-    def parent(self) -> QWidget:
-        parent = super().parent()
-        assert isinstance(parent, QWidget), f"HTMLDelegate.parent() returned non-QWidget: '{parent.__class__.__name__}'"
-        return parent
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         html: str | None = index.data(Qt.ItemDataRole.DisplayRole)
@@ -136,15 +248,40 @@ class HTMLDelegate(QStyledItemDelegate):
         else:
             available_width, available_height = parentWidget.width(), parentWidget.height()
 
-        # Create document to find natural size
         doc = self.createTextDocument(html, option.font, available_height)
         naturalWidth = int(doc.idealWidth())
         naturalHeight = int(doc.size().height())
-
-        ratio = 1.4  # visually looks better than the golden ratio.
+        ratio = 1.4
         min_width = naturalHeight * ratio
-        max_height = naturalWidth / ratio
+        max_height = min(naturalWidth / ratio, (naturalHeight * naturalWidth) / min_width)
         adjusted_width = max(naturalWidth, min_width)
         adjusted_height = min(naturalHeight, max_height)
+        finalSize = QSize(int(adjusted_width), int(adjusted_height + self.customVerticalSpacing))
 
-        return QSize(int(adjusted_width), int(adjusted_height + self.customVerticalSpacing))
+        icon_data = index.data(_ICONS_DATA_ROLE)
+        if icon_data:
+            icon_size = int(self.text_size * 1.5)
+            icon_spacing = icon_data["spacing"]
+            columns = icon_data["columns"]
+            rows = (len(icon_data["icons"]) + columns - 1) // columns
+            total_icon_width = columns * (icon_size + icon_spacing)
+            finalSize.setWidth(finalSize.width() + total_icon_width)
+            total_icon_height = rows * (icon_size + icon_spacing) + 2 * icon_spacing
+            finalSize.setHeight(max(finalSize.height(), total_icon_height))
+
+        return finalSize
+
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        if event.type() == QEvent.MouseButtonRelease:
+            assert isinstance(event, QMouseEvent)
+            if event.button() == Qt.LeftButton:
+                _, handled_click = self.process_icons(None, option, index, event=event, execute_action=True)
+                if handled_click:
+                    return True
+
+        return super().editorEvent(event, model, option, index)
+
+    def handleIconTooltips(self, event: QMouseEvent, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        """Must be called from the parent widget directly."""
+        _, handled_tooltip = self.process_icons(None, option, index, event=event, show_tooltip=True)
+        return handled_tooltip
