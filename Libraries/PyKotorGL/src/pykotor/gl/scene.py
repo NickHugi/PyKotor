@@ -392,13 +392,13 @@ class Scene:
             self.layout = self._getLyt()
 
         for identifier in self.clearCacheBuffer:
-            for git_creature in copy(self.git.creatures):
+            for git_creature in self.git.creatures.copy():
                 if identifier.resname == git_creature.resref and identifier.restype is ResourceType.UTC:
                     del self.objects[git_creature]
-            for placeable in copy(self.git.placeables):
+            for placeable in self.git.placeables.copy():
                 if identifier.resname == placeable.resref and identifier.restype is ResourceType.UTP:
                     del self.objects[placeable]
-            for door in copy(self.git.doors):
+            for door in self.git.doors.copy():
                 if door.resref == identifier.resname and identifier.restype is ResourceType.UTD:
                     del self.objects[door]
             if identifier.restype in {ResourceType.TPC, ResourceType.TGA}:
@@ -820,7 +820,7 @@ class Scene:
         name: str,
     ):
         """This function runs in a background thread and handles the I/O and processing to get the model data.
-        
+
         Currently unused.
         """
         RobustRootLogger().debug(f"async queue {name}.mdl call")

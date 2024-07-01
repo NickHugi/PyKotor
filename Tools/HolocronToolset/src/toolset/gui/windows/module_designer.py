@@ -1454,16 +1454,16 @@ class ModuleDesigner(QMainWindow):
 
     # region Events
     def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):  # noqa: FBT001, FBT002
-        super().keyPressEvent(e)
         if e is None:
             return
+        super().keyPressEvent(e)
         self.ui.mainRenderer.keyPressEvent(e)
         self.ui.flatRenderer.keyPressEvent(e)
 
     def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):  # noqa: FBT001, FBT002
-        super().keyReleaseEvent(e)
         if e is None:
             return
+        super().keyReleaseEvent(e)
         self.ui.mainRenderer.keyReleaseEvent(e)
         self.ui.flatRenderer.keyReleaseEvent(e)
 
@@ -1591,7 +1591,8 @@ class ModuleDesignerControls3d:
         """
         self.editor: ModuleDesigner = editor
         self.renderer: ModuleRenderer = renderer
-        self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)  # Show the cursor
+        self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
+        self.renderer.scene.show_cursor = True
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
