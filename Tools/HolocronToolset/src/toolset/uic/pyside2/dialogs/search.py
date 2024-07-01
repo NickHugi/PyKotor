@@ -119,145 +119,131 @@ class Ui_Dialog(object):
 
         self.groupBox_5 = QGroupBox(Dialog)
         self.groupBox_5.setObjectName(u"groupBox_5")
-        self.horizontalLayout_3 = QHBoxLayout(self.groupBox_5)
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.verticalLayout_4 = QVBoxLayout()
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.gridLayout_4 = QGridLayout(self.groupBox_5)
+        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.selectAllCheck = QCheckBox(self.groupBox_5)
+        self.selectAllCheck.setObjectName(u"selectAllCheck")
+        self.selectAllCheck.setChecked(True)
+
+        self.gridLayout_4.addWidget(self.selectAllCheck, 0, 0, 1, 4)
+
         self.typeARECheck = QCheckBox(self.groupBox_5)
         self.typeARECheck.setObjectName(u"typeARECheck")
         self.typeARECheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeARECheck)
+        self.gridLayout_4.addWidget(self.typeARECheck, 1, 0, 1, 1)
 
         self.typeGITCheck = QCheckBox(self.groupBox_5)
         self.typeGITCheck.setObjectName(u"typeGITCheck")
         self.typeGITCheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeGITCheck)
+        self.gridLayout_4.addWidget(self.typeGITCheck, 1, 1, 1, 1)
 
         self.typeIFOCheck = QCheckBox(self.groupBox_5)
         self.typeIFOCheck.setObjectName(u"typeIFOCheck")
         self.typeIFOCheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeIFOCheck)
+        self.gridLayout_4.addWidget(self.typeIFOCheck, 1, 2, 1, 1)
 
         self.typeLYTCheck = QCheckBox(self.groupBox_5)
         self.typeLYTCheck.setObjectName(u"typeLYTCheck")
         self.typeLYTCheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeLYTCheck)
+        self.gridLayout_4.addWidget(self.typeLYTCheck, 1, 3, 1, 1)
 
         self.typeVISCheck = QCheckBox(self.groupBox_5)
         self.typeVISCheck.setObjectName(u"typeVISCheck")
         self.typeVISCheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeVISCheck)
+        self.gridLayout_4.addWidget(self.typeVISCheck, 2, 0, 1, 1)
 
         self.typeDLGCheck = QCheckBox(self.groupBox_5)
         self.typeDLGCheck.setObjectName(u"typeDLGCheck")
         self.typeDLGCheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeDLGCheck)
+        self.gridLayout_4.addWidget(self.typeDLGCheck, 2, 1, 1, 1)
 
         self.typeJRLCheck = QCheckBox(self.groupBox_5)
         self.typeJRLCheck.setObjectName(u"typeJRLCheck")
         self.typeJRLCheck.setChecked(True)
 
-        self.verticalLayout_4.addWidget(self.typeJRLCheck)
+        self.gridLayout_4.addWidget(self.typeJRLCheck, 2, 2, 1, 1)
 
-
-        self.horizontalLayout_3.addLayout(self.verticalLayout_4)
-
-        self.verticalLayout_5 = QVBoxLayout()
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
         self.typeUTCCheck = QCheckBox(self.groupBox_5)
         self.typeUTCCheck.setObjectName(u"typeUTCCheck")
         self.typeUTCCheck.setChecked(True)
 
-        self.verticalLayout_5.addWidget(self.typeUTCCheck)
+        self.gridLayout_4.addWidget(self.typeUTCCheck, 2, 3, 1, 1)
 
         self.typeUTDCheck = QCheckBox(self.groupBox_5)
         self.typeUTDCheck.setObjectName(u"typeUTDCheck")
         self.typeUTDCheck.setChecked(True)
 
-        self.verticalLayout_5.addWidget(self.typeUTDCheck)
+        self.gridLayout_4.addWidget(self.typeUTDCheck, 3, 0, 1, 1)
 
         self.typeUTECheck = QCheckBox(self.groupBox_5)
         self.typeUTECheck.setObjectName(u"typeUTECheck")
         self.typeUTECheck.setChecked(True)
 
-        self.verticalLayout_5.addWidget(self.typeUTECheck)
+        self.gridLayout_4.addWidget(self.typeUTECheck, 3, 1, 1, 1)
 
         self.typeUTICheck = QCheckBox(self.groupBox_5)
         self.typeUTICheck.setObjectName(u"typeUTICheck")
         self.typeUTICheck.setChecked(True)
 
-        self.verticalLayout_5.addWidget(self.typeUTICheck)
+        self.gridLayout_4.addWidget(self.typeUTICheck, 3, 2, 1, 1)
 
         self.typeUTPCheck = QCheckBox(self.groupBox_5)
         self.typeUTPCheck.setObjectName(u"typeUTPCheck")
         self.typeUTPCheck.setChecked(True)
 
-        self.verticalLayout_5.addWidget(self.typeUTPCheck)
+        self.gridLayout_4.addWidget(self.typeUTPCheck, 3, 3, 1, 1)
 
-
-        self.horizontalLayout_3.addLayout(self.verticalLayout_5)
-
-        self.verticalLayout_6 = QVBoxLayout()
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
         self.typeUTMCheck = QCheckBox(self.groupBox_5)
         self.typeUTMCheck.setObjectName(u"typeUTMCheck")
         self.typeUTMCheck.setChecked(True)
 
-        self.verticalLayout_6.addWidget(self.typeUTMCheck)
+        self.gridLayout_4.addWidget(self.typeUTMCheck, 4, 0, 1, 1)
 
         self.typeUTWCheck = QCheckBox(self.groupBox_5)
         self.typeUTWCheck.setObjectName(u"typeUTWCheck")
         self.typeUTWCheck.setChecked(True)
 
-        self.verticalLayout_6.addWidget(self.typeUTWCheck)
+        self.gridLayout_4.addWidget(self.typeUTWCheck, 4, 1, 1, 1)
 
         self.typeUTSCheck = QCheckBox(self.groupBox_5)
         self.typeUTSCheck.setObjectName(u"typeUTSCheck")
         self.typeUTSCheck.setChecked(True)
 
-        self.verticalLayout_6.addWidget(self.typeUTSCheck)
+        self.gridLayout_4.addWidget(self.typeUTSCheck, 4, 2, 1, 1)
 
         self.typeUTTCheck = QCheckBox(self.groupBox_5)
         self.typeUTTCheck.setObjectName(u"typeUTTCheck")
         self.typeUTTCheck.setChecked(True)
 
-        self.verticalLayout_6.addWidget(self.typeUTTCheck)
+        self.gridLayout_4.addWidget(self.typeUTTCheck, 4, 3, 1, 1)
 
         self.type2DACheck = QCheckBox(self.groupBox_5)
         self.type2DACheck.setObjectName(u"type2DACheck")
         self.type2DACheck.setChecked(True)
 
-        self.verticalLayout_6.addWidget(self.type2DACheck)
+        self.gridLayout_4.addWidget(self.type2DACheck, 5, 0, 1, 1)
 
-
-        self.horizontalLayout_3.addLayout(self.verticalLayout_6)
-
-        self.verticalLayout_7 = QVBoxLayout()
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
         self.typeNSSCheck = QCheckBox(self.groupBox_5)
         self.typeNSSCheck.setObjectName(u"typeNSSCheck")
         self.typeNSSCheck.setChecked(True)
 
-        self.verticalLayout_7.addWidget(self.typeNSSCheck)
+        self.gridLayout_4.addWidget(self.typeNSSCheck, 5, 1, 1, 1)
 
         self.typeNCSCheck = QCheckBox(self.groupBox_5)
         self.typeNCSCheck.setObjectName(u"typeNCSCheck")
         self.typeNCSCheck.setChecked(True)
 
-        self.verticalLayout_7.addWidget(self.typeNCSCheck)
+        self.gridLayout_4.addWidget(self.typeNCSCheck, 5, 2, 1, 1)
 
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
-        self.verticalLayout_7.addItem(self.verticalSpacer)
-
-
-        self.horizontalLayout_3.addLayout(self.verticalLayout_7)
+        self.gridLayout_4.addItem(self.verticalSpacer, 5, 3, 1, 1)
 
 
         self.verticalLayout_8.addWidget(self.groupBox_5)
@@ -291,6 +277,7 @@ class Ui_Dialog(object):
         self.groupBox_6.setTitle(QCoreApplication.translate("Dialog", u"Options", None))
         self.filenamesOnlyCheck.setText(QCoreApplication.translate("Dialog", u"Filenames only", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("Dialog", u"File types to search in", None))
+        self.selectAllCheck.setText(QCoreApplication.translate("Dialog", u"Select All", None))
         self.typeARECheck.setText(QCoreApplication.translate("Dialog", u"ARE", None))
         self.typeGITCheck.setText(QCoreApplication.translate("Dialog", u"GIT", None))
         self.typeIFOCheck.setText(QCoreApplication.translate("Dialog", u"IFO", None))
