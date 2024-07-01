@@ -98,7 +98,7 @@ class HelpWindow(QMainWindow):
             RobustRootLogger().debug("Suppressed error in HelpWindow._setupContents", exc_info=True)
 
     def _setupContentsRecJSON(self, parent: QTreeWidgetItem | None, data: dict[str, Any]):
-        addItem: Callable[[QTreeWidgetItem], None] = (
+        addItem: Callable[[QTreeWidgetItem], None] = (  # type: ignore[arg-type]
             self.ui.contentsTree.addTopLevelItem
             if parent is None
             else parent.addChild
@@ -112,7 +112,7 @@ class HelpWindow(QMainWindow):
             self._setupContentsRecJSON(item, structure[title])
 
     def _setupContentsRecXML(self, parent: QTreeWidgetItem | None, element: ElemTree.Element):
-        addItem: Callable[[QTreeWidgetItem], None] = (
+        addItem: Callable[[QTreeWidgetItem], None] = (  # type: ignore[arg-type]
             self.ui.contentsTree.addTopLevelItem
             if parent is None
             else parent.addChild
@@ -203,7 +203,7 @@ class HelpWindow(QMainWindow):
     def onContentsClicked(self):
         if not self.ui.contentsTree.selectedItems():
             return
-        item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]
+        item: QTreeWidgetItem = self.ui.contentsTree.selectedItems()[0]  # type: ignore[arg-type]
         filename = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if filename:
             help_path = Path("./help").resolve()
