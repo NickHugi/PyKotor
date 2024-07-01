@@ -4,8 +4,6 @@ import re
 
 from typing import TYPE_CHECKING, Any, Callable
 
-import qtpy
-
 from qtpy.QtCore import (
     QEvent,
     QPoint,
@@ -36,11 +34,6 @@ from qtpy.QtWidgets import (
     QTreeWidget,
     QWidget,
 )
-
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    pass
-else:
-    pass
 
 if TYPE_CHECKING:
 
@@ -102,28 +95,18 @@ class HTMLDelegate(QStyledItemDelegate):
         text: str,
     ):
         painter.save()
+        background_color = QColor(255, 255, 255)
+        border_color = QColor(200, 200, 200)
 
-        # Use a simple, flat color background with a subtle border for clarity
-        background_color = QColor(255, 255, 255)  # White background for the badge
-        border_color = QColor(200, 200, 200)  # Light grey border for some subtle distinction
-
-        # Prepare to draw the badge with a simple filled circle and a border
         painter.setBrush(QBrush(background_color))
-        painter.setPen(QPen(border_color, 2))  # Adjust border thickness here
-        painter.setRenderHint(QPainter.Antialiasing, True)
-
-        # Draw the badge
+        painter.setPen(QPen(border_color, 2))
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.drawEllipse(center, radius, radius)
-
-        # Text settings
-        text_color = QColor(0, 0, 0)  # Black color for the text to ensure it stands out
+        text_color = QColor(0, 0, 0)
         painter.setPen(QPen(text_color))
-        painter.setFont(QFont("Arial", max(10, self.text_size - 1), QFont.Bold))  # Ensure the font size is appropriate
-
-        # Calculate text rectangle for proper alignment
+        painter.setFont(QFont("Arial", max(10, self.text_size - 1), QFont.Bold))
         text_rect = QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
-        painter.drawText(text_rect, Qt.AlignCenter, text)
-
+        painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, text)
         painter.restore()
 
     def process_icons(
@@ -184,7 +167,7 @@ class HTMLDelegate(QStyledItemDelegate):
 
             if left_icon_info:
                 left_text = left_icon_info["text_callable"]()
-                radius = int(icon_width_total / 2)
+                radius = icon_width_total // 2
 
                 center_x = start_x + radius
                 center_y = option.rect.bottom() - radius - icon_spacing
@@ -258,7 +241,7 @@ class HTMLDelegate(QStyledItemDelegate):
         adjusted_height = min(naturalHeight, max_height)
         finalSize = QSize(int(adjusted_width), int(adjusted_height + self.customVerticalSpacing))
 
-        icon_data = index.data(_ICONS_DATA_ROLE)
+        icon_data: dict[str, Any] = index.data(_ICONS_DATA_ROLE)
         if icon_data:
             icon_size = int(self.text_size * 1.5)
             icon_spacing = icon_data["spacing"]
@@ -267,6 +250,8 @@ class HTMLDelegate(QStyledItemDelegate):
             total_icon_width = columns * (icon_size + icon_spacing)
             finalSize.setWidth(finalSize.width() + total_icon_width)
             total_icon_height = rows * (icon_size + icon_spacing) + 2 * icon_spacing
+            if icon_data.get("left_badge"):
+                total_icon_height += (icon_size + icon_spacing) + 2 * icon_spacing
             finalSize.setHeight(max(finalSize.height(), total_icon_height))
 
         return finalSize
