@@ -246,6 +246,12 @@
            <layout class="QVBoxLayout" name="verticalLayout_9">
             <item>
              <widget class="QCheckBox" name="mdlDecompileCheckbox">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Decompile feature is not available.</string>
+              </property>
               <property name="text">
                <string>Decompile</string>
               </property>
@@ -317,9 +323,9 @@
      <addaction name="actionNewSSF"/>
     </widget>
     <widget class="QMenu" name="menuRecentFiles">
-      <property name="title">
-        <string>Recent Files</string>
-      </property>
+     <property name="title">
+      <string>Recent Files</string>
+     </property>
     </widget>
     <addaction name="menuNew"/>
     <addaction name="openAction"/>
