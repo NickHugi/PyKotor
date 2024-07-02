@@ -1365,7 +1365,9 @@ class DLGStandardItemModel(QStandardItemModel):
     def addRootNode(self):
         """Adds a root node to the dialog graph."""
         assert self.editor is not None
-        newLink: DLGLink = DLGLink(DLGEntry())
+        newNode = DLGEntry()
+        newNode.plot_index = -1
+        newLink: DLGLink = DLGLink(newNode)
         newLink.node.list_index = self._getNewNodeListIndex(newLink.node)
         self.appendRow(DLGStandardItem(link=newLink))
         print("<SDM> [_coreAddNode scope] newLink: ", newLink)
@@ -1377,11 +1379,12 @@ class DLGStandardItemModel(QStandardItemModel):
         assert parentItem.link is not None
         if link is None:
             newNode = DLGEntry() if isinstance(parentItem.link.node, DLGReply) else DLGReply()
+            newNode.plot_index = -1
             newNode.list_index = self._getNewNodeListIndex(newNode)
             link = DLGLink(newNode)
         newItem = DLGStandardItem(link=link)
-        self.updateItemDisplayText(newItem)
         parentItem.appendRow(newItem)
+        self.updateItemDisplayText(newItem)
         self.updateItemDisplayText(parentItem)
         self.syncItemCopies(parentItem.link, parentItem)
         return newItem

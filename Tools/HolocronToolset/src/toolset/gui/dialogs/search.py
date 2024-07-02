@@ -13,7 +13,6 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
-from utility.misc import is_debug_mode
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget

@@ -62,7 +62,7 @@ class RobustTreeView(QTreeView):
 
         self.layoutChangedDebounceTimer = QTimer(self)
         self.layoutChangedDebounceTimer.setSingleShot(True)
-        self.layoutChangedDebounceTimer.timeout.connect(lambda: self.model().layoutChanged.emit())
+        self.layoutChangedDebounceTimer.timeout.connect(self.emitLayoutChanged)
         self.branch_connectors_enabled: bool = False
         self.original_stylesheet: str = self.styleSheet()
 
@@ -74,6 +74,11 @@ class RobustTreeView(QTreeView):
         header.setMinimumSectionSize(self.geometry().width() * 5)
         header.setDefaultSectionSize(self.geometry().width() * 10)
         header.hide()
+
+    def emitLayoutChanged(self):
+        model = self.model()
+        if model is not None:
+            model.layoutChanged.emit()
 
     def debounceLayoutChanged(self, timeout: int = 100, *, preChangeEmit: bool = False):
         self.viewport().update()
@@ -190,7 +195,7 @@ class RobustTreeView(QTreeView):
             single_step = (1 if delta > 0 else -1)
             newVerticalSpacing = max(0, self.itemDelegate().customVerticalSpacing + single_step)
             self.itemDelegate().setVerticalSpacing(newVerticalSpacing)
-            self.model().layoutChanged.emit()  # Requires immediate update
+            self.emitLayoutChanged()  # Requires immediate update
             return True
         return False
 

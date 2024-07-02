@@ -10,10 +10,19 @@
     <height>694</height>
    </rect>
   </property>
+  <property name="mouseTracking">
+   <bool>true</bool>
+  </property>
   <property name="windowTitle">
    <string>DLGEditor</string>
   </property>
+  <property name="dockNestingEnabled">
+   <bool>true</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="mouseTracking">
+    <bool>true</bool>
+   </property>
    <layout class="QVBoxLayout" name="verticalLayout_main">
     <property name="spacing">
      <number>6</number>
@@ -302,7 +311,7 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>557</width>
+       <width>305</width>
        <height>970</height>
       </rect>
      </property>
@@ -1539,6 +1548,9 @@
      <width>845</width>
      <height>151</height>
     </size>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
    </property>
    <property name="windowTitle">
     <string>File Globals</string>
