@@ -14,6 +14,8 @@ from qtpy.QtCore import (
 )
 from qtpy.QtGui import (
     QFontMetrics,
+    QStandardItem,
+    QStandardItemModel,
 )
 from qtpy.QtWidgets import (
     QApplication,
@@ -157,16 +159,17 @@ class CustomListView(QListView):
 
 
 class FilterComboBox(QComboBox):
-    def __init__(self, parent: QWidget | None = None):
-        super().__init__(parent)
+    def __init__(self, parent: QWidget | None = None, *, init: bool = True):
+        if init:
+            super().__init__(parent)
         self.setEditable(True)
         self.setCompleter(None)  # type: ignore[arg-type]
         self.lineEdit().setValidator(None)  # type: ignore[arg-type]
 
-        self.sourceModel: QStringListModel = QStringListModel(self)
         self.proxyModel: FilterProxyModel = FilterProxyModel(self)
-        self.proxyModel.setSourceModel(self.sourceModel)
-        self.setModel(self.proxyModel)
+        self.sourceModel = QStringListModel(self) if init else self.model()
+        self.setModel(self.sourceModel)
+        super().setModel(self.proxyModel)
 
         self.items: list[str] = []
         self.itemsLoaded: bool = False
@@ -185,10 +188,33 @@ class FilterComboBox(QComboBox):
         mainView = CustomListView(self)
         mainView.combobox = self
         self.setView(mainView)
-        line_edit_height = self.filterLineEdit.height()
         margins = self.view().viewportMargins()
-        self.view().setViewportMargins(margins.left(), margins.top()+line_edit_height, margins.right(), margins.bottom())
+        self.view().setViewportMargins(margins.left(), margins.top() + self.filterLineEdit.height(), margins.right(), margins.bottom())
         self.view().update()
+        self.old_width = self.width()
+
+    def setEditable(self, state: bool):  # noqa: FBT001
+        self._editable = state
+        super().setEditable(state)
+
+    def lineEdit(self) -> QLineEdit:
+        line_edit = super().lineEdit()
+        if line_edit is None:
+            line_edit = QLineEdit(self)
+            self.setLineEdit(line_edit)
+        line_edit.setReadOnly(not self._editable)
+        if not self._editable:
+            line_edit.mousePressEvent = lambda *args: self.hidePopup() if self.isPoppedUp else self.showPopup()  # type: ignore[attr-value]
+        else:
+            line_edit.mousePressEvent = lambda *args: QLineEdit.mousePressEvent(line_edit, *args)  # type: ignore[attr-value]
+        line_edit.home(False)
+        return line_edit
+
+    def setModel(self, model: QStringListModel | QStandardItemModel):
+        print(f"Setting a source model of type {model.__class__.__name__}")
+        assert isinstance(model, (QStringListModel, QStandardItemModel))
+        self.proxyModel.setSourceModel(model)
+        self.sourceModel: QStringListModel | QStandardItemModel = model
 
     def keyPressEvent(self, event: QKeyEvent):
         if self.isPoppedUp:
@@ -216,32 +242,36 @@ class FilterComboBox(QComboBox):
 
     def showPopup(self):
         self.origText = self.currentText()
-        if not self.itemsLoaded:
-            self.sourceModel.setStringList(self.items)
+        if not self.itemsLoaded and self.items:
+            if isinstance(self.sourceModel, QStringListModel):
+                self.sourceModel.setStringList(self.items)
+            elif isinstance(self.sourceModel, QStandardItemModel):
+                # Assume items to be string for simple usage, modify if using different data structures
+                self.sourceModel.clear()
+                for item in self.items:
+                    self.sourceModel.appendRow(QStandardItem(item))
             self.setComboBoxText(self.origText)
             self.itemsLoaded = True
 
-        old_width = self.width()
-        max_width = old_width
+        self.old_width = self.width()
+        max_width = self.old_width
         delegate = self.itemDelegate()
         max_items_to_measure = 1000
-        extra_padding = 50
         for i in range(min(self.model().rowCount(), max_items_to_measure)):
             item_width = delegate.sizeHint(QStyleOptionViewItem(), self.model().index(i, 0)).width()
             if item_width > max_width:
                 max_width = item_width
-        adjusted_width = extra_padding + max_width
-        self.setMinimumWidth(adjusted_width)
+        adjusted_width = max_width
+        self.resize(adjusted_width, self.height())
         self.filterLineEdit.setFixedWidth(adjusted_width)
         self.filterLineEdit.adjustSize()
         self.filterLineEdit.setParent(self.view())
         self.filterLineEdit.move(0, 0)
         self.filterLineEdit.show()
         self.filterLineEdit.setFocus()
-        self.isPoppedUp = True
-        self.view().repaint()
         super().showPopup()
-        self.setMinimumWidth(old_width)
+        self.resize(self.old_width, self.height())
+        self.isPoppedUp = True
         self.filterLineEdit.setFocus()
         self.view().repaint()
 
@@ -251,6 +281,7 @@ class FilterComboBox(QComboBox):
             return
         super().hidePopup()
         self.isPoppedUp = False
+        self.resize(self.old_width, self.height())
 
     def populateComboBox(self, items: Sequence[str]):
         self.items = list(items)
