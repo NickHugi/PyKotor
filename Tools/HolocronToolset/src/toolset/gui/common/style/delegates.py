@@ -128,11 +128,12 @@ class HTMLDelegate(QStyledItemDelegate):
             columns = icon_data["columns"]
             icons: list[tuple[Any, Callable, str]] = icon_data["icons"]
 
-            left_icon_info = icon_data.get("left_badge")
-            if (execute_action or show_tooltip) and left_icon_info:
-                icons.append((None, left_icon_info["action"], left_icon_info["tooltip_callable"]()))
+            bottom_badge_info = icon_data.get("bottom_badge")
+            if (execute_action or show_tooltip) and bottom_badge_info:
+                icons.append((None, bottom_badge_info["action"], bottom_badge_info["tooltip_callable"]()))
             start_x = option.rect.left()
             start_y = option.rect.top() + icon_spacing
+            y_offset = None
             icon_width_total = columns * (icon_size + icon_spacing) - icon_spacing
 
             for i, (iconSerialized, action, tooltip) in enumerate(icons):
@@ -165,12 +166,14 @@ class HTMLDelegate(QStyledItemDelegate):
                             action()
                             handled_click = True
 
-            if left_icon_info:
-                left_text = left_icon_info["text_callable"]()
+            if bottom_badge_info:
+                left_text = bottom_badge_info["text_callable"]()
                 radius = icon_width_total // 2
-
                 center_x = start_x + radius
-                center_y = option.rect.bottom() - radius - icon_spacing
+                if y_offset is None:
+                    center_y = option.rect.top() + icon_spacing + radius
+                else:
+                    center_y = y_offset + icon_width_total + icon_spacing + radius
 
                 center = QPoint(center_x, center_y)
                 if painter:
@@ -250,7 +253,7 @@ class HTMLDelegate(QStyledItemDelegate):
             total_icon_width = columns * (icon_size + icon_spacing)
             finalSize.setWidth(finalSize.width() + total_icon_width)
             total_icon_height = rows * (icon_size + icon_spacing) + 2 * icon_spacing
-            if icon_data.get("left_badge"):
+            if icon_data.get("bottom_badge"):
                 total_icon_height += (icon_size + icon_spacing) + 2 * icon_spacing
             finalSize.setHeight(max(finalSize.height(), total_icon_height))
 
