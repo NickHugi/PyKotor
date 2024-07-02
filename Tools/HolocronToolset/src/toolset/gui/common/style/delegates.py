@@ -153,6 +153,8 @@ class HTMLDelegate(QStyledItemDelegate):
                 icon_rect = QRect(x_offset, y_offset, icon_size, icon_size)
 
                 if painter and icon is not None:
+                    background_color = QColor(235, 245, 255)  # Light pastel blue
+                    painter.fillRect(icon_rect, background_color)
                     icon.paint(painter, icon_rect)
 
                 if event:
