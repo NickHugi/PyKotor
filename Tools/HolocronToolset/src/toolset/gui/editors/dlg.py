@@ -1394,6 +1394,7 @@ class DLGStandardItemModel(QStandardItemModel):
         self.updateItemDisplayText(newItem)
         self.updateItemDisplayText(parentItem)
         self.syncItemCopies(parentItem.link, parentItem)
+        self.treeView.expand(parentItem.index())
         return newItem
 
     def _linkCoreNodes(self, target: DLGNode, source: DLGNode) -> DLGLink:
@@ -1597,7 +1598,7 @@ class DLGStandardItemModel(QStandardItemModel):
         else:
             display_text = text
         list_prefix = f"<b>{prefix}{item.link.node.list_index}:</b> "
-        item.setData(f'<span style="color:{color.name()}; font-size:{self.treeView.text_size}pt;">{list_prefix}{display_text}</span>', Qt.ItemDataRole.DisplayRole)
+        item.setData(f'<span style="color:{color.name()}; font-size:{self.treeView.getTextSize()}pt;">{list_prefix}{display_text}</span>', Qt.ItemDataRole.DisplayRole)
 
         hasConditional = item.link.active1 or item.link.active2
         hasScript = item.link.node.script1 or item.link.node.script2
@@ -1627,13 +1628,13 @@ class DLGStandardItemModel(QStandardItemModel):
 
         icon_data = {
             "icons": icons,
-            "size": 15,
+            "size": self.treeView.getTextSize,
             "spacing": 5,
             "rows": len(icons),
             "columns": 1,
             "bottom_badge": {
                 "text_callable": lambda *args: str(self.countItemRefs(item.link) if item.link else 0),
-                "size_callable": lambda *args: int(self.treeView.text_size),
+                "size_callable": self.treeView.getTextSize,
                 "tooltip_callable": lambda *args: f"{self.countItemRefs(item.link) if item.link else 0} references to this item",
                 "action": lambda *args: self.editor is not None and self.editor.show_reference_dialog([item.ref_to_link], item.data(Qt.ItemDataRole.DisplayRole))
             }
@@ -1790,17 +1791,16 @@ class DLGStandardItemModel(QStandardItemModel):
             if not item.isLoaded():
                 continue
             assert item.link is not None
-            expected_list = item.link.node.links
-            link_to_cur_item: dict[DLGLink, DLGStandardItem | None] = {link: None for link in expected_list}
+            link_to_cur_item: dict[DLGLink, DLGStandardItem | None] = {link: None for link in item.link.node.links}
 
             self.ignoring_updates = True
             while item.rowCount() > 0:
                 child_row = item.takeRow(0)
                 child_item = child_row[0] if child_row else None
-                if child_item is not None and child_item.link:
+                if child_item is not None and child_item.link is not None:
                     link_to_cur_item[child_item.link] = child_item
 
-            for link in expected_list:
+            for link in item.link.node.links:
                 child_item = link_to_cur_item[link]
                 if child_item is None:
                     child_item = DLGStandardItem(link=link)
@@ -1952,15 +1952,15 @@ class CopySyncDict(weakref.WeakKeyDictionary):
         if init_dict is None:
             super().__init__(None)
             return
-        if init_dict is not None:
-            if isinstance(init_dict, Mapping):
-                for k, v in init_dict.items():
-                    if isinstance(k, tuple):
-                        k, v = k
-                    self[k] = v
-            else:
-                for k, v in init_dict:
-                    self[k] = v
+        if isinstance(init_dict, Mapping):
+            for k, v in init_dict.items():
+                if isinstance(k, tuple):
+                    k, v = k
+                self[k] = v
+        else:
+            for k, v in init_dict:
+                self[k] = v
+        super().__init__(None)
 
     def __setitem__(self, key: DLGLink | weakref.ref[DLGLink], value: DLGLinkSync | DLGLink):
         if isinstance(key, weakref.ref):
@@ -2053,6 +2053,11 @@ class DLGTreeView(RobustTreeView):
         #self.setViewportMargins(1000, 0, 0, 0)  # Adjust left margin as needed
         #self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove | QAbstractItemView.DragDropMode.DragDrop)
 
+    def setTextSize(self, size: int):
+        super().setTextSize(size)
+        if self.editor is not None:
+            self.editor.dlg_settings.setFontSize(size)
+
     def emitLayoutChanged(self):
         super().emitLayoutChanged()
         return
@@ -2070,7 +2075,7 @@ class DLGTreeView(RobustTreeView):
                 else:
                     delegate = widget.itemDelegate()
                     if isinstance(delegate, HTMLDelegate):
-                        delegate.setTextSize(self.text_size)
+                        delegate.setTextSize(self.getTextSize())
                     widget.model().layoutChanged.emit()
 
     def model(self) -> DLGStandardItemModel | None:
@@ -2122,13 +2127,13 @@ class DLGTreeView(RobustTreeView):
         arrow = QPolygon()
 
         if self.isExpanded(index):
-            arrow.append(QPoint(center.x() - self.text_size // 2, center.y() - self.text_size // 3))
-            arrow.append(QPoint(center.x() + self.text_size // 2, center.y() - self.text_size // 3))
-            arrow.append(QPoint(center.x(), center.y() + self.text_size // 2))
+            arrow.append(QPoint(center.x() - self.getTextSize() // 2, center.y() - self.getTextSize() // 3))
+            arrow.append(QPoint(center.x() + self.getTextSize() // 2, center.y() - self.getTextSize() // 3))
+            arrow.append(QPoint(center.x(), center.y() + self.getTextSize() // 2))
         else:
-            arrow.append(QPoint(center.x() - self.text_size // 3, center.y() - self.text_size // 2))
-            arrow.append(QPoint(center.x() + self.text_size // 2, center.y()))
-            arrow.append(QPoint(center.x() - self.text_size // 3, center.y() + self.text_size // 2))
+            arrow.append(QPoint(center.x() - self.getTextSize() // 3, center.y() - self.getTextSize() // 2))
+            arrow.append(QPoint(center.x() + self.getTextSize() // 2, center.y()))
+            arrow.append(QPoint(center.x() - self.getTextSize() // 3, center.y() + self.getTextSize() // 2))
 
         painter.save()
         try:
@@ -2212,7 +2217,7 @@ class DLGTreeView(RobustTreeView):
         display_text = f"{link_list_display}\\{dragged_item.link.list_index} --> {node_list_display}\\{dragged_item.link.node.list_index}"
 
         html_content = f"""
-        <div style="color: {color}; font-size: {self.text_size}pt;">
+        <div style="color: {color}; font-size: 12pt;">
             {display_text}
         </div>
         """
@@ -2929,7 +2934,7 @@ Should return 1 or 0, representing a boolean.
         self.find_layout.addWidget(self.results_label)
         self.ui.verticalLayout_main.insertWidget(0, self.find_bar)  # type: ignore[arg-type]
         self.setup_completer()
-        self.ui.dialogTree.text_size = self.ui.dialogTree.itemDelegate().text_size = self.dlg_settings.fontSize(self.ui.dialogTree.text_size)
+        self.ui.dialogTree.setTextSize(self.dlg_settings.fontSize(self.ui.dialogTree.getTextSize()))
 
     def setup_completer(self):
         temp_entry = DLGEntry()
@@ -3409,8 +3414,8 @@ Should return 1 or 0, representing a boolean.
                             settings_key="ExpandRootChildren")
 
         self._addMenuAction(settingsMenu, "Font Size",
-                            lambda: self.ui.dialogTree.text_size,
-                            lambda x: setattr(self.ui.dialogTree, "text_size", x),
+                            self.ui.dialogTree.getTextSize,
+                            self.ui.dialogTree.setTextSize,
                             settings_key="fontSize",
                             param_type=int)
 
@@ -5263,7 +5268,7 @@ class DLGSettings:
         editor.ui.dialogTree.setAutoFillBackground(self.get("autoFillBackground", editor.ui.dialogTree.autoFillBackground()))
         editor.ui.dialogTree.setAlternatingRowColors(self.get("alternatingRowColors", editor.ui.dialogTree.alternatingRowColors()))
         editor.ui.dialogTree.setIndentation(self.get("indentation", editor.ui.dialogTree.indentation()))
-        editor.ui.dialogTree.text_size = self.get("fontSize", editor.ui.dialogTree.text_size)
+        editor.ui.dialogTree.setTextSize(self.get("fontSize", editor.ui.dialogTree.getTextSize()))
         editor.ui.dialogTree.itemDelegate().setVerticalSpacing(self.get("verticalSpacing", editor.ui.dialogTree.itemDelegate().customVerticalSpacing))
         self.setTslWidgetHandling(self.get("TSLWidgetHandling", "Default"))
         if self.get("showVerboseHoverHints", False):

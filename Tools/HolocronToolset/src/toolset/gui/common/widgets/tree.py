@@ -40,8 +40,6 @@ if TYPE_CHECKING:
 class RobustTreeView(QTreeView):
     def __init__(self, parent: QWidget | None=None):
         super().__init__(parent)
-        self.text_size: int = 12
-
         self.setUniformRowHeights(False)
         self.setTextElideMode(Qt.TextElideMode.ElideNone)
         self.setAnimated(True)
@@ -74,6 +72,16 @@ class RobustTreeView(QTreeView):
         header.setMinimumSectionSize(self.geometry().width() * 5)
         header.setDefaultSectionSize(self.geometry().width() * 10)
         header.hide()
+
+    def setTextSize(self, size: int):
+        delegate = self.itemDelegate()
+        if delegate is not None:
+            delegate.setTextSize(max(1, size))
+            self.debounceLayoutChanged()
+
+    def getTextSize(self) -> int:
+        delegate = self.itemDelegate()
+        return delegate.text_size if delegate is not None else 12
 
     def emitLayoutChanged(self):
         model = self.model()
@@ -142,12 +150,8 @@ class RobustTreeView(QTreeView):
         delta: int = event.angleDelta().y()
         if not delta:
             return False
-        self.text_size = max(1, self.text_size + (1 if delta > 0 else -1))
-        if self.itemDelegate() is not None:
-            self.itemDelegate().setTextSize(self.text_size)
-            self.debounceLayoutChanged()
-            return True
-        return False
+        self.setTextSize(self.getTextSize() + (1 if delta > 0 else -1))
+        return True
 
     def _wheel_changes_horizontal_scroll(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().y()
@@ -156,7 +160,7 @@ class RobustTreeView(QTreeView):
         if self.horizontalScrollMode() == self.ScrollPerItem:
             delta = self.indentation() * (1 if delta > 0 else -1)
         else:
-            delta = -self.text_size if delta > 0 else self.text_size
+            delta = -self.getTextSize() if delta > 0 else self.getTextSize()
         self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta)
         return True
 
@@ -170,7 +174,7 @@ class RobustTreeView(QTreeView):
             action = vertScrollBar.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderSingleStepAdd
             vertScrollBar.triggerAction(action)
         else:
-            scrollStep = -self.text_size if delta > 0 else self.text_size
+            scrollStep = -self.getTextSize() if delta > 0 else self.getTextSize()
             vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
         return True
 
@@ -184,7 +188,7 @@ class RobustTreeView(QTreeView):
             action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
             vertScrollBar.triggerAction(action)
         else:
-            scrollStep = -self.text_size if direction == "up" else self.text_size
+            scrollStep = -self.getTextSize() if direction == "up" else self.getTextSize()
             vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
 
     def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
