@@ -26,6 +26,7 @@ from qtpy.QtCore import (
 )
 from qtpy.QtGui import (
     QColor,
+    QFontMetrics,
     QIcon,
     QPalette,
     QPixmap,
@@ -64,6 +65,7 @@ from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_fil
 from pykotor.tools.path import CaseAwarePath
 from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
@@ -256,23 +258,26 @@ class ToolWindow(QMainWindow):
     def showEvent(self, event: QShowEvent):
         # Set minimum size based on the current size
         super().showEvent(event)
-        self.adjustSize()
-        self.setMinimumSize(
-            self.size().width() + QApplication.font().pointSize() * 4,
-            self.size().height(),
-        )
+        #self.adjustSize()
+        #self.setMinimumSize(
+        #    self.size().width() + QApplication.font().pointSize() * 4,
+        #    self.size().height(),
+        #)
 
     def setupModulesTab(self):
         modulesResourceList = self.ui.modulesWidget.ui
-        modulesSectionCombo = modulesResourceList.sectionCombo
+        modulesSectionCombo: FilterComboBox = modulesResourceList.sectionCombo  # type: ignore[]
+        modulesSectionCombo.__class__ = FilterComboBox
+        modulesSectionCombo.__init__(init=False)
+        modulesSectionCombo.setEditable(False)
         refreshButton = modulesResourceList.refreshButton
         designerButton = self.ui.specialActionButton
         self.collectButton = QPushButton("Collect...", self)
 
         # Remove from original layouts
-        modulesResourceList.horizontalLayout_2.removeWidget(modulesSectionCombo)
-        modulesResourceList.horizontalLayout_2.removeWidget(refreshButton)
-        modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)
+        modulesResourceList.horizontalLayout_2.removeWidget(modulesSectionCombo)  # type: ignore[arg-type]
+        modulesResourceList.horizontalLayout_2.removeWidget(refreshButton)  # type: ignore[arg-type]
+        modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)  # type: ignore[arg-type]
 
         # Set size policies
         modulesSectionCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # type: ignore[arg-type]
@@ -284,20 +289,20 @@ class ToolWindow(QMainWindow):
         # Create a new layout to stack Designer and Refresh buttons
         stackButtonLayout = QVBoxLayout()
         stackButtonLayout.setSpacing(1)
-        stackButtonLayout.addWidget(refreshButton)
-        stackButtonLayout.addWidget(designerButton)
+        stackButtonLayout.addWidget(refreshButton)  # type: ignore[arg-type]
+        stackButtonLayout.addWidget(designerButton)  # type: ignore[arg-type]
         stackButtonLayout.addWidget(self.collectButton)
 
         # Create a new horizontal layout to place the combobox and buttons
         topLayout = QHBoxLayout()
-        topLayout.addWidget(modulesSectionCombo)
+        topLayout.addWidget(modulesSectionCombo)  # type: ignore[arg-type]
         topLayout.addLayout(stackButtonLayout)
 
         # Insert the new top layout into the vertical layout
-        self.ui.verticalLayoutModulesTab.insertLayout(0, topLayout)
+        self.ui.verticalLayoutModulesTab.insertLayout(0, topLayout)  # type: ignore[attributeAccessIssue]
 
         # Adjust the vertical layout to accommodate the combobox height change
-        modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)
+        modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)  # type: ignore[arg-type]
         merged_stylesheet = f"""{modulesSectionCombo.styleSheet()}
             QComboBox {{
                 font-size: {QApplication.font().pointSize()}px;
@@ -319,8 +324,8 @@ class ToolWindow(QMainWindow):
 
         self.collectButtonMenu = create_more_actions_menu()
         self.collectButtonMenu.aboutToHide.connect(self.onMenuHide)
-        self.collectButtonMenu.leaveEvent = self.onMenuHide
-        self.collectButton.leaveEvent = self.onMenuHide
+        self.collectButtonMenu.leaveEvent = self.onMenuHide  # type: ignore[attributeAccessIssue]
+        self.collectButton.leaveEvent = self.onMenuHide  # type: ignore[attributeAccessIssue]
         self.collectButton.setMenu(self.collectButtonMenu)
 
         # Show menu on hover
@@ -1642,7 +1647,8 @@ class ToolWindow(QMainWindow):
         self.reloadInstallations()
 
     def onTabChanged(self):
-        self.setMinimumSize(512, 471)
+        ...
+        # self.setMinimumSize(512, 471)
 
     def selectResource(self, tree: ResourceList, resource: FileResource):
         """This function seems to reload the resource after determining the ui widget containing it.
