@@ -4,6 +4,7 @@ import math
 
 from typing import TYPE_CHECKING
 
+from glm import vec3
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
@@ -19,7 +20,6 @@ from utility.error_handling import assert_with_variable_trace
 from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
-    from glm import vec3
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
     from qtpy.QtWidgets import QWidget
 
@@ -58,9 +58,6 @@ class ModelRenderer(QOpenGLWidget):
         self.scene.camera.fov = ModuleDesignerSettings().fieldOfView
         self.scene.camera.distance = 0  # Set distance to 0
 
-        # Set camera position manually to simulate moving it further back
-        new_position = Vector3(0.0, -4.0, 1.8)  # Adjust this vector as needed
-        self.scene.camera.set_position(new_position)
         self.scene.camera.yaw = math.pi / 2
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
@@ -142,12 +139,12 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.height = e.size().height()
 
     def wheelEvent(self, e: QWheelEvent):
-        if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
+        if self.moveZCameraControl.satisfied(self._mouseDown, self._keysDown):
             strength: float = ModuleDesignerSettings().moveCameraSensitivity3d / 20000
             self.scene.camera.z -= -e.angleDelta().y() * strength
             return
 
-        if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
+        if self.zoomCameraControl.satisfied(self._mouseDown, self._keysDown):
             strength: float = ModuleDesignerSettings().zoomCameraSensitivity3d / 30000
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
@@ -166,7 +163,7 @@ class ModelRenderer(QOpenGLWidget):
         screen = Vector2(e.x(), e.y())
         screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
 
-        if self.moveXYCamera.satisfied(self._mouseDown, self._keysDown):
+        if self.moveXYCameraControl.satisfied(self._mouseDown, self._keysDown):
             self.doCursorLock(screen)
             forward: vec3 = -screenDelta.y * self.scene.camera.forward()
             sideward: vec3 = screenDelta.x * self.scene.camera.sideward()
@@ -174,7 +171,7 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.x -= (forward.x + sideward.x) * strength
             self.scene.camera.y -= (forward.y + sideward.y) * strength
 
-        if self.rotateCamera.satisfied(self._mouseDown, self._keysDown):
+        if self.rotateCameraControl.satisfied(self._mouseDown, self._keysDown):
             self.doCursorLock(screen)
             strength = ModuleDesignerSettings().moveCameraSensitivity3d / 10000
             self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength, clamp=True)
@@ -219,36 +216,51 @@ class ModelRenderer(QOpenGLWidget):
         self.scene.camera.y += upward.y + sideways.y + forward_vec.y
         self.scene.camera.z += upward.z + sideways.z + forward_vec.z
 
+    def rotateObject(self, obj: RenderObject, pitch: float, yaw: float, roll: float):
+        """Apply an incremental rotation to a RenderObject."""
+        # I implore someone to explain why Z affects Yaw, and Y affects Roll...
+        current_rotation = obj.rotation()
+        new_rotation = vec3(
+            current_rotation.x + pitch,
+            current_rotation.y + roll,
+            current_rotation.z + yaw
+        )
+
+        # Set the new rotation and recalculate the transformation
+        obj.set_rotation(new_rotation.x, new_rotation.y, new_rotation.z)
+
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         key: int = e.key()
         self._keysDown.add(key)
 
         rotateStrength = ModuleDesignerSettings().rotateCameraSensitivity3d / 1000
-        if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):  # TODO(th3w1zard1): ModuleDesignerSettings.rotateCameraSensitivity3d
-            self.scene.camera.rotate(math.pi / 4 * rotateStrength, 0)
-        if self.rotateCameraRight.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(-math.pi / 4 * rotateStrength, 0)
-        if self.rotateCameraUp.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, math.pi / 4 * rotateStrength)
-        if self.rotateCameraDown.satisfied(self._mouseDown, self._keysDown):
-            self.scene.camera.rotate(0, -math.pi / 4 * rotateStrength)
+        if "model" in self.scene.objects:
+            model = self.scene.objects["model"]
+            if self.rotateCameraLeftControl.satisfied(self._mouseDown, self._keysDown):
+                self.rotateObject(model, 0, math.pi / 4 * rotateStrength, 0)
+            if self.rotateCameraRightControl.satisfied(self._mouseDown, self._keysDown):
+                self.rotateObject(model, 0, -math.pi / 4 * rotateStrength, 0)
+            if self.rotateCameraUpControl.satisfied(self._mouseDown, self._keysDown):
+                self.rotateObject(model, math.pi / 4 * rotateStrength, 0, 0)
+            if self.rotateCameraDownControl.satisfied(self._mouseDown, self._keysDown):
+                self.rotateObject(model, -math.pi / 4 * rotateStrength, 0, 0)
 
-        if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraUpControl.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.z += (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
-        if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraDownControl.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.z -= (ModuleDesignerSettings().moveCameraSensitivity3d / 500)
-        if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraLeftControl.satisfied(self._mouseDown, self._keysDown):
             self.panCamera(0, -(ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0)
-        if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraRightControl.satisfied(self._mouseDown, self._keysDown):
             self.panCamera(0, (ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0)
-        if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraForwardControl.satisfied(self._mouseDown, self._keysDown):
             self.panCamera((ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0, 0)
-        if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
+        if self.moveCameraBackwardControl.satisfied(self._mouseDown, self._keysDown):
             self.panCamera(-(ModuleDesignerSettings().moveCameraSensitivity3d / 500), 0, 0)
 
-        if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
+        if self.zoomCameraInControl.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance += (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
-        if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
+        if self.zoomCameraOutControl.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         #key_name = getQtKeyStringLocalized(key)
         #RobustRootLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
@@ -262,137 +274,123 @@ class ModelRenderer(QOpenGLWidget):
     # endregion
 
     @property
-    def moveXYCamera(self):
+    def moveXYCameraControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraXY3dBind)
 
-    @moveXYCamera.setter
-    def moveXYCamera(self, value):
+    @moveXYCameraControl.setter
+    def moveXYCameraControl(self, value):
         pass
 
     @property
-    def moveZCamera(self):
+    def moveZCameraControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraZ3dBind)
 
-    @moveZCamera.setter
-    def moveZCamera(self, value):
+    @moveZCameraControl.setter
+    def moveZCameraControl(self, value):
         pass
 
     @property
-    def rotateCamera(self):
+    def rotateCameraControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().rotateCamera3dBind)
 
-    @rotateCamera.setter
-    def rotateCamera(self, value):
+    @rotateCameraControl.setter
+    def rotateCameraControl(self, value):
         pass
 
     @property
-    def zoomCamera(self):
+    def zoomCameraControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().zoomCamera3dBind)
-
-    @zoomCamera.setter
-    def zoomCamera(self, value):
+    @zoomCameraControl.setter
+    def zoomCameraControl(self, value):
         pass
 
     @property
-    def rotateCameraLeft(self):
+    def rotateCameraLeftControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().rotateCameraLeft3dBind)
-
-    @rotateCameraLeft.setter
-    def rotateCameraLeft(self, value):
+    @rotateCameraLeftControl.setter
+    def rotateCameraLeftControl(self, value):
         pass
 
     @property
-    def rotateCameraRight(self):
+    def rotateCameraRightControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().rotateCameraRight3dBind)
-
-    @rotateCameraRight.setter
-    def rotateCameraRight(self, value):
+    @rotateCameraRightControl.setter
+    def rotateCameraRightControl(self, value):
         pass
 
     @property
-    def rotateCameraUp(self):
+    def rotateCameraUpControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().rotateCameraUp3dBind)
-
-    @rotateCameraUp.setter
-    def rotateCameraUp(self, value):
+    @rotateCameraUpControl.setter
+    def rotateCameraUpControl(self, value):
         pass
 
     @property
-    def rotateCameraDown(self):
+    def rotateCameraDownControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().rotateCameraDown3dBind)
-
-    @rotateCameraDown.setter
-    def rotateCameraDown(self, value):
+    @rotateCameraDownControl.setter
+    def rotateCameraDownControl(self, value):
         pass
 
     @property
-    def moveCameraUp(self):
+    def moveCameraUpControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraUp3dBind)
-
-    @moveCameraUp.setter
-    def moveCameraUp(self, value):
+    @moveCameraUpControl.setter
+    def moveCameraUpControl(self, value):
         pass
 
     @property
-    def moveCameraDown(self):
+    def moveCameraDownControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraDown3dBind)
-
-    @moveCameraDown.setter
-    def moveCameraDown(self, value):
+    @moveCameraDownControl.setter
+    def moveCameraDownControl(self, value):
         pass
 
     @property
-    def moveCameraForward(self):
+    def moveCameraForwardControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraForward3dBind)
-
-    @moveCameraForward.setter
-    def moveCameraForward(self, value):
+    @moveCameraForwardControl.setter
+    def moveCameraForwardControl(self, value):
         pass
 
     @property
-    def moveCameraBackward(self):
+    def moveCameraBackwardControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraBackward3dBind)
-
-    @moveCameraBackward.setter
-    def moveCameraBackward(self, value):
+    @moveCameraBackwardControl.setter
+    def moveCameraBackwardControl(self, value):
         pass
 
     @property
-    def moveCameraLeft(self):
+    def moveCameraLeftControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraLeft3dBind)
-
-    @moveCameraLeft.setter
-    def moveCameraLeft(self, value):
+    @moveCameraLeftControl.setter
+    def moveCameraLeftControl(self, value):
         pass
 
     @property
-    def moveCameraRight(self):
+    def moveCameraRightControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().moveCameraRight3dBind)
-
-    @moveCameraRight.setter
-    def moveCameraRight(self, value):
+    @moveCameraRightControl.setter
+    def moveCameraRightControl(self, value):
         pass
 
     @property
-    def zoomCameraIn(self):
+    def zoomCameraInControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().zoomCameraIn3dBind)
-
-    @zoomCameraIn.setter
-    def zoomCameraIn(self, value):
+    @zoomCameraInControl.setter
+    def zoomCameraInControl(self, value):
         pass
 
     @property
-    def zoomCameraOut(self):
+    def zoomCameraOutControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().zoomCameraOut3dBind)
-
-    @zoomCameraOut.setter
-    def zoomCameraOut(self, value):
+    @zoomCameraOutControl.setter
+    def zoomCameraOutControl(self, value):
         pass
 
     @property
-    def toggleInstanceLock(self):
+    def toggleInstanceLockControl(self) -> ControlItem:
         return ControlItem(ModuleDesignerSettings().toggleLockInstancesBind)
-
-    @toggleInstanceLock.setter
-    def toggleInstanceLock(self, value):
+    @toggleInstanceLockControl.setter
+    def toggleInstanceLockControl(self, value):
         pass
