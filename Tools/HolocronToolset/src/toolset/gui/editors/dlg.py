@@ -229,6 +229,9 @@ class DLGListWidget(QListWidget):
         self.customContextMenuRequested.connect(lambda pt: self.editor.onListContextMenu(pt, self))
         self.setMouseTracking(True)
 
+    def itemDelegate(self) -> HTMLDelegate:
+        return super().itemDelegate()
+
     def mouseMoveEvent(self, event: QMouseEvent):
         super().mouseMoveEvent(event)
         if not self.useHoverText:
@@ -889,21 +892,25 @@ class DLGStandardItemModel(QStandardItemModel):
         self.ignoring_updates: bool = False
 
     def __iter__(self) -> Generator[DLGStandardItem, Any, None]:
-        stack: list[DLGStandardItem] = [
-            self.item(row, column)
-            for row in range(self.rowCount())
-            for column in range(self.columnCount())
-            if isinstance(self.item(row, column), DLGStandardItem)
-        ]
+        stack: deque[DLGStandardItem | QStandardItem] = deque(
+            [
+                self.item(row, column)
+                for row in range(self.rowCount())
+                for column in range(self.columnCount())
+            ]
+        )
         while stack:
-            item = stack.pop()
+            item = stack.popleft()
+            if not isinstance(item, DLGStandardItem):
+                continue
             yield item
-            for row in reversed(range(item.rowCount())):
-                for column in range(item.columnCount()):
-                    child = item.child(row, column)
-                    if not isinstance(child, DLGStandardItem):
-                        continue
-                    stack.append(child)
+            stack.extend(
+                [
+                    item.child(row, column)
+                    for row in range(item.rowCount())
+                    for column in range(item.columnCount())
+                ]
+            )
 
     # region Model Overrides
     def insertRows(self, row: int, count: int, parentIndex: QModelIndex | None = None) -> bool:
@@ -1434,10 +1441,10 @@ class DLGStandardItemModel(QStandardItemModel):
             print(f"<SDM> [_integrateChildNodes scope] pastedNode.list_index: {pastedLink.node.list_index} --> {new_index}")
             pastedLink.node.list_index = new_index
 
-        queue: list[DLGNode] = [pastedLink.node]
+        queue: deque[DLGNode] = deque([pastedLink.node])
         visited: set[DLGNode] = set()
         while queue:
-            curNode = queue.pop(0)
+            curNode = queue.popleft()
             if curNode in visited:
                 continue
             visited.add(curNode)
@@ -1560,9 +1567,11 @@ class DLGStandardItemModel(QStandardItemModel):
         if isinstance(item.link.node, DLGEntry):
             color = QColor(self.editor.dlg_settings.get("entryTextColor", QColor(255, 0, 0)))  # if not item.isCopy() else QColor(210, 90, 90)
             prefix = "E"
+            extra_node_info = ""
         elif isinstance(item.link.node, DLGReply):
             color = QColor(self.editor.dlg_settings.get("replyTextColor", QColor(0, 0, 255)))  # if not item.isCopy() else QColor(90, 90, 210)
             prefix = "R"
+            extra_node_info = " This means the player will not see this reply as a choice, and will (continue) to next entry."
 
         text = str(item.link.node.text) if self.editor._installation is None else self.editor._installation.string(item.link.node.text, "")  # noqa: SLF001
         if not item.link.node.links:
@@ -1571,7 +1580,7 @@ class DLGStandardItemModel(QStandardItemModel):
             if item.link.node.text.stringref == -1:
                 display_text = "(continue)"
                 tooltip_text = (
-                    "<i>No text set.<br><br>"
+                    f"<i>No text set.{extra_node_info}<br><br>"
                     "Change this behavior by:<br>"
                     "- <i>Right-click and select '<b>Edit Text</b>'</i><br>"
                     "- <i>Double-click to edit text</i>"
@@ -1622,11 +1631,11 @@ class DLGStandardItemModel(QStandardItemModel):
             "spacing": 5,
             "rows": len(icons),
             "columns": 1,
-            "left_badge": {
+            "bottom_badge": {
                 "text_callable": lambda *args: str(self.countItemRefs(item.link) if item.link else 0),
                 "size_callable": lambda *args: int(self.treeView.text_size),
                 "tooltip_callable": lambda *args: f"{self.countItemRefs(item.link) if item.link else 0} references to this item",
-                "action": lambda *args: ...  # self.editor.show_reference_dialog([item.ref_to_link], item.data(Qt.ItemDataRole.DisplayRole))
+                "action": lambda *args: self.editor is not None and self.editor.show_reference_dialog([item.ref_to_link], item.data(Qt.ItemDataRole.DisplayRole))
             }
         }
         item.setData(icon_data, _ICONS_DATA_ROLE)
@@ -2043,6 +2052,26 @@ class DLGTreeView(RobustTreeView):
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         #self.setViewportMargins(1000, 0, 0, 0)  # Adjust left margin as needed
         #self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove | QAbstractItemView.DragDropMode.DragDrop)
+
+    def emitLayoutChanged(self):
+        super().emitLayoutChanged()
+        return
+        # maybe one day.
+        if self.editor is not None:
+            queue = deque(self.editor.findChildren(QWidget))
+            seenWidgets: set[int] = set()
+            while queue:
+                widget = queue.popleft()
+                if id(widget) in seenWidgets:
+                    continue
+                seenWidgets.add(id(widget))
+                if not isinstance(widget, DLGListWidget):
+                    queue.extend(widget.findChildren(QWidget))
+                else:
+                    delegate = widget.itemDelegate()
+                    if isinstance(delegate, HTMLDelegate):
+                        delegate.setTextSize(self.text_size)
+                    widget.model().layoutChanged.emit()
 
     def model(self) -> DLGStandardItemModel | None:
         model = super().model()
@@ -2589,7 +2618,6 @@ class DLGEditor(Editor):
         self.ui.setupUi(self)
         self.dlg_settings: DLGSettings = DLGSettings()
         self.original_tooltips: dict[QWidget, str] = {}
-        self.ui.dialogTree.text_size = self.dlg_settings.fontSize(self.ui.dialogTree.text_size)
         self.search_results: list[DLGStandardItem] = []
         self.current_result_index: int = 0
         self.whats_this_toggle: bool = False
@@ -2901,6 +2929,7 @@ Should return 1 or 0, representing a boolean.
         self.find_layout.addWidget(self.results_label)
         self.ui.verticalLayout_main.insertWidget(0, self.find_bar)  # type: ignore[arg-type]
         self.setup_completer()
+        self.ui.dialogTree.text_size = self.ui.dialogTree.itemDelegate().text_size = self.dlg_settings.fontSize(self.ui.dialogTree.text_size)
 
     def setup_completer(self):
         temp_entry = DLGEntry()
@@ -3224,8 +3253,9 @@ Should return 1 or 0, representing a boolean.
         self.orphanedNodesList.takeItem(self.orphanedNodesList.row(selectedOrphanItem))
 
     def setupMenuExtras(self):
-        viewMenu = self.ui.menubar.addMenu("View")
-        settingsMenu = self.ui.menubar.addMenu("Settings")
+        viewMenu: QMenu = self.ui.menubar.addMenu("View")  # type: ignore[arg-type]
+        settingsMenu: QMenu = self.ui.menubar.addMenu("Settings")  # type: ignore[arg-type]
+
         self.ui.menubar.addAction("Help").triggered.connect(self.showAllTips)
         whats_this_action = QAction(self.style().standardIcon(QStyle.SP_TitleBarContextHelpButton), "", self)
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
@@ -3888,10 +3918,10 @@ Should return 1 or 0, representing a boolean.
         """Jumps to the original node of a copied item."""
         assert copiedItem.link is not None
         sourceNode: DLGNode = copiedItem.link.node
-        items: list[DLGStandardItem | QStandardItem | None] = [self.model.item(i, 0) for i in range(self.model.rowCount())]
+        items: deque[DLGStandardItem | QStandardItem | None] = deque([self.model.item(i, 0) for i in range(self.model.rowCount())])
 
         while items:
-            item: DLGStandardItem | None = items.pop()
+            item: DLGStandardItem | QStandardItem | None = items.popleft()
             assert item is not None
             if not isinstance(item, DLGStandardItem):
                 continue
@@ -4055,6 +4085,7 @@ Should return 1 or 0, representing a boolean.
         isListWidgetMenu = isinstance(sourceWidget, DLGListWidget)
         assert item.link is not None
         node_type = "Entry" if isinstance(item.link.node, DLGEntry) else "Reply"
+        other_node_type = "Reply" if isinstance(item.link.node, DLGEntry) else "Entry"
 
         menu = QMenu(sourceWidget)
         editTextAction = menu.addAction("Edit Text")
@@ -4111,20 +4142,19 @@ Should return 1 or 0, representing a boolean.
         menu.addSeparator()
 
         # Paste Actions
-        pasteLinkAction = menu.addAction("Paste from Clipboard as Link")
-        pasteNewAction = menu.addAction("Paste from Clipboard as Deep Copy")
+        pasteLinkAction = menu.addAction(f"Paste {other_node_type} from Clipboard as Link")
+        pasteNewAction = menu.addAction(f"Paste {other_node_type} from Clipboard as Deep Copy")
         if self._copy is None:
             pasteLinkAction.setEnabled(False)
             pasteNewAction.setEnabled(False)
-        elif isinstance(self._copy.node, DLGEntry) and isinstance(item.link.node, DLGReply):
-            pasteLinkAction.setText("Paste Entry from Clipboard as Link")
-            pasteNewAction.setText("Paste Entry from Clipboard as Deep Copy")
-        elif isinstance(self._copy.node, DLGReply) and isinstance(item.link.node, DLGEntry):
-            pasteLinkAction.setText("Paste Reply from Clipboard as Link")
-            pasteNewAction.setText("Paste Reply from Clipboard as Deep Copy")
         else:
-            pasteLinkAction.setEnabled(False)
-            pasteNewAction.setEnabled(False)
+            copied_node_type = "Entry" if isinstance(self._copy, DLGEntry) else "Reply"
+            pasteLinkAction.setText(f"Paste {copied_node_type} from Clipboard as Link")
+            pasteNewAction.setText(f"Paste {copied_node_type} from Clipboard as Deep Copy")
+            if node_type == copied_node_type:
+                pasteLinkAction.setEnabled(False)
+                pasteNewAction.setEnabled(False)
+
         pasteLinkAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_V))
         pasteLinkAction.triggered.connect(lambda: self.model.pasteItem(item, asNewBranches=False))
         pasteLinkAction.setVisible(not isListWidgetMenu)
@@ -4134,7 +4164,7 @@ Should return 1 or 0, representing a boolean.
         menu.addSeparator()
 
         # Add/Insert Actions
-        addNodeAction = menu.addAction(f"Add {node_type}")
+        addNodeAction = menu.addAction(f"Add {other_node_type}")
         addNodeAction.triggered.connect(lambda: self.model.addChildToItem(item))
         addNodeAction.setShortcut(QtKey.Key_Insert)
         addNodeAction.setVisible(not isListWidgetMenu)
@@ -5067,7 +5097,7 @@ class ReferenceChooserDialog(QDialog):
         return int(doc.idealWidth())
 
     def get_stylesheet(self) -> str:
-        font_size = self.parent().ui.dialogTree.text_size
+        font_size = 12
         return f"""
         QListWidget {{
             font-size: {font_size}pt;
