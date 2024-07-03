@@ -662,10 +662,12 @@ class ToolWindow(QMainWindow):
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
                 import qdarkstyle
-                app.setPalette(app.style().standardPalette())
-                app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
             except (ImportError, ModuleNotFoundError):
                 QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
+            else:
+                app.setStyle(self.original_style)
+                app.setPalette(app.style().standardPalette())
+                app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
             return
         elif self.settings.selectedTheme == "AMOLED":
             sheet = self._get_file_stylesheet(":/themes/other/AMOLED.qss", app)
