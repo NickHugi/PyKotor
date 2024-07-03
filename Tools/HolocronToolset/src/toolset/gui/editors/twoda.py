@@ -7,7 +7,7 @@ import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QApplication, QMessageBox
+from qtpy.QtWidgets import QAction, QApplication, QHeaderView, QMenu, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
@@ -18,7 +18,7 @@ from utility.error_handling import assert_with_variable_trace, universal_simplif
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtCore import QModelIndex
+    from qtpy.QtCore import QModelIndex, QPoint
     from qtpy.QtWidgets import QWidget
 
     from toolset.data.installation import HTInstallation
@@ -73,6 +73,13 @@ class TwoDAEditor(Editor):
         self.verticalHeaderOption: VerticalHeaderOption = VerticalHeaderOption.NONE
         self.verticalHeaderColumn: str = ""
         vertHeader = self.ui.twodaTable.verticalHeader()
+
+        # Add context menu to header
+        self.ui.twodaTable.horizontalHeader().setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.twodaTable.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
+
+        self.autoResizeEnabled = False  # To track the state of auto-fit columns
+
 
         self.model.itemChanged.connect(self.resetVerticalHeaders)
 
@@ -265,6 +272,49 @@ class TwoDAEditor(Editor):
             action = QAction(header, self)
             action.triggered.connect(lambda _=None, h=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, h))
             self.ui.menuSetRowHeader.addAction(action)  # type: ignore[arg-type]
+
+    def showHeaderContextMenu(self, position: QPoint):
+        menu = QMenu()
+
+        toggleAutoFitAction = QAction("Auto-fit Columns", self)
+        toggleAutoFitAction.setCheckable(True)
+        toggleAutoFitAction.setChecked(self.autoResizeEnabled)
+        toggleAutoFitAction.triggered.connect(self.toggleAutoFitColumns)
+        menu.addAction(toggleAutoFitAction)
+
+        toggleAlternateRowColorsAction = QAction("Toggle Alternate Row Colors", self)
+        toggleAlternateRowColorsAction.triggered.connect(self.toggleAlternateRowColors)
+        menu.addAction(toggleAlternateRowColorsAction)
+
+        menu.exec_(self.ui.twodaTable.horizontalHeader().mapToGlobal(position))
+
+    def toggleAlternateRowColors(self):
+        if self.ui.twodaTable.alternatingRowColors():
+            self.ui.twodaTable.setAlternatingRowColors(False)
+        else:
+            self.ui.twodaTable.setAlternatingRowColors(True)
+
+    def resetColumnWidths(self):
+        header = self.ui.twodaTable.horizontalHeader()
+        assert header is not None
+        for col in range(header.count()):
+            header.resizeSection(col, header.defaultSectionSize())
+
+    def autoFitColumns(self):
+        header = self.ui.twodaTable.horizontalHeader()
+        assert header is not None
+        for col in range(header.count()):
+            self.ui.twodaTable.resizeColumnToContents(col)
+
+    def toggleAutoFitColumns(self):
+        self.autoResizeEnabled = not self.autoResizeEnabled
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
+        else:
+            self.resetColumnWidths()
+        header = self.ui.twodaTable.horizontalHeader()
+        assert header is not None
+        header.viewport().update()
 
     def build(self) -> tuple[bytes, bytes]:
         """Builds a 2D array from a table model.
