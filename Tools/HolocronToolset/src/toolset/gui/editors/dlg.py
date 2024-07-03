@@ -343,8 +343,9 @@ class DLGListWidget(QListWidget):
             link_parent_path += "\\"
         else:
             link_parent_path = ""
-        hover_text_1 = f"<span style='color:{color};'> (taken from: {link_parent_path}{link_partial_path})</span>"
-        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{node_path}</div>"
+        hover_text_1 = ""
+        #hover_text_1 = f"<span style='color:{color};'> (taken from: {link_parent_path}{link_partial_path})</span>"
+        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{link_partial_path}\\{node_path}</div>"
 
         default_display = f"<div class='link-container'>{display_text_2}</div>"
         hover_display = f"<div class='link-container'>{display_text_2}{hover_text_1}</div>"
@@ -1636,7 +1637,7 @@ class DLGStandardItemModel(QStandardItemModel):
                 "text_callable": lambda *args: str(self.countItemRefs(item.link) if item.link else 0),
                 "size_callable": self.treeView.getTextSize,
                 "tooltip_callable": lambda *args: f"{self.countItemRefs(item.link) if item.link else 0} references to this item",
-                "action": lambda *args: self.editor is not None and self.editor.show_reference_dialog([item.ref_to_link], item.data(Qt.ItemDataRole.DisplayRole))
+                "action": lambda *args: self.editor is not None #and self.editor.show_reference_dialog([this_item.ref_to_link for link in self.linkToItems for this_item in self.linkToItems[link] if item.link in this_item.link.node.links], item.data(Qt.ItemDataRole.DisplayRole) )
             }
         }
         item.setData(icon_data, _ICONS_DATA_ROLE)
@@ -4231,7 +4232,12 @@ Should return 1 or 0, representing a boolean.
         self.reference_history = self.reference_history[:self.current_reference_index + 1]
         item_html = item.data(Qt.ItemDataRole.DisplayRole)
         self.current_reference_index += 1
-        references = [weakref.ref(link) for link in self.model.linkToItems if item.link in link.node.links]
+        references = [
+            this_item.ref_to_link
+            for link in self.model.linkToItems
+            for this_item in self.model.linkToItems[link]
+            if item.link in this_item.link.node.links
+        ]
         self.reference_history.append((references, item_html))
         self.show_reference_dialog(references, item_html)
 

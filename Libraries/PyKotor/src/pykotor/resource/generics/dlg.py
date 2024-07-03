@@ -718,9 +718,9 @@ class DLGLink(Generic[T]):
 
     def partial_path(self, *, is_starter: bool) -> str:
         if is_starter:
-            p1 = "EntriesList" if isinstance(self.node, DLGEntry) else "RepliesList"
-        else:
             p1 = "StartingList"
+        else:
+            p1 = "EntriesList" if isinstance(self.node, DLGEntry) else "RepliesList"
         return f"{p1}\\{self.list_index}"
 
     def __init__(
