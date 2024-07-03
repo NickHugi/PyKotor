@@ -1592,7 +1592,8 @@ class ModuleDesignerControls3d:
         self.editor: ModuleDesigner = editor
         self.renderer: ModuleRenderer = renderer
         self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
-        self.renderer.scene.show_cursor = True
+        if self.renderer._scene is not None:
+            self.renderer._scene.show_cursor = True
 
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if self.zoomCamera.satisfied(buttons, keys):
