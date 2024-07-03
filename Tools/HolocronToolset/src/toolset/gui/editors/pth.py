@@ -9,7 +9,7 @@ import qtpy
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QStatusBar, QWidget
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QMenu, QMessageBox, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.common.misc import Color
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     from qtpy.QtCore import QPoint
     from qtpy.QtGui import QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QStatusBar
 
     from pykotor.common.geometry import Vector3
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -213,7 +214,6 @@ class PTHEditor(Editor):
         statusWidget.setLayout(layout)
 
         # Set the widget to the status bar
-        self.setStatusBar(QStatusBar(self))
         self.statusBar().addPermanentWidget(statusWidget, 1)
 
     def updateStatusBar(
