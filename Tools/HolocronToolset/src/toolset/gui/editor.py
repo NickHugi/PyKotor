@@ -27,7 +27,6 @@ from qtpy.QtWidgets import (
     QShortcut,
     QSlider,
     QStyle,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -80,7 +79,7 @@ if TYPE_CHECKING:
 
 
 class MediaPlayerWidget(QWidget):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.buffer: QBuffer = QBuffer(self)
         self.player: QMediaPlayer = QMediaPlayer(self)
@@ -93,15 +92,15 @@ class MediaPlayerWidget(QWidget):
         self.speed_levels: list[float] = [1, 1.25, 1.5, 2, 5, 10]
         self.current_speed_index: int = 0
 
-        self.playPauseButton: QPushButton = QPushButton(self)
+        self.playPauseButton: QPushButton = QPushButton()
         self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
         self.playPauseButton.setFixedSize(24, 24)
 
-        self.stopButton: QPushButton = QPushButton(self)
+        self.stopButton: QPushButton = QPushButton()
         self.stopButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaStop))
         self.stopButton.setFixedSize(24, 24)
 
-        self.muteButton: QPushButton = QPushButton(self)
+        self.muteButton: QPushButton = QPushButton()
         self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
         self.muteButton.setFixedSize(24, 24)
 
@@ -109,7 +108,7 @@ class MediaPlayerWidget(QWidget):
         for button in [self.playPauseButton, self.stopButton, self.muteButton]:
             buttonLayout.addWidget(button)
             buttonLayout.setAlignment(button, Qt.AlignmentFlag.AlignBottom)
-        self.timeLabel: QLabel = QLabel("00:00 / 00:00", self)
+        self.timeLabel: QLabel = QLabel("00:00 / 00:00")
         self.setupTimeSlider()
 
         buttonLayout.addWidget(self.timeLabel)
@@ -117,11 +116,11 @@ class MediaPlayerWidget(QWidget):
 
         buttonLayout.setContentsMargins(0, 0, 0, 0)
         buttonLayout.setSpacing(0)
-        cast(QVBoxLayout, self.parent().layout()).addLayout(buttonLayout)
+        self.setLayout(buttonLayout)
         self.hideWidget()
 
     def setupTimeSlider(self):
-        self.timeSlider: QSlider = QSlider(Qt.Orientation.Horizontal, self)
+        self.timeSlider: QSlider = QSlider(Qt.Orientation.Horizontal)
         self.timeSlider.setMouseTracking(True)
         self.dragPosition = QPoint()
 
@@ -176,7 +175,7 @@ class MediaPlayerWidget(QWidget):
         self.player.stateChanged.connect(self.stateChanged)
 
         self.playPauseButton.clicked.connect(self.playPauseButtonClick)
-        self.stopButton.clicked.connect(self.player.stop)
+        self.stopButton.clicked.connect(lambda *args: self.player.stop() or self.hideWidget())
         self.muteButton.clicked.connect(self.toggleMute)
 
     def stateChanged(self, state: QMediaPlayer.MediaStatus):
@@ -326,14 +325,8 @@ class Editor(QMainWindow):
         self._editorTitle: str = title
         self.setWindowTitle(title)
         self._setupIcon(iconName)
-
-        self.statusBarContainer = QWidget()
-        self.statusBarContainerLayout: QVBoxLayout = QVBoxLayout()
-        self.statusBarContainer.setLayout(self.statusBarContainerLayout)
-        self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self.statusBarContainer)
-        #self.statusBarContainerLayout.addWidget(self.mediaPlayer)
-        self.statusBar().addWidget(self.statusBarContainer, 1)
-        self.statusBar().setFixedHeight(self.statusBar().minimumSizeHint().height()+5)
+        self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
+        self.layout().addWidget(self.mediaPlayer)
 
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:

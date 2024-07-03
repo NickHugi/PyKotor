@@ -148,7 +148,6 @@ class AsyncLoader(QDialog, Generic[T]):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.setStyleSheet("""
     QDialog {
-        background-color: palette(window);
         border-radius: 10px;
         padding: 20px;
         font-size: 12pt;

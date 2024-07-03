@@ -61,7 +61,10 @@ class FilterProxyModel(QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
         index = self.sourceModel().index(source_row, 0, source_parent)
         item_text: str | None = index.data(Qt.ItemDataRole.DisplayRole)
-        current_text = self.combo_box.lineEdit().text().lower()
+        line_edit = self.combo_box.filterLineEdit
+        if line_edit is None:
+            return True
+        current_text = line_edit.text().lower()
 
         if item_text is None:
             return False
@@ -69,7 +72,7 @@ class FilterProxyModel(QSortFilterProxyModel):
         item_text_lower = item_text.lower()
         if self.filter_text in item_text_lower:
             return True
-        return current_text == item_text_lower  # prevents annoying selection changes.
+        return current_text == item_text_lower  # Prevents annoying selection changes.
 
 
 class ButtonDelegate(QStyledItemDelegate):
@@ -150,21 +153,20 @@ class CustomListView(QListView):
                 #print("Click inside button range")
                 self.combobox.force_stay_popped_up = True
                 self.button_callback(index.data(Qt.DisplayRole))
-                super().mousePressEvent(event)
-            else:
-                #print("Click outside button range")
-                super().mousePressEvent(event)
-        else:
-            super().mousePressEvent(event)
+        super().mousePressEvent(event)
 
 
 class FilterComboBox(QComboBox):
     def __init__(self, parent: QWidget | None = None, *, init: bool = True):
         if init:
             super().__init__(parent)
-        self.setEditable(True)
-        self.setCompleter(None)  # type: ignore[arg-type]
-        self.lineEdit().setValidator(None)  # type: ignore[arg-type]
+            self._editable = True
+        else:
+            self._editable = self.isEditable()
+        if self._editable:
+            self.setEditable(True)
+            self.setCompleter(None)  # type: ignore[arg-type]
+            self.lineEdit().setValidator(None)  # type: ignore[arg-type]
 
         self.proxyModel: FilterProxyModel = FilterProxyModel(self)
         self.sourceModel = QStringListModel(self) if init else self.model()
@@ -188,6 +190,7 @@ class FilterComboBox(QComboBox):
         mainView = CustomListView(self)
         mainView.combobox = self
         self.setView(mainView)
+        # Make room for the filterbox
         margins = self.view().viewportMargins()
         self.view().setViewportMargins(margins.left(), margins.top() + self.filterLineEdit.height(), margins.right(), margins.bottom())
         self.view().update()
@@ -238,7 +241,11 @@ class FilterComboBox(QComboBox):
             self.addItem(text)
             newIndex = self.findText(text)
         self.setCurrentIndex(newIndex)
-        self.lineEdit().setText(text)
+        line_edit = self.lineEdit()
+        if line_edit is not None:
+            line_edit.setText(text)
+        else:
+            self.setCurrentText(text)
 
     def showPopup(self):
         self.origText = self.currentText()
@@ -246,7 +253,6 @@ class FilterComboBox(QComboBox):
             if isinstance(self.sourceModel, QStringListModel):
                 self.sourceModel.setStringList(self.items)
             elif isinstance(self.sourceModel, QStandardItemModel):
-                # Assume items to be string for simple usage, modify if using different data structures
                 self.sourceModel.clear()
                 for item in self.items:
                     self.sourceModel.appendRow(QStandardItem(item))

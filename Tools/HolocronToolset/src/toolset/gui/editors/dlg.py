@@ -1602,7 +1602,7 @@ class DLGStandardItemModel(QStandardItemModel):
 
         hasConditional = item.link.active1 or item.link.active2
         hasScript = item.link.node.script1 or item.link.node.script2
-        hasAnimation = item.link.node.camera_anim not in (-1, None)
+        hasAnimation = item.link.node.camera_anim not in (-1, None) or bool(item.link.node.animations)
         hasSound = item.link.node.sound and item.link.node.sound_exists
         hasVoice = item.link.node.vo_resref
         isPlotOrQuestRelated = item.link.node.plot_index != -1 or item.link.node.quest_entry or item.link.node.quest
@@ -2634,11 +2634,7 @@ class DLGEditor(Editor):
         font.setPointSize(10)
         self.tipLabel.setFont(font)
         self.tips_start_from_right_side: bool = True
-
-        #self.tipLayout = QHBoxLayout()
-        #self.tipLayout.addWidget(self.tipLabel)
-        self.statusBarContainerLayout.addWidget(self.tipLabel)
-        self.tipLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
+        self.statusBar().addWidget(self.tipLabel)
         self.voIdEditTimer: QTimer = QTimer(self)
 
         self.setupDLGTreeMVC()
@@ -2835,10 +2831,10 @@ Should return 1 or 0, representing a boolean.
         self.ui.soundComboBox.currentTextChanged.connect(self.onNodeUpdate)
         self.ui.voiceComboBox.currentTextChanged.connect(self.onNodeUpdate)
 
-        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundComboBox.currentText(), [SearchLocation.SOUND]) and None or None)
+        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundComboBox.currentText(), [SearchLocation.SOUND, SearchLocation.VOICE]) and None or None)
         self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceComboBox.currentText(), [SearchLocation.VOICE]) and None or None)
 
-        self.ui.soundComboBox.set_button_delegate("Play", lambda text: self.playSound(text, [SearchLocation.SOUND]))
+        self.ui.soundComboBox.set_button_delegate("Play", lambda text: self.playSound(text, [SearchLocation.SOUND, SearchLocation.VOICE]))
         self.ui.voiceComboBox.set_button_delegate("Play", lambda text: self.playSound(text, [SearchLocation.VOICE]))
 
         self.ui.speakerEdit.textEdited.connect(self.onNodeUpdate)
@@ -3805,7 +3801,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.ambientTrackCombo.set_button_delegate("Play", lambda text: self.playSound(text))
         installation.setupFileContextMenu(self.ui.cameraModelSelect, [ResourceType.MDL], [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
         installation.setupFileContextMenu(self.ui.ambientTrackCombo, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.MUSIC])
-        installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND])
+        installation.setupFileContextMenu(self.ui.soundComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.SOUND, SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.voiceComboBox, [ResourceType.WAV, ResourceType.MP3], [SearchLocation.VOICE])
         installation.setupFileContextMenu(self.ui.condition1ResrefEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onEndEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -4224,7 +4220,7 @@ Should return 1 or 0, representing a boolean.
 
     def _playNodeSound(self, node: DLGEntry | DLGReply):
         if str(node.sound).strip():
-            self.playSound(str(node.sound).strip(), [SearchLocation.SOUND])
+            self.playSound(str(node.sound).strip(), [SearchLocation.SOUND, SearchLocation.VOICE])
         elif str(node.vo_resref).strip():
             self.playSound(str(node.vo_resref).strip(), [SearchLocation.VOICE])
         else:
@@ -4391,7 +4387,7 @@ Should return 1 or 0, representing a boolean.
                 sound_resname = self.ui.soundComboBox.currentText().strip()
                 voice_resname = self.ui.voiceComboBox.currentText().strip()
                 if sound_resname:
-                    self.playSound(sound_resname, [SearchLocation.SOUND])
+                    self.playSound(sound_resname, [SearchLocation.SOUND, SearchLocation.VOICE])
                 elif voice_resname:
                     self.playSound(voice_resname, [SearchLocation.VOICE])
                 else:

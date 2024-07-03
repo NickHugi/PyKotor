@@ -7,7 +7,7 @@ import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QApplication, QHeaderView, QMenu, QMessageBox
+from qtpy.QtWidgets import QAction, QApplication, QMenu, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType

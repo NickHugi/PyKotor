@@ -7,7 +7,6 @@ import platform
 import struct
 import sys
 
-from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
 from typing import TYPE_CHECKING, Any, cast
@@ -404,7 +403,7 @@ class ToolWindow(QMainWindow):
         self.collectButton.setMenu(self.collectButtonMenu)
 
         # Show menu on hover
-        self.collectButton.setMouseTracking(True)
+        self.collectButton.setMouseTracking(False)
         self.collectButton.installEventFilter(self)
 
     def onMenuHide(self, *args):
@@ -645,11 +644,11 @@ class ToolWindow(QMainWindow):
         self.apply_style(app, aggressive=True)
 
         palette = None
-        sheet = ""
-        style = "Fusion"
+        sheet = "Fusion"
+        style = self.original_style
         if self.settings.selectedTheme == "Native":
-            app.setStyle(self.original_style)
-            app.setPalette(app.style().standardPalette())
+            style = self.original_style
+            palette = app.style().standardPalette()
         elif self.settings.selectedTheme == "Fusion (Light)":
             style = "Fusion"
             self.apply_style(app, sheet, "Fusion")
@@ -657,10 +656,12 @@ class ToolWindow(QMainWindow):
             style = "Fusion"
             palette = self.create_palette(QColor(53, 53, 53), QColor(35, 35, 35), QColor(240, 240, 240),
                                           QColor(25, 25, 25), self.adjust_color(QColor("orange"), saturation=80, hue_shift=-10), QColor(255, 69, 0))
+            #app.setStyle("Fusion")
+            #self._applyCustomDarkPalette()
+            #return
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
                 import qdarkstyle
-                app.setStyle("Fusion")
                 app.setPalette(app.style().standardPalette())
                 app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
             except (ImportError, ModuleNotFoundError):
@@ -670,14 +671,18 @@ class ToolWindow(QMainWindow):
             sheet = self._get_file_stylesheet(":/themes/other/AMOLED.qss", app)
             palette = self.create_palette("#000000", "#141414", "#e67e22", "#f39c12", "#808086", "#FFFFFF")
         elif self.settings.selectedTheme == "Aqua":
+            style = self.original_style
             sheet = self._get_file_stylesheet(":/themes/other/aqua.qss", app)
         elif self.settings.selectedTheme == "ConsoleStyle":
+            style = "Fusion"
             sheet = self._get_file_stylesheet(":/themes/other/ConsoleStyle.qss", app)
             palette = self.create_palette("#000000", "#1C1C1C", "#F0F0F0", "#585858", "#FF9900", "#FFFFFF")
         elif self.settings.selectedTheme == "ElegantDark":
+            style = "Fusion"
             sheet = self._get_file_stylesheet(":/themes/other/ElegantDark.qss", app)
             palette = self.create_palette("#2A2A2A", "#525252", "#00FF00", "#585858", "#BDBDBD", "#FFFFFF")
         elif self.settings.selectedTheme == "MacOS":
+            style = self.original_style
             sheet = self._get_file_stylesheet(":/themes/other/MacOS.qss", app)
             # dont use, looks worse
             #palette = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
@@ -685,6 +690,7 @@ class ToolWindow(QMainWindow):
             sheet = self._get_file_stylesheet(":/themes/other/ManjaroMix.qss", app)
             palette = self.create_palette("#151a1e", QColor().blue(), "#d3dae3", "#4fa08b", "#214037", "#027f7f")
         elif self.settings.selectedTheme == "MaterialDark":
+            style = "Fusion"
             sheet = self._get_file_stylesheet(":/themes/other/MaterialDark.qss", app)
             palette = self.create_palette("#1E1D23", "#1E1D23", "#FFFFFF", "#007B50", "#04B97F", "#37EFBA")
         elif self.settings.selectedTheme == "NeonButtons":
@@ -724,12 +730,12 @@ class ToolWindow(QMainWindow):
 
     def create_palette(
         self,
-        primary: QColor | Qt.GlobalColor | str,
-        secondary: QColor | Qt.GlobalColor | str,
-        text: QColor | Qt.GlobalColor | str,
-        tooltip_base: QColor | Qt.GlobalColor | str,
-        highlight: QColor | Qt.GlobalColor | str,
-        bright_text: QColor | Qt.GlobalColor | str,
+        primary: QColor | Qt.GlobalColor | str | int,
+        secondary: QColor | Qt.GlobalColor | str | int,
+        text: QColor | Qt.GlobalColor | str | int,
+        tooltip_base: QColor | Qt.GlobalColor | str | int,
+        highlight: QColor | Qt.GlobalColor | str | int,
+        bright_text: QColor | Qt.GlobalColor | str | int,
     ) -> QPalette:
         """Create a QPalette using base colors adjusted for specific UI roles."""
         if not isinstance(primary, QColor):
@@ -786,74 +792,81 @@ class ToolWindow(QMainWindow):
     def _applyCustomDarkPalette(self):
         dark_palette = QPalette()
 
-        dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark gray for window background
-        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark gray for buttons
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))  # Dark slate blue for disabled alternate base
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate gray for disabled buttons
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark slate gray for disabled window
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Darker gray for active window
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        # White
+        dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(240, 240, 240))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, QColor(240, 240, 240))
 
-        dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # Light gray for window text
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # White for active window text
+        # Lighter gray
+        dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(230, 230, 230))
 
-        dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))  # Darker gray for base background
-        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for highlighted text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Dark slate gray for disabled base
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for disabled highlighted text
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Even darker gray for active base
+        # Light gray
+        dark_palette.setColor(QPalette.ColorRole.Text, QColor(220, 220, 220))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, QColor(220, 220, 220))
 
-        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Medium dark gray for alternate base
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Darker medium gray for active alternate base
+        # gray
+        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))
 
-        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for tooltip base
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for disabled tooltip base
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Darker gray for active tooltip base
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-
-        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for tooltip text
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for active tooltip text
-
-        dark_palette.setColor(QPalette.ColorRole.Link, QColor(100, 149, 237))  # Cornflower blue for links
-
-        dark_palette.setColor(QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for main text
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for active text
-
-        dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(230, 230, 230))  # Slightly lighter gray for button text
-
-        dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 69, 0))  # Orange-red for bright text
-
-        dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for visited links
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for disabled visited links
-
-
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, QColor(169, 169, 169))  # Dark gray for disabled tooltip text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(169, 169, 169))  # Dark gray for disabled window text
+        # slightly darker gray
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, QColor(169, 169, 169))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(169, 169, 169))
 
         dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(128, 128, 128))  # Gray for disabled text
 
         dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(105, 105, 105))  # Dim gray for disabled button text
 
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for disabled bright text
+        # Dark slate gray
+        dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, QColor(53, 53, 53))
 
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))  # Dodger blue for disabled links
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for disabled highlight
-        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for highlight
+        # Darker slate gray
+        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))
+
+        # Darkest Slate Gray
+        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+
+        # Very Dark slate gray
+        dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))
+
+        dark_palette.setColor(QPalette.ColorRole.Link, QColor(100, 149, 237))  # Cornflower blue for links
+        dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for visited links
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for disabled visited links
+
+        # Dodger blue
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Link, QColor(42, 130, 218))
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+
+        dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 69, 0))  # Orange-red for bright text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for disabled bright text
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
 
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Text, Qt.GlobalColor.white)
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
 
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
 
         QApplication.setPalette(dark_palette)
 

@@ -121,16 +121,6 @@ class ResourceList(MainWindowList):
         self.tooltipTimer.setSingleShot(True)
         self.tooltipTimer.timeout.connect(self.showTooltip)
 
-    def toggleFlatten(self):
-        """Toggle the flatten state of the tree view."""
-        if self.flattened:
-            self.unflattenTree()
-        else:
-            self.flattenTree()
-        self.flattened = not self.flattened
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-
     def onHeaderContextMenu(self, point: QPoint):
         """Show context menu for the header."""
         menu = QMenu(self)
