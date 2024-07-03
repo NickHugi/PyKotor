@@ -14,6 +14,7 @@ from PySide2.QtWidgets import *
 
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.common.widgets.combobox import FilterComboBox
 
 
 class Ui_MainWindow(object):
@@ -286,9 +287,8 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(4, QFormLayout.LabelRole, self.label_9)
 
-        self.onHeartbeatEdit = QLineEdit(self.tab_4)
+        self.onHeartbeatEdit = FilterComboBox(self.tab_4)
         self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
-        self.onHeartbeatEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(4, QFormLayout.FieldRole, self.onHeartbeatEdit)
 
@@ -307,21 +307,18 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(6, QFormLayout.LabelRole, self.label_12)
 
-        self.onExitEdit = QLineEdit(self.tab_4)
+        self.onExitEdit = FilterComboBox(self.tab_4)
         self.onExitEdit.setObjectName(u"onExitEdit")
-        self.onExitEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(3, QFormLayout.FieldRole, self.onExitEdit)
 
-        self.onEnterEdit = QLineEdit(self.tab_4)
+        self.onEnterEdit = FilterComboBox(self.tab_4)
         self.onEnterEdit.setObjectName(u"onEnterEdit")
-        self.onEnterEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.onEnterEdit)
 
-        self.onUserDefinedEdit = QLineEdit(self.tab_4)
+        self.onUserDefinedEdit = FilterComboBox(self.tab_4)
         self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
-        self.onUserDefinedEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(6, QFormLayout.FieldRole, self.onUserDefinedEdit)
 
@@ -340,21 +337,18 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(5, QFormLayout.LabelRole, self.label_16)
 
-        self.onTrapTriggeredEdit = QLineEdit(self.tab_4)
+        self.onTrapTriggeredEdit = FilterComboBox(self.tab_4)
         self.onTrapTriggeredEdit.setObjectName(u"onTrapTriggeredEdit")
-        self.onTrapTriggeredEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(5, QFormLayout.FieldRole, self.onTrapTriggeredEdit)
 
-        self.onDisarmEdit = QLineEdit(self.tab_4)
+        self.onDisarmEdit = FilterComboBox(self.tab_4)
         self.onDisarmEdit.setObjectName(u"onDisarmEdit")
-        self.onDisarmEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(1, QFormLayout.FieldRole, self.onDisarmEdit)
 
-        self.onClickEdit = QLineEdit(self.tab_4)
+        self.onClickEdit = FilterComboBox(self.tab_4)
         self.onClickEdit.setObjectName(u"onClickEdit")
-        self.onClickEdit.setMaxLength(16)
 
         self.formLayout_5.setWidget(0, QFormLayout.FieldRole, self.onClickEdit)
 

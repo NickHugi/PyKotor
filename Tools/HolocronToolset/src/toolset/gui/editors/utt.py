@@ -79,17 +79,39 @@ class UTTEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-        cursors: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
-        factions: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        traps: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+        cursors: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
+        factions: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        traps: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
 
-        self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
-        self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
-        self.ui.trapSelect.setContext(cursors, installation, HTInstallation.TwoDA_TRAPS)
+        if cursors:
+            self.ui.cursorSelect.setContext(cursors, installation, HTInstallation.TwoDA_CURSORS)
+        if factions:
+            self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
+        if traps:
+            self.ui.trapSelect.setContext(traps, installation, HTInstallation.TwoDA_TRAPS)
 
         self.ui.cursorSelect.setItems(cursors.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.trapSelect.setItems(traps.get_column("label"))
+
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onDisarmEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEnterEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onTrapTriggeredEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
 
     def load(
         self,
@@ -146,13 +168,13 @@ class UTTEditor(Editor):
         self.ui.trapSelect.setCurrentIndex(utt.trap_type)
 
         # Scripts
-        self.ui.onClickEdit.setText(str(utt.on_click))
-        self.ui.onDisarmEdit.setText(str(utt.on_disarm))
-        self.ui.onEnterEdit.setText(str(utt.on_enter))
-        self.ui.onExitEdit.setText(str(utt.on_exit))
-        self.ui.onHeartbeatEdit.setText(str(utt.on_heartbeat))
-        self.ui.onTrapTriggeredEdit.setText(str(utt.on_trap_triggered))
-        self.ui.onUserDefinedEdit.setText(str(utt.on_user_defined))
+        self.ui.onClickEdit.setComboBoxText(str(utt.on_click))
+        self.ui.onDisarmEdit.setComboBoxText(str(utt.on_disarm))
+        self.ui.onEnterEdit.setComboBoxText(str(utt.on_enter))
+        self.ui.onExitEdit.setComboBoxText(str(utt.on_exit))
+        self.ui.onHeartbeatEdit.setComboBoxText(str(utt.on_heartbeat))
+        self.ui.onTrapTriggeredEdit.setComboBoxText(str(utt.on_trap_triggered))
+        self.ui.onUserDefinedEdit.setComboBoxText(str(utt.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
@@ -195,13 +217,13 @@ class UTTEditor(Editor):
         utt.trap_type = self.ui.trapSelect.currentIndex()
 
         # Scripts
-        utt.on_click = ResRef(self.ui.onClickEdit.text())
-        utt.on_disarm = ResRef(self.ui.onDisarmEdit.text())
-        utt.on_enter = ResRef(self.ui.onEnterEdit.text())
-        utt.on_exit = ResRef(self.ui.onExitEdit.text())
-        utt.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        utt.on_trap_triggered = ResRef(self.ui.onTrapTriggeredEdit.text())
-        utt.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        utt.on_click = ResRef(self.ui.onClickEdit.currentText())
+        utt.on_disarm = ResRef(self.ui.onDisarmEdit.currentText())
+        utt.on_enter = ResRef(self.ui.onEnterEdit.currentText())
+        utt.on_exit = ResRef(self.ui.onExitEdit.currentText())
+        utt.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utt.on_trap_triggered = ResRef(self.ui.onTrapTriggeredEdit.currentText())
+        utt.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
 
         # Comments
         utt.comment = self.ui.commentsEdit.toPlainText()
