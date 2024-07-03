@@ -6,9 +6,9 @@ from qtpy.QtCore import Qt, QModelIndex, QMimeData, QByteArray, QDataStream, QIO
 from qtpy.QtWidgets import QApplication, QWidget
 from pykotor.resource.formats.gff.gff_auto import read_gff
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.generics.dlg import DLG
+from pykotor.resource.generics.dlg import DLG, DLGNode, DLGLink, DLGEntry, DLGReply
 from pykotor.resource.type import ResourceType
-from toolset.gui.editors.dlg import DLGEditor, DLGStandardItemModel, DLGStandardItem, DLGNode, DLGLink, DLGEntry, DLGReply, DLGTreeView
+from toolset.gui.editors.dlg import DLGEditor, DLGStandardItemModel, DLGStandardItem, DLGTreeView
 from toolset.gui.editor import Editor
 from pykotor.common.language import LocalizedString
 import json
@@ -121,7 +121,7 @@ class TestDLGStandardItemModel(unittest.TestCase):
             self.assertEqual(item.link.list_index, index, f"{item.link.list_index} != {index}")
 
 
-    def test_shift_item(self):
+    def test_shift_item(self):  # sourcery skip: class-extract-method
         dlg = self.create_complex_tree()
         self.editor._loadDLG(dlg)
         items: list[DLGStandardItem] = []

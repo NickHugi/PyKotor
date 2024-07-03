@@ -7,11 +7,11 @@ import platform
 import struct
 import sys
 
+from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
 from typing import TYPE_CHECKING, Any, cast
 
-import qdarkstyle
 import qtpy
 
 from qtpy import QtCore
@@ -387,15 +387,6 @@ class ToolWindow(QMainWindow):
 
         # Adjust the vertical layout to accommodate the combobox height change
         modulesResourceList.verticalLayout.addWidget(modulesResourceList.resourceTree)  # type: ignore[arg-type]
-        merged_stylesheet = f"""{modulesSectionCombo.styleSheet()}
-            QComboBox {{
-                font-size: {QApplication.font().pointSize()}px;
-                font-family: Arial, Helvetica, sans-serif;
-                padding: 5px;
-                text-align: center;
-            }}
-        """
-        modulesSectionCombo.setStyleSheet(merged_stylesheet)
         modulesSectionCombo.setMaxVisibleItems(18)
         def create_more_actions_menu() -> QMenu:
             menu = QMenu()
@@ -667,7 +658,13 @@ class ToolWindow(QMainWindow):
             palette = self.create_palette(QColor(53, 53, 53), QColor(35, 35, 35), QColor(240, 240, 240),
                                           QColor(25, 25, 25), self.adjust_color(QColor("orange"), saturation=80, hue_shift=-10), QColor(255, 69, 0))
         elif self.settings.selectedTheme == "QDarkStyle":
-            app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
+            try:
+                import qdarkstyle
+                app.setStyle("Fusion")
+                app.setPalette(app.style().standardPalette())
+                app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
+            except (ImportError, ModuleNotFoundError):
+                QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
             return
         elif self.settings.selectedTheme == "AMOLED":
             sheet = self._get_file_stylesheet(":/themes/other/AMOLED.qss", app)
