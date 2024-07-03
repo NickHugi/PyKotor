@@ -2438,7 +2438,10 @@ class DLGTreeView(RobustTreeView):
                         print("dropEvent: dropTarget is not valid (for a pasteItem)")
                         self.resetDragState()
                         return
-                    model.pasteItem(dropParent, dragged_link, row=self.dropTarget.row, asNewBranches=False)
+                    new_index = self.dropTarget.row
+                    if self.dropTarget.position is DropPosition.ON_TOP_OF:
+                        new_index = 0
+                    model.pasteItem(dropParent, dragged_link, row=new_index, asNewBranches=False)
                     super().dropEvent(event)
                 else:
                     print("<SDM> [dropEvent scope] could not call pasteItem: dragged_node could not be deserialized from mime data.")
