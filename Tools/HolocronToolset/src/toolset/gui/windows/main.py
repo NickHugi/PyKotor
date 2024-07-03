@@ -19,6 +19,7 @@ from qtpy.QtCore import (
     QCoreApplication,
     QEvent,
     QFile,
+    QSize,
     QTextStream,
     QThread,
     QTimer,
@@ -38,14 +39,18 @@ from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
     QHBoxLayout,
+    QLabel,
     QListView,
     QMainWindow,
     QMenu,
     QMessageBox,
     QPushButton,
     QSizePolicy,
+    QStyle,
+    QToolButton,
     QTreeView,
     QVBoxLayout,
+    QWidget,
 )
 from watchdog.events import FileSystemEventHandler
 
@@ -130,9 +135,6 @@ if TYPE_CHECKING:
         QMouseEvent,
         QShowEvent,
     )
-    from qtpy.QtWidgets import (
-        QWidget,
-    )
     from typing_extensions import Literal
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
@@ -172,6 +174,88 @@ def run_module_designer(
     sys.exit(app.exec_())
 
 
+class CustomTitleBar(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAutoFillBackground(True)
+        self.setBackgroundRole(QPalette.ColorRole.Highlight)
+        self.initial_pos = None
+        title_bar_layout = QHBoxLayout(self)
+        title_bar_layout.setContentsMargins(1, 1, 1, 1)
+        title_bar_layout.setSpacing(2)
+
+        self.title = QLabel(f"{self.__class__.__name__}", self)
+        self.title.setStyleSheet(
+            """font-weight: bold;
+               border: 2px solid black;
+               border-radius: 12px;
+               margin: 2px;
+            """
+        )
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title = parent.windowTitle()
+        if title:
+            self.title.setText(title)
+        title_bar_layout.addWidget(self.title)
+        # Min button
+        self.min_button = QToolButton(self)
+        min_icon = self.style().standardIcon(
+            QStyle.StandardPixmap.SP_TitleBarMinButton
+        )
+        self.min_button.setIcon(min_icon)
+        self.min_button.clicked.connect(self.window().showMinimized)
+
+        # Max button
+        self.max_button = QToolButton(self)
+        max_icon = self.style().standardIcon(
+            QStyle.StandardPixmap.SP_TitleBarMaxButton
+        )
+        self.max_button.setIcon(max_icon)
+        self.max_button.clicked.connect(self.window().showMaximized)
+
+        # Close button
+        self.close_button = QToolButton(self)
+        close_icon = self.style().standardIcon(
+            QStyle.StandardPixmap.SP_TitleBarCloseButton
+        )
+        self.close_button.setIcon(close_icon)
+        self.close_button.clicked.connect(self.window().close)
+
+        # Normal button
+        self.normal_button = QToolButton(self)
+        normal_icon = self.style().standardIcon(
+            QStyle.StandardPixmap.SP_TitleBarNormalButton
+        )
+        self.normal_button.setIcon(normal_icon)
+        self.normal_button.clicked.connect(self.window().showNormal)
+        self.normal_button.setVisible(False)
+        # Add buttons
+        buttons = [
+            self.min_button,
+            self.normal_button,
+            self.max_button,
+            self.close_button,
+        ]
+        for button in buttons:
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            button.setFixedSize(QSize(28, 28))
+            button.setStyleSheet(
+                """QToolButton { border: 2px solid white;
+                                 border-radius: 12px;
+                                }
+                """
+            )
+            title_bar_layout.addWidget(button)
+
+    def window_state_changed(self, state):
+        if state == Qt.WindowState.WindowMaximized:
+            self.normal_button.setVisible(True)
+            self.max_button.setVisible(False)
+        else:
+            self.normal_button.setVisible(False)
+            self.max_button.setVisible(True)
+
+
 class ToolWindow(QMainWindow):
     moduleFilesUpdated = QtCore.Signal(object, object)
     overrideFilesUpdate = QtCore.Signal(object, object)
@@ -209,7 +293,7 @@ class ToolWindow(QMainWindow):
         # Theme setup
         self.original_style: str = self.style().objectName()
         self.original_palette: QPalette = self.palette()
-        self.toggle_stylesheet(self.settings.selectedTheme)
+        self.change_theme(self.settings.selectedTheme)
 
         # Focus handler (searchbox, various keyboard actions)
         self.focusHandler: MainFocusHandler = MainFocusHandler(self)
@@ -344,6 +428,21 @@ class ToolWindow(QMainWindow):
             return self.focusHandler.eventFilter(obj, event)
         return super().eventFilter(obj, event)
 
+    def resize_widget_to_text(widget: QWidget):
+        if isinstance(widget, QComboBox):
+            # Get the current font of the widget or use the application's font
+            font = widget.font()
+            # Create QFontMetrics from the current font
+            fm = QFontMetrics(font)
+            # Calculate the required width to display the text without clipping
+            required_width = fm.horizontalAdvance(widget.text())
+            # Get the current size of the widget
+            current_size = widget.size()
+            # Determine the new width (max of current and required)
+            new_width = max(required_width, current_size.width())
+            # Set the new size with the same height
+            widget.setMinimumSize(new_width, current_size.height())
+
     def _setupSignals(self):  # sourcery skip: remove-unreachable-code
         """Connects signals to slots for UI interactions.
 
@@ -361,7 +460,7 @@ class ToolWindow(QMainWindow):
         """
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
-        self.ui.menuTheme.triggered.connect(self.toggle_stylesheet)
+        self.ui.menuTheme.triggered.connect(self.change_theme)
 
         self.moduleFilesUpdated.connect(self.onModuleFileUpdated)
         self.overrideFilesUpdate.connect(self.onOverrideFileUpdated)
@@ -518,138 +617,246 @@ class ToolWindow(QMainWindow):
 
         openResourceEditor(file, resource.resname(), resource.restype(), resource.data(), self.active, self)
 
-    def reset_theme(self, app: QApplication):
-        # Reset the application stylesheet
-        app.setStyleSheet("")
-        app.setStyle("")
+    def apply_style(
+        self,
+        app: QApplication,
+        sheet: str = "",
+        style: str | None = None,
+        palette: QPalette | None = None,
+        *,
+        aggressive: bool = False,
+    ):
+        app.setStyleSheet(sheet)
+        #self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.FramelessWindowHint)
+        if style is None or style == self.original_style:
+            app.setStyle(self.original_style)
+        else:
+            app.setStyle(style)
+            if palette: ...
+                # still can't get the custom title bar working, leave this disabled until we do.
+                #self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
         app_style = app.style()
-        app.setPalette(app_style.standardPalette())
-        for widget in app.allWidgets():
-            widget.setStyleSheet("")
-            widget.setPalette(app_style.standardPalette())
-            widget.update()
+        if palette is None:
+            palette = app_style.standardPalette()
+        app.setPalette(palette)
+        if aggressive:
+            for widget in app.allWidgets():
+                widget.setStyleSheet(sheet)
+                widget.setPalette(palette)
+                widget.repaint()
 
-    def toggle_stylesheet(self, theme: QAction | str):
+    def change_theme(self, theme: QAction | str):
         app = QApplication.instance()
         assert isinstance(app, QApplication), "No Qt Application found or not a QApplication instance."
 
         print("<SDM> [toggle_stylesheet scope] self.settings.selectedTheme: ", self.settings.selectedTheme)
         self.settings.selectedTheme = theme.text() if isinstance(theme, QAction) else theme
-        self.reset_theme(app)
+        self.apply_style(app, aggressive=True)
 
-        if self.settings.selectedTheme == "Fusion (Light)":
-            app.setStyle("Fusion")
-            app.setPalette(app.style().standardPalette())
-        elif self.settings.selectedTheme == "Fusion (Dark)":
-            app.setStyle("Fusion")
-            self._applyCustomDarkPalette()
-        elif self.settings.selectedTheme == "AMOLED":
-            self._load_stylesheet_from_file(":/themes/other/AMOLED.qss", app)
-        elif self.settings.selectedTheme == "Aqua":
-            self._load_stylesheet_from_file(":/themes/other/aqua.qss", app)
-        elif self.settings.selectedTheme == "ConsoleStyle":
-            self._load_stylesheet_from_file(":/themes/other/ConsoleStyle.qss", app)
-        elif self.settings.selectedTheme == "ElegantDark":
-            self._load_stylesheet_from_file(":/themes/other/ElegantDark.qss", app)
-        elif self.settings.selectedTheme == "MacOS":
-            self._load_stylesheet_from_file(":/themes/other/MacOS.qss", app)
-        elif self.settings.selectedTheme == "ManjaroMix":
-            self._load_stylesheet_from_file(":/themes/other/ManjaroMix.qss", app)
-        elif self.settings.selectedTheme == "MaterialDark":
-            self._load_stylesheet_from_file(":/themes/other/MaterialDark.qss", app)
-        elif self.settings.selectedTheme == "NeonButtons":
-            self._load_stylesheet_from_file(":/themes/other/NeonButtons.qss", app, dark=False)
-        elif self.settings.selectedTheme == "Ubuntu":
-            self._load_stylesheet_from_file(":/themes/other/Ubuntu.qss", app)
-        elif self.settings.selectedTheme == "Breeze (Dark)":
-            self._load_stylesheet_from_file(":/dark/stylesheet.qss", app)
-        elif self.settings.selectedTheme != "Native":
-            self.settings.reset_setting("selectedTheme")
-            self.toggle_stylesheet(self.settings.selectedTheme)
-        else:
+        palette = None
+        sheet = ""
+        style = "Fusion"
+        if self.settings.selectedTheme == "Native":
             app.setStyle(self.original_style)
             app.setPalette(app.style().standardPalette())
+        elif self.settings.selectedTheme == "Fusion (Light)":
+            style = "Fusion"
+            self.apply_style(app, sheet, "Fusion")
+        elif self.settings.selectedTheme == "Fusion (Dark)":
+            style = "Fusion"
+            palette = self.create_palette(QColor(53, 53, 53), QColor(35, 35, 35), QColor(240, 240, 240),
+                                          QColor(25, 25, 25), self.adjust_color(QColor("orange"), saturation=80, hue_shift=-10), QColor(255, 69, 0))
+        elif self.settings.selectedTheme == "QDarkStyle":
+            app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
+            return
+        elif self.settings.selectedTheme == "AMOLED":
+            sheet = self._get_file_stylesheet(":/themes/other/AMOLED.qss", app)
+            palette = self.create_palette("#000000", "#141414", "#e67e22", "#f39c12", "#808086", "#FFFFFF")
+        elif self.settings.selectedTheme == "Aqua":
+            sheet = self._get_file_stylesheet(":/themes/other/aqua.qss", app)
+        elif self.settings.selectedTheme == "ConsoleStyle":
+            sheet = self._get_file_stylesheet(":/themes/other/ConsoleStyle.qss", app)
+            palette = self.create_palette("#000000", "#1C1C1C", "#F0F0F0", "#585858", "#FF9900", "#FFFFFF")
+        elif self.settings.selectedTheme == "ElegantDark":
+            sheet = self._get_file_stylesheet(":/themes/other/ElegantDark.qss", app)
+            palette = self.create_palette("#2A2A2A", "#525252", "#00FF00", "#585858", "#BDBDBD", "#FFFFFF")
+        elif self.settings.selectedTheme == "MacOS":
+            sheet = self._get_file_stylesheet(":/themes/other/MacOS.qss", app)
+            # dont use, looks worse
+            #palette = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
+        elif self.settings.selectedTheme == "ManjaroMix":
+            sheet = self._get_file_stylesheet(":/themes/other/ManjaroMix.qss", app)
+            palette = self.create_palette("#151a1e", QColor().blue(), "#d3dae3", "#4fa08b", "#214037", "#027f7f")
+        elif self.settings.selectedTheme == "MaterialDark":
+            sheet = self._get_file_stylesheet(":/themes/other/MaterialDark.qss", app)
+            palette = self.create_palette("#1E1D23", "#1E1D23", "#FFFFFF", "#007B50", "#04B97F", "#37EFBA")
+        elif self.settings.selectedTheme == "NeonButtons":
+            ...
+            #sheet = self._get_file_stylesheet(":/themes/other/NeonButtons.qss", app)
+        elif self.settings.selectedTheme == "Ubuntu":
+            ...
+            #sheet = self._get_file_stylesheet(":/themes/other/Ubuntu.qss", app)
+            #palette = self.create_palette("#f0f0f0", "#1e1d23", "#000000", "#f68456", "#ec743f", "#ffffff")
+        elif self.settings.selectedTheme == "Breeze (Dark)":
+            sheet = self._get_file_stylesheet(":/dark/stylesheet.qss", app)
+        else:
+            self.settings.reset_setting("selectedTheme")
+            self.change_theme(self.settings.selectedTheme)
         print(f"Theme changed to: '{self.settings.selectedTheme}'. Native style name: {self.original_style}")
+        self.apply_style(app, sheet, style, palette)
         self.show()
 
-    def _load_stylesheet_from_file(self, qt_path: str, app: QApplication, *, dark: bool = True):
+    def _get_file_stylesheet(self, qt_path: str, app: QApplication) -> str:
         file = QFile(qt_path)
-        file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
-        app.setStyleSheet(QTextStream(file).readAll())
-        file.close()
-        if dark:
-            self._applyCustomDarkPalette()
+        if not file.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text):
+            return ""
+        try:
+            return QTextStream(file).readAll()
+        finally:
+            file.close()
+
+    def adjust_color(self, color: Any, lightness: int = 100, saturation: int = 100, hue_shift: int = 0) -> QColor:
+        """Adjusts the color's lightness, saturation, and hue."""
+        qcolor = QColor(color)
+        h, s, v, _ = qcolor.getHsv()
+        s = max(0, min(255, s * saturation // 100))
+        v = max(0, min(255, v * lightness // 100))
+        h = (h + hue_shift) % 360
+        qcolor.setHsv(h, s, v)
+        return qcolor
+
+    def create_palette(
+        self,
+        primary: QColor | Qt.GlobalColor | str,
+        secondary: QColor | Qt.GlobalColor | str,
+        text: QColor | Qt.GlobalColor | str,
+        tooltip_base: QColor | Qt.GlobalColor | str,
+        highlight: QColor | Qt.GlobalColor | str,
+        bright_text: QColor | Qt.GlobalColor | str,
+    ) -> QPalette:
+        """Create a QPalette using base colors adjusted for specific UI roles."""
+        if not isinstance(primary, QColor):
+            primary = QColor(primary)
+        if not isinstance(secondary, QColor):
+            secondary = QColor(secondary)
+        if not isinstance(text, QColor):
+            text = QColor(text)
+        if not isinstance(tooltip_base, QColor):
+            tooltip_base = QColor(tooltip_base)
+        if not isinstance(highlight, QColor):
+            highlight = QColor(highlight)
+        if not isinstance(bright_text, QColor):
+            bright_text = QColor(bright_text)
+
+        palette = QPalette()
+        role_colors: dict[QPalette.ColorRole, QColor] = {
+            QPalette.ColorRole.Window: secondary,
+            QPalette.ColorRole.Background: self.adjust_color(primary, lightness=110),
+            QPalette.ColorRole.Dark: self.adjust_color(primary, lightness=80),
+            QPalette.ColorRole.Foreground: self.adjust_color(secondary, lightness=80),
+            QPalette.ColorRole.Button: primary,
+            QPalette.ColorRole.WindowText: text,
+            QPalette.ColorRole.Base: primary,
+            QPalette.ColorRole.AlternateBase: self.adjust_color(secondary, lightness=120),
+            QPalette.ColorRole.ToolTipBase: tooltip_base,
+            QPalette.ColorRole.ToolTipText: self.adjust_color(tooltip_base, lightness=200),  # Slightly lighter for readability
+            QPalette.ColorRole.Text: self.adjust_color(text, lightness=90),
+            QPalette.ColorRole.ButtonText: self.adjust_color(text, lightness=95),
+            QPalette.ColorRole.BrightText: bright_text,
+            QPalette.ColorRole.Link: highlight,
+            QPalette.ColorRole.LinkVisited: self.adjust_color(highlight, hue_shift=10),
+            QPalette.ColorRole.Highlight: highlight,
+            QPalette.ColorRole.HighlightedText: self.adjust_color(secondary, lightness=120, saturation=255),
+            QPalette.ColorRole.Light: self.adjust_color(primary, lightness=150),
+            QPalette.ColorRole.Midlight: self.adjust_color(primary, lightness=130),
+            QPalette.ColorRole.Mid: self.adjust_color(primary, lightness=100),
+            QPalette.ColorRole.Shadow: self.adjust_color(primary, lightness=50),
+            QPalette.ColorRole.PlaceholderText: self.adjust_color(text, lightness=70)
+        }
+        for role, color in role_colors.items():
+            palette.setColor(QPalette.Normal, role, color)
+
+        # Create disabled and inactive variations
+        for state_key, saturation_factor, lightness_factor in [
+            (QPalette.Disabled, 80, 60),  # More muted and slightly darker
+            (QPalette.Inactive, 90, 80)]:  # Slightly muted
+            for role, base_color in role_colors.items():
+                adjusted_color = self.adjust_color(base_color, saturation=saturation_factor, lightness=lightness_factor)
+                palette.setColor(state_key, role, adjusted_color)
+
+        return palette
 
     def _applyCustomDarkPalette(self):
         dark_palette = QPalette()
 
-        # Window colors
         dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark gray for window background
+        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark gray for buttons
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))  # Dark slate blue for disabled alternate base
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate gray for disabled buttons
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark slate gray for disabled window
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Darker gray for active window
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, QColor(53, 53, 53))
+
         dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # Light gray for window text
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # White for active window text
 
-        # Base colors
         dark_palette.setColor(QPalette.ColorRole.Base, QColor(35, 35, 35))  # Darker gray for base background
-        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Medium dark gray for alternate base
-        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for tooltip base
-        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for tooltip text
+        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for highlighted text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Dark slate gray for disabled base
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for disabled highlighted text
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Even darker gray for active base
 
-        # Text colors
+        dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Medium dark gray for alternate base
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Darker medium gray for active alternate base
+
+        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for tooltip base
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for disabled tooltip base
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Darker gray for active tooltip base
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
+
+        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for tooltip text
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for active tooltip text
+
+        dark_palette.setColor(QPalette.ColorRole.Link, QColor(100, 149, 237))  # Cornflower blue for links
+
         dark_palette.setColor(QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for main text
+        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for active text
+
         dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(230, 230, 230))  # Slightly lighter gray for button text
+
         dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 69, 0))  # Orange-red for bright text
 
-        # Button colors
-        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark gray for buttons
-
-        # Link colors
-        dark_palette.setColor(QPalette.ColorRole.Link, QColor(100, 149, 237))  # Cornflower blue for links
         dark_palette.setColor(QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for visited links
-
-        # Highlight colors
-        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for highlight
-        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for highlighted text
-
-        # Disabled state colors
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Dark slate gray for disabled window
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(169, 169, 169))  # Dark gray for disabled window text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Dark slate gray for disabled base
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))  # Dark slate blue for disabled alternate base
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Very dark gray for disabled tooltip base
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, QColor(169, 169, 169))  # Dark gray for disabled tooltip text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(128, 128, 128))  # Gray for disabled text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate gray for disabled buttons
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(105, 105, 105))  # Dim gray for disabled button text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for disabled bright text
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))  # Dodger blue for disabled links
         dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.LinkVisited, QColor(123, 104, 238))  # Medium slate blue for disabled visited links
+
+
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ToolTipText, QColor(169, 169, 169))  # Dark gray for disabled tooltip text
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor(169, 169, 169))  # Dark gray for disabled window text
+
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(128, 128, 128))  # Gray for disabled text
+
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(105, 105, 105))  # Dim gray for disabled button text
+
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.BrightText, QColor(255, 0, 0))  # Red for disabled bright text
+
+        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Link, QColor(42, 130, 218))  # Dodger blue for disabled links
         dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for disabled highlight
-        dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))  # Very dark gray for disabled highlighted text
-
-        # Active state colors
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Window, QColor(53, 53, 53))  # Darker gray for active window
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.WindowText, QColor(240, 240, 240))  # White for active window text
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Base, QColor(35, 35, 35))  # Even darker gray for active base
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.AlternateBase, QColor(45, 45, 45))  # Darker medium gray for active alternate base
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))  # Darker gray for active tooltip base
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.ToolTipText, QColor(200, 200, 200))  # Light gray for active tooltip text
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Text, QColor(220, 220, 220))  # Light gray for active text
-        dark_palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, QColor(53, 53, 53))  # Dark slate
-
-        # Inactive state colors
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Base, QColor(35, 35, 35))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipBase, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Text, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
+        dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))  # Dodger blue for highlight
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Link, QColor(42, 130, 218))
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.LinkVisited, QColor(42, 130, 218))
         dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(35, 35, 35))
+
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ToolTipText, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Text, Qt.GlobalColor.white)
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.ButtonText, Qt.GlobalColor.white)
+
+        dark_palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.BrightText, Qt.GlobalColor.red)
 
         QApplication.setPalette(dark_palette)
 

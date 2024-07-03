@@ -358,8 +358,6 @@
     <addaction name="macOS"/>
     <addaction name="manjaroMix"/>
     <addaction name="materialDark"/>
-    <addaction name="neonButtons"/>
-    <addaction name="ubuntu"/>
     <addaction name="breezeDark"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -757,16 +755,6 @@
   <action name="materialDark">
    <property name="text">
     <string>MaterialDark</string>
-   </property>
-  </action>
-  <action name="neonButtons">
-   <property name="text">
-    <string>NeonButtons</string>
-   </property>
-  </action>
-  <action name="ubuntu">
-   <property name="text">
-    <string>Ubuntu</string>
    </property>
   </action>
   <action name="actionIndoorMapBuilder">
