@@ -343,14 +343,10 @@ class DLGListWidget(QListWidget):
             link_parent_path += "\\"
         else:
             link_parent_path = ""
-        hover_text_1 = ""
-        #hover_text_1 = f"<span style='color:{color};'> (taken from: {link_parent_path}{link_partial_path})</span>"
-        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{link_partial_path} --> {node_path}</div>"
-
-        default_display = f"<div class='link-container'>{display_text_2}</div>"
-        hover_display = f"<div class='link-container'>{display_text_2}{hover_text_1}</div>"
-        item.setData(Qt.ItemDataRole.DisplayRole, default_display)
-        item.setData(_EXTRA_DISPLAY_ROLE, hover_display)
+        hover_text_1 = f"<span style='color:{color}; display:inline-block; vertical-align:top;'>{link_partial_path} --></span>"
+        display_text_2 = f"<div class='link-hover-text' style='display:inline-block; vertical-align:top; color:{color}; text-align:center;'>{node_path}</div>"
+        item.setData(Qt.ItemDataRole.DisplayRole, f"<div class='link-container' style='white-space: nowrap;'>{display_text_2}</div>")
+        item.setData(_EXTRA_DISPLAY_ROLE, f"<div class='link-container' style='white-space: nowrap;'>{hover_text_1}{display_text_2}</div>")
         text = repr(item.link.node) if self.editor._installation is None else self.editor._installation.string(item.link.node.text)  # noqa: SLF001
         item.setToolTip(f"{text}<br><br><i>Right click for more options</i>")
 
@@ -4101,9 +4097,10 @@ Should return 1 or 0, representing a boolean.
             focusAction.setEnabled(False)
         focusAction.setVisible(notAnOrphan)
 
-        findReferencesAction = menu.addAction("Find References")
-        findReferencesAction.triggered.connect(lambda: self.findReferences(item))
-        findReferencesAction.setVisible(notAnOrphan)
+        # FIXME: current implementation requires all items to be loaded in order to find references, which is obviously impossible
+        #findReferencesAction = menu.addAction("Find References")
+        #findReferencesAction.triggered.connect(lambda: self.findReferences(item))
+        #findReferencesAction.setVisible(notAnOrphan)
 
         # Expand/Collapse All Children Action (non copies)
         menu.addSeparator()
