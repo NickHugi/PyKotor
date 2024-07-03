@@ -476,17 +476,17 @@ class ToolWindow(QMainWindow):
             assert self.active is not None
 
             # Uncomment this block to start Module Designer in new process
-            import multiprocessing
-            module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
-            print("<SDM> [openModuleDesigner scope] module_path: ", module_path)
+            #import multiprocessing
+            #module_path = self.active.module_path() / self.ui.modulesWidget.currentSection()
+            #print("<SDM> [openModuleDesigner scope] module_path: ", module_path)
 
-            process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
-            print("<SDM> [openModuleDesigner scope] process: ", process)
+            #process = multiprocessing.Process(target=run_module_designer, args=(str(self.active.path()), self.active.name, self.active.tsl, str(module_path)))
+            #print("<SDM> [openModuleDesigner scope] process: ", process)
 
-            process.start()
-            BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
-            QTimer.singleShot(500, self.debounceModuleDesignerLoad)
-            return None
+            #process.start()
+            #BetterMessageBox("Module designer process started", "We have triggered the module designer to open, feel free to use the toolset in the meantime.").exec_()
+            #QTimer.singleShot(500, self.debounceModuleDesignerLoad)
+            #return None
 
             designerUi = (
                 ModuleDesigner(
@@ -495,7 +495,6 @@ class ToolWindow(QMainWindow):
                     self.active.module_path() / self.ui.modulesWidget.currentSection(),
                 )
             )
-            print("<SDM> [openModuleDesigner scope] designerUi: ", designerUi)
 
             icon_path = ":/images/icons/sith.png"
             if not QPixmap(icon_path).isNull():
