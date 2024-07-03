@@ -710,7 +710,10 @@ class Installation:
     ):
         """Reloads the list of resources in the streamwaves folder linked to the Installation."""
         files: list[FileResource] = []
-        stack: list[str] = [str(self._find_resource_folderpath(("streamwaves", "streamvoice")))]
+        fp = self._find_resource_folderpath(("streamwaves", "streamvoice"))
+        if not fp.safe_isdir():
+            return
+        stack: list[str] = [str(fp)]
 
         while stack:
             current_dir = stack.pop()
