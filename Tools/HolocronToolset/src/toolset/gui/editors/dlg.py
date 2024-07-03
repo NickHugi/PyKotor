@@ -345,7 +345,7 @@ class DLGListWidget(QListWidget):
             link_parent_path = ""
         hover_text_1 = ""
         #hover_text_1 = f"<span style='color:{color};'> (taken from: {link_parent_path}{link_partial_path})</span>"
-        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{link_partial_path}\\{node_path}</div>"
+        display_text_2 = f"<div class='link-hover-text' style='color:{color};text-align:center;'>{link_partial_path} --> {node_path}</div>"
 
         default_display = f"<div class='link-container'>{display_text_2}</div>"
         hover_display = f"<div class='link-container'>{display_text_2}{hover_text_1}</div>"
