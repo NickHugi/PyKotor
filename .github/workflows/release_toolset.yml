@@ -300,6 +300,7 @@ jobs:
             Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
           }
           pip install "setuptools==69.5.1"  # 70.0.0 and higher breaks pyinstaller
+          pip install qdarkstyle -U
         } catch {
           Write-Host -ForegroundColor Red "Detailed Error Report:"
           Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
