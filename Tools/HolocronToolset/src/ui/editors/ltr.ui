@@ -1,0 +1,527 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>LTR Editor</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
+      </property>
+      <widget class="QWidget" name="tabSingles">
+       <attribute name="title">
+        <string>Singles</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutSingles">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayoutSingleSelection">
+          <item>
+           <widget class="QLabel" name="labelSingleChar">
+            <property name="text">
+             <string>Character</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxSingleChar"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelSingleStart">
+            <property name="text">
+             <string>Start</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxSingleStart">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelSingleMiddle">
+            <property name="text">
+             <string>Middle</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxSingleMiddle">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelSingleEnd">
+            <property name="text">
+             <string>End</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxSingleEnd">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonSetSingle">
+          <property name="text">
+           <string>Set Single Character</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="tableSingles">
+          <column>
+           <property name="text">
+            <string>Character</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Start</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Middle</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>End</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonAddSingle">
+          <property name="text">
+           <string>Add Row</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonRemoveSingle">
+          <property name="text">
+           <string>Remove Selected Row</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabDoubles">
+       <attribute name="title">
+        <string>Doubles</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutDoubles">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayoutDoubleSelection">
+          <item>
+           <widget class="QLabel" name="labelDoublePrevChar">
+            <property name="text">
+             <string>Previous Character</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxDoublePrevChar"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelDoubleChar">
+            <property name="text">
+             <string>Character</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxDoubleChar"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelDoubleStart">
+            <property name="text">
+             <string>Start</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxDoubleStart">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelDoubleMiddle">
+            <property name="text">
+             <string>Middle</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxDoubleMiddle">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelDoubleEnd">
+            <property name="text">
+             <string>End</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxDoubleEnd">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonSetDouble">
+          <property name="text">
+           <string>Set Double Character</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="tableDoubles">
+          <column>
+           <property name="text">
+            <string>Previous Character</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Character</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Start</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Middle</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>End</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonAddDouble">
+          <property name="text">
+           <string>Add Row</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonRemoveDouble">
+          <property name="text">
+           <string>Remove Selected Row</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabTriples">
+       <attribute name="title">
+        <string>Triples</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayoutTriples">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayoutTripleSelection">
+          <item>
+           <widget class="QLabel" name="labelTriplePrev2Char">
+            <property name="text">
+             <string>Previous Character 2</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxTriplePrev2Char"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelTriplePrev1Char">
+            <property name="text">
+             <string>Previous Character 1</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxTriplePrev1Char"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelTripleChar">
+            <property name="text">
+             <string>Character</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBoxTripleChar"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelTripleStart">
+            <property name="text">
+             <string>Start</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxTripleStart">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelTripleMiddle">
+            <property name="text">
+             <string>Middle</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxTripleMiddle">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelTripleEnd">
+            <property name="text">
+             <string>End</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="spinBoxTripleEnd">
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonSetTriple">
+          <property name="text">
+           <string>Set Triple Character</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="tableTriples">
+          <column>
+           <property name="text">
+            <string>Previous Character 2</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Previous Character 1</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Character</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Start</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Middle</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>End</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonAddTriple">
+          <property name="text">
+           <string>Add Row</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="buttonRemoveTriple">
+          <property name="text">
+           <string>Remove Selected Row</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="buttonGenerate">
+      <property name="text">
+       <string>Generate Name</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLineEdit" name="lineEditGeneratedName">
+      <property name="placeholderText">
+       <string>Generated Name</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_As"/>
+    <addaction name="separator"/>
+    <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuFormat">
+    <property name="title">
+     <string>View</string>
+    </property>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuFormat"/>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionSave_As">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="text">
+    <string>Revert</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

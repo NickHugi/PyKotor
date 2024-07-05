@@ -104,6 +104,7 @@ def openResourceEditor(
     from toolset.gui.editors.gff import GFFEditor  # noqa: PLC0415
     from toolset.gui.editors.git import GITEditor  # noqa: PLC0415
     from toolset.gui.editors.jrl import JRLEditor  # noqa: PLC0415
+    from toolset.gui.editors.ltr import LTREditor  # noqa: PLC0415
     from toolset.gui.editors.nss import NSSEditor  # noqa: PLC0415
     from toolset.gui.editors.pth import PTHEditor  # noqa: PLC0415
     from toolset.gui.editors.ssf import SSFEditor  # noqa: PLC0415
@@ -137,6 +138,9 @@ def openResourceEditor(
 
     if restype.target_type() is ResourceType.TLK:
         editor = TLKEditor(None, installation)
+
+    if restype.target_type() is ResourceType.LTR:
+        editor = LTREditor(None, installation)
 
     if restype.category == "Walkmeshes":
         editor = BWMEditor(None, installation)
