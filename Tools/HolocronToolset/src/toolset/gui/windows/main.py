@@ -1546,8 +1546,6 @@ class ToolWindow(QMainWindow):
             QMessageBox(QMessageBox.Icon.Information, "dialog.tlk not found", f"Could not open the TalkTable editor, dialog.tlk not found at the expected location<br><br>{filepath}.").exec_()
             return
         data = BinaryReader.load_file(filepath)
-        print("<SDM> [openActiveTalktable scope] data: ", data)
-
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self):
@@ -2287,8 +2285,6 @@ class ToolWindow(QMainWindow):
             if ident.restype not in (ResourceType.TGA, ResourceType.TPC):
                 continue
             data = modRes.data()
-            print("<SDM> [extractAllModuleTextures scope] data: ", data)
-
             if data is None:
                 continue
             locations = modRes.locations()
@@ -2337,8 +2333,6 @@ class ToolWindow(QMainWindow):
         allModuleResources: list[ResourceResult] = []
         for ident, modRes in thisModule.resources.items():
             data = modRes.data()
-            print("<SDM> [extractModuleEverything scope] data: ", data)
-
             if data is None:
                 continue
             locations = modRes.locations()
@@ -2505,27 +2499,17 @@ class ToolWindow(QMainWindow):
 
     def _decompileTpc(self, tpc: TPC) -> bytearray:
         data = bytearray()
-        print("<SDM> [_decompileTpc scope] data: ", data)
-
         write_tpc(tpc, data, ResourceType.TGA)
         return data
 
     def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES) -> bytearray:
         assert self.active is not None
         reslookup: ResourceResult | None = self.active.resource(resource.resname(), ResourceType.MDX)
-        print("<SDM> [_decompileMdl scope] None: ", None)
-
         if reslookup is None:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), repr(resource))
         mdxData: bytes = reslookup.data
-        print("<SDM> [_decompileMdl scope] bytes: ", bytes)
-
         mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0)
-        print("<SDM> [_decompileMdl scope] None: ", None)
-
         data = bytearray()
-        print("<SDM> [_decompileMdl scope] data: ", data)
-
         write_mdl(mdl, data, ResourceType.MDL_ASCII)
         return data
 
@@ -2534,8 +2518,6 @@ class ToolWindow(QMainWindow):
         for texture in model.list_textures(data):
             try:
                 tpc: TPC | None = self.active.texture(texture)
-                print("<SDM> [_extractMdlTextures scope] None: ", None)
-
                 if tpc is None:
                     raise ValueError(texture)  # noqa: TRY301
                 if self.ui.tpcTxiCheckbox.isChecked():
@@ -2548,8 +2530,6 @@ class ToolWindow(QMainWindow):
                 write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
             except Exception as e:  # noqa: PERF203, BLE001
                 etype, msg = universal_simplify_exception(e)
-                print("<SDM> [_extractMdlTextures scope] msg: ", msg)
-
                 loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'"))
 
     def openFromFile(self):
@@ -2564,8 +2544,6 @@ class ToolWindow(QMainWindow):
             try:
                 with r_filepath.open("rb") as file:
                     data = file.read()
-                    print("<SDM> [openFromFile scope] data: ", data)
-
                 openResourceEditor(filepath, *ResourceIdentifier.from_path(r_filepath).validate().unpack(), data, self.active, self)
             except (ValueError, OSError) as e:
                 etype, msg = universal_simplify_exception(e)
