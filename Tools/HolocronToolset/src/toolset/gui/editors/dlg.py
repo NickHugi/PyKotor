@@ -2683,7 +2683,7 @@ class DLGEditor(Editor):
             "Tip: Hold CTRL+SHIFT and scroll to change the vertical spacing.",
             "Tip: 'Delete all references' will delete all EntriesList/RepliesList/StartingList links to the node, leaving it orphaned.",
             "Tip: Drag any item to the left dockpanel to pin it for easy access",
-            "Tip: Orphaned Nodes will automatically be added to the top left list, drag back in to reintegrate."
+            "Tip: Orphaned Nodes will automatically be added to the top left list, drag back in to reintegrate.",
             "Tip: Use ':' after an attribute name in the search bar to filter items by specific properties, e.g., 'is_child:1'.",
             "Tip: Combine keywords with AND/OR in the search bar to refine your search results, such as 'script1:k_swg AND listener:PLAYER'",
             "Tip: Use double quotes to search for exact phrases in item descriptions, such as '\"urgent task\"'.",
