@@ -53,6 +53,7 @@ class LocalizedStringLineEdit(QWidget):
 
         self.ui.editButton.clicked.connect(self.editLocstring)
         self.ui.locstringText.mouseDoubleClickEvent = lambda a0: self.editLocstring()  # noqa: ARG005
+        self.setToolTip("Double-click to edit this Localized String.<br><br><i>Right-click for more options</i>")
 
     def setInstallation(self, installation: HTInstallation):
         self._installation = installation
