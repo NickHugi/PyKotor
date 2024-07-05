@@ -262,6 +262,7 @@ class ModuleRenderer(QOpenGLWidget):
             - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
         """
         face: BWMFace | None = None
+        assert self._module is not None
         for module_resource in self._module.resources.values():
             if module_resource.restype() is not ResourceType.WOK:
                 continue
