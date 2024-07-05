@@ -3814,7 +3814,7 @@ Should return 1 or 0, representing a boolean.
         installation.htBatchCache2DA(required)
 
         self.all_voices = sorted({res.resname() for res in installation._streamwaves}, key=str.lower)  # noqa: SLF001
-        self.all_sounds = sorted({res.resname() for res in installation._streamsounds}, key=str.lower)  # noqa: SLF001
+        self.all_sounds = sorted({res.resname() for res in [*installation._streamwaves, *installation._streamsounds]}, key=str.lower)  # noqa: SLF001
         self.all_music = sorted({res.resname() for res in installation._streammusic}, key=str.lower)  # noqa: SLF001
         self._setupTSLEmotionsAndExpressions(installation)
         self.ui.soundComboBox.populateComboBox(self.all_sounds)  # noqa: SLF001
