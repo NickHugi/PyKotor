@@ -234,8 +234,6 @@ class FilterComboBox(QComboBox):
         *,
         alwaysOnTop: bool = True,  # Recommended
     ):
-        if not text:
-            return
         index = self.findText(text, Qt.MatchFlag.MatchCaseSensitive)
         if alwaysOnTop:
             if index != -1:  # Text found
