@@ -957,6 +957,8 @@ def construct_dlg(
         for anim_struct in anim_list:
             anim = DLGAnimation()
             anim.animation_id = anim_struct.acquire("Animation", 0)
+            if anim.animation_id > 10000:
+                anim.animation_id -= 10000
             anim.participant = anim_struct.acquire("Participant", "")
             node.animations.append(anim)
 
@@ -1254,7 +1256,7 @@ def dismantle_dlg(
         anim_list: GFFList = gff_struct.set_list("AnimList", GFFList())
         for anim in node.animations:
             anim_struct: GFFStruct = anim_list.add(0)
-            anim_struct.set_uint16("Animation", anim.animation_id)
+            anim_struct.set_uint16("Animation", anim.animation_id if anim.animation_id <= 10000 else anim.animation_id + 10000)
             anim_struct.set_string("Participant", anim.participant)
 
         if node.quest.strip() and node.quest_entry:
