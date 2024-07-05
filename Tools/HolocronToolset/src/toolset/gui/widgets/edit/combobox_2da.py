@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from qtpy import QtCore
-from qtpy.QtGui import QColor, QPainter, QPen
+from qtpy.QtGui import QColor, QPainter, QPalette, QPen
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
@@ -40,7 +40,9 @@ class ComboBox2DA(QComboBox):
         super().paintEvent(event)
         if super().currentIndex() == -1:
             painter = QPainter(self)
-            painter.setPen(QPen(QColor(0, 0, 0)))
+            # Fetch the text color from the palette
+            text_color = self.palette().color(QPalette.Text)
+            painter.setPen(QPen(text_color))
             text_rect = self.rect().adjusted(2, 0, 0, 0)
             painter.drawText(text_rect, QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft, self.placeholderText())
             painter.end()
