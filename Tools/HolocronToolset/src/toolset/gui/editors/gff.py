@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QSortFilterProxyModel
 from qtpy.QtGui import QBrush, QColor, QFont, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QApplication, QFileDialog, QLabel, QListWidgetItem, QMenu, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
+from qtpy.QtWidgets import QApplication, QFileDialog, QLabel, QListWidgetItem, QMenu, QMessageBox, QPushButton, QShortcut, QSizePolicy, QVBoxLayout
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -179,6 +179,7 @@ class GFFEditor(Editor):
                 #childNode.setForeground(QBrush(QColor(0x000088)))
                 self._load_list(childNode, value)
             elif ftype == GFFFieldType.Struct:
+                assert isinstance(value, GFFStruct)
                 self.applyPalette(childNode, GFFFieldType.Struct)
                 #childNode.setForeground(QBrush(QColor(0x660000)))
                 childNode.setData(value.struct_id, _VALUE_NODE_ROLE)
@@ -508,16 +509,18 @@ class GFFEditor(Editor):
             vec4 = Vector4(self.ui.xVec4Spin.value(), self.ui.yVec4Spin.value(), self.ui.zVec4Spin.value(), self.ui.wVec4Spin.value())
             item.setData(vec4, _VALUE_NODE_ROLE)
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.LocalizedString:
-            item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()
+            value_locstring = cast(LocalizedString, item.data(_VALUE_NODE_ROLE))
+            value_locstring.stringref = self.ui.stringrefSpin.value()
         elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct or item.data(_TYPE_NODE_ROLE) is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
         self.refreshItemText(item)
 
     def substringSelected(self):
-        if len(self.ui.substringList.selectedItems()) > 0:
-            item: QListWidgetItem = self.ui.substringList.selectedItems()[0]
-            self.ui.substringEdit.setEnabled(True)
-            self.ui.substringEdit.setPlainText(item.data(_TEXT_SUBSTRING_ROLE))
+        selectedItems = self.ui.substringList.selectedItems()
+        if selectedItems:
+            for item in selectedItems:
+                self.ui.substringEdit.setEnabled(True)
+                self.ui.substringEdit.setPlainText(item.data(_TEXT_SUBSTRING_ROLE))
         else:
             self.ui.substringEdit.setEnabled(False)
 
@@ -537,15 +540,16 @@ class GFFEditor(Editor):
             - Get the selected localization string item
             - Set the edited text on the localization string
         """
-        item: QListWidgetItem = self.ui.substringList.selectedItems()[0]
-        text: str = self.ui.substringEdit.toPlainText()
-        item.setData(_TEXT_SUBSTRING_ROLE, text)
+        for item in self.ui.substringList.selectedItems():
+            text: str = self.ui.substringEdit.toPlainText()
+            item.setData(_TEXT_SUBSTRING_ROLE, text)
 
-        substringItem: QListWidgetItem = self.ui.substringList.selectedItems()[0]
-        language, gender = LocalizedString.substring_pair(substringItem.data(_ID_SUBSTRING_ROLE))
-        locstringItem: QModelIndex = self.ui.treeView.selectedIndexes()[0]
-        locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
-        locstring.set_data(language, gender, text)
+            language, gender = LocalizedString.substring_pair(item.data(_ID_SUBSTRING_ROLE))
+            proxyIndex: QModelIndex = self.ui.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
+            locstringSourceIndex = self.proxyModel.mapToSource(proxyIndex)
+            locstringItem = self.model.itemFromIndex(locstringSourceIndex)
+            locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
+            locstring.set_data(language, gender, text)
 
     def addSubstring(self):
         """Adds a substring to the selected localized string.
@@ -565,16 +569,21 @@ class GFFEditor(Editor):
 
         for i in range(self.ui.substringList.count()):
             item = self.ui.substringList.item(i)
+            if item is None:
+                self._logger.warning(f"substringList item at index {i} was None, skipping")
+                continue
             if item.data(_ID_SUBSTRING_ROLE) == substringId:
-                print(f"Substring ID '{substringId}' already exists, exit")
+                self._logger.warning(f"Substring ID '{substringId}' already exists, exit")
                 return
 
         item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
         item.setData(_ID_SUBSTRING_ROLE, substringId)
         item.setData(_TEXT_SUBSTRING_ROLE, "")
-        self.ui.substringList.addItem(item)
+        self.ui.substringList.addItem(item)  # type: ignore[arg-type]
 
-        locstringItem = self.ui.treeView.selectedIndexes()[0]
+        proxyIndex: QModelIndex = self.ui.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
+        locstringSourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        locstringItem = self.model.itemFromIndex(locstringSourceIndex)
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
         locstring.set_data(language, gender, "")
 
@@ -598,10 +607,15 @@ class GFFEditor(Editor):
         substringId = LocalizedString.substring_id(language, gender)
         for i in range(self.ui.substringList.count())[::-1]:
             item = self.ui.substringList.item(i)
+            if item is None:
+                self._logger.warning(f"substringList item at index {i} was None, skipping")
+                continue
             if item.data(_ID_SUBSTRING_ROLE) == substringId:
                 self.ui.substringList.takeItem(i)
 
-        locstringItem = self.ui.treeView.selectedIndexes()[0]
+        proxyIndex: QModelIndex = self.ui.treeView.selectedIndexes()[0]  # type: ignore[arg-type]
+        locstringSourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        locstringItem = self.model.itemFromIndex(locstringSourceIndex)
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
         locstring.remove(language, gender)
 
@@ -663,7 +677,7 @@ class GFFEditor(Editor):
         """
         ftype = GFFFieldType(ftypeId)
         proxyIndex = self.ui.treeView.selectedIndexes()[0]
-        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        sourceIndex = self.proxyModel.mapToSource(proxyIndex)  # type: ignore[arg-type]
         item = self.model.itemFromIndex(sourceIndex)
         item.setData(ftype, _TYPE_NODE_ROLE)
 
@@ -759,7 +773,11 @@ class GFFEditor(Editor):
         ----
             item: The item to remove
         """
-        item.parent().removeRow(item.row())
+        parentItem = item.parent()
+        if parentItem is None:
+            QMessageBox(QMessageBox.Icon.Critical, "Invalid action attempted", "Cannot remove the top-level [ROOT] item.").exec_()
+            return
+        parentItem.removeRow(item.row())
         self.refreshItemText(item)
 
     def removeSelectedNodes(self):
