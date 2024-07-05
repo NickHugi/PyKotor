@@ -8,7 +8,8 @@ import qtpy
 
 from PIL import Image, ImageOps
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QImage, QPixmap
+from qtpy.QtGui import QImage, QPixmap, QResizeEvent
+from qtpy.QtWidgets import QApplication, QDesktopWidget
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.formats.tpc.io_tga import _DataTypes
@@ -101,13 +102,12 @@ class TPCEditor(Editor):
         """
         super().load(filepath, resref, restype, data)
 
-        # Read image, convert to RGB, and y_flip.
         orig_format = None
         if restype in {ResourceType.TPC, ResourceType.TGA}:
             txi_filepath: CaseAwarePath | None = CaseAwarePath.pathify(filepath).with_suffix(".txi")
             self._tpc = read_tpc(data, txi_source=txi_filepath)
             orig_format = self._tpc.format()
-            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=True)
+            width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0, y_flip=orig_format is TPCTextureFormat.RGB)
             self._tpc.set_data(width, height, [img_bytes], TPCTextureFormat.RGB)
         else:
             pillow: Image.Image = Image.open(io.BytesIO(data))
@@ -116,6 +116,10 @@ class TPCEditor(Editor):
             self._tpc = TPC()
             self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
             width, height, img_bytes = self._tpc.convert(TPCTextureFormat.RGB, 0)
+
+        image = QImage(img_bytes, width, height, QImage.Format.Format_RGB888)
+        if orig_format is not TPCTextureFormat.RGB:
+            image = image.mirrored(False, True)  # flip vertically.
 
         # Calculate new dimensions maintaining aspect ratio
         max_width, max_height = 640, 480
@@ -127,21 +131,15 @@ class TPCEditor(Editor):
             new_height = max_height
             new_width = int(new_height * aspect_ratio)
 
-        # Create QImage and scale it
-        image = QImage(img_bytes, width, height, QImage.Format_RGB888)
-        image = image.mirrored(False, True)  # False for no horizontal flip, True for vertical flip
         scaled_image = image.scaled(new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-        # Create QPixmap from the scaled QImage
-        pixmap: QPixmap = QPixmap.fromImage(scaled_image)
-
-        self.ui.textureImage.setPixmap(pixmap)
+        self.ui.textureImage.setPixmap(QPixmap.fromImage(scaled_image))
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
-        if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA:
+        if self._tpc.original_datatype_code != _DataTypes.NO_IMAGE_DATA and orig_format is not None:
             self.setToolTip(f"{self._tpc.original_datatype_code.name} - {orig_format.name}")
         elif orig_format is not None:
             self.setToolTip(orig_format.name)
+        self.centerAndAdjustWindow()
 
     def new(self):
         """Set texture image from TPC texture.

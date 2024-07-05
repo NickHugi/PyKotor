@@ -873,6 +873,21 @@ class Editor(QMainWindow):
     @abstractmethod
     def build(self) -> tuple[bytes, bytes]: ...
 
+    def centerAndAdjustWindow(self):
+        # Get the screen geometry
+        screen = QApplication.primaryScreen().geometry()
+
+        # Calculate the new position to center the window
+        new_x = (screen.width() - self.width()) // 2
+        new_y = (screen.height() - self.height()) // 2
+
+        # Adjust the position to ensure the window is fully visible
+        new_x = max(0, min(new_x, screen.width() - self.width()))
+        new_y = max(0, min(new_y, screen.height() - self.height()))
+
+        # Set the new position
+        self.move(new_x, new_y)
+
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource from a file.
 

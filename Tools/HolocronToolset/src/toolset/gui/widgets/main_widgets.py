@@ -567,7 +567,7 @@ class TextureList(MainWindowList):
 
         self.texturesModel: QStandardItemModel = QStandardItemModel()
         self.texturesProxyModel: QSortFilterProxyModel = QSortFilterProxyModel()
-        self.texturesProxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.texturesProxyModel.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.texturesProxyModel.setSourceModel(self.texturesModel)
         self.ui.resourceList.setModel(self.texturesProxyModel)  # type: ignore[arg-type]
 
@@ -681,7 +681,7 @@ class TextureList(MainWindowList):
     def scan(self):
         while True:
             for row, _resname, width, height, data in iter(self._resultQueue.get, None):
-                image = QImage(data, width, height, QImage.Format_RGB888)
+                image = QImage(data, width, height, QImage.Format.Format_RGB888)
                 pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 item = self.texturesModel.item(row, 0)
                 if item is not None:
@@ -731,7 +731,7 @@ class TextureList(MainWindowList):
     def onIconUpdate(
         self,
         item: QStandardItem,
-        icon: QIcon | QPixmap,
+        icon: QIcon,
     ):
         try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
