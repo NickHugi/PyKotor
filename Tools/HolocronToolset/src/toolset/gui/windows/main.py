@@ -448,6 +448,7 @@ class ToolWindow(QMainWindow):
             - Connects button clicks to extract/open resource methods
             - Connects menu actions to various editor, dialog and tool openings.
         """
+        self.previousGameComboIndex = 0
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
         self.ui.menuTheme.triggered.connect(self.change_theme)
@@ -1056,7 +1057,7 @@ class ToolWindow(QMainWindow):
             print(f"Index out of range - {index} (expected zero or positive)")
             return
 
-        previousIndex: int = self.ui.gameCombo.currentIndex()
+        previousIndex: int = self.previousGameComboIndex
         print("<SDM> [changeActiveInstallation scope] previousIndex: ", previousIndex)
 
         self.ui.gameCombo.setCurrentIndex(index)
@@ -1064,6 +1065,7 @@ class ToolWindow(QMainWindow):
         if index == 0:
             print("<SDM> [unset installation scope]. index: ", index)
             self.unsetInstallation()
+            self.previousGameComboIndex = 0
             return
 
         name: str = self.ui.gameCombo.itemText(index)
@@ -1189,6 +1191,7 @@ class ToolWindow(QMainWindow):
             self.unsetInstallation()
         self.show()
         self.activateWindow()
+        self.previousGameComboIndex = index
 
     def _saveCapsuleFromToolUI(self, module_name: str):
         assert self.active is not None
