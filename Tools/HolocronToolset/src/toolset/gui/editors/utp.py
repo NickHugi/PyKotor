@@ -157,6 +157,7 @@ class UTPEditor(Editor):
         installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
 
     def load(
         self,
@@ -220,6 +221,7 @@ class UTPEditor(Editor):
         self.ui.difficultySpin.setValue(utp.unlock_diff)
         self.ui.difficultyModSpin.setValue(utp.unlock_diff_mod)
 
+        assert self._installation is not None
         self.relevant_script_resnames = sorted(
             iter(
                 {
@@ -245,6 +247,7 @@ class UTPEditor(Editor):
         self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUsedEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.conversationEdit.populateComboBox(sorted(res.resname() for res in self._installation.getRelevantResources(ResourceType.DLG)))
 
         # Scripts
         self.ui.onClosedEdit.setComboBoxText(str(utp.on_closed))

@@ -106,12 +106,19 @@ class UTTEditor(Editor):
         )
 
         self.ui.onClickEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onDisarmEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onDisarmEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onEnterEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onEnterEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onExitEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onExitEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onTrapTriggeredEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onTrapTriggeredEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NCS, ResourceType.NSS])
 
     def load(
         self,
