@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Set, cast
 import qtpy
 import send2trash
 
-from qtpy.QtCore import QUrl, Qt
+from qtpy.QtCore import QAbstractItemModel, QUrl, Qt
 from qtpy.QtGui import QDesktopServices, QKeySequence
 from qtpy.QtWidgets import (
     QAction,
@@ -921,7 +921,7 @@ class CustomTableWidget(CustomItem, QTableWidget):
                 if headerItem.text() == column_name:
                     return i
         elif isinstance(self, (QTreeView, QTableView)):
-            model = self.model()
+            model = cast(QAbstractItemModel, self.model())
             for i in range(model.columnCount()):
                 if model.headerData(i, Qt.Horizontal) == column_name:
                     return i
@@ -947,7 +947,7 @@ class FileSelectionWindow(QMainWindow):
         super().__init__(editor)
 
         self.resource_table = ResourceTableWidget(0, 3, resources=search_results)  # Start with zero rows and adjust based on checkbox
-        self._installation: HTInstallation = installation
+        self._installation: HTInstallation | None = installation
         self.editor: Editor | None = editor
         self.detailed_stat_attributes: list[str] = []
         self.init_ui()
