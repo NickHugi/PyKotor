@@ -264,7 +264,7 @@ class UTEEditor(Editor):
             appearanceSpin = cast(QSpinBox, self.ui.creatureTable.cellWidget(i, 2))
 
             creature = UTECreature()
-            creature.resref = ResRef(self.ui.creatureTable.item(i, 3).text())
+            creature.resref = ResRef(cast(FilterComboBox, self.ui.creatureTable.item(i, 3)).currentText())
             creature.single_spawn = singleCheckbox.isChecked()
             creature.appearance_id = appearanceSpin.value()
             creature.challenge_rating = challengeSpin.value()
