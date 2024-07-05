@@ -79,7 +79,7 @@ class CustomStdout:
         self.editor.updateStatusBar(left_status, center_status, right_status)
 
 
-def statusBarDecorator(func):
+def statusBarDecorator(func: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args, **kwargs):
         args = list(args)
         self: PTHEditor | PTHControlScheme = args.pop(0)
@@ -260,11 +260,12 @@ class PTHEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
+        assert self._installation is not None
         result: ResourceResult | None = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
             self.loadLayout(read_lyt(result.data))
         else:
-            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt for this {resref}.{restype} but it could not be found.", icon=QMessageBox.Icon.Critical).exec_()
+            BetterMessageBox("Layout not found", f"PTHEditor requires {resref}.lyt in order to load '{resref}.{restype}', but it could not be found.", icon=QMessageBox.Icon.Critical).exec_()
 
         pth: PTH = read_pth(data)
         self._loadPTH(pth)
@@ -288,6 +289,7 @@ class PTHEditor(Editor):
 
     @statusBarDecorator
     def loadLayout(self, layout: LYT):
+        assert self._installation is not None
         walkmeshes: list[BWM] = []
         for room in layout.rooms:
             order: list[SearchLocation] = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
@@ -450,14 +452,10 @@ class PTHControlScheme:
             #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
             self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
         if shouldRotateCamera:
-            delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
-            if abs(screenDelta.x) >= abs(screenDelta.y):
-                direction = -1 if screenDelta.x < 0 else 1
-            else:
-                direction = -1 if screenDelta.y < 0 else 1
+            delta_magnitude = abs(screenDelta.x)
+            direction = -1 if screenDelta.x < 0 else 1 if screenDelta.x > 0 else 0
             rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
-            rotateAmount = delta_magnitude * rotateSens
-            rotateAmount *= direction
+            rotateAmount = delta_magnitude * rotateSens * direction
             #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
             self.editor.rotateCamera(rotateAmount)
         if self.moveSelected.satisfied(buttons, keys):
