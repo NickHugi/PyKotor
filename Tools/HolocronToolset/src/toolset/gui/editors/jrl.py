@@ -130,7 +130,7 @@ class JRLEditor(Editor):
         plot2DA: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_PLOT)
         if plot2DA:
             self.ui.categoryPlotSelect.clear()
-            self.ui.categoryPlotSelect.setPlaceholderText("[None]")
+            self.ui.categoryPlotSelect.setPlaceholderText("[Unset]")
             self.ui.categoryPlotSelect.setItems(
                 [cell.title() for cell in plot2DA.get_column("label")],
                 cleanupStrings=True,
@@ -138,7 +138,7 @@ class JRLEditor(Editor):
             self.ui.categoryPlotSelect.setContext(plot2DA, installation, HTInstallation.TwoDA_PLOT)
 
         self.ui.categoryPlanetSelect.clear()
-        self.ui.categoryPlanetSelect.setPlaceholderText("[None]")
+        self.ui.categoryPlanetSelect.setPlaceholderText("[Unset]")
         for row in planets:
             text = self._installation.talktable().string(row.get_integer("name", 0)) or row.get_string("label").replace("_", " ").title()
             self.ui.categoryPlanetSelect.addItem(text)

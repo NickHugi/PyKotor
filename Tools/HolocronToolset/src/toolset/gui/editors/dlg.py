@@ -3831,7 +3831,7 @@ Should return 1 or 0, representing a boolean.
         videoEffects: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
         if videoEffects:
             self.ui.cameraEffectSelect.clear()
-            self.ui.cameraEffectSelect.setPlaceholderText("[None]")
+            self.ui.cameraEffectSelect.setPlaceholderText("[Unset]")
             self.ui.cameraEffectSelect.setItems(
                 [
                     label.replace("VIDEO_EFFECT_", "").replace("_", " ").title()

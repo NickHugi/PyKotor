@@ -23,6 +23,7 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QListView,
     QMainWindow,
+    QSizePolicy,
     QStyleOptionViewItem,
     QStyledItemDelegate,
     QVBoxLayout,
@@ -196,6 +197,7 @@ class FilterComboBox(QComboBox):
         self.view().update()
         self.old_width = self.width()
         self.setMinimumWidth(200)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
     def setEditable(self, state: bool):  # noqa: FBT001
         self._editable = state

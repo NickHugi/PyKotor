@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy.QtWidgets import QMessageBox
+from qtpy.QtWidgets import QMessageBox, QSizePolicy
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -84,6 +84,7 @@ class UTPEditor(Editor):
 
         self.update3dPreview()
         self.new()
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
     def _setupSignals(self):
         """Connect UI buttons to their respective methods.
@@ -454,7 +455,7 @@ class UTPEditor(Editor):
         if self.globalSettings.showPreviewUTP:
             self._update_model()
         else:
-            self.setFixedSize(374, 457)
+            self.setMinimumSize(374, 457)
 
     def _update_model(self):
         """Updates the model preview.
@@ -470,7 +471,7 @@ class UTPEditor(Editor):
             self.blinkWindow()
             return
 
-        self.setFixedSize(674, 457)
+        self.setMinimumSize(674, 457)
         data, _ = self.build()
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
         if not modelname or not modelname.strip():
