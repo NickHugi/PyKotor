@@ -1620,10 +1620,10 @@ class DLGStandardItemModel(QStandardItemModel):
             icons.append((journalIconPath, None, "Item has plot/quest data"))
         if hasSound:
             soundIconPath = ":/images/common/sound-icon.png"
-            icons.append((soundIconPath, lambda *args: self.editor._playNodeSound(item.link.node), "Item has Sound (click to play)"))
+            icons.append((soundIconPath, lambda: self.editor.playSound(str(item.link.node.sound), [SearchLocation.SOUND, SearchLocation.VOICE]), "Item has Sound (click to play)"))
         if hasVoice:
             voiceIconPath = ":/images/common/voice-icon.png"
-            icons.append((voiceIconPath, lambda *args: self.editor._playNodeSound(item.link.node), "Item has VO (click to play)"))
+            icons.append((voiceIconPath, lambda: self.editor.playSound(str(item.link.node.vo_resref), [SearchLocation.SOUND, SearchLocation.VOICE]), "Item has VO (click to play)"))
 
         icon_data = {
             "icons": icons,
@@ -1635,7 +1635,7 @@ class DLGStandardItemModel(QStandardItemModel):
                 "text_callable": lambda *args: str(self.countItemRefs(item.link) if item.link else 0),
                 "size_callable": self.treeView.getTextSize,
                 "tooltip_callable": lambda *args: f"{self.countItemRefs(item.link) if item.link else 0} references to this item",
-                "action": lambda *args: self.editor is not None #and self.editor.show_reference_dialog([this_item.ref_to_link for link in self.linkToItems for this_item in self.linkToItems[link] if item.link in this_item.link.node.links], item.data(Qt.ItemDataRole.DisplayRole) )
+                "action": lambda *args: self.editor is not None and self.editor.show_reference_dialog([this_item.ref_to_link for link in self.linkToItems for this_item in self.linkToItems[link] if item.link in this_item.link.node.links], item.data(Qt.ItemDataRole.DisplayRole) )
             }
         }
         item.setData(icon_data, _ICONS_DATA_ROLE)
@@ -3258,6 +3258,9 @@ Should return 1 or 0, representing a boolean.
     def setupMenuExtras(self):
         viewMenu: QMenu = self.ui.menubar.addMenu("View")  # type: ignore[arg-type]
         settingsMenu: QMenu = self.ui.menubar.addMenu("Settings")  # type: ignore[arg-type]
+        advancedMenu = viewMenu.addMenu("Advanced")
+        refreshMenu = advancedMenu.addMenu("Refresh")
+        treeMenu = refreshMenu.addMenu("TreeView")
 
         self.ui.menubar.addAction("Help").triggered.connect(self.showAllTips)
         whats_this_action = QAction(self.style().standardIcon(QStyle.SP_TitleBarContextHelpButton), "", self)
@@ -3310,7 +3313,7 @@ Should return 1 or 0, representing a boolean.
 
         self._addMenuAction(
             viewMenu,
-            "Animations",
+            "UI Animations",
             self.ui.dialogTree.isAnimated,
             self.ui.dialogTree.setAnimated,
             settings_key="animations",
@@ -3358,7 +3361,7 @@ Should return 1 or 0, representing a boolean.
 
         # Settings Menu: Configuration settings
         self._addExclusiveMenuAction(
-            settingsMenu,
+            advancedMenu,
             "Focus Policy",
             self.ui.dialogTree.focusPolicy,
             self.ui.dialogTree.setFocusPolicy,
@@ -3396,7 +3399,7 @@ Should return 1 or 0, representing a boolean.
             settings_key="verticalScrollMode",
         )
 
-        self._addMenuAction(settingsMenu, "Auto Scroll (internal)",
+        self._addMenuAction(advancedMenu, "Auto Scroll (internal)",
                             self.ui.dialogTree.hasAutoScroll,
                             self.ui.dialogTree.setAutoScroll,
                             settings_key="autoScroll")
@@ -3438,16 +3441,14 @@ Should return 1 or 0, representing a boolean.
             settings_key="TSLWidgetHandling",
         )
 
-        self._addMenuAction(settingsMenu, "Show/Hide Extra ToolTips on Hover",
-                            lambda: self.whats_this_toggle,
-                            lambda _value: self.setupExtraTooltipMode(),
-                            settings_key="showVerboseHoverHints",
-                            param_type=bool)
+        # FIXME
+        #self._addMenuAction(settingsMenu, "Show/Hide Extra ToolTips on Hover",
+        #                    lambda: self.whats_this_toggle,
+        #                    lambda _value: self.setupExtraTooltipMode(),
+        #                    settings_key="showVerboseHoverHints",
+        #                    param_type=bool)
 
         # Advanced Menu: Miscellaneous advanced settings
-        advancedMenu = viewMenu.addMenu("Advanced")
-        refreshMenu = advancedMenu.addMenu("Refresh")
-        treeMenu = refreshMenu.addMenu("TreeView")
         self._addSimpleAction(treeMenu, "Repaint", self.ui.dialogTree.repaint)
         self._addSimpleAction(treeMenu, "Update", self.ui.dialogTree.update)
         self._addSimpleAction(treeMenu, "Resize Column To Contents", lambda: self.ui.dialogTree.resizeColumnToContents(0))
@@ -4046,7 +4047,7 @@ Should return 1 or 0, representing a boolean.
         seenNodes: set[DLGNode],
         *,
         expand: bool,
-        maxdepth: int = 6,
+        maxdepth: int = 11,
         depth: int = 0,
         isRoot: bool = True,
     ):
@@ -4103,9 +4104,9 @@ Should return 1 or 0, representing a boolean.
         focusAction.setVisible(notAnOrphan)
 
         # FIXME: current implementation requires all items to be loaded in order to find references, which is obviously impossible
-        #findReferencesAction = menu.addAction("Find References")
-        #findReferencesAction.triggered.connect(lambda: self.findReferences(item))
-        #findReferencesAction.setVisible(notAnOrphan)
+        findReferencesAction = menu.addAction("Find References")
+        findReferencesAction.triggered.connect(lambda: self.findReferences(item))
+        findReferencesAction.setVisible(notAnOrphan)
 
         # Expand/Collapse All Children Action (non copies)
         menu.addSeparator()
