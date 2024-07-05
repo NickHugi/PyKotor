@@ -1530,14 +1530,10 @@ class GITControlScheme:
             self.editor.rotateSelectedToPoint(world.x, world.y)
 
     def _handleCameraRotation(self, screenDelta: Vector2):
-        delta_magnitude = (screenDelta.x**2 + screenDelta.y**2)**0.5
-        if abs(screenDelta.x) >= abs(screenDelta.y):
-            direction = -1 if screenDelta.x < 0 else 1
-        else:
-            direction = -1 if screenDelta.y < 0 else 1
+        delta_magnitude = abs(screenDelta.x)
+        direction = -1 if screenDelta.x < 0 else 1 if screenDelta.x > 0 else 0
         rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
-        rotateAmount = delta_magnitude * rotateSens
-        rotateAmount *= direction
+        rotateAmount = delta_magnitude * rotateSens * direction
         #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
         self.editor.rotateCamera(rotateAmount)
 
