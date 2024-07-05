@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from qtpy import QtCore
-from qtpy.QtGui import QColor, QPainter, QPalette, QPen
+from qtpy.QtGui import QPainter, QPalette, QPen
 from qtpy.QtWidgets import QAction, QComboBox, QMenu, QMessageBox
 
 from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
