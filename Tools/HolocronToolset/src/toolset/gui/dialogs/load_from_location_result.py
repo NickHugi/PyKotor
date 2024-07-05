@@ -457,7 +457,7 @@ class FileItems(CustomItem):
         tableItem: FileTableWidgetItem,
     ):
         from utility.system.windows_context_menu import windows_context_menu_file
-        return windows_context_menu_file(file_path)
+        return windows_context_menu_file(file_path, int(cast(QApplication, QApplication.instance()).activeWindow().winId()))
 
     def _open_file(
         self,

@@ -122,11 +122,10 @@ def safe_isdir(path: WindowsPath) -> bool | None:
 
 
 # Function to display context menu
-def windows_context_menu_file(file_path: os.PathLike | str):
+def windows_context_menu_file(file_path: os.PathLike | str, hwnd: int | None = None):
     """Opens the default windows context menu for a filepath at the position of the cursor."""
     # Normalize filepath for safety
     parsed_filepath: WindowsPath = _safe_path_parse(file_path)
-    hwnd = None
 
     shell: CDispatch = win32com.client.Dispatch("Shell.Application")
     folder: CDispatch = shell.NameSpace(str(parsed_filepath.parent))
@@ -138,13 +137,17 @@ def windows_context_menu_file(file_path: os.PathLike | str):
             win32gui.AppendMenu(hmenu, win32con.MF_STRING, i + 1, verb.Name)
     pt: tuple[int, int] = win32gui.GetCursorPos()
 
-    with RobustInvisibleWindow() as hwnd:
-        cmd: int = win32gui.TrackPopupMenu(hmenu, win32con.TPM_LEFTALIGN | win32con.TPM_RETURNCMD,
+    if hwnd is None:
+        with RobustInvisibleWindow() as hwnd:
+            cmd: int = win32gui.TrackPopupMenu(hmenu, win32con.TPM_LEFTALIGN | win32con.TPM_RETURNCMD,
+                                            pt[0], pt[1], 0, hwnd, None)
+    else:
+        cmd = win32gui.TrackPopupMenu(hmenu, win32con.TPM_LEFTALIGN | win32con.TPM_RETURNCMD,
                                         pt[0], pt[1], 0, hwnd, None)
-        if cmd:
-            verb: DispatchBaseClass = context_menu.Item(cmd - 1)
-            if verb:
-                verb.DoIt()
+    if cmd:
+        verb: DispatchBaseClass = context_menu.Item(cmd - 1)
+        if verb:
+            verb.DoIt()
 
 
 def windows_context_menu_folder(folder_path: os.PathLike | str):
