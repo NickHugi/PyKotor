@@ -234,6 +234,13 @@ class FilterComboBox(QComboBox):
         *,
         alwaysOnTop: bool = True,  # Recommended
     ):
+        if not text:
+            line_edit = self.lineEdit()
+            if line_edit is not None:
+                line_edit.setText(text)
+            else:
+                self.setCurrentText(text)
+            return
         index = self.findText(text, Qt.MatchFlag.MatchCaseSensitive)
         if alwaysOnTop:
             if index != -1:  # Text found
