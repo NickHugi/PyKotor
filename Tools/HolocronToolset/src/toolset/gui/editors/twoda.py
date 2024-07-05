@@ -247,10 +247,6 @@ class TwoDAEditor(Editor):
         self.proxyModel.setSourceModel(self.model)
         self.ui.twodaTable.setModel(self.proxyModel)  # type: ignore[arg-type]
 
-        # Resize columns after model is populated
-        for i in range(len(headers)):
-            self.ui.twodaTable.resizeColumnToContents(i)
-
         # Reconstructing the row header setting menu
         self._reconstruct_menu(headers)
         if self.autoResizeEnabled:
