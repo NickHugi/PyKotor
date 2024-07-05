@@ -485,9 +485,9 @@ class ModuleDesigner(QMainWindow):
                 task,
                 "Error occurred loading the module designer",
             )
-            result = loader.value
             if not loader.exec_():
                 return
+            result = loader.value
         self.log.debug("ModuleDesigner.openModule Loader finished.")
         new_module, git, walkmeshes = result
         self._module = new_module
