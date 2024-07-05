@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel, Qt
-from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QApplication, QMenu, QMessageBox
+from qtpy.QtGui import QFontMetrics, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QAction, QApplication, QDesktopWidget, QMenu, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
@@ -78,7 +78,7 @@ class TwoDAEditor(Editor):
         self.ui.twodaTable.horizontalHeader().setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.twodaTable.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
 
-        self.autoResizeEnabled = False  # To track the state of auto-fit columns
+        self.autoResizeEnabled = True  # To track the state of auto-fit columns
 
 
         self.model.itemChanged.connect(self.resetVerticalHeaders)
@@ -253,6 +253,10 @@ class TwoDAEditor(Editor):
 
         # Reconstructing the row header setting menu
         self._reconstruct_menu(headers)
+        if self.autoResizeEnabled:
+            self.autoFitColumns()
+        else:
+            self.resetColumnWidths()
 
     def _reconstruct_menu(self, headers):
         self.ui.menuSetRowHeader.clear()
@@ -303,8 +307,23 @@ class TwoDAEditor(Editor):
     def autoFitColumns(self):
         header = self.ui.twodaTable.horizontalHeader()
         assert header is not None
+
+        # Resize columns to contents
+        self.ui.twodaTable.resizeColumnsToContents()
+
+        # Adjust each column's width to ensure the header text is fully visible
+        font_metrics = QFontMetrics(QApplication.font())
+
+        # Loop over each column and adjust based on header text width
         for col in range(header.count()):
-            self.ui.twodaTable.resizeColumnToContents(col)
+            # Calculate the width required for the text in the header
+            header_text = header.model().headerData(col, Qt.Orientation.Horizontal)
+            text_width = font_metrics.horizontalAdvance(str(header_text)) + 10
+
+            # Ensure the column is wide enough for the header text
+            current_width = header.sectionSize(col)
+            new_width = max(current_width, text_width)
+            header.resizeSection(col, new_width)
 
     def toggleAutoFitColumns(self):
         self.autoResizeEnabled = not self.autoResizeEnabled
