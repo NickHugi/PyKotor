@@ -1606,7 +1606,7 @@ class DLGStandardItemModel(QStandardItemModel):
         hasVoice = item.link.node.vo_resref
         isPlotOrQuestRelated = item.link.node.plot_index != -1 or item.link.node.quest_entry or item.link.node.quest
 
-        icons = []
+        icons: list[tuple[QStyle.StandardPixmap | str, Callable | None, str]] = []
         if hasConditional:
             icons.append((QStyle.SP_FileIcon, None, f"Conditional: <code>{hasConditional}</code>"))
         if hasScript:
@@ -1620,10 +1620,28 @@ class DLGStandardItemModel(QStandardItemModel):
             icons.append((journalIconPath, None, "Item has plot/quest data"))
         if hasSound:
             soundIconPath = ":/images/common/sound-icon.png"
-            icons.append((soundIconPath, lambda: self.editor.playSound(str(item.link.node.sound), [SearchLocation.SOUND, SearchLocation.VOICE]), "Item has Sound (click to play)"))
+            icons.append(
+                (
+                    soundIconPath,
+                    lambda: self.editor is not None and item.link is not None and self.editor.playSound(
+                        str(item.link.node.sound),
+                        [SearchLocation.SOUND, SearchLocation.VOICE]
+                    ),
+                    "Item has Sound (click to play)"
+                )
+            )
         if hasVoice:
             voiceIconPath = ":/images/common/voice-icon.png"
-            icons.append((voiceIconPath, lambda: self.editor.playSound(str(item.link.node.vo_resref), [SearchLocation.SOUND, SearchLocation.VOICE]), "Item has VO (click to play)"))
+            icons.append(
+                (
+                    voiceIconPath,
+                    lambda: self.editor is not None and item.link is not None and self.editor.playSound(
+                        str(item.link.node.vo_resref),
+                        [SearchLocation.SOUND, SearchLocation.VOICE]
+                    ),
+                    "Item has VO (click to play)"
+                )
+            )
 
         icon_data = {
             "icons": icons,
