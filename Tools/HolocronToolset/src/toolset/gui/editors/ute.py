@@ -5,20 +5,21 @@ from typing import TYPE_CHECKING, cast
 
 import qtpy
 
-from qtpy.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
+from qtpy.QtWidgets import QCheckBox, QDoubleSpinBox, QSizePolicy, QSpinBox
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
+from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtWidgets import QTableWidgetItem, QWidget
 
     from pykotor.resource.formats.gff.gff_data import GFF
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
@@ -124,6 +125,16 @@ class UTEEditor(Editor):
         self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self.relevant_creature_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.UTC, self._filepath
+                    )
+                }
+            )
+        )
 
     def load(
         self,
@@ -177,7 +188,12 @@ class UTEEditor(Editor):
         for _ in range(self.ui.creatureTable.rowCount()):
             self.ui.creatureTable.removeRow(0)
         for creature in ute.creatures:
-            self.addCreature(str(creature.resref), creature.appearance_id, creature.challenge_rating, creature.single_spawn)
+            self.addCreature(
+                resname=str(creature.resref),
+                appearanceId=creature.appearance_id,
+                challenge=creature.challenge_rating,
+                single=creature.single_spawn,
+            )
 
         # Scripts
         self.ui.onEnterEdit.setComboBoxText(str(ute.on_entered))
@@ -315,6 +331,7 @@ class UTEEditor(Editor):
 
     def addCreature(
         self,
+        *args,
         resname: str = "",
         appearanceId: int = 0,
         challenge: float = 0.0,
@@ -347,11 +364,18 @@ class UTEEditor(Editor):
         challengeSpin.setValue(challenge)
         appearanceSpin = QSpinBox()
         appearanceSpin.setValue(appearanceId)
+        resrefCombo = FilterComboBox()
+        resrefCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        resrefCombo.setMinimumWidth(20)
+        resrefCombo.populateComboBox(self.relevant_creature_resnames)
+        resrefCombo.setComboBoxText(resname)
+        if self._installation is not None:
+            self._installation.setupFileContextMenu(resrefCombo, [ResourceType.UTC])
 
         self.ui.creatureTable.setCellWidget(rowId, 0, singleCheckbox)
         self.ui.creatureTable.setCellWidget(rowId, 1, challengeSpin)
         self.ui.creatureTable.setCellWidget(rowId, 2, appearanceSpin)
-        self.ui.creatureTable.setItem(rowId, 3, QTableWidgetItem(resname))
+        self.ui.creatureTable.setCellWidget(rowId, 3, resrefCombo)
 
     def removeSelectedCreature(self):
         if self.ui.creatureTable.selectedItems():
