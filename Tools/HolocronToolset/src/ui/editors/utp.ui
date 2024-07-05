@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>674</width>
-    <height>498</height>
+    <height>499</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,7 +40,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_9">
        <attribute name="title">
@@ -146,7 +146,14 @@
              <item row="1" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_16">
                <item>
-                <widget class="QLineEdit" name="tagEdit"/>
+                <widget class="QLineEdit" name="tagEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="tagGenerateButton">
@@ -167,6 +174,12 @@
               <layout class="QHBoxLayout" name="horizontalLayout_17">
                <item>
                 <widget class="QLineEdit" name="resrefEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maxLength">
                   <number>16</number>
                  </property>
@@ -190,7 +203,14 @@
              <item row="3" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_18">
                <item>
-                <widget class="ComboBox2DA" name="appearanceSelect"/>
+                <widget class="ComboBox2DA" name="appearanceSelect">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
                <item>
                 <spacer name="horizontalSpacer_11">
@@ -220,10 +240,23 @@
              <item row="4" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_5">
                <item>
-                <widget class="FilterComboBox" name="conversationEdit"/>
+                <widget class="FilterComboBox" name="conversationEdit">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="conversationModifyButton">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>1</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="maximumSize">
                   <size>
                    <width>26</width>
@@ -361,7 +394,7 @@
            <item row="0" column="1">
             <widget class="QSpinBox" name="currenHpSpin">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="MinimumExpanding">
+              <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>

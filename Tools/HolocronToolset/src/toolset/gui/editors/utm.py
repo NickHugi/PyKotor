@@ -71,6 +71,7 @@ class UTMEditor(Editor):
             self._setupInstallation(installation)
 
         self.new()
+        self.adjustSize()
 
     def _setupSignals(self):
         """Sets up signal connections for UI buttons."""

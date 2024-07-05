@@ -83,6 +83,7 @@ class UTDEditor(Editor):
 
         self.update3dPreview()
         self.new()
+        self.resize(654, 495)
 
     def _setupSignals(self):
         """Connect GUI buttons and signals to methods.
@@ -409,7 +410,7 @@ class UTDEditor(Editor):
         if self.globalSettings.showPreviewUTP:
             self._update_model()
         else:
-            self.setFixedSize(374, 457)
+            self.resize(max(374, self.sizeHint().width()), max(457, self.sizeHint().height()))
 
     def _update_model(self):
         """Updates the model preview.
@@ -422,7 +423,7 @@ class UTDEditor(Editor):
             - If resources are loaded, set them on the preview renderer
             - If not loaded, clear the existing model from the preview renderer.
         """
-        self.setFixedSize(674, 457)
+        self.resize(max(674, self.sizeHint().width()), max(457, self.sizeHint().height()))
 
         data, _ = self.build()
         modelname: str = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)

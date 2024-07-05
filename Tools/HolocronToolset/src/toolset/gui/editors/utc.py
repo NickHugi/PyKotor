@@ -888,7 +888,7 @@ class UTCEditor(Editor):
 
         if self.globalSettings.showPreviewUTC:
             self.ui.previewRenderer.setVisible(True)
-            self.resize(798, 553)
+            self.resize(max(798, self.sizeHint().width()), max(553, self.sizeHint().height()))
 
             if self._installation is not None:
                 data, _ = self.build()
@@ -896,7 +896,7 @@ class UTCEditor(Editor):
                 self.ui.previewRenderer.setCreature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
-            self.resize(798 - 350, 553)
+            self.resize(max(798 - 350, self.sizeHint().width()), max(553, self.sizeHint().height()))
 
 
 class UTCSettings:

@@ -31,7 +31,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(674, 498)
+        MainWindow.resize(674, 499)
         self.actionOpen = QAction(MainWindow)
         self.actionOpen.setObjectName(u"actionOpen")
         self.actionSave = QAction(MainWindow)
@@ -134,6 +134,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
         self.tagEdit = QLineEdit(self.groupBox)
         self.tagEdit.setObjectName(u"tagEdit")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.tagEdit.sizePolicy().hasHeightForWidth())
+        self.tagEdit.setSizePolicy(sizePolicy)
 
         self.horizontalLayout_16.addWidget(self.tagEdit)
 
@@ -150,6 +155,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.setObjectName(u"horizontalLayout_17")
         self.resrefEdit = QLineEdit(self.groupBox)
         self.resrefEdit.setObjectName(u"resrefEdit")
+        sizePolicy.setHeightForWidth(self.resrefEdit.sizePolicy().hasHeightForWidth())
+        self.resrefEdit.setSizePolicy(sizePolicy)
         self.resrefEdit.setMaxLength(16)
 
         self.horizontalLayout_17.addWidget(self.resrefEdit)
@@ -167,6 +174,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18.setObjectName(u"horizontalLayout_18")
         self.appearanceSelect = ComboBox2DA(self.groupBox)
         self.appearanceSelect.setObjectName(u"appearanceSelect")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.appearanceSelect.sizePolicy().hasHeightForWidth())
+        self.appearanceSelect.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_18.addWidget(self.appearanceSelect)
 
@@ -186,11 +198,18 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
         self.conversationEdit = FilterComboBox(self.groupBox)
         self.conversationEdit.setObjectName(u"conversationEdit")
+        sizePolicy1.setHeightForWidth(self.conversationEdit.sizePolicy().hasHeightForWidth())
+        self.conversationEdit.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_5.addWidget(self.conversationEdit)
 
         self.conversationModifyButton = QPushButton(self.groupBox)
         self.conversationModifyButton.setObjectName(u"conversationModifyButton")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy2.setHorizontalStretch(1)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.conversationModifyButton.sizePolicy().hasHeightForWidth())
+        self.conversationModifyButton.setSizePolicy(sizePolicy2)
         self.conversationModifyButton.setMaximumSize(QSize(26, 16777215))
 
         self.horizontalLayout_5.addWidget(self.conversationModifyButton)
@@ -277,11 +296,11 @@ class Ui_MainWindow(object):
 
         self.frame_4 = QFrame(self.tab_10)
         self.frame_4.setObjectName(u"frame_4")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.frame_4.sizePolicy().hasHeightForWidth())
-        self.frame_4.setSizePolicy(sizePolicy)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.frame_4.sizePolicy().hasHeightForWidth())
+        self.frame_4.setSizePolicy(sizePolicy3)
         self.frame_4.setMinimumSize(QSize(0, 222))
         self.formLayout_3 = QFormLayout(self.frame_4)
         self.formLayout_3.setObjectName(u"formLayout_3")
@@ -292,11 +311,11 @@ class Ui_MainWindow(object):
 
         self.currenHpSpin = QSpinBox(self.frame_4)
         self.currenHpSpin.setObjectName(u"currenHpSpin")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.MinimumExpanding)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.currenHpSpin.sizePolicy().hasHeightForWidth())
-        self.currenHpSpin.setSizePolicy(sizePolicy1)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.currenHpSpin.sizePolicy().hasHeightForWidth())
+        self.currenHpSpin.setSizePolicy(sizePolicy4)
         self.currenHpSpin.setMinimumSize(QSize(0, 30))
         self.currenHpSpin.setMinimum(-2147483648)
         self.currenHpSpin.setMaximum(2147483647)
@@ -310,8 +329,11 @@ class Ui_MainWindow(object):
 
         self.maxHpSpin = QSpinBox(self.frame_4)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
-        sizePolicy1.setHeightForWidth(self.maxHpSpin.sizePolicy().hasHeightForWidth())
-        self.maxHpSpin.setSizePolicy(sizePolicy1)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.maxHpSpin.sizePolicy().hasHeightForWidth())
+        self.maxHpSpin.setSizePolicy(sizePolicy5)
         self.maxHpSpin.setMinimumSize(QSize(0, 30))
         self.maxHpSpin.setMinimum(-2147483648)
         self.maxHpSpin.setMaximum(2147483647)
@@ -325,8 +347,8 @@ class Ui_MainWindow(object):
 
         self.hardnessSpin = QSpinBox(self.frame_4)
         self.hardnessSpin.setObjectName(u"hardnessSpin")
-        sizePolicy1.setHeightForWidth(self.hardnessSpin.sizePolicy().hasHeightForWidth())
-        self.hardnessSpin.setSizePolicy(sizePolicy1)
+        sizePolicy5.setHeightForWidth(self.hardnessSpin.sizePolicy().hasHeightForWidth())
+        self.hardnessSpin.setSizePolicy(sizePolicy5)
         self.hardnessSpin.setMinimumSize(QSize(0, 30))
         self.hardnessSpin.setMinimum(-2147483648)
         self.hardnessSpin.setMaximum(2147483647)
@@ -340,8 +362,8 @@ class Ui_MainWindow(object):
 
         self.fortitudeSpin = QSpinBox(self.frame_4)
         self.fortitudeSpin.setObjectName(u"fortitudeSpin")
-        sizePolicy1.setHeightForWidth(self.fortitudeSpin.sizePolicy().hasHeightForWidth())
-        self.fortitudeSpin.setSizePolicy(sizePolicy1)
+        sizePolicy5.setHeightForWidth(self.fortitudeSpin.sizePolicy().hasHeightForWidth())
+        self.fortitudeSpin.setSizePolicy(sizePolicy5)
         self.fortitudeSpin.setMinimumSize(QSize(0, 30))
         self.fortitudeSpin.setMinimum(-2147483648)
         self.fortitudeSpin.setMaximum(2147483647)
@@ -355,8 +377,8 @@ class Ui_MainWindow(object):
 
         self.reflexSpin = QSpinBox(self.frame_4)
         self.reflexSpin.setObjectName(u"reflexSpin")
-        sizePolicy1.setHeightForWidth(self.reflexSpin.sizePolicy().hasHeightForWidth())
-        self.reflexSpin.setSizePolicy(sizePolicy1)
+        sizePolicy5.setHeightForWidth(self.reflexSpin.sizePolicy().hasHeightForWidth())
+        self.reflexSpin.setSizePolicy(sizePolicy5)
         self.reflexSpin.setMinimumSize(QSize(0, 30))
         self.reflexSpin.setMinimum(-2147483648)
         self.reflexSpin.setMaximum(2147483647)
@@ -370,8 +392,8 @@ class Ui_MainWindow(object):
 
         self.willSpin = QSpinBox(self.frame_4)
         self.willSpin.setObjectName(u"willSpin")
-        sizePolicy1.setHeightForWidth(self.willSpin.sizePolicy().hasHeightForWidth())
-        self.willSpin.setSizePolicy(sizePolicy1)
+        sizePolicy5.setHeightForWidth(self.willSpin.sizePolicy().hasHeightForWidth())
+        self.willSpin.setSizePolicy(sizePolicy5)
         self.willSpin.setMinimumSize(QSize(0, 30))
         self.willSpin.setMinimum(-2147483648)
         self.willSpin.setMaximum(2147483647)
@@ -666,7 +688,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)

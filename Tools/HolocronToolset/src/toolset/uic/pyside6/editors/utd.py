@@ -53,6 +53,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.previewRenderer = ModelRenderer(self.centralwidget)
         self.previewRenderer.setObjectName(u"previewRenderer")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.previewRenderer.sizePolicy().hasHeightForWidth())
+        self.previewRenderer.setSizePolicy(sizePolicy)
         self.previewRenderer.setMinimumSize(QSize(300, 0))
         self.previewRenderer.setMouseTracking(True)
         self.previewRenderer.setFocusPolicy(Qt.StrongFocus)
@@ -71,6 +76,11 @@ class Ui_MainWindow(object):
         self.formLayout_3.setContentsMargins(6, 6, 6, 6)
         self.label_6 = QLabel(self.tab_9)
         self.label_6.setObjectName(u"label_6")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy1.setHorizontalStretch(1)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
+        self.label_6.setSizePolicy(sizePolicy1)
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_6)
 
@@ -87,6 +97,8 @@ class Ui_MainWindow(object):
 
         self.label_14 = QLabel(self.tab_9)
         self.label_14.setObjectName(u"label_14")
+        sizePolicy1.setHeightForWidth(self.label_14.sizePolicy().hasHeightForWidth())
+        self.label_14.setSizePolicy(sizePolicy1)
 
         self.formLayout_3.setWidget(1, QFormLayout.LabelRole, self.label_14)
 
@@ -94,11 +106,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
         self.tagEdit = QLineEdit(self.tab_9)
         self.tagEdit.setObjectName(u"tagEdit")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tagEdit.sizePolicy().hasHeightForWidth())
-        self.tagEdit.setSizePolicy(sizePolicy)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.tagEdit.sizePolicy().hasHeightForWidth())
+        self.tagEdit.setSizePolicy(sizePolicy2)
 
         self.horizontalLayout_16.addWidget(self.tagEdit)
 
@@ -113,6 +125,8 @@ class Ui_MainWindow(object):
 
         self.label_38 = QLabel(self.tab_9)
         self.label_38.setObjectName(u"label_38")
+        sizePolicy1.setHeightForWidth(self.label_38.sizePolicy().hasHeightForWidth())
+        self.label_38.setSizePolicy(sizePolicy1)
 
         self.formLayout_3.setWidget(2, QFormLayout.LabelRole, self.label_38)
 
@@ -120,8 +134,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_17.setObjectName(u"horizontalLayout_17")
         self.resrefEdit = QLineEdit(self.tab_9)
         self.resrefEdit.setObjectName(u"resrefEdit")
-        sizePolicy.setHeightForWidth(self.resrefEdit.sizePolicy().hasHeightForWidth())
-        self.resrefEdit.setSizePolicy(sizePolicy)
+        sizePolicy2.setHeightForWidth(self.resrefEdit.sizePolicy().hasHeightForWidth())
+        self.resrefEdit.setSizePolicy(sizePolicy2)
         self.resrefEdit.setMaxLength(16)
 
         self.horizontalLayout_17.addWidget(self.resrefEdit)
@@ -137,6 +151,8 @@ class Ui_MainWindow(object):
 
         self.label_15 = QLabel(self.tab_9)
         self.label_15.setObjectName(u"label_15")
+        sizePolicy1.setHeightForWidth(self.label_15.sizePolicy().hasHeightForWidth())
+        self.label_15.setSizePolicy(sizePolicy1)
 
         self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.label_15)
 
@@ -144,8 +160,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18.setObjectName(u"horizontalLayout_18")
         self.appearanceSelect = ComboBox2DA(self.tab_9)
         self.appearanceSelect.setObjectName(u"appearanceSelect")
-        sizePolicy.setHeightForWidth(self.appearanceSelect.sizePolicy().hasHeightForWidth())
-        self.appearanceSelect.setSizePolicy(sizePolicy)
+        sizePolicy2.setHeightForWidth(self.appearanceSelect.sizePolicy().hasHeightForWidth())
+        self.appearanceSelect.setSizePolicy(sizePolicy2)
 
         self.horizontalLayout_18.addWidget(self.appearanceSelect)
 
@@ -154,6 +170,8 @@ class Ui_MainWindow(object):
 
         self.label = QLabel(self.tab_9)
         self.label.setObjectName(u"label")
+        sizePolicy1.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy1)
 
         self.formLayout_3.setWidget(4, QFormLayout.LabelRole, self.label)
 
@@ -161,19 +179,15 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
         self.conversationEdit = FilterComboBox(self.tab_9)
         self.conversationEdit.setObjectName(u"conversationEdit")
-        sizePolicy.setHeightForWidth(self.conversationEdit.sizePolicy().hasHeightForWidth())
-        self.conversationEdit.setSizePolicy(sizePolicy)
+        sizePolicy1.setHeightForWidth(self.conversationEdit.sizePolicy().hasHeightForWidth())
+        self.conversationEdit.setSizePolicy(sizePolicy1)
 
         self.horizontalLayout_5.addWidget(self.conversationEdit)
 
         self.conversationModifyButton = QPushButton(self.tab_9)
         self.conversationModifyButton.setObjectName(u"conversationModifyButton")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Minimum)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.conversationModifyButton.sizePolicy().hasHeightForWidth())
-        self.conversationModifyButton.setSizePolicy(sizePolicy1)
-        self.conversationModifyButton.setMaximumSize(QSize(30, 16777215))
+        sizePolicy2.setHeightForWidth(self.conversationModifyButton.sizePolicy().hasHeightForWidth())
+        self.conversationModifyButton.setSizePolicy(sizePolicy2)
 
         self.horizontalLayout_5.addWidget(self.conversationModifyButton)
 
@@ -261,11 +275,11 @@ class Ui_MainWindow(object):
 
         self.widget_4 = QWidget(self.tab_10)
         self.widget_4.setObjectName(u"widget_4")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.widget_4.sizePolicy().hasHeightForWidth())
-        self.widget_4.setSizePolicy(sizePolicy2)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.widget_4.sizePolicy().hasHeightForWidth())
+        self.widget_4.setSizePolicy(sizePolicy3)
         self.statsLayout = QFormLayout(self.widget_4)
         self.statsLayout.setObjectName(u"statsLayout")
         self.label_3 = QLabel(self.widget_4)
@@ -580,7 +594,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 654, 22))
+        self.menubar.setGeometry(QRect(0, 0, 654, 21))
         self.menuNew = QMenu(self.menubar)
         self.menuNew.setObjectName(u"menuNew")
         self.menuView = QMenu(self.menubar)
