@@ -4,7 +4,9 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy.QtWidgets import QTableWidgetItem
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFontMetrics
+from qtpy.QtWidgets import QAction, QApplication, QMenu, QTableWidgetItem
 
 from pykotor.resource.formats.ltr.ltr_auto import bytes_ltr, read_ltr
 from pykotor.resource.formats.ltr.ltr_data import LTR
@@ -14,7 +16,8 @@ from toolset.gui.editor import Editor
 if TYPE_CHECKING:
     import os
 
-    from qtpy.QtWidgets import QWidget
+    from qtpy.QtCore import QPoint
+    from qtpy.QtWidgets import QTableWidget, QWidget
 
     from toolset.data.installation import HTInstallation
 
@@ -38,8 +41,12 @@ class LTREditor(Editor):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.tableSingles.setSortingEnabled(True)
+        self.ui.tableDoubles.setSortingEnabled(True)
+        self.ui.tableTriples.setSortingEnabled(True)
         self._setupMenus()
         self._setupSignals()
+        self.autoResizeEnabled = True
 
         self.ltr = LTR()
 
@@ -57,6 +64,12 @@ class LTREditor(Editor):
         self.ui.buttonRemoveDouble.clicked.connect(self.removeDoubleRow)
         self.ui.buttonAddTriple.clicked.connect(self.addTripleRow)
         self.ui.buttonRemoveTriple.clicked.connect(self.removeTripleRow)
+        self.ui.tableSingles.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.tableSingles.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
+        self.ui.tableDoubles.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.tableDoubles.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
+        self.ui.tableTriples.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.tableTriples.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
 
     def populateComboBoxes(self):
         char_set = LTR.CHARACTER_SET
@@ -101,6 +114,72 @@ class LTREditor(Editor):
                     self.ui.tableTriples.setItem(index, 4, QTableWidgetItem(str(self.ltr._triples[char_set.index(prev2_char)][char_set.index(prev1_char)].get_middle(char))))
                     self.ui.tableTriples.setItem(index, 5, QTableWidgetItem(str(self.ltr._triples[char_set.index(prev2_char)][char_set.index(prev1_char)].get_end(char))))
                     index += 1
+
+    def showHeaderContextMenu(self, position: QPoint):
+        menu = QMenu()
+
+        toggleAutoFitAction = QAction("Auto-fit Columns", self)
+        toggleAutoFitAction.setCheckable(True)
+        toggleAutoFitAction.setChecked(self.autoResizeEnabled)
+        toggleAutoFitAction.triggered.connect(self.toggleAutoFitColumns)
+        menu.addAction(toggleAutoFitAction)
+
+        toggleAlternateRowColorsAction = QAction("Toggle Alternate Row Colors", self)
+        toggleAlternateRowColorsAction.triggered.connect(self.toggleAlternateRowColors)
+        menu.addAction(toggleAlternateRowColorsAction)
+
+        if self.ui.tableSingles.hasFocus():
+            menu.exec_(self.ui.tableSingles.horizontalHeader().mapToGlobal(position))
+        if self.ui.tableDoubles.hasFocus():
+            menu.exec_(self.ui.tableDoubles.horizontalHeader().mapToGlobal(position))
+        if self.ui.tableTriples.hasFocus():
+            menu.exec_(self.ui.tableTriples.horizontalHeader().mapToGlobal(position))
+
+    def toggleAlternateRowColors(self):
+        for table in (self.ui.tableSingles, self.ui.tableDoubles, self.ui.tableTriples):
+            if table.alternatingRowColors():
+                table.setAlternatingRowColors(False)
+            else:
+                table.setAlternatingRowColors(True)
+
+    def resetColumnWidths(self):
+        for table in (self.ui.tableSingles, self.ui.tableDoubles, self.ui.tableTriples):
+            header = table.horizontalHeader()
+            assert header is not None
+            for col in range(header.count()):
+                header.resizeSection(col, header.defaultSectionSize())
+
+    def autoFitColumns(self, table: QTableWidget):
+        header = table.horizontalHeader()
+        assert header is not None
+
+        # Resize columns to contents
+        table.resizeColumnsToContents()
+
+        # Adjust each column's width to ensure the header text is fully visible
+        font_metrics = QFontMetrics(QApplication.font())
+
+        # Loop over each column and adjust based on header text width
+        for col in range(header.count()):
+            # Calculate the width required for the text in the header
+            header_text = header.model().headerData(col, Qt.Orientation.Horizontal)
+            text_width = font_metrics.horizontalAdvance(str(header_text)) + 10
+
+            # Ensure the column is wide enough for the header text
+            current_width = header.sectionSize(col)
+            new_width = max(current_width, text_width)
+            header.resizeSection(col, new_width)
+
+    def toggleAutoFitColumns(self, state: bool | None = None):
+        for table in (self.ui.tableSingles, self.ui.tableDoubles, self.ui.tableTriples):
+            self.autoResizeEnabled = not self.autoResizeEnabled if state is None else state
+            if self.autoResizeEnabled:
+                self.autoFitColumns(table)
+            else:
+                self.resetColumnWidths(table)
+            header = table.horizontalHeader()
+            assert header is not None
+            header.viewport().update()
 
     def setSingleCharacter(self):
         char = self.ui.comboBoxSingleChar.currentText()
@@ -170,6 +249,7 @@ class LTREditor(Editor):
         super().load(filepath, resref, restype, data)
         self.ltr = read_ltr(data)
         self.updateUIFromLTR()
+        self.toggleAutoFitColumns(True)
 
     def build(self) -> tuple[bytes, bytes]:
         return bytes_ltr(self.ltr), b""
