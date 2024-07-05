@@ -7,7 +7,7 @@ import qtpy
 
 from qtpy.QtCore import QSortFilterProxyModel, Qt
 from qtpy.QtGui import QFontMetrics, QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QApplication, QDesktopWidget, QMenu, QMessageBox
+from qtpy.QtWidgets import QAction, QApplication, QMenu, QMessageBox
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
@@ -75,7 +75,7 @@ class TwoDAEditor(Editor):
         vertHeader = self.ui.twodaTable.verticalHeader()
 
         # Add context menu to header
-        self.ui.twodaTable.horizontalHeader().setContextMenuPolicy(Qt.CustomContextMenu)
+        self.ui.twodaTable.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.twodaTable.horizontalHeader().customContextMenuRequested.connect(self.showHeaderContextMenu)
 
         self.autoResizeEnabled = True  # To track the state of auto-fit columns

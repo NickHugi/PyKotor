@@ -21,7 +21,6 @@ from qtpy.QtCore import (
     QSize,
     QTextStream,
     QThread,
-    QTimer,
     Qt,
 )
 from qtpy.QtGui import (
@@ -61,7 +60,7 @@ from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.formats.rim.rim_auto import read_rim, write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
-from pykotor.resource.formats.tpc import TPC, read_tpc, write_tpc
+from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model, module
@@ -140,6 +139,7 @@ if TYPE_CHECKING:
 
     from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.mdl.mdl_data import MDL
+    from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
     from toolset.gui.widgets.main_widgets import TextureList
     from utility.common.more_collections import CaseInsensitiveDict
@@ -1189,6 +1189,7 @@ class ToolWindow(QMainWindow):
                 f"Failed to initialize the installation {name}<br><br>{e}",
             ).exec_()
             self.unsetInstallation()
+            self.previousGameComboIndex = 0
         self.show()
         self.activateWindow()
         self.previousGameComboIndex = index

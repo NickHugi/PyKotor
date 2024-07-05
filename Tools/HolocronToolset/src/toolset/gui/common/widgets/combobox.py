@@ -195,6 +195,7 @@ class FilterComboBox(QComboBox):
         self.view().setViewportMargins(margins.left(), margins.top() + self.filterLineEdit.height(), margins.right(), margins.bottom())
         self.view().update()
         self.old_width = self.width()
+        self.setMinimumWidth(200)
 
     def setEditable(self, state: bool):  # noqa: FBT001
         self._editable = state
