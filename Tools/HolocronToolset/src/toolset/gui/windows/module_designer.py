@@ -1655,7 +1655,6 @@ class ModuleDesignerControls3d:
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
             for instance in self.editor.selectedInstances:
-                self.editor.log.debug("Moving instance 3d '%s'", instance.resref)
                 scene = self.renderer.scene
                 assert scene is not None
 
@@ -1889,7 +1888,7 @@ class ModuleDesignerControls3d:
 
     @property
     def openContextMenu(self) -> ControlItem:
-        return ControlItem((set(), {BUTTON_TO_INT.get(QtMouse.RightButton)}))
+        return ControlItem((set(), {BUTTON_TO_INT[QtMouse.RightButton]}))
     @openContextMenu.setter
     def openContextMenu(self, value): ...
 
