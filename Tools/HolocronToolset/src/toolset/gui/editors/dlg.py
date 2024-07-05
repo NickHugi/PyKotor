@@ -1373,7 +1373,9 @@ class DLGStandardItemModel(QStandardItemModel):
         newNode.plot_index = -1
         newLink: DLGLink = DLGLink(newNode)
         newLink.node.list_index = self._getNewNodeListIndex(newLink.node)
-        self.appendRow(DLGStandardItem(link=newLink))
+        newItem = DLGStandardItem(link=newLink)
+        self.appendRow(newItem)
+        self.updateItemDisplayText(newItem)
         print("<SDM> [_coreAddNode scope] newLink: ", newLink)
         print("<SDM> [_coreAddNode scope] newLink.list_index: ", newLink.list_index)
         print("<SDM> [_coreAddNode scope] newLink.node.list_index: ", newLink.node.list_index)
@@ -5003,7 +5005,7 @@ Should return 1 or 0, representing a boolean.
     def refreshAnimList(self):
         """Refreshes the animations list."""
         self.ui.animsList.clear()
-        animations_2da: TwoDA | None= self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
+        animations_2da: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
         if animations_2da is None:
             print(f"refreshAnimList: {HTInstallation.TwoDA_DIALOG_ANIMS}.2da not found.")
 
@@ -5022,8 +5024,6 @@ Should return 1 or 0, representing a boolean.
 
                 text: str = f"{name} ({anim.participant})"
                 animItem = QListWidgetItem(text)
-                print("<SDM> [refreshAnimList scope] item: ", text)
-
                 animItem.setData(Qt.ItemDataRole.UserRole, anim)
                 self.ui.animsList.addItem(animItem)
 
