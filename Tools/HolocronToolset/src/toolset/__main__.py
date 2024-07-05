@@ -8,6 +8,7 @@ import os
 import pathlib
 import sys
 import tempfile
+import traceback
 
 from contextlib import suppress
 from types import TracebackType
@@ -49,6 +50,18 @@ def onAppCrash(
                 tback = exc.__traceback__
     logger = RobustRootLogger()
     logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
+
+    # Check if the current thread is the main GUI thread
+    with suppress(Exception):
+        from qtpy.QtWidgets import QApplication, QMessageBox
+        if QThread.currentThread() == QApplication.instance().thread():
+            # Create a message box with the exception information
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setWindowTitle("Application Error")
+            msg_box.setText(f"An unexpected error occurred:<br><br>{exc.__class__.__name__}: {exc!s}")
+            msg_box.setDetailedText("".join(traceback.format_tb(tback)))
+            msg_box.exec_()
 
 
 def fix_sys_and_cwd_path():
