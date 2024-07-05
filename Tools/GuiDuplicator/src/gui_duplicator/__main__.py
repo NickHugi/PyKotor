@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import sys
 
 from copy import deepcopy
-from fractions import Fraction
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -23,96 +23,9 @@ from pykotor.tools.path import CaseAwarePath
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
 
-parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
-parser.add_argument("--input", type=str, help="Path to the K1/TSL GUI file.")
-parser.add_argument("--output", type=str, help="Output directory")
-parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
-parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
-
-parser_args, unknown = parser.parse_known_args()
-LOGGING_ENABLED = parser_args.logging
-if LOGGING_ENABLED is None:
-    LOGGING_ENABLED = True
-while True:
-    parser_args.input = CaseAwarePath(
-        parser_args.input or (unknown[0] if len(unknown) > 0 else None) or input("Path to the K1/TSL GUI file: "),
-    ).resolve()
-    if parser_args.input.exists():
-        break
-    print("Invalid path:", parser_args.input)
-    parser.print_help()
-    parser_args.input = None
-while True:
-    parser_args.output = CaseAwarePath(
-        parser_args.output or (unknown[0] if len(unknown) > 0 else None) or input("Output directory: "),
-    ).resolve()
-    if parser_args.output.parent.exists():
-        parser_args.output.mkdir(exist_ok=True, parents=True)
-        break
-    print("Invalid path:", parser_args.output)
-    parser.print_help()
-    parser_args.output = None
-
-
-def log(message: str):
-    """Function to log messages both on console and to a file if logging is enabled."""
-    print(message)
-    if LOGGING_ENABLED:
-        with parser_args.output.joinpath("output.log").open("a", encoding="utf-8") as log_file:
-            log_file.write(message + "\n")
-
-
-def scale_value(value: float, scale_factor: float) -> int:
-    return int(value * scale_factor)
-
-
-def adjust_controls_for_resolution(gui_data: GFF, target_width: int, target_height: int) -> GFF:
-    new_gff = GFF(GFFContent.GUI)
-    new_gff.root = deepcopy(gui_data.root)
-
-    # Determine the scaling factor from the root extent.
-    root_extent_struct = new_gff.root.get_struct("EXTENT")
-    width_scale_factor = target_width / (root_extent_struct.get_int32("WIDTH"))
-    height_scale_factor = target_height / (root_extent_struct.get_int32("HEIGHT"))
-    root_extent_struct.set_int32("WIDTH", target_width)
-    root_extent_struct.set_int32("HEIGHT", target_height)
-
-    controls_list: GFFList[GFFStruct] = new_gff.root.get_list("CONTROLS")
-    for control_struct in controls_list:
-        if control_struct.get("SCROLLBAR") is not None:
-            scrollbar: GFFStruct = control_struct.get_struct("SCROLLBAR")
-            scrollbar_extent: GFFStruct = scrollbar.get_struct("EXTENT")
-            resize_extent_by_factor(scrollbar_extent, height_scale_factor, width_scale_factor)
-
-        extent = control_struct.get_struct("EXTENT")
-        resize_extent_by_factor(extent, height_scale_factor, width_scale_factor)
-    return new_gff
-
-
-def resize_extent_by_factor(
-    extent_struct: GFFStruct,
-    height_scale_factor: float,
-    width_scale_factor: float,
-):
-    extent_struct.set_int32("TOP", int(extent_struct.get_int32("TOP") * height_scale_factor))
-    extent_struct.set_int32("HEIGHT", int(extent_struct.get_int32("HEIGHT") * height_scale_factor))
-    extent_struct.set_int32("LEFT", int(extent_struct.get_int32("LEFT") * width_scale_factor))
-    extent_struct.set_int32("WIDTH", int(extent_struct.get_int32("WIDTH") * width_scale_factor))
-
-
-# Define a normalization function
-def normalize_aspect_ratio(width, height):
-    aspect_ratio = Fraction(width, height).limit_denominator(1000)  # Ensure it does not reduce too much
-
-    # Normalization rules for known non-standard aspect ratios
-    normalization = {
-        Fraction(1366, 768): Fraction(16, 9),
-        Fraction(1536, 864): Fraction(16, 9),
-        Fraction(1440, 900): Fraction(16, 10),
-        Fraction(8, 5): Fraction(16, 10),
-    }
-
-    return normalization.get(aspect_ratio, aspect_ratio)
+LOGGING_ENABLED = True
+PARSER_ARGS: argparse.Namespace | None = None
+TEST_MODE = False
 
 
 ASPECT_RATIO_TO_RESOLUTION = {
@@ -205,7 +118,57 @@ ASPECT_RATIO_TO_RESOLUTION = {
 }
 
 
-def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
+def log(message: str):
+    global PARSER_ARGS
+    assert PARSER_ARGS is not None
+    global LOGGING_ENABLED
+    """Function to log messages both on console and to a file if logging is enabled."""
+    print(message)
+    if LOGGING_ENABLED:
+        with PARSER_ARGS.output.joinpath("output.log").open("a", encoding="utf-8") as log_file:
+            log_file.write(message + "\n")
+
+
+def scale_value(value: float, scale_factor: float) -> int:
+    return int(value * scale_factor)
+
+
+def adjust_controls_for_resolution(gui_data: GFF, target_width: int, target_height: int) -> GFF:
+    new_gff = GFF(GFFContent.GUI)
+    new_gff.root = deepcopy(gui_data.root)
+
+    # Determine the scaling factor from the root extent.
+    root_extent_struct = new_gff.root.get_struct("EXTENT")
+    width_scale_factor = target_width / (root_extent_struct.get_int32("WIDTH"))
+    height_scale_factor = target_height / (root_extent_struct.get_int32("HEIGHT"))
+    root_extent_struct.set_int32("WIDTH", target_width)
+    root_extent_struct.set_int32("HEIGHT", target_height)
+
+    controls_list: GFFList = new_gff.root.get_list("CONTROLS")
+    for control_struct in controls_list:
+        if control_struct.exists("SCROLLBAR"):
+            scrollbar: GFFStruct = control_struct.get_struct("SCROLLBAR")
+            scrollbar_extent: GFFStruct = scrollbar.get_struct("EXTENT")
+            resize_extent_by_factor(scrollbar_extent, height_scale_factor, width_scale_factor)
+
+        extent = control_struct.get_struct("EXTENT")
+        resize_extent_by_factor(extent, height_scale_factor, width_scale_factor)
+    return new_gff
+
+
+def resize_extent_by_factor(
+    extent_struct: GFFStruct,
+    height_scale_factor: float,
+    width_scale_factor: float,
+):
+    extent_struct.set_int32("TOP", int(extent_struct.get_int32("TOP") * height_scale_factor))
+    extent_struct.set_int32("HEIGHT", int(extent_struct.get_int32("HEIGHT") * height_scale_factor))
+    extent_struct.set_int32("LEFT", int(extent_struct.get_int32("LEFT") * width_scale_factor))
+    extent_struct.set_int32("WIDTH", int(extent_struct.get_int32("WIDTH") * width_scale_factor))
+
+def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath, resolutions: list[tuple[int, int]]):
+    global PARSER_ARGS
+    assert PARSER_ARGS is not None
     if gui_file.suffix.lower() != ".gui":
         print(f"Invalid GUI file: '{gui_file}'")
         return
@@ -217,37 +180,139 @@ def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
 
     log(f"Processing GUI file: '{gui_file}'")
 
-    # Processing and saving the resolutions based on the ASPECT_RATIO_TO_RESOLUTION dictionary
-    for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
-        aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
-        aspect_ratio_dir.mkdir(exist_ok=True, parents=True)
-        log(f"Created directory for aspect ratio {aspect_ratio} at {aspect_ratio_dir}")
+    if PARSER_ARGS.resolution.upper() == "ALL":
+        for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
+            aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
+            aspect_ratio_dir.mkdir(exist_ok=True, parents=True)
+            log(f"Created directory for aspect ratio {aspect_ratio} at {aspect_ratio_dir}")
 
-        for width, height in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
+            for width, height in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
+                adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
+                output_filename = f"{width}x{height}.gui"
+                output_path: CaseAwarePath = aspect_ratio_dir / output_filename
+                output_path.touch(exist_ok=True)
+                write_gff(adjusted_gui_data, output_path)
+                log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
+    else:
+        for width, height in resolutions:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-            output_filename = f"{width}x{height}.gui"
-            output_path: CaseAwarePath = aspect_ratio_dir / output_filename
+            output_filename = gui_file.name
+            output_path: CaseAwarePath = output_dir / output_filename
             output_path.touch(exist_ok=True)
             write_gff(adjusted_gui_data, output_path)
             log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
 
 
 def main():
-    input_path: CaseAwarePath = parser_args.input
+    global LOGGING_ENABLED  # noqa: PLW0602
+    global PARSER_ARGS
+    global TEST_MODE
 
+    if TEST_MODE:
+        PARSER_ARGS = argparse.Namespace(
+            input=CaseAwarePath(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-10\\gui.1280x800")),
+            output=CaseAwarePath(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-9-test\\gui.1280x800")),
+            output_log=None,
+            logging=True,
+            resolution="1280x720",
+        )
+    else:
+        PARSER_ARGS = _parse_user_arg_inputs()
+
+    input_path: CaseAwarePath = PARSER_ARGS.input
+    resolution_arg: str = PARSER_ARGS.resolution
+    resolutions_to_process = []
+
+    if resolution_arg.upper() == "ALL":
+        for aspect_resolutions in ASPECT_RATIO_TO_RESOLUTION.values():
+            resolutions_to_process.extend(aspect_resolutions)
+    else:
+        try:
+            width, height = map(int, resolution_arg.lower().split("x"))
+            resolutions_to_process.append((width, height))
+        except ValueError:
+            print(f"Invalid resolution format: {resolution_arg}. Please use 'WIDTHxHEIGHT' format or 'ALL'.")
+            return
     if input_path.safe_isfile():
-        process_file(input_path, parser_args.output)
+        process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
 
     elif input_path.safe_isdir():
         for gui_file in input_path.safe_rglob("*.gui"):
             relative_path = gui_file.relative_to(input_path)
-            new_output_dir: CaseAwarePath = parser_args.output / relative_path.parent / gui_file.stem
+            new_output_dir: CaseAwarePath = PARSER_ARGS.output / relative_path.parent
             new_output_dir.mkdir(parents=True, exist_ok=True)
-            process_file(gui_file, new_output_dir)
+            process_file(gui_file, new_output_dir, resolutions_to_process)
 
     else:
         print(f"Invalid input: {input_path}. It's neither a file nor a directory.")
         return
+
+    if TEST_MODE:
+        comparison_dir = CaseAwarePath(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))
+        assert compare_directories(PARSER_ARGS.output, comparison_dir), "Test directories do not match."
+
+def compare_directories(dir1: CaseAwarePath, dir2: CaseAwarePath) -> bool:
+    dir1_files = {str(f).replace(str(dir1), "").replace("\\", ""): f for f in dir1.rglob("*.gui")}
+    dir2_files = {str(f).replace(str(dir2), "").replace("\\", ""): f for f in dir2.rglob("*.gui")}
+
+    for relative_path in dir1_files:
+        gff1 = read_gff(dir1_files[relative_path])
+        gff2 = read_gff(dir2_files[relative_path])
+        if not gff1.compare(gff2):
+            print(f"Files differ: {dir1_files[relative_path]} and {dir2_files[relative_path]}")
+            return False
+
+    return True
+
+
+def _parse_user_arg_inputs() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
+    parser.add_argument("--input", type=str, help="Path to the K1/TSL GUI file.")
+    parser.add_argument("--output", type=str, help="Output directory")
+    parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+    parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
+    parser.add_argument("--resolution", type=str, help="Specific resolution (e.g., 1920x1080) or 'ALL' for all resolutions")
+
+    result, unknown = parser.parse_known_args()
+    while True:
+        result.input = CaseAwarePath(
+            result.input
+            or (unknown[0] if len(unknown) > 0 else None)
+            or input("Path to the K1/TSL GUI file: ")
+        ).resolve()
+        if result.input.exists():
+            break
+        print("Invalid path:", result.input)
+        parser.print_help()
+        result.input = None
+    while True:
+        result.output = CaseAwarePath(
+            result.output
+            or (unknown[0] if len(unknown) > 0 else None)
+            or input("Output directory: ")
+        ).resolve()
+        if result.output.parent.exists():
+            result.output.mkdir(exist_ok=True, parents=True)
+            break
+        print("Invalid path:", result.output)
+        parser.print_help()
+        result.output = None
+    while True:
+        result.resolution = result.resolution or input(
+            "Resolution (e.g., 1920x1080) or 'ALL': "
+        )
+        if result.resolution.upper() == "ALL":
+            break
+        try:
+            width, height = map(int, result.resolution.split("x"))
+            if width > 0 and height > 0:
+                break
+        except ValueError:
+            ...
+        print("Invalid resolution:", result.resolution)
+        parser.print_help()
+        result.resolution = None
+    return result
 
 
 if __name__ == "__main__":
