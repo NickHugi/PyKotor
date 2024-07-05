@@ -197,7 +197,7 @@ class FilterComboBox(QComboBox):
         self.view().update()
         self.old_width = self.width()
         self.setMinimumWidth(200)
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
 
     def setEditable(self, state: bool):  # noqa: FBT001
         self._editable = state
