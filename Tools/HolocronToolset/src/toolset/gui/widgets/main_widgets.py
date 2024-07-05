@@ -4,7 +4,7 @@ import multiprocessing
 
 from abc import abstractmethod
 from time import sleep
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import qtpy
 
@@ -359,7 +359,7 @@ class ResourceList(MainWindowList):
         self,
         resource: FileResource,
     ):
-        model: ResourceModel = self.ui.resourceTree.model().sourceModel()  # type: ignore[attribute-access]
+        model: ResourceModel = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel()  # type: ignore[attribute-access]
         assert isinstance(model, ResourceModel)
 
         def select(parent, child):
@@ -427,8 +427,6 @@ class ResourceProxyModel(QSortFilterProxyModel):
 
     def setFilterString(self, filter_string: str):
         self.filter_string = filter_string.lower()
-        if not filter_string or not filter_string.strip():
-            return
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
