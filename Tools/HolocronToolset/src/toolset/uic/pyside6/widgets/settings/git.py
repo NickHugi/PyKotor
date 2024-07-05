@@ -16,8 +16,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFormLayout, QGridLayout, QGroupBox,
-    QHBoxLayout, QLabel, QPushButton, QScrollArea,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+    QHBoxLayout, QLabel, QLayout, QPushButton,
+    QScrollArea, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 from toolset.gui.widgets.edit.color import ColorEdit
 from toolset.gui.widgets.set_bind import SetBindWidget
@@ -34,7 +35,7 @@ class Ui_Form(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 429, 952))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -195, 429, 948))
         self.verticalLayout = QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.groupBox = QGroupBox(self.scrollAreaWidgetContents)
@@ -154,6 +155,7 @@ class Ui_Form(object):
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.formLayout_2 = QFormLayout()
         self.formLayout_2.setObjectName(u"formLayout_2")
+        self.formLayout_2.setSizeConstraint(QLayout.SetMinimumSize)
         self.formLayout_2.setVerticalSpacing(10)
         self.label_10 = QLabel(self.groupBox_2)
         self.label_10.setObjectName(u"label_10")
@@ -162,8 +164,12 @@ class Ui_Form(object):
 
         self.undefinedMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.undefinedMaterialColourEdit.setObjectName(u"undefinedMaterialColourEdit")
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(1)
+        sizePolicy.setHeightForWidth(self.undefinedMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.undefinedMaterialColourEdit.setSizePolicy(sizePolicy)
         self.undefinedMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.undefinedMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.undefinedMaterialColourEdit)
 
@@ -265,26 +271,27 @@ class Ui_Form(object):
         self.dirtMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.dirtMaterialColourEdit.setObjectName(u"dirtMaterialColourEdit")
         self.dirtMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.dirtMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.dirtMaterialColourEdit)
 
         self.obscuringMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.obscuringMaterialColourEdit.setObjectName(u"obscuringMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.obscuringMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.obscuringMaterialColourEdit.setSizePolicy(sizePolicy)
         self.obscuringMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.obscuringMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.obscuringMaterialColourEdit)
 
         self.grassMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.grassMaterialColourEdit.setObjectName(u"grassMaterialColourEdit")
         self.grassMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.grassMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(3, QFormLayout.FieldRole, self.grassMaterialColourEdit)
 
         self.stoneMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.stoneMaterialColourEdit.setObjectName(u"stoneMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.stoneMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.stoneMaterialColourEdit.setSizePolicy(sizePolicy)
         self.stoneMaterialColourEdit.setMinimumSize(QSize(0, 20))
         self.stoneMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
@@ -292,6 +299,8 @@ class Ui_Form(object):
 
         self.woodMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.woodMaterialColourEdit.setObjectName(u"woodMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.woodMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.woodMaterialColourEdit.setSizePolicy(sizePolicy)
         self.woodMaterialColourEdit.setMinimumSize(QSize(0, 20))
         self.woodMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
@@ -299,6 +308,8 @@ class Ui_Form(object):
 
         self.waterMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.waterMaterialColourEdit.setObjectName(u"waterMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.waterMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.waterMaterialColourEdit.setSizePolicy(sizePolicy)
         self.waterMaterialColourEdit.setMinimumSize(QSize(0, 20))
         self.waterMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
@@ -306,13 +317,16 @@ class Ui_Form(object):
 
         self.nonWalkMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.nonWalkMaterialColourEdit.setObjectName(u"nonWalkMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.nonWalkMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.nonWalkMaterialColourEdit.setSizePolicy(sizePolicy)
         self.nonWalkMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.nonWalkMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(7, QFormLayout.FieldRole, self.nonWalkMaterialColourEdit)
 
         self.transparentMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.transparentMaterialColourEdit.setObjectName(u"transparentMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.transparentMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.transparentMaterialColourEdit.setSizePolicy(sizePolicy)
         self.transparentMaterialColourEdit.setMinimumSize(QSize(0, 20))
         self.transparentMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
@@ -321,19 +335,21 @@ class Ui_Form(object):
         self.carpetMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.carpetMaterialColourEdit.setObjectName(u"carpetMaterialColourEdit")
         self.carpetMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.carpetMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(9, QFormLayout.FieldRole, self.carpetMaterialColourEdit)
 
         self.metalMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.metalMaterialColourEdit.setObjectName(u"metalMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.metalMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.metalMaterialColourEdit.setSizePolicy(sizePolicy)
         self.metalMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.metalMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(10, QFormLayout.FieldRole, self.metalMaterialColourEdit)
 
         self.puddlesMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.puddlesMaterialColourEdit.setObjectName(u"puddlesMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.puddlesMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.puddlesMaterialColourEdit.setSizePolicy(sizePolicy)
         self.puddlesMaterialColourEdit.setMinimumSize(QSize(0, 20))
         self.puddlesMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
@@ -341,6 +357,8 @@ class Ui_Form(object):
 
         self.swampMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.swampMaterialColourEdit.setObjectName(u"swampMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.swampMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.swampMaterialColourEdit.setSizePolicy(sizePolicy)
         self.swampMaterialColourEdit.setMinimumSize(QSize(0, 20))
         self.swampMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
@@ -348,50 +366,51 @@ class Ui_Form(object):
 
         self.mudMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.mudMaterialColourEdit.setObjectName(u"mudMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.mudMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.mudMaterialColourEdit.setSizePolicy(sizePolicy)
         self.mudMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.mudMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(13, QFormLayout.FieldRole, self.mudMaterialColourEdit)
 
         self.leavesMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.leavesMaterialColourEdit.setObjectName(u"leavesMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.leavesMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.leavesMaterialColourEdit.setSizePolicy(sizePolicy)
         self.leavesMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.leavesMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(14, QFormLayout.FieldRole, self.leavesMaterialColourEdit)
 
         self.lavaMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.lavaMaterialColourEdit.setObjectName(u"lavaMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.lavaMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.lavaMaterialColourEdit.setSizePolicy(sizePolicy)
         self.lavaMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.lavaMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(15, QFormLayout.FieldRole, self.lavaMaterialColourEdit)
 
         self.bottomlessPitMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.bottomlessPitMaterialColourEdit.setObjectName(u"bottomlessPitMaterialColourEdit")
         self.bottomlessPitMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.bottomlessPitMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(16, QFormLayout.FieldRole, self.bottomlessPitMaterialColourEdit)
 
         self.deepWaterMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.deepWaterMaterialColourEdit.setObjectName(u"deepWaterMaterialColourEdit")
         self.deepWaterMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.deepWaterMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(17, QFormLayout.FieldRole, self.deepWaterMaterialColourEdit)
 
         self.doorMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.doorMaterialColourEdit.setObjectName(u"doorMaterialColourEdit")
         self.doorMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.doorMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(18, QFormLayout.FieldRole, self.doorMaterialColourEdit)
 
         self.nonWalkGrassMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.nonWalkGrassMaterialColourEdit.setObjectName(u"nonWalkGrassMaterialColourEdit")
+        sizePolicy.setHeightForWidth(self.nonWalkGrassMaterialColourEdit.sizePolicy().hasHeightForWidth())
+        self.nonWalkGrassMaterialColourEdit.setSizePolicy(sizePolicy)
         self.nonWalkGrassMaterialColourEdit.setMinimumSize(QSize(0, 20))
-        self.nonWalkGrassMaterialColourEdit.setMaximumSize(QSize(16777215, 20))
 
         self.formLayout_2.setWidget(19, QFormLayout.FieldRole, self.nonWalkGrassMaterialColourEdit)
 

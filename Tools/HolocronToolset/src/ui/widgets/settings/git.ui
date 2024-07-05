@@ -23,9 +23,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-195</y>
         <width>429</width>
-        <height>952</height>
+        <height>948</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -60,7 +60,7 @@
            </layout>
           </item>
           <item>
-           <widget class="QWidget" name="" native="true">
+           <widget class="QWidget" name="widget" native="true">
             <property name="minimumSize">
              <size>
               <width>0</width>
@@ -171,6 +171,9 @@
          <layout class="QGridLayout" name="gridLayout_2">
           <item row="1" column="0">
            <layout class="QFormLayout" name="formLayout_2">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetMinimumSize</enum>
+            </property>
             <property name="verticalSpacing">
              <number>10</number>
             </property>
@@ -183,15 +186,15 @@
             </item>
             <item row="0" column="1">
              <widget class="ColorEdit" name="undefinedMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -338,25 +341,19 @@
                 <height>20</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
              </widget>
             </item>
             <item row="2" column="1">
              <widget class="ColorEdit" name="obscuringMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -370,16 +367,16 @@
                 <height>20</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
              </widget>
             </item>
             <item row="4" column="1">
              <widget class="ColorEdit" name="stoneMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -396,6 +393,12 @@
             </item>
             <item row="5" column="1">
              <widget class="ColorEdit" name="woodMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -412,6 +415,12 @@
             </item>
             <item row="6" column="1">
              <widget class="ColorEdit" name="waterMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -428,15 +437,15 @@
             </item>
             <item row="7" column="1">
              <widget class="ColorEdit" name="nonWalkMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -444,6 +453,12 @@
             </item>
             <item row="8" column="1">
              <widget class="ColorEdit" name="transparentMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -466,25 +481,19 @@
                 <height>20</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
              </widget>
             </item>
             <item row="10" column="1">
              <widget class="ColorEdit" name="metalMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -492,6 +501,12 @@
             </item>
             <item row="11" column="1">
              <widget class="ColorEdit" name="puddlesMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -508,6 +523,12 @@
             </item>
             <item row="12" column="1">
              <widget class="ColorEdit" name="swampMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -524,15 +545,15 @@
             </item>
             <item row="13" column="1">
              <widget class="ColorEdit" name="mudMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -540,15 +561,15 @@
             </item>
             <item row="14" column="1">
              <widget class="ColorEdit" name="leavesMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -556,15 +577,15 @@
             </item>
             <item row="15" column="1">
              <widget class="ColorEdit" name="lavaMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -578,12 +599,6 @@
                 <height>20</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
              </widget>
             </item>
             <item row="17" column="1">
@@ -591,12 +606,6 @@
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
@@ -610,25 +619,19 @@
                 <height>20</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
              </widget>
             </item>
             <item row="19" column="1">
              <widget class="ColorEdit" name="nonWalkGrassMaterialColourEdit" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
                 <height>20</height>
                </size>
               </property>
