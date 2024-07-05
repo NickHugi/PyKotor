@@ -53,7 +53,7 @@ LOCAL_PROGRAM_INFO: dict[str, Any] = {
         }
     },
     "toolsetLatestNotes": "Fixed major bug that was causing most editors to load data incorrectly.",
-    "toolsetLatestBetaNotes": "Deep-tested various editors and fixed bugs. Improve many things in the Module Designer. Fix a few bugs in the GITEditor undo/redo logic. Various other improvements/features will be noticeable.",
+    "toolsetLatestBetaNotes": "A new major Release version is available.",
     "kits": {
         "Black Vulkar Base": {"version": 1, "id": "blackvulkar"},
         "Endar Spire": {"version": 1, "id": "endarspire"},
