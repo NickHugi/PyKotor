@@ -2465,11 +2465,10 @@ class ToolWindow(QMainWindow):
             - Writes extracted data to the file path
         """
         r_folderpath: Path = save_path.parent
-        print("<SDM> [_extractResource scope] Path: ", Path)
+        print("<SDM> [_extractResource scope] Path: ", r_folderpath)
 
 
         data: bytes = resource.data()
-        print("<SDM> [_extractResource scope] bytes: ", bytes)
 
 
         if resource.restype() is ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
@@ -2478,8 +2477,6 @@ class ToolWindow(QMainWindow):
 
         if resource.restype() is ResourceType.TPC:
             tpc: TPC = read_tpc(data, txi_source=save_path)
-            print("<SDM> [_extractResource scope] TPC: ", TPC)
-
 
             if self.ui.tpcTxiCheckbox.isChecked():
                 RobustRootLogger.info(f"Extracting TXI from {resource.identifier()} because of settings.")
@@ -2488,8 +2485,6 @@ class ToolWindow(QMainWindow):
             if self.ui.tpcDecompileCheckbox.isChecked():
                 RobustRootLogger.info(f"Converting '{resource.identifier()}' to TGA because of settings.")
                 data = self._decompileTpc(tpc)
-                print("<SDM> [_extractResource scope] data: ", data)
-
 
         if resource.restype() is ResourceType.MDL:
             if self.ui.mdlTexturesCheckbox.isChecked():
@@ -2499,8 +2494,6 @@ class ToolWindow(QMainWindow):
             if self.ui.mdlDecompileCheckbox.isChecked():
                 RobustRootLogger.info(f"Converting {resource.identifier()} to ASCII MDL because of settings")
                 data = self._decompileMdl(resource, data)
-                print("<SDM> [_extractResource scope] data: ", data)
-
 
         with save_path.open("wb") as file:
             RobustRootLogger.info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
