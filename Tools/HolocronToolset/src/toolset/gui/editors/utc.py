@@ -89,6 +89,7 @@ class UTCEditor(Editor):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.setMinimumSize(798, 553)
         self._setupMenus()
         self._setupInstallation(installation)
         self._setupSignals()
@@ -887,7 +888,7 @@ class UTCEditor(Editor):
 
         if self.globalSettings.showPreviewUTC:
             self.ui.previewRenderer.setVisible(True)
-            self.setFixedSize(798, 553)
+            self.resize(798, 553)
 
             if self._installation is not None:
                 data, _ = self.build()
@@ -895,7 +896,7 @@ class UTCEditor(Editor):
                 self.ui.previewRenderer.setCreature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
-            self.setFixedSize(798 - 350, 553)
+            self.resize(798 - 350, 553)
 
 
 class UTCSettings:

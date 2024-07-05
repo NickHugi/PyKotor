@@ -153,7 +153,7 @@ class CustomListView(QListView):
             if left_limit <= viewport_pos.x() <= option.rect.right():
                 #print("Click inside button range")
                 self.combobox.force_stay_popped_up = True
-                self.button_callback(index.data(Qt.DisplayRole))
+                self.button_callback(index.data(Qt.ItemDataRole.DisplayRole))
         super().mousePressEvent(event)
 
 
@@ -217,7 +217,6 @@ class FilterComboBox(QComboBox):
         return line_edit
 
     def setModel(self, model: QStringListModel | QStandardItemModel):
-        print(f"Setting a source model of type {model.__class__.__name__}")
         assert isinstance(model, (QStringListModel, QStandardItemModel))
         self.proxyModel.setSourceModel(model)
         self.sourceModel: QStringListModel | QStandardItemModel = model
