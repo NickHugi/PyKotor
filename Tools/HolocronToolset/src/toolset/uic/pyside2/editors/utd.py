@@ -513,10 +513,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(5, QFormLayout.LabelRole, self.label_11)
 
-        self.onHeartbeatEdit = FilterComboBox(self.tab_2)
-        self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
+        self.onHeartbeatSelect = FilterComboBox(self.tab_2)
+        self.onHeartbeatSelect.setObjectName(u"onHeartbeatSelect")
 
-        self.formLayout_2.setWidget(5, QFormLayout.FieldRole, self.onHeartbeatEdit)
+        self.formLayout_2.setWidget(5, QFormLayout.FieldRole, self.onHeartbeatSelect)
 
         self.label_13 = QLabel(self.tab_2)
         self.label_13.setObjectName(u"label_13")
@@ -563,10 +563,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_2.setWidget(10, QFormLayout.LabelRole, self.label_19)
 
-        self.onUserDefinedEdit = FilterComboBox(self.tab_2)
-        self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
+        self.onUserDefinedSelect = FilterComboBox(self.tab_2)
+        self.onUserDefinedSelect.setObjectName(u"onUserDefinedSelect")
 
-        self.formLayout_2.setWidget(10, QFormLayout.FieldRole, self.onUserDefinedEdit)
+        self.formLayout_2.setWidget(10, QFormLayout.FieldRole, self.onUserDefinedSelect)
 
         self.tabWidget.addTab(self.tab_2, "")
         self.commentsTab = QWidget()

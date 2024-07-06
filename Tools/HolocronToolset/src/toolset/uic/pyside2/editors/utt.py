@@ -287,10 +287,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(4, QFormLayout.LabelRole, self.label_9)
 
-        self.onHeartbeatEdit = FilterComboBox(self.tab_4)
-        self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
+        self.onHeartbeatSelect = FilterComboBox(self.tab_4)
+        self.onHeartbeatSelect.setObjectName(u"onHeartbeatSelect")
 
-        self.formLayout_5.setWidget(4, QFormLayout.FieldRole, self.onHeartbeatEdit)
+        self.formLayout_5.setWidget(4, QFormLayout.FieldRole, self.onHeartbeatSelect)
 
         self.label_10 = QLabel(self.tab_4)
         self.label_10.setObjectName(u"label_10")
@@ -307,20 +307,20 @@ class Ui_MainWindow(object):
 
         self.formLayout_5.setWidget(6, QFormLayout.LabelRole, self.label_12)
 
-        self.onExitEdit = FilterComboBox(self.tab_4)
-        self.onExitEdit.setObjectName(u"onExitEdit")
+        self.onExitSelect = FilterComboBox(self.tab_4)
+        self.onExitSelect.setObjectName(u"onExitSelect")
 
-        self.formLayout_5.setWidget(3, QFormLayout.FieldRole, self.onExitEdit)
+        self.formLayout_5.setWidget(3, QFormLayout.FieldRole, self.onExitSelect)
 
-        self.onEnterEdit = FilterComboBox(self.tab_4)
-        self.onEnterEdit.setObjectName(u"onEnterEdit")
+        self.onEnterSelect = FilterComboBox(self.tab_4)
+        self.onEnterSelect.setObjectName(u"onEnterSelect")
 
-        self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.onEnterEdit)
+        self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.onEnterSelect)
 
-        self.onUserDefinedEdit = FilterComboBox(self.tab_4)
-        self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
+        self.onUserDefinedSelect = FilterComboBox(self.tab_4)
+        self.onUserDefinedSelect.setObjectName(u"onUserDefinedSelect")
 
-        self.formLayout_5.setWidget(6, QFormLayout.FieldRole, self.onUserDefinedEdit)
+        self.formLayout_5.setWidget(6, QFormLayout.FieldRole, self.onUserDefinedSelect)
 
         self.label_13 = QLabel(self.tab_4)
         self.label_13.setObjectName(u"label_13")

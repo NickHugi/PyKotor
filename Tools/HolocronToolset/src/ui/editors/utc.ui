@@ -2044,7 +2044,7 @@
         <item row="9" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_39">
           <item>
-           <widget class="FilterComboBox" name="onHeartbeatEdit">
+           <widget class="FilterComboBox" name="onHeartbeatSelect">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -2125,7 +2125,7 @@
         <item row="12" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_43">
           <item>
-           <widget class="FilterComboBox" name="onUserDefinedEdit">
+           <widget class="FilterComboBox" name="onUserDefinedSelect">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
               <horstretch>0</horstretch>

@@ -16,6 +16,7 @@ from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.color import ColorEdit
+from toolset.gui.common.widgets.combobox import FilterComboBox
 
 
 class Ui_MainWindow(object):
@@ -889,11 +890,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_12.setWidget(0, QFormLayout.LabelRole, self.label_36)
 
-        self.onEnterEdit = QLineEdit(self.tab_4)
-        self.onEnterEdit.setObjectName(u"onEnterEdit")
-        self.onEnterEdit.setMaxLength(16)
+        self.onEnterSelect = FilterComboBox(self.tab_4)
+        self.onEnterSelect.setObjectName(u"onEnterSelect")
 
-        self.formLayout_12.setWidget(0, QFormLayout.FieldRole, self.onEnterEdit)
+        self.formLayout_12.setWidget(0, QFormLayout.FieldRole, self.onEnterSelect)
 
         self.label_37 = QLabel(self.tab_4)
         self.label_37.setObjectName(u"label_37")
@@ -910,23 +910,20 @@ class Ui_MainWindow(object):
 
         self.formLayout_12.setWidget(3, QFormLayout.LabelRole, self.label_39)
 
-        self.onExitEdit = QLineEdit(self.tab_4)
-        self.onExitEdit.setObjectName(u"onExitEdit")
-        self.onExitEdit.setMaxLength(16)
+        self.onExitSelect = FilterComboBox(self.tab_4)
+        self.onExitSelect.setObjectName(u"onExitSelect")
 
-        self.formLayout_12.setWidget(1, QFormLayout.FieldRole, self.onExitEdit)
+        self.formLayout_12.setWidget(1, QFormLayout.FieldRole, self.onExitSelect)
 
-        self.onHeartbeatEdit = QLineEdit(self.tab_4)
-        self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
-        self.onHeartbeatEdit.setMaxLength(16)
+        self.onHeartbeatSelect = FilterComboBox(self.tab_4)
+        self.onHeartbeatSelect.setObjectName(u"onHeartbeatSelect")
 
-        self.formLayout_12.setWidget(2, QFormLayout.FieldRole, self.onHeartbeatEdit)
+        self.formLayout_12.setWidget(2, QFormLayout.FieldRole, self.onHeartbeatSelect)
 
-        self.onUserDefinedEdit = QLineEdit(self.tab_4)
-        self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
-        self.onUserDefinedEdit.setMaxLength(16)
+        self.onUserDefinedSelect = FilterComboBox(self.tab_4)
+        self.onUserDefinedSelect.setObjectName(u"onUserDefinedSelect")
 
-        self.formLayout_12.setWidget(3, QFormLayout.FieldRole, self.onUserDefinedEdit)
+        self.formLayout_12.setWidget(3, QFormLayout.FieldRole, self.onUserDefinedSelect)
 
 
         self.verticalLayout_10.addLayout(self.formLayout_12)

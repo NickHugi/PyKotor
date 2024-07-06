@@ -827,7 +827,7 @@
          <widget class="FilterComboBox" name="onOpenFailedEdit"/>
         </item>
         <item row="5" column="1">
-         <widget class="FilterComboBox" name="onHeartbeatEdit"/>
+         <widget class="FilterComboBox" name="onHeartbeatSelect"/>
         </item>
         <item row="6" column="1">
          <widget class="FilterComboBox" name="onInventoryEdit"/>
@@ -851,7 +851,7 @@
          <widget class="FilterComboBox" name="onUsedEdit"/>
         </item>
         <item row="13" column="1">
-         <widget class="FilterComboBox" name="onUserDefinedEdit"/>
+         <widget class="FilterComboBox" name="onUserDefinedSelect"/>
         </item>
        </layout>
       </widget>

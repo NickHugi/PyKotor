@@ -293,10 +293,10 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_4)
 
-        self.onEnterEdit = FilterComboBox(self.tab_3)
-        self.onEnterEdit.setObjectName(u"onEnterEdit")
+        self.onEnterSelect = FilterComboBox(self.tab_3)
+        self.onEnterSelect.setObjectName(u"onEnterSelect")
 
-        self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.onEnterEdit)
+        self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.onEnterSelect)
 
         self.label_5 = QLabel(self.tab_3)
         self.label_5.setObjectName(u"label_5")
@@ -318,25 +318,25 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setWidget(4, QFormLayout.LabelRole, self.label_9)
 
-        self.onExitEdit = FilterComboBox(self.tab_3)
-        self.onExitEdit.setObjectName(u"onExitEdit")
+        self.onExitSelect = FilterComboBox(self.tab_3)
+        self.onExitSelect.setObjectName(u"onExitSelect")
 
-        self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.onExitEdit)
+        self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.onExitSelect)
 
         self.onExhaustedEdit = FilterComboBox(self.tab_3)
         self.onExhaustedEdit.setObjectName(u"onExhaustedEdit")
 
         self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.onExhaustedEdit)
 
-        self.onHeartbeatEdit = FilterComboBox(self.tab_3)
-        self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
+        self.onHeartbeatSelect = FilterComboBox(self.tab_3)
+        self.onHeartbeatSelect.setObjectName(u"onHeartbeatSelect")
 
-        self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.onHeartbeatEdit)
+        self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.onHeartbeatSelect)
 
-        self.onUserDefinedEdit = FilterComboBox(self.tab_3)
-        self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
+        self.onUserDefinedSelect = FilterComboBox(self.tab_3)
+        self.onUserDefinedSelect.setObjectName(u"onUserDefinedSelect")
 
-        self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.onUserDefinedEdit)
+        self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.onUserDefinedSelect)
 
 
         self.gridLayout_4.addLayout(self.formLayout_3, 0, 0, 1, 1)

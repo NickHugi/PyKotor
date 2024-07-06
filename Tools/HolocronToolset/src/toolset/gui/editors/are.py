@@ -57,8 +57,7 @@ class AREEditor(Editor):
         """
         supported: list[ResourceType] = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
-        self.resize(400, 600)
-        self.setFixedSize(400, 600)  # Lock the window size
+        self.setMinimumSize(400, 600)  # Lock the window size
 
         self._are: ARE = ARE()
         self._minimap = None
@@ -110,6 +109,22 @@ class AREEditor(Editor):
         self.ui.mapImageY1Spin.valueChanged.connect(self.redoMinimap)
         self.ui.mapImageY2Spin.valueChanged.connect(self.redoMinimap)
 
+        self.relevant_script_resnames = sorted(
+            iter(
+                {
+                    res.resname().lower()
+                    for res in self._installation.getRelevantResources(
+                        ResourceType.NCS, self._filepath
+                    )
+                }
+            )
+        )
+
+        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+
     def _setupInstallation(self, installation: HTInstallation):
         """Set up installation details.
 
@@ -142,11 +157,17 @@ class AREEditor(Editor):
         self.ui.rainCheck.setVisible(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
 
+        installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
+
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         super().load(filepath, resref, restype, data)
 
         are: ARE = read_are(data)
         self._loadARE(are)
+        self.adjustSize()
 
     def _loadARE(self, are: ARE):
         """Loads area data into UI widgets.
@@ -252,10 +273,10 @@ class AREEditor(Editor):
         self.ui.dirtSize3Spin.setValue(are.dirty_size_3)
 
         # Scripts
-        self.ui.onEnterEdit.setText(str(are.on_enter))
-        self.ui.onExitEdit.setText(str(are.on_exit))
-        self.ui.onHeartbeatEdit.setText(str(are.on_heartbeat))
-        self.ui.onUserDefinedEdit.setText(str(are.on_user_defined))
+        self.ui.onEnterSelect.setComboBoxText(str(are.on_enter))
+        self.ui.onExitSelect.setComboBoxText(str(are.on_exit))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(are.on_heartbeat))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(are.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)
@@ -344,10 +365,10 @@ class AREEditor(Editor):
         are.dirty_size_3 = self.ui.dirtSize3Spin.value()
 
         # Scripts
-        are.on_enter = ResRef(self.ui.onEnterEdit.text())
-        are.on_exit = ResRef(self.ui.onExitEdit.text())
-        are.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.text())
-        are.on_user_defined = ResRef(self.ui.onUserDefinedEdit.text())
+        are.on_enter = ResRef(self.ui.onEnterSelect.text())
+        are.on_exit = ResRef(self.ui.onExitSelect.text())
+        are.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.text())
+        are.on_user_defined = ResRef(self.ui.onUserDefinedSelect.text())
 
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()

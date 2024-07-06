@@ -1322,12 +1322,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_39 = QHBoxLayout()
         self.horizontalLayout_39.setObjectName(u"horizontalLayout_39")
-        self.onHeartbeatEdit = FilterComboBox(self.Scripts)
-        self.onHeartbeatEdit.setObjectName(u"onHeartbeatEdit")
-        sizePolicy7.setHeightForWidth(self.onHeartbeatEdit.sizePolicy().hasHeightForWidth())
-        self.onHeartbeatEdit.setSizePolicy(sizePolicy7)
+        self.onHeartbeatSelect = FilterComboBox(self.Scripts)
+        self.onHeartbeatSelect.setObjectName(u"onHeartbeatSelect")
+        sizePolicy7.setHeightForWidth(self.onHeartbeatSelect.sizePolicy().hasHeightForWidth())
+        self.onHeartbeatSelect.setSizePolicy(sizePolicy7)
 
-        self.horizontalLayout_39.addWidget(self.onHeartbeatEdit)
+        self.horizontalLayout_39.addWidget(self.onHeartbeatSelect)
 
 
         self.formLayout_22.setLayout(9, QFormLayout.FieldRole, self.horizontalLayout_39)
@@ -1379,12 +1379,12 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_43 = QHBoxLayout()
         self.horizontalLayout_43.setObjectName(u"horizontalLayout_43")
-        self.onUserDefinedEdit = FilterComboBox(self.Scripts)
-        self.onUserDefinedEdit.setObjectName(u"onUserDefinedEdit")
-        sizePolicy7.setHeightForWidth(self.onUserDefinedEdit.sizePolicy().hasHeightForWidth())
-        self.onUserDefinedEdit.setSizePolicy(sizePolicy7)
+        self.onUserDefinedSelect = FilterComboBox(self.Scripts)
+        self.onUserDefinedSelect.setObjectName(u"onUserDefinedSelect")
+        sizePolicy7.setHeightForWidth(self.onUserDefinedSelect.sizePolicy().hasHeightForWidth())
+        self.onUserDefinedSelect.setSizePolicy(sizePolicy7)
 
-        self.horizontalLayout_43.addWidget(self.onUserDefinedEdit)
+        self.horizontalLayout_43.addWidget(self.onUserDefinedSelect)
 
 
         self.formLayout_22.setLayout(12, QFormLayout.FieldRole, self.horizontalLayout_43)

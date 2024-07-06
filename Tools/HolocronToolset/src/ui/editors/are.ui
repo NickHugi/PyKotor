@@ -1181,11 +1181,7 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="onEnterEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onEnterSelect"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_37">
@@ -1209,25 +1205,13 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="onExitEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onExitSelect"/>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="onHeartbeatEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onHeartbeatSelect"/>
           </item>
           <item row="3" column="1">
-           <widget class="QLineEdit" name="onUserDefinedEdit">
-            <property name="maxLength">
-             <number>16</number>
-            </property>
-           </widget>
+           <widget class="FilterComboBox" name="onUserDefinedSelect"/>
           </item>
          </layout>
         </item>
@@ -1337,6 +1321,11 @@
    <extends>QWidget</extends>
    <header location="global">toolset.gui.widgets.edit.color</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FilterComboBox</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.gui.common.widgets.combobox</header>
   </customwidget>
  </customwidgets>
  <resources/>

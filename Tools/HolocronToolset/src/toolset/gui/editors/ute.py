@@ -120,11 +120,11 @@ class UTEEditor(Editor):
         self.ui.factionSelect.setItems(factions.get_column("label"))
         self.ui.factionSelect.setContext(factions, installation, HTInstallation.TwoDA_FACTIONS)
 
-        self._installation.setupFileContextMenu(self.ui.onEnterEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onExitEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onExhaustedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
         self.relevant_creature_resnames = sorted(
             iter(
                 {
@@ -196,11 +196,11 @@ class UTEEditor(Editor):
             )
 
         # Scripts
-        self.ui.onEnterEdit.setComboBoxText(str(ute.on_entered))
-        self.ui.onExitEdit.setComboBoxText(str(ute.on_exit))
+        self.ui.onEnterSelect.setComboBoxText(str(ute.on_entered))
+        self.ui.onExitSelect.setComboBoxText(str(ute.on_exit))
         self.ui.onExhaustedEdit.setComboBoxText(str(ute.on_exhausted))
-        self.ui.onHeartbeatEdit.setComboBoxText(str(ute.on_heartbeat))
-        self.ui.onUserDefinedEdit.setComboBoxText(str(ute.on_user_defined))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(ute.on_heartbeat))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(ute.on_user_defined))
 
         self.relevant_script_resnames = sorted(
             iter(
@@ -213,11 +213,11 @@ class UTEEditor(Editor):
             )
         )
 
-        self.ui.onEnterEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onExitEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
         self.ui.onExhaustedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
 
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
@@ -271,11 +271,11 @@ class UTEEditor(Editor):
             ute.creatures.append(creature)
 
         # Scripts
-        ute.on_entered = ResRef(self.ui.onEnterEdit.currentText())
-        ute.on_exit = ResRef(self.ui.onExitEdit.currentText())
+        ute.on_entered = ResRef(self.ui.onEnterSelect.currentText())
+        ute.on_exit = ResRef(self.ui.onExitSelect.currentText())
         ute.on_exhausted = ResRef(self.ui.onExhaustedEdit.currentText())
-        ute.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
-        ute.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
+        ute.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
+        ute.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         ute.comment = self.ui.commentsEdit.toPlainText()

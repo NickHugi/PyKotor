@@ -706,7 +706,7 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="FilterComboBox" name="onHeartbeatEdit"/>
+         <widget class="FilterComboBox" name="onHeartbeatSelect"/>
         </item>
         <item row="6" column="0">
          <widget class="QLabel" name="label_13">
@@ -756,7 +756,7 @@
          </widget>
         </item>
         <item row="10" column="1">
-         <widget class="FilterComboBox" name="onUserDefinedEdit"/>
+         <widget class="FilterComboBox" name="onUserDefinedSelect"/>
         </item>
        </layout>
       </widget>

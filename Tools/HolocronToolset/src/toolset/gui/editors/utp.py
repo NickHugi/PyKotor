@@ -149,7 +149,7 @@ class UTPEditor(Editor):
         installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onInventoryEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
@@ -157,7 +157,7 @@ class UTPEditor(Editor):
         installation.setupFileContextMenu(self.ui.onLockEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onUsedEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
 
     def load(
@@ -239,7 +239,7 @@ class UTPEditor(Editor):
         self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
         self.ui.onInventoryEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
@@ -247,7 +247,7 @@ class UTPEditor(Editor):
         self.ui.onLockEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUsedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
         self.ui.conversationEdit.populateComboBox(sorted(res.resname() for res in self._installation.getRelevantResources(ResourceType.DLG)))
 
         # Scripts
@@ -256,7 +256,7 @@ class UTPEditor(Editor):
         self.ui.onDeathEdit.setComboBoxText(str(utp.on_death))
         self.ui.onEndConversationEdit.setComboBoxText(str(utp.on_end_dialog))
         self.ui.onOpenFailedEdit.setComboBoxText(str(utp.on_open_failed))
-        self.ui.onHeartbeatEdit.setComboBoxText(str(utp.on_heartbeat))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(utp.on_heartbeat))
         self.ui.onInventoryEdit.setComboBoxText(str(utp.on_inventory))
         self.ui.onMeleeAttackEdit.setComboBoxText(str(utp.on_melee_attack))
         self.ui.onSpellEdit.setComboBoxText(str(utp.on_force_power))
@@ -264,7 +264,7 @@ class UTPEditor(Editor):
         self.ui.onLockEdit.setComboBoxText(str(utp.on_lock))
         self.ui.onUnlockEdit.setComboBoxText(str(utp.on_unlock))
         self.ui.onUsedEdit.setComboBoxText(str(utp.on_used))
-        self.ui.onUserDefinedEdit.setComboBoxText(str(utp.on_user_defined))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(utp.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utp.comment)
@@ -330,7 +330,7 @@ class UTPEditor(Editor):
         utp.on_death = ResRef(self.ui.onDeathEdit.currentText())
         utp.on_end_dialog = ResRef(self.ui.onEndConversationEdit.currentText())
         utp.on_open_failed = ResRef(self.ui.onOpenFailedEdit.currentText())
-        utp.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utp.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
         utp.on_inventory = ResRef(self.ui.onInventoryEdit.currentText())
         utp.on_melee_attack = ResRef(self.ui.onMeleeAttackEdit.currentText())
         utp.on_force_power = ResRef(self.ui.onSpellEdit.currentText())
@@ -338,7 +338,7 @@ class UTPEditor(Editor):
         utp.on_lock = ResRef(self.ui.onLockEdit.currentText())
         utp.on_unlock = ResRef(self.ui.onUnlockEdit.currentText())
         utp.on_used = ResRef(self.ui.onUsedEdit.currentText())
-        utp.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
+        utp.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         utp.comment = self.ui.commentsEdit.toPlainText()

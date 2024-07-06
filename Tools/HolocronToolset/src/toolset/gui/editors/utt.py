@@ -109,16 +109,16 @@ class UTTEditor(Editor):
         installation.setupFileContextMenu(self.ui.onClickEdit, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onDisarmEdit.populateComboBox(self.relevant_script_resnames)
         installation.setupFileContextMenu(self.ui.onDisarmEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onEnterEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onEnterEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onExitEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onExitEdit, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onEnterSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onEnterSelect, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onExitSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onExitSelect, [ResourceType.NCS, ResourceType.NSS])
         self.ui.onTrapTriggeredEdit.populateComboBox(self.relevant_script_resnames)
         installation.setupFileContextMenu(self.ui.onTrapTriggeredEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NCS, ResourceType.NSS])
-        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
-        installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NCS, ResourceType.NSS])
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NCS, ResourceType.NSS])
 
     def load(
         self,
@@ -177,11 +177,11 @@ class UTTEditor(Editor):
         # Scripts
         self.ui.onClickEdit.setComboBoxText(str(utt.on_click))
         self.ui.onDisarmEdit.setComboBoxText(str(utt.on_disarm))
-        self.ui.onEnterEdit.setComboBoxText(str(utt.on_enter))
-        self.ui.onExitEdit.setComboBoxText(str(utt.on_exit))
-        self.ui.onHeartbeatEdit.setComboBoxText(str(utt.on_heartbeat))
+        self.ui.onEnterSelect.setComboBoxText(str(utt.on_enter))
+        self.ui.onExitSelect.setComboBoxText(str(utt.on_exit))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(utt.on_heartbeat))
         self.ui.onTrapTriggeredEdit.setComboBoxText(str(utt.on_trap_triggered))
-        self.ui.onUserDefinedEdit.setComboBoxText(str(utt.on_user_defined))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(utt.on_user_defined))
 
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
@@ -226,11 +226,11 @@ class UTTEditor(Editor):
         # Scripts
         utt.on_click = ResRef(self.ui.onClickEdit.currentText())
         utt.on_disarm = ResRef(self.ui.onDisarmEdit.currentText())
-        utt.on_enter = ResRef(self.ui.onEnterEdit.currentText())
-        utt.on_exit = ResRef(self.ui.onExitEdit.currentText())
-        utt.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utt.on_enter = ResRef(self.ui.onEnterSelect.currentText())
+        utt.on_exit = ResRef(self.ui.onExitSelect.currentText())
+        utt.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
         utt.on_trap_triggered = ResRef(self.ui.onTrapTriggeredEdit.currentText())
-        utt.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
+        utt.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         utt.comment = self.ui.commentsEdit.toPlainText()

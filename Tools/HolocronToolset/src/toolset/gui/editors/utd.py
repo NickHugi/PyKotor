@@ -148,13 +148,13 @@ class UTDEditor(Editor):
         installation.setupFileContextMenu(self.ui.onClosedEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onDamagedEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onDeathEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onMeleeAttackEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onOpenEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onOpenFailedEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onSpellEdit, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.onUnlockEdit, [ResourceType.NSS, ResourceType.NCS])
-        installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
         installation.setupFileContextMenu(self.ui.conversationEdit, [ResourceType.DLG])
 
     def handleWidgetWithTSL(self, widget: QWidget, installation: HTInstallation):
@@ -225,12 +225,12 @@ class UTDEditor(Editor):
         self.ui.onDamagedEdit.setComboBoxText(str(utd.on_damaged))
         self.ui.onDeathEdit.setComboBoxText(str(utd.on_death))
         self.ui.onOpenFailedEdit.setComboBoxText(str(utd.on_open_failed))
-        self.ui.onHeartbeatEdit.setComboBoxText(str(utd.on_heartbeat))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(utd.on_heartbeat))
         self.ui.onMeleeAttackEdit.setComboBoxText(str(utd.on_melee))
         self.ui.onSpellEdit.setComboBoxText(str(utd.on_power))
         self.ui.onOpenEdit.setComboBoxText(str(utd.on_open))
         self.ui.onUnlockEdit.setComboBoxText(str(utd.on_unlock))
-        self.ui.onUserDefinedEdit.setComboBoxText(str(utd.on_user_defined))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(utd.on_user_defined))
 
         self.relevant_script_resnames = sorted(
             iter(
@@ -246,13 +246,13 @@ class UTDEditor(Editor):
         self.ui.onClosedEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onDamagedEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onDeathEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
         self.ui.onMeleeAttackEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onOpenEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onOpenFailedEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onSpellEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onUnlockEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
         self.ui.conversationEdit.populateComboBox(
             sorted(
                 iter(
@@ -320,12 +320,12 @@ class UTDEditor(Editor):
         utd.on_damaged = ResRef(self.ui.onDamagedEdit.currentText())
         utd.on_death = ResRef(self.ui.onDeathEdit.currentText())
         utd.on_open_failed = ResRef(self.ui.onOpenFailedEdit.currentText())
-        utd.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utd.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
         utd.on_melee = ResRef(self.ui.onMeleeAttackEdit.currentText())
         utd.on_power = ResRef(self.ui.onSpellEdit.currentText())
         utd.on_open = ResRef(self.ui.onOpenEdit.currentText())
         utd.on_unlock = ResRef(self.ui.onUnlockEdit.currentText())
-        utd.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
+        utd.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         utd.comment = self.ui.commentsEdit.toPlainText()

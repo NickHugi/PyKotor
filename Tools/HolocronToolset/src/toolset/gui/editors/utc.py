@@ -333,10 +333,10 @@ class UTCEditor(Editor):
         self._installation.setupFileContextMenu(self.ui.onEndRoundEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onEndConversationEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onDisturbedEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onHeartbeatEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onHeartbeatSelect, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onSpawnEdit, [ResourceType.NSS, ResourceType.NCS])
         self._installation.setupFileContextMenu(self.ui.onSpellCastEdit, [ResourceType.NSS, ResourceType.NCS])
-        self._installation.setupFileContextMenu(self.ui.onUserDefinedEdit, [ResourceType.NSS, ResourceType.NCS])
+        self._installation.setupFileContextMenu(self.ui.onUserDefinedSelect, [ResourceType.NSS, ResourceType.NCS])
 
     def load(
         self,
@@ -503,10 +503,10 @@ class UTCEditor(Editor):
         self.ui.onEndRoundEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onEndConversationEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onDisturbedEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onHeartbeatEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onHeartbeatSelect.populateComboBox(self.relevant_script_resnames)
         self.ui.onSpawnEdit.populateComboBox(self.relevant_script_resnames)
         self.ui.onSpellCastEdit.populateComboBox(self.relevant_script_resnames)
-        self.ui.onUserDefinedEdit.populateComboBox(self.relevant_script_resnames)
+        self.ui.onUserDefinedSelect.populateComboBox(self.relevant_script_resnames)
 
         # Scripts
         self.ui.onBlockedEdit.setComboBoxText(str(utc.on_blocked))
@@ -518,10 +518,10 @@ class UTCEditor(Editor):
         self.ui.onEndRoundEdit.setComboBoxText(str(utc.on_end_round))
         self.ui.onEndConversationEdit.setComboBoxText(str(utc.on_end_dialog))
         self.ui.onDisturbedEdit.setComboBoxText(str(utc.on_disturbed))
-        self.ui.onHeartbeatEdit.setComboBoxText(str(utc.on_heartbeat))
+        self.ui.onHeartbeatSelect.setComboBoxText(str(utc.on_heartbeat))
         self.ui.onSpawnEdit.setComboBoxText(str(utc.on_spawn))
         self.ui.onSpellCastEdit.setComboBoxText(str(utc.on_spell))
-        self.ui.onUserDefinedEdit.setComboBoxText(str(utc.on_user_defined))
+        self.ui.onUserDefinedSelect.setComboBoxText(str(utc.on_user_defined))
 
         # Comments
         self.ui.comments.setPlainText(utc.comment)
@@ -607,10 +607,10 @@ class UTCEditor(Editor):
         utc.on_death = ResRef(self.ui.onDeathEdit.currentText())
         utc.on_end_round = ResRef(self.ui.onEndRoundEdit.currentText())
         utc.on_end_dialog = ResRef(self.ui.onEndConversationEdit.currentText())
-        utc.on_heartbeat = ResRef(self.ui.onHeartbeatEdit.currentText())
+        utc.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
         utc.on_spawn = ResRef(self.ui.onSpawnEdit.currentText())
         utc.on_spell = ResRef(self.ui.onSpellCastEdit.currentText())
-        utc.on_user_defined = ResRef(self.ui.onUserDefinedEdit.currentText())
+        utc.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
         utc.comment = self.ui.comments.toPlainText()
 
         utc.classes = []

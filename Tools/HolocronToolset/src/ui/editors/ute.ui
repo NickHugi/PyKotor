@@ -372,7 +372,7 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="FilterComboBox" name="onEnterEdit"/>
+           <widget class="FilterComboBox" name="onEnterSelect"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_5">
@@ -403,16 +403,16 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="FilterComboBox" name="onExitEdit"/>
+           <widget class="FilterComboBox" name="onExitSelect"/>
           </item>
           <item row="2" column="1">
            <widget class="FilterComboBox" name="onExhaustedEdit"/>
           </item>
           <item row="3" column="1">
-           <widget class="FilterComboBox" name="onHeartbeatEdit"/>
+           <widget class="FilterComboBox" name="onHeartbeatSelect"/>
           </item>
           <item row="4" column="1">
-           <widget class="FilterComboBox" name="onUserDefinedEdit"/>
+           <widget class="FilterComboBox" name="onUserDefinedSelect"/>
           </item>
          </layout>
         </item>
