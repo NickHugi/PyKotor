@@ -322,7 +322,7 @@ class UTEEditor(Editor):
         self.ui.respawnCountSpin.setValue(val)
         self.ui.respawnCountSpin.setEnabled(enabled)
 
-    def setContinuous(self):
+    def setContinuous(self, *args, **kwargs):
         isContinuous = self.ui.spawnSelect.currentIndex() == 1
         self.ui.respawnsCheckbox.setEnabled(isContinuous)
         self.ui.infiniteRespawnCheckbox.setEnabled(isContinuous)

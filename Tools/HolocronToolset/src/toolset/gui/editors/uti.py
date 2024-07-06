@@ -474,7 +474,7 @@ class UTIEditor(Editor):
         clipboard = QApplication.clipboard()
         clipboard.setText(text)
 
-    def onUpdateIcon(self):
+    def onUpdateIcon(self, *args, **kwargs):
         baseItem: int = self.ui.baseSelect.currentIndex()
         modelVariation: int = self.ui.modelVarSpin.value()
         textureVariation: int = self.ui.textureVarSpin.value()

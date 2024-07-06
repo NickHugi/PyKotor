@@ -290,7 +290,7 @@ class JRLEditor(Editor):
         self._model.appendRow(questItem)
         self._jrl.quests.append(newQuest)
 
-    def onValueUpdated(self):
+    def onValueUpdated(self, *args, **kwargs):
         """Updates the selected item in the journal tree when values change.
 
         This method should be connected to all the widgets that store data related quest or entry text (besides the
