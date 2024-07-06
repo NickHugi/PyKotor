@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any
+from typing import Any, Generator
 
 
 # BCP 47 language code
@@ -429,7 +429,7 @@ class LocalizedString:
         self.stringref: int = stringref
         self._substrings: dict[int, str] = {} if substrings is None else substrings
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[tuple[Language, Gender, str], Any, None]:
         """Iterates through the list of substrings. Yields a tuple containing (language, gender, text)."""
         for substring_id, text in self._substrings.items():
             language, gender = LocalizedString.substring_pair(substring_id)
@@ -514,7 +514,7 @@ class LocalizedString:
         return (language * 2) + gender
 
     @staticmethod
-    def substring_pair(substring_id: int) -> tuple[Language, Gender]:
+    def substring_pair(substring_id: int | str) -> tuple[Language, Gender]:
         """Returns a tuple containing the Language and Gender for a given substring ID.
 
         Args:
@@ -531,6 +531,8 @@ class LocalizedString:
             - Take the remainder of substring_id % 2 to get the Gender id
             - Return a tuple with the Language and Gender enum instances.
         """
+        if not isinstance(substring_id, int):
+            substring_id = int(substring_id)
         language = Language(substring_id // 2)
         gender = Gender(substring_id % 2)
         return language, gender
