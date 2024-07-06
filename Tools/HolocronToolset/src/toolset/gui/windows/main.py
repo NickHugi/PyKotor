@@ -363,7 +363,7 @@ class ToolWindow(QMainWindow):
         modulesResourceList.verticalLayout.removeItem(modulesResourceList.horizontalLayout_2)  # type: ignore[arg-type]
 
         # Set size policies
-        modulesSectionCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)  # type: ignore[arg-type]
+        modulesSectionCombo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
         refreshButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
         designerButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)  # type: ignore[arg-type]
         self.collectButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
