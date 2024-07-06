@@ -788,7 +788,10 @@ class UTCEditor(Editor):
         if self._filepath is None:
             ...
         elif is_sav_file(self._filepath):
-            capsulesToSearch = [res for res in Capsule(self._filepath) if isinstance(res, LazyCapsule)]
+            # search the capsules inside the .sav outer capsule.
+            # self._filepath represents the outer capsule
+            # res.filepath() is potentially a nested capsule.
+            capsulesToSearch = [Capsule(res.filepath()) for res in Capsule(self._filepath) if is_capsule_file(res.filename()) and res.inside_capsule]
         elif is_capsule_file(self._filepath):
             capsulesToSearch = Module.find_capsules(self._installation, self._filepath.name)
         inventoryEditor = InventoryEditor(

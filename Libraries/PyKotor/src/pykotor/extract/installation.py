@@ -442,7 +442,11 @@ class Installation:
         resname, restype = ResourceIdentifier.from_path(filepath).unpack()
         if restype.is_invalid:
             return None
-        resource = FileResource(resname, restype, filepath.stat().st_size, offset=0, filepath=filepath)
+        try:
+            resource = FileResource(resname, restype, filepath.stat().st_size, 0, filepath)
+        except Exception as e:
+            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
+            return None
         if self.progress_callback:
             self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
         return resource
@@ -457,7 +461,13 @@ class Installation:
             return filepath, None
         if self.progress_callback:
             self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
-        return filepath, list(Capsule(filepath))
+        try:
+            resource_list = list(Capsule(filepath))
+        except Exception as e:
+            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
+            return filepath, None
+        else:
+            return filepath, resource_list
 
     def load_resources_dict(
         self,
