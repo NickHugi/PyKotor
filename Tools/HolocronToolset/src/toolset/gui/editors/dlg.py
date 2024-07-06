@@ -4776,7 +4776,7 @@ Should return 1 or 0, representing a boolean.
             self.handleSoundChecked()
         self._node_loaded_into_ui = True
 
-    def onNodeUpdate(self):
+    def onNodeUpdate(self, *args, **kwargs):
         """Updates node properties based on UI selections."""
         if not self._node_loaded_into_ui:
             return
