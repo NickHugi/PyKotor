@@ -115,6 +115,7 @@ class JRLEditor(Editor):
         self.ui.categoryCommentEdit.keyReleased.connect(self.onValueUpdated)
         self.ui.entryIdSpin.editingFinished.connect(self.onValueUpdated)
         self.ui.entryXpSpin.editingFinished.connect(self.onValueUpdated)
+        self.ui.entryXpSpin.setToolTip("The game multiplies the value set here by 1000 to calculate actual XP to award.")
         self.ui.entryEndCheck.clicked.connect(self.onValueUpdated)
 
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
