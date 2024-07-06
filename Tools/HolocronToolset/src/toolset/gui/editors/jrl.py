@@ -228,7 +228,7 @@ class JRLEditor(Editor):
 
     def changeEntryText(self):
         """Opens a LocalizedStringDialog for editing the text of the selected entry."""
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)  # FIXME: locstring or locstring()?
+        dialog = LocalizedStringDialog(self, self._installation, self.ui.entryTextEdit.locstring)
         if dialog.exec_():
             self._loadLocstring(self.ui.entryTextEdit, dialog.locstring)
             self.onValueUpdated()
@@ -313,12 +313,13 @@ class JRLEditor(Editor):
         if isinstance(data, JRLQuest):  # sourcery skip: extract-method
             data.name = self.ui.categoryNameEdit.locstring()
             data.tag = self.ui.categoryTag.text()
-            data.plot_index = self.ui.categoryPlotSelect.value()
+            data.plot_index = self.ui.categoryPlotSelect.currentIndex()
             data.planet_id = self.ui.categoryPlanetSelect.currentIndex() - 1
             data.priority = JRLQuestPriority(self.ui.categoryPrioritySelect.currentIndex())
             data.comment = self.ui.categoryCommentEdit.toPlainText()
         elif isinstance(data, JRLEntry):
-            data.text = self.ui.entryTextEdit.locstring
+            if self.ui.entryTextEdit.locstring is not None:
+                data.text = self.ui.entryTextEdit.locstring
             data.end = self.ui.entryEndCheck.isChecked()
             data.xp_percentage = self.ui.entryXpSpin.value()
             data.entry_id = self.ui.entryIdSpin.value()
