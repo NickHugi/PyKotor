@@ -488,6 +488,7 @@ class Module:  # noqa: PLR0904
         link_resname = str(self.module_id())
         lyt_query = ResourceIdentifier(link_resname, ResourceType.LYT)
         git_query = ResourceIdentifier(link_resname, ResourceType.GIT)
+        vis_query = ResourceIdentifier(link_resname, ResourceType.VIS)
 
         # Start in our module resources.
         # Needs to happen first so we can determine what resources are part of our module.
@@ -505,7 +506,7 @@ class Module:  # noqa: PLR0904
         # Any resource linked in the GIT not present in the module files
         # First ensure we have a git.
         main_search_results: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
-            [lyt_query, git_query],
+            [lyt_query, git_query, vis_query],
             order,
             capsules=capsules_to_search
         )
@@ -515,10 +516,13 @@ class Module:  # noqa: PLR0904
         lyt_search = self._handle_git_lyt_reloads(main_search_results, lyt_query, LYT,
             "Lyt is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
         )
+        vis_search = self._handle_git_lyt_reloads(main_search_results, vis_query, VIS,
+            "Vis is somehow None even though we know the path there. Fix this later if the stars ever align here somehow.",
+        )
 
         # From GIT/LYT references, find them in the installation.
         search_results: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
-            {*git_search, *lyt_search},
+            list({*git_search, *lyt_search, *vis_search}),
             order,
             capsules=capsules_to_search
         )
@@ -611,7 +615,7 @@ class Module:  # noqa: PLR0904
         self,
         main_search_results: dict[ResourceIdentifier, list[LocationResult]],
         query: ResourceIdentifier,
-        useable_type: type[GIT | LYT],
+        useable_type: type[GIT | LYT | VIS],
         errmsg: str,
     ) -> set[ResourceIdentifier]:
         if not main_search_results.get(query):
@@ -745,7 +749,7 @@ class Module:  # noqa: PLR0904
                 for resource in self.resources.values()
                 if (resource.restype() is ResourceType.VIS and resource.resname() == self.module_id())
             ),
-            None,
+            None
         )
 
     def are(
