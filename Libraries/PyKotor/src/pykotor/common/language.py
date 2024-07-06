@@ -414,6 +414,17 @@ class Gender(IntEnum):
     FEMALE = 1
 
 
+class IntKeyDict(dict):
+    """This purely exists because something is setting the data with string key numbers incorrectly. This is a HACK:."""
+    def __setitem__(self, key, value):
+        if not isinstance(key, int):
+            try:
+                key = int(key)
+            except ValueError as e:
+                raise ValueError("Keys of the _substrings dictionary must be integers") from e
+        super().__setitem__(key, value)
+
+
 class LocalizedString:
     """Localized strings are a way of the game handling strings that need to be catered to a specific language or gender.
 
@@ -427,7 +438,23 @@ class LocalizedString:
 
     def __init__(self, stringref: int, substrings: dict[int, str] | None = None):
         self.stringref: int = stringref
-        self._substrings: dict[int, str] = {} if substrings is None else substrings
+        self._substrings_internal: IntKeyDict = IntKeyDict() if substrings is None else IntKeyDict(substrings)
+
+    @property
+    def _substrings(self) -> dict[int, str]:
+        """Property getter for the _substrings_internal dictionary."""
+        return self._substrings_internal
+
+    @_substrings.setter
+    def _substrings(self, value: dict[int, str]):
+        """Property setter for the _substrings_internal dictionary, ensuring keys are integers."""
+        if value is not None:
+            new_dict = IntKeyDict()
+            for key, val in value.items():
+                new_dict[key] = val
+            self._substrings_internal = new_dict
+        else:
+            self._substrings_internal = IntKeyDict()
 
     def __iter__(self) -> Generator[tuple[Language, Gender, str], Any, None]:
         """Iterates through the list of substrings. Yields a tuple containing (language, gender, text)."""
