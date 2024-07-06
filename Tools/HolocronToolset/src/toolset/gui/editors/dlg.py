@@ -1663,7 +1663,7 @@ class DLGStandardItemModel(QStandardItemModel):
             for copiedItem in items:
                 if copiedItem is item:
                     continue
-                self.updateItemDisplayText(item, updateCopies=False)
+                self.updateItemDisplayText(copiedItem, updateCopies=False)
 
     def isCopy(self, item: DLGStandardItem) -> bool:
         result = item.data(_COPY_ROLE)
