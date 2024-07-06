@@ -69,6 +69,7 @@ class JRLEditor(Editor):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.categoryCommentEdit.setVisible(False)  # FIXME:
         self._setupMenus()
         self._setupSignals()
         if installation is not None:  # will only be none in the unittests
@@ -316,7 +317,7 @@ class JRLEditor(Editor):
             data.plot_index = self.ui.categoryPlotSelect.currentIndex()
             data.planet_id = self.ui.categoryPlanetSelect.currentIndex() - 1
             data.priority = JRLQuestPriority(self.ui.categoryPrioritySelect.currentIndex())
-            data.comment = self.ui.categoryCommentEdit.toPlainText()
+            # data.comment = self.ui.categoryCommentEdit.toPlainText()
         elif isinstance(data, JRLEntry):
             if self.ui.entryTextEdit.locstring is not None:
                 data.text = self.ui.entryTextEdit.locstring
@@ -358,7 +359,7 @@ class JRLEditor(Editor):
                 self.ui.categoryPlotSelect.setCurrentIndex(data.plot_index)
                 self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
                 self.ui.categoryPrioritySelect.setCurrentIndex(data.priority.value)
-                self.ui.categoryCommentEdit.setPlainText(data.comment)
+                #self.ui.categoryCommentEdit.setPlainText(data.comment)
             elif isinstance(data, JRLEntry):
                 self.ui.questPages.setCurrentIndex(1)
                 self._loadLocstring(self.ui.entryTextEdit, data.text)
@@ -400,6 +401,9 @@ class JRLEditor(Editor):
             if isinstance(data, JRLQuest):
                 menu.addAction("Add Entry").triggered.connect(lambda: self.addEntry(item, JRLEntry()))
                 menu.addAction("Remove Quest").triggered.connect(lambda: self.removeQuest(item))
+                # it's not easy to right click without selecting an item - add the 'addQuest' action here as well.
+                menu.addSeparator()
+                menu.addAction("Add Quest").triggered.connect(lambda: self.addQuest(item, JRLQuest()))
             elif isinstance(data, JRLEntry):
                 menu.addAction("Remove Entry").triggered.connect(lambda: self.removeEntry(item))
         else:

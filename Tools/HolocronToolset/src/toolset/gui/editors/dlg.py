@@ -1661,7 +1661,7 @@ class DLGStandardItemModel(QStandardItemModel):
         if updateCopies:
             items = self.nodeToItems[item.link.node]
             for copiedItem in items:
-                if copiedItem is item:
+                if copiedItem is item or not isinstance(copiedItem, DLGStandardItem):
                     continue
                 self.updateItemDisplayText(copiedItem, updateCopies=False)
 
