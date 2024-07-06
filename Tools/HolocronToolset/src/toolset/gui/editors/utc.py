@@ -670,7 +670,7 @@ class UTCEditor(Editor):
     def generateTag(self):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
-    def portraitChanged(self, index: int):
+    def portraitChanged(self, _actual_combo_index: int):
         """Updates the portrait picture based on the selected index.
 
         Args:
@@ -682,6 +682,7 @@ class UTCEditor(Editor):
             - Else builds pixmap from index
             - Sets pixmap to portrait picture widget.
         """
+        index = self.ui.portraitSelect.currentIndex()
         if index == 0:
             image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
             pixmap = QPixmap.fromImage(image)
