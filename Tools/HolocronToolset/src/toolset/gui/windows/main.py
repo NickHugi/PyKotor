@@ -4,12 +4,13 @@ import cProfile
 import errno
 import os
 import platform
+import shutil
 import struct
 import sys
 
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import qtpy
 
@@ -53,7 +54,7 @@ from qtpy.QtWidgets import (
 from watchdog.events import FileSystemEventHandler
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
+from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf.erf_auto import read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
@@ -70,7 +71,7 @@ from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVe
 from toolset.data.installation import HTInstallation
 from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.dialogs.about import About
-from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader, ProgressDialog
+from toolset.gui.dialogs.asyncloader import AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow
 from toolset.gui.dialogs.save.generic_file_saver import FileSaveHandler
@@ -137,7 +138,6 @@ if TYPE_CHECKING:
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
-    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.type import SOURCE_TYPES
@@ -2170,7 +2170,7 @@ class ToolWindow(QMainWindow):
     def extractModuleRoomTextures(self):
         assert self.active is not None
         from pykotor.common.module import Module
-        from pykotor.tools.model import list_lightmaps, list_textures
+        from pykotor.tools.model import iterate_lightmaps, iterate_textures
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         print("<SDM> [extractModuleRoomTextures scope] str: ", str)
 
@@ -2212,12 +2212,12 @@ class ToolWindow(QMainWindow):
         for res in modelLocations.values():
             texNames = []
             try:
-                texNames.extend(iter(list_textures(res.data())))
+                texNames.extend(iter(iterate_textures(res.data())))
             except Exception:
                 RobustRootLogger.exception(f"Failed to extract textures names from {res.identifier()}")
             lmNames = []
             try:
-                lmNames.extend(iter(list_lightmaps(res.data())))
+                lmNames.extend(iter(iterate_lightmaps(res.data())))
             except Exception:
                 RobustRootLogger.exception(f"Failed to extract lightmap names from {res.identifier()}")
             texlmNames.extend(texNames)
@@ -2329,7 +2329,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractModuleEverything scope] curModuleName: ", curModuleName)
 
         if curModuleName not in self.active._modules:
-            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            RobustRootLogger.warning(f"'{curModuleName}' is not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractModuleEverything scope] thisModule: ", thisModule)
@@ -2346,6 +2346,44 @@ class ToolWindow(QMainWindow):
                 continue
             allModuleResources.append(ResourceResult(ident.resname, ident.restype, locations[0], data))
         FileSaveHandler(allModuleResources, self).save_files()
+
+    def build_extract_save_paths(self, resources: list[FileResource]) -> tuple[Path, dict[FileResource, Path]] | tuple[None, None]:
+        # TODO(th3w1zard1): currently doesn't handle same filenames existing for extra extracts e.g. tpcTxiCheckbox.isChecked() or mdlTexturesCheckbox.isChecked()
+        paths_to_write: dict[FileResource, Path] = {}
+
+        folderpath_str: str = QFileDialog.getExistingDirectory(self, "Extract to folder")
+        print("<SDM> [build_extract_save_paths scope] folderpath_str: ", folderpath_str)
+
+        if not folderpath_str or not folderpath_str.strip():
+            RobustRootLogger.debug("User cancelled folderpath extraction.")
+            return None, None
+
+        folder_path = Path(folderpath_str)
+        print("<SDM> [build_extract_save_paths scope] folder_path: ", folder_path)
+
+        for resource in resources:
+            identifier = resource.identifier()
+            print("<SDM> [build_extract_save_paths scope] identifier: ", identifier)
+
+            save_path = folder_path / str(identifier)
+            print("<SDM> [build_extract_save_paths scope] save_path: ", save_path)
+
+
+            # Determine the final save path based on UI checks
+            if resource.restype() is ResourceType.TPC and self.ui.tpcDecompileCheckbox.isChecked():
+                save_path = save_path.with_suffix(".tga")
+                print("<SDM> [build_extract_save_paths scope] save_path: ", save_path)
+
+            elif resource.restype() is ResourceType.MDL and self.ui.mdlDecompileCheckbox.isChecked():
+                save_path = save_path.with_suffix(".mdl.ascii")
+                print("<SDM> [build_extract_save_paths scope] save_path: ", save_path)
+
+
+            paths_to_write[resource] = save_path
+            print("<SDM> [build_extract_save_paths scope] paths_to_write[resource]: ", paths_to_write[resource])
+
+
+        return folder_path, paths_to_write
 
     def onExtractResources(
         self,
@@ -2377,83 +2415,68 @@ class ToolWindow(QMainWindow):
             if not resource_save_paths:
                 RobustRootLogger.debug("No resources returned from FileSaveHandler.determine_save_paths")
                 return
-            loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
-            print("<SDM> [onExtractResources scope] loader: ", loader)
+            loader = AsyncLoader.__new__(AsyncLoader)
+            seen_resources = {}
+            tasks = [
+                lambda res=resource, fp=save_path: self._extractResource(res, fp, loader, seen_resources)
+                for resource, save_path in resource_save_paths.items()
+            ]
+            loader.__init__(
+                self,
+                "Extracting Resources",
+                tasks,
+                "Failed to Extract Resources",
+            )
+            if is_debug_mode():
+                print("<SDM> [onExtractResources scope] loader: ", loader)
 
-            loader.errors.extend(failed_savepath_handlers.values())
+                loader.errors.extend(failed_savepath_handlers.values())
 
-            for resource, save_path in resource_save_paths.items():
-                loader.addTask(lambda res=resource, fp=save_path: self._extractResource(res, fp, loader))
+                loader.exec_()
+            else:
+                for resource, save_path in resource_save_paths.items():
+                    self._extractResource(resource, save_path, loader, seen_resources)
 
-            loader.exec_()
             qInstance = QApplication.instance()
             print("<SDM> [onExtractResources scope] qInstance: ", qInstance)
 
             if qInstance is None:
                 return
             if QThread.currentThread() == qInstance.thread():
-                msgBox = QMessageBox(
-                    QMessageBox.Icon.Information,
-                    "Extraction successful.",
-                    f"Successfully saved {len(paths_to_write)} files to {folder_path}",
-                    flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint
-                )
-                print("<SDM> [onExtractResources scope] msgBox: ", msgBox)
+                if loader.errors:
+                    msgBox = QMessageBox(
+                        QMessageBox.Icon.Information,
+                        "Failed to extract some items.",
+                        f"Failed to save {len(loader.errors)} files!",
+                        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint
+                    )
 
-                msgBox.setDetailedText("\n".join(str(p) for p in resource_save_paths.values()))
-                msgBox.exec_()
+                    msgBox.setDetailedText("\n".join(f"{e.__class__.__name__}: {e}" for e in loader.errors))
+                    msgBox.exec_()
+                else:
+                    msgBox = QMessageBox(
+                        QMessageBox.Icon.Information,
+                        "Extraction successful.",
+                        f"Successfully saved {len(paths_to_write)} files to {folder_path}",
+                        flags=Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint | Qt.WindowStaysOnTopHint
+                    )
+
+                    msgBox.setDetailedText("\n".join(str(p) for p in resource_save_paths.values()))
+                    msgBox.exec_()
         elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.currentSection()):
             module_name = resourceWidget.currentSection()
             print("<SDM> [onExtractResources scope] module_name: ", module_name)
 
             self._saveCapsuleFromToolUI(module_name)
 
-    def build_extract_save_paths(self, resources: list[FileResource]) -> tuple[Path, dict[FileResource, Path]] | tuple[None, None]:
-        # TODO(th3w1zard1): currently doesn't handle tpcTxiCheckbox.isChecked() or mdlTexturesCheckbox.isChecked()
-        paths_to_write: dict[FileResource, Path] = {}
-
-        folderpath_str: str = QFileDialog.getExistingDirectory(self, "Extract to folder")
-        print("<SDM> [build_extract_save_paths scope] str: ", str)
-
-        if not folderpath_str or not folderpath_str.strip():
-            RobustRootLogger.debug("User cancelled folderpath extraction.")
-            return None, None
-
-        folder_path = Path(folderpath_str)
-        print("<SDM> [build_extract_save_paths scope] folder_path: ", folder_path)
-
-        for resource in resources:
-            identifier = resource.identifier()
-            print("<SDM> [build_extract_save_paths scope] identifier: ", identifier)
-
-            save_path = folder_path / str(identifier)
-            print("<SDM> [build_extract_save_paths scope] save_path: ", save_path)
-
-
-            # Determine the final save path based on UI checks
-            if resource.restype() is ResourceType.TPC and self.ui.tpcDecompileCheckbox.isChecked():
-                save_path = save_path.with_suffix(".tga")
-                print("<SDM> [build_extract_save_paths scope] save_path: ", save_path)
-
-            elif resource.restype() is ResourceType.MDL and self.ui.mdlDecompileCheckbox.isChecked():
-                save_path = save_path.with_suffix(".ascii.mdl")
-                print("<SDM> [build_extract_save_paths scope] save_path: ", save_path)
-
-
-            paths_to_write[resource] = save_path
-            print("<SDM> [build_extract_save_paths scope] paths_to_write[resource]: ", paths_to_write[resource])
-
-
-        return folder_path, paths_to_write
-
-    def _extractResource(self, resource: FileResource, save_path: Path, loader: AsyncBatchLoader):
+    def _extractResource(self, resource: FileResource, save_path: Path, loader: AsyncLoader, seen_resources: dict[LocationResult, Path]):
         """Extracts a resource file from a FileResource object.
 
         Args:
         ----
             resource (FileResource): The FileResource object
             filepath (os.PathLike | str): Path to save the extracted file
-            loader (AsyncBatchLoader): Loader for async operations
+            loader (AsyncLoader): Loader for async operations
 
         Processing Logic:
         ----------------
@@ -2462,8 +2485,9 @@ class ToolWindow(QMainWindow):
             - Extracts textures from MDL files
             - Writes extracted data to the file path
         """
+        loader._worker.progress.emit(f"Processing resource: {resource.identifier()}", "update_maintask_text")
         r_folderpath: Path = save_path.parent
-        print("<SDM> [_extractResource scope] Path: ", r_folderpath)
+        print("<SDM> [_extractResource scope] parent savepath: ", r_folderpath)
 
 
         data: bytes = resource.data()
@@ -2476,30 +2500,40 @@ class ToolWindow(QMainWindow):
         if resource.restype() is ResourceType.TPC:
             tpc: TPC = read_tpc(data, txi_source=save_path)
 
-            if self.ui.tpcTxiCheckbox.isChecked():
-                RobustRootLogger.info(f"Extracting TXI from {resource.identifier()} because of settings.")
-                self._extractTxi(tpc, save_path.with_suffix(".txi"))
+            try:
+                if self.ui.tpcTxiCheckbox.isChecked():
+                    RobustRootLogger.info(f"Extracting TXI from '{resource.identifier()}' because of settings.")
+                    self._extractTxi(tpc, save_path.with_suffix(".txi"))
+            except Exception as e:
+                loader.errors.append(e)
 
-            if self.ui.tpcDecompileCheckbox.isChecked():
-                RobustRootLogger.info(f"Converting '{resource.identifier()}' to TGA because of settings.")
-                data = self._decompileTpc(tpc)
+            try:
+                if self.ui.tpcDecompileCheckbox.isChecked():
+                    RobustRootLogger.info(f"Converting '{resource.identifier()}' to TGA because of settings.")
+                    data = self._decompileTpc(tpc)
+                    #save_path = save_path.with_suffix(".tga")  # already handled
+            except Exception as e:
+                loader.errors.append(e)
 
         if resource.restype() is ResourceType.MDL:
             if self.ui.mdlTexturesCheckbox.isChecked():
                 RobustRootLogger.info(f"Extracting MDL Textures because of settings: {resource.identifier()}")
-                self._extractMdlTextures(resource, r_folderpath, loader, data)
+                self._extractMdlTextures(resource, r_folderpath, loader, data, seen_resources)
 
             if self.ui.mdlDecompileCheckbox.isChecked():
-                RobustRootLogger.info(f"Converting {resource.identifier()} to ASCII MDL because of settings")
+                RobustRootLogger.info(f"Converting '{resource.identifier()}' to ASCII MDL because of settings")
                 data = self._decompileMdl(resource, data)
+                #save_path = save_path.with_suffix(".mdl.ascii")  # already handled
 
         with save_path.open("wb") as file:
             RobustRootLogger.info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
             file.write(data)
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
+        if not tpc.txi or not tpc.txi.strip():
+            return
         with filepath.open("wb") as file:
-            file.write(tpc.txi.encode("ascii"))
+            file.write(tpc.txi.encode("ascii", errors="ignore"))
 
     def _decompileTpc(self, tpc: TPC) -> bytearray:
         data = bytearray()
@@ -2508,33 +2542,101 @@ class ToolWindow(QMainWindow):
 
     def _decompileMdl(self, resource: FileResource, data: SOURCE_TYPES) -> bytearray:
         assert self.active is not None
-        reslookup: ResourceResult | None = self.active.resource(resource.resname(), ResourceType.MDX)
-        if reslookup is None:
+        mdx_resource_lookup: ResourceResult | None = self.active.resource(resource.resname(), ResourceType.MDX)
+        if mdx_resource_lookup is None:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), repr(resource))
-        mdxData: bytes = reslookup.data
+        mdxData: bytes = mdx_resource_lookup.data
         mdl: MDL | None = read_mdl(data, 0, 0, mdxData, 0, 0)
         data = bytearray()
         write_mdl(mdl, data, ResourceType.MDL_ASCII)
         return data
 
-    def _extractMdlTextures(self, resource: FileResource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):
+    def _extractMdlTextures(
+        self,
+        resource: FileResource,
+        folderpath: Path,
+        loader: AsyncLoader,
+        data: bytes,
+        seen_resources: dict[LocationResult | Literal["all_locresults"], Path | Any],
+    ):
         assert self.active is not None
-        for texture in model.list_textures(data):
+        seenTextures: set[str] = set()
+        model_textures = list(model.iterate_textures(data))
+        textures_and_lightmaps: list[str] = list(set(model_textures) | set(model.iterate_lightmaps(data)))
+
+        main_subfolder = folderpath.joinpath(f"model_{resource.resname()}")
+
+        all_locresults = cast(Dict[str, Dict[ResourceIdentifier, List[LocationResult]]], seen_resources.setdefault("all_locresults", {}))
+
+        for texlm in textures_and_lightmaps:
+            if texlm in seenTextures:
+                continue
+            seenTextures.add(texlm)
+            tex_type = "texture" if texlm in model_textures else "lightmap"
+            print(f"Locating MDL {tex_type} '{texlm}' TGA/TPC")
             try:
-                tpc: TPC | None = self.active.texture(texture)
-                if tpc is None:
-                    raise ValueError(texture)  # noqa: TRY301
-                if self.ui.tpcTxiCheckbox.isChecked():
-                    self._extractTxi(tpc, folderpath.joinpath(f"{texture}.txi"))
+                location_results = all_locresults.get(texlm)
+                if location_results is None:
+                    all_locresults[texlm] = location_results = self.active.locations(
+                        [
+                            ResourceIdentifier(resname=texlm, restype=ResourceType.TPC),
+                            ResourceIdentifier(resname=texlm, restype=ResourceType.TGA),
+                        ],
+                        [
+                            SearchLocation.OVERRIDE,
+                            SearchLocation.TEXTURES_GUI,
+                            SearchLocation.TEXTURES_TPA,
+                            SearchLocation.CHITIN,
+                        ]
+                    )
+                else:
+                    print(f"Reusing last location search for texture '{texlm}' ref'd by {resource.identifier()}")
 
-                file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
-                print("<SDM> [_extractMdlTextures scope] file_format: ", file_format)
 
-                extension = "tga" if file_format is ResourceType.TGA else "tpc"
-                write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
-            except Exception as e:  # noqa: PERF203, BLE001
-                etype, msg = universal_simplify_exception(e)
-                loader.errors.append(e.__class__(f"Could not find or extract tpc: '{texture}'"))
+                is_found: bool = False
+                for resident, loclist in location_results.items():
+                    if loclist:
+                        is_found = True
+                    for location in loclist:
+                        subfolder = main_subfolder / location.filepath.stem
+                        previous_save_path = seen_resources.get(location)
+                        if previous_save_path is not None:
+                            print(f"Reusing already processed location {location} for {resident}")
+                            subfolder.mkdir(parents=True, exist_ok=True)
+                            shutil.copy(str(previous_save_path), str(subfolder))
+                            if self.ui.tpcTxiCheckbox.isChecked():
+                                txi_path = previous_save_path.with_suffix(".txi")
+                                if txi_path.safe_isfile():
+                                    shutil.copy(str(txi_path), str(subfolder))
+                            continue
+                        file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
+                        savepath = subfolder / f"{resident.resname}.{file_format.extension}"
+                        seen_resources[location] = savepath
+                        try:
+                            if self.ui.tpcTxiCheckbox.isChecked() or (resident.restype is ResourceType.TPC and self.ui.tpcDecompileCheckbox.isChecked()):
+                                tpc = read_tpc(location.filepath, location.offset, location.size)
+                                subfolder.mkdir(parents=True, exist_ok=True)
+                                if self.ui.tpcTxiCheckbox.isChecked():
+                                    self._extractTxi(tpc, savepath.with_suffix(".txi"))
+
+                                write_tpc(tpc, savepath, file_format)
+                            else:
+                                with location.filepath.open("rb") as r_stream:
+                                    r_stream.seek(location.offset)
+                                    savepath.parent.mkdir(parents=True, exist_ok=True)
+                                    with savepath.open("wb") as w_stream:
+                                        w_stream.write(r_stream.read(location.size))
+                        except Exception as e:  # noqa: BLE001, PERF203
+                            RobustRootLogger.exception(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}'")
+                            loader.errors.append(ValueError(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
+
+                if not is_found:
+                    loader.errors.append(ValueError(f"Missing {tex_type} '{texlm}' for model '{resource.identifier()}'"))
+                    continue
+            except Exception as e:  # noqa: BLE001
+                RobustRootLogger.exception(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}'")
+                loader.errors.append(ValueError(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
+
 
     def openFromFile(self):
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]

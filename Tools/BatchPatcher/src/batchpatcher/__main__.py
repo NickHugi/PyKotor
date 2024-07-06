@@ -82,7 +82,7 @@ from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
-from pykotor.tools.model import list_lightmaps, list_textures
+from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import universal_simplify_exception
@@ -370,7 +370,7 @@ def convert_gff_game(
         #    else resource.filepath()
         #)
         savepath = resource.filepath()
-    log_output(f"Converting {resource._path_ident_obj.parent}/{resource._path_ident_obj.name} to {to_game.name}")
+    log_output(f"Converting {resource.path_ident().parent}/{resource.path_ident().name} to {to_game.name}")
     generic: Any
     try:
         if resource.restype() is ResourceType.ARE:
@@ -432,11 +432,11 @@ def convert_gff_game(
         else:
             log_output(f"Unsupported gff: {resource.identifier()}")
     except (OSError, ValueError):
-        RobustRootLogger().error(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...", exc_info=False)
+        RobustRootLogger().error(f"Corrupted GFF: '{resource.path_ident()}', skipping...", exc_info=False)
         if not resource.inside_capsule:
-            log_output(f"Corrupted GFF: '{resource._path_ident_obj}', skipping...")
+            log_output(f"Corrupted GFF: '{resource.path_ident()}', skipping...")
             return
-        log_output(f"Corrupted GFF: '{resource._path_ident_obj}', will start validation process of '{resource.filepath().name}'...")
+        log_output(f"Corrupted GFF: '{resource.path_ident()}', will start validation process of '{resource.filepath().name}'...")
         new_erfrim = validate_capsule(resource.filepath(), strict=True, game=to_game)
         if isinstance(new_erfrim, ERF):
             log_output(f"Saving salvaged ERF to '{savepath}'")
@@ -512,11 +512,11 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         processed_files.add(new_file_path)
 
     if resource.restype().extension.lower() == "tga" and SCRIPT_GLOBALS.convert_tga == "TGA to TPC":
-        log_output(f"Converting TGA at {resource._path_ident_obj} to TPC...")
+        log_output(f"Converting TGA at {resource.path_ident()} to TPC...")
         return TPCTGAReader(resource.data()).load()
 
     if resource.restype().extension.lower() == "tpc" and SCRIPT_GLOBALS.convert_tga == "TPC to TGA":
-        log_output(f"Converting TPC at {resource._path_ident_obj} to TGA...")
+        log_output(f"Converting TPC at {resource.path_ident()} to TGA...")
         return TPCBinaryReader(resource.data()).load()
 
 
@@ -540,7 +540,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 gff.root,
                 gff.content,
                 gff,
-                resource._path_ident_obj,  # noqa: SLF001
+                resource.path_ident(),  # noqa: SLF001
             )
             made_change: bool = False
             if (
@@ -561,22 +561,22 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                             alien_vo_count,
                             "ConversationType",
                             conversationtype,
-                            f"Setting dialog as unskippable in {resource._path_ident_obj}",
+                            f"Setting dialog as unskippable in {resource.path_ident()}",
                         )
                         made_change = True
                         gff.root.set_uint8("Skippable", 0)
             if made_change or result_made_change:
                 return gff
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            log_output(f"[Error] cannot load corrupted GFF '{resource._path_ident_obj}'!")
+            log_output(f"[Error] cannot load corrupted GFF '{resource.path_ident()}'!")
             if not isinstance(e, (OSError, ValueError)):
-                RobustRootLogger().exception(f"[Error] loading GFF '{resource._path_ident_obj}'!")
+                RobustRootLogger().exception(f"[Error] loading GFF '{resource.path_ident()}'!")
                 log_output(traceback.format_exc())
             # raise
             return None
 
         if not gff:
-            log_output(f"GFF resource '{resource._path_ident_obj}' missing in memory")
+            log_output(f"GFF resource '{resource.path_ident()}' missing in memory")
             return None
     return None
 
@@ -741,17 +741,12 @@ def patch_file(file: os.PathLike | str):
         if restype is ResourceType.INVALID:
             return
 
-        fileres = FileResource(
-            resname,
-            restype,
-            c_file.stat().st_size,
-            0,
-            c_file,
-        )
+        fileres = FileResource(resname, restype, c_file.stat().st_size, 0, c_file)
         if SCRIPT_GLOBALS.is_patching():
             patch_and_save_noncapsule(fileres)
         if (
-            SCRIPT_GLOBALS.check_textures and fileres.restype().extension.lower() in ("mdl")
+            SCRIPT_GLOBALS.check_textures
+            and fileres.restype().extension.lower() == "mdl"
         ):
             check_model(fileres, None)
 
@@ -772,7 +767,7 @@ def get_active_layouts(k_install: Installation) -> dict[FileResource, LYT]:
             continue
 
         # Determine if the game is using it.
-        layout_display_path = resource._path_ident_obj.relative_to(k_install.path().parent)
+        layout_display_path = resource.path_ident().relative_to(k_install.path().parent)
         rim_filename = f"{resource.resname().lower()}.rim"
         mod_filename = f"{resource.resname().lower()}.mod"
         if rim_filename in lower_module_filenames:
@@ -801,11 +796,11 @@ def determine_if_model_utilized(
     lightmap_or_texture: Literal["texture", "lightmap"] = "texture",
     lmtex_name: str | None = None,
     missing_writer: TextIOWrapper | None = None,
-):
-    model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+) -> bool:
+    model_display_path = model_resource.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
     log_output(f"Determining if '{model_display_path}' is used by the game...")
     for layout_resource, lyt in layout_resources.items():
-        layout_display_path = layout_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        layout_display_path = layout_resource.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
         if layout_resource.restype() is not ResourceType.LYT:
             continue
         for index, room in enumerate(lyt.rooms):
@@ -834,7 +829,7 @@ def determine_if_model_utilized(
             continue
 
         resource2da = result_2da.as_file_resource()
-        display_path_2da = resource2da._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        display_path_2da = resource2da.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
@@ -858,7 +853,7 @@ def determine_if_model_utilized(
 
                             print(f"model '{model_resource.filename()}' is used by the game.")
                             return True
-                    except Exception:  # noqa: PERF203
+                    except Exception:  # noqa: PERF203  # sourcery skip: extract-duplicate-method
                         RobustRootLogger().exception("Error parsing '%s' header '%s'", filename_2da, header)
                         log_output(f"Error parsing '{filename_2da}' header '{header}'")
                         log_output(traceback.format_exc())
@@ -894,12 +889,10 @@ def find_missing_model_textures_lightmaps(
     k_install: Installation | None = None,
     layout_resources: dict[FileResource, LYT] | None = None,
 ) -> None | bool:
-    model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+    model_display_path = model_resource.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
     try:
-        texture_names: list[str] = []
-        gen_func = list_textures if lightmap_or_texture == "texture" else list_lightmaps
-        for lmtex_name in gen_func(model_resource.data()):
-            texture_names.append(lmtex_name)
+        gen_func = iterate_textures if lightmap_or_texture == "texture" else iterate_lightmaps
+        texture_names: list[str] = list(gen_func(model_resource.data()))
     except Exception as e:
         RobustRootLogger().exception(f"Error listing {lightmap_or_texture}s in '{model_display_path}'")
         log_output(f"Error listing {lightmap_or_texture}s in '{model_display_path}': {e}")
@@ -957,8 +950,8 @@ def check_model(
     k_install: Installation | None,
     all_layouts: dict[FileResource, LYT] | None = None,
 ):
-    if model_resource._path_ident_obj.parent.safe_isdir():
-        # log_output(f"Will include override for model {resource._path_ident_obj}")
+    if model_resource.path_ident().parent.safe_isdir():
+        # log_output(f"Will include override for model {resource.path_ident()}")
         order = [
             SearchLocation.OVERRIDE,
             SearchLocation.TEXTURES_TPC,
@@ -981,10 +974,10 @@ def _write_all_found_in_mdl(
     resource: FileResource,
     out_filestem: str,
 ):
-    log_output(f"Checking {len(tex_or_lmp_names)}{num_found_msg}{resource._path_ident_obj.parent.name}/{resource.identifier()}'...")
+    log_output(f"Checking {len(tex_or_lmp_names)}{num_found_msg}{resource.path_ident().parent.name}/{resource.identifier()}'...")
 
     # Output all textures from the model.
-    result = Path(out_filestem, resource._path_ident_obj.parent.name, f"{resource.resname()}.txt")
+    result = Path(out_filestem, resource.path_ident().parent.name, f"{resource.resname()}.txt")
     if not result.parent.safe_isdir():
         if result.parent.safe_isfile():
             result.parent.unlink(missing_ok=True)
@@ -1016,7 +1009,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
             continue
 
         resource2da = result_2da.as_file_resource()
-        display_path_2da = resource2da._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        display_path_2da = resource2da.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
         try:
             valid_2da = read_2da(result_2da.data)
         except (OSError, ValueError):
@@ -1067,23 +1060,21 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
     log_output(f"Found {len(all_used_models)} total models to check for texture references.")
     texture_lookups: dict[FileResource, list[str]] = {}
     for model_resource in all_used_models:
-        model_display_path = model_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent)
+        model_display_path = model_resource.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
         print(f"Finding textures in '{model_display_path}'")
         texture_names: list[str] = []
         try:
-            for texture_name in list_textures(model_resource.data()):
-                texture_names.append(texture_name)
+            texture_names.extend(iter(iterate_textures(model_resource.data())))
         except Exception as e:
             log_output(f"Error listing textures in '{model_display_path}': {type(e).__name__}: {e}")
         print(f"Finding lightmaps in '{model_display_path}'")
         try:
-            for lightmap_name in list_lightmaps(model_resource.data()):
-                texture_names.append(lightmap_name)
+            texture_names.extend(iter(iterate_lightmaps(model_resource.data())))
         except Exception as e:
             log_output(f"Error listing lightmaps in '{model_display_path}': {type(e).__name__}: {e}")
         texture_lookups[model_resource] = texture_names
         print(f"Found {len(texture_names)} textures: {texture_names!r}")
-    for model_resource, texture_list in texture_lookups.items():
+    for texture_list in texture_lookups.values():
         print(f"Second pass of '{model_display_path}'")
         for texture_name in texture_list:
             if not texture_name:
@@ -1098,7 +1089,7 @@ def find_unused_textures(k_install: Installation, all_layouts: dict[FileResource
     # Finally output results.
     total_size = 0
     for unused_texture_resource in all_found_textures.values():
-        log_output(unused_texture_resource._path_ident_obj.relative_to(SCRIPT_GLOBALS.path.parent))  # noqa: SLF001
+        log_output(unused_texture_resource.path_ident().relative_to(SCRIPT_GLOBALS.path.parent))  # noqa: SLF001
         total_size += unused_texture_resource.size()
 
     log_output(f"Found {len(all_found_textures)} total unused textures.")
@@ -1112,7 +1103,7 @@ def patch_install(install_path: os.PathLike | str):
     log_output()
 
     k_install = Installation(install_path)
-    all_layouts: list[FileResource] | None = None
+    all_layouts: dict[FileResource, LYT] | None = None
     if SCRIPT_GLOBALS.find_unused_textures or SCRIPT_GLOBALS.check_textures:
         all_layouts = get_active_layouts(k_install)
     if SCRIPT_GLOBALS.find_unused_textures:

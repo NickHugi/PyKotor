@@ -15,7 +15,7 @@ from utility.system.path import Path, PurePath
 if TYPE_CHECKING:
     import os
 
-    from typing_extensions import Self
+    from typing_extensions import Literal, Self
 
     from pykotor.common.misc import ResRef
     from pykotor.extract.capsule import LazyCapsule
@@ -286,6 +286,37 @@ class ResourceResult:
     def __hash__(self):
         return hash(self.identifier())
 
+    def __repr__(self):
+        return f"ResourceResult({self.resname}, {self.restype}, {self.filepath}, {self.data.__class__.__name__}[{len(self.data)}])"
+
+    def __eq__(self, other: object):
+        # sourcery skip: assign-if-exp, reintroduce-else
+        if self is other:
+            return True
+        if isinstance(other, ResourceResult):
+            return (
+                self.filepath == other.filepath
+                and self.resname == other.resname
+                and self.restype == other.restype
+                and self.data == other.data
+            )
+        return NotImplemented
+
+    def __len__(self) -> Literal[4]:
+        return 4
+
+    def __getitem__(self, key: int) -> str | ResourceType | Path | bytes:
+        if key == 0:
+            return self.resname
+        if key == 1:
+            return self.restype
+        if key == 2:
+            return self.filepath
+        if key == 3:
+            return self.data
+        msg = f"Index out of range for ResourceResult. key: {key}"
+        raise IndexError(msg)
+
     def set_file_resource(self, value: FileResource) -> None:
         # Allow _resource to be set only once
         if self._resource is None:
@@ -294,6 +325,8 @@ class ResourceResult:
             raise RuntimeError("_resource can only be called once.")
 
     def as_file_resource(self) -> FileResource:
+        if self._resource is None:
+            raise RuntimeError(f"{self!r} unexpectedly never assigned a FileResource instance.")
         return self._resource
 
     def identifier(self) -> ResourceIdentifier:
@@ -311,6 +344,37 @@ class LocationResult:
         """This method enables unpacking like tuple behavior."""
         return iter((self.filepath, self.offset, self.size))
 
+    def __repr__(self):
+        return f"LocationResult({self.filepath}, {self.offset}, {self.size})"
+
+    def __hash__(self):
+        return hash((self.filepath, self.offset, self.size))
+
+    def __eq__(self, other: object):
+        # sourcery skip: assign-if-exp, reintroduce-else
+        if self is other:
+            return True
+        if isinstance(other, LocationResult):
+            return (
+                self.filepath == other.filepath
+                and self.size == other.size
+                and self.offset == other.offset
+            )
+        return NotImplemented
+
+    def __len__(self) -> Literal[3]:
+        return 3
+
+    def __getitem__(self, key: int) -> Path | int:
+        if key == 0:
+            return self.filepath
+        if key == 1:
+            return self.offset
+        if key == 2:
+            return self.size
+        msg = f"Index out of range for LocationResult. key: {key}"
+        raise IndexError(msg)
+
     def set_file_resource(self, value: FileResource) -> None:
         # Allow _resource to be set only once
         if self._resource is None:
@@ -319,6 +383,8 @@ class LocationResult:
             raise RuntimeError("set_file_resource can only be called once.")
 
     def as_file_resource(self) -> FileResource:
+        if self._resource is None:
+            raise RuntimeError(f"{self!r} unexpectedly never assigned a FileResource instance.")
         return self._resource
 
     def identifier(self) -> ResourceIdentifier:

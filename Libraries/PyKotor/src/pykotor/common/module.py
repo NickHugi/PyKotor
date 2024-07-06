@@ -41,7 +41,7 @@ from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt, write_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
-from pykotor.tools.model import list_lightmaps, list_textures
+from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath
 from utility.logger_util import RobustRootLogger
 from utility.system.path import Path, PurePath
@@ -559,30 +559,28 @@ class Module:  # noqa: PLR0904
                     RobustRootLogger().warning("model '%s' was unexpectedly empty, but is needed by module '%s'", model.identifier(), display_name)
                     continue
             try:
-                model_textures = list_textures(model_data)
+                lookup_texture_queries.update(iterate_textures(model_data))
             except OSError as e:  # noqa: PERF203
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in list_textures() with model '%s': %s", repr(self), model.identifier(), e)
+                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_textures() with model '%s': %s", repr(self), model.identifier(), e)
             except Exception:  # noqa: BLE001
                 RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
             else:
                 RobustRootLogger().info("Found %s textures in '%s'", model.identifier(), display_name)
-                lookup_texture_queries.update(model_textures)
             try:
-                lookup_texture_queries.update(list_lightmaps(model_data))
+                lookup_texture_queries.update(iterate_lightmaps(model_data))
             except OSError as e:  # noqa: PERF203
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in list_lightmaps() with model '%s': %s", repr(self), model.identifier(), e)
+                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_lightmaps() with model '%s': %s", repr(self), model.identifier(), e)
             except Exception:  # noqa: BLE001
                 RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
             else:
                 RobustRootLogger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
-                lookup_texture_queries.update(model_textures)
 
         texture_search: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
-            (
+            [
                 ResourceIdentifier(texture, res_type)
                 for texture in lookup_texture_queries
                 for res_type in (ResourceType.TPC, ResourceType.TGA)
-            ),
+            ],
             [
                 SearchLocation.OVERRIDE,
                 SearchLocation.CHITIN,

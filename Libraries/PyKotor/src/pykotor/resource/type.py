@@ -14,11 +14,12 @@ from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from utility.logger_util import RobustRootLogger
 from utility.string_util import WrappedStr
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from pykotor.common.stream import BinaryWriterBytearray, BinaryWriterFile
 
 STREAM_TYPES = Union[io.BufferedIOBase, io.RawIOBase, mmap.mmap]
 BASE_SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, memoryview]
@@ -47,7 +48,7 @@ class ResourceWriter:
         self,
         target: TARGET_TYPES,
     ):
-        self._writer: BinaryWriter = BinaryWriter.to_auto(target)
+        self._writer: BinaryWriterFile | BinaryWriterBytearray = BinaryWriter.to_auto(target)
 
     def close(
         self,
@@ -408,8 +409,7 @@ def autoclose(func: Callable[..., R]) -> Callable[..., R]:
         try:
             resource: R = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration, struct.error) as e:
-            msg = "Tried to load an unsupported or corrupted file."
-            RobustRootLogger().exception(msg)
+            msg = "Tried to save or load an unsupported or corrupted file."
             raise ValueError(msg) from e
         finally:
             if auto_close:

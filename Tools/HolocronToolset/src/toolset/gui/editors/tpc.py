@@ -8,8 +8,7 @@ import qtpy
 
 from PIL import Image, ImageOps
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QImage, QPixmap, QResizeEvent
-from qtpy.QtWidgets import QApplication, QDesktopWidget
+from qtpy.QtGui import QImage, QPixmap
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.formats.tpc.io_tga import _DataTypes
@@ -164,9 +163,9 @@ class TPCEditor(Editor):
         self._tpc.set_single(256, 256, bytes(0 for _ in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGBA, 0)
 
-        image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+        image = QImage(rgba, width, height, QImage.Format.Format_RGBA8888)
         pixmap = QPixmap.fromImage(image)
-        self.ui.textureImage.setPixmap(pixmap)
+        self.ui.textureImage.setPixmap(pixmap)  # type: ignore[arg-type]
         self.ui.textureImage.setScaledContents(True)
         self.ui.txiEdit.setPlainText("")
 
@@ -196,11 +195,32 @@ class TPCEditor(Editor):
         image.save(dataIO, "JPEG", quality=80)
         return dataIO.getvalue()
 
-    def extract_png_bmp_bytes(self) -> bytes:
-        width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGBA, 0)
-        image = Image.frombuffer("RGBA", (width, height), pixeldata)
-        image = ImageOps.flip(image)
+    def qimage_to_pillow_image(self, qimage: QImage) -> Image.Image:
+        # Convert QImage to bytes
+        qimage = qimage.convertToFormat(QImage.Format_RGBA8888)
+        width, height = qimage.width(), qimage.height()
+        ptr = qimage.bits()
+        ptr.setsize(qimage.byteCount())
+        buffer = ptr.asstring()
 
+        # Create a Pillow Image from the raw bytes
+        pil_image = Image.frombuffer("RGBA", (width, height), buffer, "raw", "RGBA", 0, 1)
+        return pil_image
+
+    def extract_png_bmp_bytes(self) -> bytes:
+        # Get the QPixmap from the QLabel
+        pixmap = self.ui.textureImage.pixmap()
+        if pixmap is None:
+            raise ValueError("No image available in QLabel")
+
+        # Convert QPixmap to QImage
+        qimage = pixmap.toImage()
+
+        # Convert QImage to Pillow Image
+        pil_image = self.qimage_to_pillow_image(qimage)  # type: ignore[arg-type]
+
+        # Save the Pillow Image to BytesIO in the desired format
         dataIO = io.BytesIO()
-        image.save(dataIO, "PNG" if self._restype is ResourceType.PNG else "BMP")
+        image_format = "PNG" if self._restype is ResourceType.PNG else "BMP"
+        pil_image.save(dataIO, format=image_format)
         return dataIO.getvalue()

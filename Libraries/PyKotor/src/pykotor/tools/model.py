@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import struct
 
+from collections import deque
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Generator, NamedTuple
 
@@ -78,7 +79,60 @@ def rename(
     return data[:20] + name.ljust(32, "\0").encode("ascii") + data[52:]
 
 
-def list_textures(
+def iterate_textures_and_lightmaps(data: bytes) -> Generator[str, Any, None]:
+    """Extracts textures or lightmaps from a mdl file, and yields each one in lowercase.
+
+    Args:
+    ----
+        data: bytes - The raw mdl data to parse.
+
+    Returns:
+    -------
+        Generator[str, Any, None]: A generator yielding unique resource names in lowercase.
+
+    Processing Logic:
+    ----------------
+        - Uses a BinaryReader to parse the binary data.
+        - Starts at a root offset to traverse node offsets.
+        - Checks node IDs for resource nodes.
+        - Reads resource names and yields unique names.
+    """
+    seen_names: set[str] = set()
+
+    with BinaryReader.from_bytes(data, 12) as reader:
+        reader.seek(168)
+        root_offset = reader.read_uint32()
+
+        nodes: deque[int] = deque([root_offset])
+        while nodes:
+            node_offset = nodes.popleft()
+            reader.seek(node_offset)
+            node_id = reader.read_uint32()
+
+            reader.seek(node_offset + 44)
+            child_offsets_offset = reader.read_uint32()
+            child_offsets_count = reader.read_uint32()
+
+            reader.seek(child_offsets_offset)
+            nodes.extend(reader.read_uint32() for _ in range(child_offsets_count))
+
+            if node_id & 32:
+                # Extract texture name
+                reader.seek(node_offset + 168)
+                name = reader.read_string(32, encoding="ascii", errors="ignore").strip().lower()
+                if name and name != "null" and name not in seen_names and name != "dirt":
+                    seen_names.add(name)
+                    yield name
+
+                # Extract lightmap name
+                reader.seek(node_offset + 200)
+                name = reader.read_string(32, encoding="ascii", errors="ignore").strip().lower()
+                if name and name != "null" and name not in seen_names:
+                    seen_names.add(name)
+                    yield name
+
+
+def iterate_textures(
     data: bytes,
 ) -> Generator[str, Any, None]:
     """Extracts textures from a mdl file, and yields each one in lowercase.
@@ -129,7 +183,7 @@ def list_textures(
                     yield texture.lower()
 
 
-def list_lightmaps(
+def iterate_lightmaps(
     data: bytes,
 ) -> Generator[str, Any, None]:
     """Extracts lightmap names from a mdl file, and yields each one in lowercase.
@@ -179,7 +233,7 @@ def change_textures(
     data: bytes,
     textures: dict[str, str],
 ) -> bytes:
-    """Changes textures in a game file.
+    """Changes textures in the MDL file.
 
     Args:
     ----
@@ -247,7 +301,7 @@ def change_lightmaps(
     data: bytes,
     textures: dict[str, str],
 ) -> bytes:
-    """Changes lightmaps textures in a Unity3D asset file.
+    """Changes lightmaps textures in the MDL data.
 
     Args:
     ----
@@ -383,7 +437,7 @@ def convert_to_k1(
     start = data[:12]
     data = bytearray(data[12:])
 
-    data[0:4] = struct.pack("I", _GEOM_ROOT_FP0_K1)
+    data[:4] = struct.pack("I", _GEOM_ROOT_FP0_K1)
     data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K1)
 
     # TODO Animations
@@ -636,7 +690,7 @@ def convert_to_k2(
     mdx_size = data[8:12]
     data = bytearray(data[12:])
 
-    data[0:4] = struct.pack("I", _GEOM_ROOT_FP0_K2)
+    data[:4] = struct.pack("I", _GEOM_ROOT_FP0_K2)
     data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K2)
 
     for anim_offset in anim_offsets:
@@ -804,6 +858,7 @@ def transform(
 def flip(
     mdl_data: bytes,
     mdx_data: bytes,
+    *,
     flip_x: bool,
     flip_y: bool,
 ) -> MDLMDXTuple:

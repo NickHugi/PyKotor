@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
 
 from qtpy import QtCore
 from qtpy.QtCore import QThread, QTimer, Qt
-from qtpy.QtGui import QWindowStateChangeEvent
-from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
+from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePolicy, QVBoxLayout
 
 from toolset.gui.common.widgets.progressbar import AnimatedProgressBar
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
@@ -17,8 +16,8 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
 
-    from qtpy.QtCore import QEvent
     from qtpy.QtGui import QCloseEvent
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
 
 T = TypeVar("T")
@@ -96,7 +95,7 @@ class AsyncLoader(QDialog, Generic[T]):
         self,
         parent: QWidget,
         title: str,
-        task: Callable[..., T],
+        task: Callable[..., T] | list[Callable[..., T]],
         errorTitle: str | None = None,
         *,
         startImmediately: bool = True,
@@ -108,7 +107,7 @@ class AsyncLoader(QDialog, Generic[T]):
         ----
             parent: QWidget: The parent widget of the dialog.
             title: str: The title of the dialog window.
-            task: Callable: The task to run asynchronously.
+            task: Callable or list of Callables: The task(s) to run asynchronously.
 
         Returns:
         -------
@@ -127,21 +126,29 @@ class AsyncLoader(QDialog, Generic[T]):
 
         self._progressBar = AnimatedProgressBar(self)
         self._progressBar.setMinimum(0)
-        self._progressBar.setMaximum(1 if realtime_progress else 0)
-        self._progressBar.setTextVisible(realtime_progress)
+        if isinstance(task, list):
+            self._progressBar.setMaximum(len(task))
+        else:
+            self._progressBar.setMaximum(1 if realtime_progress else 0)
+        self._progressBar.setTextVisible(realtime_progress or isinstance(task, list))
 
         self._mainTaskText: QLabel = QLabel(self)
         self._mainTaskText.setText("")
-        self._mainTaskText.setVisible(realtime_progress)
+        self._mainTaskText.setVisible(realtime_progress or isinstance(task, list))
 
         self._subTaskText: QLabel = QLabel(self)
         self._subTaskText.setText("")
         self._subTaskText.setVisible(realtime_progress)
 
+        self._taskProgressText: QLabel = QLabel(self)
+        self._taskProgressText.setText("")
+        self._taskProgressText.setVisible(isinstance(task, list))
+
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self._mainTaskText)
         self.layout().addWidget(self._progressBar)
         self.layout().addWidget(self._subTaskText)
+        self.layout().addWidget(self._taskProgressText)
 
         self.setWindowTitle(title)
         self.setMinimumSize(260, 40)
@@ -179,30 +186,22 @@ class AsyncLoader(QDialog, Generic[T]):
         self._progressBar.setFixedHeight(20)  # Makes the progress bar taller
         self._mainTaskText.setAlignment(Qt.AlignCenter)  # Centers the main task text
         self._subTaskText.setAlignment(Qt.AlignCenter)  # Centers the sub task text
+        self._taskProgressText.setAlignment(Qt.AlignCenter)  # Centers the task progress text
 
         self.value: T | None = None  # type: ignore[assignment]
         self.error: Exception | None = None
+        self.errors: list[Exception] = []
         self.errorTitle: str | None = errorTitle
         self._realtime_progress: bool = realtime_progress
 
         self._worker = AsyncWorker(self, task, realtime_progress=realtime_progress)
         self._worker.successful.connect(self._onSuccessful)
         self._worker.failed.connect(self._onFailed)
-        if realtime_progress:
+        self._worker.completed.connect(self._onCompleted)
+        if realtime_progress or isinstance(task, list):
             self._worker.progress.connect(self._onProgress)
         if startImmediately:
             self.startWorker()
-
-    def changeEvent(self, event: QEvent):
-        if event.type() == QtCore.QEvent.WindowStateChange:
-            self_parent = self.parent()
-            if isinstance(self_parent, QWidget) and isinstance(event, QWindowStateChangeEvent):
-                if self_parent.isMinimized():
-                    self.setWindowState(self.windowState() | QtCore.Qt.WindowMinimized)
-                elif bool(event.oldState() & QtCore.Qt.WindowMinimized):
-                    self.setWindowState(self.windowState() & ~QtCore.Qt.WindowMinimized)
-
-        super().changeEvent(event)
 
     def startWorker(self):
         self._worker.start()
@@ -213,29 +212,46 @@ class AsyncLoader(QDialog, Generic[T]):
     def _onSuccessful(self, result: Any):
         self.value = result
         self.optionalFinishHook.emit(result)
-        self.accept()
 
     def _onFailed(self, error: Exception):
         self.error = error
         self.optionalErrorHook.emit(error)
-        self.reject()
         RobustRootLogger().error(str(error), exc_info=error)
+        if len(self.errors) == 1:  # Keep the first error as the main error
+            self.error = error
 
+    def _onCompleted(self, result: Any):
+        if self.error is not None:
+            self.reject()
+            self._showErrorDialog()
+        else:
+            self.accept()
+
+    def _showErrorDialog(self):
         if self.errorTitle:
-            error_msg = str(universal_simplify_exception(error)).replace("\n", "<br>") + " "*700 + "<br>"*2
-            msgBox = QMessageBox(QMessageBox.Icon.Critical, self.errorTitle + " "*700, error_msg)
-            msgBox.setDetailedText(format_exception_with_variables(error))
+            error_msgs = ""
+            for i, e in enumerate(self.errors):
+                this_err_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
+                error_msgs += f"<br>Error in task {i + 1}: {this_err_msg}"
+            error_msgs += " "*700 + "<br>"*2
+            msgBox = QMessageBox(QMessageBox.Icon.Critical, self.errorTitle + " "*700, error_msgs)
+            msgBox.setDetailedText("\n\n".join(format_exception_with_variables(e) for e in self.errors))
             msgBox.exec_()
 
-    def _onProgress(self, value: int | str, task_type: str):
+    def _onProgress(self, value: int | str, task_type: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
         if task_type == "increment":
+            assert isinstance(value, int)
             self._progressBar.setValue(self._progressBar.value() + value)
         elif task_type == "set_maximum":
+            assert isinstance(value, int)
             self._progressBar.setMaximum(value)
         elif task_type == "update_maintask_text":
+            assert isinstance(value, str)
             self._mainTaskText.setText(value)
         elif task_type == "update_subtask_text":
+            assert isinstance(value, str)
             self._subTaskText.setText(value)
+        self._taskProgressText.setText(f"{self._progressBar.value()}/{self._progressBar.maximum()}")
         old_width = self.width()
         self.adjustSize()
         self.setMinimumSize(self.size())
@@ -249,31 +265,40 @@ class AsyncWorker(QThread):
     successful = QtCore.Signal(object)
     failed = QtCore.Signal(object)
     progress = QtCore.Signal(object, str)
+    completed = QtCore.Signal(object)
 
     def __init__(
         self,
         parent: QWidget,
-        task: Callable[..., T],
+        task: Callable[..., T] | list[Callable[..., T]],
         *,
         realtime_progress: bool = False,
+        fast_fail: bool = False,
     ):
         super().__init__(parent)
         print("AsyncWorker.__init__: realtime_progress:", realtime_progress)
-        self._task: Callable[..., T] = task
+        self._tasks: list[Callable[..., T]] = task if isinstance(task, list) else [task]
         self._realtime_progress: bool = realtime_progress
+        self._fast_fail: bool = fast_fail
 
     def run(self):
         use_profiler: bool = False # set to False to disable the profiler.
         if use_profiler:
             profiler = cProfile.Profile()
             profiler.enable()
-        try:
-            #result = self._task(self.progress_callback)
-            result = self._task()
-        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            self.failed.emit(e)
-        else:
-            self.successful.emit(result)
+        result = None
+        for i, task in enumerate(self._tasks):
+            if len(self._tasks) > 1:
+                self.progress_callback(1, "increment")
+            try:
+                result = task()
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                self.failed.emit(e)
+                if self._fast_fail:
+                    break
+            else:
+                self.successful.emit(result)
+        self.completed.emit(result)
         if use_profiler:
             profiler.disable()
             profiler.dump_stats(f"{uuid.uuid1().hex[:7]}_async_worker.pstat")
@@ -284,144 +309,3 @@ class AsyncWorker(QThread):
         task_type: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"],
     ):
         self.progress.emit(value, task_type)
-
-
-class AsyncBatchLoader(QDialog):
-    def __init__(
-        self,
-        parent: QWidget | None,
-        title: str,
-        tasks: list[Callable],
-        errorTitle: str | None = None,
-        *,
-        cascade: bool = False,
-    ):
-        """Initializes a progress dialog for running multiple tasks asynchronously.
-
-        Args:
-        ----
-            parent (QWidget): Parent widget
-            title (str): Title of the progress dialog
-            tasks (list[Callable]): List of tasks to run
-            errorTitle (str | None): Title for error dialog, if any
-
-        Processing Logic:
-        ----------------
-            - Sets up progress bar, info text and layout
-            - Starts AsyncBatchWorker thread to run tasks asynchronously
-            - Connects signals from worker for successful, failed and completed tasks.
-        """
-        super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
-
-        self._progressBar: QProgressBar = QProgressBar(self)
-        self._progressBar.setMinimum(0)
-        self._progressBar.setMaximum(len(tasks))
-        self._progressBar.setTextVisible(False)
-
-        self._infoText: QLabel = QLabel(self)
-        self._infoText.setText("")
-        self._infoText.setVisible(False)
-
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._progressBar)
-        self.layout().addWidget(self._infoText)
-
-        self.setWindowTitle(title)
-        self.setFixedSize(260, 40)
-
-        self.value: list[Any] = []
-        self.errors: list[Exception] = []
-        self.errorTitle: str | None = errorTitle
-        self.successCount: int = 0
-        self.failCount: int = 0
-
-        self._worker: AsyncBatchWorker = AsyncBatchWorker(self, tasks, cascade=cascade)
-        self._worker.successful.connect(self._onSuccessful)
-        self._worker.failed.connect(self._onFailed)
-        self._worker.completed.connect(self._onAllCompleted)
-        self._worker.start()
-
-    def closeEvent(self, e: QCloseEvent):
-        self._worker.terminate()
-
-    def addTask(self, task: Callable):
-        self._worker.addTask(task)
-        self._progressBar.setMaximum(self._worker.numTasks())
-
-    def updateInfo(self, text: str):
-        self._infoText.setText(text)
-        if not text:
-            self.setFixedSize(260, 40)
-            self._infoText.setVisible(False)
-        else:
-            self.setFixedSize(260, 60)
-            self._infoText.setVisible(True)
-
-    def _onSuccessful(self, result: Any):
-        self.value.append(result)
-        self.successCount += 1
-        self._progressBar.setValue(self._progressBar.value() + 1)
-
-    def _onFailed(self, error: Exception):
-        self.errors.append(error)
-        self.failCount += 1
-        self._progressBar.setValue(self._progressBar.value() + 1)
-        RobustRootLogger().error(str(error), exc_info=error)
-
-    def _onAllCompleted(self):
-        if not self.errors:
-            self.accept()
-            return
-
-        self.reject()
-        if not self.errorTitle:
-            return
-
-        errorTitle = self.errorTitle
-        if self.failCount:
-            errorTitle = f"{self.errorTitle} ({self.failCount} errors)"
-        msgBox = QMessageBox(
-            QMessageBox.Icon.Critical,
-            errorTitle,
-            f"{len(self.errors)} total error(s) occurred<br>" + ("\n".join( ( str(universal_simplify_exception(error)).replace( ",", ":", 1 ) + "<br>" ) for error in self.errors)),
-            flags=Qt.WindowType.Window
-            | Qt.WindowType.Dialog
-            | Qt.WindowType.WindowStaysOnTopHint,
-        )
-        msgBox.setDetailedText("\n".join(format_exception_with_variables(e) for e in self.errors))
-        msgBox.exec_()
-
-
-class AsyncBatchWorker(QThread):
-    successful = QtCore.Signal(object)
-    failed = QtCore.Signal(object)
-    completed = QtCore.Signal()
-
-    def __init__(
-        self,
-        parent: QWidget,
-        tasks: list[Callable],
-        *,
-        cascade: bool,
-    ):
-        super().__init__(parent)
-        self._tasks: list[Callable] = tasks
-        self._cascade: bool = cascade
-
-    def run(self):
-        for task in self._tasks:
-            try:
-                result = task()
-                self.successful.emit(result)
-            except Exception as e:  # pylint: disable=W0718  # noqa: PERF203, BLE001
-                self.failed.emit(e)
-                if self._cascade:
-                    break
-        self.completed.emit()
-
-    def addTask(self, task: Callable):
-        self._tasks.append(task)
-
-    def numTasks(self) -> int:
-        return len(self._tasks)

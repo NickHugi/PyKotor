@@ -11,7 +11,7 @@ from qtpy.QtWidgets import QDialog, QListWidgetItem
 from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
+from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
@@ -183,7 +183,7 @@ class FileSearcher(QDialog):
 
         searchIn: Generator[FileResource, Any, None] = search_generator()
         searches: list[Callable[[FileResource], None]] = [lambda resource=resource: _search(resource) for resource in searchIn]
-        AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
+        AsyncLoader(self, "Searching...", searches, "An error occured during the search").exec_()
         self.fileResults.emit(results, query.installation)
 
 

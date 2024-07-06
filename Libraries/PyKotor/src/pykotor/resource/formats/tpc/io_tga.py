@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import io
+import mmap
 import struct
 
 from enum import IntEnum
@@ -14,7 +16,7 @@ try:
 except ImportError:
     pillow_available = False
 
-from pykotor.common.stream import BinaryReader
+from pykotor.common.stream import BinaryReader, BinaryWriterFile
 from pykotor.resource.formats.tpc.tpc_data import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceReader, ResourceWriter, autoclose
 
@@ -197,8 +199,7 @@ class TPCTGAReader(ResourceReader):
         # Use Pillow to handle the TGA file
         #print("Loading with pillow")
 
-        # Their static type is incorrect, it supports any stream/byte/filepath-like object.
-        with Image.open(self._reader._stream) as img:  # type: ignore[reportArgumentType]
+        with Image.open(io.BytesIO(self._reader._stream) if isinstance(self._reader._stream, mmap.mmap) else self._reader._stream) as img:  # type: ignore[reportArgumentType]
 
             # Determine the appropriate texture format based on the image mode
             if img.mode == "L":
@@ -342,6 +343,32 @@ class TPCTGAWriter(ResourceWriter):
             - Write BMP file header
             - Write pixel data in RGB or RGBA format depending on TPC format.
         """
+        if pillow_available:
+            self._write_with_pillow()
+        else:
+            self._write_with_custom_logic()
+
+    def _write_with_pillow(
+        self,
+    ):
+        if self._tpc is None:
+            raise ValueError("TPC instance is not set.")
+
+        if self._tpc.format() is TPCTextureFormat.RGBA:
+            width, height, _format, data = self._tpc.get()
+            mode = "RGBA"
+        else:
+            width, height, data = self._tpc.convert(TPCTextureFormat.RGB)
+            mode = "RGB"
+        img = Image.frombytes(mode, (width, height), data)
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img.save(self._writer._stream if isinstance(self._writer, BinaryWriterFile) else io.BytesIO(self._writer._ba), format="TGA")
+
+    def _write_with_custom_logic(
+        self,
+    ):
+        if self._tpc is None:
+            raise ValueError("TPC instance is not set.")
         width, height = self._tpc.dimensions()
 
         self._writer.write_uint8(0)  # id length
@@ -356,7 +383,7 @@ class TPCTGAWriter(ResourceWriter):
         if self._tpc.format() in {TPCTextureFormat.RGB, TPCTextureFormat.DXT1}:
             self._writer.write_uint8(32)  # bits_per_pixel, image_descriptor
             self._writer.write_uint8(0)
-            data: bytearray = self._tpc.convert(TPCTextureFormat.RGB, 0).data
+            data: bytearray = self._tpc.convert(TPCTextureFormat.RGB).data
             pixel_reader: BinaryReader = BinaryReader.from_bytes(data)
             for _ in range(len(data) // 3):
                 r = pixel_reader.read_uint8()
@@ -366,7 +393,7 @@ class TPCTGAWriter(ResourceWriter):
         else:
             self._writer.write_uint8(32)
             self._writer.write_uint8(0)
-            width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
+            width, height, data = self._tpc.convert(TPCTextureFormat.RGBA)
             pixel_reader = BinaryReader.from_bytes(data)
             for _ in range(len(data) // 4):
                 r = pixel_reader.read_uint8()

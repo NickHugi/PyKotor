@@ -10,7 +10,7 @@ from contextlib import suppress
 from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Dict, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -173,7 +173,7 @@ def safe_repr(
             return representation
 
         attrs: list[str] = []
-        for attr_name in cast(dict[str, Any], vars(obj)):
+        for attr_name in cast(Dict[str, Any], vars(obj)):
             attr_value = getattr(obj, attr_name)
             if not attr_name.startswith("__") and not callable(attr_value):
                 try:
