@@ -4171,7 +4171,7 @@ Should return 1 or 0, representing a boolean.
             pasteLinkAction.setEnabled(False)
             pasteNewAction.setEnabled(False)
         else:
-            copied_node_type = "Entry" if isinstance(self._copy, DLGEntry) else "Reply"
+            copied_node_type = "Entry" if isinstance(self._copy.node, DLGEntry) else "Reply"
             pasteLinkAction.setText(f"Paste {copied_node_type} from Clipboard as Link")
             pasteNewAction.setText(f"Paste {copied_node_type} from Clipboard as Deep Copy")
             if node_type == copied_node_type:
