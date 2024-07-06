@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
     window = ToolWindow()
     window.show()
-    window.checkForUpdates(silent=True)
+    #window.checkForUpdates(silent=True)
 
     # Start main app loop.
     app.exec_()
