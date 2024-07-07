@@ -614,7 +614,7 @@ class ToolWindow(QMainWindow):
         style: str | None = None,
         palette: QPalette | None = None,
         *,
-        aggressive: bool = False,
+        repaint_all_widgets: bool = True,
     ):
         app.setStyleSheet(sheet)
         #self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.FramelessWindowHint)
@@ -626,13 +626,15 @@ class ToolWindow(QMainWindow):
                 # still can't get the custom title bar working, leave this disabled until we do.
                 #self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
         app_style = app.style()
-        if palette is None:
+        if palette is None and app_style is not None:
             palette = app_style.standardPalette()
-        app.setPalette(palette)
-        if aggressive:
+        if palette is not None:
+            app.setPalette(palette)
+        if repaint_all_widgets:
             for widget in app.allWidgets():
                 widget.setStyleSheet(sheet)
                 widget.setPalette(palette)
+                if palette is not None:
                 widget.repaint()
 
     def change_theme(self, theme: QAction | str):
@@ -641,14 +643,18 @@ class ToolWindow(QMainWindow):
 
         print("<SDM> [toggle_stylesheet scope] self.settings.selectedTheme: ", self.settings.selectedTheme)
         self.settings.selectedTheme = theme.text() if isinstance(theme, QAction) else theme
-        self.apply_style(app, aggressive=True)
+        self.apply_style(app)
+
+        app_style = app.style()
+        assert app_style is not None
+        standard_palette = app_style.standardPalette()
 
         palette = None
-        sheet = "Fusion"
+        sheet = ""
         style = self.original_style
         if self.settings.selectedTheme == "Native":
             style = self.original_style
-            palette = app.style().standardPalette()
+            palette = standard_palette
         elif self.settings.selectedTheme == "Fusion (Light)":
             style = "Fusion"
             self.apply_style(app, sheet, "Fusion")
@@ -662,11 +668,11 @@ class ToolWindow(QMainWindow):
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
                 import qdarkstyle
-            except (ImportError, ModuleNotFoundError):
+            except ImportError:
                 QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
             else:
                 app.setStyle(self.original_style)
-                app.setPalette(app.style().standardPalette())
+                app.setPalette(standard_palette)
                 app.setStyleSheet(qdarkstyle.load_stylesheet())  # straight from the docs. Not sure why they don't require us to explicitly set a style/palette.
             return
         elif self.settings.selectedTheme == "AMOLED":
@@ -687,10 +693,9 @@ class ToolWindow(QMainWindow):
             style = self.original_style
             sheet = self._get_file_stylesheet(":/themes/other/MacOS.qss", app)
             # dont use, looks worse
-            #palette = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
+            #paletfte = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
         elif self.settings.selectedTheme == "ManjaroMix":
             sheet = self._get_file_stylesheet(":/themes/other/ManjaroMix.qss", app)
-            palette = self.create_palette("#151a1e", QColor().blue(), "#d3dae3", "#4fa08b", "#214037", "#027f7f")
         elif self.settings.selectedTheme == "MaterialDark":
             style = "Fusion"
             sheet = self._get_file_stylesheet(":/themes/other/MaterialDark.qss", app)
@@ -703,6 +708,9 @@ class ToolWindow(QMainWindow):
             #sheet = self._get_file_stylesheet(":/themes/other/Ubuntu.qss", app)
             #palette = self.create_palette("#f0f0f0", "#1e1d23", "#000000", "#f68456", "#ec743f", "#ffffff")
         elif self.settings.selectedTheme == "Breeze (Dark)":
+            if qtpy.QT6:
+                QMessageBox(QMessageBox.Icon.Critical, "Breeze Unavailable", "Breeze is only supported on qt5 at this time.").exec_()
+                return
             sheet = self._get_file_stylesheet(":/dark/stylesheet.qss", app)
         else:
             self.settings.reset_setting("selectedTheme")
