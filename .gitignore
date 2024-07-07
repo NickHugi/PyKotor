@@ -67,3 +67,4 @@ installlog.txt
 ./vendor
 powershell-bin/
 .env
+typings/*

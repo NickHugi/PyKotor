@@ -325,7 +325,7 @@ class GlobalSettings(Settings):
     )
     joinRIMsTogether = Settings.addSetting(
         "joinRIMsTogether",
-        False,
+        True,
     )
     useModuleFilenames = Settings.addSetting(
         "useModuleFilenames",
