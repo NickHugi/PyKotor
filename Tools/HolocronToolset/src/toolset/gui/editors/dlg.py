@@ -1064,7 +1064,7 @@ class DLGStandardItemModel(QStandardItemModel):
             stream.writeInt32(int(Qt.ItemDataRole.DisplayRole))
             stream.writeQString(item.data(Qt.ItemDataRole.DisplayRole))
             stream.writeInt32(_DLG_MIME_DATA_ROLE)
-            stream.writeBytes(json.dumps(item.link.to_dict()).encode())
+            stream.writeQString(json.dumps(item.link.to_dict()))
             stream.writeInt32(_MODEL_INSTANCE_ID_ROLE)
             stream.writeInt64(id(self))
             #stream_listwidget.writeInt32(int(_LINK_PARENT_NODE_PATH_ROLE))
@@ -2542,7 +2542,7 @@ class DLGTreeView(RobustTreeView):
         items: list[dict[Literal["row", "column", "roles"], Any]] = []
         if mimeData.hasFormat(QT_STANDARD_ITEM_FORMAT):
             encoded_data = mimeData.data(QT_STANDARD_ITEM_FORMAT)
-            stream = QDataStream(encoded_data, QIODevice.ReadOnly)
+            stream = QDataStream(encoded_data, QIODevice.OpenModeFlag.ReadOnly)
 
             while not stream.atEnd():
                 item_data: dict[Literal["row", "column", "roles"], Any] = {
@@ -2555,7 +2555,7 @@ class DLGTreeView(RobustTreeView):
                     if role == Qt.ItemDataRole.DisplayRole:
                         roles[role] = stream.readQString()
                     elif role == _DLG_MIME_DATA_ROLE:
-                        roles[role] = stream.readBytes().decode()
+                        roles[role] = stream.readQString()
                     elif role == _MODEL_INSTANCE_ID_ROLE:
                         roles[role] = stream.readInt64()
                     elif role == _LINK_PARENT_NODE_PATH_ROLE:
@@ -2747,7 +2747,8 @@ class DLGEditor(Editor):
         self.statusbar_animation.setDuration(30000)
         self.statusbar_animation.setStartValue(QRect(start_x, 0, self.tipLabel.width(), 10))
         self.statusbar_animation.setEndValue(QRect(end_x, 0, self.tipLabel.width(), 10))
-        self.statusbar_animation.finished.connect(self.toggleScrollbarTipDirection)
+        if qtpy.API_NAME != "PySide6":  # disconnect() seems to have a different signature
+            self.statusbar_animation.finished.connect(self.toggleScrollbarTipDirection)
         self.statusbar_animation.start()
 
     def toggleScrollbarTipDirection(self):
@@ -3192,7 +3193,7 @@ Should return 1 or 0, representing a boolean.
                 stream_listwidget.writeInt32(int(Qt.ItemDataRole.DisplayRole))
                 stream_listwidget.writeQString(item.data(Qt.ItemDataRole.DisplayRole))
                 stream_listwidget.writeInt32(_DLG_MIME_DATA_ROLE)
-                stream_listwidget.writeBytes(json.dumps(item.link.to_dict()).encode())
+                stream_listwidget.writeQString(json.dumps(item.link.to_dict()))
                 stream_listwidget.writeInt32(_MODEL_INSTANCE_ID_ROLE)
                 stream_listwidget.writeInt64(id(self))
                 #stream_listwidget.writeInt32(int(_LINK_PARENT_NODE_PATH_ROLE))
@@ -3288,21 +3289,22 @@ Should return 1 or 0, representing a boolean.
         self.ui.menubar.addAction(whats_this_action)
 
         # View Menu: Display-related settings
-        self._addExclusiveMenuAction(
-            viewMenu,
-            "Text Elide Mode",
-            self.ui.dialogTree.textElideMode,
-            self.ui.dialogTree.setTextElideMode,
-            options={
-                "Elide Left": Qt.TextElideMode.ElideLeft,
-                "Elide Right": Qt.TextElideMode.ElideRight,
-                "Elide Middle": Qt.TextElideMode.ElideMiddle,
-                "Elide None": Qt.TextElideMode.ElideNone,
-            },
-            settings_key="textElideMode",
-        )
+        if qtpy.API_NAME == "PyQt5":
+            self._addExclusiveMenuAction(
+                viewMenu,
+                "Text Elide Mode",
+                self.ui.dialogTree.textElideMode,
+                self.ui.dialogTree.setTextElideMode,
+                options={
+                    "Elide Left": Qt.TextElideMode.ElideLeft,
+                    "Elide Right": Qt.TextElideMode.ElideRight,
+                    "Elide Middle": Qt.TextElideMode.ElideMiddle,
+                    "Elide None": Qt.TextElideMode.ElideNone,
+                },
+                settings_key="textElideMode",
+            )
 
-        if qtpy.QT5:
+        if qtpy.API_NAME == "PyQt5":
             self._addExclusiveMenuAction(
                 viewMenu,
                 "Layout Direction",
@@ -3380,7 +3382,7 @@ Should return 1 or 0, representing a boolean.
         )
 
         # Settings Menu: Configuration settings
-        if qtpy.QT5:
+        if qtpy.API_NAME == "PyQt5":
             self._addExclusiveMenuAction(
                 advancedMenu,
                 "Focus Policy",
@@ -3396,7 +3398,7 @@ Should return 1 or 0, representing a boolean.
                 settings_key="focusPolicy",
             )
 
-        if qtpy.QT5:
+        if qtpy.API_NAME == "PyQt5":
             self._addExclusiveMenuAction(
                 settingsMenu,
                 "Horizontal Scroll Mode",
@@ -4516,7 +4518,7 @@ Should return 1 or 0, representing a boolean.
             original_text = label.text().replace("* ", "", 1)  # Remove any existing asterisk
             if not is_default_value:
                 label.setText(f"* {original_text}")
-                font.setWeight(65)
+                font.setWeight(QFont.Weight.Bold if qtpy.API_NAME == "PySide6" else 65)
             else:
                 label.setText(original_text)
                 font.setWeight(QFont.Weight.Normal)
