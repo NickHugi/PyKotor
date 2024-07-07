@@ -2,20 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import qtpy
 from qtpy.QtCore import (
     QEvent,
     QModelIndex,
     QRect,
+    QSize,
     QTimer,
     Qt,
 )
 from qtpy.QtGui import (
+    QColor,
+    QFont,
     QStandardItem,
     QStandardItemModel,
 )
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
+    QStyle,
+    QStyleOptionViewItem,
     QTreeView,
 )
 
@@ -107,15 +113,15 @@ class RobustTreeView(QTreeView):
         font = painter.font()
         font.setPointSize(8)
         painter.setFont(font)
-        painter.drawText(circle_rect, Qt.AlignCenter, str(random_number))
+        painter.drawText(circle_rect, Qt.AlignmentFlag.AlignCenter, str(random_number))
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() in (QEvent.Scroll, QEvent.ScrollPrepare):
+        if event.type() in (QEvent.Type.Scroll, QEvent.Type.ScrollPrepare):
             return True  # block automated scroll events
         return super().eventFilter(obj, event)
 
     def itemDelegate(self, *args) -> HTMLDelegate:
-        delegate = super().itemDelegate(*args)
+        delegate = super().itemDelegate()
         assert isinstance(delegate, HTMLDelegate)
         return delegate
 
@@ -141,7 +147,7 @@ class RobustTreeView(QTreeView):
             response = self._wheel_changes_horizontal_scroll(event)
         elif bool(modifiers & Qt.KeyboardModifier.AltModifier):
             response = self._wheel_changes_indent_size(event)
-        elif not int(modifiers):  # would be zero if there are no modifiers.
+        elif ((not int(modifiers)) if qtpy.QT5 else (modifiers != Qt.KeyboardModifier.NoModifier)):
             response = self._wheel_changes_vertical_scroll(event)
         if response is not True:
             super().wheelEvent(event)
@@ -157,7 +163,7 @@ class RobustTreeView(QTreeView):
         delta: int = event.angleDelta().y()
         if not delta:
             return True
-        if self.horizontalScrollMode() == self.ScrollPerItem:
+        if self.horizontalScrollMode() == self.ScrollMode.ScrollPerItem:
             delta = self.indentation() * (1 if delta > 0 else -1)
         else:
             delta = -self.getTextSize() if delta > 0 else self.getTextSize()
@@ -170,8 +176,11 @@ class RobustTreeView(QTreeView):
         if not delta:
             return True
         vertScrollBar = self.verticalScrollBar()
-        if self.verticalScrollMode() == self.ScrollPerItem:
-            action = vertScrollBar.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderSingleStepAdd
+        if self.verticalScrollMode() == self.ScrollMode.ScrollPerItem:
+            if qtpy.QT5:
+                action = vertScrollBar.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderSingleStepAdd
+            else:
+                action = vertScrollBar.SliderAction.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderAction.SliderSingleStepAdd
             vertScrollBar.triggerAction(action)
         else:
             scrollStep = -self.getTextSize() if delta > 0 else self.getTextSize()
@@ -184,8 +193,11 @@ class RobustTreeView(QTreeView):
         Determines what a 'single step' is by checking `self.verticalScrollMode()`
         """
         vertScrollBar = self.verticalScrollBar()
-        if self.verticalScrollMode() == QAbstractItemView.ScrollPerItem:
-            action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
+        if self.verticalScrollMode() == QAbstractItemView.ScrollMode.ScrollPerItem:
+            if qtpy.QT5:
+                action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
+            else:
+                action = vertScrollBar.SliderAction.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderAction.SliderSingleStepAdd
             vertScrollBar.triggerAction(action)
         else:
             scrollStep = -self.getTextSize() if direction == "up" else self.getTextSize()
@@ -220,6 +232,44 @@ class RobustTreeView(QTreeView):
             return None
         assert isinstance(model, QStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
         return model
+
+    def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:
+        """Construct and configure a QStyleOptionViewItem for the given index."""
+        option = QStyleOptionViewItem()
+        if index.isValid():
+            # Initialize style option from the widget
+            option.initFrom(self)
+
+            # Set state flags based on item's selection, focus, and enabled states
+            if self.selectionModel().isSelected(index):
+                option.state |= QStyle.StateFlag.State_Selected
+            if index == self.currentIndex() and self.hasFocus():
+                option.state |= QStyle.StateFlag.State_HasFocus
+            if not self.isEnabled():
+                option.state &= ~QStyle.StateFlag.State_Enabled
+            if self.isExpanded(index):
+                option.features |= QStyleOptionViewItem.ViewItemFeature.HasDecoration
+
+            # Additional properties
+            checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
+            option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
+            option.decorationPosition = QStyleOptionViewItem.Position.Top
+            option.decorationAlignment = Qt.AlignmentFlag.AlignCenter
+            option.displayAlignment = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            option.index = index
+            option.locale = self.locale()
+            option.showDecorationSelected = True
+            option.text = index.data(Qt.ItemDataRole.DisplayRole)
+            #option.backgroundBrush = QColor(Qt.GlobalColor.yellow)
+            #option.decorationSize = QSize(32, 32)
+            #option.font = QFont("Arial", 12, QFont.Weight.Bold)
+            #option.icon = QIcon("/path/to/icon.png")  # Example path to an icon
+            #option.textElideMode = Qt.TextElideMode.ElideMiddle
+            #option.viewItemPosition = QStyleOptionViewItem.ViewItemPosition.Middle
+            #if index.row() % 2 == 0:
+            #    option.backgroundBrush = QColor(Qt.GlobalColor.lightGray)
+
+        return option
 
     def getIdentifyingText(self, indexOrItem: QModelIndex | QStandardItem | None) -> str:
         if indexOrItem is None:

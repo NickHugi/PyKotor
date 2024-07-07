@@ -23,6 +23,7 @@ from qtpy.QtCore import (
     QMimeData,
     QModelIndex,
     QPoint,
+    QPointF,
     QPropertyAnimation,
     QRect,
     QSettings,
@@ -2199,7 +2200,7 @@ class DLGTreeView(RobustTreeView):
         if not index.isValid():
             return
 
-        option = self.viewOptions()
+        option = self.viewOptions() if qtpy.QT5 else self.styleOptionForIndex(index)
         option.rect = self.visualRect(index)
 
         delegate = self.itemDelegate(index)
@@ -2255,7 +2256,7 @@ class DLGTreeView(RobustTreeView):
         color: QColor,
         text: str,
     ):
-        gradient = QRadialGradient(center, radius)
+        gradient = QRadialGradient(center, radius) if qtpy.QT5 else QRadialGradient(QPointF(center), radius, QPointF(center))
         gradient.setColorAt(0, QColor(255, 255, 255, 200))
         gradient.setColorAt(0.5, color.lighter())
         gradient.setColorAt(1, color)
@@ -3301,17 +3302,18 @@ Should return 1 or 0, representing a boolean.
             settings_key="textElideMode",
         )
 
-        self._addExclusiveMenuAction(
-            viewMenu,
-            "Layout Direction",
-            self.ui.dialogTree.layoutDirection,
-            self.ui.dialogTree.setLayoutDirection,
-            options={
-                "Left to Right": Qt.LayoutDirection.LeftToRight,
-                "Right to Left": Qt.LayoutDirection.RightToLeft,
-            },
-            settings_key="layoutDirection",
-        )
+        if qtpy.QT5:
+            self._addExclusiveMenuAction(
+                viewMenu,
+                "Layout Direction",
+                self.ui.dialogTree.layoutDirection,
+                self.ui.dialogTree.setLayoutDirection,
+                options={
+                    "Left to Right": Qt.LayoutDirection.LeftToRight,
+                    "Right to Left": Qt.LayoutDirection.RightToLeft,
+                },
+                settings_key="layoutDirection",
+            )
 
         self._addMenuAction(
             viewMenu,
@@ -3378,44 +3380,46 @@ Should return 1 or 0, representing a boolean.
         )
 
         # Settings Menu: Configuration settings
-        self._addExclusiveMenuAction(
-            advancedMenu,
-            "Focus Policy",
-            self.ui.dialogTree.focusPolicy,
-            self.ui.dialogTree.setFocusPolicy,
-            options={
-                "No Focus": Qt.FocusPolicy.NoFocus,
-                "Tab Focus": Qt.FocusPolicy.TabFocus,
-                "Click Focus": Qt.FocusPolicy.ClickFocus,
-                "Strong Focus": Qt.FocusPolicy.StrongFocus,
-                "Wheel Focus": Qt.FocusPolicy.WheelFocus,
-            },
-            settings_key="focusPolicy",
-        )
+        if qtpy.QT5:
+            self._addExclusiveMenuAction(
+                advancedMenu,
+                "Focus Policy",
+                self.ui.dialogTree.focusPolicy,
+                self.ui.dialogTree.setFocusPolicy,
+                options={
+                    "No Focus": Qt.FocusPolicy.NoFocus,
+                    "Tab Focus": Qt.FocusPolicy.TabFocus,
+                    "Click Focus": Qt.FocusPolicy.ClickFocus,
+                    "Strong Focus": Qt.FocusPolicy.StrongFocus,
+                    "Wheel Focus": Qt.FocusPolicy.WheelFocus,
+                },
+                settings_key="focusPolicy",
+            )
 
-        self._addExclusiveMenuAction(
-            settingsMenu,
-            "Horizontal Scroll Mode",
-            self.ui.dialogTree.horizontalScrollMode,
-            self.ui.dialogTree.setHorizontalScrollMode,
-            options={
-                "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
-                "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
-            },
-            settings_key="horizontalScrollMode",
-        )
+        if qtpy.QT5:
+            self._addExclusiveMenuAction(
+                settingsMenu,
+                "Horizontal Scroll Mode",
+                self.ui.dialogTree.horizontalScrollMode,
+                self.ui.dialogTree.setHorizontalScrollMode,
+                options={
+                    "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
+                    "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
+                },
+                settings_key="horizontalScrollMode",
+            )
 
-        self._addExclusiveMenuAction(
-            settingsMenu,
-            "Vertical Scroll Mode",
-            self.ui.dialogTree.verticalScrollMode,
-            self.ui.dialogTree.setVerticalScrollMode,
-            options={
-                "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
-                "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
-            },
-            settings_key="verticalScrollMode",
-        )
+            self._addExclusiveMenuAction(
+                settingsMenu,
+                "Vertical Scroll Mode",
+                self.ui.dialogTree.verticalScrollMode,
+                self.ui.dialogTree.setVerticalScrollMode,
+                options={
+                    "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
+                    "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
+                },
+                settings_key="verticalScrollMode",
+            )
 
         self._addMenuAction(advancedMenu, "Auto Scroll (internal)",
                             self.ui.dialogTree.hasAutoScroll,
@@ -4112,7 +4116,7 @@ Should return 1 or 0, representing a boolean.
         menu = QMenu(sourceWidget)
         editTextAction = menu.addAction("Edit Text")
         editTextAction.triggered.connect(lambda *args: self.editText(indexes=sourceWidget.selectedIndexes(), sourceWidget=sourceWidget))
-        editTextAction.setShortcut(QKeySequence(QtKey.Key_Enter | QtKey.Key_Return))
+        editTextAction.setShortcut(QKeySequence(QtKey.Key_Enter | QtKey.Key_Return) if qtpy.QT5 else QKeySequence(QtKey.Key_Enter, QtKey.Key_Return))
         focusAction = menu.addAction("Focus")
 
         focusAction.triggered.connect(lambda: self.focusOnNode(item.link))
@@ -4130,11 +4134,11 @@ Should return 1 or 0, representing a boolean.
         menu.addSeparator()
         expandAllChildrenAction = menu.addAction("Expand All Children")
         expandAllChildrenAction.triggered.connect(lambda: self.setExpandRecursively(item, set(), expand=True))
-        expandAllChildrenAction.setShortcut(QKeySequence(Qt.ShiftModifier | QtKey.Key_Return))
+        expandAllChildrenAction.setShortcut(QKeySequence(Qt.KeyboardModifier.ShiftModifier | QtKey.Key_Return) if qtpy.QT5 else QKeySequence(QtKey.Key_Shift, QtKey.Key_Return))
         expandAllChildrenAction.setVisible(not isListWidgetMenu)
         collapseAllChildrenAction = menu.addAction("Collapse All Children")
         collapseAllChildrenAction.triggered.connect(lambda: self.setExpandRecursively(item, set(), expand=False))
-        collapseAllChildrenAction.setShortcut(QKeySequence(Qt.ShiftModifier | Qt.AltModifier | Qt.Key_Return))
+        collapseAllChildrenAction.setShortcut(QKeySequence(Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.AltModifier | QtKey.Key_Return) if qtpy.QT5 else QKeySequence(QtKey.Key_Shift, QtKey.Key_Alt, QtKey.Key_Return))
         collapseAllChildrenAction.setVisible(not isListWidgetMenu)
         if not isListWidgetMenu:
             menu.addSeparator()
@@ -4157,10 +4161,10 @@ Should return 1 or 0, representing a boolean.
         # Copy Actions
         copyNodeAction = menu.addAction(f"Copy {node_type} to Clipboard")
         copyNodeAction.triggered.connect(lambda: self.model.copyLinkAndNode(item.link))
-        copyNodeAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_C))
+        copyNodeAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_C) if qtpy.QT5 else QKeySequence(QtKey.Key_Control, QtKey.Key_C))
         copyGffPathAction = menu.addAction("Copy GFF Path")
         copyGffPathAction.triggered.connect(lambda: self.copyPath(None if item.link is None else item.link.node))
-        copyGffPathAction.setShortcut(QKeySequence(Qt.ControlModifier | Qt.AltModifier | QtKey.Key_C))
+        copyGffPathAction.setShortcut(QKeySequence(Qt.ControlModifier | Qt.AltModifier | QtKey.Key_C) if qtpy.QT5 else QKeySequence(QtKey.Key_Control, QtKey.Key_Alt, QtKey.Key_C))
         copyGffPathAction.setVisible(notAnOrphan)
         menu.addSeparator()
 
@@ -4178,11 +4182,11 @@ Should return 1 or 0, representing a boolean.
                 pasteLinkAction.setEnabled(False)
                 pasteNewAction.setEnabled(False)
 
-        pasteLinkAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_V))
+        pasteLinkAction.setShortcut(QKeySequence(Qt.ControlModifier | QtKey.Key_V) if qtpy.QT5 else QKeySequence(QtKey.Key_Control, QtKey.Key_V))
         pasteLinkAction.triggered.connect(lambda: self.model.pasteItem(item, asNewBranches=False))
         pasteLinkAction.setVisible(not isListWidgetMenu)
         pasteNewAction.setShortcut(QKeySequence(Qt.ControlModifier | Qt.ShiftModifier | QtKey.Key_V))
-        pasteNewAction.triggered.connect(lambda: self.model.pasteItem(item, asNewBranches=True))
+        pasteNewAction.triggered.connect(lambda: self.model.pasteItem(item, asNewBranches=True) if qtpy.QT5 else QKeySequence(QtKey.Key_Control, QtKey.Key_Alt, QtKey.Key_V))
         pasteNewAction.setVisible(not isListWidgetMenu)
         menu.addSeparator()
 
