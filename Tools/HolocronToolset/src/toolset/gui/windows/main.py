@@ -632,9 +632,8 @@ class ToolWindow(QMainWindow):
             app.setPalette(palette)
         if repaint_all_widgets:
             for widget in app.allWidgets():
-                widget.setStyleSheet(sheet)
-                widget.setPalette(palette)
                 if palette is not None:
+                    widget.setPalette(palette)
                 widget.repaint()
 
     def change_theme(self, theme: QAction | str):
@@ -696,6 +695,7 @@ class ToolWindow(QMainWindow):
             #paletfte = self.create_palette("#ECECEC", "#D2D8DD", "#272727", "#FBFDFD", "#467DD1", "#FFFFFF")
         elif self.settings.selectedTheme == "ManjaroMix":
             sheet = self._get_file_stylesheet(":/themes/other/ManjaroMix.qss", app)
+            palette = self.create_palette("#222b2e", "#151a1e", "#FFFFFF", "#214037", "#4fa08b", "#027f7f")
         elif self.settings.selectedTheme == "MaterialDark":
             style = "Fusion"
             sheet = self._get_file_stylesheet(":/themes/other/MaterialDark.qss", app)
