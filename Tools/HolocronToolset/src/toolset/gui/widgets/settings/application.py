@@ -56,6 +56,8 @@ class ApplicationSettingsWidget(SettingsWidget):
         """Populate the AA Settings group box with checkboxes."""
         aa_layout = self.ui.groupBoxAASettings.layout()
         for attr in dir(self.settings.__class__):
+            if not hasattr(QtCore.Qt.ApplicationAttribute, attr):
+                continue
             if not attr.startswith("AA_"):
                 continue
             if attr in self.settings.REQUIRES_RESTART:
