@@ -365,10 +365,10 @@ class AREEditor(Editor):
         are.dirty_size_3 = self.ui.dirtSize3Spin.value()
 
         # Scripts
-        are.on_enter = ResRef(self.ui.onEnterSelect.text())
-        are.on_exit = ResRef(self.ui.onExitSelect.text())
-        are.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.text())
-        are.on_user_defined = ResRef(self.ui.onUserDefinedSelect.text())
+        are.on_enter = ResRef(self.ui.onEnterSelect.currentText())
+        are.on_exit = ResRef(self.ui.onExitSelect.currentText())
+        are.on_heartbeat = ResRef(self.ui.onHeartbeatSelect.currentText())
+        are.on_user_defined = ResRef(self.ui.onUserDefinedSelect.currentText())
 
         # Comments
         are.comment = self.ui.commentsEdit.toPlainText()
