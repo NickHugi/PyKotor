@@ -962,7 +962,7 @@ class Ui_MainWindow(object):
         self.convoTypeLabel = QLabel(self.topDockWidgetContents)
         self.convoTypeLabel.setObjectName(u"convoTypeLabel")
 
-        self.gridLayout_3.addWidget(self.convoTypeLabel, 0, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.convoTypeLabel, 0, 0, 1, 1, Qt.AlignRight)
 
         self.conversationSelect = QComboBox(self.topDockWidgetContents)
         self.conversationSelect.addItem("")
@@ -982,7 +982,7 @@ class Ui_MainWindow(object):
         self.computerTypeLabel = QLabel(self.topDockWidgetContents)
         self.computerTypeLabel.setObjectName(u"computerTypeLabel")
 
-        self.gridLayout_3.addWidget(self.computerTypeLabel, 1, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.computerTypeLabel, 1, 0, 1, 1, Qt.AlignRight)
 
         self.computerSelect = QComboBox(self.topDockWidgetContents)
         self.computerSelect.addItem("")
@@ -996,7 +996,7 @@ class Ui_MainWindow(object):
         self.delayReplyLabel = QLabel(self.topDockWidgetContents)
         self.delayReplyLabel.setObjectName(u"delayReplyLabel")
 
-        self.gridLayout_3.addWidget(self.delayReplyLabel, 2, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.delayReplyLabel, 2, 0, 1, 1, Qt.AlignRight)
 
         self.replyDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
         self.replyDelaySpin.setObjectName(u"replyDelaySpin")
@@ -1010,7 +1010,7 @@ class Ui_MainWindow(object):
         self.delayEntryLabel = QLabel(self.topDockWidgetContents)
         self.delayEntryLabel.setObjectName(u"delayEntryLabel")
 
-        self.gridLayout_3.addWidget(self.delayEntryLabel, 3, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.delayEntryLabel, 3, 0, 1, 1, Qt.AlignRight)
 
         self.entryDelaySpin = GFFFieldSpinBox(self.topDockWidgetContents)
         self.entryDelaySpin.setObjectName(u"entryDelaySpin")
@@ -1024,7 +1024,7 @@ class Ui_MainWindow(object):
         self.voiceOverIDLabel = QLabel(self.topDockWidgetContents)
         self.voiceOverIDLabel.setObjectName(u"voiceOverIDLabel")
 
-        self.gridLayout_3.addWidget(self.voiceOverIDLabel, 4, 0, 1, 1)
+        self.gridLayout_3.addWidget(self.voiceOverIDLabel, 4, 0, 1, 1, Qt.AlignRight)
 
         self.voIdEdit = QLineEdit(self.topDockWidgetContents)
         self.voIdEdit.setObjectName(u"voIdEdit")
