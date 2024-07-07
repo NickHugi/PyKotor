@@ -684,7 +684,11 @@ class SortFilterProxyModel(QSortFilterProxyModel):
             - If any cell matches, return True
         - If no cells match, return False
         """
-        pattern: str = self.filterRegExp().pattern()
+        if qtpy.QT5:
+            pattern = self.filterRegExp().pattern()
+        else:
+            pattern = self.filterRegularExpression().pattern()
+
         if not pattern:
             return True
         caseInsensPattern = pattern.lower()

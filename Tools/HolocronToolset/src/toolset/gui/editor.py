@@ -161,7 +161,9 @@ class MediaPlayerWidget(QWidget):
         self.timeSlider.focusOutEvent = sliderFocusOutEvent  # type: ignore[method-override]
 
     def playPauseButtonClick(self):
-        if self.player.state() == QMediaPlayer.State.PlayingState:
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        if stateGetter() == stateEnum.PlayingState:
             self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
             self.player.pause()
         else:
@@ -172,14 +174,16 @@ class MediaPlayerWidget(QWidget):
         self.player.mediaStatusChanged.connect(self.mediaStateChanged)
         self.player.positionChanged.connect(self.positionChanged)
         self.player.durationChanged.connect(self.durationChanged)
-        self.player.stateChanged.connect(self.stateChanged)
+        stateChanged = self.player.stateChanged if qtpy.QT5 else self.player.playbackStateChanged
+        stateChanged.connect(self.stateChanged)
 
         self.playPauseButton.clicked.connect(self.playPauseButtonClick)
         self.stopButton.clicked.connect(lambda *args: self.player.stop() or self.hideWidget())
         self.muteButton.clicked.connect(self.toggleMute)
 
     def stateChanged(self, state: QMediaPlayer.MediaStatus):
-        if state == QMediaPlayer.State.PlayingState:
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        if state == stateEnum.PlayingState:
             self.showWidget()
 
     def format_time(self, msecs: int) -> str:
@@ -192,7 +196,8 @@ class MediaPlayerWidget(QWidget):
         if state == QMediaPlayer.MediaStatus.EndOfMedia:
             self.timeSlider.setValue(self.timeSlider.maximum())
             self.hideWidget()
-        if state == QMediaPlayer.State.PlayingState:
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        if state == stateEnum.PlayingState:
             self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))
         else:
             self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
@@ -201,7 +206,9 @@ class MediaPlayerWidget(QWidget):
         """Some qt bug prevents this from working properly. Requires a start and a play in order to take effect."""
         self.current_speed_index = max(0, min(len(self.speed_levels) - 1, self.current_speed_index + direction))
         newRate = self.speed_levels[self.current_speed_index]
-        wasPlaying = self.player.state() == QMediaPlayer.State.PlayingState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        wasPlaying = stateGetter() == stateEnum.PlayingState
         currentPosition = self.player.position()
         self.player.setPlaybackRate(newRate)
         self.player.setPosition(currentPosition)
@@ -209,8 +216,20 @@ class MediaPlayerWidget(QWidget):
             self.player.play()
 
     def toggleMute(self):
-        self.player.setMuted(not self.player.isMuted())
-        if self.player.isMuted():
+        if qtpy.QT5:
+            self.player.setMuted(not self.player.isMuted())
+            muted = self.player.isMuted()
+        else:
+            audio_output = self.player.audioOutput()
+            current_volume = audio_output.volume()
+            if current_volume > 0:
+                self.previous_volume = current_volume
+                audio_output.setVolume(0)
+                muted = True
+            else:
+                audio_output.setVolume(self.previous_volume if hasattr(self, "previous_volume") else 0.5)
+                muted = False
+        if muted:
             self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolumeMuted))
         else:
             self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
@@ -246,13 +265,17 @@ class MediaPlayerWidget(QWidget):
 
     def setVisible(self, visible: bool):  # noqa: FBT001
         """Override to control visibility based on player state."""
-        if self.player.state() == QMediaPlayer.State.PlayingState:
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        if stateGetter() == stateEnum.PlayingState:
             return
         super().setVisible(visible)
 
     def showEvent(self, event: QShowEvent):
         """Override to prevent showing unless playing."""
-        if self.player.state() != QMediaPlayer.State.PlayingState:
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        if stateGetter() != stateEnum.PlayingState:
             return
         super().showEvent(event)
 

@@ -756,9 +756,7 @@ class ToolWindow(QMainWindow):
         palette = QPalette()
         role_colors: dict[QPalette.ColorRole, QColor] = {
             QPalette.ColorRole.Window: secondary,
-            QPalette.ColorRole.Background: self.adjust_color(primary, lightness=110),
             QPalette.ColorRole.Dark: self.adjust_color(primary, lightness=80),
-            QPalette.ColorRole.Foreground: self.adjust_color(secondary, lightness=80),
             QPalette.ColorRole.Button: primary,
             QPalette.ColorRole.WindowText: text,
             QPalette.ColorRole.Base: primary,
@@ -778,13 +776,28 @@ class ToolWindow(QMainWindow):
             QPalette.ColorRole.Shadow: self.adjust_color(primary, lightness=50),
             QPalette.ColorRole.PlaceholderText: self.adjust_color(text, lightness=70)
         }
+
+        # Special handling for PyQt5 and PyQt6
+        if qtpy.QT5:
+            extra_roles = {
+                QPalette.ColorRole.Background: self.adjust_color(primary, lightness=110),  # Use Background for PyQt5
+                QPalette.ColorRole.Foreground: self.adjust_color(text, lightness=95)      # Use Foreground for PyQt5
+            }
+        else:
+            # In PyQt6, Background and Foreground are handled with Window and WindowText respectively
+            extra_roles = {
+                QPalette.ColorRole.Window: self.adjust_color(secondary, lightness=110),
+                QPalette.ColorRole.WindowText: self.adjust_color(text, lightness=95)
+            }
+        role_colors.update(extra_roles)
         for role, color in role_colors.items():
-            palette.setColor(QPalette.Normal, role, color)
+            palette.setColor(QPalette.ColorGroup.Normal, role, color)
 
         # Create disabled and inactive variations
         for state_key, saturation_factor, lightness_factor in [
-            (QPalette.Disabled, 80, 60),  # More muted and slightly darker
-            (QPalette.Inactive, 90, 80)]:  # Slightly muted
+            (QPalette.ColorGroup.Disabled, 80, 60),  # More muted and slightly darker
+            (QPalette.ColorGroup.Inactive, 90, 80),   # Slightly muted
+        ]:
             for role, base_color in role_colors.items():
                 adjusted_color = self.adjust_color(base_color, saturation=saturation_factor, lightness=lightness_factor)
                 palette.setColor(state_key, role, adjusted_color)
