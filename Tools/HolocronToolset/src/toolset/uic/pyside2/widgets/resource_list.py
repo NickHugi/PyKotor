@@ -87,12 +87,12 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
 #if QT_CONFIG(tooltip)
-        self.refreshButton.setToolTip(QCoreApplication.translate("Form", u"Refresh the list of modules.", None))
+        self.refreshButton.setToolTip(QCoreApplication.translate("Form", u"Refresh this list.", None))
 #endif // QT_CONFIG(tooltip)
         self.refreshButton.setText(QCoreApplication.translate("Form", u"Refresh", None))
         self.searchEdit.setPlaceholderText(QCoreApplication.translate("Form", u"search...", None))
 #if QT_CONFIG(tooltip)
-        self.reloadButton.setToolTip(QCoreApplication.translate("Form", u"Reload the active module.", None))
+        self.reloadButton.setToolTip(QCoreApplication.translate("Form", u"Reload the active module/folder.", None))
 #endif // QT_CONFIG(tooltip)
         self.reloadButton.setText(QCoreApplication.translate("Form", u"Reload", None))
     # retranslateUi

@@ -103,7 +103,7 @@ class Ui_MainWindow(object):
 
         self.firstnameRandomButton = QPushButton(self.groupBox)
         self.firstnameRandomButton.setObjectName(u"firstnameRandomButton")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.firstnameRandomButton.sizePolicy().hasHeightForWidth())
@@ -233,7 +233,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
         self.conversationEdit = FilterComboBox(self.groupBox)
         self.conversationEdit.setObjectName(u"conversationEdit")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy3.setHorizontalStretch(1)
         sizePolicy3.setVerticalStretch(0)
         sizePolicy3.setHeightForWidth(self.conversationEdit.sizePolicy().hasHeightForWidth())
@@ -243,11 +243,8 @@ class Ui_MainWindow(object):
 
         self.conversationModifyButton = QPushButton(self.groupBox)
         self.conversationModifyButton.setObjectName(u"conversationModifyButton")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.conversationModifyButton.sizePolicy().hasHeightForWidth())
-        self.conversationModifyButton.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.conversationModifyButton.sizePolicy().hasHeightForWidth())
+        self.conversationModifyButton.setSizePolicy(sizePolicy2)
         font = QFont()
         font.setStyleStrategy(QFont.PreferAntialias)
         self.conversationModifyButton.setFont(font)
@@ -329,39 +326,39 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.disarmableCheckbox = QCheckBox(self.groupBox_3)
         self.disarmableCheckbox.setObjectName(u"disarmableCheckbox")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
-        sizePolicy5.setHorizontalStretch(0)
-        sizePolicy5.setVerticalStretch(0)
-        sizePolicy5.setHeightForWidth(self.disarmableCheckbox.sizePolicy().hasHeightForWidth())
-        self.disarmableCheckbox.setSizePolicy(sizePolicy5)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.disarmableCheckbox.sizePolicy().hasHeightForWidth())
+        self.disarmableCheckbox.setSizePolicy(sizePolicy4)
 
         self.verticalLayout_2.addWidget(self.disarmableCheckbox)
 
         self.noPermDeathCheckbox = QCheckBox(self.groupBox_3)
         self.noPermDeathCheckbox.setObjectName(u"noPermDeathCheckbox")
-        sizePolicy5.setHeightForWidth(self.noPermDeathCheckbox.sizePolicy().hasHeightForWidth())
-        self.noPermDeathCheckbox.setSizePolicy(sizePolicy5)
+        sizePolicy4.setHeightForWidth(self.noPermDeathCheckbox.sizePolicy().hasHeightForWidth())
+        self.noPermDeathCheckbox.setSizePolicy(sizePolicy4)
 
         self.verticalLayout_2.addWidget(self.noPermDeathCheckbox)
 
         self.min1HpCheckbox = QCheckBox(self.groupBox_3)
         self.min1HpCheckbox.setObjectName(u"min1HpCheckbox")
-        sizePolicy5.setHeightForWidth(self.min1HpCheckbox.sizePolicy().hasHeightForWidth())
-        self.min1HpCheckbox.setSizePolicy(sizePolicy5)
+        sizePolicy4.setHeightForWidth(self.min1HpCheckbox.sizePolicy().hasHeightForWidth())
+        self.min1HpCheckbox.setSizePolicy(sizePolicy4)
 
         self.verticalLayout_2.addWidget(self.min1HpCheckbox)
 
         self.plotCheckbox = QCheckBox(self.groupBox_3)
         self.plotCheckbox.setObjectName(u"plotCheckbox")
-        sizePolicy5.setHeightForWidth(self.plotCheckbox.sizePolicy().hasHeightForWidth())
-        self.plotCheckbox.setSizePolicy(sizePolicy5)
+        sizePolicy4.setHeightForWidth(self.plotCheckbox.sizePolicy().hasHeightForWidth())
+        self.plotCheckbox.setSizePolicy(sizePolicy4)
 
         self.verticalLayout_2.addWidget(self.plotCheckbox)
 
         self.isPcCheckbox = QCheckBox(self.groupBox_3)
         self.isPcCheckbox.setObjectName(u"isPcCheckbox")
-        sizePolicy5.setHeightForWidth(self.isPcCheckbox.sizePolicy().hasHeightForWidth())
-        self.isPcCheckbox.setSizePolicy(sizePolicy5)
+        sizePolicy4.setHeightForWidth(self.isPcCheckbox.sizePolicy().hasHeightForWidth())
+        self.isPcCheckbox.setSizePolicy(sizePolicy4)
 
         self.verticalLayout_2.addWidget(self.isPcCheckbox)
 
@@ -406,8 +403,8 @@ class Ui_MainWindow(object):
 
         self.raceSelect = ComboBox2DA(self.groupBox_4)
         self.raceSelect.setObjectName(u"raceSelect")
-        sizePolicy4.setHeightForWidth(self.raceSelect.sizePolicy().hasHeightForWidth())
-        self.raceSelect.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.raceSelect.sizePolicy().hasHeightForWidth())
+        self.raceSelect.setSizePolicy(sizePolicy2)
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.raceSelect)
 
@@ -418,8 +415,8 @@ class Ui_MainWindow(object):
 
         self.subraceSelect = ComboBox2DA(self.groupBox_4)
         self.subraceSelect.setObjectName(u"subraceSelect")
-        sizePolicy4.setHeightForWidth(self.subraceSelect.sizePolicy().hasHeightForWidth())
-        self.subraceSelect.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.subraceSelect.sizePolicy().hasHeightForWidth())
+        self.subraceSelect.setSizePolicy(sizePolicy2)
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.subraceSelect)
 
@@ -434,74 +431,71 @@ class Ui_MainWindow(object):
         self.formLayout_3.setObjectName(u"formLayout_3")
         self.label_16 = QLabel(self.groupBox_5)
         self.label_16.setObjectName(u"label_16")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        sizePolicy6.setHorizontalStretch(1)
-        sizePolicy6.setVerticalStretch(0)
-        sizePolicy6.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
-        self.label_16.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_16.sizePolicy().hasHeightForWidth())
+        self.label_16.setSizePolicy(sizePolicy3)
 
         self.formLayout_3.setWidget(0, QFormLayout.LabelRole, self.label_16)
 
         self.speedSelect = ComboBox2DA(self.groupBox_5)
         self.speedSelect.setObjectName(u"speedSelect")
-        sizePolicy4.setHeightForWidth(self.speedSelect.sizePolicy().hasHeightForWidth())
-        self.speedSelect.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.speedSelect.sizePolicy().hasHeightForWidth())
+        self.speedSelect.setSizePolicy(sizePolicy2)
 
         self.formLayout_3.setWidget(0, QFormLayout.FieldRole, self.speedSelect)
 
         self.label_11 = QLabel(self.groupBox_5)
         self.label_11.setObjectName(u"label_11")
-        sizePolicy6.setHeightForWidth(self.label_11.sizePolicy().hasHeightForWidth())
-        self.label_11.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_11.sizePolicy().hasHeightForWidth())
+        self.label_11.setSizePolicy(sizePolicy3)
 
         self.formLayout_3.setWidget(1, QFormLayout.LabelRole, self.label_11)
 
         self.factionSelect = ComboBox2DA(self.groupBox_5)
         self.factionSelect.setObjectName(u"factionSelect")
-        sizePolicy4.setHeightForWidth(self.factionSelect.sizePolicy().hasHeightForWidth())
-        self.factionSelect.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.factionSelect.sizePolicy().hasHeightForWidth())
+        self.factionSelect.setSizePolicy(sizePolicy2)
 
         self.formLayout_3.setWidget(1, QFormLayout.FieldRole, self.factionSelect)
 
         self.genderAdvancedLabel = QLabel(self.groupBox_5)
         self.genderAdvancedLabel.setObjectName(u"genderAdvancedLabel")
-        sizePolicy6.setHeightForWidth(self.genderAdvancedLabel.sizePolicy().hasHeightForWidth())
-        self.genderAdvancedLabel.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.genderAdvancedLabel.sizePolicy().hasHeightForWidth())
+        self.genderAdvancedLabel.setSizePolicy(sizePolicy3)
 
         self.formLayout_3.setWidget(2, QFormLayout.LabelRole, self.genderAdvancedLabel)
 
         self.genderSelect = ComboBox2DA(self.groupBox_5)
         self.genderSelect.setObjectName(u"genderSelect")
-        sizePolicy4.setHeightForWidth(self.genderSelect.sizePolicy().hasHeightForWidth())
-        self.genderSelect.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.genderSelect.sizePolicy().hasHeightForWidth())
+        self.genderSelect.setSizePolicy(sizePolicy2)
 
         self.formLayout_3.setWidget(2, QFormLayout.FieldRole, self.genderSelect)
 
         self.label_12 = QLabel(self.groupBox_5)
         self.label_12.setObjectName(u"label_12")
-        sizePolicy6.setHeightForWidth(self.label_12.sizePolicy().hasHeightForWidth())
-        self.label_12.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_12.sizePolicy().hasHeightForWidth())
+        self.label_12.setSizePolicy(sizePolicy3)
 
         self.formLayout_3.setWidget(3, QFormLayout.LabelRole, self.label_12)
 
         self.perceptionSelect = ComboBox2DA(self.groupBox_5)
         self.perceptionSelect.setObjectName(u"perceptionSelect")
-        sizePolicy4.setHeightForWidth(self.perceptionSelect.sizePolicy().hasHeightForWidth())
-        self.perceptionSelect.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.perceptionSelect.sizePolicy().hasHeightForWidth())
+        self.perceptionSelect.setSizePolicy(sizePolicy2)
 
         self.formLayout_3.setWidget(3, QFormLayout.FieldRole, self.perceptionSelect)
 
         self.label_13 = QLabel(self.groupBox_5)
         self.label_13.setObjectName(u"label_13")
-        sizePolicy6.setHeightForWidth(self.label_13.sizePolicy().hasHeightForWidth())
-        self.label_13.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_13.sizePolicy().hasHeightForWidth())
+        self.label_13.setSizePolicy(sizePolicy3)
 
         self.formLayout_3.setWidget(4, QFormLayout.LabelRole, self.label_13)
 
         self.challengeRatingSpin = QDoubleSpinBox(self.groupBox_5)
         self.challengeRatingSpin.setObjectName(u"challengeRatingSpin")
-        sizePolicy4.setHeightForWidth(self.challengeRatingSpin.sizePolicy().hasHeightForWidth())
-        self.challengeRatingSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.challengeRatingSpin.sizePolicy().hasHeightForWidth())
+        self.challengeRatingSpin.setSizePolicy(sizePolicy2)
 
         self.formLayout_3.setWidget(4, QFormLayout.FieldRole, self.challengeRatingSpin)
 
@@ -517,8 +511,8 @@ class Ui_MainWindow(object):
         self.formLayout_24.setContentsMargins(0, 0, 0, 0)
         self.label_102 = QLabel(self.k2onlyBox)
         self.label_102.setObjectName(u"label_102")
-        sizePolicy6.setHeightForWidth(self.label_102.sizePolicy().hasHeightForWidth())
-        self.label_102.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_102.sizePolicy().hasHeightForWidth())
+        self.label_102.setSizePolicy(sizePolicy3)
 
         self.formLayout_24.setWidget(1, QFormLayout.LabelRole, self.label_102)
 
@@ -529,8 +523,8 @@ class Ui_MainWindow(object):
 
         self.label_110 = QLabel(self.k2onlyBox)
         self.label_110.setObjectName(u"label_110")
-        sizePolicy6.setHeightForWidth(self.label_110.sizePolicy().hasHeightForWidth())
-        self.label_110.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_110.sizePolicy().hasHeightForWidth())
+        self.label_110.setSizePolicy(sizePolicy3)
 
         self.formLayout_24.setWidget(2, QFormLayout.LabelRole, self.label_110)
 
@@ -575,15 +569,15 @@ class Ui_MainWindow(object):
         self.formLayout_4.setObjectName(u"formLayout_4")
         self.label_17 = QLabel(self.groupBox_6)
         self.label_17.setObjectName(u"label_17")
-        sizePolicy4.setHeightForWidth(self.label_17.sizePolicy().hasHeightForWidth())
-        self.label_17.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_17.sizePolicy().hasHeightForWidth())
+        self.label_17.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(0, QFormLayout.LabelRole, self.label_17)
 
         self.computerUseSpin = QSpinBox(self.groupBox_6)
         self.computerUseSpin.setObjectName(u"computerUseSpin")
-        sizePolicy4.setHeightForWidth(self.computerUseSpin.sizePolicy().hasHeightForWidth())
-        self.computerUseSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.computerUseSpin.sizePolicy().hasHeightForWidth())
+        self.computerUseSpin.setSizePolicy(sizePolicy2)
         self.computerUseSpin.setMinimum(-2147483648)
         self.computerUseSpin.setMaximum(2147483647)
 
@@ -591,15 +585,15 @@ class Ui_MainWindow(object):
 
         self.label_18 = QLabel(self.groupBox_6)
         self.label_18.setObjectName(u"label_18")
-        sizePolicy4.setHeightForWidth(self.label_18.sizePolicy().hasHeightForWidth())
-        self.label_18.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_18.sizePolicy().hasHeightForWidth())
+        self.label_18.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(1, QFormLayout.LabelRole, self.label_18)
 
         self.demolitionsSpin = QSpinBox(self.groupBox_6)
         self.demolitionsSpin.setObjectName(u"demolitionsSpin")
-        sizePolicy4.setHeightForWidth(self.demolitionsSpin.sizePolicy().hasHeightForWidth())
-        self.demolitionsSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.demolitionsSpin.sizePolicy().hasHeightForWidth())
+        self.demolitionsSpin.setSizePolicy(sizePolicy2)
         self.demolitionsSpin.setMinimum(-2147483648)
         self.demolitionsSpin.setMaximum(2147483647)
 
@@ -607,15 +601,15 @@ class Ui_MainWindow(object):
 
         self.label_19 = QLabel(self.groupBox_6)
         self.label_19.setObjectName(u"label_19")
-        sizePolicy4.setHeightForWidth(self.label_19.sizePolicy().hasHeightForWidth())
-        self.label_19.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_19.sizePolicy().hasHeightForWidth())
+        self.label_19.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(2, QFormLayout.LabelRole, self.label_19)
 
         self.stealthSpin = QSpinBox(self.groupBox_6)
         self.stealthSpin.setObjectName(u"stealthSpin")
-        sizePolicy4.setHeightForWidth(self.stealthSpin.sizePolicy().hasHeightForWidth())
-        self.stealthSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.stealthSpin.sizePolicy().hasHeightForWidth())
+        self.stealthSpin.setSizePolicy(sizePolicy2)
         self.stealthSpin.setMinimum(-2147483648)
         self.stealthSpin.setMaximum(2147483647)
 
@@ -623,15 +617,15 @@ class Ui_MainWindow(object):
 
         self.label_20 = QLabel(self.groupBox_6)
         self.label_20.setObjectName(u"label_20")
-        sizePolicy4.setHeightForWidth(self.label_20.sizePolicy().hasHeightForWidth())
-        self.label_20.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_20.sizePolicy().hasHeightForWidth())
+        self.label_20.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(3, QFormLayout.LabelRole, self.label_20)
 
         self.awarenessSpin = QSpinBox(self.groupBox_6)
         self.awarenessSpin.setObjectName(u"awarenessSpin")
-        sizePolicy4.setHeightForWidth(self.awarenessSpin.sizePolicy().hasHeightForWidth())
-        self.awarenessSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.awarenessSpin.sizePolicy().hasHeightForWidth())
+        self.awarenessSpin.setSizePolicy(sizePolicy2)
         self.awarenessSpin.setMinimum(-2147483648)
         self.awarenessSpin.setMaximum(2147483647)
 
@@ -639,15 +633,15 @@ class Ui_MainWindow(object):
 
         self.label_21 = QLabel(self.groupBox_6)
         self.label_21.setObjectName(u"label_21")
-        sizePolicy4.setHeightForWidth(self.label_21.sizePolicy().hasHeightForWidth())
-        self.label_21.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_21.sizePolicy().hasHeightForWidth())
+        self.label_21.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(4, QFormLayout.LabelRole, self.label_21)
 
         self.persuadeSpin = QSpinBox(self.groupBox_6)
         self.persuadeSpin.setObjectName(u"persuadeSpin")
-        sizePolicy4.setHeightForWidth(self.persuadeSpin.sizePolicy().hasHeightForWidth())
-        self.persuadeSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.persuadeSpin.sizePolicy().hasHeightForWidth())
+        self.persuadeSpin.setSizePolicy(sizePolicy2)
         self.persuadeSpin.setMinimum(-2147483648)
         self.persuadeSpin.setMaximum(2147483647)
 
@@ -655,15 +649,15 @@ class Ui_MainWindow(object):
 
         self.label_22 = QLabel(self.groupBox_6)
         self.label_22.setObjectName(u"label_22")
-        sizePolicy4.setHeightForWidth(self.label_22.sizePolicy().hasHeightForWidth())
-        self.label_22.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_22.sizePolicy().hasHeightForWidth())
+        self.label_22.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(5, QFormLayout.LabelRole, self.label_22)
 
         self.repairSpin = QSpinBox(self.groupBox_6)
         self.repairSpin.setObjectName(u"repairSpin")
-        sizePolicy4.setHeightForWidth(self.repairSpin.sizePolicy().hasHeightForWidth())
-        self.repairSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.repairSpin.sizePolicy().hasHeightForWidth())
+        self.repairSpin.setSizePolicy(sizePolicy2)
         self.repairSpin.setMinimum(-2147483648)
         self.repairSpin.setMaximum(2147483647)
 
@@ -671,15 +665,15 @@ class Ui_MainWindow(object):
 
         self.label_23 = QLabel(self.groupBox_6)
         self.label_23.setObjectName(u"label_23")
-        sizePolicy4.setHeightForWidth(self.label_23.sizePolicy().hasHeightForWidth())
-        self.label_23.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_23.sizePolicy().hasHeightForWidth())
+        self.label_23.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(6, QFormLayout.LabelRole, self.label_23)
 
         self.securitySpin = QSpinBox(self.groupBox_6)
         self.securitySpin.setObjectName(u"securitySpin")
-        sizePolicy4.setHeightForWidth(self.securitySpin.sizePolicy().hasHeightForWidth())
-        self.securitySpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.securitySpin.sizePolicy().hasHeightForWidth())
+        self.securitySpin.setSizePolicy(sizePolicy2)
         self.securitySpin.setMinimum(-2147483648)
         self.securitySpin.setMaximum(2147483647)
 
@@ -687,15 +681,15 @@ class Ui_MainWindow(object):
 
         self.label_24 = QLabel(self.groupBox_6)
         self.label_24.setObjectName(u"label_24")
-        sizePolicy4.setHeightForWidth(self.label_24.sizePolicy().hasHeightForWidth())
-        self.label_24.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_24.sizePolicy().hasHeightForWidth())
+        self.label_24.setSizePolicy(sizePolicy2)
 
         self.formLayout_4.setWidget(7, QFormLayout.LabelRole, self.label_24)
 
         self.treatInjurySpin = QSpinBox(self.groupBox_6)
         self.treatInjurySpin.setObjectName(u"treatInjurySpin")
-        sizePolicy4.setHeightForWidth(self.treatInjurySpin.sizePolicy().hasHeightForWidth())
-        self.treatInjurySpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.treatInjurySpin.sizePolicy().hasHeightForWidth())
+        self.treatInjurySpin.setSizePolicy(sizePolicy2)
         self.treatInjurySpin.setMinimum(-2147483648)
         self.treatInjurySpin.setMaximum(2147483647)
 
@@ -710,15 +704,15 @@ class Ui_MainWindow(object):
         self.formLayout_6.setObjectName(u"formLayout_6")
         self.label_31 = QLabel(self.groupBox_8)
         self.label_31.setObjectName(u"label_31")
-        sizePolicy4.setHeightForWidth(self.label_31.sizePolicy().hasHeightForWidth())
-        self.label_31.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_31.sizePolicy().hasHeightForWidth())
+        self.label_31.setSizePolicy(sizePolicy2)
 
         self.formLayout_6.setWidget(0, QFormLayout.LabelRole, self.label_31)
 
         self.fortitudeSpin = QSpinBox(self.groupBox_8)
         self.fortitudeSpin.setObjectName(u"fortitudeSpin")
-        sizePolicy4.setHeightForWidth(self.fortitudeSpin.sizePolicy().hasHeightForWidth())
-        self.fortitudeSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.fortitudeSpin.sizePolicy().hasHeightForWidth())
+        self.fortitudeSpin.setSizePolicy(sizePolicy2)
         self.fortitudeSpin.setMinimum(-2147483648)
         self.fortitudeSpin.setMaximum(2147483647)
 
@@ -726,22 +720,22 @@ class Ui_MainWindow(object):
 
         self.label_32 = QLabel(self.groupBox_8)
         self.label_32.setObjectName(u"label_32")
-        sizePolicy4.setHeightForWidth(self.label_32.sizePolicy().hasHeightForWidth())
-        self.label_32.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_32.sizePolicy().hasHeightForWidth())
+        self.label_32.setSizePolicy(sizePolicy2)
 
         self.formLayout_6.setWidget(1, QFormLayout.LabelRole, self.label_32)
 
         self.label_33 = QLabel(self.groupBox_8)
         self.label_33.setObjectName(u"label_33")
-        sizePolicy4.setHeightForWidth(self.label_33.sizePolicy().hasHeightForWidth())
-        self.label_33.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_33.sizePolicy().hasHeightForWidth())
+        self.label_33.setSizePolicy(sizePolicy2)
 
         self.formLayout_6.setWidget(2, QFormLayout.LabelRole, self.label_33)
 
         self.reflexSpin = QSpinBox(self.groupBox_8)
         self.reflexSpin.setObjectName(u"reflexSpin")
-        sizePolicy4.setHeightForWidth(self.reflexSpin.sizePolicy().hasHeightForWidth())
-        self.reflexSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.reflexSpin.sizePolicy().hasHeightForWidth())
+        self.reflexSpin.setSizePolicy(sizePolicy2)
         self.reflexSpin.setMinimum(-2147483648)
         self.reflexSpin.setMaximum(2147483647)
 
@@ -749,8 +743,8 @@ class Ui_MainWindow(object):
 
         self.willSpin = QSpinBox(self.groupBox_8)
         self.willSpin.setObjectName(u"willSpin")
-        sizePolicy4.setHeightForWidth(self.willSpin.sizePolicy().hasHeightForWidth())
-        self.willSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.willSpin.sizePolicy().hasHeightForWidth())
+        self.willSpin.setSizePolicy(sizePolicy2)
         self.willSpin.setMinimum(-2147483648)
         self.willSpin.setMaximum(2147483647)
 
@@ -765,15 +759,15 @@ class Ui_MainWindow(object):
         self.formLayout_7.setObjectName(u"formLayout_7")
         self.label_34 = QLabel(self.groupBox_9)
         self.label_34.setObjectName(u"label_34")
-        sizePolicy4.setHeightForWidth(self.label_34.sizePolicy().hasHeightForWidth())
-        self.label_34.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_34.sizePolicy().hasHeightForWidth())
+        self.label_34.setSizePolicy(sizePolicy2)
 
         self.formLayout_7.setWidget(0, QFormLayout.LabelRole, self.label_34)
 
         self.armorClassSpin = QSpinBox(self.groupBox_9)
         self.armorClassSpin.setObjectName(u"armorClassSpin")
-        sizePolicy4.setHeightForWidth(self.armorClassSpin.sizePolicy().hasHeightForWidth())
-        self.armorClassSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.armorClassSpin.sizePolicy().hasHeightForWidth())
+        self.armorClassSpin.setSizePolicy(sizePolicy2)
         self.armorClassSpin.setMinimum(-2147483648)
         self.armorClassSpin.setMaximum(2147483647)
 
@@ -799,15 +793,15 @@ class Ui_MainWindow(object):
         self.formLayout_5.setObjectName(u"formLayout_5")
         self.label_25 = QLabel(self.groupBox_7)
         self.label_25.setObjectName(u"label_25")
-        sizePolicy4.setHeightForWidth(self.label_25.sizePolicy().hasHeightForWidth())
-        self.label_25.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_25.sizePolicy().hasHeightForWidth())
+        self.label_25.setSizePolicy(sizePolicy2)
 
         self.formLayout_5.setWidget(0, QFormLayout.LabelRole, self.label_25)
 
         self.strengthSpin = QSpinBox(self.groupBox_7)
         self.strengthSpin.setObjectName(u"strengthSpin")
-        sizePolicy4.setHeightForWidth(self.strengthSpin.sizePolicy().hasHeightForWidth())
-        self.strengthSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.strengthSpin.sizePolicy().hasHeightForWidth())
+        self.strengthSpin.setSizePolicy(sizePolicy2)
         self.strengthSpin.setMinimum(-2147483648)
         self.strengthSpin.setMaximum(2147483647)
 
@@ -815,15 +809,15 @@ class Ui_MainWindow(object):
 
         self.label_26 = QLabel(self.groupBox_7)
         self.label_26.setObjectName(u"label_26")
-        sizePolicy4.setHeightForWidth(self.label_26.sizePolicy().hasHeightForWidth())
-        self.label_26.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_26.sizePolicy().hasHeightForWidth())
+        self.label_26.setSizePolicy(sizePolicy2)
 
         self.formLayout_5.setWidget(1, QFormLayout.LabelRole, self.label_26)
 
         self.dexteritySpin = QSpinBox(self.groupBox_7)
         self.dexteritySpin.setObjectName(u"dexteritySpin")
-        sizePolicy4.setHeightForWidth(self.dexteritySpin.sizePolicy().hasHeightForWidth())
-        self.dexteritySpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.dexteritySpin.sizePolicy().hasHeightForWidth())
+        self.dexteritySpin.setSizePolicy(sizePolicy2)
         self.dexteritySpin.setMinimum(-2147483648)
         self.dexteritySpin.setMaximum(2147483647)
 
@@ -831,15 +825,15 @@ class Ui_MainWindow(object):
 
         self.label_27 = QLabel(self.groupBox_7)
         self.label_27.setObjectName(u"label_27")
-        sizePolicy4.setHeightForWidth(self.label_27.sizePolicy().hasHeightForWidth())
-        self.label_27.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_27.sizePolicy().hasHeightForWidth())
+        self.label_27.setSizePolicy(sizePolicy2)
 
         self.formLayout_5.setWidget(2, QFormLayout.LabelRole, self.label_27)
 
         self.constitutionSpin = QSpinBox(self.groupBox_7)
         self.constitutionSpin.setObjectName(u"constitutionSpin")
-        sizePolicy4.setHeightForWidth(self.constitutionSpin.sizePolicy().hasHeightForWidth())
-        self.constitutionSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.constitutionSpin.sizePolicy().hasHeightForWidth())
+        self.constitutionSpin.setSizePolicy(sizePolicy2)
         self.constitutionSpin.setMinimum(-2147483648)
         self.constitutionSpin.setMaximum(2147483647)
 
@@ -847,15 +841,15 @@ class Ui_MainWindow(object):
 
         self.label_28 = QLabel(self.groupBox_7)
         self.label_28.setObjectName(u"label_28")
-        sizePolicy4.setHeightForWidth(self.label_28.sizePolicy().hasHeightForWidth())
-        self.label_28.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_28.sizePolicy().hasHeightForWidth())
+        self.label_28.setSizePolicy(sizePolicy2)
 
         self.formLayout_5.setWidget(3, QFormLayout.LabelRole, self.label_28)
 
         self.intelligenceSpin = QSpinBox(self.groupBox_7)
         self.intelligenceSpin.setObjectName(u"intelligenceSpin")
-        sizePolicy4.setHeightForWidth(self.intelligenceSpin.sizePolicy().hasHeightForWidth())
-        self.intelligenceSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.intelligenceSpin.sizePolicy().hasHeightForWidth())
+        self.intelligenceSpin.setSizePolicy(sizePolicy2)
         self.intelligenceSpin.setMinimum(-2147483648)
         self.intelligenceSpin.setMaximum(2147483647)
 
@@ -863,15 +857,15 @@ class Ui_MainWindow(object):
 
         self.label_29 = QLabel(self.groupBox_7)
         self.label_29.setObjectName(u"label_29")
-        sizePolicy4.setHeightForWidth(self.label_29.sizePolicy().hasHeightForWidth())
-        self.label_29.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_29.sizePolicy().hasHeightForWidth())
+        self.label_29.setSizePolicy(sizePolicy2)
 
         self.formLayout_5.setWidget(4, QFormLayout.LabelRole, self.label_29)
 
         self.wisdomSpin = QSpinBox(self.groupBox_7)
         self.wisdomSpin.setObjectName(u"wisdomSpin")
-        sizePolicy4.setHeightForWidth(self.wisdomSpin.sizePolicy().hasHeightForWidth())
-        self.wisdomSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.wisdomSpin.sizePolicy().hasHeightForWidth())
+        self.wisdomSpin.setSizePolicy(sizePolicy2)
         self.wisdomSpin.setMinimum(-2147483648)
         self.wisdomSpin.setMaximum(2147483647)
 
@@ -879,15 +873,15 @@ class Ui_MainWindow(object):
 
         self.label_30 = QLabel(self.groupBox_7)
         self.label_30.setObjectName(u"label_30")
-        sizePolicy4.setHeightForWidth(self.label_30.sizePolicy().hasHeightForWidth())
-        self.label_30.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_30.sizePolicy().hasHeightForWidth())
+        self.label_30.setSizePolicy(sizePolicy2)
 
         self.formLayout_5.setWidget(5, QFormLayout.LabelRole, self.label_30)
 
         self.charismaSpin = QSpinBox(self.groupBox_7)
         self.charismaSpin.setObjectName(u"charismaSpin")
-        sizePolicy4.setHeightForWidth(self.charismaSpin.sizePolicy().hasHeightForWidth())
-        self.charismaSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.charismaSpin.sizePolicy().hasHeightForWidth())
+        self.charismaSpin.setSizePolicy(sizePolicy2)
         self.charismaSpin.setMinimum(-2147483648)
         self.charismaSpin.setMaximum(2147483647)
 
@@ -902,29 +896,29 @@ class Ui_MainWindow(object):
         self.formLayout_8.setObjectName(u"formLayout_8")
         self.label_35 = QLabel(self.groupBox_10)
         self.label_35.setObjectName(u"label_35")
-        sizePolicy4.setHeightForWidth(self.label_35.sizePolicy().hasHeightForWidth())
-        self.label_35.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_35.sizePolicy().hasHeightForWidth())
+        self.label_35.setSizePolicy(sizePolicy2)
 
         self.formLayout_8.setWidget(0, QFormLayout.LabelRole, self.label_35)
 
         self.label_36 = QLabel(self.groupBox_10)
         self.label_36.setObjectName(u"label_36")
-        sizePolicy4.setHeightForWidth(self.label_36.sizePolicy().hasHeightForWidth())
-        self.label_36.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_36.sizePolicy().hasHeightForWidth())
+        self.label_36.setSizePolicy(sizePolicy2)
 
         self.formLayout_8.setWidget(1, QFormLayout.LabelRole, self.label_36)
 
         self.label_37 = QLabel(self.groupBox_10)
         self.label_37.setObjectName(u"label_37")
-        sizePolicy4.setHeightForWidth(self.label_37.sizePolicy().hasHeightForWidth())
-        self.label_37.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_37.sizePolicy().hasHeightForWidth())
+        self.label_37.setSizePolicy(sizePolicy2)
 
         self.formLayout_8.setWidget(2, QFormLayout.LabelRole, self.label_37)
 
         self.baseHpSpin = QSpinBox(self.groupBox_10)
         self.baseHpSpin.setObjectName(u"baseHpSpin")
-        sizePolicy4.setHeightForWidth(self.baseHpSpin.sizePolicy().hasHeightForWidth())
-        self.baseHpSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.baseHpSpin.sizePolicy().hasHeightForWidth())
+        self.baseHpSpin.setSizePolicy(sizePolicy2)
         self.baseHpSpin.setMinimum(-2147483648)
         self.baseHpSpin.setMaximum(2147483647)
 
@@ -932,8 +926,8 @@ class Ui_MainWindow(object):
 
         self.currentHpSpin = QSpinBox(self.groupBox_10)
         self.currentHpSpin.setObjectName(u"currentHpSpin")
-        sizePolicy4.setHeightForWidth(self.currentHpSpin.sizePolicy().hasHeightForWidth())
-        self.currentHpSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.currentHpSpin.sizePolicy().hasHeightForWidth())
+        self.currentHpSpin.setSizePolicy(sizePolicy2)
         self.currentHpSpin.setMinimum(-2147483648)
         self.currentHpSpin.setMaximum(2147483647)
 
@@ -941,8 +935,8 @@ class Ui_MainWindow(object):
 
         self.maxHpSpin = QSpinBox(self.groupBox_10)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
-        sizePolicy4.setHeightForWidth(self.maxHpSpin.sizePolicy().hasHeightForWidth())
-        self.maxHpSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.maxHpSpin.sizePolicy().hasHeightForWidth())
+        self.maxHpSpin.setSizePolicy(sizePolicy2)
         self.maxHpSpin.setMinimum(-2147483648)
         self.maxHpSpin.setMaximum(2147483647)
 
@@ -957,15 +951,15 @@ class Ui_MainWindow(object):
         self.formLayout_9.setObjectName(u"formLayout_9")
         self.label_39 = QLabel(self.groupBox_11)
         self.label_39.setObjectName(u"label_39")
-        sizePolicy4.setHeightForWidth(self.label_39.sizePolicy().hasHeightForWidth())
-        self.label_39.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_39.sizePolicy().hasHeightForWidth())
+        self.label_39.setSizePolicy(sizePolicy2)
 
         self.formLayout_9.setWidget(0, QFormLayout.LabelRole, self.label_39)
 
         self.currentFpSpin = QSpinBox(self.groupBox_11)
         self.currentFpSpin.setObjectName(u"currentFpSpin")
-        sizePolicy4.setHeightForWidth(self.currentFpSpin.sizePolicy().hasHeightForWidth())
-        self.currentFpSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.currentFpSpin.sizePolicy().hasHeightForWidth())
+        self.currentFpSpin.setSizePolicy(sizePolicy2)
         self.currentFpSpin.setMinimum(-2147483648)
         self.currentFpSpin.setMaximum(2147483647)
 
@@ -973,15 +967,15 @@ class Ui_MainWindow(object):
 
         self.label_40 = QLabel(self.groupBox_11)
         self.label_40.setObjectName(u"label_40")
-        sizePolicy4.setHeightForWidth(self.label_40.sizePolicy().hasHeightForWidth())
-        self.label_40.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.label_40.sizePolicy().hasHeightForWidth())
+        self.label_40.setSizePolicy(sizePolicy2)
 
         self.formLayout_9.setWidget(1, QFormLayout.LabelRole, self.label_40)
 
         self.maxFpSpin = QSpinBox(self.groupBox_11)
         self.maxFpSpin.setObjectName(u"maxFpSpin")
-        sizePolicy4.setHeightForWidth(self.maxFpSpin.sizePolicy().hasHeightForWidth())
-        self.maxFpSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.maxFpSpin.sizePolicy().hasHeightForWidth())
+        self.maxFpSpin.setSizePolicy(sizePolicy2)
         self.maxFpSpin.setMinimum(-2147483648)
         self.maxFpSpin.setMaximum(2147483647)
 
@@ -1010,15 +1004,15 @@ class Ui_MainWindow(object):
         self.horizontalLayout_13.setObjectName(u"horizontalLayout_13")
         self.class1Select = ComboBox2DA(self.groupBox_13)
         self.class1Select.setObjectName(u"class1Select")
-        sizePolicy4.setHeightForWidth(self.class1Select.sizePolicy().hasHeightForWidth())
-        self.class1Select.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.class1Select.sizePolicy().hasHeightForWidth())
+        self.class1Select.setSizePolicy(sizePolicy2)
 
         self.horizontalLayout_13.addWidget(self.class1Select)
 
         self.class1LevelSpin = QSpinBox(self.groupBox_13)
         self.class1LevelSpin.setObjectName(u"class1LevelSpin")
-        sizePolicy4.setHeightForWidth(self.class1LevelSpin.sizePolicy().hasHeightForWidth())
-        self.class1LevelSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.class1LevelSpin.sizePolicy().hasHeightForWidth())
+        self.class1LevelSpin.setSizePolicy(sizePolicy2)
         self.class1LevelSpin.setMinimum(-2147483648)
         self.class1LevelSpin.setMaximum(2147483647)
 
@@ -1038,15 +1032,15 @@ class Ui_MainWindow(object):
         self.horizontalLayout_14.setObjectName(u"horizontalLayout_14")
         self.class2Select = ComboBox2DA(self.groupBox_13)
         self.class2Select.setObjectName(u"class2Select")
-        sizePolicy4.setHeightForWidth(self.class2Select.sizePolicy().hasHeightForWidth())
-        self.class2Select.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.class2Select.sizePolicy().hasHeightForWidth())
+        self.class2Select.setSizePolicy(sizePolicy2)
 
         self.horizontalLayout_14.addWidget(self.class2Select)
 
         self.class2LevelSpin = QSpinBox(self.groupBox_13)
         self.class2LevelSpin.setObjectName(u"class2LevelSpin")
-        sizePolicy4.setHeightForWidth(self.class2LevelSpin.sizePolicy().hasHeightForWidth())
-        self.class2LevelSpin.setSizePolicy(sizePolicy4)
+        sizePolicy2.setHeightForWidth(self.class2LevelSpin.sizePolicy().hasHeightForWidth())
+        self.class2LevelSpin.setSizePolicy(sizePolicy2)
         self.class2LevelSpin.setMinimum(-2147483648)
         self.class2LevelSpin.setMaximum(2147483647)
 
@@ -1151,8 +1145,8 @@ class Ui_MainWindow(object):
         self.formLayout_22.setObjectName(u"formLayout_22")
         self.label_95 = QLabel(self.Scripts)
         self.label_95.setObjectName(u"label_95")
-        sizePolicy6.setHeightForWidth(self.label_95.sizePolicy().hasHeightForWidth())
-        self.label_95.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_95.sizePolicy().hasHeightForWidth())
+        self.label_95.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(0, QFormLayout.LabelRole, self.label_95)
 
@@ -1160,11 +1154,11 @@ class Ui_MainWindow(object):
         self.horizontalLayout_29.setObjectName(u"horizontalLayout_29")
         self.onBlockedEdit = FilterComboBox(self.Scripts)
         self.onBlockedEdit.setObjectName(u"onBlockedEdit")
-        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        sizePolicy7.setHorizontalStretch(0)
-        sizePolicy7.setVerticalStretch(0)
-        sizePolicy7.setHeightForWidth(self.onBlockedEdit.sizePolicy().hasHeightForWidth())
-        self.onBlockedEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.onBlockedEdit.sizePolicy().hasHeightForWidth())
+        self.onBlockedEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_29.addWidget(self.onBlockedEdit)
 
@@ -1173,8 +1167,8 @@ class Ui_MainWindow(object):
 
         self.label_106 = QLabel(self.Scripts)
         self.label_106.setObjectName(u"label_106")
-        sizePolicy6.setHeightForWidth(self.label_106.sizePolicy().hasHeightForWidth())
-        self.label_106.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_106.sizePolicy().hasHeightForWidth())
+        self.label_106.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(1, QFormLayout.LabelRole, self.label_106)
 
@@ -1182,8 +1176,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_30.setObjectName(u"horizontalLayout_30")
         self.onAttackedEdit = FilterComboBox(self.Scripts)
         self.onAttackedEdit.setObjectName(u"onAttackedEdit")
-        sizePolicy7.setHeightForWidth(self.onAttackedEdit.sizePolicy().hasHeightForWidth())
-        self.onAttackedEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onAttackedEdit.sizePolicy().hasHeightForWidth())
+        self.onAttackedEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_30.addWidget(self.onAttackedEdit)
 
@@ -1192,8 +1186,8 @@ class Ui_MainWindow(object):
 
         self.label_96 = QLabel(self.Scripts)
         self.label_96.setObjectName(u"label_96")
-        sizePolicy6.setHeightForWidth(self.label_96.sizePolicy().hasHeightForWidth())
-        self.label_96.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_96.sizePolicy().hasHeightForWidth())
+        self.label_96.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(2, QFormLayout.LabelRole, self.label_96)
 
@@ -1201,8 +1195,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_31.setObjectName(u"horizontalLayout_31")
         self.onNoticeEdit = FilterComboBox(self.Scripts)
         self.onNoticeEdit.setObjectName(u"onNoticeEdit")
-        sizePolicy7.setHeightForWidth(self.onNoticeEdit.sizePolicy().hasHeightForWidth())
-        self.onNoticeEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onNoticeEdit.sizePolicy().hasHeightForWidth())
+        self.onNoticeEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_31.addWidget(self.onNoticeEdit)
 
@@ -1211,8 +1205,8 @@ class Ui_MainWindow(object):
 
         self.label_97 = QLabel(self.Scripts)
         self.label_97.setObjectName(u"label_97")
-        sizePolicy6.setHeightForWidth(self.label_97.sizePolicy().hasHeightForWidth())
-        self.label_97.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_97.sizePolicy().hasHeightForWidth())
+        self.label_97.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(3, QFormLayout.LabelRole, self.label_97)
 
@@ -1220,8 +1214,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_32.setObjectName(u"horizontalLayout_32")
         self.onConversationEdit = FilterComboBox(self.Scripts)
         self.onConversationEdit.setObjectName(u"onConversationEdit")
-        sizePolicy7.setHeightForWidth(self.onConversationEdit.sizePolicy().hasHeightForWidth())
-        self.onConversationEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onConversationEdit.sizePolicy().hasHeightForWidth())
+        self.onConversationEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_32.addWidget(self.onConversationEdit)
 
@@ -1230,8 +1224,8 @@ class Ui_MainWindow(object):
 
         self.label_98 = QLabel(self.Scripts)
         self.label_98.setObjectName(u"label_98")
-        sizePolicy6.setHeightForWidth(self.label_98.sizePolicy().hasHeightForWidth())
-        self.label_98.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_98.sizePolicy().hasHeightForWidth())
+        self.label_98.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(4, QFormLayout.LabelRole, self.label_98)
 
@@ -1239,8 +1233,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_33.setObjectName(u"horizontalLayout_33")
         self.onDamagedEdit = FilterComboBox(self.Scripts)
         self.onDamagedEdit.setObjectName(u"onDamagedEdit")
-        sizePolicy7.setHeightForWidth(self.onDamagedEdit.sizePolicy().hasHeightForWidth())
-        self.onDamagedEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onDamagedEdit.sizePolicy().hasHeightForWidth())
+        self.onDamagedEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_33.addWidget(self.onDamagedEdit)
 
@@ -1249,8 +1243,8 @@ class Ui_MainWindow(object):
 
         self.label_109 = QLabel(self.Scripts)
         self.label_109.setObjectName(u"label_109")
-        sizePolicy6.setHeightForWidth(self.label_109.sizePolicy().hasHeightForWidth())
-        self.label_109.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_109.sizePolicy().hasHeightForWidth())
+        self.label_109.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(5, QFormLayout.LabelRole, self.label_109)
 
@@ -1258,8 +1252,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_34.setObjectName(u"horizontalLayout_34")
         self.onDeathEdit = FilterComboBox(self.Scripts)
         self.onDeathEdit.setObjectName(u"onDeathEdit")
-        sizePolicy7.setHeightForWidth(self.onDeathEdit.sizePolicy().hasHeightForWidth())
-        self.onDeathEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onDeathEdit.sizePolicy().hasHeightForWidth())
+        self.onDeathEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_34.addWidget(self.onDeathEdit)
 
@@ -1268,8 +1262,8 @@ class Ui_MainWindow(object):
 
         self.label_107 = QLabel(self.Scripts)
         self.label_107.setObjectName(u"label_107")
-        sizePolicy6.setHeightForWidth(self.label_107.sizePolicy().hasHeightForWidth())
-        self.label_107.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_107.sizePolicy().hasHeightForWidth())
+        self.label_107.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(6, QFormLayout.LabelRole, self.label_107)
 
@@ -1277,8 +1271,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_35.setObjectName(u"horizontalLayout_35")
         self.onEndRoundEdit = FilterComboBox(self.Scripts)
         self.onEndRoundEdit.setObjectName(u"onEndRoundEdit")
-        sizePolicy7.setHeightForWidth(self.onEndRoundEdit.sizePolicy().hasHeightForWidth())
-        self.onEndRoundEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onEndRoundEdit.sizePolicy().hasHeightForWidth())
+        self.onEndRoundEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_35.addWidget(self.onEndRoundEdit)
 
@@ -1287,8 +1281,8 @@ class Ui_MainWindow(object):
 
         self.label_108 = QLabel(self.Scripts)
         self.label_108.setObjectName(u"label_108")
-        sizePolicy6.setHeightForWidth(self.label_108.sizePolicy().hasHeightForWidth())
-        self.label_108.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_108.sizePolicy().hasHeightForWidth())
+        self.label_108.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(7, QFormLayout.LabelRole, self.label_108)
 
@@ -1296,8 +1290,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_36.setObjectName(u"horizontalLayout_36")
         self.onEndConversationEdit = FilterComboBox(self.Scripts)
         self.onEndConversationEdit.setObjectName(u"onEndConversationEdit")
-        sizePolicy7.setHeightForWidth(self.onEndConversationEdit.sizePolicy().hasHeightForWidth())
-        self.onEndConversationEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onEndConversationEdit.sizePolicy().hasHeightForWidth())
+        self.onEndConversationEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_36.addWidget(self.onEndConversationEdit)
 
@@ -1306,8 +1300,8 @@ class Ui_MainWindow(object):
 
         self.label_100 = QLabel(self.Scripts)
         self.label_100.setObjectName(u"label_100")
-        sizePolicy6.setHeightForWidth(self.label_100.sizePolicy().hasHeightForWidth())
-        self.label_100.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_100.sizePolicy().hasHeightForWidth())
+        self.label_100.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(8, QFormLayout.LabelRole, self.label_100)
 
@@ -1315,8 +1309,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_38.setObjectName(u"horizontalLayout_38")
         self.onDisturbedEdit = FilterComboBox(self.Scripts)
         self.onDisturbedEdit.setObjectName(u"onDisturbedEdit")
-        sizePolicy7.setHeightForWidth(self.onDisturbedEdit.sizePolicy().hasHeightForWidth())
-        self.onDisturbedEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onDisturbedEdit.sizePolicy().hasHeightForWidth())
+        self.onDisturbedEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_38.addWidget(self.onDisturbedEdit)
 
@@ -1325,8 +1319,8 @@ class Ui_MainWindow(object):
 
         self.label_101 = QLabel(self.Scripts)
         self.label_101.setObjectName(u"label_101")
-        sizePolicy6.setHeightForWidth(self.label_101.sizePolicy().hasHeightForWidth())
-        self.label_101.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_101.sizePolicy().hasHeightForWidth())
+        self.label_101.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(9, QFormLayout.LabelRole, self.label_101)
 
@@ -1334,8 +1328,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_39.setObjectName(u"horizontalLayout_39")
         self.onHeartbeatSelect = FilterComboBox(self.Scripts)
         self.onHeartbeatSelect.setObjectName(u"onHeartbeatSelect")
-        sizePolicy7.setHeightForWidth(self.onHeartbeatSelect.sizePolicy().hasHeightForWidth())
-        self.onHeartbeatSelect.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onHeartbeatSelect.sizePolicy().hasHeightForWidth())
+        self.onHeartbeatSelect.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_39.addWidget(self.onHeartbeatSelect)
 
@@ -1344,8 +1338,8 @@ class Ui_MainWindow(object):
 
         self.label_103 = QLabel(self.Scripts)
         self.label_103.setObjectName(u"label_103")
-        sizePolicy6.setHeightForWidth(self.label_103.sizePolicy().hasHeightForWidth())
-        self.label_103.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_103.sizePolicy().hasHeightForWidth())
+        self.label_103.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(10, QFormLayout.LabelRole, self.label_103)
 
@@ -1353,8 +1347,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_41.setObjectName(u"horizontalLayout_41")
         self.onSpawnEdit = FilterComboBox(self.Scripts)
         self.onSpawnEdit.setObjectName(u"onSpawnEdit")
-        sizePolicy7.setHeightForWidth(self.onSpawnEdit.sizePolicy().hasHeightForWidth())
-        self.onSpawnEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onSpawnEdit.sizePolicy().hasHeightForWidth())
+        self.onSpawnEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_41.addWidget(self.onSpawnEdit)
 
@@ -1363,8 +1357,8 @@ class Ui_MainWindow(object):
 
         self.label_104 = QLabel(self.Scripts)
         self.label_104.setObjectName(u"label_104")
-        sizePolicy6.setHeightForWidth(self.label_104.sizePolicy().hasHeightForWidth())
-        self.label_104.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_104.sizePolicy().hasHeightForWidth())
+        self.label_104.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(11, QFormLayout.LabelRole, self.label_104)
 
@@ -1372,8 +1366,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_42.setObjectName(u"horizontalLayout_42")
         self.onSpellCastEdit = FilterComboBox(self.Scripts)
         self.onSpellCastEdit.setObjectName(u"onSpellCastEdit")
-        sizePolicy7.setHeightForWidth(self.onSpellCastEdit.sizePolicy().hasHeightForWidth())
-        self.onSpellCastEdit.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onSpellCastEdit.sizePolicy().hasHeightForWidth())
+        self.onSpellCastEdit.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_42.addWidget(self.onSpellCastEdit)
 
@@ -1382,8 +1376,8 @@ class Ui_MainWindow(object):
 
         self.label_105 = QLabel(self.Scripts)
         self.label_105.setObjectName(u"label_105")
-        sizePolicy6.setHeightForWidth(self.label_105.sizePolicy().hasHeightForWidth())
-        self.label_105.setSizePolicy(sizePolicy6)
+        sizePolicy3.setHeightForWidth(self.label_105.sizePolicy().hasHeightForWidth())
+        self.label_105.setSizePolicy(sizePolicy3)
 
         self.formLayout_22.setWidget(12, QFormLayout.LabelRole, self.label_105)
 
@@ -1391,8 +1385,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_43.setObjectName(u"horizontalLayout_43")
         self.onUserDefinedSelect = FilterComboBox(self.Scripts)
         self.onUserDefinedSelect.setObjectName(u"onUserDefinedSelect")
-        sizePolicy7.setHeightForWidth(self.onUserDefinedSelect.sizePolicy().hasHeightForWidth())
-        self.onUserDefinedSelect.setSizePolicy(sizePolicy7)
+        sizePolicy5.setHeightForWidth(self.onUserDefinedSelect.sizePolicy().hasHeightForWidth())
+        self.onUserDefinedSelect.setSizePolicy(sizePolicy5)
 
         self.horizontalLayout_43.addWidget(self.onUserDefinedSelect)
 

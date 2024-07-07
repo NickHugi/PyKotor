@@ -38,7 +38,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Refresh the list of modules.</string>
+        <string>Refresh this list.</string>
        </property>
        <property name="text">
         <string>Refresh</string>
@@ -81,7 +81,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Reload the active module.</string>
+        <string>Reload the active module/folder.</string>
        </property>
        <property name="text">
         <string>Reload</string>

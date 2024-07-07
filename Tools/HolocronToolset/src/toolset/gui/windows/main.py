@@ -1181,6 +1181,8 @@ class ToolWindow(QMainWindow):
             assert textureItems is not None
             self.ui.modulesWidget.setSections(moduleItems)
             self.ui.overrideWidget.setSections(overrideItems)
+            self.ui.overrideWidget.ui.sectionCombo.setVisible(self.active.tsl)
+            self.ui.overrideWidget.ui.refreshButton.setVisible(self.active.tsl)
             self.ui.texturesWidget.setSections(textureItems)
             self.refreshCoreList(reload=True)
             self.refreshSavesList(reload=True)

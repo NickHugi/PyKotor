@@ -311,8 +311,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>305</width>
-       <height>970</height>
+       <width>449</width>
+       <height>903</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_rightDock">
@@ -1517,7 +1517,7 @@
      <x>0</x>
      <y>0</y>
      <width>1286</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1597,7 +1597,7 @@
          <number>0</number>
         </property>
         <property name="rightMargin">
-         <number>0</number>
+         <number>10</number>
         </property>
         <property name="bottomMargin">
          <number>0</number>
@@ -1678,7 +1678,7 @@
        <property name="verticalSpacing">
         <number>3</number>
        </property>
-       <item row="0" column="0">
+       <item row="0" column="0" alignment="Qt::AlignRight">
         <widget class="QLabel" name="convoTypeLabel">
          <property name="text">
           <string>Conversation Type:</string>
@@ -1720,7 +1720,7 @@
          </item>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="1" column="0" alignment="Qt::AlignRight">
         <widget class="QLabel" name="computerTypeLabel">
          <property name="text">
           <string>Computer Type:</string>
@@ -1747,7 +1747,7 @@
          </item>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="2" column="0" alignment="Qt::AlignRight">
         <widget class="QLabel" name="delayReplyLabel">
          <property name="text">
           <string>Delay before Reply:</string>
@@ -1770,7 +1770,7 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="3" column="0" alignment="Qt::AlignRight">
         <widget class="QLabel" name="delayEntryLabel">
          <property name="text">
           <string>Delay before Entry:</string>
@@ -1793,7 +1793,7 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="0">
+       <item row="4" column="0" alignment="Qt::AlignRight">
         <widget class="QLabel" name="voiceOverIDLabel">
          <property name="text">
           <string>Voiceover ID:</string>

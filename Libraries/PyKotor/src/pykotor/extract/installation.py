@@ -656,7 +656,10 @@ class Installation:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
+            if self.game().is_k1():
+                target_dirs = []
+            elif self.game().is_k2():
+                target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
             self._override = {}
 

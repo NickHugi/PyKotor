@@ -934,26 +934,26 @@ class GFFEditor(Editor):
 
     def applyPalette(self, item, ftype):
         palette = self.palette()
-        number_base_color = palette.highlight().color()
+        #number_base_color = palette.highlight().color()
         field_type_colors = {
-            GFFFieldType.UInt8: self.adjustColor(number_base_color, saturation_factor=1.0, value_factor=1.0),
-            GFFFieldType.Int8: self.adjustColor(number_base_color, saturation_factor=0.8, value_factor=0.9),
-            GFFFieldType.UInt16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=1.0, value_factor=1.0),
-            GFFFieldType.Int16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=0.8, value_factor=0.9),
-            GFFFieldType.UInt32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=1.0, value_factor=1.2),
-            GFFFieldType.Int32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=0.9, value_factor=1.1),
-            GFFFieldType.UInt64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=1.0, value_factor=1.0),
-            GFFFieldType.Int64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=0.8, value_factor=0.9),
-            GFFFieldType.Single: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=1.0, value_factor=1.0),
-            GFFFieldType.Double: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=0.8, value_factor=0.9),
-            GFFFieldType.ResRef: palette.windowText().color(),
-            GFFFieldType.String: palette.text().color(),
-            GFFFieldType.LocalizedString: palette.buttonText().color(),
-            GFFFieldType.Vector3: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.1),
-            GFFFieldType.Vector4: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.3),
+            #GFFFieldType.UInt8: self.adjustColor(number_base_color, saturation_factor=1.0, value_factor=1.0),
+            #GFFFieldType.Int8: self.adjustColor(number_base_color, saturation_factor=0.8, value_factor=0.9),
+            #GFFFieldType.UInt16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=1.0, value_factor=1.0),
+            #GFFFieldType.Int16: self.adjustColor(number_base_color, hue_shift=15, saturation_factor=0.8, value_factor=0.9),
+            #GFFFieldType.UInt32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=1.0, value_factor=1.2),
+            #GFFFieldType.Int32: self.adjustColor(number_base_color, hue_shift=30, saturation_factor=0.9, value_factor=1.1),
+            #GFFFieldType.UInt64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=1.0, value_factor=1.0),
+            #GFFFieldType.Int64: self.adjustColor(number_base_color, hue_shift=45, saturation_factor=0.8, value_factor=0.9),
+            #GFFFieldType.Single: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=1.0, value_factor=1.0),
+            #GFFFieldType.Double: self.adjustColor(number_base_color, hue_shift=60, saturation_factor=0.8, value_factor=0.9),
+            #GFFFieldType.ResRef: palette.windowText().color(),
+            #GFFFieldType.String: palette.text().color(),
+            #GFFFieldType.LocalizedString: palette.buttonText().color(),
+            #GFFFieldType.Vector3: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.1),
+            #GFFFieldType.Vector4: self.adjustColor(palette.buttonText().color(), hue_shift=90, saturation_factor=0.8, value_factor=1.3),
             GFFFieldType.Struct: QColor("darkGreen"),
             GFFFieldType.List: self.adjustColor(palette.highlight().color(), hue_shift=120, saturation_factor=0.8, value_factor=1.1),
-            GFFFieldType.Binary: palette.midlight().color(),
+            #GFFFieldType.Binary: palette.midlight().color(),
         }
         if ftype in field_type_colors:
             item.setForeground(QBrush(field_type_colors[ftype]))

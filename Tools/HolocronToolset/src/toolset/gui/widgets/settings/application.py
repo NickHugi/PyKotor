@@ -109,7 +109,7 @@ class ApplicationSettings(Settings):
     def __init__(self):
         super().__init__("Application")
 
-    REQUIRES_RESTART: ClassVar[dict[str, QtCore.Qt.ApplicationAttribute]] = {
+    REQUIRES_RESTART: ClassVar[dict[str, QtCore.Qt.ApplicationAttribute | None]] = {
         "AA_PluginApplication": QtCore.Qt.ApplicationAttribute.AA_PluginApplication,
         "AA_UseDesktopOpenGL": QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL,
         "AA_UseOpenGLES": QtCore.Qt.ApplicationAttribute.AA_UseOpenGLES,

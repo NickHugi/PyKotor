@@ -76,6 +76,7 @@ class UTCEditor(Editor):
         self.settings: UTCSettings = UTCSettings()
         self.globalSettings: GlobalSettings = GlobalSettings()
         self._utc: UTC = UTC()
+        self.setMinimumSize(0, 0)
 
         if qtpy.API_NAME == "PySide2":
             from toolset.uic.pyside2.editors.utc import Ui_MainWindow  # noqa: PLC0415  # pylint: disable=C0415
@@ -90,7 +91,7 @@ class UTCEditor(Editor):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.setMinimumSize(798, 553)
+        self.resize(798, 553)
         self._setupMenus()
         self._setupInstallation(installation)
         self._setupSignals()
