@@ -3,17 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import qtpy
+
 from qtpy.QtCore import (
     QEvent,
     QModelIndex,
     QRect,
-    QSize,
     QTimer,
     Qt,
 )
 from qtpy.QtGui import (
-    QColor,
-    QFont,
     QStandardItem,
     QStandardItemModel,
 )

@@ -498,12 +498,7 @@ class TwoDAEditor(Editor):
         """
         rowIndex: int = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for _ in range(self.model.columnCount())])
-        self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
-        font = self.model.item(rowIndex, 0).font()
-        font.setBold(True)
-        self.model.item(rowIndex, 0).setFont(font)
-        self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
-        self.resetVerticalHeaders()
+        self.setItemDisplayData(rowIndex)
 
     def duplicateRow(self):
         """Duplicates the selected row in the table.
@@ -532,12 +527,15 @@ class TwoDAEditor(Editor):
 
             rowIndex: int = self.model.rowCount()
             self.model.appendRow([QStandardItem(self.model.item(copyRow, i)) for i in range(self.model.columnCount())])
-            self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
-            font = self.model.item(rowIndex, 0).font()
-            font.setBold(True)
-            self.model.item(rowIndex, 0).setFont(font)
-            self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
-            self.resetVerticalHeaders()
+            self.setItemDisplayData(rowIndex)
+
+    def setItemDisplayData(self, rowIndex: int):
+        self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
+        font = self.model.item(rowIndex, 0).font()
+        font.setBold(True)
+        self.model.item(rowIndex, 0).setFont(font)
+        self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
+        self.resetVerticalHeaders()
 
     def removeSelectedRows(self):
         """Removes the rows the user has selected."""

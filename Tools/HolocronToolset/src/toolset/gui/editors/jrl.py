@@ -31,8 +31,8 @@ class JRLEditor(Editor):
     or quest can be edited at the bottom of the window.
     """
 
-    # JRLEditor stores a tree model and a JRL instance. These two objects must be kept in sync with each other manually:
-    # eg. if you code an entry to be deleted from the journal, ensure that you delete corresponding item in the tree.\
+    # TODO(NickHugi): JRLEditor stores a tree model and a JRL instance. These two objects must be kept in sync with each other manually:
+    # eg. if you code an entry to be deleted from the journal, ensure that you delete corresponding item in the tree.
     # It would be nice at some point to create our own implementation of QAbstractItemModel that automatically mirrors
     # the JRL object.
 
