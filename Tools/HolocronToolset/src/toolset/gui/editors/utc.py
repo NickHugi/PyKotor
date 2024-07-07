@@ -12,7 +12,7 @@ from qtpy.QtWidgets import QApplication, QListWidgetItem, QMenu, QMessageBox
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
-from pykotor.extract.capsule import Capsule, LazyCapsule
+from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
+    from pykotor.extract.capsule import LazyCapsule
     from pykotor.extract.file import LocationResult, ResourceResult
     from pykotor.resource.formats.ltr.ltr_data import LTR
     from pykotor.resource.formats.tpc.tpc_data import TPC

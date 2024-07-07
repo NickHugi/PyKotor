@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from qtpy import QtCore
 from qtpy.QtWidgets import QPlainTextEdit
 
-from pykotor.common.language import LocalizedString
-
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent, QMouseEvent
+
+    from pykotor.common.language import LocalizedString
 
 
 class HTPlainTextEdit(QPlainTextEdit):

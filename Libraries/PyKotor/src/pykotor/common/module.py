@@ -23,7 +23,7 @@ from pykotor.resource.formats.ncs.ncs_auto import write_ncs
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
 from pykotor.resource.formats.tpc.tpc_auto import write_tpc
-from pykotor.resource.formats.vis import bytes_vis, read_vis
+from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis
 from pykotor.resource.formats.vis.vis_auto import write_vis
 from pykotor.resource.generics.are import bytes_are, read_are, write_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg, write_dlg
@@ -61,7 +61,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.mdl import MDL
     from pykotor.resource.formats.rim.rim_data import RIM
     from pykotor.resource.formats.tpc import TPC
-    from pykotor.resource.formats.vis import VIS
     from pykotor.resource.generics.are import ARE
     from pykotor.resource.generics.ifo import IFO
     from pykotor.resource.generics.pth import PTH
