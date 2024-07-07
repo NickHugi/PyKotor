@@ -193,24 +193,31 @@ def main_init():
 if __name__ == "__main__":
     main_init()
 
+    import qtpy
+
     from qtpy.QtCore import QThread, Qt
     from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     from toolset.gui.widgets.settings.application import ApplicationSettings
 
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, False)
+    if qtpy.QT5:
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, False)
     # Some application settings must be set before the app starts.
     # These ones are accessible through the in-app settings window widget.
     settings_widget = ApplicationSettings()
     for attr_name, attr_value in settings_widget.REQUIRES_RESTART.items():
+        if attr_value is None:  # attr not available in this qt version.
+            continue
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
     app = QApplication(sys.argv)
     # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl!
 
     for attr_name, attr_value in settings_widget.__dict__.items():
+        if attr_value is None:  # attr not available in this qt version.
+            continue
         if not attr_name.startswith("AA_"):
             continue
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))

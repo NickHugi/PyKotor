@@ -113,18 +113,18 @@ class ApplicationSettings(Settings):
         "AA_UseOpenGLES": QtCore.Qt.ApplicationAttribute.AA_UseOpenGLES,
         "AA_UseSoftwareOpenGL": QtCore.Qt.ApplicationAttribute.AA_UseSoftwareOpenGL,
         "AA_ShareOpenGLContexts": QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts,
-        "AA_EnableHighDpiScaling": QtCore.Qt.ApplicationAttribute.AA_EnableHighDpiScaling,
-        "AA_DisableHighDpiScaling": QtCore.Qt.ApplicationAttribute.AA_DisableHighDpiScaling,
+        "AA_EnableHighDpiScaling": getattr(QtCore.Qt.ApplicationAttribute, "AA_EnableHighDpiScaling", None),
+        "AA_DisableHighDpiScaling": getattr(QtCore.Qt.ApplicationAttribute, "AA_DisableHighDpiScaling", None),
     }
 
     # region Application Attributes
     AA_ImmediateWidgetCreation = Settings.addSetting(
         "AA_ImmediateWidgetCreation",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_ImmediateWidgetCreation),
+        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_ImmediateWidgetCreation) if hasattr(QtCore.Qt.ApplicationAttribute, "AA_ImmediateWidgetCreation") else True,
     )
     AA_MSWindowsUseDirect3DByDefault = Settings.addSetting(
         "AA_MSWindowsUseDirect3DByDefault",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_MSWindowsUseDirect3DByDefault),
+        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_MSWindowsUseDirect3DByDefault) if hasattr(QtCore.Qt.ApplicationAttribute, "AA_MSWindowsUseDirect3DByDefault") else False,
     )
     AA_DontShowIconsInMenus = Settings.addSetting(
         "AA_DontShowIconsInMenus",
@@ -140,7 +140,7 @@ class ApplicationSettings(Settings):
     )
     AA_MacPluginApplication = Settings.addSetting(
         "AA_MacPluginApplication",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_MacPluginApplication),
+        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_MacPluginApplication) if hasattr(QtCore.Qt.ApplicationAttribute, "AA_MSWindowsUseDirect3DByDefault") else False,
     )
     AA_DontUseNativeMenuBar = Settings.addSetting(
         "AA_DontUseNativeMenuBar",
@@ -152,7 +152,7 @@ class ApplicationSettings(Settings):
     )
     AA_X11InitThreads = Settings.addSetting(
         "AA_X11InitThreads",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_X11InitThreads),
+        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_X11InitThreads) if hasattr(QtCore.Qt.ApplicationAttribute, "AA_X11InitThreads") else False,
     )
     AA_Use96Dpi = Settings.addSetting(
         "AA_Use96Dpi",
@@ -240,7 +240,7 @@ class ApplicationSettings(Settings):
     )
     AA_DisableWindowContextHelpButton = Settings.addSetting(
         "AA_DisableWindowContextHelpButton",
-        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_DisableWindowContextHelpButton),
+        QApplication.testAttribute(QtCore.Qt.ApplicationAttribute.AA_DisableWindowContextHelpButton) if hasattr(QtCore.Qt.ApplicationAttribute, "AA_DisableWindowContextHelpButton") else False,
     )
     AA_DisableSessionManager = Settings.addSetting(
         "AA_DisableSessionManager",
