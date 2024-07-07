@@ -636,7 +636,8 @@ class Module:  # noqa: PLR0904
             loaded_git_or_lyt: useable_type | None = original_git_or_lyt.resource()
             if not isinstance(loaded_git_or_lyt, useable_type):
                 raise RuntimeError(errmsg)  # noqa: TRY004
-            result.update(loaded_git_or_lyt.iter_resource_identifiers())
+            if not isinstance(loaded_git_or_lyt, VIS):
+                result.update(loaded_git_or_lyt.iter_resource_identifiers())
         original_git_or_lyt.activate(original_path)  # reactivate the main one.
 
         return result
