@@ -242,7 +242,11 @@ def clone_module(
                     tga.set_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
-                    write_tpc(tga, tga_data, ResourceType.TGA)
+                    try:
+                        write_tpc(tga, tga_data, ResourceType.TGA)
+                    except ValueError as e:
+                        RobustRootLogger().warning(f"Failed to write TGA for texture '{texture}' in clone_module: {e}")
+                        continue
                     new_module.set_data(new_texture_name, ResourceType.TGA, tga_data)
                 mdl_data = model.change_textures(mdl_data, new_textures)
 
