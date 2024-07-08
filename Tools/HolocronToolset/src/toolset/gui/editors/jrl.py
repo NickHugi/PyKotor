@@ -404,7 +404,7 @@ class JRLEditor(Editor):
                 menu.addAction("Remove Quest").triggered.connect(lambda: self.removeQuest(item))
                 # it's not easy to right click without selecting an item - add the 'addQuest' action here as well.
                 menu.addSeparator()
-                menu.addAction("Add Quest").triggered.connect(lambda: self.addQuest(item, JRLQuest()))
+                menu.addAction("Add Quest").triggered.connect(lambda: self.addQuest(JRLQuest()))
             elif isinstance(data, JRLEntry):
                 menu.addAction("Remove Entry").triggered.connect(lambda: self.removeEntry(item))
         else:
