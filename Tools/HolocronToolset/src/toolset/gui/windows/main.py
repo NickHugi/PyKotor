@@ -2475,7 +2475,6 @@ class ToolWindow(QMainWindow):
                     )
 
                     msgBox.setDetailedText("\n".join(f"{e.__class__.__name__}: {e}" for e in loader.errors))
-                    msgBox.exec_()
                 else:
                     msgBox = QMessageBox(
                         QMessageBox.Icon.Information,
@@ -2485,7 +2484,7 @@ class ToolWindow(QMainWindow):
                     )
 
                     msgBox.setDetailedText("\n".join(str(p) for p in resource_save_paths.values()))
-                    msgBox.exec_()
+                msgBox.exec_()
         elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.currentSection()):
             module_name = resourceWidget.currentSection()
             print("<SDM> [onExtractResources scope] module_name: ", module_name)

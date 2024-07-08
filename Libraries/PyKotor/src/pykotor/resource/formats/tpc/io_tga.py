@@ -344,7 +344,12 @@ class TPCTGAWriter(ResourceWriter):
             - Write pixel data in RGB or RGBA format depending on TPC format.
         """
         if pillow_available:
-            self._write_with_pillow()
+            try:
+                self._write_with_pillow()
+            except Exception as e:
+                RobustRootLogger.warning(f"{e.__class__.__name__}: {e}")
+                RobustRootLogger.warning("Due to above Pillow error, attempting to write with custom logic.")
+                self._write_with_custom_logic()
         else:
             self._write_with_custom_logic()
 
