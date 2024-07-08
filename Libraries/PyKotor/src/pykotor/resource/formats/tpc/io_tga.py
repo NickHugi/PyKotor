@@ -343,19 +343,12 @@ class TPCTGAWriter(ResourceWriter):
             - Write BMP file header
             - Write pixel data in RGB or RGBA format depending on TPC format.
         """
-        if pillow_available:
-            try:
-                self._write_with_pillow()
-            except Exception as e:
-                RobustRootLogger.warning(f"{e.__class__.__name__}: {e}")
-                RobustRootLogger.warning("Due to above Pillow error, attempting to write with custom logic.")
-                self._write_with_custom_logic()
-        else:
-            self._write_with_custom_logic()
+        self._write_with_custom_logic()
 
     def _write_with_pillow(
         self,
     ):
+        """Not tested."""
         if self._tpc is None:
             raise ValueError("TPC instance is not set.")
 
