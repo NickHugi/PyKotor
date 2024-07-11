@@ -8,6 +8,7 @@ from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, cast
 
+from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -53,7 +54,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from pykotor.common.language import LocalizedString
-    from pykotor.common.misc import Game, ResRef
+    from pykotor.common.misc import Game
     from pykotor.extract.file import FileResource, LocationResult, ResourceResult
     from pykotor.extract.installation import Installation
     from pykotor.resource.formats.erf.erf_data import ERF
@@ -80,7 +81,7 @@ class KModuleType(Enum):
     K2_DLG = "_dlg.erf"  # In TSL, DLGs are here instead of _s.rim.
     MOD = ".mod"  # Community-standard override, takes priority over the above.
 
-    def contains(
+    def contains(  # noqa: PLR0911
         self,
         restype: ResourceType,
         *,
@@ -167,7 +168,6 @@ class ModulePieceInfo:
 
 
 class ModulePieceResource(Capsule):
-    REQUIRED=True
 
     def __new__(
         cls,
@@ -209,40 +209,7 @@ class ModuleLinkPiece(ModulePieceResource):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(self.filepath().joinpath("module.ifo")))
         return read_gff(lookup)
 
-    def id(self) -> str:
-        # Only ever seen this wrong for custom modules.
-        return next(
-            (resource.resname() for resource in self._resources if resource.restype() is ResourceType.GIT),
-            next(
-                (resource.resname() for resource in self._resources if resource.restype() is ResourceType.ARE),
-                self.quick_id(self.filename())
-            )
-        )
-
-    @staticmethod
-    @lru_cache(maxsize=1000)
-    def quick_id(filename: str) -> str:  # sourcery skip: assign-if-exp
-        base_name: str = filename.rsplit(".")[0]  # Strip extension
-        if len(base_name) >= 6 and base_name[3:4].lower() == "m" and base_name[4:6].isdigit():  # e.g. 'danm13', 'manm26mg'...
-            base_name = f"{base_name[:3]}_{base_name[3:]}"
-        parts: list[str] = base_name.split("_")
-
-        mod_id = base_name  # If there are no underscores, return the base name itself
-        if len(parts) == 2:
-            # If there's exactly one underscore, return the part after the underscore
-            if parts[1] in ("s", "dlg"):
-                mod_id = parts[0]
-            else:  # ...except when the part after matches a qualifier
-                mod_id = parts[1]
-        elif len(parts) >= 3:
-            # If there are three or more underscores, return what's between the first two underscores
-            if parts[-1].lower() in ("s", "dlg"):
-                mod_id = "_".join(parts[1:-1])
-            else:  # ...except when the last part matches a qualifier
-                mod_id = "_".join(parts[1:-2])
-        return mod_id
-
-    def module_id(self) -> ResRef:
+    def module_id(self) -> ResRef | None:
         """Get the module id, attempt to just check resrefs, fallback to the Mod_Area_list."""
         link_resources = {
             resource
@@ -253,7 +220,7 @@ class ModuleLinkPiece(ModulePieceResource):
             check_resname = next(iter(link_resources)).identifier().lower_resname
             if all(check_resname == res.identifier().lower_resname for res in link_resources):
                 RobustRootLogger().debug("Module ID, Check 1: All link resources have the same resref of '%s'", check_resname)
-                return check_resname
+                return ResRef(check_resname)
 
         ifo = self.ifo()
         if ifo.root.exists("Mod_Area_list"):
@@ -289,12 +256,12 @@ class ModuleLinkPiece(ModulePieceResource):
             if are.root.exists("Name"):
                 actual_ftype = are.root.what_type("Name")
                 if actual_ftype is not GFFFieldType.LocalizedString:
-                    RobustRootLogger().warning(f"{self.filename()} has IFO with incorrect field 'Name' type '{actual_ftype.name}', expected 'LocalizedString'")
+                    raise ValueError(f"{self.filename()} has IFO with incorrect field 'Name' type '{actual_ftype.name}', expected 'LocalizedString'")
                 result = are.root.get_locstring("Name")
                 RobustRootLogger().debug("Check 1 result: '%s'", result)
                 return result
         # TODO(th3w1zard1): Lookup the modulesaves.2da for the fallback.
-        raise ValueError(f"Failed to get the area name from module '{self.filename()}'")
+        raise ValueError(f"Failed to find an ARE for module '{self.piece_info.filename()}'")
 
 
 class ModuleDataPiece(ModulePieceResource): ...
@@ -349,11 +316,18 @@ class Module:  # noqa: PLR0904
 
         self.reload_resources()
 
-    def root(self):
+    def root(self) -> str:
         return self._root
 
     @classmethod
-    def find_capsules(cls, install_or_path: Installation | Path, filename: str, *, strict: bool = False) -> Sequence[Capsule]:
+    def find_capsules(
+        cls,
+        install_or_path: Installation | Path,
+        filename: str,
+        *,
+        strict: bool = False,
+    ) -> Sequence[Capsule]:
+        from pykotor.extract.installation import Installation
         root = cls.find_root(filename)
         # Build all capsules relevant to this root in the provided installation
         capsules: _CapsuleDictTypes = {
@@ -370,19 +344,19 @@ class Module:  # noqa: PLR0904
             elif not strict:
                 capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
                 capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
-                if install_or_path.game().is_k2():
+                if not isinstance(install_or_path, Installation) or install_or_path.game().is_k2():
                     capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
         else:
             capsules[KModuleType.MAIN.name] = ModuleLinkPiece(module_path.joinpath(root + KModuleType.MAIN.value))
             capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
-            if install_or_path.game().is_k2():
+            if not isinstance(install_or_path, Installation) or install_or_path.game().is_k2():
                 capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
-        return [capsule for capsule in capsules.values() if capsule is not None]
+        return [capsule for capsule in capsules.values() if capsule is not None]  # type: ignore[reportReturnType]
 
 
     def get_capsules(self) -> list[ModulePieceResource]:
         """Returns all relevant ERFs/RIMs for this module."""
-        return list(self._capsules.values())
+        return list(self._capsules.values())  # type: ignore[]
 
     def root_name(self) -> str:
         return self._root
@@ -428,9 +402,6 @@ class Module:  # noqa: PLR0904
         RobustRootLogger().debug("Found module id '%s' for module '%s'", found_id, data_capsule.filename())
         self._cached_mod_id = found_id
         return found_id
-
-    def sortable_id(self) -> str:
-        return self.lookup_data_capsule().quick_id(self._root)
 
     @staticmethod
     @lru_cache(maxsize=1000)
@@ -594,7 +565,7 @@ class Module:  # noqa: PLR0904
         )
         for identifier, locations in texture_search.items():
             if identifier == "dirt.tpc":
-                continue  # skip this constant name that sometimes appears in list_textures
+                continue  # skip this constant name
             if not locations:
                 continue
             RobustRootLogger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
@@ -1139,12 +1110,12 @@ class Module:  # noqa: PLR0904
         """
         return [resource for resource in self.resources.values() if resource.restype() is ResourceType.UTE]
 
-    def store(self, resname: str | ResRef) -> ModuleResource[UTM] | None:
+    def store(self, resname: str) -> ModuleResource[UTM] | None:
         """Looks up a material (UTM) resource by the specified resname from this module and returns the resource data.
 
         Args:
         ----
-            resname(str | ResRef): Name of the resource to look up
+            resname(str): Name of the resource to look up
 
         Returns:
         -------
@@ -1559,7 +1530,7 @@ class ModuleResource(Generic[T]):
             return None
         if isinstance(res, UTC):
             return f"{self._installation.string(res.first_name)} {self._installation.string(res.last_name)}"
-        if isinstance(res, (UTP, UTD, UTW, UTT, UTE, UTM, UTS)):
+        if isinstance(res, (UTD, UTE, UTM, UTP, UTS, UTT, UTW)):
             return self._installation.string(res.name)
         print(f"Could not find a localized name for a ModuleResource typed {type(res).__name__}")
         return None
@@ -1696,7 +1667,6 @@ class ModuleResource(Generic[T]):
         """Adds a list of filepaths to the list of locations stored for the resource.
 
         If a filepath already exists, it is ignored.
-        If the ModuleResource has not yet been activated, will activate it with the first filepath.
 
         Args:
         ----
@@ -1707,44 +1677,6 @@ class ModuleResource(Generic[T]):
             for filepath in filepaths
             if filepath not in self._locations
         )
-        if self._active is not None:
-            return
-        if not self._locations:
-            return
-        #self.activate(self._locations[0])
-
-    def select_activation_path(self):
-        # sourcery skip: assign-if-exp, reintroduce-else
-        """Just realized this function isn't necessary because Installation.locations() allows a searchorder."""
-        # Categorize paths based on their priority
-        override_paths = []
-        module_path = None
-        other_paths = []
-
-        for path in self._locations:
-            try:
-                if path.is_relative_to(self._installation.override_path()):
-                    # Higher priority to paths directly under the override_path
-                    relative_depth = len(path.relative_to(self._installation.override_path()).parts)
-                    override_paths.append((relative_depth, path))
-                elif path.is_relative_to(self._installation.module_path()):
-                    module_path = path  # Assuming only one such path as per the problem statement
-                else:
-                    other_paths.append(path)
-            except ValueError:  # noqa: PERF203
-                other_paths.append(path)
-
-        # Sort override paths by depth, ascending
-        override_paths.sort()
-
-        # Select the path with the highest priority available
-        if override_paths:
-            return override_paths[0][1]  # The path with the smallest relative depth
-        if module_path:
-            return module_path
-        if other_paths:
-            return other_paths[0]
-        return None
 
     def locations(self) -> list[Path]:
         return self._locations
@@ -1752,7 +1684,7 @@ class ModuleResource(Generic[T]):
     def activate(
         self,
         filepath: os.PathLike | str | None = None,
-    ):
+    ) -> Path | None:
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         If the filepath is not in the stored locations, calling this method will add it.
@@ -1850,11 +1782,11 @@ class ModuleResource(Generic[T]):
         active_path = self.active()
         if not active_path:
             active_path = self._create_anew_in_override()
-        if is_bif_file(active_path.name):
+        if is_bif_file(active_path):
             msg = "Cannot save file to BIF."
             raise ValueError(msg)
 
-        if is_any_erf_type_file(active_path.name):
+        if is_any_erf_type_file(active_path):
             erf: ERF = read_erf(active_path)
             erf.set_data(
                 self._resname,
@@ -1863,7 +1795,7 @@ class ModuleResource(Generic[T]):
             )
             write_erf(erf, active_path)
 
-        elif is_rim_file(active_path.name):
+        elif is_rim_file(active_path):
             rim: RIM = read_rim(active_path)
             rim.set_data(
                 self._resname,
