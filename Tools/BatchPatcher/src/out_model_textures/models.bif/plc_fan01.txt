@@ -1,4 +1,0 @@
-lma_fan01
-lma_wall01
-lma_wall11
-lma_wall06

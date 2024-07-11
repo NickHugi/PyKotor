@@ -1,5 +1,0 @@
-k2_acpad01
-mg_minefx
-mg_minefx
-mg_mine
-k2_minelt01

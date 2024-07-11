@@ -1,5 +1,0 @@
-dro_sky1
-dro_sky3
-dro_sky4
-dro_sky2
-dro_sky0

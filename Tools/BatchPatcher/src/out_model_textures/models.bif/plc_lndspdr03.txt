@@ -1,2 +1,0 @@
-plc_spdra02
-plc_spdrwin01

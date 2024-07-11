@@ -1,5 +1,0 @@
-plc_koltoglass
-plc_rub2
-plc_wallpnl
-per_fl02
-plc_kolpuz

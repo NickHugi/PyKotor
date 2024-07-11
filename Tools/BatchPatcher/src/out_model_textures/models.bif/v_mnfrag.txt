@@ -1,3 +1,0 @@
-w_flashgren_001
-fx_static
-fx_static

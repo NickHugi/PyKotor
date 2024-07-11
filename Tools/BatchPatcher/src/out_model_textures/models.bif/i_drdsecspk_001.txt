@@ -1,2 +1,0 @@
-i_dr_comp_spike
-i_dr_sec_spike1

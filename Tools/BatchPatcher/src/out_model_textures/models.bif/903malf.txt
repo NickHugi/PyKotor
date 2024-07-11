@@ -1,9 +1,0 @@
-mal_floor2
-mal_trim1
-mal_floor1
-mal_floor3
-mal_wall2
-mal_wall5
-mal_floor4
-903MALf_lm0
-903MALf_lm1

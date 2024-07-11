@@ -1,5 +1,0 @@
-mal_skybk
-mal_skyfrnt
-mal_skylft
-mal_skyrght
-mal_skyup

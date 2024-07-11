@@ -1,2 +1,0 @@
-plc_gencorpse
-plc_bed1

@@ -1,7 +1,0 @@
-leh_wall02
-leh_light02
-leh_scre02
-leh_scre02
-leh_scre02
-leh_scre02
-PLC_KnrthVin01_a

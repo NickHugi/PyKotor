@@ -1,5 +1,0 @@
-plc_swoop
-plc_spdrwin01
-plc_swoop
-plc_swoop
-plc_swoop

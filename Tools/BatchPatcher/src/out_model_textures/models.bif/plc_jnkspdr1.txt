@@ -1,2 +1,0 @@
-plc_jnkspdr1
-plc_spdrwin01

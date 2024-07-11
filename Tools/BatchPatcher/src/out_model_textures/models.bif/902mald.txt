@@ -1,8 +1,0 @@
-mal_grnd01
-mal_wall02
-mal_wall02
-mal_wa1
-mal_wall02
-mal_wall02
-902MALd_lm0
-902MALd_lm1

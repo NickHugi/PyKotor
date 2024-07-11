@@ -1,2 +1,0 @@
-plc_banner
-plc_banner
