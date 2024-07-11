@@ -212,6 +212,7 @@ def terminate_main_process(
             result2 = gracefully_shutdown_threads(timeout=timeout)
             actual_self_pid = os.getpid()
         if result1 and result2:
+            print("Call sys.exit NOW")
             sys.exit(0)
 
         RobustRootLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
@@ -228,6 +229,7 @@ def terminate_main_process(
     except Exception:  # noqa: BLE001
         RobustRootLogger().exception("Exception occurred while shutting down the main process")
     finally:
+        print("call os.exit NOW")
         os._exit(0 if result1 and result2 else 1)
 
 

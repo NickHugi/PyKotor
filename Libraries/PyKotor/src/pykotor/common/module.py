@@ -618,6 +618,8 @@ class Module:  # noqa: PLR0904
         errmsg: str,
     ) -> set[ResourceIdentifier]:
         if not main_search_results.get(query):
+            if useable_type == VIS:
+                return set()  # make vis optional I guess
             raise FileNotFoundError(
                 errno.ENOENT,
                 os.strerror(errno.ENOENT),
