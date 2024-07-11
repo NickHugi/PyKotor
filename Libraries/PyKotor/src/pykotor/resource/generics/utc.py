@@ -323,10 +323,10 @@ def construct_utc(
 
     if not root.exists("SkillList") or root.what_type("SkillList") is not GFFFieldType.List:
         if root.exists("SkillList"):
-            RobustRootLogger().error("StartingList in UTC's must be a GFFList, recreating now...")
+            RobustRootLogger().error("SkillList in UTC's must be a GFFList, recreating now...")
             del root._fields["SkillList"]
         else:
-            RobustRootLogger().error("StartingList must exist in UTC's, creating now...")
+            RobustRootLogger().error("SkillList must exist in UTC's, creating now...")
         skill_list = root.set_list("SkillList", GFFList())
         skill_list.add(0).set_uint8("Rank", 0)
         skill_list.add(1).set_uint8("Rank", 0)
