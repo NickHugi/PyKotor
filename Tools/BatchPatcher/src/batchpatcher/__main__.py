@@ -317,7 +317,7 @@ def patch_nested_gff(
             made_change |= result_made_change
             continue
 
-        if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:  # and gff_content.value == GFFContent.DLG.value:
+        if ftype == GFFFieldType.LocalizedString and SCRIPT_GLOBALS.translate:
             assert isinstance(value, LocalizedString), f"{type(value).__name__}: {value}"  # noqa: S101
             new_substrings: dict[int, str] = deepcopy(value._substrings)
             for lang, gender, text in value:
@@ -490,17 +490,12 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
 
     if resource.restype().extension.lower() == "tlk" and SCRIPT_GLOBALS.translate and SCRIPT_GLOBALS.pytranslator:
         tlk: TLK | None = None
+        log_output(f"Loading TLK '{resource.filepath()}'")
         try:
-            log_output(f"Loading TLK '{resource.filepath()}'")
             tlk = read_tlk(resource.data())
         except Exception:  # pylint: disable=W0718  # noqa: BLE001
             RobustRootLogger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
             log_output(traceback.format_exc())
-            return None
-
-        if not tlk:
-            message = f"TLK resource missing in memory:\t'{resource.filepath()}'"
-            log_output(message)
             return None
 
         from_lang: Language = tlk.language
@@ -513,11 +508,21 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
 
     if resource.restype().extension.lower() == "tga" and SCRIPT_GLOBALS.convert_tga == "TGA to TPC":
         log_output(f"Converting TGA at {resource.path_ident()} to TPC...")
-        return TPCTGAReader(resource.data()).load()
+        try:
+            return TPCTGAReader(resource.data()).load()
+        except Exception:  # pylint: disable=W0718  # noqa: BLE001
+            RobustRootLogger().exception(f"[Error] loading TGA '{resource.identifier()}' at '{resource.filepath()}'!")
+            log_output(traceback.format_exc())
+            return None
 
     if resource.restype().extension.lower() == "tpc" and SCRIPT_GLOBALS.convert_tga == "TPC to TGA":
         log_output(f"Converting TPC at {resource.path_ident()} to TGA...")
-        return TPCBinaryReader(resource.data()).load()
+        try:
+            return TPCBinaryReader(resource.data()).load()
+        except Exception:  # pylint: disable=W0718  # noqa: BLE001
+            RobustRootLogger().exception(f"[Error] loading TPC '{resource.identifier()}' at '{resource.filepath()}'!")
+            log_output(traceback.format_exc())
+            return None
 
 
     if resource.restype().name.upper() in {x.name for x in GFFContent}:
@@ -574,10 +579,6 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
                 log_output(traceback.format_exc())
             # raise
             return None
-
-        if not gff:
-            log_output(f"GFF resource '{resource.path_ident()}' missing in memory")
-            return None
     return None
 
 
@@ -607,14 +608,14 @@ def patch_and_save_noncapsule(
         if capsule is None:
             txi_file = resource.filepath().with_suffix(".txi")
             if txi_file.is_file():
-                log_output("Embedding TXI information...")
+                RobustRootLogger.info("Embedding TXI information...")
                 data: bytes = BinaryReader.load_file(txi_file)
                 txi_text: str = decode_bytes_with_fallbacks(data)
                 patched_data.txi = txi_text
         else:
             txi_data = capsule.resource(resource.resname(), ResourceType.TXI)
             if txi_data is not None:
-                log_output("Embedding TXI information from resource found in capsule...")
+                RobustRootLogger.info("Embedding TXI information from resource found in capsule...")
                 txi_text = decode_bytes_with_fallbacks(txi_data)
                 patched_data.txi = txi_text
 
@@ -1170,7 +1171,7 @@ def patch_install(install_path: os.PathLike | str):
         for resource in k_install.override_resources(folder):
             if SCRIPT_GLOBALS.is_patching():
                 patch_and_save_noncapsule(resource)
-            if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):
+            if SCRIPT_GLOBALS.check_textures and resource.restype() is ResourceType.MDL:
                 check_model(resource, k_install, all_layouts)
 
     if SCRIPT_GLOBALS.is_patching():
@@ -1178,7 +1179,7 @@ def patch_install(install_path: os.PathLike | str):
     for resource in k_install.core_resources():
         if SCRIPT_GLOBALS.fix_dialog_skipping or SCRIPT_GLOBALS.translate or SCRIPT_GLOBALS.set_unskippable:
             patch_and_save_noncapsule(resource, savedir=override_path)
-        if SCRIPT_GLOBALS.check_textures and resource.restype().extension.lower() in ("mdl"):
+        if SCRIPT_GLOBALS.check_textures and resource.restype() is ResourceType.MDL:
             check_model(resource, k_install, all_layouts)
 
     patch_file(k_install.path().joinpath("dialog.tlk"))
