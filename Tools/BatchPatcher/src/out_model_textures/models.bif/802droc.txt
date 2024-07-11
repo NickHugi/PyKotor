@@ -1,0 +1,8 @@
+dro_r1roof1
+dro_cwall02
+dro_floor2
+dro_cwall01
+dro_cable1
+dro_strplght01
+802DROc_lm0
+802DROc_lm1

@@ -1106,13 +1106,13 @@ def patch_install(install_path: os.PathLike | str):
     all_layouts: dict[FileResource, LYT] | None = None
     if SCRIPT_GLOBALS.find_unused_textures or SCRIPT_GLOBALS.check_textures:
         all_layouts = get_active_layouts(k_install)
-    if SCRIPT_GLOBALS.find_unused_textures:
-        find_unused_textures(k_install, all_layouts)
+        if SCRIPT_GLOBALS.find_unused_textures:
+            find_unused_textures(k_install, all_layouts)
     # k_install.reload_all()
     if SCRIPT_GLOBALS.is_patching():
         log_output_with_separator("Patching modules...")
         if SCRIPT_GLOBALS.k1_convert_gffs or SCRIPT_GLOBALS.tsl_convert_gffs:
-            for module_name in k_install._modules:
+            for module_name in k_install._modules:  # noqa: SLF001
                 log_output(f"Validating ERF/RIM in the Modules folder: '{module_name}'")
                 module_path = k_install.module_path().joinpath(module_name)
                 to_game = Game.K2 if SCRIPT_GLOBALS.tsl_convert_gffs else Game.K1

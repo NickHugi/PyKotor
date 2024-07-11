@@ -1,0 +1,7 @@
+mal_trim1
+mal_floor4
+mal_floor1
+mal_floor3
+mal_wall2
+mal_wall5
+906MALe_lm0

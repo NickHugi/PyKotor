@@ -1,0 +1,6 @@
+mal_grnd01
+mal_wall02
+mal_wall02
+mal_wa01
+mal_grnd01
+901MALi_lm0

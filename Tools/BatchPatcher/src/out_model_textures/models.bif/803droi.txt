@@ -1,0 +1,12 @@
+dro_floor5
+dro_floor6
+dro_cwall02
+dro_ic04
+dro_ic01
+dro_strplght01
+dro_wl02b
+dro_cable1
+dro_pans2
+dro_floor4
+dro_r1roof1
+803DROi_lm0

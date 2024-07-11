@@ -153,7 +153,7 @@ def iterate_textures(
         - Reads texture names and adds unique names to the textures list
         - Returns the list of unique textures.
     """
-    textures: list[str] = []
+    texture_caseset: set[str] = set()
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
@@ -177,9 +177,10 @@ def iterate_textures(
                 if (
                     texture
                     and texture != "NULL"
-                    and texture.lower() not in textures
+                    and texture.lower() not in texture_caseset
                     and texture.lower() != "dirt"  # TODO(th3w1zard1) determine if the game really prevents the literal resname of 'dirt'.
                 ):
+                    texture_caseset.add(texture.lower())
                     yield texture.lower()
 
 
@@ -224,9 +225,13 @@ def iterate_lightmaps(
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32, encoding="ascii", errors="ignore").strip()
                 lowercase_lightmap = lightmap.lower()
-                if lightmap and lightmap != "NULL" and lowercase_lightmap not in lightmaps_caseset:
-                    yield lightmap
+                if (
+                    lightmap
+                    and lightmap != "NULL"
+                    and lowercase_lightmap not in lightmaps_caseset
+                ):
                     lightmaps_caseset.add(lowercase_lightmap)
+                    yield lightmap
 
 
 def change_textures(
