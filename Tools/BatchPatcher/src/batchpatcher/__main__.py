@@ -892,17 +892,17 @@ def find_missing_model_textures_lightmaps(
     model_display_path = model_resource.path_ident().relative_to(SCRIPT_GLOBALS.path.parent)
     try:
         gen_func = iterate_textures if lightmap_or_texture == "texture" else iterate_lightmaps
-        texture_names: list[str] = list(gen_func(model_resource.data()))
+        texlm_names: list[str] = list(gen_func(model_resource.data()))
     except Exception as e:
         RobustRootLogger().exception(f"Error listing {lightmap_or_texture}s in '{model_display_path}'")
         log_output(f"Error listing {lightmap_or_texture}s in '{model_display_path}': {e}")
         return None
     else:
-        if not texture_names:
+        if not texlm_names:
             print(f"Model '{model_display_path}' has no {lightmap_or_texture}s.")
             return True
         mdl_tex_outpath = _write_all_found_in_mdl(
-            texture_names,
+            texlm_names,
             f" {lightmap_or_texture}s found in model '",
             model_resource,
             "out_model_textures",
@@ -917,7 +917,7 @@ def find_missing_model_textures_lightmaps(
         missing_writer = mdl_missing_tex_outpath.open("a", encoding="utf-8")
         found_missing_texture = False
         try:
-            for lmtex_name in texture_names:
+            for lmtex_name in texlm_names:
                 if lmtex_name == "dirt" and lightmap_or_texture == "texture":
                     continue
                 texture_tga = ResourceIdentifier(lmtex_name, ResourceType.TGA)
@@ -937,6 +937,9 @@ def find_missing_model_textures_lightmaps(
                     return True
 
                 if not resource_results.get(texture_tga) and not resource_results.get(texture_tpc):
+                    log_output(
+                        f"{model_resource.resname()}: Missing {lightmap_or_texture} for model {model_resource.filename()}: '{lmtex_name}'"
+                    )
                     return determine_if_model_utilized(model_resource, layout_resources, k_install, lightmap_or_texture, lmtex_name, missing_writer)
         finally:
             missing_writer.close()
