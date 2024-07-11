@@ -167,6 +167,8 @@ class RIMResource:
     ):
         self.resref: ResRef = resref
         self.restype: ResourceType = restype
+        if isinstance(data, bytearray):  # FIXME: Something is passing bytearray here
+            data = bytes(data)
         self.data: bytes = data
 
     def __eq__(
