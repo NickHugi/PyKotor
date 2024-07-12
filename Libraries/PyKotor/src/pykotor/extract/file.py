@@ -31,7 +31,7 @@ class FileResource:
         filepath: os.PathLike | str,
     ):
         assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
-        self._identifier = ResourceIdentifier(resname, restype)
+        self._identifier: ResourceIdentifier = ResourceIdentifier(resname, restype)
 
         self._resname: str = resname
         self._restype: ResourceType = restype
@@ -160,16 +160,14 @@ class FileResource:
 
     def _index_resource(
         self,
-        *,
-        reload: bool = False,
     ):
         """Reload information about where the resource can be loaded from."""
         if self.inside_capsule:
-            from pykotor.extract.capsule import Capsule  # Prevent circular imports
+            from pykotor.extract.capsule import LazyCapsule  # Prevent circular imports
 
-            capsule = Capsule(self._filepath)
-            res: FileResource | None = capsule.info(self._resname, self._restype, reload=reload)
-            if res is None and self._identifier == self._filepath.name and self._filepath.safe_isfile():  # the capsule is the resource itself:
+            capsule = LazyCapsule(self._filepath)
+            res: FileResource | None = capsule.info(self._resname, self._restype)
+            if res is None and self._identifier == self._filepath.name and self._filepath.safe_isfile():  # The capsule is the resource itself:
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
                 return
@@ -186,8 +184,6 @@ class FileResource:
 
     def exists(
         self,
-        *,
-        reload: bool = False,
     ) -> bool:
         """Determines if this FileResource exists.
 
@@ -195,8 +191,8 @@ class FileResource:
         """
         try:
             if self.inside_capsule:
-                from pykotor.extract.capsule import Capsule  # Prevent circular imports
-                return bool(Capsule(self._filepath).info(self._resname, self._restype, reload=reload))
+                from pykotor.extract.capsule import LazyCapsule  # Prevent circular imports
+                return bool(LazyCapsule(self._filepath).info(self._resname, self._restype))
             return self.inside_bif or bool(self._filepath.safe_isfile())
         except Exception:
             RobustRootLogger().exception("Failed to check existence of FileResource.")
@@ -224,7 +220,7 @@ class FileResource:
         self._internal = True
         try:
             if reload:
-                self._index_resource(reload=reload)
+                self._index_resource()
             with BinaryReader.from_file(self._filepath) as file:
                 file.seek(self._offset)
                 data: bytes = file.read_bytes(self._size)
@@ -236,7 +232,7 @@ class FileResource:
                         res._file_hash = generate_hash(sentdata)  # noqa: SLF001
                         res._hash_task_running = False  # noqa: SLF001
 
-                    with ThreadPoolExecutor(thread_name_prefix="background_fileresource_sha1hash_calculation") as executor:
+                    with ThreadPoolExecutor(thread_name_prefix="FileResource_SHA1calc") as executor:
                         executor.submit(background_task, self, data)
             return data
         finally:
@@ -251,7 +247,7 @@ class FileResource:
         if reload or not self._file_hash:
             if not self._filepath.safe_isfile():
                 return ""  # FileResource or the capsule doesn't exist on disk.
-            self._file_hash = generate_hash(self.data())  # Calculate the sha1 hash
+            self._file_hash = generate_hash(self.data())
         return self._file_hash
 
     def as_file_resource(self) -> Self:
@@ -435,18 +431,18 @@ class ResourceIdentifier:
     def unpack(self) -> tuple[str, ResourceType]:
         return self.resname, self.restype
 
-    def validate(self):
+    def validate(self) -> Self:
         if self.restype == ResourceType.INVALID:
             msg = f"Invalid resource: '{self}'"
             raise ValueError(msg)
         return self
 
     @classmethod
-    def identify(cls, obj: ResourceIdentifier | os.PathLike | str):
+    def identify(cls, obj: ResourceIdentifier | os.PathLike | str) -> ResourceIdentifier:
         return obj if isinstance(obj, (cls, ResourceIdentifier)) else cls.from_path(obj)
 
     @classmethod
-    def from_path(cls, file_path: os.PathLike | str) -> ResourceIdentifier:
+    def from_path(cls, file_path: os.PathLike | str) -> Self:
         """Generate a ResourceIdentifier from a file path or file name. If not valid, will return an invalidated ResourceType equal to ResourceType.INVALID.
 
         Args:
@@ -467,16 +463,16 @@ class ResourceIdentifier:
         try:
             path_obj = PurePath.pathify(file_path)
         except Exception:
-            return ResourceIdentifier("", ResourceType.from_extension(""))
+            return cls("", ResourceType.from_extension(""))
 
         max_dots: int = path_obj.name.count(".")
         for dots in range(max_dots + 1, 1, -1):
             with suppress(Exception):
                 resname, restype_ext = path_obj.split_filename(dots)
-                return ResourceIdentifier(
+                return cls(
                     resname,
                     ResourceType.from_extension(restype_ext).validate(),
                 )
 
         # ResourceType is invalid at this point.
-        return ResourceIdentifier(path_obj.stem, ResourceType.from_extension(path_obj.suffix))
+        return cls(path_obj.stem, ResourceType.from_extension(path_obj.suffix))
