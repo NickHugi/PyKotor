@@ -50,21 +50,18 @@ from pykotor.common.misc import Game, ResRef
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule, LazyCapsule
 from pykotor.extract.file import FileResource, ResourceIdentifier
-from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.extract.twoda import K1Columns2DA, K2Columns2DA
+from pykotor.extract.installation import Installation
 from pykotor.font.draw import write_bitmap_fonts
 from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFList, GFFStruct, read_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.formats.lyt.lyt_auto import read_lyt
 from pykotor.resource.formats.rim.rim_auto import write_rim
 from pykotor.resource.formats.rim.rim_data import RIM
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.tpc.io_tga import TPCTGAReader, TPCTGAWriter
 from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.tpc.tpc_data import TPC
-from pykotor.resource.formats.twoda.twoda_auto import read_2da
 from pykotor.resource.generics.are import read_are, write_are
 from pykotor.resource.generics.dlg import read_dlg, write_dlg
 from pykotor.resource.generics.git import read_git, write_git
@@ -82,21 +79,17 @@ from pykotor.resource.generics.utw import read_utw, write_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
-from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import universal_simplify_exception
 from utility.logger_util import RobustRootLogger
 from utility.system.path import Path, PurePath
-from utility.tkinter.updater import human_readable_size
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from io import TextIOWrapper
 
     from typing_extensions import Literal
 
-    from pykotor.resource.formats.lyt.lyt_data import LYT
     from pykotor.resource.formats.tlk import TLK
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 
