@@ -62,24 +62,24 @@ if not is_frozen():
         update_sys_path(pathlib.Path(__file__).parents[1])
 
 
-from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
-from pykotor.common.misc import Game
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.config import LogLevel
-from pykotor.tslpatcher.logger import LogType, PatchLogger
-from pykotor.tslpatcher.namespaces import PatcherNamespace
-from pykotor.tslpatcher.patcher import ModInstaller
-from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
-from pykotor.tslpatcher.uninstall import ModUninstaller
-from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
-from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import terminate_main_process, win_get_system32_dir
-from utility.system.path import Path
-from utility.tkinter.updater import TkProgressDialog
+from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
+from pykotor.common.misc import Game  # noqa: E402
+from pykotor.common.stream import BinaryReader  # noqa: E402
+from pykotor.extract.file import ResourceIdentifier  # noqa: E402
+from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default  # noqa: E402
+from pykotor.tslpatcher.config import LogLevel  # noqa: E402
+from pykotor.tslpatcher.logger import LogType, PatchLogger  # noqa: E402
+from pykotor.tslpatcher.namespaces import PatcherNamespace  # noqa: E402
+from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
+from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
+from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
+from utility.error_handling import universal_simplify_exception  # noqa: E402
+from utility.logger_util import RobustRootLogger  # noqa: E402
+from utility.misc import ProcessorArchitecture  # noqa: E402
+from utility.system.os_helper import terminate_main_process, win_get_system32_dir  # noqa: E402
+from utility.system.path import Path  # noqa: E402
+from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -134,7 +134,7 @@ def show_update_dialog(
             # Buttons
             button_box: toga.Box = toga.Box(style=Pack(direction=ROW, padding_top=10))
             for option in options:
-                button = toga.Button(option["label"], on_press=lambda widget, opt=option: self.handle_result(opt), style=Pack(padding=5))
+                button = toga.Button(option["label"], on_press=lambda widget, opt=option: self.handle_result(opt), style=Pack(padding=5))  # noqa: ARG005
                 button_box.add(button)
             self.add(button_box)
 
@@ -206,7 +206,6 @@ def parse_args() -> Namespace:
 class HoloPatcher(toga.App):
     def startup(self):
         print("HoloPatcher.startup!!!\n\n\n")
-        self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1, padding=5))
         self.html_template = """
         <!DOCTYPE html>
         <html>
@@ -258,7 +257,6 @@ class HoloPatcher(toga.App):
         </html>
         """
         self.default_window_size: tuple[int, int] = (400, 500)
-        self.web_view.set_content("", self.html_template)
         self.main_window: toga.MainWindow = toga.MainWindow(
             title=f"HoloPatcher {VERSION_LABEL}",
             size=self.default_window_size,
@@ -350,28 +348,28 @@ class HoloPatcher(toga.App):
 
         # Tools Menu Commands
         tools_menu = [
-            Command(lambda command, **kwargs: self.test_reader() or True, text="Validate INI", group=tools_group),
-            Command(lambda command, **kwargs: self.uninstall_selected_mod() or True, text="Uninstall Mod / Restore Backup", group=tools_group),
-            Command(lambda command, **kwargs: self.fix_permissions() or True, text="Fix permissions to file/folder...", group=tools_group),
-            Command(lambda command, **kwargs: self.lowercase_files_and_folders() or True, text="Fix iOS Case Sensitivity", group=tools_group),
-            Command(lambda command, **kwargs: self.create_rte_content() or True, text="Create info.rte...", group=tools_group)
+            Command(lambda command, **kwargs: self.test_reader() or True, text="Validate INI", group=tools_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: self.uninstall_selected_mod() or True, text="Uninstall Mod / Restore Backup", group=tools_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: self.fix_permissions() or True, text="Fix permissions to file/folder...", group=tools_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: self.lowercase_files_and_folders() or True, text="Fix iOS Case Sensitivity", group=tools_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: self.create_rte_content() or True, text="Create info.rte...", group=tools_group)  # noqa: ARG005
         ]
 
         # Help Menu Commands
         help_menu = [
-            Command(lambda command, **kwargs: webbrowser.open_new("https://discord.gg/nDkHXfc36s"), text="Discord", group=deadlystream_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://deadlystream.com"), text="Website", group=deadlystream_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://discord.com/invite/kotor"), text="Discord", group=neocities_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://kotor.neocities.org"), text="Website", group=neocities_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"), text="KOTOR 1", group=pcgamingwiki_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"), text="KOTOR 2: TSL", group=pcgamingwiki_group)
+            Command(lambda command, **kwargs: webbrowser.open_new("https://discord.gg/nDkHXfc36s"), text="Discord", group=deadlystream_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://deadlystream.com"), text="Website", group=deadlystream_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://discord.com/invite/kotor"), text="Discord", group=neocities_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://kotor.neocities.org"), text="Website", group=neocities_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"), text="KOTOR 1", group=pcgamingwiki_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"), text="KOTOR 2: TSL", group=pcgamingwiki_group)  # noqa: ARG005
         ]
 
         # About Menu Commands
         about_menu = [
-            Command(lambda command, **kwargs: self.check_for_updates() or True, text="Check for Updates", group=about_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"), text="HoloPatcher Home", group=about_group),
-            Command(lambda command, **kwargs: webbrowser.open_new("https://github.com/NickHugi/PyKotor"), text="GitHub Source", group=about_group)
+            Command(lambda command, **kwargs: self.check_for_updates() or True, text="Check for Updates", group=about_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"), text="HoloPatcher Home", group=about_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: webbrowser.open_new("https://github.com/NickHugi/PyKotor"), text="GitHub Source", group=about_group)  # noqa: ARG005
         ]
 
         # Adding commands to the main window toolbar
@@ -381,15 +379,16 @@ class HoloPatcher(toga.App):
 
     def initialize_ui_controls(self):
         assert self.main_window.content is not None
-        top_box = toga.Box(style=Pack(direction=ROW, alignment=CENTER, padding=5))
 
         # Namespace/Mod row.
-        self.namespaces_combobox = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4), accessor="patcher_namespace")
-        self.namespaces_combobox.on_change = self.on_namespace_option_chosen
-        top_box.add(self.namespaces_combobox)
+        self.namespaces_combobox: toga.Selection = toga.Selection(
+            items=[],
+            style=Pack(flex=1, padding_right=5, font_size=10, padding=4),
+            accessor="patcher_namespace",
+            on_change=self.on_namespace_option_chosen
+        )
         self.browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_mod, style=Pack(padding_right=5))
-        top_box.add(self.browse_button)
-        self.expand_namespace_description_button = toga.Button(
+        self.expand_namespace_description_button: toga.Button = toga.Button(
             "?",
             on_press=lambda _widget: self.fire_async_function(
                 self.display_info_dialog(
@@ -399,32 +398,48 @@ class HoloPatcher(toga.App):
             ),
             style=Pack(padding_right=5, width=30)
         )
-        top_box.add(self.expand_namespace_description_button)
-        self.main_window.content.add(top_box)
+        self.main_window.content.add(
+            toga.Box(
+                style=Pack(direction=ROW, alignment=CENTER, padding=5),
+                children = [
+                    self.namespaces_combobox,
+                    self.browse_button,
+                    self.expand_namespace_description_button
+                ]
+            )
+        )
 
         # KOTOR Install row.
-        gamepaths_box = toga.Box(style=Pack(direction=ROW, alignment=CENTER, padding=5))
         self.gamepaths = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))
-        gamepaths_box.add(self.gamepaths)
         self.gamepaths_browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_kotor, style=Pack(padding_right=5))
-        gamepaths_box.add(self.gamepaths_browse_button)
-        self.main_window.content.add(gamepaths_box)
+        self.main_window.content.add(
+            toga.Box(
+                style=Pack(direction=ROW, alignment=CENTER, padding=5),
+                children=[self.gamepaths, self.gamepaths_browse_button]
+            )
+        )
 
         # Main WebView for content display
-        text_frame = toga.ScrollContainer(horizontal=False, vertical=True, style=Pack(flex=1))  # ScrollContainer to add scrollbars
-        text_frame.content = self.web_view
-        self.main_window.content.add(text_frame)
+        self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1, padding=5))
+        self.web_view.set_content("", self.html_template)
+        self.main_text_frame: toga.ScrollContainer = toga.ScrollContainer(  # ScrollContainer to add scrollbars
+            horizontal=False,
+            vertical=True,
+            style=Pack(flex=1),
+            content=self.web_view,
+        )
+        self.main_window.content.add(self.main_text_frame)
 
         # Bottom widgets.
-        bottom_box = toga.Box(style=Pack(direction=ROW, padding=5, alignment=CENTER))
-        self.exit_button = toga.Button("Exit", on_press=self.handle_exit_button, style=Pack(flex=1, padding=5))
-        bottom_box.add(self.exit_button)
-        self.progress_bar = toga.ProgressBar(max=100, value=0, style=Pack(flex=3, padding_top=5))
-        bottom_box.add(self.progress_bar)
-        self.install_button = toga.Button("Install", on_press=self.begin_install, style=Pack(flex=1, padding=5))
-        bottom_box.add(self.install_button)
-        self.main_window.content.add(bottom_box)
-
+        self.exit_button: toga.Button = toga.Button("Exit", on_press=self.handle_exit_button, style=Pack(flex=1, padding=5))
+        self.progress_bar: toga.ProgressBar = toga.ProgressBar(max=100, value=0, style=Pack(flex=3, padding_top=5))
+        self.install_button: toga.Button = toga.Button("Install", on_press=self.begin_install, style=Pack(flex=1, padding=5))
+        self.main_window.content.add(
+            toga.Box(
+                style=Pack(direction=ROW, padding=5, alignment=CENTER),
+                children=[self.exit_button, self.progress_bar, self.install_button]
+            )
+        )
         self.main_window.show()
 
     def update_progress_bar_directly(self, value: int = 1):
