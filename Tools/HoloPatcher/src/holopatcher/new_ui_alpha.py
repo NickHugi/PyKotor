@@ -117,7 +117,7 @@ def show_update_dialog(
     message: str,
     options: list[dict[str, Any]],
 ):
-    class UpdateDialog(toga.Box):  # TODO: move class to library code, for now keep nested in this function so it doesn't clutter the autoimport-completions
+    class UpdateDialog(toga.Box):  # TODO(th3w1zard1): move class to library code, for now keep nested in this function so it doesn't clutter the autoimport-completions
         def __init__(self, title: str, message: str, options: list[dict[str, Any]], *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.options: list[dict[str, Any]] = options
@@ -290,11 +290,9 @@ class HoloPatcher(toga.App):
         if isinstance(coro, AsyncResult):
             async def await_async_result():
                 return await coro
-            future = asyncio.run_coroutine_threadsafe(await_async_result(), self.loop)
-            return cast(T, future.result())  # Wait for the coroutine to complete and return the result
+            return cast(T, asyncio.run_coroutine_threadsafe(await_async_result(), self.loop).result())  # Wait for the coroutine to complete and return the result
         if isinstance(coro, (Coroutine, asyncio.Task, Awaitable)):
-            future = asyncio.run_coroutine_threadsafe(coro, self.loop)
-            return cast(T, future.result())  # Wait for the coroutine to complete and return the result
+            return cast(T, asyncio.run_coroutine_threadsafe(coro, self.loop).result())  # Wait for the coroutine to complete and return the result
         raise TypeError("Provided argument must be a coroutine or a callable returning a coroutine")
 
     def fire_async_function(
@@ -337,9 +335,7 @@ class HoloPatcher(toga.App):
 
     def initialize_top_menu(self):
         # Groups
-        tools_group = Group("Tools")
-        help_group = Group("Help")
-        about_group = Group("About")
+        tools_group, help_group, about_group = Group("Tools"), Group("Help"), Group("About")
 
         # Help subgroups
         deadlystream_group = Group("DeadlyStream", parent=help_group)
@@ -401,11 +397,7 @@ class HoloPatcher(toga.App):
         self.main_window.content.add(
             toga.Box(
                 style=Pack(direction=ROW, alignment=CENTER, padding=5),
-                children = [
-                    self.namespaces_combobox,
-                    self.browse_button,
-                    self.expand_namespace_description_button
-                ]
+                children = [self.namespaces_combobox, self.browse_button, self.expand_namespace_description_button]
             )
         )
 
@@ -490,12 +482,13 @@ class HoloPatcher(toga.App):
         from utility.tkinter.updater import run_tk_progress_dialog
         from utility.updater.restarter import RestartStrategy
         from utility.updater.update import AppUpdate
+
+        os_name = platform.system()
         proc_arch = ProcessorArchitecture.from_os()
         assert proc_arch == ProcessorArchitecture.from_python()
-        os_name = platform.system()
-        links: list[str] = []
 
         is_release = True  # TODO(th3w1zard1): remove this line when the beta version direct links are ready.
+        links: list[str] = []
         if is_release:
             links = remote_info["holopatcherDirectLinks"][os_name][proc_arch.value]
         else:
@@ -506,8 +499,6 @@ class HoloPatcher(toga.App):
         def download_progress_hook(data: dict[str, Any], progress_queue: Queue = progress_queue):
             progress_queue.put(data)
 
-        # Prepare the list of progress hooks with the method from ProgressDialog
-        progress_hooks = [download_progress_hook]
         def exitapp(kill_self_here: bool):  # noqa: FBT001
             packaged_data = {"action": "shutdown", "data": {}}
             progress_queue.put(packaged_data)
@@ -530,7 +521,7 @@ class HoloPatcher(toga.App):
             CURRENT_VERSION,
             latest_version,
             downloader=None,
-            progress_hooks=progress_hooks,
+            progress_hooks=[download_progress_hook],
             exithook=exitapp,
             r_strategy=RestartStrategy.DEFAULT,
             version_to_tag_parser=remove_second_dot
@@ -880,7 +871,8 @@ class HoloPatcher(toga.App):
         """
         try:
             if default_directory_path_str is None:
-                directory_path_str: os.PathLike | str = self.run_async_from_sync(self.main_window.select_folder_dialog("Select the mod directory (where tslpatchdata lives)"))
+                directory_path_str: os.PathLike | str = self.run_async_from_sync(self.main_window.select_folder_dialog(
+                                                                                "Select the mod directory (where tslpatchdata lives)"))
                 if not directory_path_str:
                     return
             else:
@@ -1025,7 +1017,7 @@ class HoloPatcher(toga.App):
                         extra_msg = f"{num_files} files and {num_folders} folders finished processing."
                         self.logger.add_note(extra_msg)
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
                     result_queue.put(False)  # noqa: FBT003
                 else:
@@ -1100,22 +1092,27 @@ class HoloPatcher(toga.App):
 
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if self.run_async_from_sync(self.display_confirm_dialog(
-            "Permission error",
-            f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
-        )):
+        if self.run_async_from_sync(
+            self.display_confirm_dialog(
+                "Permission error",
+                f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
+            )
+        ):
             directory.gain_access(recurse=recurse)
             self.on_namespace_option_chosen()
         if not directory.has_access(recurse=recurse):
-            return self.run_async_from_sync(self.display_error_dialog(
-                "Unauthorized",
-                (
-                    f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
-                    f"{os.linesep}"
-                    f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
-                    "Continue with an install anyway?"
-                ),
-            ))
+            self.fire_async_function(
+                self.display_error_dialog(
+                    "Unauthorized",
+                    (
+                        f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
+                        f"{os.linesep}"
+                        f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
+                        "Continue with an install anyway?"
+                    ),
+                )
+            )
+            return False
         return True
 
     def preinstall_validate_chosen(self) -> bool:
@@ -1137,30 +1134,38 @@ class HoloPatcher(toga.App):
             - Check write access to the KOTOR install directory.
         """
         if self.task_running:
-            self.fire_async_function(self.display_info_dialog(
-                "Task already running",
-                "Wait for the previous task to finish.",
-            ))
+            self.fire_async_function(
+                self.display_info_dialog(
+                    "Task already running",
+                    "Wait for the previous task to finish.",
+                )
+            )
             return False
         if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-            self.fire_async_function(self.display_error_dialog(
-                "No mod chosen",
-                "Select your mod directory first.",
-            ))
+            self.fire_async_function(
+                self.display_error_dialog(
+                    "No mod chosen",
+                    "Select your mod directory first.",
+                )
+            )
             return False
         game_path: str = str(self.gamepaths.value)
         if not game_path:
-            self.fire_async_function(self.display_error_dialog(
-                "No KOTOR directory chosen",
-                "Select your KOTOR directory first.",
-            ))
+            self.fire_async_function(
+                self.display_error_dialog(
+                    "No KOTOR directory chosen",
+                    "Select your KOTOR directory first.",
+                )
+            )
             return False
         case_game_path = CaseAwarePath(game_path)
         if not case_game_path.safe_isdir():
-            self.fire_async_function(self.display_error_dialog(
-                "Invalid KOTOR directory chosen",
-                "Select a valid path to your KOTOR install.",
-            ))
+            self.fire_async_function(
+                self.display_error_dialog(
+                    "Invalid KOTOR directory chosen",
+                    "Select a valid path to your KOTOR install.",
+                )
+            )
             return False
         game_path_str = str(case_game_path)
         self.gamepaths.value = game_path_str
@@ -1651,7 +1656,7 @@ def hp_exit_cleanup(app: HoloPatcher):
 def main():
     app = HoloPatcher(
         formal_name="HoloPatcher",
-        app_id="com.pykotor.holopatcher"
+        app_id="com.pykotor.holopatcher",
     )
     atexit.register(lambda: hp_exit_cleanup(app))
     app.main_loop()
@@ -1662,6 +1667,7 @@ if __name__ == "__main__":
     if str(Path(sys.executable)).startswith(tempfile.gettempdir()):
         with suppress(Exception):
             from tkinter import messagebox
+
             messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
