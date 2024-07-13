@@ -12,7 +12,6 @@ import queue
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import tkinter as tk
 import webbrowser
@@ -30,7 +29,7 @@ from typing import TYPE_CHECKING, Any, Coroutine, Generator, NoReturn, cast
 import pypandoc
 import toga
 
-from toga import Group
+from toga import Group, Selection
 from toga.command import Command
 from toga.sources import ListSource
 from toga.style import Pack
@@ -203,23 +202,30 @@ def parse_args() -> Namespace:
 class HoloPatcher(toga.App):
     def startup(self):
         print("HoloPatcher.startup!!!\n\n\n")
-        self.simple_thread_event: Event = Event()
-        self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1))
-        self.html_template: str = """
+        self.simple_thread_event = Event()
+        self.web_view = toga.WebView(style=Pack(flex=1, padding=5))
+        self.html_template = """
         <!DOCTYPE html>
         <html>
         <head>
             <title>WebView Content</title>
             <style>
                 body {
-                    font-family: Helvetica, sans-serif;
+                    font-family: 'Helvetica', sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    overflow: auto;
+                    height: 100vh; /* Full height */
+                    box-sizing: border-box;
+                }
+                #content {
                     padding: 10px;
                 }
-                .DEBUG { color: #6495ED; }  /* Cornflower Blue */
-                .INFO { color: #000000; }   /* Black */
-                .WARNING { color: #CC4E00; background-color: #FFF3E0; font-weight: bold; font-size: 10px; }  /* Orange with bold font */
-                .ERROR { color: #DC143C; font-weight: bold; font-size: 10px; }  /* Firebrick with bold font */
-                .CRITICAL { color: #FFFFFF; background-color: #8B0000; font-weight: bold; font-size: 10px; }  /* White on Dark Red with bold font */
+                .DEBUG { color: #6495ED; }
+                .INFO { color: #000000; }
+                .WARNING { color: #CC4E00; background-color: #FFF3E0; font-weight: bold; font-size: 10px; }
+                .ERROR { color: #DC143C; font-weight: bold; font-size: 10px; }
+                .CRITICAL { color: #FFFFFF; background-color: #8B0000; font-weight: bold; font-size: 10px; }
             </style>
         </head>
         <body>
@@ -228,15 +234,17 @@ class HoloPatcher(toga.App):
                 function setContent(newContent) {
                     document.getElementById('content').innerHTML = newContent;
                 }
-
                 function appendLogLine(logLine, logType) {
+                    var container = document.getElementById('content');
                     var logElement = document.createElement('div');
                     logElement.className = logType;
                     logElement.innerHTML = logLine + '<br>';
-                    document.getElementById('content').appendChild(logElement);
+                    container.appendChild(logElement);
+                    if (container.children.length > 100) {
+                        container.removeChild(container.firstChild);
+                    }
                     window.scrollTo(0, document.body.scrollHeight);
                 }
-
                 function setFontColor(logType, color) {
                     var styleElement = document.createElement('style');
                     styleElement.innerHTML = '.' + logType + ' { color: ' + color + '; }';
@@ -259,7 +267,6 @@ class HoloPatcher(toga.App):
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
         self.pykotor_logger: RobustRootLogger = RobustRootLogger()
-        self.namespaces: list[PatcherNamespace] = []
         self.background_tasks: set[asyncio.Task[Any] | asyncio.Future[Any]] = set()  # To store references to tasks
 
         self.initialize_logger()
@@ -358,7 +365,7 @@ class HoloPatcher(toga.App):
             "?",
             on_press=lambda _widget: self.run_background_task(
                 self.main_window.info_dialog(
-                    str(self.namespaces_combobox.value.patcher_namespace.name),
+                    str(cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace).name),
                     self.get_namespace_description()
                 )
             ),
@@ -375,9 +382,9 @@ class HoloPatcher(toga.App):
         gamepaths_box.add(self.gamepaths_browse_button)
         self.main_window.content.add(gamepaths_box)
 
-        # Main view widget
-        text_frame = toga.Box(style=Pack(direction=COLUMN, flex=1, padding=5))
-        text_frame.add(self.web_view)  # Add WebView to the frame
+        # Main WebView for content display
+        text_frame = toga.ScrollContainer(horizontal=False, vertical=True, style=Pack(flex=1))  # ScrollContainer to add scrollbars
+        text_frame.content = self.web_view
         self.main_window.content.add(text_frame)
 
         # Bottom widgets.
@@ -734,10 +741,7 @@ class HoloPatcher(toga.App):
 
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
-        namespace_option: PatcherNamespace | None = next(
-            (x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace),
-            None,
-        )
+        namespace_option: PatcherNamespace | None = cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace)
         return namespace_option.description if namespace_option else ""
 
     async def lowercase_files_and_folders(
@@ -801,6 +805,7 @@ class HoloPatcher(toga.App):
 
     def on_namespace_option_chosen(
         self,
+        combobox: Selection | None = None,
         config_reader: ConfigReader | None = None,
     ):
         """Handles the namespace option being chosen from the combobox.
@@ -817,11 +822,9 @@ class HoloPatcher(toga.App):
             4. Handling game paths if a game number is found
             5. Loading the info.rtf file as defined.
         """
-        if not self.namespaces:
-            return
         try:
             # Load the settings from the ini changes file.
-            namespace_option: PatcherNamespace = next(x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace)
+            namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
@@ -887,16 +890,10 @@ class HoloPatcher(toga.App):
         ----
             namespaces: List of PatcherNamespace objects
             config_reader: ConfigReader object or None
-
-        Processing Logic:
-        ----------------
-            - Populates the namespaces combobox with the provided namespaces
-            - Sets the first namespace as the selected option
-            - Stores the namespaces for later use
-            - Calls on_namespace_option_chosen to load initial config.
         """
+        self.namespaces = namespaces
         self.namespaces_combobox.items = ListSource(data=namespaces, accessors=["patcher_namespace"])
-        self.on_namespace_option_chosen(config_reader)
+        self.on_namespace_option_chosen(config_reader=config_reader)
 
     async def open_mod(
         self,
@@ -1221,7 +1218,7 @@ class HoloPatcher(toga.App):
             - Finally set the install status to not running.
         """
         self.pykotor_logger.debug("begin_install_thread reached")
-        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace)
+        namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace
         tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
         ini_file_path = tslpatchdata_path.joinpath(namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
@@ -1244,7 +1241,7 @@ class HoloPatcher(toga.App):
     async def test_reader(self):  # sourcery skip: no-conditionals-in-tests
         if not await self.preinstall_validate_chosen():
             return
-        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace)
+        namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
         self.set_state(state=True)
@@ -1295,7 +1292,8 @@ class HoloPatcher(toga.App):
             self.browse_button.enabled = True
 
     def clear_main_text(self):
-        self.web_view.evaluate_javascript("setContent('');")
+        """Clears all content from the WebView to prepare for new content."""
+        self.web_view.evaluate_javascript("document.getElementById('content').innerHTML = '';")
 
     def _execute_mod_install(
         self,
@@ -1516,8 +1514,16 @@ class HoloPatcher(toga.App):
     def load_rtf_content(self, rtf_text: str):
         """Converts the RTF content to HTML and displays it in the WebView."""
         self.clear_main_text()
-        html_content: str = pypandoc.convert_text(rtf_text, "html", format="rtf").replace("'", "\\'")
-        self.web_view.evaluate_javascript(f"setContent('{html_content}');")
+        try:
+            html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
+        except OSError:
+            # Download Pandoc if it is not installed
+            pypandoc.download_pandoc()
+            html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
+
+        # Use JSON dumps to safely encode the HTML for JavaScript
+        safe_html_content = json.dumps(html_content)
+        self.web_view.evaluate_javascript(f"setContent({safe_html_content});")
 
     def write_log(self, log: PatchLog):
         """Writes a message to the log.
