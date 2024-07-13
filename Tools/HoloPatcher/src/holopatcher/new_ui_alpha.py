@@ -22,7 +22,6 @@ from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
 from enum import IntEnum
 from multiprocessing import Queue
-from threading import Event, Thread
 from tkinter import messagebox
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Awaitable, Coroutine, Generator, NoReturn, TypeVar, cast
@@ -227,7 +226,6 @@ def parse_args() -> Namespace:
 class HoloPatcher(toga.App):
     def startup(self):
         print("HoloPatcher.startup!!!\n\n\n")
-        self.simple_thread_event = Event()
         self.web_view = toga.WebView(style=Pack(flex=1, padding=5))
         self.html_template = """
         <!DOCTYPE html>
@@ -286,9 +284,7 @@ class HoloPatcher(toga.App):
 
         self.set_window(width=400, height=500)
 
-        self.install_running: bool = False
         self.task_running: bool = False
-        self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
         self.pykotor_logger: RobustRootLogger = RobustRootLogger()
@@ -306,7 +302,10 @@ class HoloPatcher(toga.App):
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.execute_commandline(cmdline_args)
 
-    def run_async_as_sync(self, coro: Coroutine[Any, Any, T] | Awaitable[Any] | asyncio.Task[Any] | AsyncResult) -> T:
+    def run_async_from_sync(
+        self,
+        coro: Coroutine[Any, Any, T] | Awaitable[Any] | asyncio.Task[Any] | AsyncResult,
+    ) -> T:
         """Utility method to run a coroutine as a background task and keep a reference to it."""
         if isinstance(coro, AsyncResult):
             async def await_async_result():
@@ -332,7 +331,7 @@ class HoloPatcher(toga.App):
             coro (Coroutine | AsyncResult | Awaitable): The coroutine or awaitable object to run in the background.
             callback (Callable, optional): A function to execute with the result of the coroutine.
         """
-        async def task_wrapper(app: toga.App, **kwargs):
+        async def task_wrapper(app: toga.App, **kwargs):  # noqa: ARG001
             try:
                 result = await coro
                 if callback is not None:
@@ -604,7 +603,7 @@ class HoloPatcher(toga.App):
                     self.exit()
                     sys.exit(ExitCode.SUCCESS)
         elif num_cmdline_actions > 1:
-            self.run_async_as_sync(self.display_error_dialog("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]"))
+            self.run_async_from_sync(self.display_error_dialog("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]"))
             sys.exit(ExitCode.NUMBER_OF_ARGS)
 
     def _begin_oneshot(
@@ -613,62 +612,15 @@ class HoloPatcher(toga.App):
     ):
         self.one_shot = True
         self.main_window.visible = False
-        self.setup_cli_messagebox_overrides()
         if not self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
-            self.begin_install_thread(self.simple_thread_event, self.namespaces_combobox.value.patcher_namespace)
+            self.begin_install(self.namespaces_combobox.value.patcher_namespace)
         if cmdline_args.uninstall:
             self.uninstall_selected_mod()
         if cmdline_args.validate:
             self.test_reader()
         sys.exit(ExitCode.SUCCESS)
-
-    def setup_cli_messagebox_overrides(self):
-        """Overrides message box functions for console mode. This is done for true CLI support.
-
-        Args:
-        ----
-            self: The class instance.
-
-        Processing Logic:
-        ----------------
-            - Replaces message box functions with print statements to display messages in the console.
-            - Prompts the user for input and returns True/False for yes/no questions instead of opening a message box.
-            - Allows message boxes to work as expected in console mode without GUI dependencies.
-        """
-
-        class MessageboxOverride:
-            @staticmethod
-            def showinfo(title, message, **options):
-                print(f"[Note] - {title}: {message}")  # noqa: T201
-
-            @staticmethod
-            def showwarning(title, message, **options):
-                print(f"[Warning] - {title}: {message}")  # noqa: T201
-
-            @staticmethod
-            def showerror(title, message, **options):
-                print(f"[Error] - {title}: {message}")  # noqa: T201
-
-            @staticmethod
-            def askyesno(title, message, **options):
-                """Console-based replacement for messagebox.askyesno and similar."""
-                print(f"{title}\n{message}")  # noqa: T201
-                while True:
-                    response = input("(y/N)").lower().strip()
-                    if response in {"yes", "y"}:
-                        return True
-                    if response in {"no", "n"}:
-                        return False
-                    print("Invalid input. Please enter 'yes' or 'no'")  # noqa: T201
-
-        messagebox.showinfo = MessageboxOverride.showinfo  # type: ignore[assignment]
-        messagebox.showwarning = MessageboxOverride.showwarning  # type: ignore[assignment]
-        messagebox.showerror = MessageboxOverride.showerror  # type: ignore[assignment]
-        # messagebox.askyesno = MessageboxOverride.askyesno
-        # messagebox.askyesnocancel = MessageboxOverride.askyesno
-        # messagebox.askretrycancel = MessageboxOverride.askyesno
 
     def hide_console(self):
         """Hide the console window in GUI mode."""
@@ -697,7 +649,7 @@ class HoloPatcher(toga.App):
             return
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
-            self.run_async_as_sync(
+            self.fire_async_function(
                 self.display_error_dialog(
                     "Backup Folder Empty/Missing.",
                     f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
@@ -718,23 +670,6 @@ class HoloPatcher(toga.App):
         if not fully_ran:
             self.on_namespace_option_chosen()
 
-    def async_raise(self, tid: int, exctype: type):
-        """Raises an exception in the threads with id tid."""
-        if not inspect.isclass(exctype):
-            msg = "Only types can be raised (not instances)"
-            raise TypeError(msg)
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
-        if res == 0:
-            msg = "Invalid thread id(0)"
-            raise ValueError(msg)
-        if res != 1:
-            # "if it returns a number greater than one, you're in trouble,
-            # and you should call it again with exc=NULL to revert the effect"
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
-            msg = "PyThreadState_SetAsyncExc FAILED"
-            raise SystemError(msg)
-        print("PyThreadState_SetAsyncExc SUCCESSFUL")
-
     def handle_exit_button(self, button: toga.Button | None = None):
         """Handle exit button click during installation.
 
@@ -746,7 +681,7 @@ class HoloPatcher(toga.App):
             - If stopping fails, force terminate install thread
             - Destroy window and exit with abort code.
         """
-        if not self.task_running or not self.task_thread or not self.task_thread.is_alive():
+        if not self.task_running:
             print("Goodbye!")
             self.exit()
             sys.exit(ExitCode.SUCCESS)
@@ -754,53 +689,19 @@ class HoloPatcher(toga.App):
 
         # Handle unsafe exit.
         if (
-            self.install_running
-            and not self.run_async_as_sync(
-                self.main_window.confirm_dialog(
+            not self.run_async_from_sync(
+                self.display_confirm_dialog(
                     "Really cancel the current installation? ",
                     "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
                 )
             )
         ):
             return
-        if (
-            self.task_running
-            and not self.run_async_as_sync(
-                self.main_window.confirm_dialog(
-                    "Really cancel the current task?",
-                    "A task is currently running. Exiting now may not be safe. Really continue?",
-                )
-            )
-        ):
-            return
-        self.simple_thread_event.set()
-        time.sleep(1)
-        print("Install thread is still alive, attempting force close...")
-        i = 0
-        while self.task_thread.is_alive():
-            if hasattr(self.task_thread, "_stop") and callable(self.task_thread._stop):  # type: ignore[]  # noqa: SLF001
-                try:
-                    self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access  # noqa: SLF001
-                    print("Force terminate of install thread succeeded")
-                except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
-                    self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
-            try:
-                if self.task_thread.ident is None:
-                    msg = "Task ident is None, expected an int."
-                    raise ValueError(msg)  # noqa: TRY301
-                self.async_raise(self.task_thread.ident, SystemExit)
-            except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
-                self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
-            print(f"Install thread is still alive after {i} seconds, waiting...")
-            time.sleep(1)
-            i += 1
-            if i == 2:
-                break
-        if self.task_thread.is_alive():
-            print("Failed to stop thread!")
 
-        print("Destroying self")
+        print("Close mainwindow")
         self.main_window.close()
+        print("Exit main app")
+        self.exit()
         print("Goodbye! (sys.exit abort unsafe)")
         print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
         pid = os.getpid()
@@ -819,7 +720,7 @@ class HoloPatcher(toga.App):
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
         namespace_option: PatcherNamespace | None = cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace)
-        return namespace_option.description if namespace_option else ""
+        return "" if namespace_option is None else namespace_option.description
 
     def lowercase_files_and_folders(
         self,
@@ -828,13 +729,13 @@ class HoloPatcher(toga.App):
         reset_namespace: bool = False,
     ):
         if not directory:
-            directory = self.run_async_as_sync(self.main_window.select_folder_dialog("Select target directory"))
+            directory = self.run_async_from_sync(self.main_window.select_folder_dialog("Select target directory"))
             if directory is None:
                 return  # User cancelled the dialog
 
         try:
 
-            def task():
+            def task(app: toga.App | None = None, **kwargs):
                 self.set_state(state=True)
                 self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
@@ -866,13 +767,12 @@ class HoloPatcher(toga.App):
                 except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
                 finally:
-                    self.set_state(state=False)
+                    self.add_background_task(lambda app, **kwargs: self.set_state(state=False))
                     if not made_change:
                         self.logger.add_note("Nothing to change - all files/folders already correct case.")
                     self.logger.add_note("iOS case rename task completed.")
 
-            self.task_thread = Thread(target=task, name="lowercase_tool_task")
-            self.task_thread.start()
+            self.add_background_task(task)
         except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
         finally:
@@ -911,13 +811,13 @@ class HoloPatcher(toga.App):
             game_number: int | None = reader.config.game_number
             if game_number:
                 game = Game(game_number)
-                supported_paths = [
+                kotor_paths_stringlist: list[str] = [
                     str(path)
-                    for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
+                    for game_key in reversed([game] + ([Game.K1] if game == Game.K2 else []))
                     for path in find_kotor_paths_from_default()[game_key]
                 ]
-                self.gamepaths.items = supported_paths
-                self.gamepaths.value = supported_paths[0] if supported_paths else None
+                self.gamepaths.items = kotor_paths_stringlist
+                self.gamepaths.value = kotor_paths_stringlist[0] if kotor_paths_stringlist else None
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
@@ -974,7 +874,7 @@ class HoloPatcher(toga.App):
     def open_mod(
         self,
         default_directory_path_str: os.PathLike | str | None = None,
-        unknown_toga_arg: Any | None = None,
+        button: toga.Button | None = None,
     ):
         """Opens a mod directory.
 
@@ -994,14 +894,14 @@ class HoloPatcher(toga.App):
         """
         try:
             if default_directory_path_str is None:
-                directory_path_str: os.PathLike | str = self.run_async_as_sync(self.main_window.select_folder_dialog("Select the mod directory (where tslpatchdata lives)"))
+                directory_path_str: os.PathLike | str = self.run_async_from_sync(self.main_window.select_folder_dialog("Select the mod directory (where tslpatchdata lives)"))
                 if not directory_path_str:
                     return
             else:
                 directory_path_str = default_directory_path_str
 
-            tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             # handle when a user selects 'tslpatchdata' instead of mod root
+            tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
                 tslpatchdata_path = tslpatchdata_path.parent
 
@@ -1012,20 +912,24 @@ class HoloPatcher(toga.App):
             if namespace_path.safe_isfile():
                 print("FOUND namespace_path:", namespace_path)
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
+
             elif changes_path.safe_isfile():
                 print("FOUND changes_path:", changes_path, "namespace_path not found:", namespace_path)
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
                 self.load_namespace(namespaces, config_reader)
+
             else:
                 print("namespace_path not found:", namespace_path, "changes_path not found:", changes_path)
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
-                    self.run_async_as_sync(self.display_error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'"))
+                    self.run_async_from_sync(self.display_error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'"))
                 return
             self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
+
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
+
         else:
             if default_directory_path_str:
                 self.browse_button.style.visibility = "hidden"
@@ -1054,15 +958,17 @@ class HoloPatcher(toga.App):
         try:
             directory_path_str = default_kotor_dir_str
             if not directory_path_str:
-                directory_path_str = self.run_async_as_sync(self.main_window.select_folder_dialog("Select the KOTOR directory"))
+                directory_path_str = self.run_async_from_sync(self.main_window.select_folder_dialog("Select the KOTOR directory"))
                 if not directory_path_str:
                     return  # User cancelled the dialog
+
             directory = CaseAwarePath(directory_path_str)
             self.check_access(directory)
             directory_str = str(directory)
             if directory_str not in [str(item) for item in self.gamepaths.items]:
                 self.gamepaths.items.append(directory_str)
             self.gamepaths.value = directory_str
+
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
@@ -1098,10 +1004,10 @@ class HoloPatcher(toga.App):
 
     def _handle_fix_permissions(
         self,
-        chosen_path: os.PathLike | str | None,
-        directory: os.PathLike | str | None,
-        reset_namespace: bool,  # noqa: FBT001
-        error: Exception | None
+        chosen_path: os.PathLike | str | None = None,
+        directory: os.PathLike | str | None = None,
+        reset_namespace: bool = False,  # noqa: FBT001, FBT002
+        error: Exception | None = None
     ):
         if chosen_path is None:
             print("_handle_fix_permissions: user did not choose a path.")
@@ -1142,14 +1048,16 @@ class HoloPatcher(toga.App):
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
 
-            result_queue = queue.Queue()
             self.set_state(state=True)
             self.clear_main_text()
+
+            from threading import Thread
+            result_queue = queue.Queue()
             self.task_thread = Thread(target=task, args=(result_queue,), name="fix_permissions_thread")
             self.task_thread.start()
 
             async def _end_fix_permissions(
-                app: toga.App,
+                app: toga.App,  # noqa: ARG001
                 task_thread: Thread = self.task_thread,
                 result_queue: queue.Queue = result_queue,
                 directory: os.PathLike | str | None = directory,
@@ -1167,7 +1075,7 @@ class HoloPatcher(toga.App):
 
             self.add_background_task(_end_fix_permissions)
 
-        except Exception as e2:
+        except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
@@ -1206,14 +1114,14 @@ class HoloPatcher(toga.App):
 
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if self.run_async_as_sync(self.main_window.confirm_dialog(
+        if self.run_async_from_sync(self.display_confirm_dialog(
             "Permission error",
             f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
         )):
             directory.gain_access(recurse=recurse)
             self.on_namespace_option_chosen()
         if not directory.has_access(recurse=recurse):
-            return self.run_async_as_sync(self.display_error_dialog(
+            return self.run_async_from_sync(self.display_error_dialog(
                 "Unauthorized",
                 (
                     f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
@@ -1288,18 +1196,15 @@ class HoloPatcher(toga.App):
         try:
             if not self.preinstall_validate_chosen():
                 return
-            print("Prevalidate finished")
-            print("set ui state")
             self.set_state(state=True)
             self.clear_main_text()
             install_message = f"Starting install...{os.linesep}".replace("\n", "<br>")
             self.web_view.evaluate_javascript(f"setContent('{install_message}');")
-            print("starting install thread")
+
+            namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace  # type: ignore[]
             async def begin_install_thread(
-                app: toga.App,
-                should_cancel_thread: Event=self.simple_thread_event,
-                namespace: PatcherNamespace=self.namespaces_combobox.value.patcher_namespace,
-                update_progress_func: Callable | None = lambda val=1: self.add_background_task(lambda app, val=val, **kwargs: self.update_progress_bar_directly(val)),
+                app: toga.App,  # noqa: ARG001
+                namespace: PatcherNamespace = namespace_option,
                 **kwargs,
             ):
                 """Starts the mod installation thread. This function is called directly when utilizing the CLI.
@@ -1319,26 +1224,24 @@ class HoloPatcher(toga.App):
                     - Finally set the install status to not running.
                 """
                 print("begin_install_thread reached")
+                def update_progress_func(val: int = 1):
+                    self.add_background_task(lambda app, val=val, **kwargs: self.update_progress_bar_directly(val))  # noqa: ARG005
+
                 tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
                 ini_file_path = tslpatchdata_path.joinpath(namespace.changes_filepath())
-                print("ini_file_path:", ini_file_path)
                 namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
                 try:
-                    print("Create ModInstaller instance.")
                     installer = ModInstaller(namespace_mod_path, str(self.gamepaths.value), ini_file_path, self.logger)
-                    print("Installer constructed.")
                     installer.tslpatchdata_path = tslpatchdata_path
-                    print("Call _execute_mod_install")
-                    self._execute_mod_install(installer, should_cancel_thread, update_progress_func)
+                    self._execute_mod_install(installer, update_progress_func)
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    print("Exception", file=sys.__stderr__)
                     self._handle_exception_during_install(e)
                 finally:
-                    self.add_background_task(lambda app, **kwargs: self.set_state(state=False))
+                    self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
+
             self.add_background_task(begin_install_thread)
-            #self.task_thread = Thread(target=begin_install_thread, args=(self.simple_thread_event, self.namespaces_combobox.value.patcher_namespace, lambda val: self.add_background_task(lambda app, val=val, **kwargs: self.update_progress_bar_directly(val))), name="HoloPatcher_install_thread")  # noqa: E501, ARG005
-            #self.task_thread.start()
+
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
         finally:
@@ -1363,7 +1266,7 @@ class HoloPatcher(toga.App):
                 self.add_background_task(lambda app, **kwargs: self.set_state(state=False))
                 self.logger.add_note("Config reader test is complete.")
 
-        Thread(target=task, name="Test_Reader_Thread").start()
+        self.add_background_task(lambda app, **kwargs: task)
 
     def set_state(
         self,
@@ -1404,7 +1307,6 @@ class HoloPatcher(toga.App):
     def _execute_mod_install(
         self,
         installer: ModInstaller,
-        should_cancel_thread: Event,
         update_progress_func: Callable | None = None
     ):
         """Executes the mod installation.
@@ -1430,7 +1332,7 @@ class HoloPatcher(toga.App):
             if confirm_msg and not self.one_shot and confirm_msg.upper() != "N/A":
                 # Show a confirmation dialog
                 print("Show confirm dialog")
-                if not self.run_async_as_sync(self.main_window.confirm_dialog("This mod requires confirmation", confirm_msg)):
+                if not self.run_async_from_sync(self.display_confirm_dialog("This mod requires confirmation", confirm_msg)):
                     print("User did not confirm.")
                     return  # If the dialog returns False, stop the execution
                 print("confirm dialog passed.")
@@ -1451,7 +1353,7 @@ class HoloPatcher(toga.App):
             # profiler.enable()
             print("Jump to ModInstaller code.")
             install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-            installer.install(should_cancel_thread, update_progress_func)
+            installer.install(update_progress_func)
             total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
             print("install complete")
             if update_progress_func is not None:
@@ -1528,12 +1430,22 @@ class HoloPatcher(toga.App):
     def log_file_path(self) -> Path:
         return Path.pathify(self.mod_path) / "installlog.txt"
 
+    async def display_confirm_dialog(self, title: str, message: str) -> bool:
+        """Utility to display error dialog on the main thread."""
+        if self.one_shot:
+            return True
+        return await self.main_window.confirm_dialog(title, message)
+
     async def display_info_dialog(self, title: str, message: str):
         """Utility to display error dialog on the main thread."""
+        if self.one_shot:
+            print(title, message)
         await self.main_window.info_dialog(title, message)
 
     async def display_error_dialog(self, title: str, message: str):
         """Utility to display error dialog on the main thread."""
+        if self.one_shot:
+            print(title, message, file=sys.stderr)
         await self.main_window.error_dialog(title, message)
 
     def _handle_exception_during_install(
@@ -1702,6 +1614,7 @@ def temporary_toga_window() -> Generator[toga.Window, Any, None]:
         app = toga.App("Error App", "org.example.error")
         window = toga.Window(size=(1, 1))
         window.show()
+        from threading import Thread
         Thread(target=app.main_loop, daemon=True, name="Temp_Toga_Window_Daemon").start()
     yield window
     window.close()
