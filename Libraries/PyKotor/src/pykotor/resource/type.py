@@ -158,7 +158,7 @@ class ResourceType(Enum):
     TTF = ResourceTuple(2072, "ttf", "Fonts", "binary")
     TTC = ResourceTuple(2073, "ttc", "Unused", "binary")
     CUT = ResourceTuple(2074, "cut", "Cutscenes", "gff")
-    KA = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
+    KA  = ResourceTuple(2075, "ka", "Unused", "xml")  # noqa: E221
     JPG = ResourceTuple(2076, "jpg", "Images", "binary")
     ICO = ResourceTuple(2077, "ico", "Images", "binary")
     OGG = ResourceTuple(2078, "ogg", "Audio", "binary")

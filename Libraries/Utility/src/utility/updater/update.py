@@ -198,7 +198,7 @@ class LibUpdate:
         if background:
             if not self._is_downloading:
                 self._is_downloading = True
-                threading.Thread(target=self._download).start()
+                threading.Thread(target=self._download, name="LibUpdate_download_thread").start()
         elif not self._is_downloading:
             self._is_downloading = True
             return self._download()

@@ -443,7 +443,7 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
         cls = object.__getattribute__(self, "__class__")
         if not object.__getattribute__(cls, "_logger"):
             type.__setattr__(cls, "_logger", object.__getattribute__(self, "_setup_logger")())
-            listener_thread = threading.Thread(target=object.__getattribute__(self, "_start_listener"))
+            listener_thread = threading.Thread(target=object.__getattribute__(self, "_start_listener"), name="RobustRootLogger_listener")
             listener_thread.daemon = True
             self.listener_thread = listener_thread
 
@@ -516,7 +516,7 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             exception_handler.addFilter(LogLevelFilter(logging.ERROR))
             logger.addHandler(exception_handler)
             object.__setattr__(self, "_orig_log_func", logger._log)
-            logger._log = object.__getattribute__(self, "_log")  # doesn't properly work
+            #logger._log = object.__getattribute__(self, "_log")  # doesn't properly work
 
             # Adding handlers to the queue listener
             #object.__setattr__(self, "listener", QueueListener(object.__getattribute__(self, "_queue"), console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler))
@@ -559,7 +559,7 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
                         orig_log_func(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
                     queue.task_done()
 
-            logging_thread = threading.Thread(target=logging_thread_func, args=(our_queue,logging_context))
+            logging_thread = threading.Thread(target=logging_thread_func, args=(our_queue,logging_context), name="RobustRootLogger_log_thread")
             logging_thread.start()
             atexit.register(our_queue.put, None)
             object.__setattr__(self, "logging_thread_func", logging_thread_func)

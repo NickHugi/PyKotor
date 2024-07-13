@@ -806,7 +806,7 @@ class App:
                         self.logger.add_note("Nothing to change - all files/folders already correct case.")
                     self.logger.add_note("iOS case rename task completed.")
 
-            self.task_thread = Thread(target=task)
+            self.task_thread = Thread(target=task, name="lowercase_tool_task")
             self.task_thread.start()
         except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
@@ -1073,7 +1073,7 @@ class App:
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
 
-            self.task_thread = Thread(target=task)
+            self.task_thread = Thread(target=task, name="fix_permissions_tool_task")
             self.task_thread.start()
         except Exception as e2:
             self._handle_general_exception(e2)
@@ -1198,7 +1198,7 @@ class App:
             if not self.preinstall_validate_chosen():
                 return
             self.pykotor_logger.debug("Prevalidate finished, starting install thread")
-            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
+            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly), name="HoloPatcher_install_thread")
             self.task_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
@@ -1268,7 +1268,7 @@ class App:
                 self.set_state(state=False)
                 self.logger.add_note("Config reader test is complete.")
 
-        Thread(target=task).start()
+        Thread(target=task, name="reader_test_thread").start()
 
     def set_state(
         self,

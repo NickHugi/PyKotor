@@ -595,14 +595,14 @@ def patch_and_save_noncapsule(
         if capsule is None:
             txi_file = resource.filepath().with_suffix(".txi")
             if txi_file.is_file():
-                RobustRootLogger().info("Embedding TXI information...")
+                print("Embedding TXI information...")
                 data: bytes = BinaryReader.load_file(txi_file)
                 txi_text: str = decode_bytes_with_fallbacks(data)
                 patched_data.txi = txi_text
         else:
             txi_data = capsule.resource(resource.resname(), ResourceType.TXI)
             if txi_data is not None:
-                RobustRootLogger().info("Embedding TXI information from resource found in capsule...")
+                print("Embedding TXI information from resource found in capsule...")
                 txi_text = decode_bytes_with_fallbacks(txi_data)
                 patched_data.txi = txi_text
 
@@ -1314,7 +1314,7 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.pytranslator.translation_option = TranslationOption[self.translation_option.get()]
             self.toggle_output_frame(tk.BooleanVar(value=False))
 
-            SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread)
+            SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread, name="Patchloop_Thread")
             SCRIPT_GLOBALS.install_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             RobustRootLogger().exception("Unhandled exception during the patching process.")
