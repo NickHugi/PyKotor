@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import cProfile
 import gc
 import multiprocessing
 import os
@@ -188,6 +187,7 @@ def main_init():
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
     # os.environ["QT_SCALE_FACTOR"] = "1"
+    atexit.register(last_resort_cleanup)
 
 
 if __name__ == "__main__":
@@ -202,8 +202,8 @@ if __name__ == "__main__":
     from toolset.gui.widgets.settings.application import ApplicationSettings
 
     if qtpy.QT5:
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, False)
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, False)  # Default
+        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, True)  # Default
     # Some application settings must be set before the app starts.
     # These ones are accessible through the in-app settings window widget.
     settings_widget = ApplicationSettings()
@@ -213,7 +213,12 @@ if __name__ == "__main__":
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
     app = QApplication(sys.argv)
-    # app.setAttribute(Qt.ApplicationAttribute.AA_ForceRasterWidgets, False)  # this breaks gl!
+    app.setFont(QFont("Roboto", 13))
+    app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    app.setApplicationName("HolocronToolsetV3")
+    app.setOrganizationName("PyKotor")
+    app.setOrganizationDomain("github.com/NickHugi/PyKotor")
+    app.thread().setPriority(QThread.Priority.HighestPriority)
 
     for attr_name, attr_value in settings_widget.__dict__.items():
         if attr_value is None:  # attr not available in this qt version.
@@ -221,13 +226,8 @@ if __name__ == "__main__":
         if not attr_name.startswith("AA_"):
             continue
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
-    app.setFont(QFont("Roboto", 13))
-    app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    app.setApplicationName("HolocronToolsetV3")
-    app.setOrganizationName("PyKotor")
-    app.setOrganizationDomain("github.com/NickHugi/PyKotor")
 
-    app.thread().setPriority(QThread.Priority.HighestPriority)
+    app.aboutToQuit.connect(qt_cleanup)
 
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox
@@ -238,23 +238,7 @@ if __name__ == "__main__":
         msgBox.exec_()
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
-    app.aboutToQuit.connect(qt_cleanup)
-    atexit.register(last_resort_cleanup)
-
     from toolset.gui.windows.main import ToolWindow
 
-    profiler: bool | cProfile.Profile = False  # Set to False or None to disable profiler
-    if profiler:
-        profiler = cProfile.Profile()
-        profiler.enable()
-
-    window = ToolWindow()
-    window.show()
-    #window.checkForUpdates(silent=True)
-
-    # Start main app loop.
+    ToolWindow().show()
     app.exec_()
-
-    if profiler:
-        profiler.disable()
-        profiler.dump_stats(str(pathlib.Path("profiler_output.pstat")))
