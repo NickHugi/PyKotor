@@ -418,19 +418,17 @@ class HoloPatcher(toga.App):
         # Bottom widgets.
         bottom_box = toga.Box(style=Pack(direction=ROW, padding=5, alignment=CENTER))
         self.exit_button = toga.Button("Exit", on_press=self.handle_exit_button, style=Pack(flex=1, padding=5))
-        self.install_button = toga.Button("Install", on_press=self.begin_install, style=Pack(flex=1, padding=5))
         bottom_box.add(self.exit_button)
-        self.progress_value = 0
-        self.progress_bar = toga.ProgressBar(max=100, value=self.progress_value, style=Pack(flex=3, padding_top=5))
+        self.progress_bar = toga.ProgressBar(max=100, value=0, style=Pack(flex=3, padding_top=5))
         bottom_box.add(self.progress_bar)
+        self.install_button = toga.Button("Install", on_press=self.begin_install, style=Pack(flex=1, padding=5))
         bottom_box.add(self.install_button)
         self.main_window.content.add(bottom_box)
 
         self.main_window.show()
 
     def update_progress_bar_directly(self, value: int = 1):
-        self.progress_value += value
-        self.progress_bar.value = self.progress_value
+        self.progress_bar.value += value
 
     def check_for_updates(self):
         try:
@@ -1207,6 +1205,7 @@ class HoloPatcher(toga.App):
                 try:
                     installer = ModInstaller(namespace_mod_path, str(self.gamepaths.value), ini_file_path, self.logger)
                     installer.tslpatchdata_path = tslpatchdata_path
+                    self.progress_bar.start()
                     self._execute_mod_install(installer, update_progress_func)
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     self._handle_exception_during_install(e)
