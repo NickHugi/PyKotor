@@ -355,11 +355,11 @@ class _Node:
         self.header: _NodeHeader | None = _NodeHeader()
         self.trimesh: _TrimeshHeader | None = None
         self.skin: _SkinmeshHeader | None = None
-        self.children_offsets = []
+        self.children_offsets: list[int] = []
 
         self.w_children = []
-        self.w_controllers = []
-        self.w_controller_data = []
+        self.w_controllers: list[_Controller] = []
+        self.w_controller_data: list[float] = []
 
     def read(
         self,
@@ -923,7 +923,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0: int = 0
         self.unknown0_count: int = 0
         self.unknown0_count2: int = 0
-        self.bones: tuple[int] = tuple(-1 for _ in range(16))
+        self.bones: tuple[int, ...] = tuple(-1 for _ in range(16))
         self.unknown1: int = 0
 
         self.bonemap: list[int] = []
@@ -950,7 +950,7 @@ class _SkinmeshHeader:
         self.offset_to_unknown0 = reader.read_uint32()
         self.unknown0_count = reader.read_uint32()
         self.unknown0_count2 = reader.read_uint32()
-        self.bones = (reader.read_uint16() for _ in range(16))
+        self.bones = tuple(reader.read_uint16() for _ in range(16))
         self.unknown1 = reader.read_uint32()
         return self
 
