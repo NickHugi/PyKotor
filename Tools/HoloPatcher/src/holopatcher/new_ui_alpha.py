@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 import atexit
 import ctypes
-import functools
-import inspect
 import json
 import os
 import pathlib
@@ -22,7 +20,6 @@ from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
 from enum import IntEnum
 from multiprocessing import Queue
-from tkinter import messagebox
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Awaitable, Coroutine, Generator, NoReturn, TypeVar, cast
 
@@ -34,8 +31,8 @@ from toga.command import Command
 from toga.handlers import AsyncResult
 from toga.sources import ListSource
 from toga.style import Pack
-from toga.style.pack import CENTER, COLUMN, ROW
-from toga.widgets.base import BaseStyle
+from travertino.constants import CENTER, COLUMN, ROW
+from travertino.declaration import BaseStyle
 
 
 def is_frozen() -> bool:
@@ -85,11 +82,8 @@ from utility.system.path import Path
 from utility.tkinter.updater import TkProgressDialog
 
 if TYPE_CHECKING:
-    import tkinter as tk
-
     from argparse import Namespace
     from collections.abc import Callable
-    from concurrent.futures import Future
     from datetime import timedelta
     from multiprocessing import Process
 
@@ -117,31 +111,17 @@ class ExitCode(IntEnum):
 class HoloPatcherError(Exception): ...
 
 
-def run_in_executor(fn):
-    """Decorator to run a synchronous function in the default executor."""
-    @functools.wraps(fn)
-    def wrapper(*args, **kwargs):
-        loop = asyncio.get_running_loop()
-        return loop.run_in_executor(None, fn, *args, **kwargs)
-    return wrapper
-
-
-def safe_async_call(coro_or_func):
-    """Ensures that an async function or a regular function is called appropriately within the asyncio event loop."""
-    if asyncio.iscoroutinefunction(coro_or_func) or asyncio.iscoroutine(coro_or_func):
-        # Schedule the coroutine to run on the event loop.
-        asyncio.run_coroutine_threadsafe(coro_or_func, asyncio.get_event_loop())
-    else:
-        # Run synchronous code directly or in a thread-safe manner if required.
-        asyncio.get_event_loop().call_soon_threadsafe(coro_or_func)
-
-
-def show_update_dialog(window: toga.MainWindow, title: str, message: str, options: list[dict[str, Any]]):
+def show_update_dialog(
+    window: toga.MainWindow,
+    title: str,
+    message: str,
+    options: list[dict[str, Any]],
+):
     class UpdateDialog(toga.Box):  # TODO: move class to library code, for now keep nested in this function so it doesn't clutter the autoimport-completions
         def __init__(self, title: str, message: str, options: list[dict[str, Any]], *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.options: list[dict[str, Any]] = options
-            cast(BaseStyle, self.style).update(direction=COLUMN, padding=10)
+            cast(BaseStyle, self.style).update(direction=COLUMN, padding=10)  # type: ignore[]
 
             # Title
             self.title_label: toga.Label = toga.Label(title, style=Pack(padding_bottom=10))
@@ -226,7 +206,7 @@ def parse_args() -> Namespace:
 class HoloPatcher(toga.App):
     def startup(self):
         print("HoloPatcher.startup!!!\n\n\n")
-        self.web_view = toga.WebView(style=Pack(flex=1, padding=5))
+        self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1, padding=5))
         self.html_template = """
         <!DOCTYPE html>
         <html>
@@ -277,18 +257,20 @@ class HoloPatcher(toga.App):
         </body>
         </html>
         """
+        self.default_window_size: tuple[int, int] = (400, 500)
         self.web_view.set_content("", self.html_template)
-        self.main_window: toga.MainWindow = toga.MainWindow(title=f"HoloPatcher {VERSION_LABEL}")
-        self.main_window.content = toga.Box(style=Pack(direction=COLUMN))
-        self.on_exit = lambda widget, **kwargs: self.handle_exit_button() or True
-
-        self.set_window(width=400, height=500)
+        self.main_window: toga.MainWindow = toga.MainWindow(
+            title=f"HoloPatcher {VERSION_LABEL}",
+            size=self.default_window_size,
+            position=self.get_centered_position(*self.default_window_size),
+            content=toga.Box(style=Pack(direction=COLUMN)),
+        )
+        self.on_exit = lambda widget, **kwargs: self.handle_exit_button() or True  # noqa: ARG005
 
         self.task_running: bool = False
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
         self.pykotor_logger: RobustRootLogger = RobustRootLogger()
-        self.background_tasks: set[asyncio.Task[Any] | Future] = set()  # To store references to tasks
 
         self.initialize_logger()
         self.initialize_top_menu()
@@ -320,8 +302,7 @@ class HoloPatcher(toga.App):
     def fire_async_function(
         self,
         coro: Coroutine | Awaitable | AsyncResult,
-        callback: Callable[[Any | None, Exception | None], Any]
-        | None = None,
+        callback: Callable[[Any | None, Exception | None], Any] | None = None,
     ):
         """Execute an awaitable object or coroutine as a background task and optionally call a callback with the result,
         safe to use from any thread or context.
@@ -342,23 +323,15 @@ class HoloPatcher(toga.App):
                     callback(None, e)
         self.add_background_task(task_wrapper)
 
-    def set_window(self, width: int, height: int):
-        self.main_window.size = (width, height)
-
-        # Get screen dimensions
+    def get_centered_position(self, width: int, height: int) -> tuple[int, int]:
         user32 = ctypes.windll.user32
-        screen_width = user32.GetSystemMetrics(0)
-        screen_height = user32.GetSystemMetrics(1)
-
-        # Calculate position to center the window
-        x_position = int((screen_width / 2) - (width / 2))
-        y_position = int((screen_height / 2) - (height / 2))
-
-        # Set the position of the window
-        self.main_window.position = (x_position, y_position)
+        return (
+            int((user32.GetSystemMetrics(0) / 2) - (width / 2)),
+            int((user32.GetSystemMetrics(1) / 2) - (height / 2))
+        )
 
     def initialize_logger(self):
-        self.logger = PatchLogger()
+        self.logger: PatchLogger = PatchLogger()
         self.logger.verbose_observable.subscribe(self.write_log)
         self.logger.note_observable.subscribe(self.write_log)
         self.logger.warning_observable.subscribe(self.write_log)
@@ -403,7 +376,7 @@ class HoloPatcher(toga.App):
 
         # Adding commands to the main window toolbar
         for command in (*tools_menu, *help_menu, *about_menu):
-            self.app.commands.add(command)
+            self.commands.add(command)
 
 
     def initialize_ui_controls(self):
@@ -420,7 +393,7 @@ class HoloPatcher(toga.App):
             "?",
             on_press=lambda _widget: self.fire_async_function(
                 self.display_info_dialog(
-                    str(cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace).name),
+                    str(cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace).name),  # type: ignore[]
                     self.get_namespace_description()
                 )
             ),
@@ -533,10 +506,8 @@ class HoloPatcher(toga.App):
                 sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
 
         def remove_second_dot(s: str) -> str:
-            if s.count(".") == 2:
-                # Find the index of the second dot
+            if s.count(".") == 2:  # noqa: PLR2004
                 second_dot_index = s.find(".", s.find(".") + 1)
-                # Remove the second dot by slicing and concatenating
                 s = s[:second_dot_index] + s[second_dot_index + 1:]
             return f"v{s}-patcher"
 
@@ -615,7 +586,7 @@ class HoloPatcher(toga.App):
         if not self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
-            self.begin_install(self.namespaces_combobox.value.patcher_namespace)
+            self.begin_install(self.namespaces_combobox.value.patcher_namespace)  # type: ignore[]
         if cmdline_args.uninstall:
             self.uninstall_selected_mod()
         if cmdline_args.validate:
@@ -647,6 +618,7 @@ class HoloPatcher(toga.App):
         """
         if not self.preinstall_validate_chosen():
             return
+
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
             self.fire_async_function(
@@ -656,10 +628,11 @@ class HoloPatcher(toga.App):
                 )
             )
             return
+
         self.set_state(state=True)
         self.clear_main_text()
         fully_ran: bool = True
-        try:
+        try:  # TODO(th3w1zard1): refactor ModUninstaller to not be hardcoded with tkinter.
             uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.value), self.logger)
             fully_ran = uninstaller.uninstall_selected_mod()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -719,7 +692,7 @@ class HoloPatcher(toga.App):
 
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
-        namespace_option: PatcherNamespace | None = cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace)
+        namespace_option: PatcherNamespace | None = cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace)  # type: ignore[]
         return "" if namespace_option is None else namespace_option.description
 
     def lowercase_files_and_folders(
@@ -735,7 +708,7 @@ class HoloPatcher(toga.App):
 
         try:
 
-            def task(app: toga.App | None = None, **kwargs):
+            def task(app: toga.App | None = None, **kwargs):  # noqa: ARG001
                 self.set_state(state=True)
                 self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
@@ -767,7 +740,7 @@ class HoloPatcher(toga.App):
                 except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
                 finally:
-                    self.add_background_task(lambda app, **kwargs: self.set_state(state=False))
+                    self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
                     if not made_change:
                         self.logger.add_note("Nothing to change - all files/folders already correct case.")
                     self.logger.add_note("iOS case rename task completed.")
@@ -801,7 +774,7 @@ class HoloPatcher(toga.App):
         """
         try:
             # Load the settings from the ini changes file.
-            namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace
+            namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace  # type: ignore[]
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
@@ -932,10 +905,10 @@ class HoloPatcher(toga.App):
 
         else:
             if default_directory_path_str:
-                self.browse_button.style.visibility = "hidden"
+                self.browse_button.style.visibility = "hidden"  # type: ignore[]
             if not namespace_path.safe_isfile():
-                self.namespaces_combobox.style.visibility = "hidden"
-                self.expand_namespace_description_button.style.visibility = "hidden"
+                self.namespaces_combobox.style.visibility = "hidden"  # type: ignore[]
+                self.expand_namespace_description_button.style.visibility = "hidden"  # type: ignore[]
 
     def open_kotor(
         self,
@@ -1024,7 +997,7 @@ class HoloPatcher(toga.App):
                     with suppress(Exception):
                         self.play_complete_sound()
                     if not access:
-                        result_queue.put(False)
+                        result_queue.put(False)  # noqa: FBT003
                     check_isdir: bool = path.is_dir()
                     num_files = 0
                     num_folders = 0
@@ -1041,9 +1014,9 @@ class HoloPatcher(toga.App):
 
                 except Exception as e:
                     self._handle_general_exception(e)
-                    result_queue.put(False)
+                    result_queue.put(False)  # noqa: FBT003
                 else:
-                    result_queue.put(True)
+                    result_queue.put(True)  # noqa: FBT003
                 finally:
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
@@ -1250,7 +1223,7 @@ class HoloPatcher(toga.App):
     def test_reader(self):  # sourcery skip: no-conditionals-in-tests
         if not self.preinstall_validate_chosen():
             return
-        namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace
+        namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace  # type: ignore[]
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
         self.set_state(state=True)
@@ -1263,10 +1236,10 @@ class HoloPatcher(toga.App):
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
             finally:
-                self.add_background_task(lambda app, **kwargs: self.set_state(state=False))
+                self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
                 self.logger.add_note("Config reader test is complete.")
 
-        self.add_background_task(lambda app, **kwargs: task)
+        self.add_background_task(lambda app, **kwargs: task)  # noqa: ARG005
 
     def set_state(
         self,
@@ -1353,7 +1326,7 @@ class HoloPatcher(toga.App):
             # profiler.enable()
             print("Jump to ModInstaller code.")
             install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-            installer.install(update_progress_func)
+            installer.install(None, update_progress_func)
             total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
             print("install complete")
             if update_progress_func is not None:
@@ -1391,7 +1364,7 @@ class HoloPatcher(toga.App):
                 self.fire_async_function(
                     self.display_error_dialog(
                         "Install completed with errors!",
-                        f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
+                        f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."  # noqa: E501
                         f"{os.linesep * 2}Total install time: {time_str}"
                         f"{os.linesep}Total patches: {num_patches}",
                     )
@@ -1423,7 +1396,7 @@ class HoloPatcher(toga.App):
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
         finally:
-            self.add_background_task(lambda app, **kwargs: self.set_state(state=False))
+            self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
             self.logger.add_note("Config reader test is complete.")
 
     @property
@@ -1481,7 +1454,7 @@ class HoloPatcher(toga.App):
         )
         raise
 
-    def create_rte_content(self, event: tk.Tk | None = None):
+    def create_rte_content(self):
         from utility.tkinter.rte_editor import main as start_rte_editor
 
         start_rte_editor()
@@ -1546,7 +1519,7 @@ class HoloPatcher(toga.App):
             style_str = "".join(style)
             content = content.replace(f"<{tag}>", f'<span style="{style_str}">').replace(f"</{tag}>", "</span>")
 
-        content = content.replace("'", "\\'")
+        content = json.dumps(content)
         self.web_view.evaluate_javascript(f"setContent('{content}');")
 
     def load_rtf_content(self, rtf_text: str):
@@ -1586,15 +1559,15 @@ class HoloPatcher(toga.App):
         except OSError:
             RobustRootLogger().exception(f"Failed to write the log file at '{self.log_file_path}'!")
 
-        def update_ui(app: toga.App, **kwargs):
+        def update_ui(app: toga.App, **kwargs):  # noqa: ARG001
             log_tag = log_type_to_tag(log)
-            log_message = log.formatted_message.replace("\n", "<br>").replace("'", "\\'").replace("`", "\\`").replace("\\", "\\\\")
+            log_message = json.dumps(log.formatted_message)
             script = f"appendLogLine(`{log_message}`, '{log_tag}');"
             self.web_view.evaluate_javascript(script)
 
         if threading.current_thread() == threading.main_thread():
             print("update ui (main thread)")
-            update_ui(self.app)
+            update_ui(self)
             print("update ui completed (main thread)")
         else:
             print("update ui (OTHER thread)")
@@ -1657,6 +1630,7 @@ def hp_exit_cleanup(app: HoloPatcher):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
     app.main_window.close()
+    app.exit()
     terminate_main_process()
 
 
@@ -1668,11 +1642,13 @@ def main():
     atexit.register(lambda: hp_exit_cleanup(app))
     app.main_loop()
 
-def is_running_from_temp() -> bool:
-    return str(Path(sys.executable)).startswith(tempfile.gettempdir())
 
 if __name__ == "__main__":
-    if is_running_from_temp():
-        messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+    # fast fail if the user is running from their temp folder (i.e they probably didn't extract the app from the archive)
+    if str(Path(sys.executable)).startswith(tempfile.gettempdir()):
+        with suppress(Exception):
+            from tkinter import messagebox
+            messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
+
     main()
