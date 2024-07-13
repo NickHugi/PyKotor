@@ -465,7 +465,7 @@ class MDLEmitter:
     def __init__(
         self,
     ):
-        # TODO: Make enums, check if bools, docs, seperate flags into booleans
+        # TODO: Make enums, check if bools, docs, separate flags into booleans
         self.dead_space: float = 0.0
         self.blast_radius: float = 0.0
         self.blast_length: float = 0.0
