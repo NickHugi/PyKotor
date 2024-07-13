@@ -1,35 +1,42 @@
 from __future__ import annotations
 
+import asyncio
 import atexit
 import ctypes
 import inspect
-import io
 import json
 import os
 import pathlib
 import platform
+import queue
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import tkinter as tk
 import webbrowser
 
 from argparse import ArgumentParser
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
 from enum import IntEnum
 from multiprocessing import Queue
-from threading import Thread
+from threading import Event, Thread
+from tkinter import messagebox
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, Coroutine, Generator, NoReturn, cast
 
+import pypandoc
 import toga
 
-from toga import Box, Group
+from toga import Group
 from toga.command import Command
+from toga.sources import ListSource
 from toga.style import Pack
 from toga.style.pack import CENTER, COLUMN, ROW
+from toga.widgets.base import BaseStyle
+from toga.window import Dialog
 
 
 def is_frozen() -> bool:
@@ -66,14 +73,13 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.config import LogLevel
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tslpatcher.logger import LogType, PatchLogger
 from pykotor.tslpatcher.patcher import ModInstaller
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 from pykotor.tslpatcher.uninstall import ModUninstaller
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import get_root_logger
+from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
-from utility.string_util import striprtf
 from utility.system.os_helper import terminate_main_process, win_get_system32_dir
 from utility.system.path import Path
 from utility.tkinter.updater import TkProgressDialog
@@ -83,7 +89,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from datetime import timedelta
     from multiprocessing import Process
-    from threading import Event
 
     from pykotor.tslpatcher.logger import PatchLog
     from pykotor.tslpatcher.namespaces import PatcherNamespace
@@ -106,6 +111,39 @@ class ExitCode(IntEnum):
 
 
 class HoloPatcherError(Exception): ...
+
+
+def show_update_dialog(window: toga.MainWindow, title: str, message: str, options: list[dict[str, Any]]):
+    class UpdateDialog(toga.Box):  # TODO: move class to library code, for now keep nested in this function so it doesn't clutter the autoimport-completions
+        def __init__(self, title: str, message: str, options: list[dict[str, Any]], *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.options: list[dict[str, Any]] = options
+            cast(BaseStyle, self.style).update(direction=COLUMN, padding=10)
+
+            # Title
+            self.title_label: toga.Label = toga.Label(title, style=Pack(padding_bottom=10))
+            self.add(self.title_label)
+
+            # Message
+            self.message_label: toga.Label = toga.Label(message, style=Pack(padding_bottom=10))
+            self.add(self.message_label)
+
+            # Buttons
+            button_box: toga.Box = toga.Box(style=Pack(direction=ROW, padding_top=10))
+            for option in options:
+                button = toga.Button(option["label"], on_press=lambda widget, opt=option: self.handle_result(opt), style=Pack(padding=5))
+                button_box.add(button)
+            self.add(button_box)
+
+        def handle_result(self, option: dict[str, Any]):
+            if "callback" in option:
+                option["callback"]()
+            if self.window is None:
+                return
+            self.window.close()
+    dialog = UpdateDialog(title, message, options)
+    window.content = dialog
+    window.show()
 
 
 # Please be careful modifying this functionality as 3rd parties depend on this syntax.
@@ -164,9 +202,53 @@ def parse_args() -> Namespace:
 
 class HoloPatcher(toga.App):
     def startup(self):
-        self.main_window: toga.MainWindow = toga.MainWindow(title=f"HoloPatcher {VERSION_LABEL}", closeable=self.handle_exit_button)
-        # Initialize content before setting window size and style
-        self.main_window.content = Box(style=Pack(direction=COLUMN, padding=10))
+        self.simple_thread_event: Event = Event()
+        self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1))
+        self.html_template: str = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>WebView Content</title>
+            <style>
+                body {
+                    font-family: Helvetica, sans-serif;
+                    padding: 10px;
+                }
+                .DEBUG { color: #6495ED; }  /* Cornflower Blue */
+                .INFO { color: #000000; }   /* Black */
+                .WARNING { color: #CC4E00; background-color: #FFF3E0; font-weight: bold; font-size: 10px; }  /* Orange with bold font */
+                .ERROR { color: #DC143C; font-weight: bold; font-size: 10px; }  /* Firebrick with bold font */
+                .CRITICAL { color: #FFFFFF; background-color: #8B0000; font-weight: bold; font-size: 10px; }  /* White on Dark Red with bold font */
+            </style>
+        </head>
+        <body>
+            <div id="content"></div>
+            <script>
+                function setContent(newContent) {
+                    document.getElementById('content').innerHTML = newContent;
+                }
+
+                function appendLogLine(logLine, logType) {
+                    var logElement = document.createElement('div');
+                    logElement.className = logType;
+                    logElement.innerHTML = logLine + '<br>';
+                    document.getElementById('content').appendChild(logElement);
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
+
+                function setFontColor(logType, color) {
+                    var styleElement = document.createElement('style');
+                    styleElement.innerHTML = '.' + logType + ' { color: ' + color + '; }';
+                    document.head.appendChild(styleElement);
+                }
+            </script>
+        </body>
+        </html>
+        """
+        self.web_view.set_content("", self.html_template)
+        self.main_window: toga.MainWindow = toga.MainWindow(title=f"HoloPatcher {VERSION_LABEL}")
+        self.main_window.content = toga.Box(style=Pack(direction=COLUMN))
+        self.on_exit = lambda widget, **kwargs: self.run_background_task(self.handle_exit_button()) or True
 
         self.set_window(width=400, height=500)
 
@@ -175,17 +257,33 @@ class HoloPatcher(toga.App):
         self.task_thread: Thread | None = None
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
-        self.pykotor_logger = get_root_logger()
+        self.pykotor_logger: RobustRootLogger = RobustRootLogger()
         self.namespaces: list[PatcherNamespace] = []
+        self.background_tasks: set[asyncio.Task[Any] | asyncio.Future[Any]] = set()  # To store references to tasks
 
         self.initialize_logger()
         self.initialize_top_menu()
         self.initialize_ui_controls()
 
         cmdline_args: Namespace = parse_args()
-        self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
-        self.execute_commandline(cmdline_args)
+        self.run_background_task(self.open_mod(cmdline_args.tslpatchdata or Path.cwd()))
+        self.run_background_task(self.execute_commandline(cmdline_args))
         self.pykotor_logger.debug("Init complete")
+
+    def run_background_task(self, coro: Coroutine[Any, Any, Any] | asyncio.Task[Any] | Dialog):
+        """Utility method to run a coroutine as a background task and keep a reference to it."""
+        if isinstance(coro, Coroutine):
+            task = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        elif isinstance(coro, asyncio.Task):
+            task = coro
+        elif isinstance(coro, Dialog):
+            task = asyncio.run_coroutine_threadsafe(coro.future, self.loop)
+        else:
+            # Directly ensure_future if it's not one of the above types
+            task = asyncio.ensure_future(coro, loop=self.loop)
+
+        self.background_tasks.add(task)
+        task.add_done_callback(self.background_tasks.discard)
 
     def set_window(self, width: int, height: int):
         self.main_window.size = (width, height)
@@ -218,26 +316,26 @@ class HoloPatcher(toga.App):
         about_group = Group("About")
 
         tools_menu = [
-            Command(self.test_reader, text="Validate INI", group=tools_group),
-            Command(self.uninstall_selected_mod, text="Uninstall Mod / Restore Backup", group=tools_group),
-            Command(self.fix_permissions, text="Fix permissions to file/folder...", group=tools_group),
-            Command(self.lowercase_files_and_folders, text="Fix iOS Case Sensitivity", group=tools_group),
-            Command(self.create_rte_content, text="Create info.rte...", group=tools_group)
+            Command(lambda command, **kwargs: self.run_background_task(self.test_reader()) or True, text="Validate INI", group=tools_group),  # noqa: ARG005
+            Command(lambda command, **kwargs: self.run_background_task(self.uninstall_selected_mod()) or True, text="Uninstall Mod / Restore Backup", group=tools_group),
+            Command(lambda command, **kwargs: self.run_background_task(self.fix_permissions()) or True, text="Fix permissions to file/folder...", group=tools_group),
+            Command(lambda command, **kwargs: self.run_background_task(self.lowercase_files_and_folders()) or True, text="Fix iOS Case Sensitivity", group=tools_group),
+            Command(lambda command, **kwargs: self.create_rte_content() or True, text="Create info.rte...", group=tools_group)
         ]
 
         help_menu = [
-            Command(lambda: webbrowser.open_new("https://discord.gg/nDkHXfc36s"), text="Discord", group=deadlystream_group),
-            Command(lambda: webbrowser.open_new("https://deadlystream.com"), text="Website", group=deadlystream_group),
-            Command(lambda: webbrowser.open_new("https://discord.com/invite/kotor"), text="Discord", group=neocities_group),
-            Command(lambda: webbrowser.open_new("https://kotor.neocities.org"), text="Website", group=neocities_group),
-            Command(lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"), text="KOTOR 1", group=pcgamingwiki_group),
-            Command(lambda: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"), text="KOTOR 2: TSL", group=pcgamingwiki_group)
+            Command(lambda command, **kwargs: webbrowser.open_new("https://discord.gg/nDkHXfc36s"), text="Discord", group=deadlystream_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://deadlystream.com"), text="Website", group=deadlystream_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://discord.com/invite/kotor"), text="Discord", group=neocities_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://kotor.neocities.org"), text="Website", group=neocities_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic"), text="KOTOR 1", group=pcgamingwiki_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://www.pcgamingwiki.com/wiki/Star_Wars:_Knights_of_the_Old_Republic_II_-_The_Sith_Lords"), text="KOTOR 2: TSL", group=pcgamingwiki_group)
         ]
 
         about_menu = [
-            Command(self.check_for_updates, text="Check for Updates", group=about_group),
-            Command(lambda: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"), text="HoloPatcher Home", group=about_group),
-            Command(lambda: webbrowser.open_new("https://github.com/NickHugi/PyKotor"), text="GitHub Source", group=about_group)
+            Command(lambda command, **kwargs: self.check_for_updates() or True, text="Check for Updates", group=about_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://deadlystream.com/files/file/2243-holopatcher"), text="HoloPatcher Home", group=about_group),
+            Command(lambda command, **kwargs: webbrowser.open_new("https://github.com/NickHugi/PyKotor"), text="GitHub Source", group=about_group)
         ]
 
         self.main_window.toolbar.add(*tools_menu)
@@ -245,118 +343,90 @@ class HoloPatcher(toga.App):
         self.main_window.toolbar.add(*about_menu)
 
     def initialize_ui_controls(self):
+        assert self.main_window.content is not None
         top_box = toga.Box(style=Pack(direction=ROW, alignment=CENTER, padding=5))
 
-        # Setup the namespaces/changes ini combobox (selected mod)
-        self.namespaces_combobox = toga.Selection(items=[], style=Pack(flex=1, padding_right=5))
-        self.namespaces_combobox.on_select = self.on_namespace_option_chosen
+        # Namespace/Mod row.
+        self.namespaces_combobox = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))
+        self.namespaces_combobox.on_change = self.on_namespace_option_chosen
         top_box.add(self.namespaces_combobox)
-
-        self.browse_button = toga.Button("Browse", on_press=self.open_mod, style=Pack(padding_right=5))
+        self.browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.run_background_task(self.open_mod()), style=Pack(padding_right=5))
         top_box.add(self.browse_button)
-
-        self.expand_namespace_description_button = toga.Button("?", on_press=lambda widget: self.show_info_message(self.namespaces_combobox.value, self.get_namespace_description()), style=Pack(padding_right=5))
+        self.expand_namespace_description_button = toga.Button(
+            "?",
+            on_press=lambda _widget: self.run_background_task(
+                self.main_window.info_dialog(
+                    str(self.namespaces_combobox.value),
+                    self.get_namespace_description()
+                )
+            ),
+            style=Pack(padding_right=5, width=30)
+        )
         top_box.add(self.expand_namespace_description_button)
-
         self.main_window.content.add(top_box)
 
+        # KOTOR Install row.
         gamepaths_box = toga.Box(style=Pack(direction=ROW, alignment=CENTER, padding=5))
-
-        # Store all discovered KOTOR install paths
-        self.gamepaths_combobox = toga.Selection(items=[], style=Pack(flex=1, padding_right=5))
-        self.gamepaths_combobox.on_select = self.on_gamepaths_chosen
-        gamepaths_box.add(self.gamepaths_combobox)
-
-        self.gamepaths_browse_button = toga.Button("Browse", on_press=self.open_kotor, style=Pack(padding_right=5))
+        self.gamepaths = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))
+        gamepaths_box.add(self.gamepaths)
+        self.gamepaths_browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.run_background_task(self.open_kotor()), style=Pack(padding_right=5))
         gamepaths_box.add(self.gamepaths_browse_button)
-
         self.main_window.content.add(gamepaths_box)
 
+        # Main view widget
         text_frame = toga.Box(style=Pack(direction=COLUMN, flex=1, padding=5))
-
-        self.main_text = toga.MultilineTextInput(readonly=True, style=Pack(flex=1))
-        self.set_text_font(self.main_text)
-        text_frame.add(self.main_text)
-
+        text_frame.add(self.web_view)  # Add WebView to the frame
         self.main_window.content.add(text_frame)
 
+        # Bottom widgets.
         bottom_box = toga.Box(style=Pack(direction=ROW, padding=5, alignment=CENTER))
-
         self.exit_button = toga.Button("Exit", on_press=self.handle_exit_button, style=Pack(flex=1, padding=5))
-        self.install_button = toga.Button("Install", on_press=self.begin_install, style=Pack(flex=1, padding=5))
+        self.install_button = toga.Button("Install", on_press=lambda *args, **kwargs: self.run_background_task(self.begin_install()), style=Pack(flex=1, padding=5))
         bottom_box.add(self.exit_button)
         bottom_box.add(self.install_button)
-
         self.progress_value = 0
         self.progress_bar = toga.ProgressBar(max=100, value=self.progress_value, style=Pack(flex=1, padding_top=5))
         bottom_box.add(self.progress_bar)
-
         self.main_window.content.add(bottom_box)
 
         self.main_window.show()
-
 
     def update_progress_bar_directly(self, value=1):
         self.progress_value += value
         self.progress_bar.value = self.progress_value
 
-    def set_text_font(self, text_frame):
-        # Define the font style
-        text_frame.style.font_family = "Helvetica"
-        text_frame.style.font_size = 9
-
-        # Define the tag styles for different log levels
-        self.main_text.DEBUG_STYLE = Pack(color="#6495ED")  # Cornflower Blue
-        self.main_text.INFO_STYLE = Pack(color="#000000")   # Black
-        self.main_text.WARNING_STYLE = Pack(color="#CC4E00", background_color="#FFF3E0", font_weight="bold", font_size=10)  # Orange with bold font
-        self.main_text.ERROR_STYLE = Pack(color="#DC143C", font_weight="bold", font_size=10)  # Firebrick with bold font
-        self.main_text.CRITICAL_STYLE = Pack(color="#FFFFFF", background_color="#8B0000", font_weight="bold", font_size=10)  # White on Dark Red with bold font
-
-    def on_combobox_focus_in(
-        self,
-        event: tk.Event,
-    ):
-        if self.namespaces_combobox_state == 2:  # no selection, fix the focus  # noqa: PLR2004
-            self.root.focus_set()
-            self.namespaces_combobox_state = 0  # base status
-        else:
-            self.namespaces_combobox_state = 1  # combobox clicked
-
-    def on_combobox_focus_out(
-        self,
-        event: tk.Event,
-    ):
-        if self.namespaces_combobox_state == 1:
-            self.namespaces_combobox_state = 2  # no selection
-
     def check_for_updates(self):
         try:
-            from utility.tkinter.updater import UpdateDialog
             updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
             if isinstance(updateInfoData, Exception):
                 self._handle_general_exception(updateInfoData)
                 return
             latest_version = updateInfoData["holopatcherLatestVersion"]
             if remoteVersionNewer(CURRENT_VERSION, latest_version):
-                dialog = UpdateDialog(
-                    self.root,
+                result = show_update_dialog(
+                    self.main_window,
                     "Update Available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
-                    ["Update", "Manual"],
+                    [
+                        {"label": "Update", "callback": lambda: self._run_autoupdate(latest_version, updateInfoData)},
+                        {"label": "Manual", "callback": lambda: webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])},
+                        {"label": "Cancel"}
+                    ]
                 )
-                if dialog.result == "Update":
+                if result == "Update":
                     self._run_autoupdate(latest_version, updateInfoData)
-                elif dialog.result == "Manual":
+                elif result == "Manual":
                     webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
             else:
-                dialog = UpdateDialog(
-                    self.root,
+                result = show_update_dialog(
+                    self.main_window,
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
-                    ["Reinstall"],
+                    [
+                        {"label": "Reinstall", "callback": lambda: self._run_autoupdate(latest_version, updateInfoData)},
+                        {"label": "Cancel"}
+                    ]
                 )
-                if dialog.result == "Reinstall":
-                    self._run_autoupdate(latest_version, updateInfoData)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, title="Unable to fetch latest version")
 
@@ -395,7 +465,7 @@ class HoloPatcher(toga.App):
             TkProgressDialog.monitor_and_terminate(progress_dialog)
             if kill_self_here:
                 time.sleep(3)
-                self.root.destroy()
+                self.main_window.close()
                 sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
 
         def remove_second_dot(s: str) -> str:
@@ -425,11 +495,11 @@ class HoloPatcher(toga.App):
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
         except Exception:  # noqa: BLE001
-            get_root_logger().critical("Auto-update had an unexpected error", exc_info=True)
+            RobustRootLogger().critical("Auto-update had an unexpected error", exc_info=True)
         #finally:
         #    exitapp(True)
 
-    def execute_commandline(
+    async def execute_commandline(
         self,
         cmdline_args: Namespace,
     ):
@@ -449,35 +519,35 @@ class HoloPatcher(toga.App):
             - Begin install thread or call uninstall method and exit
         """
         if cmdline_args.game_dir:
-            self.open_kotor(cmdline_args.game_dir)
+            await self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
-            self.namespaces_combobox.set(self.namespaces_combobox["values"][cmdline_args.namespace_option_index])
+            self.namespaces_combobox.value = self.namespaces_combobox.items[cmdline_args.namespace_option_index]
         if not cmdline_args.console:
             self.hide_console()
 
         self.one_shot: bool = False
         num_cmdline_actions: int = sum([cmdline_args.install, cmdline_args.uninstall, cmdline_args.validate])
         if num_cmdline_actions == 1:
-            self._begin_oneshot(cmdline_args)
+            await self._begin_oneshot(cmdline_args)
         elif num_cmdline_actions > 1:
-            messagebox.showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
+            await self.main_window.error_dialog("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    def _begin_oneshot(
+    async def _begin_oneshot(
         self,
         cmdline_args: Namespace,
     ):
         self.one_shot = True
-        self.root.withdraw()
+        self.main_window.visible = False
         self.setup_cli_messagebox_overrides()
-        if not self.preinstall_validate_chosen():
+        if not await self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
             self.begin_install_thread(self.simple_thread_event)
         if cmdline_args.uninstall:
-            self.uninstall_selected_mod()
+            await self.uninstall_selected_mod()
         if cmdline_args.validate:
-            self.test_reader()
+            await self.test_reader()
         sys.exit(ExitCode.SUCCESS)
 
     def setup_cli_messagebox_overrides(self):
@@ -532,7 +602,7 @@ class HoloPatcher(toga.App):
         if os.name == "nt":
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-    def uninstall_selected_mod(self):
+    async def uninstall_selected_mod(self):
         """Uninstalls the selected mod using the most recent backup folder created during the last install.
 
         Processing Logic:
@@ -549,11 +619,11 @@ class HoloPatcher(toga.App):
             - Restore files from backup
             - Offer to delete restored backup.
         """
-        if not self.preinstall_validate_chosen():
+        if not await self.preinstall_validate_chosen():
             return
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
-            messagebox.showerror(
+            await self.main_window.error_dialog(
                 "Backup folder empty/missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
             )
@@ -562,7 +632,7 @@ class HoloPatcher(toga.App):
         self.clear_main_text()
         fully_ran: bool = True
         try:
-            uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
+            uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.value), self.logger)
             fully_ran = uninstaller.uninstall_selected_mod()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_exception_during_install(e)
@@ -570,7 +640,7 @@ class HoloPatcher(toga.App):
             self.set_state(state=False)
             self.logger.add_note("Mod uninstaller/backup restore task completed.")
         if not fully_ran:
-            self.on_namespace_option_chosen(tk.Event())
+            self.on_namespace_option_chosen()
 
     def async_raise(self, tid: int, exctype: type):
         """Raises an exception in the threads with id tid."""
@@ -589,7 +659,7 @@ class HoloPatcher(toga.App):
             raise SystemError(msg)
         print("success")
 
-    def handle_exit_button(self):
+    async def handle_exit_button(self):
         """Handle exit button click during installation.
 
         Processing Logic:
@@ -606,26 +676,27 @@ class HoloPatcher(toga.App):
             return  # leave here for the static type checkers
 
         # Handle unsafe exit.
-        if self.install_running and not messagebox.askyesno(
+        if self.install_running and not await self.main_window.confirm_dialog(
             "Really cancel the current installation? ",
             "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
-        if self.task_running and not messagebox.askyesno(
+        if self.task_running and not await self.main_window.confirm_dialog(
             "Really cancel the current task?",
             "A task is currently running. Exiting now may not be safe. Really continue?",
         ):
             return
         self.simple_thread_event.set()
-        time.sleep(1)
+        await asyncio.sleep(1)
         print("Install thread is still alive, attempting force close...")
         i = 0
         while self.task_thread.is_alive():
-            try:
-                self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access
-                print("force terminate of install thread succeeded")
-            except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
-                self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
+            if hasattr(self.task_thread, "_stop") and callable(self.task_thread._stop):
+                try:
+                    self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access  # noqa: SLF001
+                    print("force terminate of install thread succeeded")
+                except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
+                    self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
                 if self.task_thread.ident is None:
                     msg = "task ident is None, expected an int."
@@ -634,7 +705,7 @@ class HoloPatcher(toga.App):
             except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using async_raise(self.install_thread.ident, SystemExit)", msgbox=False)
             print(f"Install thread is still alive after {i} seconds, waiting...")
-            time.sleep(1)
+            await asyncio.sleep(1)
             i += 1
             if i == 2:
                 break
@@ -642,7 +713,7 @@ class HoloPatcher(toga.App):
             print("Failed to stop thread!")
 
         print("Destroying self")
-        self.root.destroy()
+        self.main_window.close()
         print("Goodbye! (sys.exit abort unsafe)")
         print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
         pid = os.getpid()
@@ -658,40 +729,24 @@ class HoloPatcher(toga.App):
             # This code might not be reached, but it's here for completeness
             os._exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
-    def on_gamepaths_chosen(
-        self,
-        event: tk.Event,
-    ):
-        """Adjust the combobox after a short delay."""
-        self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
-
-    def move_cursor_to_end(
-        self,
-        combobox: ttk.Combobox,
-    ):
-        """Shows the rightmost portion of the specified combobox as that's the most relevant."""
-        combobox.focus_set()
-        position: int = len(combobox.get())
-        combobox.icursor(position)
-        combobox.xview(position)
-        self.root.focus_set()
-
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
         namespace_option: PatcherNamespace | None = next(
-            (x for x in self.namespaces if x.name == self.namespaces_combobox.get()),
+            (x for x in self.namespaces if x.name == self.namespaces_combobox.value),
             None,
         )
         return namespace_option.description if namespace_option else ""
 
-    def lowercase_files_and_folders(
+    async def lowercase_files_and_folders(
         self,
         directory: os.PathLike | str | None = None,
+        *,
         reset_namespace: bool = False,
     ):
-        directory = directory or filedialog.askdirectory()
         if not directory:
-            return
+            directory = await self.main_window.select_folder_dialog("Select target directory")
+            if directory is None:
+                return  # User cancelled the dialog
 
         try:
 
@@ -709,7 +764,7 @@ class HoloPatcher(toga.App):
                             str_file_path = str(file_path)
                             str_new_file_path = str(new_file_path)
                             if str_file_path != str_new_file_path:
-                                self.logger.add_note(f"Renaming {str_file_path} to '{new_file_path.name}'")
+                                self.logger.add_note(f"Renaming '{str_file_path}' to '{new_file_path.name}'")
                                 file_path.rename(new_file_path)
                                 made_change = True
 
@@ -720,10 +775,10 @@ class HoloPatcher(toga.App):
                             str_dir_path = str(dir_path)
                             str_new_dir_path = str(new_dir_path)
                             if str_dir_path != str_new_dir_path:
-                                self.logger.add_note(f"Renaming {str_dir_path} to '{new_dir_path.name}'")
+                                self.logger.add_note(f"Renaming '{str_dir_path}' to '{new_dir_path.name}'")
                                 dir_path.rename(str_new_dir_path)
                                 made_change = True
-                    Path(directory).rename(Path._fix_path_formatting(str(directory).lower()))
+                    Path(directory).rename(Path._fix_path_formatting(str(directory).lower()))  # noqa: SLF001
                 except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
                 finally:
@@ -738,12 +793,11 @@ class HoloPatcher(toga.App):
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
-                self.on_namespace_option_chosen(tk.Event())
+                self.on_namespace_option_chosen()
             self.logger.add_verbose("iOS case rename task started.")
 
     def on_namespace_option_chosen(
         self,
-        event: tk.Event,
         config_reader: ConfigReader | None = None,
     ):
         """Handles the namespace option being chosen from the combobox.
@@ -762,7 +816,7 @@ class HoloPatcher(toga.App):
         """
         try:
             # Load the settings from the ini changes file.
-            namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+            namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.value)
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
@@ -772,17 +826,19 @@ class HoloPatcher(toga.App):
             game_number: int | None = reader.config.game_number
             if game_number:
                 game = Game(game_number)
-                self.gamepaths["values"] = [
+                supported_paths = [
                     str(path)
                     for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
                     for path in find_kotor_paths_from_default()[game_key]
                 ]
+                self.gamepaths.items = supported_paths
+                self.gamepaths.value = supported_paths[0] if supported_paths else None
 
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
             if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
-                messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
+                self.run_background_task(self.main_window.error_dialog("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk."))
                 return
 
             if info_rte_path.safe_isfile():
@@ -792,12 +848,10 @@ class HoloPatcher(toga.App):
             elif info_rtf_path.safe_isfile():
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
-                self.set_stripped_rtf_text(rtf_text)
+                self.load_rtf_content(rtf_text)
                 # self.load_rtf_file(info_rtf_path)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
-        else:
-            self.root.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
     def _handle_general_exception(
         self,
@@ -810,9 +864,11 @@ class HoloPatcher(toga.App):
         self.pykotor_logger.exception(custom_msg, exc_info=exc)
         error_name, msg = universal_simplify_exception(exc)
         if msgbox:
-            messagebox.showerror(
-                title or error_name,
-                f"{(error_name + os.linesep * 2) if title else ''}{custom_msg}.{os.linesep * 2}{msg}",
+            self.run_background_task(
+                self.main_window.error_dialog(
+                    title or error_name,
+                    f"{(error_name + os.linesep * 2) if title else ''}{custom_msg}.{os.linesep * 2}{msg}",
+                )
             )
 
     def load_namespace(
@@ -834,12 +890,25 @@ class HoloPatcher(toga.App):
             - Stores the namespaces for later use
             - Calls on_namespace_option_chosen to load initial config.
         """
-        self.namespaces_combobox["values"] = namespaces
-        self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
-        self.namespaces = namespaces
-        self.on_namespace_option_chosen(tk.Event(), config_reader)
+        # Define the accessor to use for displaying items
+        class NamespaceItem:
+            def __init__(self, name):
+                self.value = name
 
-    def open_mod(
+        # Convert namespaces to a ListSource with the defined accessor
+        namespace_items = [NamespaceItem(namespace.name) for namespace in namespaces]
+        self.namespaces_combobox.items = ListSource(data=namespace_items, accessors=["value"])
+
+        # Set the initial value if there are any items
+        if self.namespaces_combobox.items:
+            self.namespaces_combobox.value = self.namespaces_combobox.items[0].value
+        else:
+            self.namespaces_combobox.value = None
+
+        self.namespaces = namespaces
+        self.on_namespace_option_chosen()
+
+    async def open_mod(
         self,
         default_directory_path_str: os.PathLike | str | None = None,
     ):
@@ -861,7 +930,7 @@ class HoloPatcher(toga.App):
         """
         try:
             if default_directory_path_str is None:
-                directory_path_str: os.PathLike | str = filedialog.askdirectory()
+                directory_path_str: os.PathLike | str = await self.main_window.select_folder_dialog("Select the mod directory (where tslpatchdata lives)")
                 if not directory_path_str:
                     return
             else:
@@ -885,18 +954,18 @@ class HoloPatcher(toga.App):
             else:
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
-                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
+                    await self.main_window.error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'")
                 return
-            self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
+            await self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
         else:
             if default_directory_path_str:
-                self.browse_button.place_forget()
+                self.browse_button.style.visibility = "hidden"
             if not namespace_path.safe_isfile():
-                self.namespaces_combobox.place_forget()
+                self.namespaces_combobox.style.visibility = "hidden"
 
-    def open_kotor(
+    async def open_kotor(
         self,
         default_kotor_dir_str: os.PathLike | str | None = None,
     ):
@@ -914,16 +983,17 @@ class HoloPatcher(toga.App):
             - Move cursor after a delay to end of dropdown
         """
         try:
-            directory_path_str: os.PathLike | str = default_kotor_dir_str or filedialog.askdirectory()
+            directory_path_str = default_kotor_dir_str
             if not directory_path_str:
-                return
+                directory_path_str = await self.main_window.select_folder_dialog("Select the KOTOR directory")
+                if not directory_path_str:
+                    return  # User cancelled the dialog
             directory = CaseAwarePath(directory_path_str)
-            self.check_access(directory)
+            await self.check_access(directory)
             directory_str = str(directory)
-            self.gamepaths.set(str(directory))
-            if directory_str not in self.gamepaths["values"]:
-                self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
-            self.root.after(10, self.move_cursor_to_end, self.namespaces_combobox)
+            if directory_str not in [str(item) for item in self.gamepaths.items]:
+                self.gamepaths.items.append(directory_str)
+            self.gamepaths.value = directory_str
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
 
@@ -943,38 +1013,35 @@ class HoloPatcher(toga.App):
             # Play the system 'error' sound
             winsound.MessageBeep(winsound.MB_ICONHAND)
 
-    def fix_permissions(
+    async def fix_permissions(
         self,
         directory: os.PathLike | str | None = None,
+        *,
         reset_namespace: bool = False,
-        check: bool = False,
     ):
-        path_arg = filedialog.askdirectory() if directory is None else directory
+        path_arg = await self.main_window.select_folder_dialog("Select target directory") if directory is None else directory
         if not path_arg:
             return
-        if not directory and not messagebox.askyesno("Warning!", "This is not a toy. Really continue?"):
+        if not directory and not await self.main_window.confirm_dialog(
+            "Warning!",
+            "This is not a toy. Really continue?"
+        ):
             return
 
         try:
             path: Path = Path.pathify(path_arg)
 
-            def task() -> bool:
+            def task(result_queue: queue.Queue) -> None:
                 extra_msg: str = ""
                 self.set_state(state=True)
                 self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
                     access: bool = path.gain_access(recurse=True, log_func=self.logger.add_verbose)
-                    # self.play_complete_sound()
+                    with suppress(Exception):
+                        self.play_complete_sound()
                     if not access:
-                        if not directory:
-                            messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
-                        else:
-                            messagebox.showerror(
-                                "Could not gain permission!",
-                                f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
-                            )
-                        return False
+                        result_queue.put(False)
                     check_isdir: bool = path.is_dir()
                     num_files = 0
                     num_folders = 0
@@ -988,27 +1055,33 @@ class HoloPatcher(toga.App):
                     if check_isdir:
                         extra_msg = f"{num_files} files and {num_folders} folders finished processing."
                         self.logger.add_note(extra_msg)
-                    messagebox.showinfo("Successfully acquired permission", f"The operation was successful. {extra_msg}")
 
                 except Exception as e:
                     self._handle_general_exception(e)
-                    return False
+                    result_queue.put(False)
                 else:
-                    return True
+                    result_queue.put(True)
                 finally:
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
 
-            self.task_thread = Thread(target=task)
+            result_queue = queue.Queue()
+            self.task_thread = Thread(target=task, args=(result_queue,))
             self.task_thread.start()
+            self.task_thread.join()
+            if not result_queue.get():
+                await self.main_window.error_dialog(
+                    "Could not gain permission!",
+                    f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
+                )
         except Exception as e2:
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
-                self.on_namespace_option_chosen(tk.Event())
+                self.on_namespace_option_chosen()
             self.logger.add_verbose("Started the File/Folder permissions fixer task.")
 
-    def check_access(
+    async def check_access(
         self,
         directory: Path,
         *,
@@ -1041,14 +1114,14 @@ class HoloPatcher(toga.App):
 
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if messagebox.askyesno(
+        if await self.main_window.confirm_dialog(
             "Permission error",
             f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
         ):
             directory.gain_access(recurse=recurse)
-            self.on_namespace_option_chosen(tk.Event())
+            self.on_namespace_option_chosen()
         if not directory.has_access(recurse=recurse):
-            return messagebox.askyesno(
+            return await self.main_window.error_dialog(
                 "Unauthorized",
                 (
                     f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
@@ -1059,7 +1132,7 @@ class HoloPatcher(toga.App):
             )
         return True
 
-    def preinstall_validate_chosen(self) -> bool:
+    async def preinstall_validate_chosen(self) -> bool:
         """Validates prerequisites for starting an install.
 
         Args:
@@ -1078,36 +1151,36 @@ class HoloPatcher(toga.App):
             - Check write access to the KOTOR install directory.
         """
         if self.task_running:
-            messagebox.showinfo(
+            await self.main_window.info_dialog(
                 "Task already running",
                 "Wait for the previous task to finish.",
             )
             return False
         if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-            messagebox.showinfo(
+            await self.main_window.error_dialog(
                 "No mod chosen",
                 "Select your mod directory first.",
             )
             return False
-        game_path: str = self.gamepaths.get()
+        game_path: str = str(self.gamepaths.value)
         if not game_path:
-            messagebox.showinfo(
+            await self.main_window.error_dialog(
                 "No KOTOR directory chosen",
                 "Select your KOTOR directory first.",
             )
             return False
         case_game_path = CaseAwarePath(game_path)
         if not case_game_path.safe_isdir():
-            messagebox.showinfo(
+            await self.main_window.error_dialog(
                 "Invalid KOTOR directory chosen",
                 "Select a valid path to your KOTOR install.",
             )
             return False
         game_path_str = str(case_game_path)
-        self.gamepaths.set(game_path_str)
-        return self.check_access(Path(game_path_str))
+        self.gamepaths.value = game_path_str
+        return await self.check_access(Path(game_path_str))
 
-    def begin_install(self):
+    async def begin_install(self):
         """Starts the installation process in a background thread.
 
         Note: This function is not called when utilizing the CLI due to the thread creation - for passthrough purposes.
@@ -1121,7 +1194,7 @@ class HoloPatcher(toga.App):
         """
         self.pykotor_logger.debug("Call begin_install")
         try:
-            if not self.preinstall_validate_chosen():
+            if not await self.preinstall_validate_chosen():
                 return
             self.pykotor_logger.debug("Prevalidate finished, starting install thread")
             self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
@@ -1152,21 +1225,18 @@ class HoloPatcher(toga.App):
             - Finally set the install status to not running.
         """
         self.pykotor_logger.debug("begin_install_thread reached")
-        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.value)
         tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
         ini_file_path = tslpatchdata_path.joinpath(namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
         self.pykotor_logger.debug("set ui state")
         self.set_state(state=True)
-        self.install_running = True
         self.clear_main_text()
-        self.main_text.config(state=tk.NORMAL)
-        self.main_text.insert(tk.END, f"Starting install...{os.linesep}")
-        self.main_text.see(tk.END)
-        self.main_text.config(state=tk.DISABLED)
+        install_message = f"Starting install...{os.linesep}".replace("\n", "<br>")
+        self.web_view.evaluate_javascript(f"setContent('{install_message}');")
         try:
-            installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
+            installer = ModInstaller(namespace_mod_path, str(self.gamepaths.value), ini_file_path, self.logger)
             installer.tslpatchdata_path = tslpatchdata_path
             self._execute_mod_install(installer, should_cancel_thread, update_progress_func)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -1175,10 +1245,10 @@ class HoloPatcher(toga.App):
             self.set_state(state=False)
             self.install_running = False
 
-    def test_reader(self):  # sourcery skip: no-conditionals-in-tests
-        if not self.preinstall_validate_chosen():
+    async def test_reader(self):  # sourcery skip: no-conditionals-in-tests
+        if not await self.preinstall_validate_chosen():
             return
-        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.value)
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
         self.set_state(state=True)
@@ -1214,33 +1284,28 @@ class HoloPatcher(toga.App):
             - Handles enabling/disabling buttons during task process.
         """
         if state:
-            self.progress_bar["value"] = 0
-            self.progress_bar["maximum"] = 100
-            self.progress_value.set(0)
+            self.progress_bar.value = 0
+            self.progress_bar.max = 100
+            self.progress_value = 0
             self.task_running = True
-            self.install_button.config(state=tk.DISABLED)
-            self.gamepaths_browse_button.config(state=tk.DISABLED)
-            self.browse_button.config(state=tk.DISABLED)
+            self.install_button.enabled = False
+            self.gamepaths_browse_button.enabled = False
+            self.browse_button.enabled = False
         else:
             self.task_running = False
             self.initialize_logger()  # reset the errors/warnings etc
-            self.install_button.config(state=tk.NORMAL)
-            self.gamepaths_browse_button.config(state=tk.NORMAL)
-            self.browse_button.config(state=tk.NORMAL)
+            self.install_button.enabled = True
+            self.gamepaths_browse_button.enabled = True
+            self.browse_button.enabled = True
 
     def clear_main_text(self):
-        self.main_text.config(state=tk.NORMAL)
-        self.main_text.delete(1.0, tk.END)
-        for tag in self.main_text.tag_names():
-            if tag not in ["sel"]:
-                self.main_text.tag_delete(tag)
-        self.main_text.config(state=tk.DISABLED)
+        self.web_view.evaluate_javascript("setContent('');")
 
     def _execute_mod_install(
         self,
         installer: ModInstaller,
         should_cancel_thread: Event,
-        progress_update_func: Callable | None = None
+        update_progress_func: Callable | None = None
     ):
         """Executes the mod installation.
 
@@ -1261,18 +1326,17 @@ class HoloPatcher(toga.App):
         """
         try:
             confirm_msg: str = installer.config().confirm_message.strip()
-            if (
-                confirm_msg
-                and not self.one_shot
-                and confirm_msg != "N/A"
-                and not messagebox.askokcancel(
-                    "This mod requires confirmation",
-                    confirm_msg,
-                )
-            ):
-                return
-            if progress_update_func is not None:
-                self.progress_bar["maximum"] = len(
+            if confirm_msg and not self.one_shot and confirm_msg != "N/A":
+                # Create a function to handle the confirmation dialog result
+                def handle_confirmation_dialog(response):
+                    if not response:
+                        return  # Cancel the operation if the user did not confirm
+
+                # Show a confirmation dialog
+                if not self.main_window.confirm_dialog("This mod requires confirmation", confirm_msg):
+                    return  # If the dialog returns False, stop the execution
+            if update_progress_func is not None:
+                self.progress_bar.max = len(
                 [
                     *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
                     *installer.get_tlk_patches(installer.config()),
@@ -1286,14 +1350,12 @@ class HoloPatcher(toga.App):
             # profiler = cProfile.Profile()
             # profiler.enable()
             install_start_time: datetime = datetime.now(timezone.utc).astimezone()
-            installer.install(should_cancel_thread, progress_update_func)
+            installer.install(should_cancel_thread, update_progress_func)
             total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
-            if progress_update_func is not None:
-                self.progress_value.set(99)
-                self.progress_bar["value"] = 99
-                self.progress_bar["maximum"] = 100
-                self.update_progress_bar_directly()
-                self.root.update_idletasks()
+            if update_progress_func is not None:
+                self.progress_bar.value = 99  # Update the current value
+                self.progress_bar.max = 100   # Set the maximum value if needed
+                update_progress_func()
             # profiler.disable()
             # profiler_output_file = Path("profiler_output.pstat").resolve()
             # profiler.dump_stats(str(profiler_output_file))
@@ -1318,27 +1380,33 @@ class HoloPatcher(toga.App):
                 f"Total patches: {num_patches}",
             )
             if num_errors > 0:
-                messagebox.showerror(
-                    "Install completed with errors!",
-                    f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
-                    f"{os.linesep * 2}Total install time: {time_str}"
-                    f"{os.linesep}Total patches: {num_patches}",
+                self.run_background_task(
+                    self.main_window.error_dialog(
+                        "Install completed with errors!",
+                        f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
+                        f"{os.linesep * 2}Total install time: {time_str}"
+                        f"{os.linesep}Total patches: {num_patches}",
+                    )
                 )
                 if self.one_shot:
                     sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
             elif num_warnings > 0:
-                messagebox.showwarning(
-                    "Install completed with warnings",
-                    f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
-                    f"{os.linesep * 2}Total install time: {time_str}"
-                    f"{os.linesep}Total patches: {num_patches}",
+                self.run_background_task(
+                    self.main_window.info_dialog(
+                        "Install completed with warnings",
+                        f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
+                        f"{os.linesep * 2}Total install time: {time_str}"
+                        f"{os.linesep}Total patches: {num_patches}",
+                    )
                 )
             else:
-                messagebox.showinfo(
-                    "Install complete!",
-                    f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
-                    f"{os.linesep * 2}Total install time: {time_str}"
-                    f"{os.linesep}Total patches: {num_patches}",
+                self.run_background_task(
+                    self.main_window.info_dialog(
+                        "Install complete!",
+                        f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
+                        f"{os.linesep * 2}Total install time: {time_str}"
+                        f"{os.linesep}Total patches: {num_patches}",
+                    )
                 )
                 if self.one_shot:
                     sys.exit(ExitCode.SUCCESS)
@@ -1374,9 +1442,12 @@ class HoloPatcher(toga.App):
         self.pykotor_logger.exception("Unhandled exception in HoloPatcher", exc_info=e)
         error_name, msg = universal_simplify_exception(e)
         self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
-        messagebox.showerror(
-            error_name,
-            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
+
+        self.run_background_task(
+            self.main_window.error_dialog(
+                error_name,
+                f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
+            )
         )
         raise
 
@@ -1385,68 +1456,79 @@ class HoloPatcher(toga.App):
 
         start_rte_editor()
 
-    def load_rte_content(
-        self,
-        rte_content: str | bytes | bytearray | None = None,
-    ):
+    def load_rte_content(self, rte_content: str | bytes | bytearray | None = None):
+        """Load and display RTE content in the WebView."""
         self.clear_main_text()
-        self.main_text.config(state=tk.NORMAL)
+
         if rte_content is None:
-            file_path_str = filedialog.askopenfilename()
+            file_path_str = self.main_window.open_file_dialog("Open", Path.cwd(), ["*.rte"])
             if not file_path_str:
                 return
             with Path(file_path_str).open("rb") as f:
                 rte_encoded_data: bytes = f.read()
             rte_content = decode_bytes_with_fallbacks(rte_encoded_data)
 
-        document = json.loads(rte_content)
+        document: dict[str, Any] = json.loads(rte_content)
+        content: str = document.get("content", "")
 
-        self.main_text.insert("1.0", document["content"])
-        for tag in self.main_text.tag_names():
-            if tag not in ["sel"]:
-                self.main_text.tag_delete(tag)
+        # Handle tag configurations
+        tag_configs: dict[str, Any | dict] = document.get("tag_configs", {})
+        for tag, config in tag_configs.items():
+            style: list[str] = []
+            for key, value in config.items():
+                if key == "foreground":
+                    style.append(f"color:{value};")
+                elif key == "background":
+                    style.append(f"background-color:{value};")
+                elif key == "font":
+                    style.append(f"font-family:{value};")
+                elif key == "size":
+                    style.append(f"font-size:{value}pt;")
+                elif key == "bold" and value:
+                    style.append("font-weight:bold;")
+                elif key == "italic" and value:
+                    style.append("font-style:italic;")
+                elif key == "underline" and value:
+                    style.append("text-decoration:underline;")
+                elif key == "overstrike" and value:
+                    style.append("text-decoration:line-through;")
+                elif key == "justify":
+                    if value == "left":
+                        style.append("text-align:left;")
+                    elif value == "center":
+                        style.append("text-align:center;")
+                    elif value == "right":
+                        style.append("text-align:right;")
+                elif key == "spacing1":
+                    style.append(f"line-height:{value};")
+                elif key == "spacing3":
+                    style.append(f"margin-bottom:{value};")
+                elif key == "lmargin1":
+                    style.append(f"margin-left:{value}px;")
+                elif key == "lmargin2":
+                    style.append(f"margin-right:{value}px;")
+                elif key == "bullet_list":
+                    style.append("list-style-type:disc;")
+                elif key == "numbered_list":
+                    style.append("list-style-type:decimal;")
+            style_str = "".join(style)
+            content = content.replace(f"<{tag}>", f'<span style="{style_str}">').replace(f"</{tag}>", "</span>")
 
-        if "tag_configs" in document:
-            for tag, config in document["tag_configs"].items():
-                self.main_text.tag_configure(tag, **config)
-        for tag_name in document["tags"]:
-            for tag_range in document["tags"][tag_name]:
-                self.main_text.tag_add(tag_name, *tag_range)
-        self.main_text.config(state=tk.DISABLED)
+        content = content.replace("'", "\\'")
+        self.web_view.evaluate_javascript(f"setContent('{content}');")
 
-    def load_rtf_file(self, file_path: os.PathLike | str):
-        from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
-        from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
-
-        with Path.pathify(file_path).open("rb") as file:
-            rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
-            doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
-        self.main_text.config(state=tk.NORMAL)
-        self.main_text.delete(1.0, tk.END)
-        self.main_text.insert(tk.END, PlaintextWriter.write(doc).getvalue())
-        self.main_text.config(state=tk.DISABLED)
-
-    def set_stripped_rtf_text(
-        self,
-        rtf_text: str,
-    ):
-        """Strips the info.rtf of all RTF related text and displays it in the UI."""
-        stripped_content: str = striprtf(rtf_text)
+    def load_rtf_content(self, rtf_text: str):
+        """Converts the RTF content to HTML and displays it in the WebView."""
         self.clear_main_text()
-        self.main_text.config(state=tk.NORMAL)
-        self.main_text.delete(1.0, tk.END)
-        self.main_text.insert(tk.END, stripped_content)
-        self.main_text.config(state=tk.DISABLED)
+        html_content: str = pypandoc.convert_text(rtf_text, "html", format="rtf").replace("'", "\\'")
+        self.web_view.evaluate_javascript(f"setContent('{html_content}');")
 
-    def write_log(
-        self,
-        log: PatchLog,
-    ):
+    def write_log(self, log: PatchLog):
         """Writes a message to the log.
 
         Args:
         ----
-            message (str): The message to write to the log.
+            log: PatchLog - The log object containing the message and type.
 
         Processes the log message by:
             - Setting the description text widget to editable
@@ -1454,19 +1536,45 @@ class HoloPatcher(toga.App):
             - Scrolling to the end of the text
             - Making the description text widget not editable again.
         """
-        log_to_style_map = {
-            "DEBUG": self.main_text.DEBUG_STYLE,
-            "INFO": self.main_text.INFO_STYLE,
-            "WARNING": self.main_text.WARNING_STYLE,
-            "ERROR": self.main_text.ERROR_STYLE,
-            "CRITICAL": self.main_text.CRITICAL_STYLE,
-        }
+        def log_type_to_tag(log: PatchLog) -> str:
+            if log.log_type == LogType.NOTE:
+                return "INFO"
+            if log.log_type == LogType.VERBOSE:
+                return "DEBUG"
+            return log.log_type.name
 
-        log_type = log.log_type.name
-        style = log_to_style_map.get(log_type, self.main_text.INFO_STYLE)
+        try:
+            self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.log_file_path.open("a", encoding="utf-8") as log_file:
+                log_file.write(f"{log.formatted_message}\n")
+            if log.log_type.value < self.log_level.value:
+                return
+        except OSError:
+            RobustRootLogger().exception(f"Failed to write the log file at '{self.log_file_path}'!")
 
-        self.main_text.append(log.formatted_message + os.linesep, style)
-        self.main_text.scroll_to_end()
+        log_tag = log_type_to_tag(log)
+        log_message = log.formatted_message.replace("\n", "<br>").replace("'", "\\'").replace("`", "\\`").replace("\\", "\\\\")
+        script = f"appendLogLine(`{log_message}`, '{log_tag}');"
+        self.web_view.evaluate_javascript(script)
+
+
+@contextmanager
+def temporary_toga_window() -> Generator[toga.Window, Any, None]:
+    app = toga.App.app if hasattr(toga.App, "app") else None
+    new_app_created: bool = False
+    if app is not None:
+        window = toga.Window(size=(1, 1))
+        window.show()
+    else:
+        new_app_created = True
+        app = toga.App("Error App", "org.example.error")
+        window = toga.Window(size=(1, 1))
+        window.show()
+        Thread(target=app.main_loop, daemon=True).start()
+    yield window
+    window.close()
+    if new_app_created:
+        app.exit()
 
 
 def onAppCrash(
@@ -1490,41 +1598,36 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    get_root_logger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
+    RobustRootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
-    with suppress(Exception):
-        root = tk.Tk()
-        root.withdraw()  # Hide
-        messagebox.showerror(title, short_msg)
-        root.destroy()
+    with temporary_toga_window() as temp_window:
+        temp_window.error_dialog(title, f"{short_msg}\n{etype.__name__}")
     sys.exit(ExitCode.CRASH)
 
 
 sys.excepthook = onAppCrash
 
 
-def my_cleanup_function(app: HoloPatcher):
+def hp_exit_cleanup(app: HoloPatcher):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
+    app.main_window.close()
     terminate_main_process()
-    app.root.destroy()
 
 
 def main():
     app = HoloPatcher(
         formal_name="HoloPatcher",
-        app_id="com.example.holopatcher"
+        app_id="com.pykotor.holopatcher"
     )
+    atexit.register(lambda: hp_exit_cleanup(app))
     app.main_loop()
 
-def is_running_from_temp():
-    app_path = Path(sys.executable)
-    temp_dir = tempfile.gettempdir()
-    return str(app_path).startswith(temp_dir)
+def is_running_from_temp() -> bool:
+    return str(Path(sys.executable)).startswith(tempfile.gettempdir())
 
 if __name__ == "__main__":
     if is_running_from_temp():
         messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
-    main().main_loop()
-    atexit.register(lambda: my_cleanup_function(app))
+    main()
