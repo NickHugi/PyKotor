@@ -202,6 +202,7 @@ def parse_args() -> Namespace:
 
 class HoloPatcher(toga.App):
     def startup(self):
+        print("HoloPatcher.startup!!!\n\n\n")
         self.simple_thread_event: Event = Event()
         self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1))
         self.html_template: str = """
@@ -266,6 +267,7 @@ class HoloPatcher(toga.App):
         self.initialize_ui_controls()
 
         cmdline_args: Namespace = parse_args()
+        print(f"init directory: {cmdline_args.tslpatchdata or Path.cwd()}")
         self.run_background_task(self.open_mod(cmdline_args.tslpatchdata or Path.cwd()))
         self.run_background_task(self.execute_commandline(cmdline_args))
         self.pykotor_logger.debug("Init complete")
@@ -277,7 +279,7 @@ class HoloPatcher(toga.App):
         elif isinstance(coro, asyncio.Task):
             task = coro
         elif isinstance(coro, Dialog):
-            task = asyncio.run_coroutine_threadsafe(coro.future, self.loop)
+            task = asyncio.run_coroutine_threadsafe(coro, self.loop)
         else:
             # Directly ensure_future if it's not one of the above types
             task = asyncio.ensure_future(coro, loop=self.loop)
@@ -347,7 +349,7 @@ class HoloPatcher(toga.App):
         top_box = toga.Box(style=Pack(direction=ROW, alignment=CENTER, padding=5))
 
         # Namespace/Mod row.
-        self.namespaces_combobox = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))
+        self.namespaces_combobox = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4), accessor="patcher_namespace")
         self.namespaces_combobox.on_change = self.on_namespace_option_chosen
         top_box.add(self.namespaces_combobox)
         self.browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.run_background_task(self.open_mod()), style=Pack(padding_right=5))
@@ -356,7 +358,7 @@ class HoloPatcher(toga.App):
             "?",
             on_press=lambda _widget: self.run_background_task(
                 self.main_window.info_dialog(
-                    str(self.namespaces_combobox.value),
+                    str(self.namespaces_combobox.value.patcher_namespace.name),
                     self.get_namespace_description()
                 )
             ),
@@ -391,7 +393,7 @@ class HoloPatcher(toga.App):
 
         self.main_window.show()
 
-    def update_progress_bar_directly(self, value=1):
+    def update_progress_bar_directly(self, value: int = 1):
         self.progress_value += value
         self.progress_bar.value = self.progress_value
 
@@ -404,7 +406,7 @@ class HoloPatcher(toga.App):
             latest_version = updateInfoData["holopatcherLatestVersion"]
             if remoteVersionNewer(CURRENT_VERSION, latest_version):
                 result = show_update_dialog(
-                    self.main_window,
+                    toga.MainWindow(title=f"Updater {VERSION_LABEL}"),
                     "Update Available",
                     "A newer version of HoloPatcher is available, would you like to download it now?",
                     [
@@ -419,7 +421,7 @@ class HoloPatcher(toga.App):
                     webbrowser.open_new(updateInfoData["holopatcherDownloadLink"])
             else:
                 result = show_update_dialog(
-                    self.main_window,
+                    toga.MainWindow(title=f"Updater {VERSION_LABEL}"),
                     "No updates available.",
                     f"You are already running the latest version of HoloPatcher ({VERSION_LABEL})",
                     [
@@ -624,7 +626,7 @@ class HoloPatcher(toga.App):
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
             await self.main_window.error_dialog(
-                "Backup folder empty/missing.",
+                "Backup Folder Empty/Missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
             )
             return
@@ -638,7 +640,7 @@ class HoloPatcher(toga.App):
             self._handle_exception_during_install(e)
         finally:
             self.set_state(state=False)
-            self.logger.add_note("Mod uninstaller/backup restore task completed.")
+            self.logger.add_note("Mod Uninstaller/Backup Restore Task Completed.")
         if not fully_ran:
             self.on_namespace_option_chosen()
 
@@ -649,17 +651,17 @@ class HoloPatcher(toga.App):
             raise TypeError(msg)
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
         if res == 0:
-            msg = "invalid thread id"
+            msg = "Invalid thread id(0)"
             raise ValueError(msg)
         if res != 1:
             # "if it returns a number greater than one, you're in trouble,
             # and you should call it again with exc=NULL to revert the effect"
             ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
-            msg = "PyThreadState_SetAsyncExc failed"
+            msg = "PyThreadState_SetAsyncExc FAILED"
             raise SystemError(msg)
-        print("success")
+        print("PyThreadState_SetAsyncExc SUCCESSFUL")
 
-    async def handle_exit_button(self):
+    async def handle_exit_button(self, unknown_toga_arg: Any | None = None):
         """Handle exit button click during installation.
 
         Processing Logic:
@@ -672,6 +674,7 @@ class HoloPatcher(toga.App):
         """
         if not self.task_running or not self.task_thread or not self.task_thread.is_alive():
             print("Goodbye!")
+            self.exit()
             sys.exit(ExitCode.SUCCESS)
             return  # leave here for the static type checkers
 
@@ -691,15 +694,15 @@ class HoloPatcher(toga.App):
         print("Install thread is still alive, attempting force close...")
         i = 0
         while self.task_thread.is_alive():
-            if hasattr(self.task_thread, "_stop") and callable(self.task_thread._stop):
+            if hasattr(self.task_thread, "_stop") and callable(self.task_thread._stop):  # type: ignore[]  # noqa: SLF001
                 try:
                     self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access  # noqa: SLF001
-                    print("force terminate of install thread succeeded")
+                    print("Force terminate of install thread succeeded")
                 except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                     self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
             try:
                 if self.task_thread.ident is None:
-                    msg = "task ident is None, expected an int."
+                    msg = "Task ident is None, expected an int."
                     raise ValueError(msg)  # noqa: TRY301
                 self.async_raise(self.task_thread.ident, SystemExit)
             except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -732,7 +735,7 @@ class HoloPatcher(toga.App):
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
         namespace_option: PatcherNamespace | None = next(
-            (x for x in self.namespaces if x.name == self.namespaces_combobox.value),
+            (x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace),
             None,
         )
         return namespace_option.description if namespace_option else ""
@@ -787,7 +790,7 @@ class HoloPatcher(toga.App):
                         self.logger.add_note("Nothing to change - all files/folders already correct case.")
                     self.logger.add_note("iOS case rename task completed.")
 
-            self.task_thread = Thread(target=task)
+            self.task_thread = Thread(target=task, name="lowercase_tool_task")
             self.task_thread.start()
         except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
@@ -814,9 +817,11 @@ class HoloPatcher(toga.App):
             4. Handling game paths if a game number is found
             5. Loading the info.rtf file as defined.
         """
+        if not self.namespaces:
+            return
         try:
             # Load the settings from the ini changes file.
-            namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.value)
+            namespace_option: PatcherNamespace = next(x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace)
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             reader: ConfigReader = config_reader or ConfigReader.from_filepath(changes_ini_path)
             reader.load_settings()
@@ -890,27 +895,13 @@ class HoloPatcher(toga.App):
             - Stores the namespaces for later use
             - Calls on_namespace_option_chosen to load initial config.
         """
-        # Define the accessor to use for displaying items
-        class NamespaceItem:
-            def __init__(self, name):
-                self.value = name
-
-        # Convert namespaces to a ListSource with the defined accessor
-        namespace_items = [NamespaceItem(namespace.name) for namespace in namespaces]
-        self.namespaces_combobox.items = ListSource(data=namespace_items, accessors=["value"])
-
-        # Set the initial value if there are any items
-        if self.namespaces_combobox.items:
-            self.namespaces_combobox.value = self.namespaces_combobox.items[0].value
-        else:
-            self.namespaces_combobox.value = None
-
-        self.namespaces = namespaces
-        self.on_namespace_option_chosen()
+        self.namespaces_combobox.items = ListSource(data=namespaces, accessors=["patcher_namespace"])
+        self.on_namespace_option_chosen(config_reader)
 
     async def open_mod(
         self,
         default_directory_path_str: os.PathLike | str | None = None,
+        unknown_toga_arg: Any | None = None,
     ):
         """Opens a mod directory.
 
@@ -946,12 +937,15 @@ class HoloPatcher(toga.App):
             changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 
             if namespace_path.safe_isfile():
+                print("FOUND namespace_path:", namespace_path)
                 self.load_namespace(NamespaceReader.from_filepath(namespace_path))
             elif changes_path.safe_isfile():
+                print("FOUND changes_path:", changes_path, "namespace_path not found:", namespace_path)
                 config_reader: ConfigReader = ConfigReader.from_filepath(changes_path)
                 namespaces: list[PatcherNamespace] = [config_reader.config.as_namespace(changes_path)]
                 self.load_namespace(namespaces, config_reader)
             else:
+                print("namespace_path not found:", namespace_path, "changes_path not found:", changes_path)
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     await self.main_window.error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'")
@@ -964,10 +958,12 @@ class HoloPatcher(toga.App):
                 self.browse_button.style.visibility = "hidden"
             if not namespace_path.safe_isfile():
                 self.namespaces_combobox.style.visibility = "hidden"
+                self.expand_namespace_description_button.style.visibility = "hidden"
 
     async def open_kotor(
         self,
         default_kotor_dir_str: os.PathLike | str | None = None,
+        unknown_toga_arg: Any | None = None,
     ):
         """Opens the KOTOR directory.
 
@@ -1066,7 +1062,7 @@ class HoloPatcher(toga.App):
                     self.logger.add_note("File/Folder permissions fixer task completed.")
 
             result_queue = queue.Queue()
-            self.task_thread = Thread(target=task, args=(result_queue,))
+            self.task_thread = Thread(target=task, args=(result_queue,), name="HoloPatcher_install_thread")
             self.task_thread.start()
             self.task_thread.join()
             if not result_queue.get():
@@ -1197,7 +1193,7 @@ class HoloPatcher(toga.App):
             if not await self.preinstall_validate_chosen():
                 return
             self.pykotor_logger.debug("Prevalidate finished, starting install thread")
-            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly))
+            self.task_thread = Thread(target=self.begin_install_thread, args=(self.simple_thread_event, self.update_progress_bar_directly), name="HoloPatcher_install_thread")
             self.task_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
@@ -1225,7 +1221,7 @@ class HoloPatcher(toga.App):
             - Finally set the install status to not running.
         """
         self.pykotor_logger.debug("begin_install_thread reached")
-        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.value)
+        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace)
         tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
         ini_file_path = tslpatchdata_path.joinpath(namespace_option.changes_filepath())
         namespace_mod_path: CaseAwarePath = ini_file_path.parent
@@ -1248,7 +1244,7 @@ class HoloPatcher(toga.App):
     async def test_reader(self):  # sourcery skip: no-conditionals-in-tests
         if not await self.preinstall_validate_chosen():
             return
-        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.value)
+        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x == self.namespaces_combobox.value.patcher_namespace)
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
         self.set_state(state=True)
@@ -1264,7 +1260,7 @@ class HoloPatcher(toga.App):
                 self.set_state(state=False)
                 self.logger.add_note("Config reader test is complete.")
 
-        Thread(target=task).start()
+        Thread(target=task, name="Test_Reader_Thread").start()
 
     def set_state(
         self,
@@ -1570,7 +1566,7 @@ def temporary_toga_window() -> Generator[toga.Window, Any, None]:
         app = toga.App("Error App", "org.example.error")
         window = toga.Window(size=(1, 1))
         window.show()
-        Thread(target=app.main_loop, daemon=True).start()
+        Thread(target=app.main_loop, daemon=True, name="Temp_Toga_Window_Daemon").start()
     yield window
     window.close()
     if new_app_created:
