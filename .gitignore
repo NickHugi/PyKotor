@@ -68,3 +68,6 @@ installlog.txt
 powershell-bin/
 .env
 typings/*
+Tools/HoloPatcher/src/holopatcher/node_modules
+Tools/HoloPatcher/src/holopatcher/package-lock.json
+Tools/HoloPatcher/src/holopatcher/package.json
