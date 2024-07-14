@@ -77,7 +77,7 @@ from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.logger_util import RobustRootLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
-from utility.system.os_helper import terminate_main_process, win_get_system32_dir  # noqa: E402
+from utility.system.os_helper import get_app_dir, terminate_main_process, win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
@@ -206,56 +206,11 @@ def parse_args() -> Namespace:
 class HoloPatcher(toga.App):
     def startup(self):
         print("HoloPatcher.startup!!!\n\n\n")
-        self.html_template = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>WebView Content</title>
-            <style>
-                body {
-                    font-family: 'Helvetica', sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    overflow: auto;
-                    height: 100vh; /* Full height */
-                    box-sizing: border-box;
-                }
-                #content {
-                    padding: 10px;
-                }
-                .DEBUG { color: #6495ED; }
-                .INFO { color: #000000; }
-                .WARNING { color: #CC4E00; background-color: #FFF3E0; font-weight: bold; font-size: 10px; }
-                .ERROR { color: #DC143C; font-weight: bold; font-size: 10px; }
-                .CRITICAL { color: #FFFFFF; background-color: #8B0000; font-weight: bold; font-size: 10px; }
-            </style>
-        </head>
-        <body>
-            <div id="content"></div>
-            <script>
-                function setContent(newContent) {
-                    document.getElementById('content').innerHTML = newContent;
-                }
-                function appendLogLine(logLine, logType) {
-                    var container = document.getElementById('content');
-                    var logElement = document.createElement('div');
-                    logElement.className = logType;
-                    logElement.innerHTML = logLine + '<br>';
-                    container.appendChild(logElement);
-                    if (container.children.length > 100) {
-                        container.removeChild(container.firstChild);
-                    }
-                    window.scrollTo(0, document.body.scrollHeight);
-                }
-                function setFontColor(logType, color) {
-                    var styleElement = document.createElement('style');
-                    styleElement.innerHTML = '.' + logType + ' { color: ' + color + '; }';
-                    document.head.appendChild(styleElement);
-                }
-            </script>
-        </body>
-        </html>
-        """
+
+        # Define the HTML template with JavaScript for dynamic content updates
+        template_path = get_app_dir() / "template.html"
+        with template_path.open("r") as file:
+            self.html_template = file.read()
         self.default_window_size: tuple[int, int] = (400, 500)
         self.main_window: toga.MainWindow = toga.MainWindow(
             title=f"HoloPatcher {VERSION_LABEL}",
@@ -327,7 +282,7 @@ class HoloPatcher(toga.App):
         )
 
     def initialize_logger(self):
-        self.logger: PatchLogger = PatchLogger()
+        self.logger = PatchLogger()
         self.logger.verbose_observable.subscribe(self.write_log)
         self.logger.note_observable.subscribe(self.write_log)
         self.logger.warning_observable.subscribe(self.write_log)
@@ -413,7 +368,7 @@ class HoloPatcher(toga.App):
 
         # Main WebView for content display
         self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1, padding=5))
-        self.web_view.set_content("", self.html_template)
+        self.web_view.set_content("about:blank", self.html_template)
         self.main_text_frame: toga.ScrollContainer = toga.ScrollContainer(  # ScrollContainer to add scrollbars
             horizontal=False,
             vertical=True,
@@ -433,6 +388,11 @@ class HoloPatcher(toga.App):
             )
         )
         self.main_window.show()
+
+    def toggle_view(self, view: str):
+        """Toggle between content and log views."""
+        script = f"toggleView('{view}');"
+        self.web_view.evaluate_javascript(script)
 
     def update_progress_bar_directly(self, value: int = 1):
         self.progress_bar.value += value
@@ -1592,6 +1552,18 @@ class HoloPatcher(toga.App):
             print("update ui (OTHER thread)")
             self.add_background_task(update_ui)
             print("update ui completed (OTHER thread)")
+
+    def set_content(self, new_content: str):
+        script = f"setContent({json.dumps(new_content)});"
+        self.web_view.evaluate_javascript(script)
+
+    def append_log_line(self, log_line: str, log_type: str):
+        script = f"appendLogLine('{log_line}', '{log_type}');"
+        self.web_view.evaluate_javascript(script)
+
+    def show_view(self, view: str):
+        script = f"showView('{view}');"
+        self.web_view.evaluate_javascript(script)
 
 
 @contextmanager

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Viewer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+        #content {
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+        #log-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            transition: height 1s ease;
+        }
+        #expander {
+            text-align: center;
+            cursor: pointer;
+            background-color: #ddd;
+            padding: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        #logs {
+            overflow-y: auto;
+            display: none;
+        }
+        .collapsed #logs {
+            display: none;
+        }
+        .expanded #logs, .slightly-expanded #logs {
+            display: block;
+        }
+        .collapsed #expander::after {
+            content: ' ^^^ LOG VIEW ^^^ ';
+        }
+        .expanded #expander::after {
+            content: ' vvv LOG VIEW vvv ';
+        }
+        .slightly-expanded #expander::after {
+            content: ' --- LOG VIEW --- ';
+        }
+        .expanded #log-container, .slightly-expanded #log-container {
+            height: 30%;
+        }
+        .collapsed #log-container {
+            height: 5%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .log-entry {
+            transition: all 0.5s ease;
+        }
+        .DEBUG { color: blue; }
+        .INFO { color: black; }
+        .WARNING { color: orange; }
+        .ERROR { color: red; }
+        .CRITICAL { color: white; background-color: red; }
+        .log-entry.new {
+            animation: slideIn 1s ease;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="content" class="collapsed">
+        <!-- Main content area -->
+    </div>
+    <div id="log-container" class="collapsed">
+        <div id="expander" onclick="toggleExpand()"></div>
+        <div id="logs">
+            <table id="logs-table">
+                <tbody>
+                    <!-- Log entries will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function toggleExpand() {
+            const container = document.getElementById('log-container');
+            if (container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+                container.classList.add('collapsed');
+            } else if (container.classList.contains('slightly-expanded')) {
+                container.classList.remove('slightly-expanded');
+                container.classList.add('expanded');
+            } else {
+                container.classList.remove('collapsed');
+                container.classList.add('slightly-expanded');
+            }
+        }
+
+        let newLogCount = 0;
+
+        function setContent(newContent) {
+            document.getElementById('content').innerHTML = newContent;
+            updateExpanderState();
+        }
+
+        function appendLogLine(logLine, logType) {
+            var tableBody = document.getElementById('logs-table').getElementsByTagName('tbody')[0];
+            var row = tableBody.insertRow();
+            var cell = row.insertCell(0);
+            cell.innerHTML = logLine;
+            row.className = 'log-entry ' + logType + ' new';
+            var logs = document.getElementById('logs');
+            logs.scrollTop = logs.scrollHeight; // Auto-scroll to new log entry
+            updateExpanderState();
+        }
+
+        function filterLogs() {
+            var filter = document.getElementById('log-filter').value;
+            var logEntries = document.getElementsByClassName('log-entry');
+            for (var i = 0; i < logEntries.length; i++) {
+                var logEntry = logEntries[i];
+                if (filter === 'ALL' || logEntry.classList.contains(filter)) {
+                    logEntry.style.display = 'table-row';
+                } else {
+                    logEntry.style.display = 'none';
+                }
+            }
+        }
+
+        function toggleExpand() {
+            let content = document.getElementById('content');
+            let container = document.getElementById('log-container');
+            let logs = document.getElementById('logs');
+            let expander = document.getElementById('expander');
+
+            if (container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+                container.classList.add('collapsed');
+            } else if (container.classList.contains('slightly-expanded')) {
+                container.classList.remove('slightly-expanded');
+                container.classList.add('expanded');
+            } else {
+                container.classList.remove('collapsed');
+                container.classList.add('slightly-expanded');
+            }
+            updateExpanderState();
+        }
+
+        function updateExpanderState() {
+            let logs = document.getElementById('logs');
+            let expander = document.getElementById('expander');
+            let hasLogs = logs.querySelector('tbody').children.length > 0;
+            let hasContent = document.getElementById('content').innerHTML.trim() !== '';
+
+            console.log(`hasLogs: ${hasLogs}, hasContent: ${hasContent}`);
+
+            if (hasLogs || hasContent) {
+                expander.style.display = 'block';
+                if (hasLogs && !hasContent) {
+                    if (logs.classList.contains('expanded')) {
+                        expander.classList.remove('collapsed', 'slightly-expanded');
+                        expander.classList.add('expanded');
+                    } else {
+                        expander.classList.remove('expanded', 'slightly-expanded');
+                        expander.classList.add('collapsed');
+                    }
+                } else {
+                    if (logs.classList.contains('expanded')) {
+                        expander.classList.remove('collapsed', 'slightly-expanded');
+                        expander.classList.add('expanded');
+                    } else if (logs.classList.contains('slightly-expanded')) {
+                        expander.classList.remove('collapsed', 'expanded');
+                        expander.classList.add('slightly-expanded');
+                    } else {
+                        expander.classList.remove('expanded', 'slightly-expanded');
+                        expander.classList.add('collapsed');
+                    }
+                }
+            } else {
+                expander.style.display = 'none';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            updateExpanderState();
+        });
+        updateExpanderState();
+    </script>
+</body>
+</html>
