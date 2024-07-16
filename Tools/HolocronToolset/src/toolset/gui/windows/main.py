@@ -412,7 +412,7 @@ class ToolWindow(QMainWindow):
         self.collectButtonMenu.close()
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if obj == self.collectButton and event.type() == QEvent.Type.HoverEnter:
+        if obj == getattr(self, "collectButton", object()) and event.type() == QEvent.Type.HoverEnter:
             self.collectButton.showMenu()
         if hasattr(self, "focusHandler"):
             return self.focusHandler.eventFilter(obj, event)

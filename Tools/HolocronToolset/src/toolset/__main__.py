@@ -133,10 +133,11 @@ def qt_cleanup():
     WINDOWS.clear()
     gc.collect()
     for obj in gc.get_objects():
-        if isinstance(obj, QThread) and obj.isRunning():
-            RobustRootLogger().debug(f"Terminating QThread: {obj}")
-            obj.terminate()
-            obj.wait()
+        with suppress(RuntimeError):  # wrapped C/C++ object of type QThread has been deleted
+            if isinstance(obj, QThread) and obj.isRunning():
+                RobustRootLogger().debug(f"Terminating QThread: {obj}")
+                obj.terminate()
+                obj.wait()
     terminate_child_processes()
 
 def last_resort_cleanup():
@@ -184,10 +185,6 @@ def main_init():
     if not is_debug_mode() or is_frozen():
         os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
         os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
-    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
-    # os.environ["QT_SCALE_FACTOR"] = "1"
-    atexit.register(last_resort_cleanup)
 
 
 if __name__ == "__main__":
@@ -215,6 +212,10 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setFont(QFont("Roboto", 13))
     app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
+    # os.environ["QT_SCALE_FACTOR"] = "1"
+    atexit.register(last_resort_cleanup)
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
     app.setOrganizationDomain("github.com/NickHugi/PyKotor")
