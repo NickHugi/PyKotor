@@ -80,9 +80,9 @@
         .ERROR { color: red; }
         .CRITICAL { color: white; background-color: red; }
         .log-entry.new {
-            animation: slideIn 1s ease;
+            animation: customSlideIn 0.25s ease;
         }
-        @keyframes slideIn {
+        @keyframes customSlideIn {
             from {
                 transform: translateX(100%);
                 opacity: 0;
@@ -114,12 +114,15 @@
             if (container.classList.contains('expanded')) {
                 container.classList.remove('expanded');
                 container.classList.add('collapsed');
+                container.style.top = 'auto'; // Reset to auto when collapsed
             } else if (container.classList.contains('slightly-expanded')) {
                 container.classList.remove('slightly-expanded');
                 container.classList.add('expanded');
+                container.style.top = '0'; // Fully expanded
             } else {
                 container.classList.remove('collapsed');
                 container.classList.add('slightly-expanded');
+                container.style.top = '70vh'; // Adjust as needed for slight expansion
             }
             updateExpanderState();
         }
@@ -168,9 +171,8 @@
                     logContainer.classList.add('slightly-expanded');
                 }
             } else {
-                if (!hasContent) {
-                    expander.style.display = 'none';
-                }
+                expander.style.display = 'none';
+                logContainer.classList.remove('expanded', 'slightly-expanded');
                 logContainer.classList.add('collapsed');
             }
         }
