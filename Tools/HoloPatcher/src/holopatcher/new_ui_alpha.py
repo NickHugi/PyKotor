@@ -34,6 +34,8 @@ from toga.style import Pack
 from travertino.constants import CENTER, COLUMN, ROW
 from travertino.declaration import BaseStyle
 
+from utility.string_util import striprtf
+
 
 def is_frozen() -> bool:
     return (
@@ -62,6 +64,7 @@ if not is_frozen():
         update_sys_path(pathlib.Path(__file__).parents[1])
 
 
+
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.common.stream import BinaryReader  # noqa: E402
@@ -88,6 +91,7 @@ if TYPE_CHECKING:
     from multiprocessing import Process
 
     from toga import Selection
+    from toga.window import Dialog
 
     from pykotor.tslpatcher.logger import PatchLog
 
@@ -229,10 +233,12 @@ class HoloPatcher(toga.App):
         self.initialize_top_menu()
         self.initialize_ui_controls()
         print("Init complete")
-        self.fire_async_function(self.post_startup())
+        self.run_later(self.post_startup())
 
     async def post_startup(self):
+        print("post_startup")
         cmdline_args: Namespace = parse_args()
+        print("parse_args complete")
         print(f"init directory: {cmdline_args.tslpatchdata or Path.cwd()}")
         self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
         self.execute_commandline(cmdline_args)
@@ -241,16 +247,23 @@ class HoloPatcher(toga.App):
         self,
         coro: Coroutine[Any, Any, T] | Awaitable[Any] | asyncio.Task[Any] | AsyncResult,
     ) -> T:
-        """Utility method to run a coroutine as a background task and keep a reference to it."""
-        if isinstance(coro, AsyncResult):
-            async def await_async_result():
-                return await coro
-            return cast(T, asyncio.run_coroutine_threadsafe(await_async_result(), self.loop).result())  # Wait for the coroutine to complete and return the result
-        if isinstance(coro, (Coroutine, asyncio.Task, Awaitable)):
-            return cast(T, asyncio.run_coroutine_threadsafe(coro, self.loop).result())  # Wait for the coroutine to complete and return the result
+        """Utility method to run a coroutine as a background task and keep a reference to it.
+
+        DO NOT RUN GUI CODE WITH THIS FUNCTION!
+        """
+        print("run_async_from_sync called!")
+        try:
+            if isinstance(coro, AsyncResult):
+                async def await_async_result():
+                    return await coro
+                return cast(T, asyncio.run_coroutine_threadsafe(await_async_result(), self.loop).result())  # Wait for the coroutine to complete and return the result
+            if isinstance(coro, (Coroutine, asyncio.Task, Awaitable)):
+                return cast(T, asyncio.run_coroutine_threadsafe(coro, self.loop).result())  # Wait for the coroutine to complete and return the result
+        finally:
+            print("run_async_from_sync finished!")
         raise TypeError("Provided argument must be a coroutine or a callable returning a coroutine")
 
-    def fire_async_function(
+    def run_later(
         self,
         coro: Coroutine | Awaitable | AsyncResult,
         callback: Callable[[Any | None, Exception | None], Any] | None = None,
@@ -263,7 +276,8 @@ class HoloPatcher(toga.App):
             coro (Coroutine | AsyncResult | Awaitable): The coroutine or awaitable object to run in the background.
             callback (Callable, optional): A function to execute with the result of the coroutine.
         """
-        async def task_wrapper(app: toga.App, **kwargs):  # noqa: ARG001
+        print("add_bg_task_helper called!")
+        async def task_wrapper(app: toga.App, **kwargs):  # noqa: ARG001  # type: ignore[]
             try:
                 result = await coro
                 if callback is not None:
@@ -336,12 +350,12 @@ class HoloPatcher(toga.App):
             items=[],
             style=Pack(flex=1, padding_right=5, font_size=10, padding=4),
             accessor="patcher_namespace",
-            on_change=self.on_namespace_option_chosen
+            on_change=self.refresh_ui_data
         )
-        self.browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_mod, style=Pack(padding_right=5))
+        self.browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_mod(), style=Pack(padding_right=5))
         self.expand_namespace_description_button: toga.Button = toga.Button(
             "?",
-            on_press=lambda _widget: self.fire_async_function(
+            on_press=lambda _widget: self.run_later(
                 self.display_info_dialog(
                     str(cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace).name),  # type: ignore[]
                     self.get_namespace_description()
@@ -358,7 +372,7 @@ class HoloPatcher(toga.App):
 
         # KOTOR Install row.
         self.gamepaths = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))
-        self.gamepaths_browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_kotor, style=Pack(padding_right=5))
+        self.gamepaths_browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_kotor(), style=Pack(padding_right=5))
         self.main_window.content.add(
             toga.Box(
                 style=Pack(direction=ROW, alignment=CENTER, padding=5),
@@ -585,7 +599,7 @@ class HoloPatcher(toga.App):
 
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
-            self.fire_async_function(
+            self.run_later(
                 self.display_error_dialog(
                     "Backup Folder Empty/Missing.",
                     f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
@@ -605,7 +619,7 @@ class HoloPatcher(toga.App):
             self.set_state(state=False)
             self.logger.add_note("Mod Uninstaller/Backup Restore Task Completed.")
         if not fully_ran:
-            self.on_namespace_option_chosen()
+            self.refresh_ui_data()
 
     def handle_exit_button(self, button: toga.Button | None = None):
         """Handle exit button click during installation.
@@ -714,10 +728,10 @@ class HoloPatcher(toga.App):
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
-                self.on_namespace_option_chosen()
+                self.refresh_ui_data()
             self.logger.add_verbose("iOS case rename task started.")
 
-    def on_namespace_option_chosen(
+    def refresh_ui_data(
         self,
         combobox: Selection | None = None,
         config_reader: ConfigReader | None = None,
@@ -760,7 +774,7 @@ class HoloPatcher(toga.App):
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
             if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
-                self.fire_async_function(self.display_error_dialog("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk."))
+                self.run_later(self.display_error_dialog("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk."))
                 return
 
             if info_rte_path.safe_isfile():
@@ -786,7 +800,7 @@ class HoloPatcher(toga.App):
         self.pykotor_logger.exception(custom_msg, exc_info=exc)
         error_name, msg = universal_simplify_exception(exc)
         if msgbox:
-            self.fire_async_function(
+            self.run_later(
                 self.display_error_dialog(
                     title or error_name,
                     f"{(error_name + os.linesep * 2) if title else ''}{custom_msg}.{os.linesep * 2}{msg}",
@@ -806,18 +820,20 @@ class HoloPatcher(toga.App):
             config_reader: ConfigReader object or None
         """
         self.namespaces_combobox.items = ListSource(data=namespaces, accessors=["patcher_namespace"])
-        self.on_namespace_option_chosen(config_reader=config_reader)
+        self.refresh_ui_data(config_reader=config_reader)
 
     def open_mod(
         self,
-        default_directory_path_str: os.PathLike | str | None = None,
-        button: toga.Button | None = None,
+        directory_path_str: os.PathLike | str | None = None,
+        exc: BaseException | None = None,
+        *,
+        startup: bool = True,
     ):
         """Opens a mod directory.
 
         Args:
         ----
-            default_directory_path_str: The default directory path to open as a string or None. This is
+            directory_path_str: The default directory path to open as a string or None. This is
                 relevant when HoloPatcher is placed next to a 'tslpatchdata' folder containing the patcher files.
                 This is also relevant when using the CLI.
 
@@ -829,15 +845,18 @@ class HoloPatcher(toga.App):
             - Checks permissions of the mod folder
             - Handles errors opening the mod.
         """
+        print(f"open_mod({directory_path_str}, {exc})")
         try:
-            if default_directory_path_str is None:
-                directory_path_str: os.PathLike | str = self.run_async_from_sync(self.main_window.select_folder_dialog(
-                                                                                "Select the mod directory (where tslpatchdata lives)"))
-                if not directory_path_str:
-                    return
-            else:
-                directory_path_str = default_directory_path_str
-
+            if directory_path_str is None:
+                async def select_folder() -> Dialog:
+                    return await self.main_window.select_folder_dialog("Select the mod directory (where tslpatchdata lives)")
+                self.run_later(
+                    select_folder(),
+                    lambda folder, exc: self.open_mod("" if folder is None else folder, exc, startup=False),
+                )
+                return
+            if not directory_path_str:
+                return
             # handle when a user selects 'tslpatchdata' instead of mod root
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
@@ -860,16 +879,16 @@ class HoloPatcher(toga.App):
             else:
                 print("namespace_path not found:", namespace_path, "changes_path not found:", changes_path)
                 self.mod_path = ""
-                if not default_directory_path_str:  # don't show the error if the cwd was attempted
-                    self.run_async_from_sync(self.display_error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'"))
+                if not startup:  # don't show the error if the cwd was attempted
+                    self.run_later(self.display_error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'"))
                 return
-            self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
+            self.run_later(self.check_access(tslpatchdata_path, recurse=True, should_filter=True))
 
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
 
-        else:
-            if default_directory_path_str:
+        else:  # Mod dir is valid at this point.
+            if startup:
                 self.browse_button.style.visibility = "hidden"  # type: ignore[]
             if not namespace_path.safe_isfile():
                 self.namespaces_combobox.style.visibility = "hidden"  # type: ignore[]
@@ -877,14 +896,16 @@ class HoloPatcher(toga.App):
 
     def open_kotor(
         self,
-        default_kotor_dir_str: os.PathLike | str | None = None,
-        unknown_toga_arg: Any | None = None,
+        directory_path_str: os.PathLike | str | None = None,
+        exc: BaseException | None = None,
+        *,
+        startup: bool = True,
     ):
         """Opens the KOTOR directory.
 
         Args:
         ----
-            default_kotor_dir_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
+            directory_path_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
 
         Processing Logic:
         ----------------
@@ -893,15 +914,22 @@ class HoloPatcher(toga.App):
             - Set the gamepaths config value and add path to list if not already present
             - Move cursor after a delay to end of dropdown
         """
+        print(f"open_kotor({directory_path_str}, {exc}, startup={startup})")
         try:
-            directory_path_str = default_kotor_dir_str
+            if directory_path_str is None:
+                print("select kotor dir (user)")
+                async def select_folder() -> Dialog:
+                    return await self.main_window.select_folder_dialog("Select the KOTOR directory")
+                self.run_later(
+                    select_folder(),
+                    lambda folder, exc: self.open_kotor("" if folder is None else folder, exc, startup=False),
+                )
+                return
             if not directory_path_str:
-                directory_path_str = self.run_async_from_sync(self.main_window.select_folder_dialog("Select the KOTOR directory"))
-                if not directory_path_str:
-                    return  # User cancelled the dialog
+                return
 
             directory = CaseAwarePath(directory_path_str)
-            self.check_access(directory)
+            self.run_later(self.check_access(directory))
             directory_str = str(directory)
             if directory_str not in [str(item) for item in self.gamepaths.items]:
                 self.gamepaths.items.append(directory_str)
@@ -933,7 +961,7 @@ class HoloPatcher(toga.App):
         reset_namespace: bool = False,
     ):
         if directory is None:
-            self.fire_async_function(
+            self.run_later(
                 self.main_window.select_folder_dialog("Select target directory"),
                 lambda chosen_path, error: self._handle_fix_permissions(chosen_path, directory, reset_namespace, error)
             )
@@ -1017,9 +1045,9 @@ class HoloPatcher(toga.App):
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
-                self.on_namespace_option_chosen()
+                self.refresh_ui_data()
 
-    def check_access(
+    async def check_access(
         self,
         directory: Path,
         *,
@@ -1052,25 +1080,21 @@ class HoloPatcher(toga.App):
 
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if self.run_async_from_sync(
-            self.display_confirm_dialog(
-                "Permission error",
-                f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
-            )
+        if await self.display_confirm_dialog(
+            "Permission error",
+            f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
         ):
             directory.gain_access(recurse=recurse)
-            self.on_namespace_option_chosen()
+            self.refresh_ui_data()
         if not directory.has_access(recurse=recurse):
-            self.fire_async_function(
-                self.display_error_dialog(
-                    "Unauthorized",
-                    (
-                        f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
-                        f"{os.linesep}"
-                        f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
-                        "Continue with an install anyway?"
-                    ),
-                )
+            await self.display_error_dialog(
+                "Unauthorized",
+                (
+                    f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
+                    f"{os.linesep}"
+                    f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
+                    "Continue with an install anyway?"
+                ),
             )
             return False
         return True
@@ -1094,7 +1118,7 @@ class HoloPatcher(toga.App):
             - Check write access to the KOTOR install directory.
         """
         if self.task_running:
-            self.fire_async_function(
+            self.run_later(
                 self.display_info_dialog(
                     "Task already running",
                     "Wait for the previous task to finish.",
@@ -1102,7 +1126,7 @@ class HoloPatcher(toga.App):
             )
             return False
         if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-            self.fire_async_function(
+            self.run_later(
                 self.display_error_dialog(
                     "No mod chosen",
                     "Select your mod directory first.",
@@ -1111,7 +1135,7 @@ class HoloPatcher(toga.App):
             return False
         game_path: str = str(self.gamepaths.value)
         if not game_path:
-            self.fire_async_function(
+            self.run_later(
                 self.display_error_dialog(
                     "No KOTOR directory chosen",
                     "Select your KOTOR directory first.",
@@ -1120,7 +1144,7 @@ class HoloPatcher(toga.App):
             return False
         case_game_path = CaseAwarePath(game_path)
         if not case_game_path.safe_isdir():
-            self.fire_async_function(
+            self.run_later(
                 self.display_error_dialog(
                     "Invalid KOTOR directory chosen",
                     "Select a valid path to your KOTOR install.",
@@ -1129,7 +1153,12 @@ class HoloPatcher(toga.App):
             return False
         game_path_str = str(case_game_path)
         self.gamepaths.value = game_path_str
-        return self.check_access(Path(game_path_str))
+        game_path_nocase = Path(game_path_str)
+        access = game_path_nocase.has_access()
+        if not access:
+            self.run_later(self.check_access(game_path_nocase))
+            return False
+        return True
 
     def begin_install(self, button: toga.Button | None = None):
         """Starts the installation process in a background thread.
@@ -1241,22 +1270,18 @@ class HoloPatcher(toga.App):
             self.progress_bar.value = 0
             self.progress_bar.max = 100
             self.progress_value = 0
-            self.task_running = True
-            self.install_button.enabled = False
-            self.gamepaths_browse_button.enabled = False
-            self.browse_button.enabled = False
         else:
-            self.task_running = False
             self.initialize_logger()  # reset the errors/warnings etc
-            self.install_button.enabled = True
-            self.gamepaths_browse_button.enabled = True
-            self.browse_button.enabled = True
+        self.task_running = state
+        self.install_button.enabled = not state
+        self.gamepaths_browse_button.enabled = not state
+        self.browse_button.enabled = not state
 
     def clear_main_text(self):
         """Clears all content from the WebView to prepare for new content."""
         self.web_view.evaluate_javascript("document.getElementById('content').innerHTML = '';")
 
-    def _execute_mod_install(
+    def _execute_mod_install(  # noqa: PLR0915
         self,
         installer: ModInstaller,
         update_progress_func: Callable | None = None
@@ -1340,7 +1365,7 @@ class HoloPatcher(toga.App):
             )
             if num_errors > 0:
                 print("show error dialog postinstall")
-                self.fire_async_function(
+                self.run_later(
                     self.display_error_dialog(
                         "Install completed with errors!",
                         f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."  # noqa: E501
@@ -1352,7 +1377,7 @@ class HoloPatcher(toga.App):
                     sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
             elif num_warnings > 0:
                 print("show warning dialog postinstall")
-                self.fire_async_function(
+                self.run_later(
                     self.display_info_dialog(
                         "Install completed with warnings",
                         f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
@@ -1362,7 +1387,7 @@ class HoloPatcher(toga.App):
                 )
             else:
                 print("show info dialog postinstall")
-                self.fire_async_function(
+                self.run_later(
                     self.display_info_dialog(
                         "Install complete!",
                         f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
@@ -1425,7 +1450,7 @@ class HoloPatcher(toga.App):
             f"{error_name}: {msg}{os.linesep}The installation was aborted with errors"
         )
 
-        self.fire_async_function(
+        self.run_later(
             self.display_error_dialog(
                 error_name,
                 f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
@@ -1505,13 +1530,16 @@ class HoloPatcher(toga.App):
         """Converts the RTF content to HTML and displays it in the WebView."""
         self.clear_main_text()
         try:
-            html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
-        except OSError:
-            # Download Pandoc if it is not installed
-            pypandoc.download_pandoc(delete_installer=True)
-            html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
+            try:
+                html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
+            except OSError:
+                # Download Pandoc if it is not installed
+                pypandoc.download_pandoc(delete_installer=True)
+                html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
+        except Exception as e:  # noqa: BLE001
+            RobustRootLogger().exception("Failed to load RTF content. Falling back to plaintext...")
+            html_content: str = striprtf(rtf_text)
 
-        # Use JSON dumps to safely encode the HTML for JavaScript
         safe_html_content = json.dumps(html_content)
         self.web_view.evaluate_javascript(f"setContent({safe_html_content});")
 
