@@ -69,10 +69,7 @@ def pytest_report_teststatus(report: pytest.TestReport, config: pytest.Config) -
             return "failed", "F", "FAILED: <unknown error>"
 
         reprcrash = getattr(report.longrepr, "reprcrash", None)
-        if reprcrash is not None:
-            msg = reprcrash.message
-        else:
-            msg = repr(report.longrepr)
+        msg = repr(report.longrepr) if reprcrash is None else reprcrash.message
         return "failed", "F", f"FAILED: {msg}"
     return None
 
@@ -341,7 +338,8 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> pytes
         return report
     return None
 
-def pytest_generate_tests(metafunc: pytest.Metafunc):
+# NEVER extract/wrap any code in new functions, breaks pytest's MetaFunc.
+def pytest_generate_tests(metafunc: pytest.Metafunc):  # sourcery skip: extract-method
     if "script_data" in metafunc.fixturenames:
         print("Generating NSS compile tests...")
         # Load the data prepared in the session start
