@@ -139,7 +139,6 @@ def windows_context_menu_file(
     item: CDispatch = folder.ParseName(parsed_filepath.name)
     context_menu: CDispatch = item.Verbs()
 
-    assert isinstance(context_menu, Iterable)
     hmenu: int = win32gui.CreatePopupMenu()
     for i, verb in enumerate(context_menu):
         if verb.Name:
@@ -171,7 +170,6 @@ def windows_context_menu_folder(
     item: CDispatch = folder.Self
     context_menu: CDispatch = item.Verbs()
 
-    assert isinstance(context_menu, Iterable)
     hmenu: int = win32gui.CreatePopupMenu()
     for i, verb in enumerate(context_menu):
         if verb.Name:
@@ -206,7 +204,6 @@ def windows_context_menu_multiple(
     ]
     context_menu: CDispatch = folders_items[0].Verbs()
 
-    assert isinstance(context_menu, Iterable)
     hmenu: int = win32gui.CreatePopupMenu()
     for i, verb in enumerate(context_menu):
         if verb.Name:
