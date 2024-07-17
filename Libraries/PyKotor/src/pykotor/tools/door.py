@@ -30,11 +30,15 @@ def get_model(
     Returns:
     -------
         Returns the model name for the door.
+
+    Raises:
+    ------
+        ValueError: genericdoors.2da not found in passed arguments OR the installation.
     """
     if genericdoors is None:
-        result = installation.resource("placeables", ResourceType.TwoDA)
+        result = installation.resource("genericdoors", ResourceType.TwoDA)
         if not result:
-            raise ValueError("Resource 'placeables.2da' not found in the installation, cannot get UTD model.")
+            raise ValueError("Resource 'genericdoors.2da' not found in the installation, cannot get UTD model.")
         genericdoors = read_2da(result.data)
     if not isinstance(genericdoors, TwoDA):
         genericdoors = read_2da(genericdoors)
