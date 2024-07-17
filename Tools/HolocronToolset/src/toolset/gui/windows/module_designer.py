@@ -1175,6 +1175,8 @@ class ModuleDesigner(QMainWindow):
     def onResourceTreeContextMenu(self, point: QPoint):
         menu = QMenu(self)
         curItem = self.ui.resourceTree.currentItem()
+        if curItem is None:
+            return
         data = curItem.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(data, ModuleResource):
             self._active_instance_location_menu(data, menu)
