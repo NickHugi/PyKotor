@@ -127,7 +127,7 @@ class InsertInstanceDialog(QDialog):
             )
             self.ui.previewRenderer.clearModel()
             return
-        self._extracted_from_onResourceSelected_19(modelname)
+        self.setRendererModelName(modelname)
 
     def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
@@ -272,10 +272,10 @@ class InsertInstanceDialog(QDialog):
                 mdx_data: bytes | None = None
                 if resource.restype() is ResourceType.UTD and self.globalSettings.showPreviewUTD:
                     modelname: str = door.get_model(read_utd(resource.data()), self._installation)
-                    self._extracted_from_onResourceSelected_19(modelname)
+                    self.setRendererModelName(modelname)
                 elif resource.restype() is ResourceType.UTP and self.globalSettings.showPreviewUTP:
                     modelname: str = placeable.get_model(read_utp(resource.data()), self._installation)
-                    self._extracted_from_onResourceSelected_19(modelname)
+                    self.setRendererModelName(modelname)
                 elif (
                     resource.restype() in (ResourceType.MDL, ResourceType.MDX)
                     and any((
@@ -315,8 +315,7 @@ class InsertInstanceDialog(QDialog):
                     else:
                         self.ui.previewRenderer.clearModel()
 
-    # TODO Rename this here and in `_update_model` and `onResourceSelected`
-    def _extracted_from_onResourceSelected_19(self, modelname):
+    def setRendererModelName(self, modelname):
         mdl: ResourceResult | None = self._installation.resource(
             modelname, ResourceType.MDL
         )
