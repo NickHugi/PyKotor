@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite errors="1" failures="0" hostname="fv-az1457-68" name="pytest" skipped="0" tests="1" time="0.094" timestamp="2024-07-22T05:14:27.644523"><testcase classname="" name="" time="0.000"><error message="collection failure">E     File "D:\a\PyKotor\PyKotor\Libraries\PyKotor\src\pykotor\extract\installation.py", line 1248
+        def location(self, file: os.PathLike | str, order: list[SearchLocation] | None = None, /, *, capsules: list[Capsule] | None = None, folders: list[Path] | None = None) -&gt; list[LocationResult]: ...
+                                                                                               ^
+    SyntaxError: invalid syntax</error></testcase></testsuite></testsuites>
