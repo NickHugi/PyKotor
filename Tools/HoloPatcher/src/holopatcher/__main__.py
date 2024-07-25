@@ -58,25 +58,26 @@ if not is_frozen():
         update_sys_path(pathlib.Path(__file__).parents[1])
 
 
-from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer
-from pykotor.common.misc import Game
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
-from pykotor.tslpatcher.config import LogLevel
-from pykotor.tslpatcher.logger import LogType, PatchLogger
-from pykotor.tslpatcher.patcher import ModInstaller
-from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
-from pykotor.tslpatcher.uninstall import ModUninstaller
-from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
-from utility.misc import ProcessorArchitecture
-from utility.string_util import striprtf
-from utility.system.os_helper import terminate_main_process, win_get_system32_dir
-from utility.system.path import Path
-from utility.tkinter.tooltip import ToolTip
-from utility.tkinter.updater import TkProgressDialog
+from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
+from pykotor.common.misc import Game  # noqa: E402
+from pykotor.common.stream import BinaryReader  # noqa: E402
+from pykotor.extract.file import ResourceIdentifier  # noqa: E402
+from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default  # noqa: E402
+from pykotor.tslpatcher.config import LogLevel  # noqa: E402
+from pykotor.tslpatcher.logger import LogType, PatchLogger  # noqa: E402
+from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
+from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
+from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
+from utility.error_handling import universal_simplify_exception  # noqa: E402
+from utility.logger_util import RobustRootLogger  # noqa: E402
+from utility.misc import ProcessorArchitecture  # noqa: E402
+from utility.string_util import striprtf  # noqa: E402
+from utility.system.os_helper import win_get_system32_dir  # noqa: E402
+from utility.system.path import Path  # noqa: E402
+from utility.system.process import terminate_main_process  # noqa: E402
+from utility.tkinter.tooltip import ToolTip  # noqa: E402
+from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
 if TYPE_CHECKING:
     from argparse import Namespace

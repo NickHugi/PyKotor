@@ -80,8 +80,9 @@ from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.logger_util import RobustRootLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
-from utility.system.os_helper import get_app_dir, terminate_main_process, win_get_system32_dir  # noqa: E402
+from utility.system.os_helper import get_app_dir, win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
+from utility.system.process import terminate_main_process  # noqa: E402
 from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
 if TYPE_CHECKING:

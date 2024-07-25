@@ -124,7 +124,7 @@ def qt_cleanup():
     """Cleanup so we can exit."""
     from toolset.utils.window import WINDOWS
     from utility.logger_util import RobustRootLogger
-    from utility.system.os_helper import terminate_child_processes
+    from utility.system.process import terminate_child_processes
 
     RobustRootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
     for window in WINDOWS:
@@ -143,7 +143,7 @@ def qt_cleanup():
 def last_resort_cleanup():
     """Prevents the toolset from running in the background after sys.exit is called..."""
     from utility.logger_util import RobustRootLogger
-    from utility.system.os_helper import gracefully_shutdown_threads, start_shutdown_process
+    from utility.system.process import gracefully_shutdown_threads, start_shutdown_process
 
     RobustRootLogger().info("Fully shutting down Holocron Toolset...")
     # kill_self_pid()

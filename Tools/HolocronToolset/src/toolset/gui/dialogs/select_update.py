@@ -23,7 +23,7 @@ from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_t
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from utility.logger_util import RobustRootLogger
 from utility.misc import ProcessorArchitecture
-from utility.system.os_helper import terminate_child_processes
+from utility.system.process import terminate_child_processes
 from utility.updater.github import GithubRelease
 from utility.updater.update import AppUpdate
 
