@@ -718,31 +718,40 @@ class Installation:
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
         self._streamsounds = self.load_resources_list(self.streamsounds_path())
 
-    def load_streamwaves(
-        self,
-    ):
-        """Reloads the list of resources in the streamwaves folder linked to the Installation."""
+    def _quicker_load_resources(self, folder_path: Path) -> list[FileResource]:
+        """Load resources from the given folder path."""
         files: list[FileResource] = []
-        fp = self._find_resource_folderpath(("streamwaves", "streamvoice"))
-        if not fp.safe_isdir():
-            return
-        stack: list[str] = [str(fp)]
+        try:
+            if not folder_path.safe_isdir():
+                return files
+            stack: list[str] = [str(folder_path)]
+            install_path_str = str(self.path())
 
-        while stack:
-            current_dir = stack.pop()
-            with os.scandir(current_dir) as it:
-                for entry in it:
-                    if entry.is_file():
-                        files.append(FileResource.from_path(entry.path))
-                    elif entry.is_dir():
-                        stack.append(entry.path)
-        self._streamwaves = files
+            while stack:
+                current_dir = stack.pop()
+                with os.scandir(current_dir) as it:
+                    for entry in it:
+                        if entry.is_file():
+                            try:
+                                if self.progress_callback:
+                                    relpath = entry.path[len(install_path_str):].strip("\\").strip("/")
+                                    self.progress_callback(f"Loading '{relpath}'...", "update_subtask_text")
+                                files.append(FileResource.from_path(entry.path))
+                            except Exception:  # noqa: BLE001
+                                self._log.exception("Error loading resource:", entry.path)
+                        elif entry.is_dir():
+                            stack.append(entry.path)
+        except Exception:  # noqa: BLE001
+            self._log.exception("Error loading resources from folder:", folder_path)
+        return files
 
-    def load_streamvoice(
-        self,
-    ):
+    def load_streamwaves(self):
+        """Reloads the list of resources in the streamwaves folder linked to the Installation."""
+        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")))
+
+    def load_streamvoice(self):
         """Reloads the list of resources in the streamvoice folder linked to the Installation."""
-        self._streamwaves = self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")), recurse=True)
+        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")))
 
     # endregion
 
