@@ -119,9 +119,9 @@ ASPECT_RATIO_TO_RESOLUTION = {
 
 
 def log(message: str):
-    global PARSER_ARGS
+    global PARSER_ARGS  # noqa: PLW0602
     assert PARSER_ARGS is not None
-    global LOGGING_ENABLED
+    global LOGGING_ENABLED  # noqa: PLW0602
     """Function to log messages both on console and to a file if logging is enabled."""
     print(message)
     if LOGGING_ENABLED:
@@ -166,8 +166,12 @@ def resize_extent_by_factor(
     extent_struct.set_int32("LEFT", int(extent_struct.get_int32("LEFT") * width_scale_factor))
     extent_struct.set_int32("WIDTH", int(extent_struct.get_int32("WIDTH") * width_scale_factor))
 
-def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath, resolutions: list[tuple[int, int]]):
-    global PARSER_ARGS
+def process_file(
+    gui_file: CaseAwarePath,
+    output_dir: CaseAwarePath,
+    resolutions: list[tuple[int, int]],
+):
+    global PARSER_ARGS  # noqa: PLW0602
     assert PARSER_ARGS is not None
     if gui_file.suffix.lower() != ".gui":
         print(f"Invalid GUI file: '{gui_file}'")
@@ -183,21 +187,19 @@ def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath, resolutions
     if PARSER_ARGS.resolution.upper() == "ALL":
         for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
             aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
-            aspect_ratio_dir.mkdir(exist_ok=True, parents=True)
-            log(f"Created directory for aspect ratio {aspect_ratio} at {aspect_ratio_dir}")
 
             for width, height in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
                 adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-                output_filename = f"{width}x{height}.gui"
-                output_path: CaseAwarePath = aspect_ratio_dir / output_filename
-                output_path.touch(exist_ok=True)
+                output_path: CaseAwarePath = aspect_ratio_dir / f"{width}x{height}" / gui_file.name
+                output_path.parent.mkdir(exist_ok=True, parents=True)
+                log(f"Created directory for aspect ratio {aspect_ratio} at {output_path}")
                 write_gff(adjusted_gui_data, output_path)
                 log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
     else:
         for width, height in resolutions:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-            output_filename = gui_file.name
-            output_path: CaseAwarePath = output_dir / output_filename
+            output_folder = gui_file.name
+            output_path: CaseAwarePath = output_dir / output_folder
             output_path.touch(exist_ok=True)
             write_gff(adjusted_gui_data, output_path)
             log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
@@ -205,8 +207,8 @@ def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath, resolutions
 
 def main():
     global LOGGING_ENABLED  # noqa: PLW0602
-    global PARSER_ARGS
-    global TEST_MODE
+    global PARSER_ARGS  # noqa: PLW0602, PLW0603
+    global TEST_MODE  # noqa: PLW0602
 
     if TEST_MODE:
         PARSER_ARGS = argparse.Namespace(
@@ -238,8 +240,7 @@ def main():
 
     elif input_path.safe_isdir():
         for gui_file in input_path.safe_rglob("*.gui"):
-            relative_path = gui_file.relative_to(input_path)
-            new_output_dir: CaseAwarePath = PARSER_ARGS.output / relative_path.parent
+            new_output_dir: CaseAwarePath = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
             new_output_dir.mkdir(parents=True, exist_ok=True)
             process_file(gui_file, new_output_dir, resolutions_to_process)
 
@@ -298,9 +299,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
         parser.print_help()
         result.output = None
     while True:
-        result.resolution = result.resolution or input(
-            "Resolution (e.g., 1920x1080) or 'ALL': "
-        )
+        result.resolution = result.resolution or input("Resolution (e.g., 1920x1080) or 'ALL': ")
         if result.resolution.upper() == "ALL":
             break
         try:
