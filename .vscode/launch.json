@@ -25,10 +25,6 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "pythonArgs": [
-                "-Xfrozen_modules=off",
-                "-Xdev"
-            ],
             "justMyCode": true,
         },
         {
