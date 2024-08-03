@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class FileSystemNode:
-    def __init__(self, name: str, parent: "FileSystemNode" | None = None,
+    def __init__(self, name: str, parent: FileSystemNode | None = None,
                  is_dir: bool = False, size: str = "", ftype: str = "",
                  date_modified: str = "", path: str = ""):
         self.name = name
@@ -23,7 +23,7 @@ class FileSystemNode:
         self.path = path
         self.icon = "folder.png" if is_dir else "file.png"
 
-    def addChild(self, child: 'FileSystemNode'):
+    def addChild(self, child: FileSystemNode):
         child.parent = self
         self.children.append(child)
 

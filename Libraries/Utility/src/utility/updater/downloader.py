@@ -290,7 +290,7 @@ class FileDownloader:
         if total is None:
             return "-.-%"
         percent = float(received) / total * 100
-        return "%.1f" % percent
+        return f"{percent:.1f}"
 
 
 

@@ -356,7 +356,7 @@ class Module:  # noqa: PLR0904
 
     def get_capsules(self) -> list[ModulePieceResource]:
         """Returns all relevant ERFs/RIMs for this module."""
-        return list(self._capsules.values())  # type: ignore[]
+        return list(self._capsules.values())  # pyright: ignore[reportReturnType]
 
     def root_name(self) -> str:
         return self._root
@@ -364,8 +364,8 @@ class Module:  # noqa: PLR0904
     def lookup_main_capsule(
         self,
     ) -> ModuleFullOverridePiece | ModuleLinkPiece:
-        mod_capsule = self._capsules[KModuleType.MOD.name] if self.dot_mod else None
-        relevant_capsule: ModuleFullOverridePiece | ModuleLinkPiece | None = mod_capsule or self._capsules[KModuleType.MAIN.name]
+        mod_capsule = self._capsules[KModuleType.MOD.name] if self.dot_mod else None  # pyright: ignore[reportTypedDictNotRequiredAccess]
+        relevant_capsule: ModuleFullOverridePiece | ModuleLinkPiece | None = mod_capsule or self._capsules[KModuleType.MAIN.name]  # pyright: ignore[reportTypedDictNotRequiredAccess]
         assert relevant_capsule is not None
         return relevant_capsule
 
@@ -373,9 +373,9 @@ class Module:  # noqa: PLR0904
         self,
     ) -> ModuleFullOverridePiece | ModuleDataPiece:
         relevant_capsule: ModuleFullOverridePiece | ModuleDataPiece | None = (
-            self._capsules[KModuleType.MOD.name]
-            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None
-            else self._capsules[KModuleType.DATA.name]
+            self._capsules[KModuleType.MOD.name]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            else self._capsules[KModuleType.DATA.name]  # pyright: ignore[reportTypedDictNotRequiredAccess]
         )
         assert relevant_capsule is not None
         return relevant_capsule
@@ -384,14 +384,14 @@ class Module:  # noqa: PLR0904
         self,
     ) -> ModuleFullOverridePiece | ModuleDLGPiece:
         relevant_capsule: ModuleDataPiece | ModuleDLGPiece | None = (
-            self._capsules[KModuleType.MOD.name]
-            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None
-            else (self._capsules[KModuleType.K2_DLG.name] if self._installation.game().is_k2() else self._capsules[KModuleType.DATA.name])
+            self._capsules[KModuleType.MOD.name]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            else (self._capsules[KModuleType.K2_DLG.name] if self._installation.game().is_k2() else self._capsules[KModuleType.DATA.name])  # pyright: ignore[reportTypedDictNotRequiredAccess]
         )
         assert relevant_capsule is not None
-        return relevant_capsule
+        return relevant_capsule  # pyright: ignore[reportReturnType]
 
-    def module_id(self) -> ResRef:
+    def module_id(self) -> ResRef | None:
         if self._cached_mod_id is not None:
             return self._cached_mod_id
         data_capsule = self.lookup_main_capsule()
@@ -444,7 +444,7 @@ class Module:  # noqa: PLR0904
         """
         display_name = f"{self._root}.mod" if self.dot_mod else f"{self._root}.rim"
         RobustRootLogger().info("Loading module resources needed for '%s'", display_name)
-        mod_capsule = self._capsules[KModuleType.MOD.name]
+        mod_capsule = self._capsules[KModuleType.MOD.name]  # pyright: ignore[reportTypedDictNotRequiredAccess]
         capsules_to_search = [self.lookup_main_capsule()] if mod_capsule is None else [mod_capsule]
         # Lookup the GIT and LYT first.
         order = [
@@ -588,14 +588,11 @@ class Module:  # noqa: PLR0904
         if not main_search_results.get(query):
             if useable_type == VIS:
                 return set()  # make vis optional I guess
-            raise FileNotFoundError(
-                errno.ENOENT,
-                os.strerror(errno.ENOENT),
-                self.lookup_main_capsule().filepath() / str(query),
-            )
+            raise FileNotFoundError(errno.ENOENT,
+                                    os.strerror(errno.ENOENT),
+                                    self.lookup_main_capsule().filepath() / str(query))
         original_git_or_lyt = self.add_locations(
-            query.resname,
-            query.restype,
+            query.resname, query.restype,
             (loc.filepath for loc in main_search_results[query]),
         )
         # Activate each GIT/LYT location for this module, and fill this module with all of their resources (all of the resources their instances point to).
@@ -666,10 +663,7 @@ class Module:  # noqa: PLR0904
             ModuleResource | None: The resource with the given name and type, or None if it does not exist.
         """
         ident = ResourceIdentifier(resname, restype)
-        resource = self.resources.get(ident, None)
-        #if resource is None:
-        #    get_root_logger().warning("pykotor.common.module Module resource not found: '%s'", ident)
-        return resource
+        return self.resources.get(ident, None)
 
     def layout(self) -> ModuleResource[LYT] | None:
         """Returns the LYT layout resource with a matching ID if it exists.
