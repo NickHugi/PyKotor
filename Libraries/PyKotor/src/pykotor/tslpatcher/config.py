@@ -154,7 +154,7 @@ class PatcherConfig:
                 nested_modifiers = self.get_nested_gff_patches(gff_modifier)
 
                 # nested modifiers will reference the item from the flattened list.
-                gff_modifier.modifiers = nested_modifiers  # type: ignore[reportAttributeAccessIssue]
+                gff_modifier.modifiers = nested_modifiers  # pyright: ignore[reportAttributeAccessIssue]
                 flattened_gff_patches.extend(nested_modifiers)
         return flattened_gff_patches
 

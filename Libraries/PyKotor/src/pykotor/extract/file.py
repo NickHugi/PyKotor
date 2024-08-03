@@ -382,8 +382,8 @@ class ResourceIdentifier:
 
     resname: str
     restype: ResourceType
-    _cached_filename_str: str = field(default=None, init=False, repr=False)  # type: ignore[reportArgumentType]
-    _lower_resname_str: str = field(default=None, init=False, repr=False)  # type: ignore[reportArgumentType]
+    _cached_filename_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]
+    _lower_resname_str: str = field(default=None, init=False, repr=False)  # pyright: ignore[reportArgumentType]
 
     def __post_init__(self):
         # Workaround to initialize a field in a frozen dataclass

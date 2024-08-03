@@ -199,7 +199,7 @@ class TPCTGAReader(ResourceReader):
         # Use Pillow to handle the TGA file
         #print("Loading with pillow")
 
-        with Image.open(io.BytesIO(self._reader._stream) if isinstance(self._reader._stream, mmap.mmap) else self._reader._stream) as img:  # type: ignore[reportArgumentType]
+        with Image.open(io.BytesIO(self._reader._stream) if isinstance(self._reader._stream, mmap.mmap) else self._reader._stream) as img:  # pyright: ignore[reportArgumentType]
 
             # Determine the appropriate texture format based on the image mode
             if img.mode == "L":

@@ -107,7 +107,7 @@ def _setup_and_profile_installation() -> dict[Game, Installation]:
 
     ALL_INSTALLATIONS = {}
 
-    profiler: cProfile.Profile = True  # type: ignore[reportAssignmentType, assignment]
+    profiler: cProfile.Profile = True  # pyright: ignore[reportAssignmentType, assignment]
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()

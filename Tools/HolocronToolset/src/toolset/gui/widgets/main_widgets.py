@@ -513,7 +513,7 @@ class ResourceModel(QStandardItemModel):
         self,
         items: list[QStandardItem],
     ) -> list[FileResource]:
-        return [item.resource for item in items if hasattr(item, "resource")]  # type: ignore[reportAttributeAccessIssue]
+        return [item.resource for item in items if hasattr(item, "resource")]  # pyright: ignore[reportAttributeAccessIssue]
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""

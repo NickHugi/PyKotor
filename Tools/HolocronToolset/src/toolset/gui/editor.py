@@ -929,7 +929,7 @@ class Editor(QMainWindow):
             - Refresh window title
             - Emit loadedFile signal with load details.
         """
-        self._filepath = Path.pathify(filepath)  # type: ignore[reportGeneralTypeIssues]
+        self._filepath = Path.pathify(filepath)  # pyright: ignore[reportGeneralTypeIssues]
         self._resname = resref
         self._restype = restype
         self._revert = data
@@ -982,7 +982,7 @@ class Editor(QMainWindow):
         setText: Callable[[str], None] = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
         className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
 
-        textbox.locstring = locstring  # type: ignore[reportAttributeAccessIssue]
+        textbox.locstring = locstring  # pyright: ignore[reportAttributeAccessIssue]
         theme = GlobalSettings().selectedTheme
         if locstring.stringref == -1:
             text = str(locstring)
@@ -1039,7 +1039,7 @@ class Editor(QMainWindow):
         tempFile.close()
 
         player: PyQt6MediaPlayer | PySide6MediaPlayer = cast(Any, self.mediaPlayer.player)
-        audioOutput = QAudioOutput(self)  # type: ignore[reportCallIssue]
+        audioOutput = QAudioOutput(self)  # pyright: ignore[reportCallIssue]
         player.setAudioOutput(audioOutput)  # type: ignore[attr-name]
         player.setSource(QUrl.fromLocalFile(tempFile.name))  # type: ignore[attr-name]
         audioOutput.setVolume(1)  # IMPORTANT!! volume starts off at 0% otherwise.

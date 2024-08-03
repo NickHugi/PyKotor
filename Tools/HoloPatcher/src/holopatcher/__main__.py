@@ -798,7 +798,7 @@ class App:
                                 self.logger.add_note(f"Renaming {str_dir_path} to '{new_dir_path.name}'")
                                 dir_path.rename(str_new_dir_path)
                                 made_change = True
-                    Path(directory).rename(Path._fix_path_formatting(str(directory).lower()))
+                    Path(directory).rename(Path.str_norm(str(directory).lower()))
                 except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
                 finally:
@@ -1108,7 +1108,7 @@ class App:
             - If access cannot be gained, show error
             - If no access after trying, prompt user to continue with an install anyway.
         """
-        filter_results: Callable[[Path], bool] | None = None  # type: ignore[reportGeneralTypeIssues]
+        filter_results: Callable[[Path], bool] | None = None  # pyright: ignore[reportGeneralTypeIssues]
         if should_filter:
 
             def filter_results(x: Path) -> bool:

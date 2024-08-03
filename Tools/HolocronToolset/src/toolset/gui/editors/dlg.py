@@ -875,7 +875,7 @@ class DLGStandardItemModel(QStandardItemModel):
     #modelAboutToBeReset: ClassVar[QtCore.Signal] = QtCore.Signal()  # No parameters
 
     # Custom for this model.
-    coreDLGItemDataChanged: ClassVar[QtCore.Signal] = QtCore.Signal(QStandardItem)  # type: ignore[reportPrivateImportUsage]
+    coreDLGItemDataChanged: ClassVar[QtCore.Signal] = QtCore.Signal(QStandardItem)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: DLGTreeView):
         assert isinstance(parent, DLGTreeView)

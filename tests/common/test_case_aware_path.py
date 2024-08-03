@@ -36,7 +36,7 @@ class TestCaseAwarePath(unittest.TestCase):
             CaseAwarePath("/path/to/dir")
         except Exception as e:
             self.fail(f"Unexpected exception raised: {e}")
-        
+
 
     def test_hashing(self):
         path1 = CaseAwarePath("test\\path\\to\\nothing")
@@ -104,12 +104,12 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertTrue(file_path.is_relative_to(folder_path))
 
     def test_fix_path_formatting(self):
-        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", slash="\\"), "C:\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", slash="/"), "C:/path/to/dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="\\"), "\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", slash="/"), "/path/to/dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
-        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", slash="/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath.str_norm("C:/path//to/dir/", slash="\\"), "C:\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath.str_norm("C:/path//to/dir/", slash="/"), "C:/path/to/dir")
+        self.assertEqual(CaseAwarePath.str_norm("\\path//to/dir/", slash="\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath.str_norm("\\path//to/dir/", slash="/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath.str_norm("/path//to/dir/", slash="\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath.str_norm("/path//to/dir/", slash="/"), "/path/to/dir")
 
 
 class TestSplitFilename(unittest.TestCase):

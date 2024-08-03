@@ -27,29 +27,29 @@ if TYPE_CHECKING:
 
 
 class ModuleRenderer(QOpenGLWidget):
-    rendererInitialized = QtCore.Signal()
+    rendererInitialized = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when the context is being setup, the QMainWindow must be in an activated/unhidden state."""
 
-    sceneInitialized = QtCore.Signal()
+    sceneInitialized = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when scene has been initialized."""
 
-    mouseMoved = QtCore.Signal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys  # pyright: ignore[reportPrivateImportUsage]  # noqa: E501
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyboardPressed = QtCore.Signal(object, object)  # mouse, keys
+    keyboardPressed = QtCore.Signal(object, object)  # mouse, keys  # pyright: ignore[reportPrivateImportUsage]
 
-    keyboardReleased = QtCore.Signal(object, object)  # mouse, keys
+    keyboardReleased = QtCore.Signal(object, object)  # mouse, keys  # pyright: ignore[reportPrivateImportUsage]
 
-    objectSelected = QtCore.Signal(object)
+    objectSelected = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when an object has been selected through the renderer."""
 
     def __init__(self, parent: QWidget):
@@ -91,11 +91,14 @@ class ModuleRenderer(QOpenGLWidget):
     @property
     def scene(self) -> Scene:
         if self._scene is None:
-            if QThread.currentThread() == QApplication.instance().thread():
+            instance = QApplication.instance()
+            assert instance is not None
+            if QThread.currentThread() == instance.thread():
                 self.showSceneNotReadyMessage()
             else:
                 QMetaObject.invokeMethod(self, "showSceneNotReadyMessage", Qt.QueuedConnection)
             raise ValueError("Scene is not initialized.")
+        assert self._scene is not None
         return self._scene
 
     def showSceneNotReadyMessage(self):
@@ -175,7 +178,8 @@ class ModuleRenderer(QOpenGLWidget):
             glContext.doneCurrent()  # Ensure the context is not current
             self.update()  # Trigger an update which will indirectly handle context recreation when needed
 
-        self.hide()  # Optionally hide the widget to reset its state
+        self.hide()
+        self._scene = None
 
     def paintGL(self):
         """Renders the scene and handles object selection.
@@ -357,7 +361,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        RobustRootLogger.debug("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        print("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
     def wheelEvent(self, e: QWheelEvent | None):
         super().wheelEvent(e)

@@ -115,7 +115,7 @@ def save_profiler_output(
 
 
 if __name__ == "__main__":
-    profiler: cProfile.Profile = True  # type: ignore[reportAssignmentType, assignment]
+    profiler: cProfile.Profile = True  # pyright: ignore[reportAssignmentType, assignment]
     if profiler:
         profiler = cProfile.Profile()
         profiler.enable()

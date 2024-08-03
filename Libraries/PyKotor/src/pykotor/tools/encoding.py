@@ -72,7 +72,7 @@ def decode_bytes_with_fallbacks(
                 return byte_content.decode(provided_encoding, errors=attempt_errors)
 
         # Detect encoding using charset_normalizer
-        detected_encodings = detected_encodings or charset_normalizer.from_bytes(byte_content)  # type: ignore[reportOptionalMemberAccess]
+        detected_encodings = detected_encodings or charset_normalizer.from_bytes(byte_content)  # pyright: ignore[reportOptionalMemberAccess]
 
         # Filter the charset-normalizer results to encodings with a maximum of 256 characters
         if only_8bit_encodings:

@@ -187,7 +187,7 @@ class ModulePieceResource(Capsule):
                 new_cls = ModuleDLGPiece
             elif piece_info.modtype is KModuleType.MOD:
                 new_cls = ModuleFullOverridePiece
-        return object.__new__(new_cls)  # type: ignore[reportArgumentType]
+        return object.__new__(new_cls)  # pyright: ignore[reportArgumentType]
 
     def __init__(
         self,
@@ -336,7 +336,7 @@ class Module:  # noqa: PLR0904
             KModuleType.K2_DLG.name: None,
             KModuleType.MOD.name: None,
         }
-        module_path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
+        module_path: Installation | Path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
             mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
             if mod_filepath.safe_isfile():
@@ -351,7 +351,7 @@ class Module:  # noqa: PLR0904
             capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
             if not isinstance(install_or_path, Installation) or install_or_path.game().is_k2():
                 capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
-        return [capsule for capsule in capsules.values() if capsule is not None]  # type: ignore[reportReturnType]
+        return [capsule for capsule in capsules.values() if capsule is not None]  # pyright: ignore[reportReturnType]
 
 
     def get_capsules(self) -> list[ModulePieceResource]:
@@ -364,11 +364,8 @@ class Module:  # noqa: PLR0904
     def lookup_main_capsule(
         self,
     ) -> ModuleFullOverridePiece | ModuleLinkPiece:
-        relevant_capsule: ModuleFullOverridePiece | ModuleLinkPiece | None = (
-            self._capsules[KModuleType.MOD.name]
-            if self.dot_mod and self._capsules[KModuleType.MOD.name] is not None
-            else self._capsules[KModuleType.MAIN.name]
-        )
+        mod_capsule = self._capsules[KModuleType.MOD.name] if self.dot_mod else None
+        relevant_capsule: ModuleFullOverridePiece | ModuleLinkPiece | None = mod_capsule or self._capsules[KModuleType.MAIN.name]
         assert relevant_capsule is not None
         return relevant_capsule
 

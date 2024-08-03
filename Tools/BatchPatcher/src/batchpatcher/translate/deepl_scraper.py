@@ -165,4 +165,4 @@ def deepl_tr(
         print("Content get!")
 
         # remove possible attached suffix
-        return re.sub(r"[\d]+_$", "", content.strip()).strip()  # type: ignore[reportOptionalMemberAccess]
+        return re.sub(r"[\d]+_$", "", content.strip()).strip()  # pyright: ignore[reportOptionalMemberAccess]

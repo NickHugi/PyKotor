@@ -30,7 +30,7 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
 
     # Define a new closeEvent method that also calls the original
     def newCloseEvent(
-        event: QCloseEvent | None = unique_sentinel,  # type: ignore[reportArgumentType]
+        event: QCloseEvent | None = unique_sentinel,  # pyright: ignore[reportArgumentType]
         *args,
         **kwargs,
     ):
@@ -43,10 +43,10 @@ def addWindow(window: QWidget | QDialog | QMainWindow, *, show: bool = True):
         if event is unique_sentinel:  # Make event arg optional just in case the class has the wrong definition.
             original_closeEvent(*args, **kwargs)
         else:
-            original_closeEvent(event, *args, **kwargs)  # type: ignore[reportArgumentType]
+            original_closeEvent(event, *args, **kwargs)  # pyright: ignore[reportArgumentType]
 
     # Override the widget's closeEvent with the new one
-    window.closeEvent = newCloseEvent  # type: ignore[reportAttributeAccessIssue]
+    window.closeEvent = newCloseEvent  # pyright: ignore[reportAttributeAccessIssue]
 
     # Add the window to the global list and show it
     WINDOWS.append(window)

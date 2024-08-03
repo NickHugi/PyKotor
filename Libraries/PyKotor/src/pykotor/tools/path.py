@@ -6,7 +6,7 @@ import platform
 import tempfile
 
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pykotor.tools.registry import find_software_key, winreg_key
 from utility.string_util import ireplace
@@ -16,10 +16,10 @@ from utility.system.path import (
     PurePath as InternalPurePath,
     WindowsPath as InternalWindowsPath,
 )
-from utility.system.registry import resolve_reg_key_to_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+    from typing import Any, ClassVar
 
     from pykotor.common.misc import Game
     from utility.system.path import PathElem
@@ -42,7 +42,7 @@ def is_filesystem_case_sensitive(path: os.PathLike | str) -> bool | None:
         return None
 
 
-def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]:
+def simple_wrapper(fn_name: str, wrapped_class_type: type[CaseAwarePath]) -> Callable[..., Any]:
     """Wraps a function to handle case-sensitive pathlib.PurePath arguments.
 
     This is a hacky way of ensuring that all args to any pathlib methods have their path case-sensitively resolved.
@@ -101,16 +101,11 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
                     return instance
             return arg
 
-        # Parse `self` if it meets the condition
         actual_self_or_cls: CaseAwarePath | type = parse_arg(self)
-
-        # Handle positional arguments
         new_args: tuple[CaseAwarePath | Any, ...] = tuple(parse_arg(arg) for arg in args)
-
-        # Handle keyword arguments
         new_kwargs: dict[str, CaseAwarePath | Any] = {k: parse_arg(v) for k, v in kwargs.items()}
 
-        # TODO: when orig_fn doesn't exist, the AttributeException should be raised by
+        # TODO(th3w1zard1): when orig_fn doesn't exist, the AttributeException should be raised by
         # the prior stack instead of here, as that's what would normally happen.
 
         return orig_fn(actual_self_or_cls, *new_args, **new_kwargs)
@@ -118,7 +113,7 @@ def simple_wrapper(fn_name: str, wrapped_class_type: type) -> Callable[..., Any]
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls: type):  # TODO(th3w1zard1): move into CaseAwarePath.__getattr__
+def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
     # Create a dictionary that'll hold the original methods for this class
     """Wraps methods of a pathlib class to be case insensitive.
 
@@ -135,10 +130,8 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO(th3w1zard1): move 
         5. Check if method and not wrapped before
         6. Add method to wrapped dictionary and reassign with wrapper.
     """
-    cls._original_methods = {}  # type: ignore[attr-defined]
     mro: list[type] = cls.mro()  # Gets the method resolution order
     parent_classes: list[type] = mro[1:-1]  # Exclude the current class itself and the object class
-    cls_methods: set[str] = {method for method in cls.__dict__ if callable(getattr(cls, method))}  # define names of methods in the cls, excluding inherited
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
@@ -158,7 +151,6 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO(th3w1zard1): move 
         "_init",
         "__new__",
         "pathify",
-        *cls_methods,
     }
 
     for parent in parent_classes:
@@ -170,11 +162,12 @@ def create_case_insensitive_pathlib_class(cls: type):  # TODO(th3w1zard1): move 
                 wrapped_methods.add(attr_name)
 
 
-# TODO: Move to pykotor.common
+# TODO(th3w1zard1): Move to pykotor.common
 class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPath):  # type: ignore[misc]
     """A class capable of resolving case-sensitivity in a path. Absolutely essential for working with KOTOR files on Unix filesystems."""
 
-    __slots__ = ("_tail_cached",)
+    __slots__: tuple[str] = ("_tail_cached",)
+    _original_methods: ClassVar[dict[str, Callable[..., Any]]] = {}
 
     @staticmethod
     def extract_absolute_prefix(relative_path: InternalPath, absolute_path: InternalPath) -> tuple[str, ...]:
@@ -337,7 +330,7 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         if isinstance(other, CaseAwarePath):
             return self.as_posix().lower() == other.as_posix().lower()
 
-        return self._fix_path_formatting(str(other), slash="/").lower() == self.as_posix().lower()
+        return self.str_norm(str(other), slash="/").lower() == self.as_posix().lower()
 
     def __repr__(self):
         str_path = self._flavour.sep.join(str(part) for part in self.parts)
@@ -356,7 +349,7 @@ if os.name != "nt":  # Wrapping is unnecessary on Windows
     create_case_insensitive_pathlib_class(CaseAwarePath)
 
 
-def get_default_paths() -> dict[str, dict[Game, list[str]]]:
+def get_default_paths() -> dict[str, dict[Game, list[str]]]:  # TODO(th3w1zard1): Many of these paths are incomplete and need community input.
     from pykotor.common.misc import Game  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
 
     return {
@@ -454,11 +447,20 @@ def find_kotor_paths_from_default() -> dict[Game, list[CaseAwarePath]]:
     # Build hardcoded default kotor locations
     raw_locations: dict[str, dict[Game, list[str]]] = get_default_paths()
     locations: dict[Game, set[CaseAwarePath]] = {
-        game: {case_path for case_path in (CaseAwarePath(path).expanduser().resolve() for path in paths) if case_path.safe_isdir()} for game, paths in raw_locations.get(os_str, {}).items()
+        game: {
+            case_path
+            for case_path in (
+                CaseAwarePath(path).expanduser().resolve()
+                for path in paths
+            )
+            if case_path.safe_isdir()
+        }
+        for game, paths in raw_locations.get(os_str, {}).items()
     }
 
     # Build kotor locations by registry (if on windows)
     if os_str == "Windows":
+        from utility.system.win32.registry import resolve_reg_key_to_path
         for game, possible_game_paths in ((Game.K1, winreg_key(Game.K1)), (Game.K2, winreg_key(Game.K2))):
             for reg_key, reg_valname in possible_game_paths:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)

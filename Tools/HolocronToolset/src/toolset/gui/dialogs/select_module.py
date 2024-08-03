@@ -87,7 +87,7 @@ class SelectModuleDialog(QDialog):
 
             item = QListWidgetItem(f"{moduleNames[module]}  [{lowerModuleFileName}]")
             item.setData(QtCore.Qt.ItemDataRole.UserRole, lowerModuleFileName)
-            self.ui.moduleList.addItem(item)  # type: ignore[reportCallIssue]
+            self.ui.moduleList.addItem(item)  # pyright: ignore[reportCallIssue]
 
     def browse(self):
         filepath, _ = QFileDialog.getOpenFileName(

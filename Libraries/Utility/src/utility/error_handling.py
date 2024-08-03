@@ -375,7 +375,7 @@ unique_sentinel = object()
 
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
-    return_type: type[RT] = unique_sentinel,  # type: ignore[reportGeneralTypeIssues, assignment]
+    return_type: type[RT] = unique_sentinel,  # pyright: ignore[reportGeneralTypeIssues, assignment]
     *,
     action: Literal["print", "stderr"] = "print",
     log: bool = True,

@@ -99,7 +99,7 @@ from utility.logger_util import RobustRootLogger
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from typing_extensions import Literal
+    from typing_extensions import Literal  # pyright: ignore[reportMissingModuleSource]
 
     from pykotor.common.module import Module, ModulePieceResource, ModuleResource
     from pykotor.extract.file import ResourceIdentifier, ResourceResult
@@ -324,15 +324,15 @@ class Scene:
     def module(self, value):
         self._module = value
 
-    def _getGit(self) -> GIT:
+    def _getGit(self) -> GIT | None:
         module_resource_git = self.module.git()
         return self._resource_from_module(module_resource_git, "' is missing a GIT.")
 
-    def _getLyt(self) -> LYT:
+    def _getLyt(self) -> LYT | None:
         layout_module_resource = self.module.layout()
         return self._resource_from_module(layout_module_resource, "' is missing a LYT.")
 
-    def _getIfo(self) -> IFO:
+    def _getIfo(self) -> IFO | None:
         info_module_resource = self.module.info()
         return self._resource_from_module(info_module_resource, "' is missing an IFO.")
 

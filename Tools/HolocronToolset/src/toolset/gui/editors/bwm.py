@@ -223,7 +223,7 @@ class BWMEditor(Editor):
     def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]):
         if not delta.y:
             return  # sometimes it'll be zero when holding middlemouse-down.
-        if QtCore.Qt.Key_Control in keys:  # type: ignore[reportGeneralTypeIssues, attr-defined]
+        if QtCore.Qt.Key_Control in keys:  # pyright: ignore[reportGeneralTypeIssues, attr-defined]
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoomFactor = calculate_zoom_strength(delta.y, sensSetting)
             self.ui.renderArea.camera.nudgeZoom(zoomFactor)
