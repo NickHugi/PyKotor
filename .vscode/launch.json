@@ -1,102 +1,103 @@
 {
-  "version": "0.2.0",
-  "preLaunchTask": "install_requirements",
-  "dependsOn": "install_requirements",
-  "configurations": [
-    {
-      "type": "bashdb",
-      "request": "launch",
-      "name": "Bash-Debug (current file)",
-      "cwd": "${workspaceFolder}",
-      "program": "${file}",
-      "args": []
-    },
-    {
-      "name": "PowerShell Launch Current File",
-      "type": "PowerShell",
-      "request": "launch",
-      "script": "${file}",
-      "cwd": "${fileDirname}"
-    },
-    {
-      "name": "Python: Current File",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal",
-      "pythonArgs": [
-        "-Xfrozen_modules=off",
-        "-Xdev"
-      ],
-      "justMyCode": true,
-    },
-    {
-      "name": "Debug Unit Test",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${file}",
-      "purpose": [
-        "debug-test"
-      ],
-      "justMyCode": true,
-    },
-    {
-      "name": "Run Holocron Toolset",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "toolset",
-      "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
-      "pythonArgs": [
-        "-Xfrozen_modules=off",
-        "-Xdev"
-      ],
-      "console": "integratedTerminal",
-      "justMyCode": true,
-      "autoReload": {
-        "enable": true,
-      },
-    },
-    {
-      "name": "Toolset: Compile UI",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/Tools/HolocronToolset/src/ui/convertui.py",
-      "console": "integratedTerminal",
-      "pythonArgs": [
-        "-Xfrozen_modules=off",
-        "-Xdev"
-      ],
-      "justMyCode": false,
-    },
-    {
-      "name": "Run HoloPatcher",
-      "type": "debugpy",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
-      "module": "holopatcher",
-      "console": "integratedTerminal",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"
-      },
-      "justMyCode": true,
-      "autoReload": {
-        "enable": true,
-      },
-    },
-    {
-      "name": "Run BatchPatcher",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "batchpatcher",
-      "cwd": "${workspaceFolder}/Tools/BatchPatcher/src/",
-      "console": "integratedTerminal",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"
-      },
-      "justMyCode": true,
-      "autoReload": {
-        "enable": true,
-      },
-    },
-  ]
+    "version": "0.2.0",
+    "preLaunchTask": "install_requirements",
+    "dependsOn": "install_requirements",
+    "configurations":
+    [
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "Bash-Debug (current file)",
+            "cwd": "${workspaceFolder}",
+            "program": "${file}",
+            "args": []
+        },
+        {
+            "name": "PowerShell Launch Current File",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "cwd": "${fileDirname}"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "pythonArgs": [
+                "-Xfrozen_modules=off",
+                "-Xdev"
+            ],
+            "justMyCode": true,
+        },
+        {
+            "name": "Debug Unit Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": [
+                "debug-test"
+            ],
+            "justMyCode": true,
+        },
+        {
+            "name": "Run Holocron Toolset",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "toolset",
+            "cwd": "${workspaceFolder}/Tools/HolocronToolset/src/",
+            "pythonArgs": [
+                "-Xfrozen_modules=off",
+                "-Xdev"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "autoReload": {
+                "enable": true,
+            },
+        },
+        {
+            "name": "Toolset: Compile UI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Tools/HolocronToolset/src/ui/convertui.py",
+            "console": "integratedTerminal",
+            "pythonArgs": [
+                "-Xfrozen_modules=off",
+                "-Xdev"
+            ],
+            "justMyCode": false,
+        },
+        {
+            "name": "Run HoloPatcher",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/Tools/HoloPatcher/src/",
+            "module": "holopatcher",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"
+            },
+            "justMyCode": true,
+            "autoReload": {
+                "enable": true,
+            },
+        },
+        {
+            "name": "Run BatchPatcher",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "batchpatcher",
+            "cwd": "${workspaceFolder}/Tools/BatchPatcher/src/",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/Libraries/PyKotor/src;${workspaceFolder}/Libraries/Utility/src;${env:PYTHONPATH}"
+            },
+            "justMyCode": true,
+            "autoReload": {
+                "enable": true,
+            },
+        },
+    ]
 }
