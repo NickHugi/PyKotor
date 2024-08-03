@@ -19,4 +19,3 @@ pytest-html
 types-Pillow
 types-Send2Trash
 send2trash
-types-pywin32
