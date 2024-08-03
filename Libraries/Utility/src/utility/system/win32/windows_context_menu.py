@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Protocol, cast, runtime_checkable
 import comtypes  # pyright: ignore[reportMissingTypeStubs]
 import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
 
-from utility.system.win32.hwnd import RobustInvisibleWindow, SimplePyHWND
+from utility.system.win32.hwnd import SimplePyHWND
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Sequence
@@ -128,7 +128,7 @@ def show_context_menu(context_menu: CDispatch | ShellFolderItemVerbs, hwnd: int 
             AppendMenu(hmenu, MF_STRING, i + 1, verb.Name)
     pt: _Vector2 = get_cursor_pos(GetCursorPos, use_pywin32=pywin32_available)
     with ExitStack() as stack:
-        hwnd = stack.enter_context(RobustInvisibleWindow()) if hwnd is None else hwnd
+        hwnd = stack.enter_context(SimplePyHWND()) if hwnd is None else hwnd
         cmd = TrackPopupMenu(hmenu, TPM_LEFTALIGN | TPM_RETURNCMD,
                              pt.x, pt.y, 0, hwnd, None)
     if not isinstance(cmd, int):
