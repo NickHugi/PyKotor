@@ -34,8 +34,6 @@ from toga.style import Pack
 from travertino.constants import CENTER, COLUMN, ROW
 from travertino.declaration import BaseStyle
 
-from utility.string_util import striprtf
-
 
 def is_frozen() -> bool:
     return (
@@ -53,11 +51,11 @@ if not is_frozen():
             sys.path.append(working_dir)
 
     with suppress(Exception):
-        pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+        pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
         if pykotor_path.exists():
             update_sys_path(pykotor_path.parent)
     with suppress(Exception):
-        utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+        utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src" / "utility"
         if utility_path.exists():
             update_sys_path(utility_path.parent)
     with suppress(Exception):
@@ -80,6 +78,7 @@ from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.logger_util import RobustRootLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
+from utility.string_util import striprtf  # noqa: E402
 from utility.system.os_helper import get_app_dir, win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 from utility.system.process import terminate_main_process  # noqa: E402
@@ -681,7 +680,7 @@ class HoloPatcher(toga.App):
         reset_namespace: bool = False,
     ):
         if not directory:
-            directory = self.run_async_from_sync(self.main_window.select_folder_dialog("Select target directory"))
+            directory = self.run_async_from_sync(self.main_window.open_file_dialog("Select target directory"))
             if directory is None:
                 return  # User cancelled the dialog
 
@@ -850,7 +849,7 @@ class HoloPatcher(toga.App):
         try:
             if directory_path_str is None:
                 async def select_folder() -> Dialog:
-                    return await self.main_window.select_folder_dialog("Select the mod directory (where tslpatchdata lives)")
+                    return await self.main_window.open_file_dialog("Select the mod directory (where tslpatchdata lives)")
                 self.run_later(
                     select_folder(),
                     lambda folder, exc: self.open_mod("" if folder is None else folder, exc, startup=False),
@@ -1655,10 +1654,7 @@ def hp_exit_cleanup(app: HoloPatcher):
 
 
 def main():
-    app = HoloPatcher(
-        formal_name="HoloPatcher",
-        app_id="com.pykotor.holopatcher",
-    )
+    app = HoloPatcher(formal_name="HoloPatcher", app_id="com.pykotor.holopatcher")
     atexit.register(lambda: hp_exit_cleanup(app))
     app.main_loop()
 
