@@ -100,7 +100,7 @@ def HandleCOMCall(action_desc: str = "Unspecified COM function") -> Generator[Ca
     future_error_msg = f"An error has occurred in win32 COM function '{action_desc}'"
     try:
         # Yield back a callable function that will raise if hr is nonzero.
-        yield lambda hr: HRESULT(hr).raise_for_status(hr, future_error_msg)
+        yield lambda hr: HRESULT(hr).raise_for_status(hr, future_error_msg) and hr or hr
     except (COMError, OSError) as e:
         errcode = getattr(e, "winerror", getattr(e, "hresult", None))
         if errcode is None:

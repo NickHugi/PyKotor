@@ -3,7 +3,6 @@ from __future__ import annotations
 from ctypes import WINFUNCTYPE, c_int, c_wchar_p, windll
 from ctypes.wintypes import LPARAM, WPARAM
 
-# Define constants for the MessageBox function
 MB_OK = 0x0
 MB_OKCANCEL = 0x1
 MB_ABORTRETRYIGNORE = 0x2
@@ -43,7 +42,6 @@ IDNO = 7
 IDTRYAGAIN = 10
 IDCONTINUE = 11
 
-# Define the MessageBox function prototype
 windll.user32.MessageBoxW.argtypes = [c_int, c_wchar_p, c_wchar_p, c_int]
 windll.user32.MessageBoxW.restype = c_int
 
@@ -54,7 +52,8 @@ CallNextHookEx = windll.user32.CallNextHookEx
 GetWindowRect = windll.user32.GetWindowRect
 MoveWindow = windll.user32.MoveWindow
 
-def windows_message_box(
+
+def windows_message_box(  # noqa: PLR0913
     message: str,
     title: str,
     box_type: int = MB_OK,
@@ -83,30 +82,40 @@ def windows_message_box(
     result = windll.user32.MessageBoxW(0, message, title, style)
     return result
 
+
 def show_ok_message_box(message: str, title: str, detailed_text: str | None = None) -> int:
     return windows_message_box(message, title, MB_OK, MB_ICONINFORMATION, detailed_text=detailed_text)
+
 
 def show_yes_no_message_box(message: str, title: str, detailed_text: str | None = None) -> int:
     return windows_message_box(message, title, MB_YESNO, MB_ICONQUESTION, detailed_text=detailed_text)
 
+
 def show_retry_cancel_message_box(message: str, title: str, detailed_text: str | None = None) -> int:
     return windows_message_box(message, title, MB_RETRYCANCEL, MB_ICONWARNING, detailed_text=detailed_text)
+
 
 def show_error_message_box(message: str, title: str, detailed_text: str | None = None) -> int:
     return windows_message_box(message, title, MB_OK, MB_ICONERROR, detailed_text=detailed_text)
 
+
 def show_warning_message_box(message: str, title: str, detailed_text: str | None = None) -> int:
     return windows_message_box(message, title, MB_OK, MB_ICONWARNING, detailed_text=detailed_text)
 
+
 if __name__ == "__main__":
-    # Example for comprehensive message box function
-    response = windows_message_box("Do you want to save changes?", "Save Changes",
-                                  box_type=MB_YESNOCANCEL, icon=MB_ICONQUESTION,
-                                  default_button=MB_DEFBUTTON2, modality=MB_SYSTEMMODAL,
-                                  options=MB_RTLREADING, detailed_text="This will overwrite the existing file.")
+    response = windows_message_box(
+        "Do you want to save changes?",
+        "Save Changes",
+        box_type=MB_YESNOCANCEL,
+        icon=MB_ICONQUESTION,
+        default_button=MB_DEFBUTTON2,
+        modality=MB_SYSTEMMODAL,
+        options=MB_RTLREADING,
+        detailed_text="This will overwrite the existing file.",
+    )
     print(f"Response: {response}")  # 6=YES, 7=NO, 2=CANCEL/X button.
 
-    # Example for common usage functions
     response = show_ok_message_box("Operation completed successfully.", "Success")
     if response == IDOK:
         print("User clicked OK")

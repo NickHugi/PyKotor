@@ -728,7 +728,7 @@ class IFileDialog(IModalWindow):
     _methods_: ClassVar[list[_ComMemberSpec]] = [
         COMMETHOD([], HRESULT, "SetFileTypes",
                   (["in"], c_uint, "cFileTypes"),
-                  (["in"], c_void_p, "rgFilterSpec")),
+                  (["in"], POINTER(c_void_p), "rgFilterSpec")),
         COMMETHOD([], HRESULT, "SetFileTypeIndex",
                   (["in"], c_uint, "iFileType")),
         COMMETHOD([], HRESULT, "GetFileTypeIndex",
@@ -779,7 +779,7 @@ class IFileDialog(IModalWindow):
     AddRef: Callable[[], ULONG]
     Release: Callable[[], ULONG]
     Show: Callable[[int | HWND], HRESULT]
-    SetFileTypes: Callable[[c_uint | int, c_void_p], HRESULT]
+    SetFileTypes: Callable[[c_uint | int, _Pointer[c_void_p]], HRESULT]
     SetFileTypeIndex: Callable[[c_uint], HRESULT]
     GetFileTypeIndex: Callable[[], _Pointer[c_uint]]
     Advise: Callable[[IUnknown | comtypes.COMObject], int]

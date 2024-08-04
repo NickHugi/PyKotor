@@ -193,7 +193,7 @@ def terminate_main_process(
 
         RobustRootLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
         if sys.platform == "win32":
-            from utility.system.process import win_get_system32_dir
+            from utility.system.os_helper import win_get_system32_dir
             sys32path = win_get_system32_dir()
             subprocess.run(
                 [str(sys32path / "taskkill.exe"), "/F", "/T", "/PID", str(actual_self_pid)],  # noqa: S603

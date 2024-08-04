@@ -5,7 +5,6 @@ import json
 import re
 
 from contextlib import suppress
-from tkinter import messagebox
 from typing import Any
 
 from utility.error_handling import universal_simplify_exception
@@ -67,6 +66,7 @@ def getRemoteHolopatcherUpdateInfo(*, use_beta_channel: bool = False, silent: bo
             raise TypeError(f"Expected remoteInfo to be a dict, instead got type {remote_info.__class__.__name__}")  # noqa: TRY301
     except Exception as e:  # noqa: BLE001
         err_msg = str(universal_simplify_exception(e))
+        from tkinter import messagebox
         if silent or messagebox.askyesno(
             "Error occurred fetching update information.",
             (

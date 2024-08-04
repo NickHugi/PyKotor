@@ -30,9 +30,6 @@ if TYPE_CHECKING:
     from typing_extensions import Literal
 
 
-
-
-
 class FileDownloaderError(ConnectionError):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
