@@ -79,6 +79,7 @@ from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.logger_util import RobustRootLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
 from utility.string_util import striprtf  # noqa: E402
+from utility.system.agnostics import askokcancel, askyesno, showerror, askopenfilename, askdirectory, asksaveasfilename  # noqa: E402
 from utility.system.os_helper import get_app_dir, win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 from utility.system.process import terminate_main_process  # noqa: E402
@@ -276,7 +277,7 @@ class HoloPatcher(toga.App):
             coro (Coroutine | AsyncResult | Awaitable): The coroutine or awaitable object to run in the background.
             callback (Callable, optional): A function to execute with the result of the coroutine.
         """
-        print("add_bg_task_helper called!")
+        print("run_later called!")
         async def task_wrapper(app: toga.App, **kwargs):  # noqa: ARG001  # type: ignore[]
             try:
                 result = await coro
@@ -561,7 +562,7 @@ class HoloPatcher(toga.App):
         if num_cmdline_actions == 1:
             try:
                 self._begin_oneshot(cmdline_args)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 if self.one_shot:
                     self.exit()
                     sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
@@ -570,7 +571,7 @@ class HoloPatcher(toga.App):
                     self.exit()
                     sys.exit(ExitCode.SUCCESS)
         elif num_cmdline_actions > 1:
-            self.run_async_from_sync(self.display_error_dialog("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]"))
+            showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
 
     def _begin_oneshot(
@@ -657,13 +658,9 @@ class HoloPatcher(toga.App):
             return  # leave here for the static type checkers
 
         # Handle unsafe exit.
-        if (
-            not self.run_async_from_sync(
-                self.display_confirm_dialog(
-                    "Really cancel the current installation? ",
-                    "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
-                )
-            )
+        if askyesno(
+            "Really cancel the current installation? ",
+            "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
 
@@ -679,7 +676,7 @@ class HoloPatcher(toga.App):
                 system32_path = win_get_system32_dir()
                 subprocess.run([str(system32_path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)  # noqa: S603
             else:
-                subprocess.run(["kill", "-9", str(pid)], check=True)
+                subprocess.run(["kill", "-9", str(pid)], check=True)  # noqa: S603, S607
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "Failed to kill process", msgbox=False)
         finally:
@@ -698,7 +695,7 @@ class HoloPatcher(toga.App):
         reset_namespace: bool = False,
     ):
         if not directory:
-            results: list[str] | None = self.open_folder_dialog("Select the folder you'd like to recursively fix.")
+            results: str | None = self.open_folder_dialog("Select the folder you'd like to recursively fix.")
             if not results or not Path(results[0]).safe_isdir():
                 return  # User cancelled the dialog
             directory = Path(results[0])
@@ -847,10 +844,7 @@ class HoloPatcher(toga.App):
         def handle_folder_selection(folder, exc):
             callback("" if folder is None else folder, exc, startup=False)
 
-        self.run_later(
-            select_folder(),
-            handle_folder_selection,
-        )
+        self.run_later(select_folder(), handle_folder_selection)
 
     def open_mod(
         self,
@@ -866,14 +860,6 @@ class HoloPatcher(toga.App):
             directory_path_str: The default directory path to open as a string or None. This is
                 relevant when HoloPatcher is placed next to a 'tslpatchdata' folder containing the patcher files.
                 This is also relevant when using the CLI.
-
-        Processing Logic:
-        ----------------
-            - Gets the directory path from the argument or opens a file dialog
-            - Loads namespaces from namespaces.ini or changes from changes.ini
-                - If a changes.ini was loaded, build it as a single entry in a namespace.
-            - Checks permissions of the mod folder
-            - Handles errors opening the mod.
         """
         print(f"open_mod({directory_path_str}, {exc})")
         try:
@@ -906,7 +892,7 @@ class HoloPatcher(toga.App):
                 if not startup:  # don't show the error if the cwd was attempted
                     self.run_later(self.display_error_dialog("Error", f"Could not find a mod located chosen target '{directory_path_str}'"))
                 return
-            self.run_later(self.check_access(tslpatchdata_path, recurse=True, should_filter=True))
+            self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
 
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
@@ -930,34 +916,20 @@ class HoloPatcher(toga.App):
         Args:
         ----
             directory_path_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
-
-        Processing Logic:
-        ----------------
-            - Try to get the directory path from the default or by opening a file dialog
-            - Check access permissions for the directory
-            - Set the gamepaths config value and add path to list if not already present
-            - Move cursor after a delay to end of dropdown
         """
         print(f"open_kotor({directory_path_str}, {exc}, startup={startup})")
         try:
             if directory_path_str is None:
-                print("select kotor dir (user)")
-                async def select_folder() -> Dialog:
-                    return await self.main_window.select_folder_dialog("Select the KOTOR directory")
-                self.run_later(
-                    select_folder(),
-                    lambda folder, exc: self.open_kotor("" if folder is None else folder, exc, startup=False),
-                )
+                directory_path_str = self.open_folder_dialog("Select the KOTOR directory")
                 return
             if not directory_path_str:
                 return
 
-            directory = CaseAwarePath(directory_path_str)
-            self.run_later(self.check_access(directory))
-            directory_str = str(directory)
-            if directory_str not in [str(item) for item in self.gamepaths.items]:
-                self.gamepaths.items.append(directory_str)
-            self.gamepaths.value = directory_str
+            directory = str(CaseAwarePath(directory_path_str).resolve())
+            self.check_access(Path(directory))
+            if directory not in [str(item) for item in self.gamepaths.items]:
+                self.gamepaths.items.append(directory)
+            self.gamepaths.value = directory
 
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
@@ -975,7 +947,7 @@ class HoloPatcher(toga.App):
         if os.name == "nt":
             import winsound
 
-            # Play the system 'error' sound
+            # Play the system "error" sound
             winsound.MessageBeep(winsound.MB_ICONHAND)
 
     def fix_permissions(
@@ -985,11 +957,8 @@ class HoloPatcher(toga.App):
         reset_namespace: bool = False,
     ):
         if directory is None:
-            self.run_later(
-                self.main_window.select_folder_dialog("Select target directory"),
-                lambda chosen_path, error: self._handle_fix_permissions(chosen_path, directory, reset_namespace, error)
-            )
-        else:
+            directory = self.open_folder_dialog("Select target directory")
+        if directory and Path(directory).safe_isdir():
             self._handle_fix_permissions(directory, directory, reset_namespace, None)
 
     def _handle_fix_permissions(
@@ -1071,7 +1040,7 @@ class HoloPatcher(toga.App):
             if reset_namespace and self.mod_path:
                 self.refresh_ui_data()
 
-    async def check_access(
+    def check_access(
         self,
         directory: Path,
         *,
@@ -1104,14 +1073,14 @@ class HoloPatcher(toga.App):
 
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if await self.display_confirm_dialog(
+        if askyesno(
             "Permission error",
             f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
         ):
             directory.gain_access(recurse=recurse)
             self.refresh_ui_data()
         if not directory.has_access(recurse=recurse):
-            await self.display_error_dialog(
+            showerror(
                 "Unauthorized",
                 (
                     f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
@@ -1175,12 +1144,7 @@ class HoloPatcher(toga.App):
                 )
             )
             return False
-        game_path_str = str(case_game_path)
-        self.gamepaths.value = game_path_str
-        game_path_nocase = Path(game_path_str)
-        access = game_path_nocase.has_access()
-        if not access:
-            self.run_later(self.check_access(game_path_nocase))
+        if self.check_access(Path(str(case_game_path))):
             return False
         return True
 
@@ -1229,7 +1193,7 @@ class HoloPatcher(toga.App):
                 """
                 print("begin_install_thread reached")
                 def update_progress_func(val: int = 1):
-                    self.add_background_task(lambda app, val=val, **kwargs: self.update_progress_bar_directly(val))  # noqa: ARG005
+                    self.update_progress_bar_directly(val)  # noqa: ARG005
 
                 tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
                 ini_file_path = tslpatchdata_path.joinpath(namespace.changes_filepath())
@@ -1243,7 +1207,7 @@ class HoloPatcher(toga.App):
                 except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                     self._handle_exception_during_install(e)
                 finally:
-                    self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
+                    self.set_state(state=False)  # noqa: ARG005
 
             self.add_background_task(begin_install_thread)
 
@@ -1268,7 +1232,7 @@ class HoloPatcher(toga.App):
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
             finally:
-                self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
+                self.set_state(state=False)  # noqa: ARG005
                 self.logger.add_note("Config reader test is complete.")
 
         self.add_background_task(lambda app, **kwargs: task)  # noqa: ARG005
@@ -1333,7 +1297,7 @@ class HoloPatcher(toga.App):
             if confirm_msg and not self.one_shot and confirm_msg.upper() != "N/A":
                 # Show a confirmation dialog
                 print("Show confirm dialog")
-                if not self.run_async_from_sync(self.display_confirm_dialog("This mod requires confirmation", confirm_msg)):
+                if not askokcancel("This mod requires confirmation", confirm_msg):
                     print("User did not confirm.")
                     return  # If the dialog returns False, stop the execution
                 print("confirm dialog passed.")
@@ -1424,7 +1388,7 @@ class HoloPatcher(toga.App):
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
         finally:
-            self.add_background_task(lambda app, **kwargs: self.set_state(state=False))  # noqa: ARG005
+            self.set_state(state=False)  # noqa: ARG005
             self.logger.add_note("Config reader test is complete.")
 
     @property
@@ -1487,7 +1451,7 @@ class HoloPatcher(toga.App):
 
         start_rte_editor()
 
-    def load_rte_content(
+    def load_rte_content(  # noqa: C901, PLR0912, PLR0915
         self, rte_content: str | bytes | bytearray | None = None
     ):
         """Load and display RTE content in the WebView."""
@@ -1617,47 +1581,50 @@ class HoloPatcher(toga.App):
         script = f"showView('{view}');"
         self.web_view.evaluate_javascript(script)
 
-    def open_file_dialog(self, title: str = "Select the file target.") -> list[str] | None:
+    def open_file_dialog(self, title: str = "Select the file target.") -> str | None:
         try:
             if platform.system() == "Windows":
-                from utility.system.win32.com.windialogs import open_folder_dialog
-                results = open_folder_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
+                from utility.system.win32.com.windialogs import open_file_dialog
+                results = open_file_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
                                             hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
             else:
-                from utility.system.system_wrappers import unix_open_folder_browser
-                results = unix_open_folder_browser(title)
+                from utility.system.platform_wrappers import unix_open_file_browser
+                results = unix_open_file_browser(title)
         except Exception as e:  # noqa: BLE001, F841
             RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
-            results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
-        return None if results is None else results
+            results = [self.run_async_from_sync(self.main_window.open_file_dialog(title))]
+        if not results or not results[0] or not results[0].strip():
+            return None
+        return results[0]
 
     def open_folder_dialog(self, title: str = "Select the folder target.") -> str | None:
         try:
             if platform.system() == "Windows":
-                from utility.system.win32.com.windialogs import open_folder_dialog
-                results = open_folder_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
-                                            hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
+                results = askdirectory(title=title)
             else:
-                from utility.system.system_wrappers import unix_open_folder_browser
+                from utility.system.platform_wrappers import unix_open_folder_browser
                 results = unix_open_folder_browser(title)
         except Exception as e:  # noqa: BLE001, F841
             RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
             results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
-        return results[0] if results else None
+        if not results or not results[0] or not results[0].strip():
+            return None
+        return results[0]
 
-    def save_file_dialog(self, title: str = "Select the path to save this file.") -> list[str] | None:
+    def save_file_dialog(self, title: str = "Select the path to save this file.") -> str | None:
         try:
             if platform.system() == "Windows":
-                from utility.system.win32.com.windialogs import open_folder_dialog
-                results = open_folder_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
+                from utility.system.win32.com.windialogs import save_file_dialog
+                results = save_file_dialog(title, overwrite_prompt=True, no_readonly_return=True,
                                             hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
             else:
-                from utility.system.system_wrappers import unix_open_folder_browser
-                results = unix_open_folder_browser(title)
+                results = asksaveasfilename(title=title)
         except Exception as e:  # noqa: BLE001, F841
             RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
             results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
-        return None if results is None else results
+        if not results or not results[0] or not results[0].strip():
+            return None
+        return results[0]
 
 
 @contextmanager
@@ -1703,8 +1670,7 @@ def onAppCrash(
                 tback = exc.__traceback__
     RobustRootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
-    with temporary_toga_window() as temp_window:
-        temp_window.error_dialog(title, f"{short_msg}\n{etype.__name__}")
+    showerror(title, short_msg)
     sys.exit(ExitCode.CRASH)
 
 
@@ -1730,9 +1696,7 @@ if __name__ == "__main__":
     # fast fail if the user is running from their temp folder (i.e they probably didn't extract the app from the archive)
     if str(Path(sys.executable)).startswith(tempfile.gettempdir()):
         with suppress(Exception):
-            from tkinter import messagebox
-
-            messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
+            showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
     main()

@@ -19,7 +19,7 @@ def _get_tk_root():
     return tk._default_root  # pyright: ignore[reportAttributeAccessIssue]  # noqa: SLF001
 
 
-def askdirectory(
+def askdirectory(  # noqa: ANN201
     *,
     initialdir: os.PathLike | str | None = None,
     mustexist: bool | None = None,
@@ -31,7 +31,7 @@ def askdirectory(
     except ImportError:
         result = open_folder_dialog(title, None if initialdir is None else str(initialdir))
         if not result:
-            return None
+            return ""
         return result[0]
     else:
         return filedialog.askdirectory(
@@ -79,7 +79,7 @@ def askopenfile(
         return file
 
 
-def askopenfilename(
+def askopenfilename(  # noqa: PLR0913
     *,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
@@ -99,7 +99,7 @@ def askopenfilename(
             defaultextension,
         )
         if not result:
-            return None
+            return ""
         return result[0]
     else:
         file = filedialog.askopenfilename(
@@ -114,7 +114,7 @@ def askopenfilename(
         return file
 
 
-def asksaveasfile(
+def asksaveasfile(  # noqa: PLR0913, ANN201
     mode: str = "w",
     *,
     confirmoverwrite: bool | None = None,
@@ -138,7 +138,7 @@ def asksaveasfile(
         )
         if not result:
             return None
-        return result[0]
+        return open(result[0], mode)
     else:
         return filedialog.asksaveasfile(
             mode,
@@ -153,8 +153,9 @@ def asksaveasfile(
         )
 
 
-def asksaveasfilename(
+def asksaveasfilename(  # noqa: PLR0913
     *,
+    confirmoverwrite: bool | None = None,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
     initialdir: os.PathLike | str | None = None,
@@ -162,13 +163,23 @@ def asksaveasfilename(
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
-) -> str | None:
+) -> str:
     try:
         from tkinter import filedialog
-    except ImportError as e1:
-        ...
+    except ImportError:
+        result = save_file_dialog(
+            title,
+            default_folder=None if initialdir is None else str(initialdir),
+            file_types=filetypes,
+            default_extension=defaultextension,
+            overwrite_prompt=True if confirmoverwrite is None else confirmoverwrite
+        )
+        if not result:
+            return ""
+        return result[0]
     else:
         return filedialog.asksaveasfilename(
+            confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
             filetypes=filetypes,
             initialdir=initialdir,

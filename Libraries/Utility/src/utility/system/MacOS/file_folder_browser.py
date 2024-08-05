@@ -284,6 +284,7 @@ def asksaveasfile(
 
 def asksaveasfilename(
     *,
+    confirmoverwrite: bool | None = None,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
     initialdir: os.PathLike | str | None = None,
@@ -311,6 +312,7 @@ def asksaveasfilename(
             return result
     else:
         return filedialog.asksaveasfilename(
+            confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
             filetypes=filetypes,
             initialdir=initialdir,

@@ -314,6 +314,7 @@ def asksaveasfile(  # noqa: PLR0913, PLR0911, ANN201
 
 def asksaveasfilename(  # noqa: PLR0913, PLR0911, ANN201
     *,
+    confirmoverwrite: bool | None = None,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
     initialdir: os.PathLike | str | None = None,
@@ -350,6 +351,7 @@ def asksaveasfilename(  # noqa: PLR0913, PLR0911, ANN201
                     raise RuntimeError("All methods to save filename dialog failed") from e4
     else:
         return filedialog.asksaveasfilename(
+            confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
             filetypes=filetypes,
             initialdir=initialdir,
