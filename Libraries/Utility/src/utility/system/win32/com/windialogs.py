@@ -5,7 +5,7 @@ import json
 import os
 import random
 
-from ctypes import POINTER, WINFUNCTYPE, Array, byref, c_uint, c_ulong, c_void_p, c_wchar_p, cast as cast_with_ctypes, windll
+from ctypes import POINTER, WINFUNCTYPE, byref, c_ulong, c_void_p, c_wchar_p, cast as cast_with_ctypes, windll
 from ctypes.wintypes import HMODULE, HWND, LPCWSTR
 from typing import TYPE_CHECKING, Any, Sequence
 
@@ -52,7 +52,7 @@ from utility.system.win32.com.interfaces import (
 from utility.system.win32.hresult import HRESULT, S_FALSE, S_OK
 
 if TYPE_CHECKING:
-    from ctypes import _FuncPointer, _Pointer
+    from ctypes import Array, _FuncPointer, _Pointer
     from ctypes.wintypes import LPWSTR
 
     from utility.system.win32.com.interfaces import IFileDialog, IShellItemArray
@@ -232,7 +232,7 @@ DEFAULT_FILTERS: list[COMDLG_FILTERSPEC] = [
 ]
 
 
-def configure_file_dialog(
+def configure_file_dialog(  # noqa: PLR0913, PLR0912, C901
     dialog_type: type[IFileOpenDialog | IFileSaveDialog],
     title: str | None = None,
     options: int = 0,
@@ -322,7 +322,6 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
     overwrite_prompt: bool = False,
     strict_file_types: bool = False,
     no_change_dir: bool = True,
-    pick_folders: bool = False,
     force_filesystem: bool = True,
     all_non_storage_items: bool = False,
     no_validate: bool = False,
@@ -352,7 +351,6 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
         overwrite_prompt (bool): Prompts if the selected file already exists. FOS_OVERWRITEPROMPT.
         strict_file_types (bool): Restricts selection to specified file types. FOS_STRICTFILETYPES.
         no_change_dir (bool): Prevents changing the current working directory. FOS_NOCHANGEDIR.
-        pick_folders (bool): Allows folder selection instead of files. FOS_PICKFOLDERS.
         force_filesystem (bool): Ensures only file system items are shown. FOS_FORCEFILESYSTEM.
         all_non_storage_items (bool): Allows selection of non-file system items. FOS_ALLNONSTORAGEITEMS.
         no_validate (bool): Disables file name validation. FOS_NOVALIDATE.
@@ -382,8 +380,7 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
         options |= FOS_STRICTFILETYPES
     if no_change_dir:
         options |= FOS_NOCHANGEDIR
-    if pick_folders:
-        options |= FOS_PICKFOLDERS
+    options |= FOS_PICKFOLDERS
     if force_filesystem:
         options |= FOS_FORCEFILESYSTEM
     if all_non_storage_items:
@@ -421,7 +418,7 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
     return configure_file_dialog(IFileOpenDialog, title, options, default_folder, ok_button_text, None, file_types, default_extension)
 
 
-def save_file_dialog(
+def save_file_dialog(  # noqa: C901, PLR0913, PLR0912
     title: str | None = "Save File",
     default_folder: str | None = None,
     file_types: list[tuple[str, str]] | None = None,
@@ -532,7 +529,6 @@ def open_folder_dialog(  # noqa: C901, PLR0913, PLR0912
     overwrite_prompt: bool = False,
     strict_file_types: bool = False,
     no_change_dir: bool = False,
-    pick_folders: bool = True,
     force_filesystem: bool = True,
     all_non_storage_items: bool = False,
     no_validate: bool = False,
@@ -560,7 +556,6 @@ def open_folder_dialog(  # noqa: C901, PLR0913, PLR0912
         overwrite_prompt (bool): Prompts if the selected file already exists. FOS_OVERWRITEPROMPT.
         strict_file_types (bool): Restricts selection to specified file types. FOS_STRICTFILETYPES.
         no_change_dir (bool): Prevents changing the current working directory. FOS_NOCHANGEDIR.
-        pick_folders (bool): Allows folder selection instead of files. FOS_PICKFOLDERS.
         force_filesystem (bool): Ensures only file system items are shown. FOS_FORCEFILESYSTEM.
         all_non_storage_items (bool): Allows selection of non-file system items. FOS_ALLNONSTORAGEITEMS.
         no_validate (bool): Disables file name validation. FOS_NOVALIDATE.
@@ -590,8 +585,7 @@ def open_folder_dialog(  # noqa: C901, PLR0913, PLR0912
         options |= FOS_STRICTFILETYPES
     if no_change_dir:
         options |= FOS_NOCHANGEDIR
-    if pick_folders:
-        options |= FOS_PICKFOLDERS
+    options |= FOS_PICKFOLDERS
     if force_filesystem:
         options |= FOS_FORCEFILESYSTEM
     if all_non_storage_items:
@@ -687,7 +681,6 @@ if __name__ == "__main__":
         "overwrite_prompt": random.choice([True, False]),
         "strict_file_types": random.choice([True, False]),
         "no_change_dir": random.choice([True, False]),
-        "pick_folders": True,
         "force_filesystem": random.choice([True, False]),
         "all_non_storage_items": random.choice([True, False]),
         "no_validate": random.choice([True, False]),
@@ -708,7 +701,7 @@ if __name__ == "__main__":
     }
     print("\nOpen folder args")
     print(json.dumps(open_folder_args, indent=4, sort_keys=True))
-    selected_folders = open_folder_dialog(**open_folder_args)
+    selected_folders: list[str] | None = open_folder_dialog(**open_folder_args)
     print("Selected folders:", selected_folders)
 
     # Randomizing arguments for open_file_dialog
@@ -720,7 +713,6 @@ if __name__ == "__main__":
         "overwrite_prompt": random.choice([True, False]),
         "strict_file_types": random.choice([True, False]),
         "no_change_dir": random.choice([True, False]),
-        "pick_folders": False,
         "force_filesystem": random.choice([True, False]),
         "all_non_storage_items": random.choice([True, False]),
         "no_validate": random.choice([True, False]),
@@ -741,7 +733,7 @@ if __name__ == "__main__":
     }
     print("\nOpen file args")
     print(json.dumps(open_file_args, indent=4, sort_keys=True))
-    selected_files = open_file_dialog(**open_file_args)
+    selected_files: list[str] | None = open_file_dialog(**open_file_args)
     print("Selected files:", selected_files)
 
     # Randomizing arguments for save_file_dialog
@@ -772,5 +764,5 @@ if __name__ == "__main__":
     }
     print("\nSave file args")
     print(json.dumps(save_file_args, indent=4, sort_keys=True))
-    saved_file = save_file_dialog(**save_file_args)
+    saved_file: list[str] | None = save_file_dialog(**save_file_args)
     print("Saved file:", saved_file)
