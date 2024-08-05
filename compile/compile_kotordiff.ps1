@@ -12,7 +12,6 @@ Write-Host "The path to the script directory is: $scriptPath"
 Write-Host "The path to the root directory is: $rootPath"
 
 Write-Host "Initializing python virtual environment..."
-Write-Host "Initializing python virtual environment..."
 if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
 } else {

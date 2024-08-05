@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable
 
-from utility.system.win32.com.windialogs import open_file_dialog, open_folder_dialog, save_file_dialog
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -28,18 +28,19 @@ def askdirectory(  # noqa: ANN201
 ):
     try:
         from tkinter import filedialog
-    except ImportError:
-        result = open_folder_dialog(title, None if initialdir is None else str(initialdir))
-        if not result:
-            return ""
-        return result[0]
-    else:
         return filedialog.askdirectory(
             initialdir=initialdir,
             mustexist=mustexist,
             title=title,
             parent=_get_tk_root() if parent is None else parent,
         )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import open_folder_dialog
+        result = open_folder_dialog(title, None if initialdir is None else str(initialdir))
+        if not result:
+            return ""
+        return result[0]
 
 
 def askopenfile(
@@ -55,18 +56,7 @@ def askopenfile(
 ):
     try:
         from tkinter import filedialog
-    except ImportError:
-        result = open_file_dialog(
-            title,
-            None if initialdir is None else str(initialdir),
-            filetypes,
-            defaultextension,
-        )
-        if not result:
-            return None
-        return open(result[0], mode)
-    else:
-        file = filedialog.askopenfile(
+        return filedialog.askopenfile(
             mode,
             defaultextension=defaultextension,
             filetypes=filetypes,
@@ -76,7 +66,18 @@ def askopenfile(
             parent=_get_tk_root() if parent is None else parent,
             typevariable=typevariable,
         )
-        return file
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import open_file_dialog
+        result = open_file_dialog(
+            title,
+            None if initialdir is None else str(initialdir),
+            filetypes,
+            defaultextension,
+        )
+        if not result:
+            return None
+        return open(result[0], mode)
 
 
 def askopenfilename(  # noqa: PLR0913
@@ -91,7 +92,18 @@ def askopenfilename(  # noqa: PLR0913
 ) -> str | None:
     try:
         from tkinter import filedialog
-    except ImportError:
+        return filedialog.askopenfilename(
+            defaultextension=defaultextension,
+            filetypes=filetypes,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import open_file_dialog
         result = open_file_dialog(
             title,
             None if initialdir is None else str(initialdir),
@@ -101,17 +113,6 @@ def askopenfilename(  # noqa: PLR0913
         if not result:
             return ""
         return result[0]
-    else:
-        file = filedialog.askopenfilename(
-            defaultextension=defaultextension,
-            filetypes=filetypes,
-            initialdir=initialdir,
-            initialfile=initialfile,
-            title=title,
-            parent=_get_tk_root() if parent is None else parent,
-            typevariable=typevariable,
-        )
-        return file
 
 
 def asksaveasfile(  # noqa: PLR0913, ANN201
@@ -128,18 +129,6 @@ def asksaveasfile(  # noqa: PLR0913, ANN201
 ):
     try:
         from tkinter import filedialog
-    except ImportError:
-        result = save_file_dialog(
-            title,
-            default_folder=None if initialdir is None else str(initialdir),
-            file_types=filetypes,
-            default_extension=defaultextension,
-            overwrite_prompt=True if confirmoverwrite is None else confirmoverwrite
-        )
-        if not result:
-            return None
-        return open(result[0], mode)
-    else:
         return filedialog.asksaveasfile(
             mode,
             confirmoverwrite=confirmoverwrite,
@@ -151,6 +140,19 @@ def asksaveasfile(  # noqa: PLR0913, ANN201
             title=title,
             typevariable=typevariable,
         )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import save_file_dialog
+        result = save_file_dialog(
+            title,
+            default_folder=None if initialdir is None else str(initialdir),
+            file_types=filetypes,
+            default_extension=defaultextension,
+            overwrite_prompt=True if confirmoverwrite is None else confirmoverwrite
+        )
+        if not result:
+            return None
+        return open(result[0], mode)
 
 
 def asksaveasfilename(  # noqa: PLR0913
@@ -166,18 +168,6 @@ def asksaveasfilename(  # noqa: PLR0913
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError:
-        result = save_file_dialog(
-            title,
-            default_folder=None if initialdir is None else str(initialdir),
-            file_types=filetypes,
-            default_extension=defaultextension,
-            overwrite_prompt=True if confirmoverwrite is None else confirmoverwrite
-        )
-        if not result:
-            return ""
-        return result[0]
-    else:
         return filedialog.asksaveasfilename(
             confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
@@ -188,3 +178,16 @@ def asksaveasfilename(  # noqa: PLR0913
             title=title,
             typevariable=typevariable,
         )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import save_file_dialog
+        result = save_file_dialog(
+            title,
+            default_folder=None if initialdir is None else str(initialdir),
+            file_types=filetypes,
+            default_extension=defaultextension,
+            overwrite_prompt=True if confirmoverwrite is None else confirmoverwrite
+        )
+        if not result:
+            return ""
+        return result[0]
