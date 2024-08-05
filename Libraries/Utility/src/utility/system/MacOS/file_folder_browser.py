@@ -1,164 +1,198 @@
-# The following code is completely boilerplate and untested. Requires finding a mac user to do testing.
-
 from __future__ import annotations
 
 import ctypes
+import subprocess
 
-from ctypes import c_bool, c_char_p, c_uint, c_void_p
-from ctypes.util import find_library
+from utility.logger_util import RobustRootLogger
 
-# Load the Cocoa framework
-libobjc = ctypes.cdll.LoadLibrary(find_library("objc"))
-libAppKit = ctypes.cdll.LoadLibrary(find_library("AppKit"))
 
-# Define basic Objective-C types
-cID = c_void_p
-SEL = c_void_p
-IMP = c_void_p
-Class = c_void_p
+# Check if a command exists
+def command_exists(cmd: str) -> bool:
+    return subprocess.call(["which", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0  # noqa: S603, S607
 
-# Define utility functions for working with Objective-C
-libobjc.objc_getClass.restype = Class
-libobjc.objc_getClass.argtypes = [c_char_p]
 
-libobjc.sel_registerName.restype = SEL
-libobjc.sel_registerName.argtypes = [c_char_p]
+# Run subprocess command
+def run_command(cmd: list[str]) -> str | None:
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603
+    except subprocess.CalledProcessError:
+        return None
+    else:
+        return result.stdout.strip()
 
-libobjc.objc_msgSend.restype = cID
-libobjc.objc_msgSend.argtypes = [cID, SEL]
 
-libobjc.objc_msgSend_bool.restype = c_bool
-libobjc.objc_msgSend_bool.argtypes = [cID, SEL, c_bool]
+# AppleScript dialog runner
+def applescript_dialog(script: str) -> str | None:
+    try:
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, check=False)  # noqa: S603, S607
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:  # noqa: BLE001
+        return None
+    else:
+        return None
 
-libobjc.objc_msgSend_uint.restype = c_uint
-libobjc.objc_msgSend_uint.argtypes = [cID, SEL]
 
-libobjc.objc_msgSend_id.restype = cID
-libobjc.objc_msgSend_id.argtypes = [cID, SEL, cID]
+# ctypes method: Using Cocoa Framework
+def cocoa_dialog(
+    dialog_type: str,
+    title: str = "",
+    allow_multiple: bool = False,
+    show_hidden: bool = False,
+    default_name: str = "",
+) -> list[str] | str | None:
+    try:
+        libobjc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("objc"))
+        libAppKit = ctypes.cdll.LoadLibrary(ctypes.util.find_library("AppKit"))
 
-libobjc.objc_msgSend_id_uint.restype = cID
-libobjc.objc_msgSend_id_uint.argtypes = [cID, SEL, cID, c_uint]
+        cID = ctypes.c_void_p
+        SEL = ctypes.c_void_p
+        libobjc.objc_getClass.restype = cID
+        libobjc.objc_getClass.argtypes = [ctypes.c_char_p]
+        libobjc.sel_registerName.restype = SEL
+        libobjc.sel_registerName.argtypes = [ctypes.c_char_p]
+        libobjc.objc_msgSend.restype = cID
+        libobjc.objc_msgSend.argtypes = [cID, SEL]
 
-libobjc.objc_msgSend_id_bool.restype = cID
-libobjc.objc_msgSend_id_bool.argtypes = [cID, SEL, cID, c_bool]
+        NSOpenPanel = libobjc.objc_getClass(b"NSOpenPanel")
+        NSSavePanel = libobjc.objc_getClass(b"NSSavePanel")
+        NSURL = libobjc.objc_getClass(b"NSURL")
+        NSString = libobjc.objc_getClass(b"NSString")
+        NSApplication = libobjc.objc_getClass(b"NSApplication")
 
-# Define Objective-C constants
-NSOpenPanel = libobjc.objc_getClass(b"NSOpenPanel")
-NSSavePanel = libobjc.objc_getClass(b"NSSavePanel")
-NSURL = libobjc.objc_getClass(b"NSURL")
-NSString = libobjc.objc_getClass(b"NSString")
-NSApplication = libobjc.objc_getClass(b"NSApplication")
+        def NSString_from_str(string):
+            return libobjc.objc_msgSend(NSString, libobjc.sel_registerName(b"stringWithUTF8String:"), ctypes.c_char_p(string.encode("utf-8")))
 
-# Utility function to convert Python string to NSString
-def NSString_from_str(string):
-    return libobjc.objc_msgSend_id(NSString, libobjc.sel_registerName(b"stringWithUTF8String:"), c_char_p(string.encode("utf-8")))
+        def str_from_NSURL(nsurl):
+            utf8_string = libobjc.objc_msgSend(nsurl, libobjc.sel_registerName(b"absoluteString"))
+            return ctypes.string_at(libobjc.objc_msgSend(utf8_string, libobjc.sel_registerName(b"UTF8String"))).decode("utf-8")
 
-# Utility function to convert NSURL to Python string
-def str_from_NSURL(nsurl):
-    utf8_string = libobjc.objc_msgSend(nsurl, libobjc.sel_registerName(b"absoluteString"))
-    return ctypes.string_at(libobjc.objc_msgSend(utf8_string, libobjc.sel_registerName(b"UTF8String"))).decode("utf-8")
+        app = libobjc.objc_msgSend(NSApplication, libobjc.sel_registerName(b"sharedApplication"))
 
-# Define the main function to create and display a file open dialog
-def browse_files(title: str = "Select File(s)", *, allow_multiple: bool = False, show_hidden: bool = False) -> list[str]:
-    # Initialize the app and create the open panel
-    app = libobjc.objc_msgSend(NSApplication, libobjc.sel_registerName(b"sharedApplication"))
-    panel = libobjc.objc_msgSend(NSOpenPanel, libobjc.sel_registerName(b"openPanel"))
+        if dialog_type in ("open_file", "open_folder"):
+            panel = libobjc.objc_msgSend(NSOpenPanel, libobjc.sel_registerName(b"openPanel"))
+            libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setCanChooseFiles:"), ctypes.c_bool(dialog_type == "open_file"))
+            libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setCanChooseDirectories:"), ctypes.c_bool(dialog_type == "open_folder"))
+        elif dialog_type == "save_file":
+            panel = libobjc.objc_msgSend(NSSavePanel, libobjc.sel_registerName(b"savePanel"))
+            if default_name:
+                default_name_nsstring = NSString_from_str(default_name)
+                libobjc.objc_msgSend_id(panel, libobjc.sel_registerName(b"setNameFieldStringValue:"), default_name_nsstring)
 
-    # Set the panel properties
-    if title:
-        title_nsstring = NSString_from_str(title)
-        libobjc.objc_msgSend_id(panel, libobjc.sel_registerName(b"setTitle:"), title_nsstring)
+        if title:
+            title_nsstring = NSString_from_str(title)
+            libobjc.objc_msgSend_id(panel, libobjc.sel_registerName(b"setTitle:"), title_nsstring)
 
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setAllowsMultipleSelection:"), c_bool(allow_multiple))
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setCanChooseFiles:"), c_bool(True))
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setCanChooseDirectories:"), c_bool(False))
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setShowsHiddenFiles:"), c_bool(show_hidden))
+        libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setAllowsMultipleSelection:"), ctypes.c_bool(allow_multiple))
+        libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setShowsHiddenFiles:"), ctypes.c_bool(show_hidden))
 
-    # Display the panel
-    response = libobjc.objc_msgSend_uint(panel, libobjc.sel_registerName(b"runModal"))
+        response = libobjc.objc_msgSend_uint(panel, libobjc.sel_registerName(b"runModal"))
 
-    # Process the result
-    if response == 1:  # NSModalResponseOK
-        urls = libobjc.objc_msgSend(panel, libobjc.sel_registerName(b"URLs"))
-        count = libobjc.objc_msgSend_uint(urls, libobjc.sel_registerName(b"count"))
+        if response == 1:  # NSModalResponseOK
+            if dialog_type == "save_file":
+                nsurl = libobjc.objc_msgSend(panel, libobjc.sel_registerName(b"URL"))
+                file_path = str_from_NSURL(nsurl)
+                return file_path
 
-        file_paths = []
-        for i in range(count):
-            nsurl = libobjc.objc_msgSend_id_uint(urls, libobjc.sel_registerName(b"objectAtIndex:"), i)
-            file_paths.append(str_from_NSURL(nsurl))
+            urls = libobjc.objc_msgSend(panel, libobjc.sel_registerName(b"URLs"))
+            count = libobjc.objc_msgSend_uint(urls, libobjc.sel_registerName(b"count"))
 
-        return file_paths
+            file_paths = []
+            for i in range(count):
+                nsurl = libobjc.objc_msgSend_id_uint(urls, libobjc.sel_registerName(b"objectAtIndex:"), i)
+                file_paths.append(str_from_NSURL(nsurl))
 
-    return []
+            return file_paths
 
-# Define the function to create and display a folder open dialog
-def browse_folders(title: str = "Select Folder", *, allow_multiple: bool = False, show_hidden: bool = False) -> list[str]:
-    # Initialize the app and create the open panel
-    app = libobjc.objc_msgSend(NSApplication, libobjc.sel_registerName(b"sharedApplication"))
-    panel = libobjc.objc_msgSend(NSOpenPanel, libobjc.sel_registerName(b"openPanel"))
+    except Exception:  # noqa: BLE001
+        RobustRootLogger.exception("Failed to run a cocoa file/folder browser!")
+        return None
+    else:
+        return None
 
-    # Set the panel properties
-    if title:
-        title_nsstring = NSString_from_str(title)
-        libobjc.objc_msgSend_id(panel, libobjc.sel_registerName(b"setTitle:"), title_nsstring)
 
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setAllowsMultipleSelection:"), c_bool(allow_multiple))
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setCanChooseFiles:"), c_bool(False))
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setCanChooseDirectories:"), c_bool(True))
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setShowsHiddenFiles:"), c_bool(show_hidden))
+# Primary functions
+def open_file_dialog(title: str = "Open File", file_types: list[str] | None = None) -> list[str] | None:
+    try:
+        import tkinter as tk
 
-    # Display the panel
-    response = libobjc.objc_msgSend_uint(panel, libobjc.sel_registerName(b"runModal"))
+        from tkinter import filedialog
 
-    # Process the result
-    if response == 1:  # NSModalResponseOK
-        urls = libobjc.objc_msgSend(panel, libobjc.sel_registerName(b"URLs"))
-        count = libobjc.objc_msgSend_uint(urls, libobjc.sel_registerName(b"count"))
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(title=title, filetypes=[(ft, ft) for ft in file_types] if file_types else None)
+    except ImportError:  # noqa: S110
+        pass
+    else:
+        return [file_path] if file_path else None
+    file_types_str = "{" + '", "'.join(file_types) + "}" if file_types else "{}"
+    script = f"""
+        set fileTypes to {file_types_str}
+        set filePath to POSIX path of (choose file of type fileTypes with prompt "{title}")
+        return filePath
+    """
 
-        folder_paths = []
-        for i in range(count):
-            nsurl = libobjc.objc_msgSend_id_uint(urls, libobjc.sel_registerName(b"objectAtIndex:"), i)
-            folder_paths.append(str_from_NSURL(nsurl))
+    result = applescript_dialog(script)
+    if result:
+        return [result]
 
-        return folder_paths
+    return cocoa_dialog("open_file", title)
 
-    return []
 
-# Define the function to create and display a save file dialog
-def save_file(title: str = "Save File", default_name: str = "Untitled", show_hidden: bool = False) -> str:
-    # Initialize the app and create the save panel
-    app = libobjc.objc_msgSend(NSApplication, libobjc.sel_registerName(b"sharedApplication"))
-    panel = libobjc.objc_msgSend(NSSavePanel, libobjc.sel_registerName(b"savePanel"))
+def save_file_dialog(title: str = "Save File", file_types: list[str] | None = None, default_name: str = "Untitled") -> str | None:
+    try:
+        import tkinter as tk
 
-    # Set the panel properties
-    if title:
-        title_nsstring = NSString_from_str(title)
-        libobjc.objc_msgSend_id(panel, libobjc.sel_registerName(b"setTitle:"), title_nsstring)
+        from tkinter import filedialog
 
-    if default_name:
-        default_name_nsstring = NSString_from_str(default_name)
-        libobjc.objc_msgSend_id(panel, libobjc.sel_registerName(b"setNameFieldStringValue:"), default_name_nsstring)
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.asksaveasfilename(title=title, filetypes=[(ft, ft) for ft in file_types] if file_types else None, initialfile=default_name)
+    except ImportError:  # noqa: S110
+        pass
+    else:
+        return file_path if file_path else None
 
-    libobjc.objc_msgSend_bool(panel, libobjc.sel_registerName(b"setShowsHiddenFiles:"), c_bool(show_hidden))
+    file_types_str = "{" + '", "'.join(file_types) + "}" if file_types else "{}"
+    script = f"""
+        set fileTypes to {file_types_str}
+        set filePath to POSIX path of (choose file name with prompt "{title}")
+        return filePath
+    """
+    result = applescript_dialog(script)
+    if result:
+        return result
 
-    # Display the panel
-    response = libobjc.objc_msgSend_uint(panel, libobjc.sel_registerName(b"runModal"))
+    return cocoa_dialog("save_file", title, default_name=default_name)
 
-    # Process the result
-    if response == 1:  # NSModalResponseOK
-        nsurl = libobjc.objc_msgSend(panel, libobjc.sel_registerName(b"URL"))
-        file_path = str_from_NSURL(nsurl)
-        return file_path
 
-    return ""
+def open_folder_dialog(title: str = "Select Folder") -> list[str] | None:
+    try:
+        import tkinter as tk
 
-# Example usage
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        folder_path = filedialog.askdirectory(title=title)
+    except ImportError:  # noqa: S110
+        pass
+    else:
+        return [folder_path] if folder_path else None
+
+    script = f"""
+        set folderPath to POSIX path of (choose folder with prompt "{title}")
+        return folderPath
+    """
+    result = applescript_dialog(script)
+    if result:
+        return [result]
+
+    return cocoa_dialog("open_folder", title)
+
+
 if __name__ == "__main__":
-    selected_files = browse_files()
-    print("Selected files:", selected_files)
-
-    selected_folders = browse_folders()
-    print("Selected folders:", selected_folders)
-
-    saved_file = save_file()
-    print("Saved file:", saved_file)
+    # Example usage
+    print("Open file dialog result:", open_file_dialog("Open a file", ["public.text", "public.python-script"]))
+    print("Save file dialog result:", save_file_dialog("Save a file", ["public.text", "public.python-script"]))
+    print("Open folder dialog result:", open_folder_dialog("Select a folder"))

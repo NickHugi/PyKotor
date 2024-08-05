@@ -157,7 +157,7 @@ def register_idispatch_object(
 
 if __name__ == "__main__":
     # Small test.
-    import comtypes
+    import comtypes  # pyright: ignore[reportMissingTypeStubs]
 
     from win32com.shell import shell  # pyright: ignore[reportMissingModuleSource]
     IID_IFileSystemBindData = GUID("{01e18d10-4d8b-11d2-855d-006008059367}")
