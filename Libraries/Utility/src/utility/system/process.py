@@ -114,7 +114,7 @@ def terminate_child_processes(
             log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
             try:
                 if sys.platform == "win32":
-                    from utility.system.process import win_get_system32_dir
+                    from utility.system.os_helper import win_get_system32_dir
                     subprocess.run([str(win_get_system32_dir() / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)],  # noqa: S603
                                    creationflags=subprocess.CREATE_NO_WINDOW, check=True)
                 else:
