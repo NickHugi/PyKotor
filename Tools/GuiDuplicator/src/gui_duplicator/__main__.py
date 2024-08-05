@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.tools.path import CaseAwarePath
+from utility.system.agnostics import askdirectory
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
@@ -166,6 +167,7 @@ def resize_extent_by_factor(
     extent_struct.set_int32("LEFT", int(extent_struct.get_int32("LEFT") * width_scale_factor))
     extent_struct.set_int32("WIDTH", int(extent_struct.get_int32("WIDTH") * width_scale_factor))
 
+
 def process_file(
     gui_file: CaseAwarePath,
     output_dir: CaseAwarePath,
@@ -178,10 +180,6 @@ def process_file(
         return
 
     gui_data: GFF | None = read_gff(gui_file)
-    if not gui_data:
-        print(f"Could not read GUI file: '{gui_file}'")
-        return
-
     log(f"Processing GUI file: '{gui_file}'")
 
     if PARSER_ARGS.resolution.upper() == "ALL":
@@ -198,9 +196,8 @@ def process_file(
     else:
         for width, height in resolutions:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-            output_folder = gui_file.name
-            output_path: CaseAwarePath = output_dir / output_folder
-            output_path.touch(exist_ok=True)
+            output_path: CaseAwarePath = output_dir / f"{width}x{height}" / gui_file.name
+            output_path.parent.mkdir(exist_ok=True, parents=True)
             write_gff(adjusted_gui_data, output_path)
             log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
 
@@ -239,18 +236,22 @@ def main():
         process_file(input_path, PARSER_ARGS.output, resolutions_to_process)
 
     elif input_path.safe_isdir():
-        for gui_file in input_path.safe_rglob("*.gui"):
+        files_to_process = list(input_path.safe_rglob("*.gui"))
+        if not files_to_process:
+            print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
+        for gui_file in files_to_process:
             new_output_dir: CaseAwarePath = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
             new_output_dir.mkdir(parents=True, exist_ok=True)
             process_file(gui_file, new_output_dir, resolutions_to_process)
 
     else:
-        print(f"Invalid input: {input_path}. It's neither a file nor a directory.")
+        print(f"Invalid input: '{input_path}'. It's neither a file nor a directory.")
         return
 
     if TEST_MODE:
         comparison_dir = CaseAwarePath(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))
         assert compare_directories(PARSER_ARGS.output, comparison_dir), "Test directories do not match."
+
 
 def compare_directories(dir1: CaseAwarePath, dir2: CaseAwarePath) -> bool:
     dir1_files = {str(f).replace(str(dir1), "").replace("\\", ""): f for f in dir1.rglob("*.gui")}
@@ -276,22 +277,26 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
 
     result, unknown = parser.parse_known_args()
     while True:
-        result.input = CaseAwarePath(
-            result.input
-            or (unknown[0] if len(unknown) > 0 else None)
-            or input("Path to the K1/TSL GUI file: ")
-        ).resolve()
+        result.input = result.input or (unknown[0] if len(unknown) > 0 else None) or askdirectory(title="Select a folder of K1/TSL GUI files to convert")
+        if not result.input or not result.input.strip():
+            print("error: You cancelled the browse folder dialog. You must choose a path to load your input .ui file(s)!")
+            result.input = input("Path to the K1/TSL GUI file: ")
+            if not result.input or not result.input.strip():
+                continue
+        result.input = CaseAwarePath(result.input).resolve()
         if result.input.exists():
             break
         print("Invalid path:", result.input)
         parser.print_help()
         result.input = None
     while True:
-        result.output = CaseAwarePath(
-            result.output
-            or (unknown[0] if len(unknown) > 0 else None)
-            or input("Output directory: ")
-        ).resolve()
+        result.output = result.output or (unknown[0] if len(unknown) > 0 else None) or askdirectory(title="Select the output directory:")
+        if not result.output or not result.output.strip():
+            print("error: You cancelled the browse folder dialog. You must choose a path to save your input .ui file(s)!")
+            result.output = input("Folder path to save the conversions at: ")
+            if not result.output or not result.output.strip():
+                continue
+        result.output = CaseAwarePath(result.output).resolve()
         if result.output.parent.exists():
             result.output.mkdir(exist_ok=True, parents=True)
             break
