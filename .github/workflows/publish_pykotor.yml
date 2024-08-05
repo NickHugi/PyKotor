@@ -747,7 +747,7 @@ jobs:
         Move-Item -LiteralPath ./dist/KotorDiff-static -Destination ./dist/KotorDiff -Force
       shell: pwsh
 
-    - name: Compile GUIDuplicator
+    - name: Compile GUIConverter
       if: ${{ success() || failure() }}
       env:
         MATRIX_ARCH: ${{ matrix.architecture }}
@@ -755,7 +755,7 @@ jobs:
         $upxDir = $env:UPX_DIR
         Write-Host "Using UPX directory at '$upxDir'"
         $env:PYTHONOPTIMIZE = "1"
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiconverter_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -force_python_version ${{ matrix.python-version }}
         & $pythonExePath -m pip install --upgrade pip
         if ("${{ runner.os }}" -eq "Windows") {
           if ("${{ matrix.python-version }}" -eq "3.12") {
@@ -768,9 +768,9 @@ jobs:
         } else {
           pip install pyinstaller -U --prefer-binary
         }
-        pip install -r Tools/GuiDuplicator/requirements.txt --prefer-binary
+        pip install -r Tools/GuiConverter/requirements.txt --prefer-binary
         $output = ""
-        . ./compile/compile_gui_duplicator.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
+        . ./compile/compile_gui_converter.ps1 -noprompt -venv_name .venv_guiconverter_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }} -upx_dir $upxDir 2>&1 | ForEach-Object {
           Write-Output $_.ToString()
           if($_ -match 'ERROR:') {
             $errorLines += $_.ToString()
@@ -799,15 +799,15 @@ jobs:
         }
       shell: pwsh
 
-    - name: GUIDuplicator - Create Static Binary
+    - name: GUIConverter - Create Static Binary
       if: ${{ (success() || failure()) && runner.os == 'Linux' }}
       run: |
-        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiduplicator_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
+        . ./install_python_venv.ps1 -noprompt -venv_name .venv_guiconverter_${{ matrix.os }}_${{ matrix.python_pypy }}_${{ matrix.python-version }}_${{ matrix.architecture }}
         & $pythonExePath -m pip install staticx
-        staticx ./dist/GuiDuplicator ./dist/GuiDuplicator-static
+        staticx ./dist/GuiConverter ./dist/GuiConverter-static
         # Rename the static binary for clarity and consistency
-        Write-Output "./dist/GuiDuplicator-static  --> ./dist/GuiDuplicator"
-        Move-Item -LiteralPath ./dist/GuiDuplicator-static -Destination ./dist/GuiDuplicator -Force
+        Write-Output "./dist/GuiConverter-static  --> ./dist/GuiConverter"
+        Move-Item -LiteralPath ./dist/GuiConverter-static -Destination ./dist/GuiConverter -Force
       shell: pwsh
 
     - name: Upload compiled binaries attempt 1

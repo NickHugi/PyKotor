@@ -19,22 +19,23 @@ if ($this_noprompt) {
     . $rootPath/install_python_venv.ps1 -venv_name $venv_name
 }
 
-Write-Host "Installing required packages to build the gui duplicator..."
+Write-Host "Installing required packages to build the gui converter..."
 . $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
 . $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
 . $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
 
 $current_working_dir = (Get-Location).Path
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/GuiDuplicator/src").Path
+Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/GuiConverter/src").Path
 
 # Determine the final executable path
 $finalExecutablePath = $null
 if ((Get-OS) -eq "Windows") {
-    $finalExecutablePath = "$rootPath\dist\GuiDuplicator.exe"
+    $finalExecutablePath = "$rootPath\dist\GuiConverter.exe"
+    . $pythonExePath -m pip install comtypes -U
 } elseif ((Get-OS) -eq "Linux") {
-    $finalExecutablePath = "$rootPath/dist/GuiDuplicator"
+    $finalExecutablePath = "$rootPath/dist/GuiConverter"
 } elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/GuiDuplicator"
+    $finalExecutablePath = "$rootPath/dist/GuiConverter"
 }
 
 # Delete the final executable if it exists
@@ -42,7 +43,7 @@ if (Test-Path -LiteralPath $finalExecutablePath) {
     Remove-Item -LiteralPath $finalExecutablePath -Force
 }
 
-Write-Host "Compiling GuiDuplicator..."
+Write-Host "Compiling GuiConverter..."
 Write-Host "EXTRA PYTHONPATH: '$env:PYTHONPATH'"
 $pyInstallerArgs = @{
     'exclude-module' = @(
@@ -128,7 +129,7 @@ $pyInstallerArgs = @{
     'console' = $true  # https://github.com/pyinstaller/pyinstaller/wiki/FAQ#mac-os-x  https://pyinstaller.org/en/stable/usage.html#cmdoption-w
     'onefile' = $true
     'noconfirm' = $true
-    'name' = "GuiDuplicator"
+    'name' = "GuiConverter"
     'distpath' = ($rootPath + $pathSep + 'dist')
     'upx-dir' = $upx_dir
 }
@@ -171,7 +172,7 @@ foreach ($arg in $pyInstallerArgs) {
 }
 
 # Append the final script path
-$argumentsArray += "gui_duplicator/__main__.py"
+$argumentsArray += "gui_converter/__main__.py"
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"
@@ -179,9 +180,9 @@ Write-Host "Executing command: $pythonExePath $argumentsArray"
 
 # Check if the final executable exists
 if (-not (Test-Path -LiteralPath $finalExecutablePath)) {
-    Write-Error "GUI Duplicator could not be compiled, scroll up to find out why"   
+    Write-Error "GUI Converter could not be compiled, scroll up to find out why"   
 } else {
-    Write-Host "GUI Duplicator was compiled to '$finalExecutablePath'"
+    Write-Host "GUI Converter was compiled to '$finalExecutablePath'"
 }
 Set-Location -LiteralPath $current_working_dir
 

@@ -779,7 +779,7 @@
                 "--distpath=${workspaceFolder}${pathSeparator}dist",
                 "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}Utility${pathSeparator}src",
                 "--path=${workspaceFolder}${pathSeparator}Libraries${pathSeparator}PyKotor${pathSeparator}src",
-                "gui_duplicator${pathSeparator}__main__.py"
+                "gui_converter${pathSeparator}__main__.py"
             ],
             "presentation": {
                 "echo": true,
@@ -794,7 +794,7 @@
             "options": {
                 "shell": {},
                 "env": {},
-                "cwd": "${workspaceFolder}${pathSeparator}tools${pathSeparator}GuiDuplicator${pathSeparator}src"
+                "cwd": "${workspaceFolder}${pathSeparator}tools${pathSeparator}GuiConverter${pathSeparator}src"
             }
         },
         {

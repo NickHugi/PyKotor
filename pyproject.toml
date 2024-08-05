@@ -130,7 +130,7 @@ src = [
     "Tools/BatchPatcher/src",
     "Tools/HoloPatcher/src",
     "Tools/KotorDiff/src",
-    "Tools/GuiDuplicator/src",
+    "Tools/GuiConverter/src",
     "Tools/MDLDecompile/src",
     "tests"
 ]

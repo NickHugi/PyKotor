@@ -6,7 +6,7 @@
     "python.analysis.enablePytestSupport": true,
     "python.analysis.extraPaths": [
         "./Tools/BatchPatcher/src",
-        "./Tools/GuiDuplicator/src",
+        "./Tools/GuiConverter/src",
         "./Tools/HolocronToolset/src",
         "./Tools/HoloPatcher/src",
         "./Tools/KotorDiff/src",
