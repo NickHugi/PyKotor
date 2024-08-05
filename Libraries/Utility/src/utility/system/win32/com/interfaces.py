@@ -58,6 +58,8 @@ IID_IShellLink = GUID("{000214f9-0000-0000-c000-000000000046}")
 IID_IShellLinkDataList = GUID("{45E2B4AE-B1C3-11D0-BA91-00C04FD7A083}")
 IID_IPropertyStore = GUID("{886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99}")
 IID_IFileOperationProgressSink = GUID("{04B0F1A7-9490-44BC-96E1-4296A31252E2}")
+IID_IFileOperation = GUID("{94EA2B94-E9CC-49E0-C0E3-D20A7D91AA98}")
+CLSID_FileOperation = GUID("{3AD05575-8857-4850-9277-11B85BDB8E09}")
 CLSID_FileDialog = GUID("{3D9C8F03-50D4-4E40-BB11-70E74D3F10F3}")
 CLSID_FileOpenDialog = GUID("{DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7}")
 CLSID_FileOpenDialogLegacy = GUID("{725F645B-EAED-4fc5-B1C5-D9AD0ACCBA5E}")
@@ -707,6 +709,80 @@ class FileOperationProgressSink(comtypes.COMObject):
         return S_OK
     def ResumeTimer(self) -> HRESULT:
         return S_OK
+
+
+class IFileOperation(comtypes.IUnknown):
+    _case_insensitive_ = True
+    _iid_ = IID_IFileOperation
+    _idlflags_ = []
+
+    _methods_: ClassVar[list[_ComMemberSpec]] = [
+        # Advise methods
+        comtypes.COMMETHOD([], HRESULT, "Advise",
+                           (["in"], POINTER(IFileOperationProgressSink), "pfops"),
+                           (["out"], POINTER(c_ulong), "pdwCookie")),
+        comtypes.COMMETHOD([], HRESULT, "Unadvise",
+                           (["in"], c_ulong, "dwCookie")),
+
+        # Operation control methods
+        comtypes.COMMETHOD([], HRESULT, "SetOperationFlags",
+                           (["in"], c_ulong, "dwOperationFlags")),
+        comtypes.COMMETHOD([], HRESULT, "SetProgressMessage",
+                           (["in"], c_wchar_p, "pszMessage")),
+        comtypes.COMMETHOD([], HRESULT, "SetProgressDialog",
+                           (["in"], POINTER(IUnknown), "popd")),
+
+        # Item methods
+        comtypes.COMMETHOD([], HRESULT, "SetProperties",
+                           (["in"], POINTER(IUnknown), "pproparray")),
+        comtypes.COMMETHOD([], HRESULT, "SetOwnerWindow",
+                           (["in"], c_ulong, "hwndOwner")),
+        comtypes.COMMETHOD([], HRESULT, "ApplyPropertiesToItem",
+                           (["in"], POINTER(IShellItem), "psiItem")),
+        comtypes.COMMETHOD([], HRESULT, "ApplyPropertiesToItems",
+                           (["in"], POINTER(IUnknown), "punkItems")),
+
+        # Operation methods
+        comtypes.COMMETHOD([], HRESULT, "RenameItem",
+                           (["in"], POINTER(IShellItem), "psiItem"),
+                           (["in"], c_wchar_p, "pszNewName"),
+                           (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
+        comtypes.COMMETHOD([], HRESULT, "RenameItems",
+                           (["in"], POINTER(IUnknown), "pUnkItems"),
+                           (["in"], c_wchar_p, "pszNewName")),
+        comtypes.COMMETHOD([], HRESULT, "MoveItem",
+                           (["in"], POINTER(IShellItem), "psiItem"),
+                           (["in"], POINTER(IShellItem), "psiDestinationFolder"),
+                           (["in"], c_wchar_p, "pszNewName"),
+                           (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
+        comtypes.COMMETHOD([], HRESULT, "MoveItems",
+                           (["in"], POINTER(IUnknown), "punkItems"),
+                           (["in"], POINTER(IShellItem), "psiDestinationFolder")),
+        comtypes.COMMETHOD([], HRESULT, "CopyItem",
+                           (["in"], POINTER(IShellItem), "psiItem"),
+                           (["in"], POINTER(IShellItem), "psiDestinationFolder"),
+                           (["in"], c_wchar_p, "pszNewName"),
+                           (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
+        comtypes.COMMETHOD([], HRESULT, "CopyItems",
+                           (["in"], POINTER(IUnknown), "punkItems"),
+                           (["in"], POINTER(IShellItem), "psiDestinationFolder")),
+        comtypes.COMMETHOD([], HRESULT, "DeleteItem",
+                           (["in"], POINTER(IShellItem), "psiItem"),
+                           (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
+        comtypes.COMMETHOD([], HRESULT, "DeleteItems",
+                           (["in"], POINTER(IUnknown), "punkItems")),
+        comtypes.COMMETHOD([], HRESULT, "NewItem",
+                           (["in"], POINTER(IShellItem), "psiDestinationFolder"),
+                           (["in"], c_ulong, "dwFileAttributes"),
+                           (["in"], c_wchar_p, "pszName"),
+                           (["in"], c_wchar_p, "pszTemplateName"),
+                           (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
+
+        # Execution methods
+        comtypes.COMMETHOD([], HRESULT, "PerformOperations"),
+        comtypes.COMMETHOD([], HRESULT, "GetAnyOperationsAborted",
+                           (["out"], POINTER(c_int), "pfAnyOperationsAborted"))
+    ]
 
 
 class IFileDialogEvents(IUnknown):
