@@ -23,7 +23,7 @@ from multiprocessing import Queue
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Awaitable, Coroutine, Generator, NoReturn, TypeVar, cast
 
-import pypandoc
+import pypandoc  # pyright: ignore[reportMissingTypeStubs]
 import toga
 
 from toga import Group
@@ -31,8 +31,8 @@ from toga.command import Command
 from toga.handlers import AsyncResult
 from toga.sources import ListSource
 from toga.style import Pack
-from travertino.constants import CENTER, COLUMN, ROW
-from travertino.declaration import BaseStyle
+from travertino.constants import CENTER, COLUMN, ROW  # pyright: ignore[reportMissingTypeStubs]
+from travertino.declaration import BaseStyle  # pyright: ignore[reportMissingTypeStubs]
 
 
 def is_frozen() -> bool:
@@ -240,7 +240,7 @@ class HoloPatcher(toga.App):
         cmdline_args: Namespace = parse_args()
         print("parse_args complete")
         print(f"init directory: {cmdline_args.tslpatchdata or Path.cwd()}")
-        self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
+        self.open_mod(cmdline_args.tslpatchdata or Path.cwd(), startup=True)
         self.execute_commandline(cmdline_args)
 
     def run_async_from_sync(
@@ -289,10 +289,28 @@ class HoloPatcher(toga.App):
         self.add_background_task(task_wrapper)
 
     def get_centered_position(self, width: int, height: int) -> tuple[int, int]:
-        user32 = ctypes.windll.user32
+        if platform.system() == "Windows":
+            # Windows
+            user32 = ctypes.windll.user32
+            screen_width = user32.GetSystemMetrics(0)
+            screen_height = user32.GetSystemMetrics(1)
+        # use screeninfo pip package
+        elif self.main_window is None:
+            from screeninfo import get_monitors
+            monitors = get_monitors()
+            if monitors:
+                primary_monitor = monitors[0]
+                screen_width = primary_monitor.width
+                screen_height = primary_monitor.height
+        # macOS and Linux using Toga's main_window to get screen dimensions
+        else:
+            screen = self.main_window.screen_position
+            screen_width = screen.x
+            screen_height = screen.y
+
         return (
-            int((user32.GetSystemMetrics(0) / 2) - (width / 2)),
-            int((user32.GetSystemMetrics(1) / 2) - (height / 2))
+            int((screen_width / 2) - (width / 2)),
+            int((screen_height / 2) - (height / 2))
         )
 
     def initialize_logger(self):
@@ -673,17 +691,17 @@ class HoloPatcher(toga.App):
         namespace_option: PatcherNamespace | None = cast(PatcherNamespace, self.namespaces_combobox.value.patcher_namespace)  # type: ignore[]
         return "" if namespace_option is None else namespace_option.description
 
-    def lowercase_files_and_folders(
+    def lowercase_files_and_folders(  # noqa: C901
         self,
         directory: os.PathLike | str | None = None,
         *,
         reset_namespace: bool = False,
     ):
         if not directory:
-            directory = self.run_async_from_sync(self.main_window.open_file_dialog("Select target directory"))
-            if directory is None:
+            results: list[str] | None = self.open_folder_dialog("Select the folder you'd like to recursively fix.")
+            if not results or not Path(results[0]).safe_isdir():
                 return  # User cancelled the dialog
-
+            directory = Path(results[0])
         try:
 
             def task(app: toga.App | None = None, **kwargs):  # noqa: ARG001
@@ -822,12 +840,24 @@ class HoloPatcher(toga.App):
         self.namespaces_combobox.items = ListSource(data=namespaces, accessors=["patcher_namespace"])
         self.refresh_ui_data(config_reader=config_reader)
 
+    def run_with_dialog(self, callback: Callable[[Any | None, Exception | None], Any], dialog_message: str):
+        async def select_folder() -> Dialog:
+            return await self.main_window.select_folder_dialog(dialog_message)
+
+        def handle_folder_selection(folder, exc):
+            callback("" if folder is None else folder, exc, startup=False)
+
+        self.run_later(
+            select_folder(),
+            handle_folder_selection,
+        )
+
     def open_mod(
         self,
         directory_path_str: os.PathLike | str | None = None,
         exc: BaseException | None = None,
         *,
-        startup: bool = True,
+        startup: bool = False,
     ):
         """Opens a mod directory.
 
@@ -847,16 +877,10 @@ class HoloPatcher(toga.App):
         """
         print(f"open_mod({directory_path_str}, {exc})")
         try:
-            if directory_path_str is None:
-                async def select_folder() -> Dialog:
-                    return await self.main_window.open_file_dialog("Select the mod directory (where tslpatchdata lives)")
-                self.run_later(
-                    select_folder(),
-                    lambda folder, exc: self.open_mod("" if folder is None else folder, exc, startup=False),
-                )
-                return
             if not directory_path_str:
-                return
+                directory_path_str = self.open_folder_dialog("Select the mod directory (where tslpatchdata lives)")
+                if not directory_path_str or not directory_path_str.strip():
+                    return
             # handle when a user selects 'tslpatchdata' instead of mod root
             tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
             if not tslpatchdata_path.safe_isdir() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
@@ -889,10 +913,10 @@ class HoloPatcher(toga.App):
 
         else:  # Mod dir is valid at this point.
             if startup:
-                self.browse_button.style.visibility = "hidden"  # type: ignore[]
-            if not namespace_path.safe_isfile():
-                self.namespaces_combobox.style.visibility = "hidden"  # type: ignore[]
-                self.expand_namespace_description_button.style.visibility = "hidden"  # type: ignore[]
+                self.browse_button.style.visibility = "hidden"
+                if not namespace_path.safe_isfile():
+                    self.namespaces_combobox.style.visibility = "hidden"  # type: ignore[]
+                    self.expand_namespace_description_button.style.visibility = "hidden"  # type: ignore[]
 
     def open_kotor(
         self,
@@ -1593,6 +1617,48 @@ class HoloPatcher(toga.App):
         script = f"showView('{view}');"
         self.web_view.evaluate_javascript(script)
 
+    def open_file_dialog(self, title: str = "Select the file target.") -> list[str] | None:
+        try:
+            if platform.system() == "Windows":
+                from utility.system.win32.com.windialogs import open_folder_dialog
+                results = open_folder_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
+                                            hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
+            else:
+                from utility.system.system_wrappers import unix_open_folder_browser
+                results = unix_open_folder_browser(title)
+        except Exception as e:  # noqa: BLE001, F841
+            RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
+            results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
+        return None if results is None else results
+
+    def open_folder_dialog(self, title: str = "Select the folder target.") -> str | None:
+        try:
+            if platform.system() == "Windows":
+                from utility.system.win32.com.windialogs import open_folder_dialog
+                results = open_folder_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
+                                            hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
+            else:
+                from utility.system.system_wrappers import unix_open_folder_browser
+                results = unix_open_folder_browser(title)
+        except Exception as e:  # noqa: BLE001, F841
+            RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
+            results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
+        return results[0] if results else None
+
+    def save_file_dialog(self, title: str = "Select the path to save this file.") -> list[str] | None:
+        try:
+            if platform.system() == "Windows":
+                from utility.system.win32.com.windialogs import open_folder_dialog
+                results = open_folder_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
+                                            hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
+            else:
+                from utility.system.system_wrappers import unix_open_folder_browser
+                results = unix_open_folder_browser(title)
+        except Exception as e:  # noqa: BLE001, F841
+            RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
+            results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
+        return None if results is None else results
+
 
 @contextmanager
 def temporary_toga_window() -> Generator[toga.Window, Any, None]:
@@ -1648,7 +1714,8 @@ sys.excepthook = onAppCrash
 def hp_exit_cleanup(app: HoloPatcher):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
-    app.main_window.close()
+    if app.main_window is not None:
+        app.main_window.close()
     app.exit()
     terminate_main_process()
 
