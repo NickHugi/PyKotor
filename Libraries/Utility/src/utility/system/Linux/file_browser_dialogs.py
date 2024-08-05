@@ -3,6 +3,8 @@ from __future__ import annotations
 import ctypes
 import subprocess
 
+from utility.logger_util import RobustRootLogger
+
 
 # Check if a command exists
 def command_exists(cmd: str) -> bool:
@@ -95,7 +97,7 @@ def open_file_dialog(title: str = "Open File", file_types: list[str] | None = No
         root.withdraw()
         file_path = filedialog.askopenfilename(title=title, filetypes=[(ft, ft) for ft in file_types] if file_types else None)
     except ImportError:
-        ...
+        RobustRootLogger().error("tkinter not installed, attempting fallbacks...")
     else:
         return file_path if file_path else None
 
@@ -120,7 +122,7 @@ def save_file_dialog(title: str = "Save File", file_types: list[str] | None = No
         root.withdraw()
         file_path = filedialog.asksaveasfilename(title=title, filetypes=[(ft, ft) for ft in file_types] if file_types else None)
     except ImportError:  # noqa: S110
-        pass
+        RobustRootLogger().error("tkinter not installed, attempting fallbacks...")
     else:
         return file_path if file_path else None
 
@@ -145,7 +147,7 @@ def open_folder_dialog(title: str = "Select Folder") -> str | None:
         root.withdraw()
         folder_path = filedialog.askdirectory(title=title)
     except ImportError:  # noqa: S110
-        pass
+        RobustRootLogger().error("tkinter not installed, attempting fallbacks...")
     else:
         return folder_path if folder_path else None
 
