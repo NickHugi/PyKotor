@@ -11,7 +11,7 @@ def unix_open_file_browser(
         from utility.system.MacOS.file_folder_browser import open_file_dialog
         return open_file_dialog(title, file_types)
     if platform.system() == "Linux":
-        from utility.system.Linux.file_browser_dialogs import open_file_dialog
+        from utility.system.Linux.file_folder_browser import open_file_dialog
         result = open_file_dialog(title, file_types)
         if not result:
             return []
@@ -28,7 +28,7 @@ def unix_open_folder_browser(
         from utility.system.MacOS.file_folder_browser import open_folder_dialog
         return open_folder_dialog(title=title)
     if platform.system() == "Linux":
-        from utility.system.Linux.file_browser_dialogs import open_folder_dialog
+        from utility.system.Linux.file_folder_browser import open_folder_dialog
         result = open_folder_dialog(title=title)
         if not result:
             return []
@@ -47,7 +47,7 @@ def save_file_dialog(
         from utility.system.MacOS.file_folder_browser import save_file_dialog
         return save_file_dialog(title=title, default_name=default_name, file_types=file_types)
     if platform.system() == "Linux":
-        from utility.system.Linux.file_browser_dialogs import save_file_dialog
+        from utility.system.Linux.file_folder_browser import save_file_dialog
         result = save_file_dialog(title=title, file_types=file_types)
         if not result:
             return None
