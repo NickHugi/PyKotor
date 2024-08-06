@@ -716,7 +716,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
                 print(format_exception_with_variables(e, message=f"Error during chown for '{self}'"))
 
         # (Any OS) chmod the folder
-        print("Attempting pathlib.Path.chmod(self)...")
+        print(f"Attempting pathlib.Path.chmod({self})...")
         try:
             # Get the current permissions
             current_permissions: int = self.stat().st_mode
@@ -870,7 +870,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(icacls_reset_args))
             else:
-                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False, capture_output=True, text=True)
+                icacls_reset_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_reset_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if icacls_reset_result.returncode != 0:
                     log_func(
                         f"Failed reset permissions of {self_path_str}:\n"
@@ -890,7 +890,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:  # sourcery skip: extract-duplicate-method
                 commands.append(" ".join(takeown_args))
             else:
-                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)
+                takeown_result: subprocess.CompletedProcess[str] = subprocess.run(takeown_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if takeown_result.returncode != 0:
                     log_func(
                         f"Failed to take ownership of {self_path_str}:\n"
@@ -908,7 +908,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(icacls_args))
             else:
-                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)
+                icacls_result: subprocess.CompletedProcess[str] = subprocess.run(icacls_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if icacls_result.returncode != 0:
                     log_func(
                         f"Could not set Windows icacls permissions at '{self_path_str}':\n"
@@ -933,7 +933,7 @@ class Path(PurePath, pathlib.Path):  # type: ignore[misc]
             if elevate:
                 commands.append(" ".join(attrib_args))
             else:
-                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False, capture_output=True, text=True)
+                attrib_result: subprocess.CompletedProcess[str] = subprocess.run(attrib_args, timeout=60, check=False, capture_output=True, text=True)  # noqa: S603
                 if attrib_result.returncode != 0:
                     log_func(
                         f"Could not set Windows icacls permissions at '{self_path_str}':\n"

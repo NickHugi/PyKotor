@@ -27,7 +27,7 @@ def _run_apple_script(script: str) -> str:
     )
     return result.stdout.strip()
 
-def _run_cocoa_dialog(
+def _run_cocoa_dialog(  # noqa: C901, PLR0913
     dialog_type: str,
     title: str | None = None,
     initialdir: str | None = None,
@@ -148,8 +148,8 @@ def askopenfile(  # noqa: PLR0913
     *,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
-    initialdir: os.PathLike | str | None = None,
-    initialfile: os.PathLike | str | None = None,
+    initialdir: str | None = None,
+    initialfile: str | None = None,
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
@@ -169,7 +169,14 @@ def askopenfile(  # noqa: PLR0913
     except Exception:  # noqa: BLE001
         RobustRootLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
         try:
-            result = _run_cocoa_dialog("open_file", title)
+            result = _run_cocoa_dialog(
+                "open_file",
+                defaultextension=defaultextension,
+                filetypes=filetypes,
+                initialdir=initialdir,
+                initialfile=initialfile,
+                title=title,
+            )
             return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
         except Exception:  # noqa: BLE001
             try:
@@ -194,8 +201,8 @@ def askopenfilename(  # noqa: PLR0913
     *,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
-    initialdir: os.PathLike | str | None = None,
-    initialfile: os.PathLike | str | None = None,
+    initialdir: str | None = None,
+    initialfile: str | None = None,
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
@@ -215,7 +222,14 @@ def askopenfilename(  # noqa: PLR0913
     except Exception:  # noqa: BLE001
         RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
         try:
-            result = _run_cocoa_dialog("open_file", title)
+            result = _run_cocoa_dialog(
+                "open_file",
+                defaultextension=defaultextension,
+                filetypes=filetypes,
+                initialdir=initialdir,
+                initialfile=initialfile,
+                title=title,
+            )
             return "" if not result or not result.strip() else result
         except Exception:  # noqa: BLE001
             try:
@@ -265,7 +279,14 @@ def asksaveasfile(  # noqa: PLR0913
     except Exception:  # noqa: BLE001
         RobustRootLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
         try:
-            result = _run_cocoa_dialog("save_file", title, str(initialdir), str(initialfile), filetypes, defaultextension)
+            result = _run_cocoa_dialog(
+                "save_file",
+                defaultextension=defaultextension,
+                filetypes=filetypes,
+                initialdir=str(initialdir),
+                initialfile=str(initialfile),
+                title=title,
+            )
             return None if not result or not result[0].strip() else open(result[0], mode)  # noqa: PTH123, SIM115
         except Exception:  # noqa: BLE001
             script = f"""
@@ -303,7 +324,14 @@ def asksaveasfilename(  # noqa: PLR0913
     except Exception:  # noqa: BLE001
         RobustRootLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
         try:
-            result = _run_cocoa_dialog("save_file", title, str(initialdir), str(initialfile), filetypes, defaultextension)
+            result = _run_cocoa_dialog(
+                "save_file",
+                defaultextension=defaultextension,
+                filetypes=filetypes,
+                initialdir=str(initialdir),
+                initialfile=str(initialfile),
+                title=title,
+            )
             return "" if not result or not result.strip() else result
         except Exception:  # noqa: BLE001
             script = f"""
