@@ -79,7 +79,7 @@ from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.logger_util import RobustRootLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
 from utility.string_util import striprtf  # noqa: E402
-from utility.system.agnostics import askokcancel, askyesno, showerror, askopenfilename, askdirectory, asksaveasfilename  # noqa: E402
+from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, asksaveasfilename, askyesno, showerror  # noqa: E402
 from utility.system.os_helper import get_app_dir, win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 from utility.system.process import terminate_main_process  # noqa: E402
@@ -252,7 +252,7 @@ class HoloPatcher(toga.App):
 
         DO NOT RUN GUI CODE WITH THIS FUNCTION!
         """
-        print("run_async_from_sync called!")
+        print("unsafe async function called!")
         try:
             if isinstance(coro, AsyncResult):
                 async def await_async_result():
@@ -261,7 +261,7 @@ class HoloPatcher(toga.App):
             if isinstance(coro, (Coroutine, asyncio.Task, Awaitable)):
                 return cast(T, asyncio.run_coroutine_threadsafe(coro, self.loop).result())  # Wait for the coroutine to complete and return the result
         finally:
-            print("run_async_from_sync finished!")
+            print("unsafe async function finished!")
         raise TypeError("Provided argument must be a coroutine or a callable returning a coroutine")
 
     def run_later(
@@ -618,11 +618,9 @@ class HoloPatcher(toga.App):
 
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
-            self.run_later(
-                self.display_error_dialog(
-                    "Backup Folder Empty/Missing.",
-                    f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
-                )
+            showerror(
+                "Backup Folder Empty/Missing.",
+                f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
             )
             return
 
@@ -901,8 +899,8 @@ class HoloPatcher(toga.App):
             if startup:
                 self.browse_button.style.visibility = "hidden"
                 if not namespace_path.safe_isfile():
-                    self.namespaces_combobox.style.visibility = "hidden"  # type: ignore[]
-                    self.expand_namespace_description_button.style.visibility = "hidden"  # type: ignore[]
+                    self.namespaces_combobox.style.visibility = "hidden"
+                    self.expand_namespace_description_button.style.visibility = "hidden"
 
     def open_kotor(
         self,
@@ -921,9 +919,8 @@ class HoloPatcher(toga.App):
         try:
             if directory_path_str is None:
                 directory_path_str = self.open_folder_dialog("Select the KOTOR directory")
-                return
-            if not directory_path_str:
-                return
+                if not directory_path_str or not directory_path_str.strip():
+                    return
 
             directory = str(CaseAwarePath(directory_path_str).resolve())
             self.check_access(Path(directory))
@@ -1065,7 +1062,7 @@ class HoloPatcher(toga.App):
             - If access cannot be gained, show error
             - If no access after trying, prompt user to continue with an install anyway.
         """
-        filter_results: Callable[[Path], bool] | None = None  # pyright: ignore[reportGeneralTypeIssues]
+        filter_results: Callable[[Path], bool] | None = None
         if should_filter:
 
             def filter_results(x: Path) -> bool:
@@ -1438,11 +1435,9 @@ class HoloPatcher(toga.App):
             f"{error_name}: {msg}{os.linesep}The installation was aborted with errors"
         )
 
-        self.run_later(
-            self.display_error_dialog(
-                error_name,
-                f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
-            )
+        showerror(
+            error_name,
+            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
         )
         raise
 
@@ -1581,50 +1576,19 @@ class HoloPatcher(toga.App):
         script = f"showView('{view}');"
         self.web_view.evaluate_javascript(script)
 
-    def open_file_dialog(self, title: str = "Select the file target.") -> str | None:
+    def open_file_dialog(self, title: str = "Select the file target.") -> str:
         try:
-            if platform.system() == "Windows":
-                from utility.system.win32.com.windialogs import open_file_dialog
-                results = open_file_dialog(title, allow_multiple_selection=True, no_readonly_return=True,
-                                            hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
-            else:
-                from utility.system.platform_wrappers import unix_open_file_browser
-                results = unix_open_file_browser(title)
-        except Exception as e:  # noqa: BLE001, F841
+            return askopenfilename(title=title)
+        except Exception:  # noqa: BLE001
             RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
-            results = [self.run_async_from_sync(self.main_window.open_file_dialog(title))]
-        if not results or not results[0] or not results[0].strip():
-            return None
-        return results[0]
+            return self.run_async_from_sync(self.main_window.open_file_dialog(title))
 
-    def open_folder_dialog(self, title: str = "Select the folder target.") -> str | None:
+    def open_folder_dialog(self, title: str = "Select the folder target.") -> str:
         try:
-            if platform.system() == "Windows":
-                results = askdirectory(title=title)
-            else:
-                from utility.system.platform_wrappers import unix_open_folder_browser
-                results = unix_open_folder_browser(title)
-        except Exception as e:  # noqa: BLE001, F841
+            return askdirectory(title=title)
+        except Exception:  # noqa: BLE001
             RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
-            results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
-        if not results or not results[0] or not results[0].strip():
-            return None
-        return results[0]
-
-    def save_file_dialog(self, title: str = "Select the path to save this file.") -> str | None:
-        try:
-            if platform.system() == "Windows":
-                from utility.system.win32.com.windialogs import save_file_dialog
-                results = save_file_dialog(title, overwrite_prompt=True, no_readonly_return=True,
-                                            hide_mru_places=True, add_to_recent=False, show_hidden_files=True)
-            else:
-                results = asksaveasfilename(title=title)
-        except Exception as e:  # noqa: BLE001, F841
-            RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
-            results = [self.run_async_from_sync(self.main_window.select_folder_dialog(title))]
-        if not results or not results[0] or not results[0].strip():
-            return None
-        return results[0]
+            return self.run_async_from_sync(self.main_window.select_folder_dialog(title))
 
 
 @contextmanager
