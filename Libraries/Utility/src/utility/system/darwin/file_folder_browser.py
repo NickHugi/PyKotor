@@ -2,25 +2,26 @@ from __future__ import annotations
 
 import subprocess
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
-from utility.system.path import PosixPath
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
 
-    from tkinter import Misc, StringVar  # Do not import tkinter-related outside type-checking blocks, in case not installed.
+    from tkinter import Misc, StringVar, Tk  # Do not import tkinter-related outside type-checking blocks, in case not installed.
+    from typing import IO, Any, Iterable
 
 
-def _get_tk_root():
+def _get_tk_root() -> Tk:
     import tkinter as tk
-    if tk._default_root is None:  # pyright: ignore[reportAttributeAccessIssue]
+    if tk._default_root is None:  # pyright: ignore[reportAttributeAccessIssue]  # noqa: SLF001
         root = tk.Tk()
         root.withdraw()
         return root
-    return tk._default_root  # pyright: ignore[reportAttributeAccessIssue]
+    return tk._default_root  # pyright: ignore[reportAttributeAccessIssue]  # noqa: SLF001
 
-def _run_apple_script(script) -> str:
+def _run_apple_script(script: str) -> str:
     result = subprocess.run(
         ["osascript", "-e", script], check=True, capture_output=True, text=True  # noqa: S607, S603
     )
@@ -114,32 +115,35 @@ def askdirectory(
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError:
-        try:
-            return _run_cocoa_dialog(
-                dialog_type="open_folder",
-                title=title,
-                initialdir=None if initialdir is None else str(initialdir),
-            ) or ""
-        except Exception:
-            try:
-                script = f"""
-                    set directory to POSIX path of (choose folder with prompt "{title}"{f' default location POSIX file "{initialdir}"' if initialdir else ''})
-                    return directory
-                """
-                return _run_apple_script(script)
-            except Exception as e3:
-                raise RuntimeError("All methods to open directory dialog failed") from e3
-    else:
-        return filedialog.askdirectory(
+        result = filedialog.askdirectory(
             initialdir=initialdir,
             mustexist=mustexist,
             title=title,
             parent=_get_tk_root() if parent is None else parent,
         )
+        return "" if not result or not result.strip() else result
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askdirectory() threw an exception!", exc_info=True)
+        try:
+            result = _run_cocoa_dialog(
+                dialog_type="open_folder",
+                title=title,
+                initialdir=None if initialdir is None else str(initialdir),
+            )
+            return "" if not result or not result.strip() else result
+        except Exception:  # noqa: BLE001
+            try:
+                script = f"""
+                    set directory to POSIX path of (choose folder with prompt "{title}"{f' default location POSIX file "{initialdir}"' if initialdir else ''})
+                    return directory
+                """
+                result = _run_apple_script(script)
+                return "" if not result or not result.strip() else result
+            except Exception as e3:
+                raise RuntimeError("All methods to open directory dialog failed") from e3
 
 
-def askopenfile(
+def askopenfile(  # noqa: PLR0913
     mode: str = "r",
     *,
     defaultextension: str | None = None,
@@ -149,16 +153,25 @@ def askopenfile(
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
-):
+) -> IO[Any] | None:
     try:
         from tkinter import filedialog
-    except ImportError as e1:
+        return filedialog.askopenfile(
+            mode,
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog("open_file", title)
-            if not result or not result.strip():
-                return None
-            return PosixPath(result if isinstance(result, str) else result[0]).open(mode)
-        except Exception as e2:  # noqa: BLE001
+            return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
+        except Exception:  # noqa: BLE001
             try:
                 script = f'set file to POSIX path of (choose file with prompt "{title}"'
 
@@ -173,25 +186,11 @@ def askopenfile(
                 script += "\nreturn file"
 
                 result = _run_apple_script(script)
-                if not result or not result.strip():
-                    return None
-                return PosixPath(result).open(mode)
+                return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
             except Exception as e3:
                 raise RuntimeError("All methods to open file dialog failed") from e3
-    else:
-        file = filedialog.askopenfile(
-            mode,
-            defaultextension=defaultextension,
-            filetypes=filetypes,
-            initialdir=initialdir,
-            initialfile=initialfile,
-            title=title,
-            parent=_get_tk_root() if parent is None else parent,
-            typevariable=typevariable,
-        )
-        return file
 
-def askopenfilename(
+def askopenfilename(  # noqa: PLR0913
     *,
     defaultextension: str | None = None,
     filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
@@ -203,15 +202,22 @@ def askopenfilename(
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError as e1:
+        result = filedialog.askopenfilename(
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+        return "" if not result or not result.strip() else result
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog("open_file", title)
-            if not result or not result.strip():
-                return ""
-            return result if isinstance(result, str) else result[0]
-        except ValueError:
-            raise
-        except Exception as e2:  # noqa: BLE001
+            return "" if not result or not result.strip() else result
+        except Exception:  # noqa: BLE001
             try:
                 script = f'set file to POSIX path of (choose file with prompt "{title}"'
 
@@ -225,22 +231,13 @@ def askopenfilename(
                 script += ")"
                 script += "\nreturn file"
 
-                return _run_apple_script(script)
+                result = _run_apple_script(script)
+                return "" if not result or not result.strip() else result
             except Exception as e3:
                 raise RuntimeError("All methods to open file dialog failed") from e3
-    else:
-        file = filedialog.askopenfilename(
-            defaultextension=defaultextension,
-            filetypes=filetypes,
-            initialdir=initialdir,
-            initialfile=initialfile,
-            title=title,
-            parent=_get_tk_root() if parent is None else parent,
-            typevariable=typevariable,
-        )
-        return file
 
-def asksaveasfile(
+
+def asksaveasfile(  # noqa: PLR0913
     mode: str = "w",
     *,
     confirmoverwrite: bool | None = None,
@@ -251,38 +248,35 @@ def asksaveasfile(
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
-):
+) -> IO[Any] | None:
     try:
         from tkinter import filedialog
-    except ImportError:
-        try:
-            file = _run_cocoa_dialog("save_file", title, str(initialdir), str(initialfile), filetypes, defaultextension)
-            if not file or not file.strip():
-                return None
-            return PosixPath(file).resolve().open(mode)
-        except Exception:  # noqa: BLE001
-            script = f"""
-                set file to POSIX path of (choose file name with prompt "{title}"{f' default location POSIX file "{initialdir}"' if initialdir else ''}{f' default name "{initialfile}"' if initialfile else ''})
-                return file
-            """
-            result = _run_apple_script(script)
-            if not result or not result.strip():
-                return None
-            return PosixPath(result).resolve().open(mode)
-    else:
         return filedialog.asksaveasfile(
             mode,
             confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
-            filetypes=filetypes,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
             initialdir=initialdir,
             initialfile=initialfile,
             parent=_get_tk_root() if parent is None else parent,
             title=title,
             typevariable=typevariable,
         )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
+        try:
+            result = _run_cocoa_dialog("save_file", title, str(initialdir), str(initialfile), filetypes, defaultextension)
+            return None if not result or not result[0].strip() else open(result[0], mode)  # noqa: PTH123, SIM115
+        except Exception:  # noqa: BLE001
+            script = f"""
+                set file to POSIX path of (choose file name with prompt "{title}"{f' default location POSIX file "{initialdir}"' if initialdir else ''}{f' default name "{initialfile}"' if initialfile else ''})
+                return file
+            """
+            result = _run_apple_script(script)
+            return None if not result or not result[0].strip() else open(result[0], mode)  # noqa: PTH123, SIM115
 
-def asksaveasfilename(
+
+def asksaveasfilename(  # noqa: PLR0913
     *,
     confirmoverwrite: bool | None = None,
     defaultextension: str | None = None,
@@ -295,29 +289,34 @@ def asksaveasfilename(
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError:
-        try:
-            file = _run_cocoa_dialog("save_file", title, str(initialdir), str(initialfile), filetypes, defaultextension)
-            if not file or not file.strip():
-                return ""
-            return file  # noqa: TRY300
-        except Exception:  # noqa: BLE001
-            script = f"""
-                set file to POSIX path of (choose file name with prompt "{title}"{f' default location POSIX file "{initialdir}"' if initialdir else ''}{f' default name "{initialfile}"' if initialfile else ''})
-                return file
-            """  # noqa: E501
-            result = _run_apple_script(script)
-            if not result or not result.strip():
-                return ""
-            return result
-    else:
-        return filedialog.asksaveasfilename(
+        result = filedialog.asksaveasfilename(
             confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
-            filetypes=filetypes,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
             initialdir=initialdir,
             initialfile=initialfile,
             parent=_get_tk_root() if parent is None else parent,
             title=title,
             typevariable=typevariable,
         )
+        return "" if not result or not result.strip() else result
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
+        try:
+            result = _run_cocoa_dialog("save_file", title, str(initialdir), str(initialfile), filetypes, defaultextension)
+            return "" if not result or not result.strip() else result
+        except Exception:  # noqa: BLE001
+            script = f"""
+                set file to POSIX path of (choose file name with prompt "{title}"{f' default location POSIX file "{initialdir}"' if initialdir else ''}{f' default name "{initialfile}"' if initialfile else ''})
+                return file
+            """  # noqa: E501
+            result = _run_apple_script(script)
+            return "" if not result or not result.strip() else result
+
+
+if __name__ == "__main__":
+    askdirectory()
+    askopenfile()
+    askopenfilename()
+    asksaveasfile()
+    asksaveasfilename()

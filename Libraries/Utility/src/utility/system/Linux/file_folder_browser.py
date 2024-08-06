@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import subprocess
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
-from utility.system.path import PosixPath
+from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
 
-    from tkinter import Misc, StringVar  # Do not import tkinter-related outside type-checking blocks, in case not installed.
+    from tkinter import Misc, StringVar, Tk  # Do not import tkinter-related outside type-checking blocks, in case not installed.
+    from typing import IO, Any, Iterable
 
 
-def _get_tk_root():
+def _get_tk_root() -> Tk:
     import tkinter as tk
     if tk._default_root is None:  # pyright: ignore[reportAttributeAccessIssue]  # noqa: SLF001
         root = tk.Tk()
@@ -127,31 +128,35 @@ def askdirectory(  # noqa: PLR0913, PLR0911, ANN201
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError:
+        result = filedialog.askdirectory(
+            initialdir=initialdir,
+            mustexist=mustexist,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+        )
+        return "" if not result or not result.strip() else result
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askdirectory() threw an exception!", exc_info=True)
         try:
-            return _run_zenity_dialog("file-selection", ["--directory", f"--title={title}", f"--filename={initialdir or ''}"]) or ""
-        except Exception:
+            result = _run_zenity_dialog("file-selection", ["--directory", f"--title={title}", f"--filename={initialdir or ''}"]) or ""
+            return "" if not result or not result.strip() else result
+        except Exception:  # noqa: BLE001
             try:
-                return _run_yad_dialog("file-selection", ["--directory", f"--title={title}", f"--filename={initialdir or ''}"]) or ""
-            except Exception:
+                result = _run_yad_dialog("file-selection", ["--directory", f"--title={title}", f"--filename={initialdir or ''}"]) or ""
+                return "" if not result or not result.strip() else result
+            except Exception:  # noqa: BLE001
                 try:
-                    return _run_gtk_dialog(
+                    result = _run_gtk_dialog(
                         dialog_type="open_folder",
                         title=title,
                         initialdir=None if initialdir is None else str(initialdir),
                         initialfile=None,
                         filetypes=None,
                         defaultextension=None,
-                    ) or ""
+                    )
+                    return "" if not result or not result.strip() else result
                 except Exception as e4:
                     raise RuntimeError("All methods to open directory dialog failed") from e4
-    else:
-        return filedialog.askdirectory(
-            initialdir=initialdir,
-            mustexist=mustexist,
-            title=title,
-            parent=_get_tk_root() if parent is None else parent,
-        )
 
 
 def askopenfile(  # noqa: PLR0913, PLR0911, ANN201
@@ -164,22 +169,29 @@ def askopenfile(  # noqa: PLR0913, PLR0911, ANN201
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
-):
+) -> IO[Any] | None:
     try:
         from tkinter import filedialog
-    except ImportError:
+        return filedialog.askopenfile(
+            mode,
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
-            if not result or not result.strip():
-                return None
-            return PosixPath(result).open(mode)
-        except Exception:
+            return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
+        except Exception:  # noqa: BLE001
             try:
                 result = _run_yad_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
-                if not result or not result.strip():
-                    return None
-                return PosixPath(result).open(mode)
-            except Exception:
+                return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
+            except Exception:  # noqa: BLE001
                 try:
                     result = _run_gtk_dialog(
                         dialog_type="open_file",
@@ -189,23 +201,9 @@ def askopenfile(  # noqa: PLR0913, PLR0911, ANN201
                         filetypes=filetypes,
                         defaultextension=defaultextension,
                     )
-                    if not result or not result.strip():
-                        return None
-                    return PosixPath(result).open(mode)
+                    return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
                 except Exception as e:
                     raise RuntimeError("All methods to open file dialog failed") from e
-    else:
-        file = filedialog.askopenfile(
-            mode,
-            defaultextension=defaultextension,
-            filetypes=filetypes,
-            initialdir=initialdir,
-            initialfile=initialfile,
-            title=title,
-            parent=_get_tk_root() if parent is None else parent,
-            typevariable=typevariable,
-        )
-        return file
 
 
 def askopenfilename(  # noqa: PLR0913, PLR0911, ANN201
@@ -220,41 +218,38 @@ def askopenfilename(  # noqa: PLR0913, PLR0911, ANN201
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError:
-        try:
-            result = _run_zenity_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
-            if not result or not result.strip():
-                return ""
-            return result
-        except Exception:
-            try:
-                result = _run_yad_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
-                if not result or not result.strip():
-                    return ""
-                return result
-            except Exception:
-                try:
-                    return _run_gtk_dialog(
-                        dialog_type="open_file",
-                        title=title,
-                        initialdir=None if initialdir is None else str(initialdir),
-                        initialfile=None if initialfile is None else str(initialfile),
-                        filetypes=filetypes,
-                        defaultextension=defaultextension,
-                    ) or ""
-                except Exception as e4:
-                    raise RuntimeError("All methods to open filename dialog failed") from e4
-    else:
-        file = filedialog.askopenfilename(
+        result = filedialog.askopenfilename(
             defaultextension=defaultextension,
-            filetypes=filetypes,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
             initialdir=initialdir,
             initialfile=initialfile,
             title=title,
             parent=_get_tk_root() if parent is None else parent,
             typevariable=typevariable,
         )
-        return file
+        return "" if not result or not result.strip() else result
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
+        try:
+            result = _run_zenity_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
+            return "" if not result or not result.strip() else result
+        except Exception:  # noqa: BLE001
+            try:
+                result = _run_yad_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
+                return "" if not result or not result.strip() else result
+            except Exception:  # noqa: BLE001
+                try:
+                    result = _run_gtk_dialog(
+                        dialog_type="open_file",
+                        title=title,
+                        initialdir=None if initialdir is None else str(initialdir),
+                        initialfile=None if initialfile is None else str(initialfile),
+                        filetypes=filetypes,
+                        defaultextension=defaultextension,
+                    )
+                    return "" if not result or not result.strip() else result
+                except Exception as e4:
+                    raise RuntimeError("All methods to open filename dialog failed") from e4
 
 
 def asksaveasfile(  # noqa: PLR0913, PLR0911, ANN201
@@ -268,22 +263,30 @@ def asksaveasfile(  # noqa: PLR0913, PLR0911, ANN201
     parent: Misc | None = None,
     title: str | None = None,
     typevariable: StringVar | str | None = None,
-):
+) -> IO[Any] | None:
     try:
         from tkinter import filedialog
-    except ImportError:
+        return filedialog.asksaveasfile(
+            mode,
+            confirmoverwrite=confirmoverwrite,
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            parent=_get_tk_root() if parent is None else parent,
+            title=title,
+            typevariable=typevariable,
+        )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
-            if not result or not result.strip():
-                return None
-            return PosixPath(result).open(mode)
-        except Exception:
+            return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
+        except Exception:  # noqa: BLE001
             try:
                 result = _run_yad_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
-                if not result or not result.strip():
-                    return None
-                return PosixPath(result).open(mode)
-            except Exception:
+                return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
+            except Exception:  # noqa: BLE001
                 try:
                     result = _run_gtk_dialog(
                         dialog_type="save_file",
@@ -293,23 +296,9 @@ def asksaveasfile(  # noqa: PLR0913, PLR0911, ANN201
                         filetypes=filetypes,
                         defaultextension=defaultextension,
                     )
-                    if result is None:
-                        return None
-                    return PosixPath(result).open(mode)
+                    return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
                 except Exception as e4:
                     raise RuntimeError("All methods to save file dialog failed") from e4
-    else:
-        return filedialog.asksaveasfile(
-            mode,
-            confirmoverwrite=confirmoverwrite,
-            defaultextension=defaultextension,
-            filetypes=filetypes,
-            initialdir=initialdir,
-            initialfile=initialfile,
-            parent=_get_tk_root() if parent is None else parent,
-            title=title,
-            typevariable=typevariable,
-        )
 
 
 def asksaveasfilename(  # noqa: PLR0913, PLR0911, ANN201
@@ -325,38 +314,44 @@ def asksaveasfilename(  # noqa: PLR0913, PLR0911, ANN201
 ) -> str:
     try:
         from tkinter import filedialog
-    except ImportError:
-        try:
-            result = _run_zenity_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
-            if not result or not result.strip():
-                return ""
-            return result
-        except Exception:
-            try:
-                result = _run_yad_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
-                if not result or not result.strip():
-                    return ""
-                return result
-            except Exception:
-                try:
-                    return _run_gtk_dialog(
-                        dialog_type="save_file",
-                        title=title,
-                        initialdir=None if initialdir is None else str(initialdir),
-                        initialfile=None if initialfile is None else str(initialfile),
-                        filetypes=filetypes,
-                        defaultextension=defaultextension,
-                    ) or ""
-                except Exception as e4:
-                    raise RuntimeError("All methods to save filename dialog failed") from e4
-    else:
-        return filedialog.asksaveasfilename(
+        result = filedialog.asksaveasfilename(
             confirmoverwrite=confirmoverwrite,
             defaultextension=defaultextension,
-            filetypes=filetypes,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
             initialdir=initialdir,
             initialfile=initialfile,
             parent=_get_tk_root() if parent is None else parent,
             title=title,
             typevariable=typevariable,
         )
+        return "" if not result or not result.strip() else result
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
+        try:
+            result = _run_zenity_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
+            return "" if not result or not result.strip() else result
+        except Exception:  # noqa: BLE001
+            try:
+                result = _run_yad_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
+                return "" if not result or not result.strip() else result
+            except Exception:  # noqa: BLE001
+                try:
+                    result = _run_gtk_dialog(
+                        dialog_type="save_file",
+                        title=title,
+                        initialdir=None if initialdir is None else str(initialdir),
+                        initialfile=None if initialfile is None else str(initialfile),
+                        filetypes=filetypes,
+                        defaultextension=defaultextension,
+                    )
+                    return "" if not result or not result.strip() else result
+                except Exception as e4:
+                    raise RuntimeError("All methods to save filename dialog failed") from e4
+
+
+if __name__ == "__main__":
+    askdirectory()
+    askopenfile()
+    askopenfilename()
+    asksaveasfile()
+    asksaveasfilename()
