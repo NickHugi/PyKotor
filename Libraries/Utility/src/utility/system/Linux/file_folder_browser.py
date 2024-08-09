@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from tkinter import Misc, StringVar, Tk  # Do not import tkinter-related outside type-checking blocks, in case not installed.
     from typing import IO, Any, Iterable
 
+    from typing_extensions import Literal
+
 
 def _get_tk_root() -> Tk:
     import tkinter as tk
@@ -250,6 +252,124 @@ def askopenfilename(  # noqa: PLR0913, PLR0911, ANN201
                     return "" if not result or not result.strip() else result
                 except Exception as e4:
                     raise RuntimeError("All methods to open filename dialog failed") from e4
+
+
+def askopenfilenames(  # noqa: PLR0913
+    *,
+    defaultextension: str | None = None,
+    filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
+    initialdir: os.PathLike | str | None = None,
+    initialfile: os.PathLike | str | None = None,
+    parent: Misc | None = None,
+    title: str | None = None,
+    typevariable: StringVar | str | None = None,
+) -> tuple[str, ...] | Literal[""]:
+    try:
+        from tkinter import filedialog
+        result = filedialog.askopenfilenames(
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+        return "" if not result else tuple(result)
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
+        try:
+            result = _run_zenity_dialog("file-selection", [
+                f"--title={title}",
+                "--multiple",
+                "--separator=|",
+                f"--filename={initialdir or ''}",
+                *([f"--file-filter={ftype[1]}" for ftype in filetypes] if filetypes else [])
+            ]) or ""
+            return "" if not result or not result.strip() else tuple(result.split("|"))
+        except Exception:  # noqa: BLE001
+            try:
+                result = _run_yad_dialog("file-selection", [
+                    f"--title={title}",
+                    "--multiple",
+                    "--separator=|",
+                    f"--filename={initialdir or ''}",
+                    *([f"--file-filter={ftype[1]}" for ftype in filetypes] if filetypes else [])
+                ]) or ""
+                return "" if not result or not result.strip() else tuple(result.split("|"))
+            except Exception:  # noqa: BLE001
+                try:
+                    result = _run_gtk_dialog(
+                        dialog_type="open_file",
+                        title=title,
+                        initialdir=None if initialdir is None else str(initialdir),
+                        initialfile=None if initialfile is None else str(initialfile),
+                        filetypes=filetypes,
+                        defaultextension=defaultextension,
+                    )
+                    return "" if not result or not result.strip() else (result,)
+                except Exception as e4:
+                    raise RuntimeError("All methods to open filenames dialog failed") from e4
+
+
+def askopenfiles(  # noqa: PLR0913
+    mode: str = "r",
+    *,
+    defaultextension: str | None = None,
+    filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
+    initialdir: os.PathLike | str | None = None,
+    initialfile: os.PathLike | str | None = None,
+    parent: Misc | None = None,
+    title: str | None = None,
+    typevariable: StringVar | str | None = None,
+) -> tuple[IO[Any], ...] | None:
+    try:
+        from tkinter import filedialog
+        result = filedialog.askopenfiles(
+            mode,
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+        return result if result else None  # noqa: TRY300
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
+        try:
+            result = _run_zenity_dialog("file-selection", [
+                f"--title={title}",
+                "--multiple",
+                "--separator=|",
+                f"--filename={initialdir or ''}",
+                *([f"--file-filter={ftype[1]}" for ftype in filetypes] if filetypes else [])
+            ])
+            return None if not result or not result.strip() else tuple(open(file, mode) for file in result.split("|"))
+        except Exception:  # noqa: BLE001
+            try:
+                result = _run_yad_dialog("file-selection", [
+                    f"--title={title}",
+                    "--multiple",
+                    "--separator=|",
+                    f"--filename={initialdir or ''}",
+                    *([f"--file-filter={ftype[1]}" for ftype in filetypes] if filetypes else [])
+                ])
+                return None if not result or not result.strip() else tuple(open(file, mode) for file in result.split("|"))
+            except Exception:  # noqa: BLE001
+                try:
+                    result = _run_gtk_dialog(
+                        dialog_type="open_file",
+                        title=title,
+                        initialdir=None if initialdir is None else str(initialdir),
+                        initialfile=None if initialfile is None else str(initialfile),
+                        filetypes=filetypes,
+                        defaultextension=defaultextension,
+                    )
+                    return None if not result or not result.strip() else (open(result, mode),)
+                except Exception as e4:
+                    raise RuntimeError("All methods to open files dialog failed") from e4
 
 
 def asksaveasfile(  # noqa: PLR0913, PLR0911, ANN201

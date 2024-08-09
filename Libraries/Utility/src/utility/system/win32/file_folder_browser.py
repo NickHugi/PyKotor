@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from tkinter import Misc, StringVar, Tk  # Do not import tkinter-related outside type-checking blocks, in case not installed.
     from typing import IO, Any, Iterable
 
+    from typing_extensions import Literal
+
 
 def _get_tk_root() -> Tk:
     import tkinter as tk
@@ -110,6 +112,78 @@ def askopenfilename(  # noqa: PLR0913
             defaultextension,
         )
         return "" if not result or not result[0].strip() else result[0]
+
+
+def askopenfilenames(  # noqa: PLR0913
+    *,
+    defaultextension: str | None = None,
+    filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
+    initialdir: os.PathLike | str | None = None,
+    initialfile: os.PathLike | str | None = None,
+    parent: Misc | None = None,
+    title: str | None = None,
+    typevariable: StringVar | str | None = None,
+) -> tuple[str, ...] | Literal[""]:
+    try:
+        from tkinter import filedialog
+        result = filedialog.askopenfilenames(
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+        return "" if not result else tuple(result)
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import open_file_dialog
+        result = open_file_dialog(
+            title,
+            None if initialdir is None else str(initialdir),
+            filetypes,
+            defaultextension,
+            allow_multiple_selection=True
+        )
+        return "" if not result else tuple(result)
+
+
+def askopenfiles(  # noqa: PLR0913
+    mode: str = "r",
+    *,
+    defaultextension: str | None = None,
+    filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
+    initialdir: os.PathLike | str | None = None,
+    initialfile: os.PathLike | str | None = None,
+    parent: Misc | None = None,
+    title: str | None = None,
+    typevariable: StringVar | str | None = None,
+) -> tuple[IO[Any], ...] | None:
+    try:
+        from tkinter import filedialog
+        return filedialog.askopenfiles(
+            mode,
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,  # rem: do not send None
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
+        from utility.system.win32.com.windialogs import open_file_dialog
+        result = open_file_dialog(
+            title,
+            None if initialdir is None else str(initialdir),
+            filetypes,
+            defaultextension,
+            allow_multiple_selection=True
+        )
+        return None if not result else tuple(open(file, mode) for file in result)  # noqa: PTH123, SIM115
+
 
 
 def asksaveasfile(  # noqa: PLR0913, ANN201

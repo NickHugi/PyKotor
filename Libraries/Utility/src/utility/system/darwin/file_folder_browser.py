@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from tkinter import Misc, StringVar, Tk  # Do not import tkinter-related outside type-checking blocks, in case not installed.
     from typing import IO, Any, Iterable
 
+    from typing_extensions import Literal
+
 
 def _get_tk_root() -> Tk:
     import tkinter as tk
@@ -249,6 +251,108 @@ def askopenfilename(  # noqa: PLR0913
                 return "" if not result or not result.strip() else result
             except Exception as e3:
                 raise RuntimeError("All methods to open file dialog failed") from e3
+
+
+def askopenfilenames(  # noqa: PLR0913
+    *,
+    defaultextension: str | None = None,
+    filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
+    initialdir: os.PathLike | str | None = None,
+    initialfile: os.PathLike | str | None = None,
+    parent: Misc | None = None,
+    title: str | None = None,
+    typevariable: StringVar | str | None = None,
+) -> tuple[str, ...] | Literal[""]:
+    try:
+        from tkinter import filedialog
+        result = filedialog.askopenfilenames(
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+        return tuple(result) if result else ""
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
+        try:
+            result = _run_cocoa_dialog(
+                dialog_type="open_file",
+                defaultextension=defaultextension,
+                filetypes=filetypes,
+                initialdir=initialdir,
+                initialfile=initialfile,
+                title=title,
+            )
+            return tuple(result.split(",")) if result else ""
+        except Exception:  # noqa: BLE001
+            try:
+                script = f'set files to choose file with prompt "{title}"'
+                if initialdir:
+                    script += f' default location POSIX file "{initialdir}"'
+                if filetypes:
+                    file_types_str = ", ".join([f'"{ft[1]}"' if isinstance(ft[1], str) else "{"+", ".join([f'"{ext}"' for ext in ft[1]])+"}" for ft in filetypes])
+                    script += f" of type {{{file_types_str}}}"
+                script += " with multiple selections allowed"
+                script += "\nreturn files as POSIX path"
+                result = _run_apple_script(script)
+                return tuple(result.split(",")) if result else ""
+            except Exception as e3:
+                raise RuntimeError("All methods to open multiple files dialog failed") from e3
+
+
+def askopenfiles(  # noqa: PLR0913
+    mode: str = "r",
+    *,
+    defaultextension: str | None = None,
+    filetypes: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = None,
+    initialdir: os.PathLike | str | None = None,
+    initialfile: os.PathLike | str | None = None,
+    parent: Misc | None = None,
+    title: str | None = None,
+    typevariable: StringVar | str | None = None,
+) -> tuple[IO[Any], ...] | None:
+    try:
+        from tkinter import filedialog
+        result = filedialog.askopenfiles(
+            mode=mode,
+            defaultextension=defaultextension,
+            filetypes=[] if filetypes is None else filetypes,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            title=title,
+            parent=_get_tk_root() if parent is None else parent,
+            typevariable=typevariable,
+        )
+        return tuple(result) if result else None
+    except Exception:  # noqa: BLE001
+        RobustRootLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
+        try:
+            result = _run_cocoa_dialog(
+                dialog_type="open_file",
+                defaultextension=defaultextension,
+                filetypes=filetypes,
+                initialdir=initialdir,
+                initialfile=initialfile,
+                title=title,
+            )
+            return tuple(open(f, mode) for f in result.split(",")) if result else None
+        except Exception:  # noqa: BLE001
+            try:
+                script = f'set files to choose file with prompt "{title}"'
+                if initialdir:
+                    script += f' default location POSIX file "{initialdir}"'
+                if filetypes:
+                    file_types_str = ", ".join([f'"{ft[1]}"' if isinstance(ft[1], str) else "{"+", ".join([f'"{ext}"' for ext in ft[1]])+"}" for ft in filetypes])
+                    script += f" of type {{{file_types_str}}}"
+                script += " with multiple selections allowed"
+                script += "\nreturn files as POSIX path"
+                result = _run_apple_script(script)
+                return tuple(open(f, mode) for f in result.split(",")) if result else None
+            except Exception as e3:
+                raise RuntimeError("All methods to open multiple files dialog failed") from e3
 
 
 def asksaveasfile(  # noqa: PLR0913
