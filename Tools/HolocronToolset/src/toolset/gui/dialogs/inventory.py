@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, cast
 
 import qtpy
 
@@ -202,7 +202,12 @@ class InventoryEditor(QDialog):
             self.setEquipment(slot, str(item.resref))
 
         for item in self.inventory:
-            self.ui.contentsTable.addItem(str(item.resref), item.droppable, item.infinite)
+            try:
+                self.ui.contentsTable.addItem(str(item.resref), item.droppable, item.infinite)
+            except FileNotFoundError:  # noqa: PERF203
+                RobustRootLogger().error(f"{item.resref}.uti did not exist in the installation", exc_info=True)
+            except (OSError, ValueError):  # noqa: PERF203
+                RobustRootLogger().error(f"{item.resref}.uti is corrupted", exc_info=True)
 
         self.ui.tabWidget_2.setVisible(not hide_equipment)
 
@@ -599,7 +604,7 @@ class InventoryTable(QTableWidget):
         """
         rowID: int = self.rowCount()
         self.insertRow(rowID)
-        filepath, name, uti = self.window().getItem(resname, "")
+        filepath, name, uti = cast(InventoryEditor, self.window()).getItem(resname, "")
         iconItem: QTableWidgetItem = self._set_uti(uti)
         nameItem = QTableWidgetItem(name)
         nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
