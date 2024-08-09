@@ -19,9 +19,9 @@ if ($this_noprompt) {
 }
 
 Write-Host "Installing required packages to build the kotordiff tool..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
+& $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+& $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
 
 $current_working_dir = (Get-Location).Path
 Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/KotorDiff/src").Path
