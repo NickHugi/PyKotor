@@ -73,8 +73,8 @@ if ((Get-OS) -eq "Mac") {
 }
 
 Write-Host "Installing required packages to build the batchpatcher..."
-. $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-. $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "BatchPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
-. $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorFont" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+& $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Tools" + $pathSep + "BatchPatcher" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotorFont" + $pathSep + "requirements.txt") --prefer-binary --progress-bar on
