@@ -726,7 +726,7 @@ class App:
                 system32_path = win_get_system32_dir()
                 subprocess.run([str(system32_path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)  # noqa: S603
             else:
-                subprocess.run(["kill", "-9", str(pid)], check=True)
+                subprocess.run(["kill", "-9", str(pid)], check=True)  # noqa: S607, S603
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "Failed to kill process", msgbox=False)
         finally:
