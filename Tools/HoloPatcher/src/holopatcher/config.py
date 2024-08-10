@@ -11,13 +11,13 @@ from utility.error_handling import universal_simplify_exception
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "1.6.0b4",
+    "currentVersion": "1.7.0b1",
     "holopatcherLatestVersion": "1.5.2",
-    "holopatcherLatestBetaVersion": "1.6.0b4",
+    "holopatcherLatestBetaVersion": "1.7.0b1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HoloPatcher/src/config.py?ref=bleeding-edge",
     "holopatcherDownloadLink": "https://deadlystream.com/files/file/1982-holocron-holopatcher",
-    "holopatcherBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v1.60-patcher-beta4",
+    "holopatcherBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v1.70-patcher-beta1",
     "holopatcherDirectLinks": {
         "Darwin": {
             "32bit": [],
