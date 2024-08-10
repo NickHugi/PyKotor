@@ -214,13 +214,15 @@ class AsyncLoader(QDialog, Generic[T]):
         self.optionalFinishHook.emit(result)
 
     def _onFailed(self, error: Exception):
-        self.error = error
+        print("AsyncLoader._onFailed")
+        self.errors.append(error)
         self.optionalErrorHook.emit(error)
         RobustRootLogger().error(str(error), exc_info=error)
         if len(self.errors) == 1:  # Keep the first error as the main error
             self.error = error
 
-    def _onCompleted(self, result: Any):
+    def _onCompleted(self):
+        print("_onCompleted")
         if self.error is not None:
             self.reject()
             self._showErrorDialog()
@@ -228,6 +230,7 @@ class AsyncLoader(QDialog, Generic[T]):
             self.accept()
 
     def _showErrorDialog(self):
+        print("AsyncLoader._showErrorDialog")
         if self.errorTitle:
             error_msgs = ""
             for i, e in enumerate(self.errors):
@@ -262,10 +265,10 @@ class AsyncLoader(QDialog, Generic[T]):
 
 
 class AsyncWorker(QThread):
-    successful = QtCore.Signal(object)
-    failed = QtCore.Signal(object)
-    progress = QtCore.Signal(object, str)
-    completed = QtCore.Signal(object)
+    successful = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    failed = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    progress = QtCore.Signal(object, str)  # pyright: ignore[reportPrivateImportUsage]
+    completed = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(
         self,
@@ -287,7 +290,7 @@ class AsyncWorker(QThread):
             profiler = cProfile.Profile()
             profiler.enable()
         result = None
-        for i, task in enumerate(self._tasks):
+        for task in self._tasks:
             if len(self._tasks) > 1:
                 self.progress_callback(1, "increment")
             try:
@@ -295,10 +298,12 @@ class AsyncWorker(QThread):
             except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
                 self.failed.emit(e)
                 if self._fast_fail:
+                    print("fast fail, emit completed")
+                    self.completed.emit()
                     break
             else:
                 self.successful.emit(result)
-        self.completed.emit(result)
+        self.completed.emit()
         if use_profiler:
             profiler.disable()
             profiler.dump_stats(f"{uuid.uuid1().hex[:7]}_async_worker.pstat")
