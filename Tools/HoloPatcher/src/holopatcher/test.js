@@ -11,6 +11,13 @@ const path = require('path');
 
     await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
+    // Capture console.log messages from the page
+    page.on('console', msg => {
+        for (let i = 0; i < msg.args().length; ++i) {
+            console.log(`${i}: ${msg.args()[i]}`);
+        }
+    });
+
     async function resetPage() {
         await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
     }
@@ -23,8 +30,10 @@ const path = require('path');
 
     async function removeAllLogs() {
         await page.evaluate(() => {
-            const logsContainer = document.getElementById('logs');
-            logsContainer.innerHTML = '';
+            const logsContainer = document.getElementById('logs').querySelector('tbody');
+            while (logsContainer.firstChild) {
+                logsContainer.removeChild(logsContainer.firstChild);
+            }
             updateExpanderState();
         });
     }
