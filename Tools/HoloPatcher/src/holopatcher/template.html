@@ -36,25 +36,22 @@
         #logs {
             overflow-y: auto;
             display: none;
+            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
+            z-index: 3; /* Higher z-index to cover content */
         }
         .collapsed #logs {
             display: none;
         }
-        .expanded #logs, .slightly-expanded #logs {
+        .slightly-expanded #logs {
+            max-height: 70vh; /* Set a max height to prevent it from covering too much content */
             display: block;
+            overflow-y: auto; /* Enable vertical scrolling */
         }
         .collapsed #expander::after {
             content: ' ^^^ LOG VIEW ^^^ ';
         }
-        .expanded #expander::after {
-            content: ' vvv LOG VIEW vvv ';
-        }
         .slightly-expanded #expander::after {
             content: ' --- LOG VIEW --- ';
-        }
-        .expanded #log-container {
-            height: 100%;
-            top: 0;
         }
         .slightly-expanded #log-container {
             height: 30%;
@@ -67,6 +64,10 @@
         table {
             width: 100%;
             border-collapse: collapse;
+        }
+        td {
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Ensures that long words wrap correctly */
         }
         tr:nth-child(even) {
             background-color: #f2f2f2;
@@ -111,20 +112,15 @@
     <script>
         function toggleExpand() {
             const container = document.getElementById('log-container');
-            if (container.classList.contains('expanded')) {
-                container.classList.remove('expanded');
-                container.classList.add('collapsed');
-                container.style.top = 'auto'; // Reset to auto when collapsed
-            } else if (container.classList.contains('slightly-expanded')) {
-                container.classList.remove('slightly-expanded');
-                container.classList.add('expanded');
-                container.style.top = '0'; // Fully expanded
-            } else {
+            if (container.classList.contains('collapsed')) {
                 container.classList.remove('collapsed');
                 container.classList.add('slightly-expanded');
-                container.style.top = '70vh'; // Adjust as needed for slight expansion
+                document.getElementById('logs').style.display = 'block'; // Show logs when slightly expanded
+            } else {
+                container.classList.remove('slightly-expanded');
+                container.classList.add('collapsed');
+                document.getElementById('logs').style.display = 'none'; // Hide logs when collapsed
             }
-            updateExpanderState();
         }
 
         function setContent(newContent) {
