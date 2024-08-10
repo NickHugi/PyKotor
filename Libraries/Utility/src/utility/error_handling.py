@@ -293,7 +293,7 @@ def format_exception_with_variables(
 
     # Construct a detailed message with variables from all stack frames
     detailed_message: list[str] = [
-        f"{message} Exception '{exc}' of type '{etype}' occurred.",
+        f"{etype.__name__}: {exc}",
         "Stack Trace Variables:",
     ]
     if tb is None:
@@ -375,7 +375,7 @@ unique_sentinel = object()
 
 def with_variable_trace(
     exception_types: type[Exception] | tuple[type[Exception], ...] = Exception,
-    return_type: type[RT] = unique_sentinel,  # pyright: ignore[reportGeneralTypeIssues, assignment]
+    return_type: type[RT] = unique_sentinel,  # pyright: ignore[reportGeneralTypeIssues, assignment]  # type: ignore[assignment]
     *,
     action: Literal["print", "stderr"] = "print",
     log: bool = True,

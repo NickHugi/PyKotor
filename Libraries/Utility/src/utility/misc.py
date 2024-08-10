@@ -14,21 +14,22 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
-    from typing_extensions import Buffer, SupportsIndex
+    from typing_extensions import Buffer, Literal, Self, SupportsIndex
 
-
+T = TypeVar("T")
+U = TypeVar("U")
 class ProcessorArchitecture(Enum):
     BIT_32 = "32bit"
     BIT_64 = "64bit"
 
-    def __str__(self):
+    def __str__(self) -> Literal["32bit", "64bit"]:
         return self.value
 
-    def __int__(self):
-        return self.get_int() or -1
+    def __int__(self) -> Literal[32, 64]:
+        return self.get_int()
 
     @classmethod
-    def from_os(cls):
+    def from_os(cls) -> Self:
         return cls(platform.architecture()[0])
 
     @classmethod
@@ -38,18 +39,18 @@ class ProcessorArchitecture(Enum):
     def get_machine_repr(self):
         return self._get("x86", "x64")
 
-    def get_int(self):
+    def get_int(self) -> Literal[32, 64]:
         return self._get(32, 64)
 
     def get_dashed_bitness(self):
         return self._get("32-bit", "64-bit")
 
-    def _get(self, arg0, arg1) -> Any:  # sourcery skip: assign-if-exp, reintroduce-else  # noqa: ANN001
+    def _get(self, arg0: T, arg1: U) -> T | U:  # sourcery skip: assign-if-exp, reintroduce-else  # noqa: ANN001
         if self == self.BIT_32:
             return arg0
         if self == self.BIT_64:
             return arg1
-        return None
+        raise RuntimeError(arg0, arg1)
 
     def supports_64_bit(self) -> bool:
         """Check if the architecture supports 64-bit processing."""
@@ -101,7 +102,7 @@ def print_excluding_base_classes(
             ):
                 try:
                     print(f"  {attr}: {getattr(obj, attr)}")
-                except Exception as ex:
+                except Exception as ex:  # noqa: BLE001
                     print(f"  {attr}: Unable to retrieve value ({ex})")
 
     # Get the attributes of the base classes to exclude
@@ -124,7 +125,7 @@ def get_system_info() -> dict[str, Any]:
     # CPU information
     psutil = None
     with suppress(ImportError):
-        import psutil
+        import psutil  # pyright: ignore[reportMissingImports]  # type: ignore[no-redef]
     if psutil is not None:
         info["Physical cores"] = psutil.cpu_count(logical=False)
         info["Total cores"] = psutil.cpu_count(logical=True)
@@ -145,7 +146,7 @@ def get_system_info() -> dict[str, Any]:
     # GPU Information
     GPUtil = None
     with suppress(ImportError):
-        import GPUtil
+        import GPUtil  # pyright: ignore[reportMissingImports]  # type: ignore[no-redef]
     if GPUtil is not None:
         gpus = GPUtil.getGPUs()
         gpu_info = []
@@ -166,18 +167,6 @@ def get_system_info() -> dict[str, Any]:
     return info
 
 
-T = TypeVar("T")
-
-
-def remove_duplicates(my_list: list[T], *, case_insensitive: bool = False) -> list[T]:
-    seen = set()
-    return [
-        x.lower() if case_insensitive and isinstance(x, str) else x
-        for x in my_list
-        if not (x in seen or seen.add(x))  # type: ignore[func-returns-value]
-    ]
-
-
 def is_debug_mode() -> bool:
     ret = False
     if os.getenv("PYTHONDEBUG", None):
@@ -191,7 +180,6 @@ def is_debug_mode() -> bool:
         ret = False
     if os.getenv("DEBUG_MODE", "0") == "1":
         ret = True
-    print(f"DEBUG MODE: {ret}")
     return ret
 
 

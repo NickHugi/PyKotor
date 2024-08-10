@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 
 
 class UTF8StreamWrapper:
-    def __init__(self, original_stream: TextIOWrapper[str]):
-        self.original_stream: TextIOWrapper[str] = original_stream
+    def __init__(self, original_stream: TextIOWrapper):
+        self.original_stream: TextIOWrapper = original_stream
 
     def write(self, message):
         # Ensure message is a string, encode to UTF-8 with errors replaced,
