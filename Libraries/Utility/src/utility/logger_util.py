@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import atexit
 import logging
 import multiprocessing
 import os
@@ -10,20 +9,17 @@ import threading
 import time
 import uuid
 
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, suppress
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from queue import Queue
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from utility.error_handling import format_exception_with_variables
 
 if TYPE_CHECKING:
-    import queue
 
-    from contextlib import _GeneratorContextManager
     from io import TextIOWrapper
-    from logging.handlers import QueueListener
     from multiprocessing.process import BaseProcess
     from types import TracebackType
 
@@ -196,10 +192,9 @@ class CustomExceptionFormatter(logging.Formatter):
         return result
 
 
-class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
+class ColoredConsoleHandler(logging.StreamHandler):
     try:
         import colorama  # type: ignore[import-untyped, reportMissingModuleSource]
-
         colorama.init()
         USING_COLORAMA = True
     except ImportError:
@@ -215,9 +210,21 @@ class ColoredConsoleHandler(logging.StreamHandler, CustomExceptionFormatter):
     }
 
     def format(self, record: logging.LogRecord) -> str:
-        msg = super().format(record)
+        # Check if detailed formatting is requested
+        detailed = getattr(record, "detailed", False)
+
+        # Use detailed formatter if detailed flag is set, otherwise default
+        if detailed:
+            formatter: logging.Formatter = CustomExceptionFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        else:
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+        # Apply the chosen formatter
+        msg = formatter.format(record)
+
+        # Add color codes and exception info if present
         if record.exc_info:
-            msg += f"\n{self.formatException(record.exc_info)}"
+            msg += f"\n{formatter.formatException(record.exc_info)}"
         return f"{self.COLOR_CODES.get(record.levelno, '')}{msg}{self.RESET_CODE}"
 
 
@@ -388,7 +395,6 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
         logging.Logger: The root logger with the specified handlers and formatters.
     """
     _instance: Self | None = None
-    _queue: Queue = Queue()
     _logger: logging.Logger = None  # type: ignore[assignment]
 
     def __reduce__(self) -> tuple[type[Self], tuple[()]]:
@@ -439,13 +445,9 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
         return object.__getattribute__(logger, attr_name)
 
     def __init__(self):
-        self.listener: QueueListener
         cls = object.__getattribute__(self, "__class__")
         if not object.__getattribute__(cls, "_logger"):
             type.__setattr__(cls, "_logger", object.__getattribute__(self, "_setup_logger")())
-            listener_thread = threading.Thread(target=object.__getattribute__(self, "_start_listener"), name="RobustRootLogger_listener")
-            listener_thread.daemon = True
-            self.listener_thread = listener_thread
 
     def _setup_logger(
         self,
@@ -471,10 +473,6 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
                 error_critical_log_file = f"errors_pykotor_{cur_process.pid}.log"
                 exception_log_file = f"exception_pykotor_{cur_process.pid}.log"
                 console_format_str = f"PID={cur_process.pid} - {console_format_str}"
-
-            #our_queue = type.__getattribute__(object.__getattribute__(self, "__class__"), "_queue")
-            #queue_handler = QueueHandler(our_queue)
-            #logger.addHandler(queue_handler)
 
             console_handler = ColoredConsoleHandler()
             formatter = logging.Formatter(console_format_str)
@@ -506,32 +504,21 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             error_critical_handler = RotatingFileHandler(str(log_dir / error_critical_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
             error_critical_handler.setLevel(logging.ERROR)
             error_critical_handler.addFilter(LogLevelFilter(logging.ERROR))
-            error_critical_handler.setFormatter(exception_formatter)
+            error_critical_handler.setFormatter(default_formatter)
             logger.addHandler(error_critical_handler)
 
             # Handler for EXCEPTIONS (using CustomExceptionFormatter)
             exception_handler = RotatingFileHandler(str(log_dir / exception_log_file), maxBytes=20*1024*1024, backupCount=5, encoding="utf8")
             exception_handler.setLevel(logging.ERROR)
-            exception_handler.setFormatter(exception_formatter)
             exception_handler.addFilter(LogLevelFilter(logging.ERROR))
+            exception_handler.setFormatter(exception_formatter)
             logger.addHandler(exception_handler)
-            object.__setattr__(self, "_orig_log_func", logger._log)
-            #logger._log = object.__getattribute__(self, "_log")  # doesn't properly work
 
-            # Adding handlers to the queue listener
-            #object.__setattr__(self, "listener", QueueListener(object.__getattribute__(self, "_queue"), console_handler, everything_handler, info_warning_handler, error_critical_handler, exception_handler))
+            # The custom exception filter is slow, ensure logging does not happen on the main thread.
+            object.__setattr__(self, "_orig_log_func", logger._log)  # noqa: SLF001
+            logger._log = object.__getattribute__(self, "_log")  # type: ignore[method-assign]  # noqa: SLF001
 
         return logger
-
-    def _start_listener(self):
-        if not hasattr(self, "listener"):
-            object.__getattribute__(self, "_setup_logger")()
-        try:
-            object.__getattribute__(self, "listener_thread").start()
-        except AttributeError:
-            logging.getLogger().handlers = []
-            object.__setattr__(object.__getattribute__(self, "__class__"), "_logger", self._setup_logger())
-            object.__getattribute__(self, "listener_thread").start()
 
     def __call__(self, *args, **kwargs) -> RobustRootLogger:
         _actual_logger: logging.Logger | None = object.__getattribute__(self, "_logger")
@@ -539,32 +526,31 @@ class RobustRootLogger(logging.Logger, metaclass=MetaLogger):  # noqa: N801
             object.__getattribute__(self, "__class__")()
         return self
 
-    def _log(self, level: int, msg: str, *args, **kwargs) -> None:  # type: ignore[override]
-        our_queue: queue.Queue = object.__getattribute__(self, "_queue")
-        try:
-            logging_thread_func = object.__getattribute__(self, "logging_thread_func")
-        except AttributeError:
-            # Custom logic to prevent encoding issues
-            def logging_thread_func(
-                queue: queue.Queue,
-                logging_context: Callable[..., _GeneratorContextManager[None]],
-            ):
-                while True:
-                    task = cast(Union[Tuple[int, str, tuple, dict], None], queue.get())
-                    if task is None:
-                        break  # Stop signal
-                    level, msg, args, kwargs = task
-                    orig_log_func = object.__getattribute__(self, "_orig_log_func")
-                    with logging_context():
-                        orig_log_func(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
-                    queue.task_done()
+    def _log(  # type: ignore[override]
+        self,
+        level: int,
+        msg: str,
+        *args,
+        extra: dict[str, Any] | None = None,
+        exc_info: BaseException | tuple[type[BaseException], BaseException, TracebackType | None] | None = None,
+        **kwargs,
+    ) -> None:
+        """Truly ensures that logging is not done on the main thread."""
+        from utility.misc import is_debug_mode
+        extra = ({} if extra is None else extra)
+        extra["detailed"] = extra.get("detailed", is_debug_mode())
+        def logging_task(level: int, msg: str, *args, **kwargs):
+            orig_log_func = object.__getattribute__(self, "_orig_log_func")
+            with logging_context():
+                orig_log_func(level, msg.encode(encoding="utf-8", errors="replace").decode(), *args, **kwargs)  # noqa: SLF001
 
-            logging_thread = threading.Thread(target=logging_thread_func, args=(our_queue,logging_context), name="RobustRootLogger_log_thread")
-            logging_thread.start()
-            atexit.register(our_queue.put, None)
-            object.__setattr__(self, "logging_thread_func", logging_thread_func)
-
-        our_queue.put((level, msg, args, kwargs))
+        if exc_info:
+            if isinstance(exc_info, BaseException):
+                exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
+            elif not isinstance(exc_info, tuple):
+                exc_info = sys.exc_info()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            executor.submit(logging_task, level, msg, *args, exc_info=exc_info, extra=extra, **kwargs)
 
 
 get_root_logger = RobustRootLogger  # deprecated, provided for backwards compatibility.
@@ -572,15 +558,20 @@ get_root_logger = RobustRootLogger  # deprecated, provided for backwards compati
 
 # Example usage
 if __name__ == "__main__":
-    RobustRootLogger.debug("This is a debug message.")
     logger = RobustRootLogger()
+    logger.debug("This is a debug message")
     logger.info("This is an info message.")
     logger.warning("This is a warning message.")
     logger.error("This is an error message.")
     logger.critical("This is a critical message.")
+    RobustRootLogger.debug("This is a debug message, correctly handling a user forgetting to construct RobustRootLogger.")  # type: ignore[call-arg, arg-type]
 
     # Test various edge case
-    RobustRootLogger("This is a test of __call__")
+    RobustRootLogger("This is a test of __call__")  # type: ignore[call-arg]
 
     # Uncomment to test uncaught exception logging
+    try:
+        raise RuntimeError("Test caught exception")  # noqa: TRY301
+    except RuntimeError:
+        RobustRootLogger().exception("Message for a caught exception")
     raise RuntimeError("Test uncaught exception")
