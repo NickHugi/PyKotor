@@ -70,17 +70,19 @@ from pykotor.extract.file import ResourceIdentifier  # noqa: E402
 from pykotor.tools.encoding import decode_bytes_with_fallbacks  # noqa: E402
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default  # noqa: E402
 from pykotor.tslpatcher.config import LogLevel  # noqa: E402
-from pykotor.tslpatcher.logger import LogType, PatchLogger  # noqa: E402
+from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger  # noqa: E402
 from pykotor.tslpatcher.namespaces import PatcherNamespace  # noqa: E402
 from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
 from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
 from utility.logger_util import RobustRootLogger  # noqa: E402
-from utility.misc import ProcessorArchitecture  # noqa: E402
+from utility.misc import ProcessorArchitecture, is_debug_mode  # noqa: E402
 from utility.string_util import striprtf  # noqa: E402
-from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, asksaveasfilename, askyesno, showerror  # noqa: E402
-from utility.system.os_helper import get_app_dir, win_get_system32_dir  # noqa: E402
+from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, askyesno, showerror  # noqa: E402
+
+#from utility.system.os_helper import get_app_dir
+from utility.system.os_helper import win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 from utility.system.process import terminate_main_process  # noqa: E402
 from utility.tkinter.updater import TkProgressDialog  # noqa: E402
@@ -94,7 +96,6 @@ if TYPE_CHECKING:
     from toga import Selection
     from toga.window import Dialog
 
-    from pykotor.tslpatcher.logger import PatchLog
 
 VERSION_LABEL = f"v{CURRENT_VERSION}"
 T = TypeVar("T")
@@ -212,10 +213,195 @@ class HoloPatcher(toga.App):
     def startup(self):
         print("HoloPatcher.startup!!!\n\n\n")
 
+        self.html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Log Viewer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+        #content {
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            z-index: 1;
+            position: relative;
+        }
+        #log-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            transition: height 1s ease, top 1s ease;
+            z-index: 2;
+        }
+        #expander {
+            text-align: center;
+            cursor: pointer;
+            background-color: #ddd;
+            padding: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        #logs {
+            overflow-y: auto;
+            display: none;
+            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
+            z-index: 3; /* Higher z-index to cover content */
+        }
+        .collapsed #logs {
+            display: none;
+        }
+        .slightly-expanded #logs {
+            max-height: 70vh; /* Set a max height to prevent it from covering too much content */
+            display: block;
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+        .collapsed #expander::after {
+            content: ' ^^^ LOG VIEW ^^^ ';
+        }
+        .slightly-expanded #expander::after {
+            content: ' --- LOG VIEW --- ';
+        }
+        .slightly-expanded #log-container {
+            height: 30%;
+            top: auto;
+        }
+        .collapsed #log-container {
+            height: 5%;
+            top: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        td {
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Ensures that long words wrap correctly */
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .log-entry {
+            transition: all 0.5s ease;
+        }
+        .DEBUG { color: blue; }
+        .INFO { color: black; }
+        .WARNING { color: orange; }
+        .ERROR { color: red; }
+        .CRITICAL { color: white; background-color: red; }
+        .log-entry.new {
+            animation: customSlideIn 0.25s ease;
+        }
+        @keyframes customSlideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="content" class="collapsed">
+        <!-- Main content area -->
+    </div>
+    <div id="log-container" class="collapsed">
+        <div id="expander" onclick="toggleExpand()"></div>
+        <div id="logs">
+            <table id="logs-table">
+                <tbody>
+                    <!-- Log entries will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function toggleExpand() {
+            const container = document.getElementById('log-container');
+            if (container.classList.contains('collapsed')) {
+                container.classList.remove('collapsed');
+                container.classList.add('slightly-expanded');
+                document.getElementById('logs').style.display = 'block'; // Show logs when slightly expanded
+            } else {
+                container.classList.remove('slightly-expanded');
+                container.classList.add('collapsed');
+                document.getElementById('logs').style.display = 'none'; // Hide logs when collapsed
+            }
+        }
+
+        function setContent(newContent) {
+            document.getElementById('content').innerHTML = newContent;
+            updateExpanderState();
+        }
+
+        function appendLogLine(logLine, logType) {
+            const tableBody = document.getElementById('logs-table').getElementsByTagName('tbody')[0];
+            const row = tableBody.insertRow();
+            const cell = row.insertCell(0);
+            cell.innerHTML = logLine;
+            row.className = 'log-entry ' + logType + ' new';
+            document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight; // Auto-scroll to new log entry
+            updateExpanderState();
+        }
+
+        function filterLogs() {
+            const filter = document.getElementById('log-filter').value;
+            const logEntries = document.getElementsByClassName('log-entry');
+            for (let i = 0; i < logEntries.length; i++) {
+                const logEntry = logEntries[i];
+                if (filter === 'ALL' || logEntry.classList.contains(filter)) {
+                    logEntry.style.display = 'table-row';
+                } else {
+                    logEntry.style.display = 'none';
+                }
+            }
+        }
+
+        function updateExpanderState() {
+            const logs = document.getElementById('logs');
+            const expander = document.getElementById('expander');
+            const logContainer = document.getElementById('log-container');
+            const hasLogs = logs.querySelector('tbody').children.length > 0;
+            const hasContent = document.getElementById('content').innerHTML.trim() !== '';
+
+            console.log(`hasLogs: ${hasLogs}, hasContent: ${hasContent}`);
+
+            if (hasLogs) {
+                expander.style.display = 'block';
+                if (logContainer.classList.contains('collapsed')) {
+                    logContainer.classList.remove('collapsed');
+                    logContainer.classList.add('slightly-expanded');
+                }
+            } else {
+                expander.style.display = 'none';
+                logContainer.classList.remove('expanded', 'slightly-expanded');
+                logContainer.classList.add('collapsed');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            updateExpanderState();
+        });
+        updateExpanderState();
+    </script>
+</body>
+</html>
+"""
         # Define the HTML template with JavaScript for dynamic content updates
-        template_path = get_app_dir() / "template.html"
-        with template_path.open("r") as file:
-            self.html_template = file.read()
+        # uncomment to test from file
+        #template_path = get_app_dir() / "template.html"
+        #with template_path.open("r") as file:
+        #    self.html_template = file.read()
         self.default_window_size: tuple[int, int] = (400, 500)
         self.main_window: toga.MainWindow = toga.MainWindow(
             title=f"HoloPatcher {VERSION_LABEL}",
@@ -297,12 +483,15 @@ class HoloPatcher(toga.App):
             screen_height = user32.GetSystemMetrics(1)
         # use screeninfo pip package
         elif self.main_window is None:
-            from screeninfo import get_monitors
-            monitors = get_monitors()
-            if monitors:
-                primary_monitor = monitors[0]
-                screen_width = primary_monitor.width
-                screen_height = primary_monitor.height
+            try:
+                from screeninfo import get_monitors
+                monitors = get_monitors()
+                if monitors:
+                    primary_monitor = monitors[0]
+                    screen_width = primary_monitor.width
+                    screen_height = primary_monitor.height
+            except ImportError:
+                return (100, 100)
         # macOS and Linux using Toga's main_window to get screen dimensions
         else:
             screen = self.main_window.screen_position
@@ -356,9 +545,49 @@ class HoloPatcher(toga.App):
             Command(lambda command, **kwargs: webbrowser.open_new("https://github.com/NickHugi/PyKotor"), text="GitHub Source", group=about_group)  # noqa: ARG005
         ]
 
+        # Test Menu Commands (Ported from Puppeteer script)
+        if is_debug_mode():
+            test_group = Group("Tests")
+            test_menu = [
+                Command(lambda command, **kwargs: self.add_log_entry() or True, text="Test Log Entry (direct appendLogLine evaluate call)", group=test_group),
+                Command(lambda command, **kwargs: self.remove_all_logs() or True, text="Remove All Logs", group=test_group),
+                Command(lambda command, **kwargs: self.test_write_log() or True, text="Test Log Entry (using write_log)", group=test_group),
+                Command(lambda command, **kwargs: self.test_add_note() or True, text="Test Log Entry (using add_note)", group=test_group),
+                Command(lambda command, **kwargs: self.remove_all_content() or True, text="Remove All Content", group=test_group)
+            ]
+        else:
+            test_menu = []
+
         # Adding commands to the main window toolbar
-        for command in (*tools_menu, *help_menu, *about_menu):
+        for command in (*tools_menu, *help_menu, *about_menu, *test_menu):
             self.commands.add(command)
+
+    def add_log_entry(self):
+        script = "appendLogLine('This is a log message', 'INFO');"
+        self.web_view.evaluate_javascript(script)
+
+    def test_add_note(self):
+        self.logger.add_note("This is a log message")
+
+    def test_write_log(self):
+        self.write_log(PatchLog("This is a log message", LogType.NOTE))
+
+    def remove_all_logs(self):
+        script = """
+            const logsContainer = document.getElementById('logs').querySelector('tbody');
+            while (logsContainer.firstChild) {
+                logsContainer.removeChild(logsContainer.firstChild);
+            }
+            updateExpanderState();
+        """
+        self.web_view.evaluate_javascript(script)
+
+    def remove_all_content(self):
+        script = """
+            document.getElementById('content').innerHTML = '';
+            updateExpanderState();
+        """
+        self.web_view.evaluate_javascript(script)
 
 
     def initialize_ui_controls(self):
@@ -401,7 +630,7 @@ class HoloPatcher(toga.App):
 
         # Main WebView for content display
         self.web_view: toga.WebView = toga.WebView(style=Pack(flex=1, padding=5))
-        self.web_view.set_content("about:blank", self.html_template)
+        self.web_view.set_content("", self.html_template)
         self.main_text_frame: toga.ScrollContainer = toga.ScrollContainer(  # ScrollContainer to add scrollbars
             horizontal=False,
             vertical=True,
@@ -424,7 +653,7 @@ class HoloPatcher(toga.App):
 
     def toggle_view(self, view: str):
         """Toggle between content and log views."""
-        script = f"toggleView('{view}');"
+        script = f"toggleExpand('{view}');"
         self.web_view.evaluate_javascript(script)
 
     def update_progress_bar_directly(self, value: int = 1):
@@ -1068,6 +1297,7 @@ class HoloPatcher(toga.App):
             def filter_results(x: Path) -> bool:
                 return not ResourceIdentifier.from_path(x).restype.is_invalid
 
+        print("check_access frontend: call backend has_access")
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
         if askyesno(
@@ -1141,9 +1371,10 @@ class HoloPatcher(toga.App):
                 )
             )
             return False
+        print("preinstall validation: check access")
         if self.check_access(Path(str(case_game_path))):
-            return False
-        return True
+            return True
+        return False
 
     def begin_install(self, button: toga.Button | None = None):
         """Starts the installation process in a background thread.
@@ -1161,8 +1392,8 @@ class HoloPatcher(toga.App):
         try:
             if not self.preinstall_validate_chosen():
                 return
+            print("Preinstall validated")
             self.set_state(state=True)
-            self.clear_main_text()
             install_message = f"Starting install...{os.linesep}".replace("\n", "<br>")
             self.web_view.evaluate_javascript(f"setContent('{install_message}');")
 
@@ -1207,6 +1438,7 @@ class HoloPatcher(toga.App):
                     self.set_state(state=False)  # noqa: ARG005
 
             self.add_background_task(begin_install_thread)
+            print("Started installer in background task")
 
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred during the installation and the program was forced to exit")
@@ -1507,7 +1739,7 @@ class HoloPatcher(toga.App):
             content = content.replace(f"<{tag}>", f'<span style="{style_str}">').replace(f"</{tag}>", "</span>")
 
         content = json.dumps(content)
-        self.web_view.evaluate_javascript(f"setContent('{content}');")
+        self.web_view.evaluate_javascript(f"setContent({content});")
 
     def load_rtf_content(self, rtf_text: str):
         """Converts the RTF content to HTML and displays it in the WebView."""
@@ -1519,7 +1751,7 @@ class HoloPatcher(toga.App):
                 # Download Pandoc if it is not installed
                 pypandoc.download_pandoc(delete_installer=True)
                 html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             RobustRootLogger().exception("Failed to load RTF content. Falling back to plaintext...")
             html_content: str = striprtf(rtf_text)
 
@@ -1533,6 +1765,16 @@ class HoloPatcher(toga.App):
         ----
             log: PatchLog - The log object containing the message and type.
         """
+        def log_type_to_level() -> LogType:
+            log_map: dict[LogLevel, LogType] = {
+                LogLevel.ERRORS: LogType.WARNING,
+                LogLevel.GENERAL: LogType.WARNING,
+                LogLevel.FULL: LogType.VERBOSE,
+                LogLevel.WARNINGS: LogType.NOTE,
+                LogLevel.NOTHING: LogType.WARNING
+            }
+            return log_map[self.log_level]
+
         def log_type_to_tag(log: PatchLog) -> str:
             if log.log_type == LogType.NOTE:
                 return "INFO"
@@ -1544,15 +1786,18 @@ class HoloPatcher(toga.App):
             self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
             with self.log_file_path.open("a", encoding="utf-8") as log_file:
                 log_file.write(f"{log.formatted_message}\n")
-            if log.log_type.value < self.log_level.value:
+            if log.log_type.value < log_type_to_level().value:
+                print(log.log_type.value, "<", self.log_level.value)
                 return
         except OSError:
             RobustRootLogger().exception(f"Failed to write the log file at '{self.log_file_path}'!")
 
         def update_ui(app: toga.App, **kwargs):  # noqa: ARG001
             log_tag = log_type_to_tag(log)
-            log_message = json.dumps(log.formatted_message)
-            script = f"appendLogLine(`{log_message}`, '{log_tag}');"
+            # Safely escape the log message for JavaScript execution
+            log_message = log.formatted_message.replace("\\", "\\\\").replace("'", "\\'")
+            script = f"appendLogLine('{log_message}', '{log_tag}');"
+            print(f"evaluating script '{script}'")
             self.web_view.evaluate_javascript(script)
 
         if threading.current_thread() == threading.main_thread():
@@ -1566,14 +1811,6 @@ class HoloPatcher(toga.App):
 
     def set_content(self, new_content: str):
         script = f"setContent({json.dumps(new_content)});"
-        self.web_view.evaluate_javascript(script)
-
-    def append_log_line(self, log_line: str, log_type: str):
-        script = f"appendLogLine('{log_line}', '{log_type}');"
-        self.web_view.evaluate_javascript(script)
-
-    def show_view(self, view: str):
-        script = f"showView('{view}');"
         self.web_view.evaluate_javascript(script)
 
     def open_file_dialog(self, title: str = "Select the file target.") -> str:
