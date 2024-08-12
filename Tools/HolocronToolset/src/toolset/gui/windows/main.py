@@ -90,7 +90,8 @@ from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.main_widgets import ResourceList
-from toolset.gui.widgets.resource_fsmodel import ResourceFileSystemModel
+
+#from toolset.gui.widgets.resource_fsmodel import ResourceFileSystemModel
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
@@ -200,8 +201,8 @@ class ToolWindow(QMainWindow):
         self.original_palette: QPalette = self.palette()
         self.change_theme(self.settings.selectedTheme)
 
-        self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
-        self.fileSystemModel.setRootPath(Path(__file__).parent)
+        #self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
+        #self.fileSystemModel.setRootPath(Path(__file__).parent)
 
         # Focus handler (searchbox, various keyboard actions)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -249,7 +250,7 @@ class ToolWindow(QMainWindow):
         self.erfEditorButton = QPushButton("ERF Editor", self)
         self.erfEditorButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.erfEditorButton.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
-        self.ui.verticalLayoutRightPanel.insertWidget(2, self.erfEditorButton)  # pyright: ignore[reportArgumentType]
+        self.ui.verticalLayout_5.insertWidget(2, self.erfEditorButton)  # pyright: ignore[reportArgumentType]
         self.erfEditorButton.hide()
 
         modulesResourceList = self.ui.modulesWidget.ui
@@ -988,7 +989,7 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
 
-        self.fileSystemModel.setRootPath(path)
+        #self.fileSystemModel.setRootPath(path)
         #return
 
         active = self.installations.get(name)
