@@ -644,10 +644,11 @@ class ERFEditorTable(QTableView):
             event.setDropAction(QtCore.Qt.DropAction.CopyAction)
             event.accept()
             links: list[str] = [str(url.toLocalFile()) for url in event.mimeData().urls()]
-            model = self.model()
+            filterModel = cast(ERFSortFilterProxyModel, self.model())
+            sourceModel = cast(QStandardItemModel, filterModel.sourceModel())
             existing_items = {
-                f"{model.item(row, 0).text()}.{model.item(row, 1).text()}".strip().lower()
-                for row in range(model.rowCount())
+                f"{sourceModel.index(row, 0).data()}.{sourceModel.index(row, 1).data()}".strip().lower()
+                for row in range(sourceModel.rowCount())
             }
             always = False
             never = False
@@ -672,7 +673,7 @@ class ERFEditorTable(QTableView):
                         response = msgBox.exec_()
                     if response == QMessageBox.Yes:
                         for row in range(self.model().rowCount()):
-                            filename = f"{model.item(row, 0).text()}.{model.item(row, 1).text()}".strip().lower()
+                            filename = f"{sourceModel.item(row, 0).text()}.{sourceModel.item(row, 1).text()}".strip().lower()
                             if filename == link.lower().strip():
                                 print(f"Removing '{filename}' from the erf/rim.")
                                 self.model().removeRow(row)
@@ -684,7 +685,7 @@ class ERFEditorTable(QTableView):
                     elif response == QMessageBox.YesToAll:
                         always = True
                         for row in range(self.model().rowCount()):
-                            filename = f"{model.item(row, 0).text()}.{model.item(row, 1).text()}".strip().lower()
+                            filename = f"{sourceModel.item(row, 0).text()}.{sourceModel.item(row, 1).text()}".strip().lower()
                             if filename == link.lower().strip():
                                 print(f"Removing '{filename}' from the erf/rim.")
                                 self.model().removeRow(row)
