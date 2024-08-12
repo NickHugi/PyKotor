@@ -209,7 +209,7 @@ class IndoorMapBuilder(QMainWindow):
             self._refreshWindowTitle()
 
     def saveAs(self):
-        filepath, _ = QFileDialog.getSaveFileName(self, "Save Map", "", "Indoor Map File (*.indoor)")
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save Map", Path(self._filepath).name if self._filepath and self._filepath.strip() else "test.indoor", "Indoor Map File (*.indoor)")
         if filepath:
             BinaryWriter.dump(filepath, self._map.write())
             self._filepath = filepath

@@ -1049,6 +1049,8 @@ class ToolWindow(QMainWindow):
         if not prepare_loader.exec_():
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
+        assert prepare_loader.value
+        assert self.active is not None
 
         # Any issues past this point must call self.unsetInstallation()
         try:
@@ -1081,7 +1083,7 @@ class ToolWindow(QMainWindow):
             #self.dogObserver.start()
             self.log.info("Loader task completed.")
             self.settings.installations()[name].path = path
-            self.installations[name] = self.active
+            self.installations[name] = self.active  # pyright: ignore[reportArgumentType]
         except Exception as e:
             self.log.exception("Failed to initialize the installation")
             QMessageBox(
@@ -1767,9 +1769,37 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self):
         self.reloadInstallations()
 
+    def _open_module_tab_erf_editor(self):
+        assert self.active is not None
+        resourceWidget = self.getActiveResourceWidget()
+        assert isinstance(resourceWidget, ResourceList)
+        filename = resourceWidget.currentSection()
+        print("<SDM> [openERFEditor scope] filename: ", filename)
+
+        if not filename:
+            return
+        erf_filepath = self.active.module_path() / filename
+        print("<SDM> [openERFEditor scope] erf_filepath: ", erf_filepath)
+
+        if not erf_filepath.safe_isfile():
+            self.log.warning(f"Not loading '{erf_filepath}'. File does not exist")
+            return
+        res_ident = ResourceIdentifier.from_path(erf_filepath)
+        print("<SDM> [openERFEditor scope] res_ident: ", res_ident)
+
+        if not res_ident.restype:
+            self.log.warning(f"Not loading '{erf_filepath}'. Invalid resource")
+            return
+        _filepath, _editor = openResourceEditor(erf_filepath, res_ident.resname, res_ident.restype, BinaryReader.load_file(erf_filepath),
+                                                self.active, self, gff_specialized=self.settings.gff_specializedEditors)
+
+
     def onTabChanged(self):
-        ...
-        # self.setMinimumSize(512, 471)
+        current_widget = self.getActiveResourceTab()
+        if current_widget is self.ui.modulesTab:
+            self.erfEditorButton.show()
+        else:
+            self.erfEditorButton.hide()
 
     def selectResource(self, tree: ResourceList, resource: FileResource):
         """This function seems to reload the resource after determining the ui widget containing it.

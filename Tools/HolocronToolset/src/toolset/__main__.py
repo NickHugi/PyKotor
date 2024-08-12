@@ -193,7 +193,6 @@ if __name__ == "__main__":
     import qtpy
 
     from qtpy.QtCore import QThread, Qt
-    from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication, QMessageBox
 
     from toolset.gui.widgets.settings.application import ApplicationSettings
@@ -210,7 +209,7 @@ if __name__ == "__main__":
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
     app = QApplication(sys.argv)
-    app.setFont(QFont("Roboto", 13))
+    app.setDoubleClickInterval(1)
     app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
