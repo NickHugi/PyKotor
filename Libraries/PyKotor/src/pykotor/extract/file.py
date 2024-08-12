@@ -30,6 +30,9 @@ class FileResource:
         offset: int,
         filepath: os.PathLike | str,
     ):
+        # This assert sometimes fails when reading dbcs or other weird encoding.
+        # for example attempting to read japanese filenames got me 'resource name '?????? (??2Quad) ' cannot start/end with a whitespace'
+        # I don't understand what the point of high-level unicode python strings if I can't even work through the issue?
         assert resname == resname.strip(), f"FileResource cannot be constructed, resource name '{resname}' cannot start/end with whitespace."
         self._identifier: ResourceIdentifier = ResourceIdentifier(resname, restype)
 
@@ -98,9 +101,10 @@ class FileResource:
     @classmethod
     def from_path(cls, path: os.PathLike | str) -> Self:
         path_obj: Path = Path.pathify(path)
+        resname, restype = path_obj.stem, ResourceType.from_extension(path_obj.suffix)
         return cls(
-            resname=path_obj.stem,
-            restype=ResourceType.from_extension(path_obj.suffix),
+            resname=resname,
+            restype=restype,
             size=path_obj.stat().st_size,
             offset=0,
             filepath=path_obj,
@@ -190,11 +194,17 @@ class FileResource:
         This method is completely safe to call.
         """
         try:
+            if (
+                self.inside_capsule
+                and self._path_ident_obj.name.lower() == self._path_ident_obj.parent.name.lower()
+                and self.filepath().name != self.filepath().parent.name
+            ):
+                return self.filepath().is_file()
             if self.inside_capsule:
                 from pykotor.extract.capsule import LazyCapsule  # Prevent circular imports
                 return bool(LazyCapsule(self._filepath).info(self._resname, self._restype))
             return self.inside_bif or bool(self._filepath.safe_isfile())
-        except Exception:
+        except Exception:  # noqa: BLE001
             RobustRootLogger().exception("Failed to check existence of FileResource.")
             return False
 
@@ -253,6 +263,54 @@ class FileResource:
     def as_file_resource(self) -> Self:
         """For unifying use with LocationResult and ResourceResult."""
         return self
+
+
+@dataclass
+class ResourceStatResult:
+    st_size: int | None = None
+    st_mode: int | None = None
+    st_atime: float | None = None
+    st_mtime: float | None = None
+    st_ctime: float | None = None
+    st_nlink: int | None = None
+    st_atime_ns: int | None = None
+    st_mtime_ns: int | None = None
+    st_ctime_ns: int | None = None
+    st_ino: int | None = None
+    st_dev: int | None = None
+    st_uid: int | None = None
+    st_gid: int | None = None
+    st_file_attributes: int | None = None
+    st_reparse_tag: int | None = None
+    st_blocks: int | None = None
+    st_blksize: int | None = None
+    st_rdev: int | None = None
+    st_flags: int | None = None
+
+    @classmethod
+    def from_stat_result(cls, stat_result: os.stat_result) -> ResourceStatResult:
+        return cls(
+            st_size=stat_result.st_size,
+            st_mode=stat_result.st_mode,
+            st_atime=stat_result.st_atime,
+            st_mtime=stat_result.st_mtime,
+            st_ctime=stat_result.st_ctime,
+            st_nlink=stat_result.st_nlink,
+            st_atime_ns=stat_result.st_atime_ns,
+            st_mtime_ns=stat_result.st_mtime_ns,
+            st_ctime_ns=stat_result.st_ctime_ns,
+            st_ino=stat_result.st_ino,
+            st_dev=stat_result.st_dev,
+            st_uid=stat_result.st_uid,
+            st_gid=stat_result.st_gid,
+            st_file_attributes=getattr(stat_result, "st_file_attributes", None),
+            st_reparse_tag=getattr(stat_result, "st_reparse_tag", None),
+            st_blocks=getattr(stat_result, "st_blocks", None),
+            st_blksize=getattr(stat_result, "st_blksize", None),
+            st_rdev=getattr(stat_result, "st_rdev", None),
+            st_flags=getattr(stat_result, "st_flags", None),
+        )
+
 
 @dataclass(frozen=True)
 class ResourceResult:

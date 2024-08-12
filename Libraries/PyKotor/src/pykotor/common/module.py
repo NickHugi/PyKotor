@@ -13,19 +13,14 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
-from pykotor.resource.formats.bwm.bwm_auto import write_bwm
+from pykotor.resource.formats.bwm import bytes_bwm, read_bwm, write_bwm
 from pykotor.resource.formats.erf import read_erf, write_erf
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.gff.gff_data import GFF, GFFFieldType
-from pykotor.resource.formats.lyt import LYT, bytes_lyt, read_lyt
-from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.ncs.ncs_auto import write_ncs
+from pykotor.resource.formats.gff import GFF, GFFFieldType, read_gff
+from pykotor.resource.formats.lyt import LYT, bytes_lyt, read_lyt, write_lyt
+from pykotor.resource.formats.ncs import write_ncs
 from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.formats.tpc import bytes_tpc, read_tpc
-from pykotor.resource.formats.tpc.tpc_auto import write_tpc
-from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis
-from pykotor.resource.formats.vis.vis_auto import write_vis
+from pykotor.resource.formats.tpc import bytes_tpc, read_tpc, write_tpc
+from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis, write_vis
 from pykotor.resource.generics.are import bytes_are, read_are, write_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg, write_dlg
 from pykotor.resource.generics.git import GIT, bytes_git, read_git, write_git
@@ -111,26 +106,12 @@ class KModuleType(Enum):
         if self is self.MOD:
             return self is not ResourceType.TwoDA
         if self is self.MAIN:
-            return restype in {
-                ResourceType.ARE,
-                ResourceType.IFO,
-                ResourceType.GIT,
-            }
+            return restype in {ResourceType.ARE, ResourceType.IFO, ResourceType.GIT}
         if self is self.DATA:
             return restype in {
-                ResourceType.FAC,
-                ResourceType.LYT,
-                ResourceType.NCS,
-                ResourceType.PTH,
-                ResourceType.UTC,
-                ResourceType.UTD,
-                ResourceType.UTE,
-                ResourceType.UTI,
-                ResourceType.UTM,
-                ResourceType.UTP,
-                ResourceType.UTS,
-                ResourceType.UTT,
-                ResourceType.UTW,
+                ResourceType.FAC, ResourceType.LYT, ResourceType.NCS, ResourceType.PTH,
+                ResourceType.UTC, ResourceType.UTD, ResourceType.UTE, ResourceType.UTI,
+                ResourceType.UTM, ResourceType.UTP, ResourceType.UTS, ResourceType.UTT, ResourceType.UTW
             }
         raise RuntimeError(f"Invalid ModuleType enum: {self!r}")
 
@@ -148,10 +129,7 @@ class ModulePieceInfo:
         if isinstance(filename, ResourceIdentifier):
             filename = str(filename)
         root = Module.find_root(filename)
-        return cls(
-            root,
-            KModuleType(filename[len(root):])
-        )
+        return cls(root, KModuleType(filename[len(root):]))
 
     def filename(self) -> str:
         return self.root + self.modtype.value
@@ -197,7 +175,7 @@ class ModulePieceResource(Capsule):
     ):
         path_obj = CaseAwarePath.pathify(path)
         self.piece_info: ModulePieceInfo = ModulePieceInfo.from_filename(path_obj.name)
-        self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1)
+        self.missing_resources: list[FileResource] = []  # TODO(th3w1zard1):
         super().__init__(path_obj, *args, **kwargs)
 
 
@@ -260,7 +238,6 @@ class ModuleLinkPiece(ModulePieceResource):
                 result = are.root.get_locstring("Name")
                 RobustRootLogger().debug("Check 1 result: '%s'", result)
                 return result
-        # TODO(th3w1zard1): Lookup the modulesaves.2da for the fallback.
         raise ValueError(f"Failed to find an ARE for module '{self.piece_info.filename()}'")
 
 
@@ -336,7 +313,7 @@ class Module:  # noqa: PLR0904
             KModuleType.K2_DLG.name: None,
             KModuleType.MOD.name: None,
         }
-        module_path: Installation | Path = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
+        module_path: Path | CaseAwarePath = install_or_path if isinstance(install_or_path, Path) else install_or_path.module_path()
         if filename.lower().endswith(".mod"):
             mod_filepath = module_path.joinpath(root + KModuleType.MOD.value)
             if mod_filepath.safe_isfile():
@@ -351,12 +328,12 @@ class Module:  # noqa: PLR0904
             capsules[KModuleType.DATA.name] = ModuleDataPiece(module_path.joinpath(root + KModuleType.DATA.value))
             if not isinstance(install_or_path, Installation) or install_or_path.game().is_k2():
                 capsules[KModuleType.K2_DLG.name] = ModuleDLGPiece(module_path.joinpath(root + KModuleType.K2_DLG.value))
-        return [capsule for capsule in capsules.values() if capsule is not None]  # pyright: ignore[reportReturnType]
+        return [capsule for capsule in capsules.values() if capsule is not None]  # pyright: ignore[reportReturnType]  # type: ignore[misc]
 
 
     def get_capsules(self) -> list[ModulePieceResource]:
         """Returns all relevant ERFs/RIMs for this module."""
-        return list(self._capsules.values())  # pyright: ignore[reportReturnType]
+        return list(self._capsules.values())  # pyright: ignore[reportReturnType]  # type: ignore[arg-type]
 
     def root_name(self) -> str:
         return self._root
@@ -389,7 +366,7 @@ class Module:  # noqa: PLR0904
             else (self._capsules[KModuleType.K2_DLG.name] if self._installation.game().is_k2() else self._capsules[KModuleType.DATA.name])  # pyright: ignore[reportTypedDictNotRequiredAccess]
         )
         assert relevant_capsule is not None
-        return relevant_capsule  # pyright: ignore[reportReturnType]
+        return relevant_capsule  # pyright: ignore[reportReturnType]  # type: ignore[return-value]
 
     def module_id(self) -> ResRef | None:
         if self._cached_mod_id is not None:
@@ -520,7 +497,8 @@ class Module:  # noqa: PLR0904
             try:
                 model_data = model.data()
             except OSError:
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s", repr(self), model.identifier(), e)
+                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s",
+                                           repr(self), model.identifier(), exc_info=True, extra={"detailed": False})
                 continue
             else:
                 if model_data is None:
@@ -531,18 +509,22 @@ class Module:  # noqa: PLR0904
                     continue
             try:
                 lookup_texture_queries.update(iterate_textures(model_data))
-            except OSError as e:  # noqa: PERF203
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_textures() with model '%s': %s", repr(self), model.identifier(), e)
+            except OSError:  # noqa: PERF203
+                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_textures() with model '%s': %s",
+                                           repr(self), model.identifier(), exc_info=True, extra={"detailed": False})
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+                RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'",
+                                             repr(self), model.identifier(), exc_info=True)
             else:
                 RobustRootLogger().info("Found %s textures in '%s'", model.identifier(), display_name)
             try:
                 lookup_texture_queries.update(iterate_lightmaps(model_data))
-            except OSError as e:  # noqa: PERF203
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_lightmaps() with model '%s': %s", repr(self), model.identifier(), e)
+            except OSError:  # noqa: PERF203
+                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_lightmaps() with model '%s': %s",
+                                           repr(self), model.identifier(), exc_info=True, extra={"detailed": False})
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'", repr(self), model.identifier(), exc_info=True)
+                RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'",
+                                             repr(self), model.identifier(), exc_info=True)
             else:
                 RobustRootLogger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
 
@@ -600,8 +582,8 @@ class Module:  # noqa: PLR0904
         result: set[ResourceIdentifier] = set()
         for location in original_git_or_lyt.locations():
             original_git_or_lyt.activate(location)
-            loaded_git_or_lyt: useable_type | None = original_git_or_lyt.resource()
-            if not isinstance(loaded_git_or_lyt, useable_type):
+            loaded_git_or_lyt: type[GIT | LYT | VIS] | None = original_git_or_lyt.resource()
+            if not isinstance(loaded_git_or_lyt, (GIT, LYT, VIS)):
                 raise RuntimeError(errmsg)  # noqa: TRY004
             if not isinstance(loaded_git_or_lyt, VIS):
                 result.update(loaded_git_or_lyt.iter_resource_identifiers())

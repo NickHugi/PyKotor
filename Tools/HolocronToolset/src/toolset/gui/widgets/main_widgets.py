@@ -405,7 +405,6 @@ class ResourceList(MainWindowList):
         builder = ResourceItems(resources=resources)
         builder.viewport = lambda: self.ui.resourceTree
         builder.runContextMenu(point, menu=menu)
-        #menu.popup(self.ui.resourceTree.mapToGlobal(point))
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
@@ -734,7 +733,7 @@ class TextureList(MainWindowList):
         try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
         except RuntimeError:
-            RobustRootLogger.exception("Could not update TextureList icon")
+            RobustRootLogger().exception("Could not update TextureList icon")
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)
@@ -788,3 +787,4 @@ class TextureListTask:
             if size <= 64:
                 return i
         return 0
+

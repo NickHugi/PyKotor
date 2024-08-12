@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from ctypes import HRESULT as ctypesHRESULT, c_long  # noqa: N811
+from ctypes import HRESULT as ctypesHRESULT, c_long, get_last_error  # noqa: N811
 from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 if TYPE_CHECKING:
     from typing_extensions import Literal, Self  # pyright: ignore[reportMissingModuleSource]
 
 
-class HRESULTError(OSError):
+class Win32OSError(OSError):
     ...
 
 
@@ -356,14 +356,22 @@ class HRESULT(ctypesHRESULT):
             return f"{self.to_hresult(self.value):08X}"
         return format(self.to_hresult(self.value), format_spec)
 
-    def exception(self, short_desc: str = "") -> HRESULTError:
-        return HRESULTError(self.to_hresult(self.value), decode_hresult(self), short_desc or "")
+    def exception(self, short_desc: str | None = None) -> Win32OSError:
+        return Win32OSError(self.to_hresult(self.value), decode_hresult(self), short_desc or "")
 
     @classmethod
-    def raise_for_status(cls, hresult: HRESULT | ctypesHRESULT | Self | int, short_desc: str = "", *, ignore_s_false: bool = False):
+    def raise_for_status(
+        cls,
+        hresult: HRESULT | ctypesHRESULT | Self | int | None = None,
+        short_desc: str | None = None,
+        *,
+        ignore_s_false: bool = False,
+    ):
+        hresult = HRESULT(get_last_error() if hresult is None else hresult)
         hr: Self = hresult if isinstance(hresult, cls) else cls(hresult)
-        if (hr == 1 and not ignore_s_false) or hr not in (0, 1):
+        if (hr == 1 and not ignore_s_false) or hr not in (HRESULT(0), HRESULT(1)):
             raise hr.exception(short_desc)
+        return hresult
 
 
 

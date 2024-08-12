@@ -17,33 +17,13 @@ from utility.system.win32.com.com_helpers import HandleCOMCall
 from utility.system.win32.com.com_types import GUID
 from utility.system.win32.com.interfaces import (
     COMDLG_FILTERSPEC,
-    FOS_ALLNONSTORAGEITEMS,
-    FOS_ALLOWMULTISELECT,
-    FOS_CREATEPROMPT,
-    FOS_DEFAULTNOMINIMODE,
-    FOS_DONTADDTORECENT,
-    FOS_FILEMUSTEXIST,
-    FOS_FORCEFILESYSTEM,
-    FOS_FORCEPREVIEWPANEON,
-    FOS_FORCESHOWHIDDEN,
-    FOS_HIDEMRUPLACES,
-    FOS_HIDEPINNEDPLACES,
-    FOS_NOCHANGEDIR,
-    FOS_NODEREFERENCELINKS,
-    FOS_NOREADONLYRETURN,
-    FOS_NOTESTFILECREATE,
-    FOS_NOVALIDATE,
-    FOS_OVERWRITEPROMPT,
-    FOS_PATHMUSTEXIST,
-    FOS_PICKFOLDERS,
-    FOS_SHAREAWARE,
-    FOS_STRICTFILETYPES,
     SFGAO_FILESYSTEM,
     SFGAO_FOLDER,
     SIGDN,
     CLSID_FileOpenDialog,
     CLSID_FileSaveDialog,
     COMFunctionPointers,
+    FileOpenOptions,
     IFileDialogEvents,
     IFileOpenDialog,
     IFileSaveDialog,
@@ -257,11 +237,11 @@ def configure_file_dialog(  # noqa: PLR0913, PLR0912, C901
             check(fileDialog.SetDefaultFolder(shell_item))
 
     # Resolve contradictory options
-    if options & FOS_ALLNONSTORAGEITEMS:
-        if options & FOS_FORCEFILESYSTEM:
-            options &= ~FOS_FORCEFILESYSTEM  # Remove FOS_FORCEFILESYSTEM
-        if options & FOS_PICKFOLDERS:
-            options &= ~FOS_PICKFOLDERS  # Remove FOS_PICKFOLDERS
+    if options & FileOpenOptions.FOS_ALLNONSTORAGEITEMS:
+        if options & FileOpenOptions.FOS_FORCEFILESYSTEM:
+            options &= ~FileOpenOptions.FOS_FORCEFILESYSTEM  # Remove FileOpenOptions.FOS_FORCEFILESYSTEM
+        if options & FileOpenOptions.FOS_PICKFOLDERS:
+            options &= ~FileOpenOptions.FOS_PICKFOLDERS  # Remove FileOpenOptions.FOS_PICKFOLDERS
 
     original_dialog_options = fileDialog.GetOptions()
     print(f"Original dialog options: {original_dialog_options}")
@@ -294,7 +274,7 @@ def configure_file_dialog(  # noqa: PLR0913, PLR0912, C901
         fileDialog.SetOkButtonLabel(ok_button_label)
     elif isinstance(fileDialog, IFileSaveDialog):
         fileDialog.SetOkButtonLabel("Save")
-    elif options & FOS_PICKFOLDERS:
+    elif options & FileOpenOptions.FOS_PICKFOLDERS:
         fileDialog.SetOkButtonLabel("Select Folder")
     else:
         fileDialog.SetOkButtonLabel("Select File")
@@ -348,26 +328,26 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
         default_folder (str | None): The initial folder to open.
         file_types (list[tuple[str, str]] | None): A list of file type filters.
         default_extension (str | None): The default file extension.
-        overwrite_prompt (bool): Prompts if the selected file already exists. FOS_OVERWRITEPROMPT.
-        strict_file_types (bool): Restricts selection to specified file types. FOS_STRICTFILETYPES.
-        no_change_dir (bool): Prevents changing the current working directory. FOS_NOCHANGEDIR.
-        force_filesystem (bool): Ensures only file system items are shown. FOS_FORCEFILESYSTEM.
-        all_non_storage_items (bool): Allows selection of non-file system items. FOS_ALLNONSTORAGEITEMS.
-        no_validate (bool): Disables file name validation. FOS_NOVALIDATE.
-        allow_multiple_selection (bool): Allows selecting multiple files. FOS_ALLOWMULTISELECT.
-        path_must_exist (bool): Requires the path to exist. FOS_PATHMUSTEXIST.
-        file_must_exist (bool): Requires the file to exist. FOS_FILEMUSTEXIST.
-        create_prompt (bool): Prompts to create a new file if it doesn't exist. FOS_CREATEPROMPT.
-        share_aware (bool): Ensures the dialog is aware of sharing conflicts. FOS_SHAREAWARE.
-        no_readonly_return (bool): Prevents selection of read-only items. FOS_NOREADONLYRETURN.
-        no_test_file_create (bool): Disables testing file creation ability. FOS_NOTESTFILECREATE.
-        hide_mru_places (bool): Hides most recently used places. FOS_HIDEMRUPLACES.
-        hide_pinned_places (bool): Hides pinned places. FOS_HIDEPINNEDPLACES.
-        no_dereference_links (bool): Prevents dereferencing shortcuts. FOS_NODEREFERENCELINKS.
-        add_to_recent (bool): Prevents adding the file to recent files. FOS_DONTADDTORECENT.
-        show_hidden_files (bool): Shows hidden files and folders. FOS_FORCESHOWHIDDEN.
-        default_no_minimode (bool): Uses default non-minimized mode. FOS_DEFAULTNOMINIMODE.
-        force_preview_pane_on (bool): Forces the preview pane to be visible. FOS_FORCEPREVIEWPANEON.
+        overwrite_prompt (bool): Prompts if the selected file already exists. FileOpenOptions.FOS_OVERWRITEPROMPT.
+        strict_file_types (bool): Restricts selection to specified file types. FileOpenOptions.FOS_STRICTFILETYPES.
+        no_change_dir (bool): Prevents changing the current working directory. FileOpenOptions.FOS_NOCHANGEDIR.
+        force_filesystem (bool): Ensures only file system items are shown. FileOpenOptions.FOS_FORCEFILESYSTEM.
+        all_non_storage_items (bool): Allows selection of non-file system items. FileOpenOptions.FOS_ALLNONSTORAGEITEMS.
+        no_validate (bool): Disables file name validation. FileOpenOptions.FOS_NOVALIDATE.
+        allow_multiple_selection (bool): Allows selecting multiple files. FileOpenOptions.FOS_ALLOWMULTISELECT.
+        path_must_exist (bool): Requires the path to exist. FileOpenOptions.FOS_PATHMUSTEXIST.
+        file_must_exist (bool): Requires the file to exist. FileOpenOptions.FOS_FILEMUSTEXIST.
+        create_prompt (bool): Prompts to create a new file if it doesn't exist. FileOpenOptions.FOS_CREATEPROMPT.
+        share_aware (bool): Ensures the dialog is aware of sharing conflicts. FileOpenOptions.FOS_SHAREAWARE.
+        no_readonly_return (bool): Prevents selection of read-only items. FileOpenOptions.FOS_NOREADONLYRETURN.
+        no_test_file_create (bool): Disables testing file creation ability. FileOpenOptions.FOS_NOTESTFILECREATE.
+        hide_mru_places (bool): Hides most recently used places. FileOpenOptions.FOS_HIDEMRUPLACES.
+        hide_pinned_places (bool): Hides pinned places. FileOpenOptions.FOS_HIDEPINNEDPLACES.
+        no_dereference_links (bool): Prevents dereferencing shortcuts. FileOpenOptions.FOS_NODEREFERENCELINKS.
+        add_to_recent (bool): Prevents adding the file to recent files. FileOpenOptions.FOS_DONTADDTORECENT.
+        show_hidden_files (bool): Shows hidden files and folders. FileOpenOptions.FOS_FORCESHOWHIDDEN.
+        default_no_minimode (bool): Uses default non-minimized mode. FileOpenOptions.FOS_DEFAULTNOMINIMODE.
+        force_preview_pane_on (bool): Forces the preview pane to be visible. FileOpenOptions.FOS_FORCEPREVIEWPANEON.
         ok_button_text (str): The text for the button used to select/confirm the dialog.
 
     Returns:
@@ -375,46 +355,46 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
     """
     options = 0
     if overwrite_prompt:
-        options |= FOS_OVERWRITEPROMPT
+        options |= FileOpenOptions.FOS_OVERWRITEPROMPT
     if strict_file_types:
-        options |= FOS_STRICTFILETYPES
+        options |= FileOpenOptions.FOS_STRICTFILETYPES
     if no_change_dir:
-        options |= FOS_NOCHANGEDIR
-    options |= FOS_PICKFOLDERS
+        options |= FileOpenOptions.FOS_NOCHANGEDIR
+    options |= FileOpenOptions.FOS_PICKFOLDERS
     if force_filesystem:
-        options |= FOS_FORCEFILESYSTEM
+        options |= FileOpenOptions.FOS_FORCEFILESYSTEM
     if all_non_storage_items:
-        options |= FOS_ALLNONSTORAGEITEMS
+        options |= FileOpenOptions.FOS_ALLNONSTORAGEITEMS
     if no_validate:
-        options |= FOS_NOVALIDATE
+        options |= FileOpenOptions.FOS_NOVALIDATE
     if allow_multiple_selection:
-        options |= FOS_ALLOWMULTISELECT
+        options |= FileOpenOptions.FOS_ALLOWMULTISELECT
     if path_must_exist:
-        options |= FOS_PATHMUSTEXIST
+        options |= FileOpenOptions.FOS_PATHMUSTEXIST
     if file_must_exist:
-        options |= FOS_FILEMUSTEXIST
+        options |= FileOpenOptions.FOS_FILEMUSTEXIST
     if create_prompt:
-        options |= FOS_CREATEPROMPT
+        options |= FileOpenOptions.FOS_CREATEPROMPT
     if share_aware:
-        options |= FOS_SHAREAWARE
+        options |= FileOpenOptions.FOS_SHAREAWARE
     if no_readonly_return:
-        options |= FOS_NOREADONLYRETURN
+        options |= FileOpenOptions.FOS_NOREADONLYRETURN
     if no_test_file_create:
-        options |= FOS_NOTESTFILECREATE
+        options |= FileOpenOptions.FOS_NOTESTFILECREATE
     if hide_mru_places:
-        options |= FOS_HIDEMRUPLACES
+        options |= FileOpenOptions.FOS_HIDEMRUPLACES
     if hide_pinned_places:
-        options |= FOS_HIDEPINNEDPLACES
+        options |= FileOpenOptions.FOS_HIDEPINNEDPLACES
     if no_dereference_links:
-        options |= FOS_NODEREFERENCELINKS
+        options |= FileOpenOptions.FOS_NODEREFERENCELINKS
     if not add_to_recent:
-        options |= FOS_DONTADDTORECENT
+        options |= FileOpenOptions.FOS_DONTADDTORECENT
     if show_hidden_files:
-        options |= FOS_FORCESHOWHIDDEN
+        options |= FileOpenOptions.FOS_FORCESHOWHIDDEN
     if default_no_minimode:
-        options |= FOS_DEFAULTNOMINIMODE
+        options |= FileOpenOptions.FOS_DEFAULTNOMINIMODE
     if force_preview_pane_on:
-        options |= FOS_FORCEPREVIEWPANEON
+        options |= FileOpenOptions.FOS_FORCEPREVIEWPANEON
     return configure_file_dialog(IFileOpenDialog, title, options, default_folder, ok_button_text, None, file_types, default_extension)
 
 
@@ -452,25 +432,25 @@ def save_file_dialog(  # noqa: C901, PLR0913, PLR0912
         default_folder (str | None): The initial folder to open.
         file_types (list[tuple[str, str]] | None): A list of file type filters.
         default_extension (str | None): The default file extension.
-        overwrite_prompt (bool): Prompts if the selected file already exists. FOS_OVERWRITEPROMPT.
-        strict_file_types (bool): Restricts selection to specified file types. FOS_STRICTFILETYPES.
-        no_change_dir (bool): Prevents changing the current working directory. FOS_NOCHANGEDIR.
-        force_filesystem (bool): Ensures only file system items are shown. FOS_FORCEFILESYSTEM.
-        all_non_storage_items (bool): Allows selection of non-file system items. FOS_ALLNONSTORAGEITEMS.
-        no_validate (bool): Disables file name validation. FOS_NOVALIDATE.
-        path_must_exist (bool): Requires the path to exist. FOS_PATHMUSTEXIST.
-        file_must_exist (bool): Requires the file to exist. FOS_FILEMUSTEXIST.
-        create_prompt (bool): Prompts to create a new file if it doesn't exist. FOS_CREATEPROMPT.
-        share_aware (bool): Ensures the dialog is aware of sharing conflicts. FOS_SHAREAWARE.
-        no_readonly_return (bool): Prevents selection of read-only items. FOS_NOREADONLYRETURN.
-        no_test_file_create (bool): Disables testing file creation ability. FOS_NOTESTFILECREATE.
-        hide_mru_places (bool): Hides most recently used places. FOS_HIDEMRUPLACES.
-        hide_pinned_places (bool): Hides pinned places. FOS_HIDEPINNEDPLACES.
-        no_dereference_links (bool): Prevents dereferencing shortcuts. FOS_NODEREFERENCELINKS.
-        add_to_recent (bool): Prevents adding the file to recent files. FOS_DONTADDTORECENT.
-        show_hidden_files (bool): Shows hidden files and folders. FOS_FORCESHOWHIDDEN.
-        default_no_minimode (bool): Uses default non-minimized mode. FOS_DEFAULTNOMINIMODE.
-        force_preview_pane_on (bool): Forces the preview pane to be visible. FOS_FORCEPREVIEWPANEON.
+        overwrite_prompt (bool): Prompts if the selected file already exists. FileOpenOptions.FOS_OVERWRITEPROMPT.
+        strict_file_types (bool): Restricts selection to specified file types. FileOpenOptions.FOS_STRICTFILETYPES.
+        no_change_dir (bool): Prevents changing the current working directory. FileOpenOptions.FOS_NOCHANGEDIR.
+        force_filesystem (bool): Ensures only file system items are shown. FileOpenOptions.FOS_FORCEFILESYSTEM.
+        all_non_storage_items (bool): Allows selection of non-file system items. FileOpenOptions.FOS_ALLNONSTORAGEITEMS.
+        no_validate (bool): Disables file name validation. FileOpenOptions.FOS_NOVALIDATE.
+        path_must_exist (bool): Requires the path to exist. FileOpenOptions.FOS_PATHMUSTEXIST.
+        file_must_exist (bool): Requires the file to exist. FileOpenOptions.FOS_FILEMUSTEXIST.
+        create_prompt (bool): Prompts to create a new file if it doesn't exist. FileOpenOptions.FOS_CREATEPROMPT.
+        share_aware (bool): Ensures the dialog is aware of sharing conflicts. FileOpenOptions.FOS_SHAREAWARE.
+        no_readonly_return (bool): Prevents selection of read-only items. FileOpenOptions.FOS_NOREADONLYRETURN.
+        no_test_file_create (bool): Disables testing file creation ability. FileOpenOptions.FOS_NOTESTFILECREATE.
+        hide_mru_places (bool): Hides most recently used places. FileOpenOptions.FOS_HIDEMRUPLACES.
+        hide_pinned_places (bool): Hides pinned places. FileOpenOptions.FOS_HIDEPINNEDPLACES.
+        no_dereference_links (bool): Prevents dereferencing shortcuts. FileOpenOptions.FOS_NODEREFERENCELINKS.
+        add_to_recent (bool): Prevents adding the file to recent files. FileOpenOptions.FOS_DONTADDTORECENT.
+        show_hidden_files (bool): Shows hidden files and folders. FileOpenOptions.FOS_FORCESHOWHIDDEN.
+        default_no_minimode (bool): Uses default non-minimized mode. FileOpenOptions.FOS_DEFAULTNOMINIMODE.
+        force_preview_pane_on (bool): Forces the preview pane to be visible. FileOpenOptions.FOS_FORCEPREVIEWPANEON.
         ok_button_text (str): The text for the button used to select/confirm the dialog.
 
     Returns:
@@ -478,47 +458,47 @@ def save_file_dialog(  # noqa: C901, PLR0913, PLR0912
     """
     options = 0
     if overwrite_prompt:
-        options |= FOS_OVERWRITEPROMPT
+        options |= FileOpenOptions.FOS_OVERWRITEPROMPT
     if strict_file_types:
-        options |= FOS_STRICTFILETYPES
+        options |= FileOpenOptions.FOS_STRICTFILETYPES
     if no_change_dir:
-        options |= FOS_NOCHANGEDIR
+        options |= FileOpenOptions.FOS_NOCHANGEDIR
     #if pick_folders:  # Incompatible (exceptions)
-    #    options |= FOS_PICKFOLDERS
+    #    options |= FileOpenOptions.FOS_PICKFOLDERS
     if force_filesystem:
-        options |= FOS_FORCEFILESYSTEM
+        options |= FileOpenOptions.FOS_FORCEFILESYSTEM
     if all_non_storage_items:
-        options |= FOS_ALLNONSTORAGEITEMS
+        options |= FileOpenOptions.FOS_ALLNONSTORAGEITEMS
     if no_validate:
-        options |= FOS_NOVALIDATE
+        options |= FileOpenOptions.FOS_NOVALIDATE
     #if allow_multiple_selection:  # Incompatible (exceptions)
-    #    options |= FOS_ALLOWMULTISELECT
+    #    options |= FileOpenOptions.FOS_ALLOWMULTISELECT
     if path_must_exist:
-        options |= FOS_PATHMUSTEXIST
+        options |= FileOpenOptions.FOS_PATHMUSTEXIST
     if file_must_exist:
-        options |= FOS_FILEMUSTEXIST
+        options |= FileOpenOptions.FOS_FILEMUSTEXIST
     if create_prompt:
-        options |= FOS_CREATEPROMPT
+        options |= FileOpenOptions.FOS_CREATEPROMPT
     if share_aware:
-        options |= FOS_SHAREAWARE
+        options |= FileOpenOptions.FOS_SHAREAWARE
     if no_readonly_return:
-        options |= FOS_NOREADONLYRETURN
+        options |= FileOpenOptions.FOS_NOREADONLYRETURN
     if no_test_file_create:
-        options |= FOS_NOTESTFILECREATE
+        options |= FileOpenOptions.FOS_NOTESTFILECREATE
     if hide_mru_places:
-        options |= FOS_HIDEMRUPLACES
+        options |= FileOpenOptions.FOS_HIDEMRUPLACES
     if hide_pinned_places:
-        options |= FOS_HIDEPINNEDPLACES
+        options |= FileOpenOptions.FOS_HIDEPINNEDPLACES
     if no_dereference_links:
-        options |= FOS_NODEREFERENCELINKS
+        options |= FileOpenOptions.FOS_NODEREFERENCELINKS
     if not add_to_recent:
-        options |= FOS_DONTADDTORECENT
+        options |= FileOpenOptions.FOS_DONTADDTORECENT
     if show_hidden_files:
-        options |= FOS_FORCESHOWHIDDEN
+        options |= FileOpenOptions.FOS_FORCESHOWHIDDEN
     if default_no_minimode:
-        options |= FOS_DEFAULTNOMINIMODE
+        options |= FileOpenOptions.FOS_DEFAULTNOMINIMODE
     if force_preview_pane_on:
-        options |= FOS_FORCEPREVIEWPANEON
+        options |= FileOpenOptions.FOS_FORCEPREVIEWPANEON
     return configure_file_dialog(IFileSaveDialog, title, options, default_folder, ok_button_text, None, file_types, default_extension)
 
 
@@ -553,26 +533,26 @@ def open_folder_dialog(  # noqa: C901, PLR0913, PLR0912
     Args:
         title (str | None): The title of the dialog.
         default_folder (str | None): The initial folder to open.
-        overwrite_prompt (bool): Prompts if the selected file already exists. FOS_OVERWRITEPROMPT.
-        strict_file_types (bool): Restricts selection to specified file types. FOS_STRICTFILETYPES.
-        no_change_dir (bool): Prevents changing the current working directory. FOS_NOCHANGEDIR.
-        force_filesystem (bool): Ensures only file system items are shown. FOS_FORCEFILESYSTEM.
-        all_non_storage_items (bool): Allows selection of non-file system items. FOS_ALLNONSTORAGEITEMS.
-        no_validate (bool): Disables file name validation. FOS_NOVALIDATE.
-        allow_multiple_selection (bool): Allows selecting multiple files. FOS_ALLOWMULTISELECT.
-        path_must_exist (bool): Requires the path to exist. FOS_PATHMUSTEXIST.
-        file_must_exist (bool): Requires the file to exist. FOS_FILEMUSTEXIST.
-        create_prompt (bool): Prompts to create a new file if it doesn't exist. FOS_CREATEPROMPT.
-        share_aware (bool): Ensures the dialog is aware of sharing conflicts. FOS_SHAREAWARE.
-        no_readonly_return (bool): Prevents selection of read-only items. FOS_NOREADONLYRETURN.
-        no_test_file_create (bool): Disables testing file creation ability. FOS_NOTESTFILECREATE.
-        hide_mru_places (bool): Hides most recently used places. FOS_HIDEMRUPLACES.
-        hide_pinned_places (bool): Hides pinned places. FOS_HIDEPINNEDPLACES.
-        no_dereference_links (bool): Prevents dereferencing shortcuts. FOS_NODEREFERENCELINKS.
-        add_to_recent (bool): Prevents adding the file to recent files. FOS_DONTADDTORECENT.
-        show_hidden_files (bool): Shows hidden files and folders. FOS_FORCESHOWHIDDEN.
-        default_no_minimode (bool): Uses default non-minimized mode. FOS_DEFAULTNOMINIMODE.
-        force_preview_pane_on (bool): Forces the preview pane to be visible. FOS_FORCEPREVIEWPANEON.
+        overwrite_prompt (bool): Prompts if the selected file already exists. FileOpenOptions.FOS_OVERWRITEPROMPT.
+        strict_file_types (bool): Restricts selection to specified file types. FileOpenOptions.FOS_STRICTFILETYPES.
+        no_change_dir (bool): Prevents changing the current working directory. FileOpenOptions.FOS_NOCHANGEDIR.
+        force_filesystem (bool): Ensures only file system items are shown. FileOpenOptions.FOS_FORCEFILESYSTEM.
+        all_non_storage_items (bool): Allows selection of non-file system items. FileOpenOptions.FOS_ALLNONSTORAGEITEMS.
+        no_validate (bool): Disables file name validation. FileOpenOptions.FOS_NOVALIDATE.
+        allow_multiple_selection (bool): Allows selecting multiple files. FileOpenOptions.FOS_ALLOWMULTISELECT.
+        path_must_exist (bool): Requires the path to exist. FileOpenOptions.FOS_PATHMUSTEXIST.
+        file_must_exist (bool): Requires the file to exist. FileOpenOptions.FOS_FILEMUSTEXIST.
+        create_prompt (bool): Prompts to create a new file if it doesn't exist. FileOpenOptions.FOS_CREATEPROMPT.
+        share_aware (bool): Ensures the dialog is aware of sharing conflicts. FileOpenOptions.FOS_SHAREAWARE.
+        no_readonly_return (bool): Prevents selection of read-only items. FileOpenOptions.FOS_NOREADONLYRETURN.
+        no_test_file_create (bool): Disables testing file creation ability. FileOpenOptions.FOS_NOTESTFILECREATE.
+        hide_mru_places (bool): Hides most recently used places. FileOpenOptions.FOS_HIDEMRUPLACES.
+        hide_pinned_places (bool): Hides pinned places. FileOpenOptions.FOS_HIDEPINNEDPLACES.
+        no_dereference_links (bool): Prevents dereferencing shortcuts. FileOpenOptions.FOS_NODEREFERENCELINKS.
+        add_to_recent (bool): Prevents adding the file to recent files. FileOpenOptions.FOS_DONTADDTORECENT.
+        show_hidden_files (bool): Shows hidden files and folders. FileOpenOptions.FOS_FORCESHOWHIDDEN.
+        default_no_minimode (bool): Uses default non-minimized mode. FileOpenOptions.FOS_DEFAULTNOMINIMODE.
+        force_preview_pane_on (bool): Forces the preview pane to be visible. FileOpenOptions.FOS_FORCEPREVIEWPANEON.
         ok_button_text (str): The text for the button used to select/confirm the dialog.
 
     Returns:
@@ -580,46 +560,46 @@ def open_folder_dialog(  # noqa: C901, PLR0913, PLR0912
     """
     options = 0
     if overwrite_prompt:
-        options |= FOS_OVERWRITEPROMPT
+        options |= FileOpenOptions.FOS_OVERWRITEPROMPT
     if strict_file_types:
-        options |= FOS_STRICTFILETYPES
+        options |= FileOpenOptions.FOS_STRICTFILETYPES
     if no_change_dir:
-        options |= FOS_NOCHANGEDIR
-    options |= FOS_PICKFOLDERS
+        options |= FileOpenOptions.FOS_NOCHANGEDIR
+    options |= FileOpenOptions.FOS_PICKFOLDERS
     if force_filesystem:
-        options |= FOS_FORCEFILESYSTEM
+        options |= FileOpenOptions.FOS_FORCEFILESYSTEM
     if all_non_storage_items:
-        options |= FOS_ALLNONSTORAGEITEMS
+        options |= FileOpenOptions.FOS_ALLNONSTORAGEITEMS
     if no_validate:
-        options |= FOS_NOVALIDATE
+        options |= FileOpenOptions.FOS_NOVALIDATE
     if allow_multiple_selection:
-        options |= FOS_ALLOWMULTISELECT
+        options |= FileOpenOptions.FOS_ALLOWMULTISELECT
     if path_must_exist:
-        options |= FOS_PATHMUSTEXIST
+        options |= FileOpenOptions.FOS_PATHMUSTEXIST
     if file_must_exist:
-        options |= FOS_FILEMUSTEXIST
+        options |= FileOpenOptions.FOS_FILEMUSTEXIST
     if create_prompt:
-        options |= FOS_CREATEPROMPT
+        options |= FileOpenOptions.FOS_CREATEPROMPT
     if share_aware:
-        options |= FOS_SHAREAWARE
+        options |= FileOpenOptions.FOS_SHAREAWARE
     if no_readonly_return:
-        options |= FOS_NOREADONLYRETURN
+        options |= FileOpenOptions.FOS_NOREADONLYRETURN
     if no_test_file_create:
-        options |= FOS_NOTESTFILECREATE
+        options |= FileOpenOptions.FOS_NOTESTFILECREATE
     if hide_mru_places:
-        options |= FOS_HIDEMRUPLACES
+        options |= FileOpenOptions.FOS_HIDEMRUPLACES
     if hide_pinned_places:
-        options |= FOS_HIDEPINNEDPLACES
+        options |= FileOpenOptions.FOS_HIDEPINNEDPLACES
     if no_dereference_links:
-        options |= FOS_NODEREFERENCELINKS
+        options |= FileOpenOptions.FOS_NODEREFERENCELINKS
     if not add_to_recent:
-        options |= FOS_DONTADDTORECENT
+        options |= FileOpenOptions.FOS_DONTADDTORECENT
     if show_hidden_files:
-        options |= FOS_FORCESHOWHIDDEN
+        options |= FileOpenOptions.FOS_FORCESHOWHIDDEN
     if default_no_minimode:
-        options |= FOS_DEFAULTNOMINIMODE
+        options |= FileOpenOptions.FOS_DEFAULTNOMINIMODE
     if force_preview_pane_on:
-        options |= FOS_FORCEPREVIEWPANEON
+        options |= FileOpenOptions.FOS_FORCEPREVIEWPANEON
     return configure_file_dialog(IFileOpenDialog, title, options, default_folder, ok_button_text, None, None, None)
 
 
