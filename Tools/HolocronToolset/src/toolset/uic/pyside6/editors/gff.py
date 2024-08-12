@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'gff.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.lineEdit)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer)
 
@@ -140,7 +140,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.intSpin)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 280, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 280, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_5.addItem(self.verticalSpacer_3)
 
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.floatSpin)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 280, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 280, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_2)
 

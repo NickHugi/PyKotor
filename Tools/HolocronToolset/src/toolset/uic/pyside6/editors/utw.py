@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utw.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -156,7 +156,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.formLayout)
 
-        self.verticalSpacer = QSpacerItem(320, 85, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(320, 85, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer)
 

@@ -88,8 +88,8 @@ class ProgressDialog(QDialog):
 
 
 class AsyncLoader(QDialog, Generic[T]):
-    optionalFinishHook = QtCore.Signal(object)
-    optionalErrorHook = QtCore.Signal(object)
+    optionalFinishHook = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    optionalErrorHook = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(
         self,
@@ -241,7 +241,11 @@ class AsyncLoader(QDialog, Generic[T]):
             msgBox.setDetailedText("\n\n".join(format_exception_with_variables(e) for e in self.errors))
             msgBox.exec_()
 
-    def _onProgress(self, value: int | str, task_type: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
+    def _onProgress(
+        self,
+        value: int | str,
+        task_type: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"],
+    ):
         if task_type == "increment":
             assert isinstance(value, int)
             self._progressBar.setValue(self._progressBar.value() + value)

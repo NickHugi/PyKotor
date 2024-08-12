@@ -79,7 +79,7 @@ class SetBindWidget(QWidget):
 
     def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
-        RobustRootLogger.info(f"Set keybind to {self.keybind}")
+        RobustRootLogger().info(f"Set keybind to {self.keybind}")
 
     def setMouseAndKeyBinds(self, bind: Bind):
         # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't affected there.

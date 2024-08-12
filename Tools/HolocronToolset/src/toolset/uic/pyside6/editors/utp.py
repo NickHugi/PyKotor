@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utp.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -89,7 +89,7 @@ class Ui_MainWindow(object):
 
         self.gridLayout_3.addWidget(self.groupBox_15, 1, 0, 1, 1)
 
-        self.verticalSpacer = QSpacerItem(20, 77, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 77, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.gridLayout_3.addItem(self.verticalSpacer, 3, 0, 1, 1)
 
@@ -134,7 +134,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
         self.tagEdit = QLineEdit(self.groupBox)
         self.tagEdit.setObjectName(u"tagEdit")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.tagEdit.sizePolicy().hasHeightForWidth())
@@ -174,7 +174,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_18.setObjectName(u"horizontalLayout_18")
         self.appearanceSelect = ComboBox2DA(self.groupBox)
         self.appearanceSelect.setObjectName(u"appearanceSelect")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.appearanceSelect.sizePolicy().hasHeightForWidth())
@@ -182,7 +182,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_18.addWidget(self.appearanceSelect)
 
-        self.horizontalSpacer_11 = QSpacerItem(29, 17, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_11 = QSpacerItem(29, 17, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
         self.horizontalLayout_18.addItem(self.horizontalSpacer_11)
 
@@ -205,7 +205,7 @@ class Ui_MainWindow(object):
 
         self.conversationModifyButton = QPushButton(self.groupBox)
         self.conversationModifyButton.setObjectName(u"conversationModifyButton")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy2.setHorizontalStretch(1)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.conversationModifyButton.sizePolicy().hasHeightForWidth())
@@ -296,7 +296,7 @@ class Ui_MainWindow(object):
 
         self.frame_4 = QFrame(self.tab_10)
         self.frame_4.setObjectName(u"frame_4")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
         sizePolicy3.setHeightForWidth(self.frame_4.sizePolicy().hasHeightForWidth())
@@ -311,7 +311,7 @@ class Ui_MainWindow(object):
 
         self.currenHpSpin = QSpinBox(self.frame_4)
         self.currenHpSpin.setObjectName(u"currenHpSpin")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
         sizePolicy4.setHorizontalStretch(0)
         sizePolicy4.setVerticalStretch(0)
         sizePolicy4.setHeightForWidth(self.currenHpSpin.sizePolicy().hasHeightForWidth())
@@ -329,7 +329,7 @@ class Ui_MainWindow(object):
 
         self.maxHpSpin = QSpinBox(self.frame_4)
         self.maxHpSpin.setObjectName(u"maxHpSpin")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.MinimumExpanding)
         sizePolicy5.setHorizontalStretch(0)
         sizePolicy5.setVerticalStretch(0)
         sizePolicy5.setHeightForWidth(self.maxHpSpin.sizePolicy().hasHeightForWidth())
@@ -403,7 +403,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.frame_4)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout.addItem(self.verticalSpacer_2)
 
@@ -502,7 +502,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.groupBox_2)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 123, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 123, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_5.addItem(self.verticalSpacer_3)
 

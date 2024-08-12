@@ -818,7 +818,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
-                RobustRootLogger.warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
+                RobustRootLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
                 continue
             if item.data(Qt.ItemDataRole.UserRole) == featId:
                 return item
@@ -828,7 +828,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
-                RobustRootLogger.warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
+                RobustRootLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
                 continue
             if item.data(Qt.ItemDataRole.UserRole) == powerId:
                 return item
@@ -852,7 +852,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)
             if item is None:
-                RobustRootLogger.warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
+                RobustRootLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
                 continue
 
             if item.checkState() == Qt.Checked:
@@ -873,7 +873,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)
             if item is None:
-                RobustRootLogger.warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
+                RobustRootLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
                 continue
 
             if item.checkState() == Qt.Checked:

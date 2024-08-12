@@ -242,7 +242,7 @@ class GlobalSettings(Settings):
         Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
         The installations dictionary is then saved back to the user settings.
         """
-        RobustRootLogger.info("First time user, attempt auto-detection of currently installed KOTOR paths.")
+        RobustRootLogger().info("First time user, attempt auto-detection of currently installed KOTOR paths.")
         self.extractPath = str(get_log_directory(f"{uuid.uuid4().hex[:7]}_extract"))
         counters: dict[Game, int] = {Game.K1: 1, Game.K2: 1}
         # Create a set of existing paths
@@ -250,7 +250,7 @@ class GlobalSettings(Settings):
 
         for game, paths in find_kotor_paths_from_default().items():
             for path in filter(CaseAwarePath.safe_isdir, paths):
-                RobustRootLogger.info(f"Autodetected game {game!r} path {path}")
+                RobustRootLogger().info(f"Autodetected game {game!r} path {path}")
                 if path in existing_paths:  # If the path is already recorded, skip to the next one
                     continue
 

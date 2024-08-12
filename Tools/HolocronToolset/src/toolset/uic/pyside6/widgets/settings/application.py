@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'application.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -44,7 +44,7 @@ class Ui_ApplicationSettingsWidget(object):
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
         self.resetAttributesButton = QPushButton(self.scrollAreaWidgetContents)
         self.resetAttributesButton.setObjectName(u"resetAttributesButton")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         sizePolicy.setHorizontalStretch(10)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.resetAttributesButton.sizePolicy().hasHeightForWidth())
@@ -53,7 +53,7 @@ class Ui_ApplicationSettingsWidget(object):
 
         self.verticalLayout_4.addWidget(self.resetAttributesButton)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer)
 

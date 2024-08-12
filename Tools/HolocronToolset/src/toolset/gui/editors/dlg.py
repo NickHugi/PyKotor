@@ -198,7 +198,7 @@ class DLGListWidgetItem(QListWidgetItem):
             self.flags()
             self.isSelected()
         except RuntimeError as e:  # RuntimeError: wrapped C/C++ object of type DLGStandardItem has been deleted
-            RobustRootLogger.warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
+            RobustRootLogger().warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
             return True
         else:
             return False

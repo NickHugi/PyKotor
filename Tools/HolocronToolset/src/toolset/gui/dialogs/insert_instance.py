@@ -120,14 +120,14 @@ class InsertInstanceDialog(QDialog):
         data, _ = self.build()
         modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
         if not modelname or not modelname.strip():
-            RobustRootLogger.warning(
+            RobustRootLogger().warning(
                 "Placeable '%s.%s' has no model to render!",
                 self._resname,
                 self._restype,
             )
             self.ui.previewRenderer.clearModel()
             return
-        self.setRendererModelName(modelname)
+        self.setRenderModel(modelname)
 
     def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
@@ -272,10 +272,10 @@ class InsertInstanceDialog(QDialog):
                 mdx_data: bytes | None = None
                 if resource.restype() is ResourceType.UTD and self.globalSettings.showPreviewUTD:
                     modelname: str = door.get_model(read_utd(resource.data()), self._installation)
-                    self.setRendererModelName(modelname)
+                    self.setRenderModel(modelname)
                 elif resource.restype() is ResourceType.UTP and self.globalSettings.showPreviewUTP:
                     modelname: str = placeable.get_model(read_utp(resource.data()), self._installation)
-                    self.setRendererModelName(modelname)
+                    self.setRenderModel(modelname)
                 elif (
                     resource.restype() in (ResourceType.MDL, ResourceType.MDX)
                     and any((
@@ -315,7 +315,7 @@ class InsertInstanceDialog(QDialog):
                     else:
                         self.ui.previewRenderer.clearModel()
 
-    def setRendererModelName(self, modelname):
+    def setRenderModel(self, modelname):
         mdl: ResourceResult | None = self._installation.resource(
             modelname, ResourceType.MDL
         )

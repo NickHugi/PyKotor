@@ -625,7 +625,7 @@ class PropertyEditor(QDialog):
             for i in range(costtable.get_height()):
                 costName = UTIEditor.costName(installation, utiProperty.cost_table, i)
                 if not costName:
-                    RobustRootLogger.warning(f"No costName at index {i}")
+                    RobustRootLogger().warning(f"No costName at index {i}")
                 item = QListWidgetItem(costName)
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.costList.addItem(item)
@@ -636,7 +636,7 @@ class PropertyEditor(QDialog):
             for i in range(paramtable.get_height()):
                 paramName = UTIEditor.paramName(installation, utiProperty.param1, i)
                 if not paramName:
-                    RobustRootLogger.warning(f"No paramName at index {i}")
+                    RobustRootLogger().warning(f"No paramName at index {i}")
                 item = QListWidgetItem(paramName)
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.parameterList.addItem(item)

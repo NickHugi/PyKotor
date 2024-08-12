@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'git.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -49,7 +49,7 @@ class Ui_Form(object):
 
         self.horizontalLayout_3.addWidget(self.controlsResetButton)
 
-        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_3 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_3.addItem(self.horizontalSpacer_3)
 
@@ -164,7 +164,7 @@ class Ui_Form(object):
 
         self.undefinedMaterialColourEdit = ColorEdit(self.groupBox_2)
         self.undefinedMaterialColourEdit.setObjectName(u"undefinedMaterialColourEdit")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
         sizePolicy.setHeightForWidth(self.undefinedMaterialColourEdit.sizePolicy().hasHeightForWidth())
@@ -424,7 +424,7 @@ class Ui_Form(object):
 
         self.horizontalLayout.addWidget(self.coloursResetButton)
 
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer)
 

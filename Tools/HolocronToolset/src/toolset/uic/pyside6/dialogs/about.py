@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'about.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -39,7 +39,7 @@ class Ui_Dialog(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.aboutLabel = QLabel(self.verticalLayoutWidget)
         self.aboutLabel.setObjectName(u"aboutLabel")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.aboutLabel.sizePolicy().hasHeightForWidth())
@@ -58,7 +58,7 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_2.addWidget(self.closeButton)
 
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer_2)
 

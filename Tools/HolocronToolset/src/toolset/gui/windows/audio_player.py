@@ -115,7 +115,7 @@ class AudioPlayer(QMainWindow):
                 self.player.stop()
                 QTimer.singleShot(33, lambda: remove_any(filePathStr))
             except OSError:
-                RobustRootLogger.exception(f"Error removing temporary file {filePathStr}")
+                RobustRootLogger().exception(f"Error removing temporary file {filePathStr}")
 
     def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")

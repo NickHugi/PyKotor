@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'dlg_original.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -351,7 +351,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_6.addWidget(self.label_11)
 
-        self.horizontalSpacer_6 = QSpacerItem(19, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_6 = QSpacerItem(19, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
         self.horizontalLayout_6.addItem(self.horizontalSpacer_6)
 
@@ -380,7 +380,7 @@ class Ui_MainWindow(object):
 
         self.script1Param1Spin = GFFFieldSpinBox(self.scriptsTab)
         self.script1Param1Spin.setObjectName(u"script1Param1Spin")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.script1Param1Spin.sizePolicy().hasHeightForWidth())
@@ -431,7 +431,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addWidget(self.script1Param6Edit)
 
-        self.horizontalSpacer_4 = QSpacerItem(19, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_4 = QSpacerItem(19, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer_4)
 
@@ -508,7 +508,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.script2Param6Edit)
 
-        self.horizontalSpacer_5 = QSpacerItem(19, 20, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_5 = QSpacerItem(19, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
         self.horizontalLayout_3.addItem(self.horizontalSpacer_5)
 
@@ -678,7 +678,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addLayout(self.horizontalLayout_5)
 
-        self.verticalSpacer = QSpacerItem(20, 95, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 95, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer)
 
@@ -721,7 +721,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.editAnimButton)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_3)
 
@@ -815,7 +815,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_7.addLayout(self.formLayout_2)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_7.addItem(self.verticalSpacer_2)
 
@@ -876,7 +876,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_8.addLayout(self.formLayout_3)
 
-        self.horizontalSpacer = QSpacerItem(516, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer = QSpacerItem(516, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_8.addItem(self.horizontalSpacer)
 
@@ -943,7 +943,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_9.addLayout(self.formLayout_4)
 
-        self.horizontalSpacer_2 = QSpacerItem(324, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_2 = QSpacerItem(324, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_9.addItem(self.horizontalSpacer_2)
 
@@ -1052,7 +1052,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_10.addLayout(self.verticalLayout_9)
 
-        self.horizontalSpacer_3 = QSpacerItem(324, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_3 = QSpacerItem(324, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_10.addItem(self.horizontalSpacer_3)
 

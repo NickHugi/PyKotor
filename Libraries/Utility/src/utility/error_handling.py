@@ -293,6 +293,7 @@ def format_exception_with_variables(
 
     # Construct a detailed message with variables from all stack frames
     detailed_message: list[str] = [
+        formatted_traceback,
         f"{etype.__name__}: {exc}",
         "Stack Trace Variables:",
     ]

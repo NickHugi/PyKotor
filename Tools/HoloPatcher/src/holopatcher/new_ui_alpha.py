@@ -854,7 +854,6 @@ class HoloPatcher(toga.App):
             return
 
         self.set_state(state=True)
-        self.clear_main_text()
         fully_ran: bool = True
         try:  # TODO(th3w1zard1): refactor ModUninstaller to not be hardcoded with tkinter.
             uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.value), self.logger)

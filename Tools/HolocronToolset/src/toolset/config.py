@@ -133,7 +133,7 @@ def remoteVersionNewer(localVersion: str, remoteVersion: str) -> bool | None:
 
         version_check = version.parse(remoteVersion) > version.parse(localVersion)
     if version_check is None:
-        RobustRootLogger.warning(f"Version string might be malformed, attempted 'packaging.version.parse({localVersion}) > packaging.version.parse({remoteVersion})'")
+        RobustRootLogger().warning(f"Version string might be malformed, attempted 'packaging.version.parse({localVersion}) > packaging.version.parse({remoteVersion})'")
         with suppress(Exception):
             from distutils.version import LooseVersion
 

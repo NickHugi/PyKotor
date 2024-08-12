@@ -54,13 +54,13 @@ class SettingsWidget(QWidget):
 
     def validateBind(self, bindName: str, bind: Bind) -> Bind:
         if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
-            RobustRootLogger.error(f"Invalid setting bind: '{bindName}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
+            RobustRootLogger().error(f"Invalid setting bind: '{bindName}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
             bind = self._reset_and_get_default(bindName)
         return bind
 
     def validateColour(self, colourName: str, color_value: int) -> int:
         if not is_int(color_value):
-            RobustRootLogger.error(f"Invalid color setting: '{colourName}', expected a RGBA color integer, but got {color_value!r} (type {color_value.__class__.__name__})")
+            RobustRootLogger().error(f"Invalid color setting: '{colourName}', expected a RGBA color integer, but got {color_value!r} (type {color_value.__class__.__name__})")
             color_value = self._reset_and_get_default(colourName)
         return color_value
 
@@ -85,5 +85,5 @@ class SettingsWidget(QWidget):
     def _reset_and_get_default(self, settingName: str) -> Any:
         self.settings.reset_setting(settingName)
         result = self.settings.get_default(settingName)
-        RobustRootLogger.warning(f"Due to last error, will use default value '{result!r}'" )
+        RobustRootLogger().warning(f"Due to last error, will use default value '{result!r}'" )
         return result

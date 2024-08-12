@@ -126,7 +126,7 @@ class InventoryEditor(QDialog):
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
 
         self._installation: HTInstallation = installation
-        self._capsules: list[Capsule] = capsules
+        self._capsules: Sequence[Capsule] = capsules
         self._slotMap: dict[EquipmentSlot, SlotMapping] = {
             EquipmentSlot.IMPLANT: SlotMapping(self.ui.implantPicture, self.ui.implantFrame, ":/images/inventory/{}_implant.png"),
             EquipmentSlot.HEAD: SlotMapping(self.ui.headPicture, self.ui.headFrame, ":/images/inventory/{}_head.png"),
@@ -345,7 +345,7 @@ class InventoryEditor(QDialog):
             try:
                 filepath, name, uti = self.getItem(resname, filepath)
             except FileNotFoundError:
-                RobustRootLogger.exception(f"Failed to get the equipment item '{resname}.uti' for the InventoryEditor")
+                RobustRootLogger().exception(f"Failed to get the equipment item '{resname}.uti' for the InventoryEditor")
                 return
 
             slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")

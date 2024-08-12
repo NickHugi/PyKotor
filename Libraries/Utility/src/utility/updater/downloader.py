@@ -178,9 +178,9 @@ class FileDownloader:
                     # Determine the filename from the Content-Disposition header or URL.
                     filename = self._get_filename_from_cd(r.headers.get("Content-Disposition")) or Path(url).name
                     self.downloaded_filename = filename
-                    RobustRootLogger.info(f"Expected downloaded filename: {self.downloaded_filename}")
+                    RobustRootLogger().info(f"Expected downloaded filename: {self.downloaded_filename}")
                     file_path = self.filepath.parent / filename
-                    RobustRootLogger.info(f"Expected download path: {file_path}")
+                    RobustRootLogger().info(f"Expected download path: {file_path}")
 
                     # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))

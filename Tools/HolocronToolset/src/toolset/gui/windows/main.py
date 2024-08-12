@@ -19,14 +19,12 @@ from qtpy.QtCore import (
     QCoreApplication,
     QEvent,
     QFile,
-    QSize,
     QTextStream,
     QThread,
     Qt,
 )
 from qtpy.QtGui import (
     QColor,
-    QFontMetrics,
     QIcon,
     QPalette,
     QPixmap,
@@ -38,18 +36,14 @@ from qtpy.QtWidgets import (
     QApplication,
     QFileDialog,
     QHBoxLayout,
-    QLabel,
     QListView,
     QMainWindow,
     QMenu,
     QMessageBox,
     QPushButton,
     QSizePolicy,
-    QStyle,
-    QToolButton,
     QTreeView,
     QVBoxLayout,
-    QWidget,
 )
 from watchdog.events import FileSystemEventHandler
 
@@ -95,8 +89,8 @@ from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
 from toolset.gui.helpers.callback import BetterMessageBox
-from toolset.gui.helpers.main_focus_helper import MainFocusHandler
 from toolset.gui.widgets.main_widgets import ResourceList
+from toolset.gui.widgets.resource_fsmodel import ResourceFileSystemModel
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
@@ -125,15 +119,9 @@ else:
 if TYPE_CHECKING:
 
     from qtpy import QtGui
-    from qtpy.QtCore import (
-        QObject,
-    )
-    from qtpy.QtGui import (
-        QCloseEvent,
-        QKeyEvent,
-        QMouseEvent,
-        QShowEvent,
-    )
+    from qtpy.QtCore import QObject
+    from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent
+    from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
     from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
@@ -173,91 +161,9 @@ def run_module_designer(
     sys.exit(app.exec_())
 
 
-class CustomTitleBar(QWidget):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setAutoFillBackground(True)
-        self.setBackgroundRole(QPalette.ColorRole.Highlight)
-        self.initial_pos = None
-        title_bar_layout = QHBoxLayout(self)
-        title_bar_layout.setContentsMargins(1, 1, 1, 1)
-        title_bar_layout.setSpacing(2)
-
-        self.title = QLabel(f"{self.__class__.__name__}", self)
-        self.title.setStyleSheet(
-            """font-weight: bold;
-               border: 2px solid black;
-               border-radius: 12px;
-               margin: 2px;
-            """
-        )
-        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title = parent.windowTitle()
-        if title:
-            self.title.setText(title)
-        title_bar_layout.addWidget(self.title)
-        # Min button
-        self.min_button = QToolButton(self)
-        min_icon = self.style().standardIcon(
-            QStyle.StandardPixmap.SP_TitleBarMinButton
-        )
-        self.min_button.setIcon(min_icon)
-        self.min_button.clicked.connect(self.window().showMinimized)
-
-        # Max button
-        self.max_button = QToolButton(self)
-        max_icon = self.style().standardIcon(
-            QStyle.StandardPixmap.SP_TitleBarMaxButton
-        )
-        self.max_button.setIcon(max_icon)
-        self.max_button.clicked.connect(self.window().showMaximized)
-
-        # Close button
-        self.close_button = QToolButton(self)
-        close_icon = self.style().standardIcon(
-            QStyle.StandardPixmap.SP_TitleBarCloseButton
-        )
-        self.close_button.setIcon(close_icon)
-        self.close_button.clicked.connect(self.window().close)
-
-        # Normal button
-        self.normal_button = QToolButton(self)
-        normal_icon = self.style().standardIcon(
-            QStyle.StandardPixmap.SP_TitleBarNormalButton
-        )
-        self.normal_button.setIcon(normal_icon)
-        self.normal_button.clicked.connect(self.window().showNormal)
-        self.normal_button.setVisible(False)
-        # Add buttons
-        buttons = [
-            self.min_button,
-            self.normal_button,
-            self.max_button,
-            self.close_button,
-        ]
-        for button in buttons:
-            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-            button.setFixedSize(QSize(28, 28))
-            button.setStyleSheet(
-                """QToolButton { border: 2px solid white;
-                                 border-radius: 12px;
-                                }
-                """
-            )
-            title_bar_layout.addWidget(button)
-
-    def window_state_changed(self, state):
-        if state == Qt.WindowState.WindowMaximized:
-            self.normal_button.setVisible(True)
-            self.max_button.setVisible(False)
-        else:
-            self.normal_button.setVisible(False)
-            self.max_button.setVisible(True)
-
-
 class ToolWindow(QMainWindow):
-    moduleFilesUpdated = QtCore.Signal(object, object)
-    overrideFilesUpdate = QtCore.Signal(object, object)
+    moduleFilesUpdated = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    overrideFilesUpdate = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self):
         """Initializes the main window.
@@ -287,16 +193,17 @@ class ToolWindow(QMainWindow):
 
         # Watchdog
         self.dogObserver: BaseObserver | None = None
-        self.dogHandler = FolderObserver(self)
+        self.dogHandler: FolderObserver = FolderObserver(self)
 
         # Theme setup
         self.original_style: str = self.style().objectName()
         self.original_palette: QPalette = self.palette()
         self.change_theme(self.settings.selectedTheme)
 
+        self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
+        self.fileSystemModel.setRootPath(Path(__file__).parent)
+
         # Focus handler (searchbox, various keyboard actions)
-        self.focusHandler: MainFocusHandler = MainFocusHandler(self)
-        self.installEventFilter(self.focusHandler)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setFocus()
 
@@ -338,16 +245,13 @@ class ToolWindow(QMainWindow):
             print(f"Failed to load HT main window icon from {icon_path}")
         self.setupModulesTab()
 
-    def showEvent(self, event: QShowEvent):
-        # Set minimum size based on the current size
-        super().showEvent(event)
-        #self.adjustSize()
-        #self.setMinimumSize(
-        #    self.size().width() + QApplication.font().pointSize() * 4,
-        #    self.size().height(),
-        #)
-
     def setupModulesTab(self):
+        self.erfEditorButton = QPushButton("ERF Editor", self)
+        self.erfEditorButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.erfEditorButton.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
+        self.ui.verticalLayoutRightPanel.insertWidget(2, self.erfEditorButton)  # pyright: ignore[reportArgumentType]
+        self.erfEditorButton.hide()
+
         modulesResourceList = self.ui.modulesWidget.ui
         modulesSectionCombo: FilterComboBox = modulesResourceList.sectionCombo  # type: ignore[]
         modulesSectionCombo.__class__ = FilterComboBox
@@ -418,36 +322,7 @@ class ToolWindow(QMainWindow):
             return self.focusHandler.eventFilter(obj, event)
         return super().eventFilter(obj, event)
 
-    def resize_widget_to_text(widget: QWidget):
-        if isinstance(widget, QComboBox):
-            # Get the current font of the widget or use the application's font
-            font = widget.font()
-            # Create QFontMetrics from the current font
-            fm = QFontMetrics(font)
-            # Calculate the required width to display the text without clipping
-            required_width = fm.horizontalAdvance(widget.text())
-            # Get the current size of the widget
-            current_size = widget.size()
-            # Determine the new width (max of current and required)
-            new_width = max(required_width, current_size.width())
-            # Set the new size with the same height
-            widget.setMinimumSize(new_width, current_size.height())
-
     def _setupSignals(self):  # sourcery skip: remove-unreachable-code
-        """Connects signals to slots for UI interactions.
-
-        Args:
-        ----
-            self: {The class instance}: Sets up connections for UI signals.
-
-        Processing Logic:
-        ----------------
-            - Connects game combo box index changed to change active installation
-            - Connects module/override file updated signals to update handlers
-            - Connects various widget signals like section changed to handler methods
-            - Connects button clicks to extract/open resource methods
-            - Connects menu actions to various editor, dialog and tool openings.
-        """
         self.previousGameComboIndex = 0
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
@@ -1113,12 +988,12 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
 
-        active = self.installations.get(name)
-        print("<SDM> [changeActiveInstallation scope] active: ", active)
+        self.fileSystemModel.setRootPath(path)
+        #return
 
+        active = self.installations.get(name)
         if active:
             self.active = active
-            print("<SDM> [changeActiveInstallation scope] self.active: ", self.active)
 
         else:
             loader: AsyncLoader | None = None
@@ -1127,9 +1002,10 @@ class ToolWindow(QMainWindow):
                 if self.settings.profileToolset and cProfile is not None:
                     profiler = cProfile.Profile()
                     profiler.enable()
-                progress_callback = None
+                progress_callback = None  # pyright: ignore[reportAssignmentType]
                 if loader is not None and loader._realtime_progress:  # noqa: SLF001
                     def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
+                        assert loader is not None
                         loader._worker.progress.emit(data, mtype)  # noqa: SLF001
                 new_active = HTInstallation(path, name, tsl=tsl, progress_callback=progress_callback)
                 if self.settings.profileToolset and profiler:
@@ -1147,11 +1023,13 @@ class ToolWindow(QMainWindow):
             if not loader.exec_():
                 self.ui.gameCombo.setCurrentIndex(previousIndex)
                 return
+            assert loader.value is not None
             self.active = loader.value
 
         # KEEP UI CODE IN MAIN THREAD!
         self.ui.resourceTabs.setEnabled(True)
         self.ui.sidebar.setEnabled(True)
+
         def prepare_task() -> tuple[list[QStandardItem] | None, ...]:
             profiler = None
             if self.settings.profileToolset and cProfile is not None:
@@ -2198,7 +2076,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractModuleRoomTextures scope] str: ", str)
 
         if curModuleName not in self.active._modules:
-            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
             BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
@@ -2237,12 +2115,12 @@ class ToolWindow(QMainWindow):
             try:
                 texNames.extend(iter(iterate_textures(res.data())))
             except Exception:
-                RobustRootLogger.exception(f"Failed to extract textures names from {res.identifier()}")
+                RobustRootLogger().exception(f"Failed to extract textures names from {res.identifier()}")
             lmNames = []
             try:
                 lmNames.extend(iter(iterate_lightmaps(res.data())))
             except Exception:
-                RobustRootLogger.exception(f"Failed to extract lightmap names from {res.identifier()}")
+                RobustRootLogger().exception(f"Failed to extract lightmap names from {res.identifier()}")
             texlmNames.extend(texNames)
             texlmNames.extend(lmNames)
         textureData: CaseInsensitiveDict[TPC | None] = self.active.textures(texlmNames)
@@ -2258,7 +2136,7 @@ class ToolWindow(QMainWindow):
         from pykotor.common.module import Module
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         if curModuleName not in self.active._modules:
-            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
             BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
@@ -2302,7 +2180,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractAllModuleTextures scope] str: ", str)
 
         if curModuleName not in self.active._modules:
-            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractAllModuleTextures scope] thisModule: ", thisModule)
@@ -2326,7 +2204,7 @@ class ToolWindow(QMainWindow):
         from pykotor.common.module import Module
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         if curModuleName not in self.active._modules:
-            RobustRootLogger.warning(f"'{curModuleName}' not a valid module.")
+            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractAllModuleModels scope] thisModule: ", thisModule)
@@ -2352,7 +2230,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractModuleEverything scope] curModuleName: ", curModuleName)
 
         if curModuleName not in self.active._modules:
-            RobustRootLogger.warning(f"'{curModuleName}' is not a valid module.")
+            RobustRootLogger().warning(f"'{curModuleName}' is not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractModuleEverything scope] thisModule: ", thisModule)
@@ -2516,7 +2394,7 @@ class ToolWindow(QMainWindow):
 
 
         if resource.restype() is ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
-            RobustRootLogger.info(f"Not extracting MDX file '{resource.identifier()}', decompiling MDLs is checked.")
+            RobustRootLogger().info(f"Not extracting MDX file '{resource.identifier()}', decompiling MDLs is checked.")
             return
 
         if resource.restype() is ResourceType.TPC:
@@ -2524,14 +2402,14 @@ class ToolWindow(QMainWindow):
 
             try:
                 if self.ui.tpcTxiCheckbox.isChecked():
-                    RobustRootLogger.info(f"Extracting TXI from '{resource.identifier()}' because of settings.")
+                    RobustRootLogger().info(f"Extracting TXI from '{resource.identifier()}' because of settings.")
                     self._extractTxi(tpc, save_path.with_suffix(".txi"))
             except Exception as e:
                 loader.errors.append(e)
 
             try:
                 if self.ui.tpcDecompileCheckbox.isChecked():
-                    RobustRootLogger.info(f"Converting '{resource.identifier()}' to TGA because of settings.")
+                    RobustRootLogger().info(f"Converting '{resource.identifier()}' to TGA because of settings.")
                     data = self._decompileTpc(tpc)
                     #save_path = save_path.with_suffix(".tga")  # already handled
             except Exception as e:
@@ -2539,16 +2417,16 @@ class ToolWindow(QMainWindow):
 
         if resource.restype() is ResourceType.MDL:
             if self.ui.mdlTexturesCheckbox.isChecked():
-                RobustRootLogger.info(f"Extracting MDL Textures because of settings: {resource.identifier()}")
+                RobustRootLogger().info(f"Extracting MDL Textures because of settings: {resource.identifier()}")
                 self._extractMdlTextures(resource, r_folderpath, loader, data, seen_resources)
 
             if self.ui.mdlDecompileCheckbox.isChecked():
-                RobustRootLogger.info(f"Converting '{resource.identifier()}' to ASCII MDL because of settings")
+                RobustRootLogger().info(f"Converting '{resource.identifier()}' to ASCII MDL because of settings")
                 data = self._decompileMdl(resource, data)
                 #save_path = save_path.with_suffix(".mdl.ascii")  # already handled
 
         with save_path.open("wb") as file:
-            RobustRootLogger.info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
+            RobustRootLogger().info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
             file.write(data)
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
@@ -2649,14 +2527,14 @@ class ToolWindow(QMainWindow):
                                     with savepath.open("wb") as w_stream:
                                         w_stream.write(r_stream.read(location.size))
                         except Exception as e:  # noqa: BLE001, PERF203
-                            RobustRootLogger.exception(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}'")
+                            RobustRootLogger().exception(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}'")
                             loader.errors.append(ValueError(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
 
                 if not is_found:
                     loader.errors.append(ValueError(f"Missing {tex_type} '{texlm}' for model '{resource.identifier()}'"))
                     continue
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger.exception(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}'")
+                RobustRootLogger().exception(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}'")
                 loader.errors.append(ValueError(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
 
 

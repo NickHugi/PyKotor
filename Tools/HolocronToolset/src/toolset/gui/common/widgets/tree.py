@@ -13,7 +13,6 @@ from qtpy.QtCore import (
 )
 from qtpy.QtGui import (
     QStandardItem,
-    QStandardItemModel,
 )
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -28,11 +27,13 @@ from toolset.gui.common.style.delegates import HTMLDelegate
 if TYPE_CHECKING:
 
     from qtpy.QtCore import (
+        QAbstractItemModel,
         QObject,
     )
     from qtpy.QtGui import (
         QPainter,
         QResizeEvent,
+        QStandardItemModel,
         QWheelEvent,
     )
     from qtpy.QtWidgets import (
@@ -42,7 +43,7 @@ if TYPE_CHECKING:
 
 
 class RobustTreeView(QTreeView):
-    def __init__(self, parent: QWidget | None=None):
+    def __init__(self, parent: QWidget | None=None, *, use_columns: bool = False):
         super().__init__(parent)
         self.setUniformRowHeights(False)
         self.setTextElideMode(Qt.TextElideMode.ElideNone)
@@ -53,7 +54,8 @@ class RobustTreeView(QTreeView):
         self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
         self.setIndentation(20)
         self.setWordWrap(True)
-        self.fix_horizontal_scroll_bar()
+        if not use_columns:
+            self.fix_horizontal_scroll_bar()
         #self.setGraphicsEffect(QGraphicsEffect.)
         self.setAlternatingRowColors(False)
         self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
@@ -79,9 +81,15 @@ class RobustTreeView(QTreeView):
 
     def setTextSize(self, size: int):
         delegate = self.itemDelegate()
-        if delegate is not None:
-            delegate.setTextSize(max(1, size))
-            self.debounceLayoutChanged()
+        if delegate is None:
+            return
+        text_size = max(1, size)
+        model: QAbstractItemModel | None = self.model()
+        assert model is not None
+        delegate.setTextSize(text_size)
+        for column in range(model.columnCount()):
+            self.resizeColumnToContents(column)
+        self.debounceLayoutChanged()
 
     def getTextSize(self) -> int:
         delegate = self.itemDelegate()
@@ -205,10 +213,11 @@ class RobustTreeView(QTreeView):
         delta: int = event.angleDelta().y()
         if not delta:
             return False
-        if self.itemDelegate() is not None:
-            single_step = (1 if delta > 0 else -1)
-            newVerticalSpacing = max(0, self.itemDelegate().customVerticalSpacing + single_step)
-            self.itemDelegate().setVerticalSpacing(newVerticalSpacing)
+        item_delegate: HTMLDelegate | None = self.itemDelegate()
+        if item_delegate is not None:
+            single_step: Literal[-1, 1] = (1 if delta > 0 else -1)
+            newVerticalSpacing: int = max(0, item_delegate.customVerticalSpacing + single_step)
+            item_delegate.setVerticalSpacing(newVerticalSpacing)
             self.emitLayoutChanged()  # Requires immediate update
             return True
         return False
@@ -218,17 +227,14 @@ class RobustTreeView(QTreeView):
         #print(f"wheel changes indent delta: {delta}")
         if not delta:
             return False
-        if self.itemDelegate() is not None:
-            self.setIndentation(max(0, self.indentation() + (1 if delta > 0 else -1)))
-            self.debounceLayoutChanged()
-            return True
-        return False
+        self.setIndentation(max(0, self.indentation() + (1 if delta > 0 else -1)))
+        self.debounceLayoutChanged()
+        return True
 
-    def model(self) -> QStandardItemModel | None:
+    def model(self) -> QStandardItemModel | QAbstractItemModel | None:
         model = super().model()
         if model is None:
             return None
-        assert isinstance(model, QStandardItemModel), f"model was {model} of type {model.__class__.__name__}"
         return model
 
     def styleOptionForIndex(self, index: QModelIndex) -> QStyleOptionViewItem:

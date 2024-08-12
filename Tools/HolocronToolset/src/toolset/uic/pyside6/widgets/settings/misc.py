@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'misc.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -179,7 +179,7 @@ class Ui_Form(object):
 
         self.verticalLayout.addLayout(self.formLayout)
 
-        self.verticalSpacer = QSpacerItem(17, 139, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(17, 139, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout.addItem(self.verticalSpacer)
 

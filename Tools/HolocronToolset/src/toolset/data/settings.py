@@ -39,10 +39,10 @@ class SettingsProperty(property, Generic[T]):
             serialized_value = instance.settings.value(self.name, self.serialized_default, self.serialized_type)
             constructed_value: T = self.deserialize_value(serialized_value)
             if constructed_value.__class__ != self.default.__class__:
-                RobustRootLogger.error(f"Corrupted setting '{self.name}': {constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
+                RobustRootLogger().error(f"Corrupted setting '{self.name}': {constructed_value.__class__} != {self.default.__class__}, repr type({constructed_value}) != type({self.default})")
                 return self._handle_corrupted_setting(instance)
         except Exception as e:
-            RobustRootLogger.exception(f"Exception in settings getter while deserializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
+            RobustRootLogger().exception(f"Exception in settings getter while deserializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
             return self._handle_corrupted_setting(instance)
         else:
             return constructed_value
@@ -51,20 +51,20 @@ class SettingsProperty(property, Generic[T]):
         try:
             serialized_value: KT = self.serialize_value(value)
         except Exception as e:  # noqa: BLE001
-            RobustRootLogger.exception(f"Exception in settings setter while serializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
+            RobustRootLogger().exception(f"Exception in settings setter while serializing setting '{self.name}', got {serialized_value} ({serialized_value}) of type {serialized_value.__class__.__name__}. Original error: {e.__class__.__name__}: {e}")
         else:
             try:
                 instance.settings.setValue(self.name, serialized_value)
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger.exception(f"Exception in settings setter while saving serialized setting '{self.name}', value {serialized_value}: {e}")
+                RobustRootLogger().exception(f"Exception in settings setter while saving serialized setting '{self.name}', value {serialized_value}: {e}")
 
     def _handle_corrupted_setting(self, instance: Settings) -> T:
-        RobustRootLogger.warning(f"Due to the above error, will reset setting '{self.name}'")
+        RobustRootLogger().warning(f"Due to the above error, will reset setting '{self.name}'")
         self.reset_to_default(instance)
         return self.default
 
     def reset_to_default(self, instance: Settings):
-        RobustRootLogger.info(f"Reset setting '{self.name}' to default of {self.default!s} (repr: {self.default!r})")
+        RobustRootLogger().info(f"Reset setting '{self.name}' to default of {self.default!s} (repr: {self.default!r})")
         instance.settings.setValue(self.name, self.serialized_default)
 
         # Double check it serialized correctly.

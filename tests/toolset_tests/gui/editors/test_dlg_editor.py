@@ -199,13 +199,13 @@ class TestDLGStandardItemModel(unittest.TestCase):
         try:
             deserialized_node = DLGNode.from_dict(dlg_nodes_dict)
         except Exception:
-            RobustRootLogger.exception("Unhandled exception by DLGNode.from_dict.")
+            RobustRootLogger().exception("Unhandled exception by DLGNode.from_dict.")
             raise
         test1 = deserialized_node.links[0].node.links[0].node.links[0].node
         try:
             test2 = all_items[4].link.node
         except IndexError:
-            RobustRootLogger.exception("IndexError: items[4].link.node")
+            RobustRootLogger().exception("IndexError: items[4].link.node")
             raise
         self.assertEqual(test1, test2)
 

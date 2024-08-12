@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utm.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -29,7 +29,7 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(414, 335)
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
@@ -131,7 +131,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addWidget(self.idSpin)
 
-        self.horizontalSpacer_3 = QSpacerItem(29, 17, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer_3 = QSpacerItem(29, 17, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
         self.horizontalLayout.addItem(self.horizontalSpacer_3)
 
@@ -206,7 +206,7 @@ class Ui_MainWindow(object):
         self.storeFlagSelect.addItem("")
         self.storeFlagSelect.addItem("")
         self.storeFlagSelect.setObjectName(u"storeFlagSelect")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        sizePolicy1 = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.storeFlagSelect.sizePolicy().hasHeightForWidth())

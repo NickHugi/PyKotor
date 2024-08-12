@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import qtpy
 
@@ -333,7 +333,7 @@ class ERFEditor(Editor):
     def openContextMenu(self, position):
         selectedResources = self.getSelectedResources()
         if not selectedResources:
-            RobustRootLogger.info("ERFEditor: Nothing selected to build context menu.")
+            RobustRootLogger().info("ERFEditor: Nothing selected to build context menu.")
             return
 
         mainMenu = QMenu(self)
@@ -385,7 +385,7 @@ class ERFEditor(Editor):
         """
         selectedResources = self.getSelectedResources()
         if not selectedResources:
-            RobustRootLogger.info("ERFEditor: Nothing selected to save.")
+            RobustRootLogger().info("ERFEditor: Nothing selected to save.")
         saveHandler = FileSaveHandler(selectedResources, parent=self)
         saveHandler.save_files()
 
@@ -415,7 +415,7 @@ class ERFEditor(Editor):
 
         inputField = dialog.findChild(QLineEdit)
         if inputField is None:
-            RobustRootLogger.warning("inputField could not be found in parent class QLineEdit")
+            RobustRootLogger().warning("inputField could not be found in parent class QLineEdit")
             return "", False
         inputField.setValidator(self.resRefValidator())
 

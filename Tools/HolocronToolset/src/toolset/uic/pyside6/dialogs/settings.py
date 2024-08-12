@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -43,7 +43,7 @@ class Ui_Dialog(object):
         QTreeWidgetItem(self.settingsTree)
         QTreeWidgetItem(self.settingsTree)
         self.settingsTree.setObjectName(u"settingsTree")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.settingsTree.sizePolicy().hasHeightForWidth())
@@ -52,7 +52,7 @@ class Ui_Dialog(object):
         self.splitter.addWidget(self.settingsTree)
         self.settingsStack = QStackedWidget(self.splitter)
         self.settingsStack.setObjectName(u"settingsStack")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy1.setHorizontalStretch(1)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.settingsStack.sizePolicy().hasHeightForWidth())

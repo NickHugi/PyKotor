@@ -99,7 +99,7 @@ def get_body_model(
             RobustRootLogger().debug(f"utc is wearing armor, fetch '{armor_resref}.uti'")
             armor_res_lookup = installation.resource(str(armor_resref), ResourceType.UTI)
             if armor_res_lookup is None:
-                RobustRootLogger.error(f"'{armor_resref}.uti' missing from installation{context_base}")
+                RobustRootLogger().error(f"'{armor_resref}.uti' missing from installation{context_base}")
                 model_column, body_model, tex_column, tex_append, override_texture = lookupNoArmor()  # fallback
             else:
                 armor_uti = read_uti(armor_res_lookup.data)
@@ -215,7 +215,7 @@ def _load_hand_uti(
     """
     hand_lookup = installation.resource(hand_resref, ResourceType.UTI)
     if not hand_lookup:
-        RobustRootLogger.error(f"{hand_resref}.uti missing from installation.")
+        RobustRootLogger().error(f"{hand_resref}.uti missing from installation.")
         return None
     hand_uti: UTI = read_uti(hand_lookup.data)
     default_model: str = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")

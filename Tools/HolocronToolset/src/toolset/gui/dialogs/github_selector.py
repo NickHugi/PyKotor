@@ -381,7 +381,7 @@ class GitHubFileSelector(QDialog):
         if not self.selectedPath:
             QMessageBox.warning(self, "No Selection", "You must select a file.")
             return
-        RobustRootLogger.info(f"{self.__class__.__name__}: User selected '{self.selectedPath}'")
+        RobustRootLogger().info(f"{self.__class__.__name__}: User selected '{self.selectedPath}'")
         super().accept()
 
     def onForkChanged(self, index: int) -> None:

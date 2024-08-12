@@ -66,7 +66,7 @@ class FileSaveHandler(Generic[T]):
                 failed_extractions[path] = e
                 del successfully_saved_paths[resource]
             else:
-                RobustRootLogger.info(f"Saved {self.get_resource_ident(resource)} to '{path}'")
+                RobustRootLogger().info(f"Saved {self.get_resource_ident(resource)} to '{path}'")
 
         if failed_extractions:
             self._handle_failed_extractions(failed_extractions)
@@ -103,7 +103,7 @@ class FileSaveHandler(Generic[T]):
                 paths_to_write[resource] = file_path
 
         else:
-            RobustRootLogger.warning("FileSaveHandler: no resources sent with the constructor, nothing to save.")
+            RobustRootLogger().warning("FileSaveHandler: no resources sent with the constructor, nothing to save.")
 
         return paths_to_write
 
@@ -157,7 +157,7 @@ class FileSaveHandler(Generic[T]):
             )
             for resource, path in paths_to_write.items():
                 is_overwrite = "overwriting existing file" if path.safe_isfile() else "saving as"
-                RobustRootLogger.info("Extracting '%s' to '%s' and %s '%s'", path.name, path.parent, is_overwrite, path.name)
+                RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", path.name, path.parent, is_overwrite, path.name)
                 try:
                     if path.safe_isdir():
                         shutil.rmtree(path)
@@ -186,7 +186,7 @@ class FileSaveHandler(Generic[T]):
                         failed_extractions[new_path] = e
                 else:
                     if path.safe_isfile():
-                        RobustRootLogger.info("Will save '%s' as '%s'", path.name, new_path)
+                        RobustRootLogger().info("Will save '%s' as '%s'", path.name, new_path)
                     new_paths_to_write[resource] = new_path
         else:
             RobustRootLogger.debug(
