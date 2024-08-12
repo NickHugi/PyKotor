@@ -16,12 +16,14 @@ from qtpy.QtGui import (
     QColor,
     QFont,
     QIcon,
+    QImage,
     QMouseEvent,
     QPainter,
     QPalette,
     QPen,
     QPixmap,
     QTextDocument,
+    QTextOption,
 )
 from qtpy.QtWidgets import (
     QApplication,
@@ -53,11 +55,12 @@ _ICONS_DATA_ROLE = Qt.ItemDataRole.UserRole + 10
 
 
 class HTMLDelegate(QStyledItemDelegate):
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, parent: QWidget | None = None, *, word_wrap: bool = True):
         super().__init__(parent)
         self.text_size: int = 12
         self.customVerticalSpacing: int = 0
         self.nudgedModelIndexes: dict[QModelIndex, tuple[int, int]] = {}
+        self.word_wrap: bool = word_wrap
 
     def parent(self) -> QWidget:
         parent = super().parent()
@@ -69,6 +72,9 @@ class HTMLDelegate(QStyledItemDelegate):
 
     def setTextSize(self, size: int):
         self.text_size = size
+
+    def setWordWrap(self, *, wrap: bool):
+        self.word_wrap = wrap
 
     def nudgeItem(
         self,
@@ -84,6 +90,10 @@ class HTMLDelegate(QStyledItemDelegate):
         doc = QTextDocument()
         doc.setHtml(FONT_SIZE_REPLACE_RE.sub(f"font-size:{self.text_size}pt;", html))
         doc.setDefaultFont(font)
+        if not self.word_wrap:
+            text_option = QTextOption()
+            text_option.setWrapMode(QTextOption.NoWrap)
+            doc.setDefaultTextOption(text_option)
         doc.setTextWidth(width)
         return doc
 
@@ -131,24 +141,29 @@ class HTMLDelegate(QStyledItemDelegate):
             bottom_badge_info = icon_data.get("bottom_badge")
             if (execute_action or show_tooltip) and bottom_badge_info:
                 icons.append((None, bottom_badge_info["action"], bottom_badge_info["tooltip_callable"]()))
-            start_x = option.rect.left()
-            start_y = option.rect.top() + icon_spacing
             y_offset = None
             icon_width_total = columns * (icon_size + icon_spacing) - icon_spacing
 
             for i, (iconSerialized, action, tooltip) in enumerate(icons):
-                if isinstance(iconSerialized, QStyle.StandardPixmap):
+                icon = None
+
+                if isinstance(iconSerialized, QIcon):
+                    icon = iconSerialized
+                elif isinstance(iconSerialized, QStyle.StandardPixmap):
                     icon = QApplication.style().standardIcon(iconSerialized)
                 elif isinstance(iconSerialized, str):
-                    pixmap = QPixmap(iconSerialized)
-                    scaled_pixmap = pixmap.scaled(icon_size, icon_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    scaled_pixmap = QPixmap(iconSerialized).scaled(icon_size, icon_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                     icon = QIcon(scaled_pixmap)
+                elif isinstance(iconSerialized, QPixmap):
+                    icon = QIcon(iconSerialized)
+                elif isinstance(iconSerialized, QImage):
+                    icon = QIcon(QPixmap.fromImage(iconSerialized))
                 else:
                     icon = None
                 col = i % columns
                 row = i // columns
-                x_offset = start_x + (icon_size + icon_spacing) * col
-                y_offset = start_y + (icon_size + icon_spacing) * row
+                x_offset = option.rect.left() + (icon_size + icon_spacing) * col
+                y_offset = option.rect.top() + icon_spacing + (icon_size + icon_spacing) * row
 
                 icon_rect = QRect(x_offset, y_offset, icon_size, icon_size)
 
@@ -164,22 +179,18 @@ class HTMLDelegate(QStyledItemDelegate):
                             QToolTip.showText(event.globalPos(), tooltip, self.parent())
                             return icon_width_total, True
 
-                        if execute_action and action:
+                        if execute_action and action is not None:
                             action()
                             handled_click = True
 
             if bottom_badge_info:
-                left_text = bottom_badge_info["text_callable"]()
                 radius = icon_width_total // 2
-                center_x = start_x + radius
                 if y_offset is None:
                     center_y = option.rect.top() + icon_spacing + radius
                 else:
                     center_y = y_offset + icon_width_total + icon_spacing + radius
-
-                center = QPoint(center_x, center_y)
                 if painter:
-                    self.draw_badge(painter, center, radius, left_text)
+                    self.draw_badge(painter, QPoint(option.rect.left() + radius, center_y), radius, bottom_badge_info["text_callable"]())
 
         if show_tooltip:
             QToolTip.hideText()
@@ -200,6 +211,7 @@ class HTMLDelegate(QStyledItemDelegate):
         icon_width_total, _ = self.process_icons(painter, option, index)
 
         new_rect = option.rect.adjusted(icon_width_total, 0, 0, 0)
+        painter.setClipRect(new_rect)
         display_data = index.data(Qt.DisplayRole)
         if display_data:
             doc = self.createTextDocument(display_data, option.font, new_rect.width())
