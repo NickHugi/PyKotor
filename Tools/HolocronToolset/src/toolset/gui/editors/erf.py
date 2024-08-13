@@ -621,7 +621,7 @@ class ERFEditor(Editor):
 
 
 class ERFEditorTable(QTableView):
-    resourceDropped = QtCore.Signal(object)
+    resourceDropped = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -731,8 +731,12 @@ class ERFEditorTable(QTableView):
             return
 
         urls: list[QtCore.QUrl] = []
-        for index in (index for index in self.selectedIndexes() if not index.column()):
-            resource: ERFResource = self.model().itemData(self._proxy_model.mapToSource(index))[QtCore.Qt.ItemDataRole.UserRole + 1]
+        filterModel = cast(ERFSortFilterProxyModel, self.model())
+        sourceModel = cast(QStandardItemModel, filterModel.sourceModel())
+        for index in (
+            index for index in self.selectedIndexes() if not index.column()
+        ):
+            resource: ERFResource = sourceModel.data(filterModel.mapToSource(index), QtCore.Qt.ItemDataRole.UserRole + 1)
             file_stem, file_ext = str(resource.resref), resource.restype.extension
             filepath = Path(tempDir, f"{file_stem}.{file_ext}")
             with filepath.open("wb") as file:
