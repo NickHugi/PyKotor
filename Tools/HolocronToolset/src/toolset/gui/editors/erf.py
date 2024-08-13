@@ -423,11 +423,11 @@ class ERFEditor(Editor):
             new_resname = dialog.textValue()
             if ResRef.is_valid(new_resname):
                 return new_resname, True
-            QMessageBox.warning(self, "Invalid ResRef", f"The ResRef you entered ({new_resname}) is invalid. Please try again.")
+            QMessageBox.warning(self, "Invalid ResRef", "ResRefs must adhere to SBCS encoding standards (typically cp1252) and be a maximum of 16 characters.")
         return "", False
 
     def resRefValidator(self) -> QRegExpValidator:
-        return QRegExpValidator(QRegExp(r"^[a-zA-Z0-9_]*$"))
+        return QRegExpValidator(QRegExp(r"^[a-zA-Z0-9_]*$"))  # pyright: ignore[reportArgumentType, reportCallIssue]
 
     def removeSelected(self):
         """Removes selected rows from table view.
