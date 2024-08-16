@@ -1,84 +1,170 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ApplicationSettingsWidget</class>
- <widget class="QWidget" name="ApplicationSettingsWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>800</width>
-    <height>600</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Application Settings</string>
-  </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QScrollArea" name="scrollArea">
-     <property name="widgetResizable">
-      <bool>true</bool>
-     </property>
-     <widget class="QWidget" name="scrollAreaWidgetContents">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>780</width>
-        <height>580</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QGroupBox" name="groupBoxAASettings">
-         <property name="title">
-          <string>Experimental settings (may cause app crashes)</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3"/>
-        </widget>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <widget class="QPushButton" name="resetAttributesButton">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-             <horstretch>10</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>50</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Reset Attributes</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
+    <class>ApplicationSettingsWidget</class>
+    <widget class="QWidget" name="ApplicationSettingsWidget">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>800</width>
+                <height>600</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Application Settings</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+            <item>
+                <widget class="QScrollArea" name="scrollArea">
+                    <property name="widgetResizable">
+                        <bool>true</bool>
+                    </property>
+                    <widget class="QWidget" name="scrollAreaWidgetContents">
+                        <property name="geometry">
+                            <rect>
+                                <x>0</x>
+                                <y>0</y>
+                                <width>780</width>
+                                <height>580</height>
+                            </rect>
+                        </property>
+                        <layout class="QVBoxLayout" name="verticalLayout_2">
+                            <item>
+                                <widget class="QGroupBox" name="groupBoxFontSettings">
+                                    <property name="title">
+                                        <string>Global Font Settings</string>
+                                    </property>
+                                    <layout class="QVBoxLayout" name="verticalLayout_font">
+                                        <item>
+                                            <widget class="QLabel" name="currentFontLabel">
+                                                <property name="text">
+                                                    <string>Current Font: Default</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QPushButton" name="fontButton">
+                                                <property name="text">
+                                                    <string>Select Font...</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QGroupBox" name="groupBoxEnvVariables">
+                                    <property name="title">
+                                        <string>Environment Variables</string>
+                                    </property>
+                                    <layout class="QVBoxLayout" name="verticalLayout_env">
+                                        <item>
+                                            <widget class="QTableWidget" name="tableWidget">
+                                                <column>
+                                                    <property name="text">
+                                                        <string>Variable</string>
+                                                    </property>
+                                                </column>
+                                                <column>
+                                                    <property name="text">
+                                                        <string>Value</string>
+                                                    </property>
+                                                </column>
+                                                <property name="rowCount">
+                                                    <number>0</number>
+                                                </property>
+                                                <property name="columnCount">
+                                                    <number>2</number>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <layout class="QHBoxLayout" name="horizontalLayout_buttons">
+                                                <item>
+                                                    <widget class="QPushButton" name="addButton">
+                                                        <property name="text">
+                                                            <string>Add</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="editButton">
+                                                        <property name="text">
+                                                            <string>Edit</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="removeButton">
+                                                        <property name="text">
+                                                            <string>Remove</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                            </layout>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </item>
+                            <item>
+                                <layout class="QVBoxLayout" name="verticalLayout_4">
+                                    <item>
+                                        <widget class="QPushButton" name="resetAttributesButton">
+                                            <property name="sizePolicy">
+                                                <sizepolicy hsizetype="Preferred"
+                                                            vsizetype="Minimum">
+                                                    <horstretch>10</horstretch>
+                                                    <verstretch>0</verstretch>
+                                                </sizepolicy>
+                                            </property>
+                                            <property name="maximumSize">
+                                                <size>
+                                                    <width>16777215</width>
+                                                    <height>50</height>
+                                                </size>
+                                            </property>
+                                            <property name="text">
+                                                <string>Reset Attributes</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <spacer name="verticalSpacer">
+                                            <property name="orientation">
+                                                <enum>Qt::Vertical</enum>
+                                            </property>
+                                            <property name="sizeHint" stdset="0">
+                                                <size>
+                                                    <width>20</width>
+                                                    <height>40</height>
+                                                </size>
+                                            </property>
+                                        </spacer>
+                                    </item>
+                                </layout>
+                            </item>
+                            <item>
+                                <widget class="QGroupBox" name="groupBoxMiscSettings">
+                                    <property name="title">
+                                        <string>Miscellaneous Settings</string>
+                                    </property>
+                                    <layout class="QVBoxLayout" name="verticalLayout_misc" />
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QGroupBox" name="groupBoxAASettings">
+                                    <property name="title">
+                                        <string>Experimental settings (may cause app crashes)</string>
+                                    </property>
+                                    <layout class="QVBoxLayout" name="verticalLayout_3" />
+                                </widget>
+                            </item>
+                        </layout>
+                    </widget>
+                </widget>
+            </item>
         </layout>
-       </item>
-      </layout>
-     </widget>
     </widget>
-   </item>
-  </layout>
- </widget>
- <resources/>
- <connections/>
+    <resources/>
+    <connections/>
 </ui>

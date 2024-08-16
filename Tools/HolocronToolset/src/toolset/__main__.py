@@ -11,6 +11,10 @@ import traceback
 
 from contextlib import suppress
 from types import TracebackType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qtpy.QtCore import QSettings
 
 
 def is_frozen() -> bool:
@@ -152,6 +156,32 @@ def last_resort_cleanup():
     start_shutdown_process()
     RobustRootLogger().debug("Shutdown process started...")
 
+
+def initToolsetPreLaunchSettings():
+    from qtpy.QtWidgets import QApplication
+
+    from toolset.gui.widgets.settings.application import ApplicationSettings
+
+    # Some application settings must be set before the app starts.
+    # These ones are accessible through the in-app settings window widget.
+    settings_widget = ApplicationSettings()
+    environment_variables: dict[str, str] = settings_widget.EnvironmentVariables
+    for key, value in environment_variables.items():
+        os.environ[key] = os.environ.get(key, value)  # Use os.environ.get to prioritize the existing env.
+    for attr_name, attr_value in settings_widget.REQUIRES_RESTART.items():
+        if attr_value is None:  # attr not available in this qt version.
+            continue
+        QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
+
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
+
+    from utility.misc import is_debug_mode
+    if not is_debug_mode() or is_frozen():
+        os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
+        os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
+
+
 def main_init():
     sys.excepthook = onAppCrash
     if multiprocessing.current_process() == "MainProcess":
@@ -178,56 +208,43 @@ def main_init():
         else:
             set_qt_api()
 
-    if os.name == "nt":
-        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
-
-    from utility.misc import is_debug_mode
-    if not is_debug_mode() or is_frozen():
-        os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
-        os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
+    initToolsetPreLaunchSettings()
 
 
 if __name__ == "__main__":
     main_init()
 
-    import qtpy
-
-    from qtpy.QtCore import QThread, Qt
+    from qtpy.QtCore import QThread
+    from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication, QMessageBox
 
-    from toolset.gui.widgets.settings.application import ApplicationSettings
-
-    if qtpy.QT5:
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, False)  # Default
-        QApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableHighDpiScaling, True)  # Default
-    # Some application settings must be set before the app starts.
-    # These ones are accessible through the in-app settings window widget.
-    settings_widget = ApplicationSettings()
-    for attr_name, attr_value in settings_widget.REQUIRES_RESTART.items():
-        if attr_value is None:  # attr not available in this qt version.
-            continue
-        QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
-
     app = QApplication(sys.argv)
-    app.setDoubleClickInterval(1)
-    app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
-    # os.environ["QT_SCALE_FACTOR"] = "1"
-    atexit.register(last_resort_cleanup)
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
     app.setOrganizationDomain("github.com/NickHugi/PyKotor")
     app.thread().setPriority(QThread.Priority.HighestPriority)
+    atexit.register(last_resort_cleanup)
+    app.aboutToQuit.connect(qt_cleanup)
+    #app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
+    # os.environ["QT_SCALE_FACTOR"] = "1"
 
+    from toolset.gui.widgets.settings.application import ApplicationSettings
+    settings_widget = ApplicationSettings()
+    toolset_qsettings: QSettings = settings_widget.settings
     for attr_name, attr_value in settings_widget.__dict__.items():
         if attr_value is None:  # attr not available in this qt version.
             continue
         if not attr_name.startswith("AA_"):
             continue
-        QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
+        QApplication.setAttribute(attr_value, toolset_qsettings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
-    app.aboutToQuit.connect(qt_cleanup)
+    for name, setting in settings_widget.MISC_SETTINGS.items():
+        if toolset_qsettings.contains(name):
+            qsetting_lookup_val = toolset_qsettings.value(name, setting.getter(), setting.setting_type)
+            setting.setter(qsetting_lookup_val)
+    app.setFont(toolset_qsettings.value("GlobalFont", QApplication.font(), QFont))
 
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox
