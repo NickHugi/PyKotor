@@ -268,7 +268,7 @@ class Installation:
         -------
             dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        r_path = Path.pathify(path)
+        r_path = CaseAwarePath.pathify(path)
         if not r_path.safe_isdir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return {}
