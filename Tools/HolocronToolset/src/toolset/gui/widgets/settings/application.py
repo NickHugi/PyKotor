@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
 import qtpy
@@ -298,7 +300,15 @@ class ApplicationSettings(Settings):
     def __init__(self):
         super().__init__("Application")
 
-    EnvironmentVariables = Settings.addSetting("EnvironmentVariables", {})
+
+    EnvironmentVariables = Settings.addSetting(
+        "EnvironmentVariables",
+        {
+            "QT_MULTIMEDIA_PREFERRED_PLUGINS": os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation") if os.name == "nt" else "",
+            "QT_DEBUG_PLUGINS": os.environ.get("QT_DEBUG_PLUGINS", "0"),
+            "QT_LOGGING_RULES": os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")
+        }
+    )
 
     MISC_SETTINGS: ClassVar[dict[str, MiscSetting]] = {
         "QuitOnLastWindowClosed": MiscSetting(QGuiApplication.quitOnLastWindowClosed, QGuiApplication.setQuitOnLastWindowClosed, bool),

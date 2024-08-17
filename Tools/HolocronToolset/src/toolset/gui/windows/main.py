@@ -89,9 +89,8 @@ from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
 from toolset.gui.helpers.callback import BetterMessageBox
+from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemModel
 from toolset.gui.widgets.main_widgets import ResourceList
-
-#from toolset.gui.widgets.resource_fsmodel import ResourceFileSystemModel
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
 from toolset.gui.windows.indoor_builder import IndoorMapBuilder
@@ -136,7 +135,7 @@ if TYPE_CHECKING:
 def run_module_designer(
     active_path: str,
     active_name: str,
-    active_tsl: bool,
+    active_tsl: bool,  # noqa: FBT001
     module_path: str | None = None,
 ):
     """An alternative way to start the ModuleDesigner: run this function in a new process so the main tool window doesn't wait on the module designer."""
@@ -201,8 +200,8 @@ class ToolWindow(QMainWindow):
         self.original_palette: QPalette = self.palette()
         self.change_theme(self.settings.selectedTheme)
 
-        #self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
-        #self.fileSystemModel.setRootPath(Path(__file__).parent)
+        self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
+        self.fileSystemModel.setRootPath(Path(__file__).parent)
 
         # Focus handler (searchbox, various keyboard actions)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -250,7 +249,7 @@ class ToolWindow(QMainWindow):
         self.erfEditorButton = QPushButton("ERF Editor", self)
         self.erfEditorButton.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.erfEditorButton.clicked.connect(self._open_module_tab_erf_editor)  # Connect to the ERF Editor functionality
-        self.ui.verticalLayout_5.insertWidget(2, self.erfEditorButton)  # pyright: ignore[reportArgumentType]
+        self.ui.verticalLayoutRightPanel.insertWidget(2, self.erfEditorButton)  # pyright: ignore[reportArgumentType]
         self.erfEditorButton.hide()
 
         modulesResourceList = self.ui.modulesWidget.ui
@@ -542,7 +541,7 @@ class ToolWindow(QMainWindow):
             #return
         elif self.settings.selectedTheme == "QDarkStyle":
             try:
-                import qdarkstyle
+                import qdarkstyle  # pyright: ignore[reportMissingTypeStubs]
             except ImportError:
                 QMessageBox.critical(self, "Theme not found", "QDarkStyle is not installed in this environment.")
             else:
@@ -824,13 +823,13 @@ class ToolWindow(QMainWindow):
         newSaveDirPath = CaseAwarePath(newSaveDir)
         print("<SDM> [onSavepathChanged scope] newSaveDirPath: ", newSaveDirPath)
 
-        if newSaveDirPath not in self.active._saves:
+        if newSaveDirPath not in self.active.saves:
             self.active.load_saves()
-        if newSaveDirPath not in self.active._saves:
+        if newSaveDirPath not in self.active.saves:
             print(f"Cannot load save {newSaveDirPath}: not found in saves list")
             return
 
-        for save_path, resource_list in self.active._saves[newSaveDirPath].items():
+        for save_path, resource_list in self.active.saves[newSaveDirPath].items():
             # Create a new parent item for the save_path
             save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
             print("<SDM> [onSavepathChanged scope] save_path_item: ", save_path_item)
@@ -936,7 +935,7 @@ class ToolWindow(QMainWindow):
         assert self.active is not None
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(texturepackName))
 
-    def changeActiveInstallation(self, index: int):
+    def changeActiveInstallation(self, index: int):  # noqa: PLR0915, C901
         """Changes the active installation selected.
 
         If an installation does not have a path yet set, the user is prompted
@@ -989,8 +988,7 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
 
-        #self.fileSystemModel.setRootPath(path)
-        #return
+        self.fileSystemModel.setRootPath(path)
 
         active = self.installations.get(name)
         if active:
@@ -1168,8 +1166,8 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Icon.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-            RobustRootLogger().exception("Error extracting capsule %s", module_name)
-            QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule", str(universal_simplify_exception(e))).exec_()
+            RobustRootLogger().exception("Error extracting capsule file '%s'", module_name)
+            QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule file", str(universal_simplify_exception(e))).exec_()
 
     def onOpenResources(
         self,
@@ -2056,7 +2054,7 @@ class ToolWindow(QMainWindow):
             self.active.load_saves()
 
         sections: list[QStandardItem] = []
-        for save_path in self.active._saves:
+        for save_path in self.active.saves:
             save_path_str = str(save_path)
             print("<SDM> [refreshSavesList scope] save_path_str: ", save_path_str)
 

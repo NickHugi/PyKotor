@@ -153,7 +153,7 @@ class Installation:
 
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
-        self._saves: dict[Path, dict[Path, list[FileResource]]] = {}
+        self.saves: dict[Path, dict[Path, list[FileResource]]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
         self._rims: dict[str, list[FileResource]] = {}
 
@@ -214,28 +214,326 @@ class Installation:
             self.progress_callback(1, "increment")
         self._log.info(message)
 
-    def __iter__(self) -> Generator[FileResource, Any, None]:
-        if not self._initialized:
-            self.reload_all()
-        yield from self._chitin
-        yield from self._streammusic
-        yield from self._streamsounds
-        yield from self._streamwaves
-        for resources in self._override.values():
-            yield from resources
-        for resources in self._modules.values():
-            yield from resources
-        for resources in self._lips.values():
-            yield from resources
-        for resources in self._texturepacks.values():
-            yield from resources
-        for resources in self._rims.values():
-            yield from resources
-        tlk_path = self._path / "dialog.tlk"
-        yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
-        female_tlk_path = self._path / "dialogf.tlk"
-        if female_tlk_path.safe_isfile():
-            yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
+    # region Load Data
+    def _build_single_resource(
+        self,
+        filepath: Path | CaseAwarePath,
+    ) -> FileResource | None:
+        resname, restype = ResourceIdentifier.from_path(filepath).unpack()
+        if restype.is_invalid:
+            return None
+        try:
+            resource = FileResource(resname, restype, filepath.stat().st_size, 0, filepath)
+        except Exception as e:
+            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
+            return None
+        if self.progress_callback:
+            self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
+        return resource
+
+    def _build_resource_list(
+        self,
+        filepath: Path | CaseAwarePath,
+        capsule_check: Callable,
+    ) -> tuple[Path, list[FileResource] | None]:
+        # sourcery skip: extract-method
+        if not capsule_check(filepath):
+            return filepath, None
+        if self.progress_callback:
+            self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
+        try:
+            resource_list = list(Capsule(filepath))
+        except Exception as e:
+            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
+            return filepath, None
+        else:
+            return filepath, resource_list
+
+    def load_resources_dict(
+        self,
+        path: CaseAwarePath,
+        capsule_check: Callable,
+        *,
+        recurse: bool = False,
+    ) -> dict[str, list[FileResource]]:
+        """Load resources for a given path and store them in a new dict.
+
+        Args:
+        ----
+            path (os.PathLike | str): path for lookup.
+            recurse (bool): whether to recurse into subfolders (default is False)
+            capsule_check (Callable returns bool): If the check doesn't pass, the resource isn't added.
+
+        Returns:
+        -------
+            dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
+        """
+        r_path = Path.pathify(path)
+        if not r_path.safe_isdir():
+            self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
+            return {}
+
+        self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
+        files_iter = r_path.safe_rglob("*") if recurse else r_path.safe_iterdir()
+
+        resources_dict: dict[str, list[FileResource]] = {}
+
+        if self.use_multithreading:
+            num_cores = os.cpu_count() or 1
+            max_workers = num_cores * 4
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for future in as_completed(
+                    executor.submit(self._build_resource_list, file, capsule_check)
+                    for file in files_iter
+                ):
+                    filepath, resource = future.result()
+                    if not resource:
+                        continue
+                    resources_dict[filepath.name] = resource
+        else:
+            for file in files_iter:
+                filepath, resource = self._build_resource_list(file, capsule_check)
+                if not resource:
+                    continue
+                resources_dict[filepath.name] = resource
+        if not resources_dict:
+            self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
+        return resources_dict
+
+    def load_resources_list(
+        self,
+        path: CaseAwarePath,
+        *,
+        recurse: bool = False,
+    ) -> list[FileResource]:
+        """Load resources for a given path and store them in a new list.
+
+        Args:
+        ----
+            path (os.PathLike | str): path for lookup.
+            recurse (bool): whether to recurse into subfolders (default is False)
+
+        Returns:
+        -------
+            list[FileResource]: The list where resources at the path have been stored.
+        """
+        r_path = Path.pathify(path)
+        if not r_path.safe_isdir():
+            self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
+            return []
+
+        self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
+        files_iter = (
+            path.safe_rglob("*")
+            if recurse
+            else path.safe_iterdir()
+        )
+
+        resources_list: list[FileResource] = []
+
+        if self.use_multithreading:
+            num_cores = os.cpu_count() or 1
+            max_workers = num_cores * 2
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for future in as_completed(executor.submit(self._build_single_resource, file) for file in files_iter):
+                    resource = future.result()
+                    if not resource:
+                        continue
+                    resources_list.append(resource)
+        else:
+            for file in files_iter:
+                resource = self._build_single_resource(file)
+                if not resource:
+                    continue
+                resources_list.append(resource)
+        if not resources_list:
+            self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
+        return resources_list
+
+    def load_chitin(self):
+        """Reloads the list of resources in the Chitin linked to the Installation."""
+        chitin_path: CaseAwarePath = self._path / "chitin.key"
+        chitin_exists: bool | None = chitin_path.safe_isfile()
+        if chitin_exists:
+            self._log.info("Loading BIFs from chitin.key at '%s'...", self._path)
+            self._chitin = list(Chitin(key_path=chitin_path))
+            self._log.info("Done loading chitin")
+        elif chitin_exists is False:
+            self._log.warning("The chitin.key file did not exist at '%s' when loading the installation, skipping...", self._path)
+        elif chitin_exists is None:
+            self._log.error("No permissions to the chitin.key file at '%s' when loading the installation, skipping...", self._path)
+
+    def load_lips(
+        self,
+    ):
+        """Reloads the list of modules in the lips folder linked to the Installation."""
+        self._lips = self.load_resources_dict(self.lips_path(), capsule_check=is_mod_file)
+
+    def load_modules(self):
+        """Reloads the list of modules files in the modules folder linked to the Installation."""
+        self._modules = self.load_resources_dict(self.module_path(), capsule_check=is_capsule_file)
+
+    def reload_module(self, module: str):
+        """Reloads the list of resources in specified module in the modules folder linked to the Installation.
+
+        Args:
+        ----
+            module: The filename of the module, including the extension.
+        """
+        if not self._modules or module not in self._modules:
+            self.load_modules()
+        self._modules[module] = list(Capsule(self.module_path() / module))
+
+    def load_rims(
+        self,
+    ):
+        """Reloads the list of module files in the rims folder linked to the Installation."""
+        self._rims = self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
+
+    def load_textures(
+        self,
+    ):
+        """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
+        self._texturepacks = self.load_resources_dict(self.texturepacks_path(), capsule_check=is_erf_file)
+
+    def load_saves(
+        self,
+    ):
+        """Reloads the data in the 'saves' folder linked to the Installation."""
+        self.saves = {}
+        for save_location in self.save_locations():
+            self._log.debug(f"Found an active save location at '{save_location}'")
+            self.saves[save_location] = {}
+            for this_save_path in save_location.iterdir():
+                if not this_save_path.safe_isdir():
+                    continue
+                self._log.debug(f"Discovered a save bundle '{this_save_path.name}'")
+                self.saves[save_location][this_save_path] = []
+                for file in this_save_path.iterdir():
+                    res_ident = ResourceIdentifier.from_path(file)
+                    file_res = FileResource(res_ident.resname, res_ident.restype, file.stat().st_size, 0, file)
+                    self.saves[save_location][this_save_path].append(file_res)
+
+    def load_override(self, directory: str | None = None):
+        """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
+
+        If a directory argument is not passed, this will reload all subdirectories in the Override folder.
+        If directory argument is ".", this will load all the loose files in the Override folder.
+
+        the _override dict follows the following example format:
+        _override["."] = list[FileResource]  # the loose files in the Override folder
+        _override["subdir1"] = list[FileResource]  # the loose files in subdir1
+        _override["subdir2"] = list[FileResource]  # the loose files in subdir2
+        _override["subdir1/subdir3"] = list[FileResource]  # the loose files in subdir1/subdir3. Key is always a posix path (delimited by /'s)
+
+        Args:
+        ----
+            directory: The relative path of a subfolder to the override folder.
+        """
+        override_path: CaseAwarePath = self.override_path()
+        target_dirs: list[CaseAwarePath]
+        if directory:
+            target_dirs = [override_path / directory]
+            self._override[directory] = []
+        else:
+            if self.game().is_k1():
+                target_dirs = []
+            elif self.game().is_k2():
+                target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
+            target_dirs.append(override_path)
+            self._override = {}
+
+        for folder in target_dirs:
+            relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
+            self._override[relative_folder] = self.load_resources_list(folder, recurse=True)
+
+    def reload_override(
+        self,
+        directory: str,
+    ):
+        """Reload the resources in the specified override subdirectory.
+
+        Args:
+        ----
+            directory: Path to directory containing override configuration
+
+        Processing Logic:
+        ----------------
+            - Load override configuration from given directory
+            - Override any existing resources with new ones from directory
+        """
+        self.load_override(directory)
+
+    def reload_override_file(
+        self,
+        file: os.PathLike | str,
+    ):
+        filepath: Path = Path.pathify(file)
+        parent_folder = filepath.parent
+        rel_folderpath: str = str(parent_folder.relative_to(self.override_path())) if parent_folder.name else "."
+        if rel_folderpath not in self._override:
+            self.load_override(rel_folderpath)
+
+        identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
+        if identifier.restype is ResourceType.INVALID:
+            self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
+            return
+        resource = FileResource(*identifier.unpack(), filepath.stat().st_size, 0, filepath)
+
+        override_list: list[FileResource] = self._override[rel_folderpath]
+        if resource not in override_list:
+            override_list.append(resource)
+        else:
+            override_list[override_list.index(resource)] = resource
+
+    def load_streammusic(
+        self,
+    ):
+        """Reloads the list of resources in the streammusic folder linked to the Installation."""
+        self._streammusic = self.load_resources_list(self.streammusic_path())
+
+    def load_streamsounds(
+        self,
+    ):
+        """Reloads the list of resources in the streamsounds folder linked to the Installation."""
+        self._streamsounds = self.load_resources_list(self.streamsounds_path())
+
+    def _quicker_load_resources(self, folder_path: Path) -> list[FileResource]:
+        """Load resources from the given folder path."""
+        files: list[FileResource] = []
+        try:
+            if not folder_path.safe_isdir():
+                return files
+            stack: list[str] = [str(folder_path)]
+            install_path_str = str(self.path())
+
+            while stack:
+                current_dir = stack.pop()
+                with os.scandir(current_dir) as it:
+                    for entry in it:
+                        if entry.is_file():
+                            try:
+                                if self.progress_callback:
+                                    relpath = entry.path[len(install_path_str):].strip("\\").strip("/")
+                                    self.progress_callback(f"Loading '{relpath}'...", "update_subtask_text")
+                                files.append(FileResource.from_path(entry.path))
+                            except Exception:  # noqa: BLE001
+                                self._log.exception("Error loading resource:", entry.path)
+                        elif entry.is_dir():
+                            stack.append(entry.path)
+        except Exception:  # noqa: BLE001
+            self._log.exception("Error loading resources from folder:", folder_path)
+        return files
+
+    def load_streamwaves(self):
+        """Reloads the list of resources in the streamwaves folder linked to the Installation."""
+        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")))
+
+    def load_streamvoice(self):
+        """Reloads the list of resources in the streamvoice folder linked to the Installation."""
+        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")))
+
+    # endregion
 
     # region Get Paths
     def path(self) -> CaseAwarePath:
@@ -434,328 +732,31 @@ class Installation:
 
     # endregion
 
-    # region Load Data
-    def _build_single_resource(
-        self,
-        filepath: Path | CaseAwarePath,
-    ) -> FileResource | None:
-        resname, restype = ResourceIdentifier.from_path(filepath).unpack()
-        if restype.is_invalid:
-            return None
-        try:
-            resource = FileResource(resname, restype, filepath.stat().st_size, 0, filepath)
-        except Exception as e:
-            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
-            return None
-        if self.progress_callback:
-            self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
-        return resource
-
-    def _build_resource_list(
-        self,
-        filepath: Path | CaseAwarePath,
-        capsule_check: Callable,
-    ) -> tuple[Path, list[FileResource] | None]:
-        # sourcery skip: extract-method
-        if not capsule_check(filepath):
-            return filepath, None
-        if self.progress_callback:
-            self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
-        try:
-            resource_list = list(Capsule(filepath))
-        except Exception as e:
-            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
-            return filepath, None
-        else:
-            return filepath, resource_list
-
-    def load_resources_dict(
-        self,
-        path: CaseAwarePath,
-        capsule_check: Callable,
-        *,
-        recurse: bool = False,
-    ) -> dict[str, list[FileResource]]:
-        """Load resources for a given path and store them in a new dict.
-
-        Args:
-        ----
-            path (os.PathLike | str): path for lookup.
-            recurse (bool): whether to recurse into subfolders (default is False)
-            capsule_check (Callable returns bool): If the check doesn't pass, the resource isn't added.
-
-        Returns:
-        -------
-            dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
-        """
-        r_path = Path.pathify(path)
-        if not r_path.safe_isdir():
-            self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
-            return {}
-
-        self._log.info("Loading '%s' from installation...", r_path.relative_to(self._path))
-        files_iter = r_path.safe_rglob("*") if recurse else r_path.safe_iterdir()
-
-        resources_dict: dict[str, list[FileResource]] = {}
-
-        if self.use_multithreading:
-            num_cores = os.cpu_count() or 1
-            max_workers = num_cores * 4
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for future in as_completed(
-                    executor.submit(self._build_resource_list, file, capsule_check)
-                    for file in files_iter
-                ):
-                    filepath, resource = future.result()
-                    if not resource:
-                        continue
-                    resources_dict[filepath.name] = resource
-        else:
-            for file in files_iter:
-                filepath, resource = self._build_resource_list(file, capsule_check)
-                if not resource:
-                    continue
-                resources_dict[filepath.name] = resource
-        if not resources_dict:
-            self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
-        return resources_dict
-
-    def load_resources_list(
-        self,
-        path: CaseAwarePath,
-        *,
-        recurse: bool = False,
-    ) -> list[FileResource]:
-        """Load resources for a given path and store them in a new list.
-
-        Args:
-        ----
-            path (os.PathLike | str): path for lookup.
-            recurse (bool): whether to recurse into subfolders (default is False)
-
-        Returns:
-        -------
-            list[FileResource]: The list where resources at the path have been stored.
-        """
-        r_path = Path.pathify(path)
-        if not r_path.safe_isdir():
-            self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
-            return []
-
-        self._log.info("Loading %s from installation...", r_path.relative_to(self._path))
-        files_iter = (
-            path.safe_rglob("*")
-            if recurse
-            else path.safe_iterdir()
-        )
-
-        resources_list: list[FileResource] = []
-
-        if self.use_multithreading:
-            num_cores = os.cpu_count() or 1
-            max_workers = num_cores * 2
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                for future in as_completed(executor.submit(self._build_single_resource, file) for file in files_iter):
-                    resource = future.result()
-                    if not resource:
-                        continue
-                    resources_list.append(resource)
-        else:
-            for file in files_iter:
-                resource = self._build_single_resource(file)
-                if not resource:
-                    continue
-                resources_list.append(resource)
-        if not resources_list:
-            self._log.warning("No resources found at '%s' when loading the installation, skipping...", r_path)
-        return resources_list
-
-    def load_chitin(self):
-        """Reloads the list of resources in the Chitin linked to the Installation."""
-        chitin_path: CaseAwarePath = self._path / "chitin.key"
-        chitin_exists: bool | None = chitin_path.safe_isfile()
-        if chitin_exists:
-            self._log.info("Loading BIFs from chitin.key at '%s'...", self._path)
-            self._chitin = list(Chitin(key_path=chitin_path))
-            self._log.info("Done loading chitin")
-        elif chitin_exists is False:
-            self._log.warning("The chitin.key file did not exist at '%s' when loading the installation, skipping...", self._path)
-        elif chitin_exists is None:
-            self._log.error("No permissions to the chitin.key file at '%s' when loading the installation, skipping...", self._path)
-
-    def load_lips(
-        self,
-    ):
-        """Reloads the list of modules in the lips folder linked to the Installation."""
-        self._lips = self.load_resources_dict(self.lips_path(), capsule_check=is_mod_file)
-
-    def load_modules(self):
-        """Reloads the list of modules files in the modules folder linked to the Installation."""
-        self._modules = self.load_resources_dict(self.module_path(), capsule_check=is_capsule_file)
-
-    def reload_module(self, module: str):
-        """Reloads the list of resources in specified module in the modules folder linked to the Installation.
-
-        Args:
-        ----
-            module: The filename of the module, including the extension.
-        """
-        if not self._modules or module not in self._modules:
-            self.load_modules()
-        self._modules[module] = list(Capsule(self.module_path() / module))
-
-    def load_rims(
-        self,
-    ):
-        """Reloads the list of module files in the rims folder linked to the Installation."""
-        self._rims = self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
-
-    def load_textures(
-        self,
-    ):
-        """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
-        self._texturepacks = self.load_resources_dict(self.texturepacks_path(), capsule_check=is_erf_file)
-
-    def load_saves(
-        self,
-    ):
-        """Reloads the data in the 'saves' folder linked to the Installation."""
-        self._saves = {}
-        for save_location in self.save_locations():
-            self._log.debug(f"Found an active save location at '{save_location}'")
-            self._saves[save_location] = {}
-            for this_save_path in save_location.iterdir():
-                if not this_save_path.safe_isdir():
-                    continue
-                self._log.debug(f"Discovered a save bundle '{this_save_path.name}'")
-                self._saves[save_location][this_save_path] = []
-                for file in this_save_path.iterdir():
-                    res_ident = ResourceIdentifier.from_path(file)
-                    file_res = FileResource(res_ident.resname, res_ident.restype, file.stat().st_size, 0, file)
-                    self._saves[save_location][this_save_path].append(file_res)
-
-    def load_override(self, directory: str | None = None):
-        """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
-
-        If a directory argument is not passed, this will reload all subdirectories in the Override folder.
-        If directory argument is ".", this will load all the loose files in the Override folder.
-
-        the _override dict follows the following example format:
-        _override["."] = list[FileResource]  # the loose files in the Override folder
-        _override["subdir1"] = list[FileResource]  # the loose files in subdir1
-        _override["subdir2"] = list[FileResource]  # the loose files in subdir2
-        _override["subdir1/subdir3"] = list[FileResource]  # the loose files in subdir1/subdir3. Key is always a posix path (delimited by /'s)
-
-        Args:
-        ----
-            directory: The relative path of a subfolder to the override folder.
-        """
-        override_path: CaseAwarePath = self.override_path()
-        target_dirs: list[CaseAwarePath]
-        if directory:
-            target_dirs = [override_path / directory]
-            self._override[directory] = []
-        else:
-            if self.game().is_k1():
-                target_dirs = []
-            elif self.game().is_k2():
-                target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
-            target_dirs.append(override_path)
-            self._override = {}
-
-        for folder in target_dirs:
-            relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
-            self._override[relative_folder] = self.load_resources_list(folder, recurse=True)
-
-    def reload_override(
-        self,
-        directory: str,
-    ):
-        """Reload the resources in the specified override subdirectory.
-
-        Args:
-        ----
-            directory: Path to directory containing override configuration
-
-        Processing Logic:
-        ----------------
-            - Load override configuration from given directory
-            - Override any existing resources with new ones from directory
-        """
-        self.load_override(directory)
-
-    def reload_override_file(
-        self,
-        file: os.PathLike | str,
-    ):
-        filepath: Path = Path.pathify(file)
-        parent_folder = filepath.parent
-        rel_folderpath: str = str(parent_folder.relative_to(self.override_path())) if parent_folder.name else "."
-        if rel_folderpath not in self._override:
-            self.load_override(rel_folderpath)
-
-        identifier: ResourceIdentifier = ResourceIdentifier.from_path(filepath)
-        if identifier.restype is ResourceType.INVALID:
-            self._log.error("Cannot reload override file. Invalid KOTOR resource:", identifier)
-            return
-        resource = FileResource(*identifier.unpack(), filepath.stat().st_size, 0, filepath)
-
-        override_list: list[FileResource] = self._override[rel_folderpath]
-        if resource not in override_list:
-            override_list.append(resource)
-        else:
-            override_list[override_list.index(resource)] = resource
-
-    def load_streammusic(
-        self,
-    ):
-        """Reloads the list of resources in the streammusic folder linked to the Installation."""
-        self._streammusic = self.load_resources_list(self.streammusic_path())
-
-    def load_streamsounds(
-        self,
-    ):
-        """Reloads the list of resources in the streamsounds folder linked to the Installation."""
-        self._streamsounds = self.load_resources_list(self.streamsounds_path())
-
-    def _quicker_load_resources(self, folder_path: Path) -> list[FileResource]:
-        """Load resources from the given folder path."""
-        files: list[FileResource] = []
-        try:
-            if not folder_path.safe_isdir():
-                return files
-            stack: list[str] = [str(folder_path)]
-            install_path_str = str(self.path())
-
-            while stack:
-                current_dir = stack.pop()
-                with os.scandir(current_dir) as it:
-                    for entry in it:
-                        if entry.is_file():
-                            try:
-                                if self.progress_callback:
-                                    relpath = entry.path[len(install_path_str):].strip("\\").strip("/")
-                                    self.progress_callback(f"Loading '{relpath}'...", "update_subtask_text")
-                                files.append(FileResource.from_path(entry.path))
-                            except Exception:  # noqa: BLE001
-                                self._log.exception("Error loading resource:", entry.path)
-                        elif entry.is_dir():
-                            stack.append(entry.path)
-        except Exception:  # noqa: BLE001
-            self._log.exception("Error loading resources from folder:", folder_path)
-        return files
-
-    def load_streamwaves(self):
-        """Reloads the list of resources in the streamwaves folder linked to the Installation."""
-        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamvoice", "streamwaves")))
-
-    def load_streamvoice(self):
-        """Reloads the list of resources in the streamvoice folder linked to the Installation."""
-        self._streamwaves[:] = self._quicker_load_resources(self._find_resource_folderpath(("streamwaves", "streamvoice")))
-
-    # endregion
-
     # region Get FileResources
+
+    def __iter__(self) -> Generator[FileResource, Any, None]:
+        if not self._initialized:
+            self.reload_all()
+        yield from self._chitin
+        yield from self._streammusic
+        yield from self._streamsounds
+        yield from self._streamwaves
+        for resources in self._override.values():
+            yield from resources
+        for resources in self._modules.values():
+            yield from resources
+        for resources in self._lips.values():
+            yield from resources
+        for resources in self._texturepacks.values():
+            yield from resources
+        for resources in self._rims.values():
+            yield from resources
+        tlk_path = self._path / "dialog.tlk"
+        yield FileResource("dialog", ResourceType.TLK, tlk_path.stat().st_size, 0, tlk_path)
+        female_tlk_path = self._path / "dialogf.tlk"
+        if female_tlk_path.safe_isfile():
+            yield FileResource("dialogf", ResourceType.TLK, female_tlk_path.stat().st_size, 0, female_tlk_path)
+
     def chitin_resources(self) -> list[FileResource]:
         """Returns a shallow copy of the list of FileResources stored in the Chitin linked to the Installation.
 

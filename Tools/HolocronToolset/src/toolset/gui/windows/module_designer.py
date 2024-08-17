@@ -342,9 +342,6 @@ class ModuleDesigner(QMainWindow):
         self.customStatusBarContainer.setLayout(self.customStatusBarLayout)
         self.customStatusBar.addPermanentWidget(self.customStatusBarContainer)
 
-        # Initial status bar update
-        # self.updateStatusBar(QCursor.pos(), set(), set(), self.ui.mainRenderer)
-
     def updateStatusBar(
         self,
         mousePos: QPoint | Vector2,
@@ -430,7 +427,7 @@ class ModuleDesigner(QMainWindow):
             self.log.info("No .mod found at '%s'", mod_filepath)
             answer = QMessageBox.question(
                 self,
-                "No .mod for this module found.",
+                "Editing .RIM/.ERF modules is discouraged.",
                 f"The Module Designer would like to create a .mod for module '{mod_root}', would you like to do this now?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.Yes
@@ -489,6 +486,7 @@ class ModuleDesigner(QMainWindow):
                 return
             result = loader.value
         self.log.debug("ModuleDesigner.openModule Loader finished.")
+        assert result is not None, "result main check failed."
         new_module, git, walkmeshes = result
         self._module = new_module
         self.log.debug("setGit")

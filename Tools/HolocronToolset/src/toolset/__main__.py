@@ -61,12 +61,12 @@ def onAppCrash(
         if QThread.currentThread() == QApplication.instance().thread():
             # Create a message box with the exception information
             msg_box = QMessageBox()
-            msg_box.setWindowFlags(msg_box.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
-            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setWindowFlags(msg_box.windowFlags() | QtCore.Qt.WindowType.WindowStaysOnTopHint)
+            msg_box.setIcon(QMessageBox.Icon.Critical)
             msg_box.setWindowTitle("Application Error")
             msg_box.setText(f"An unexpected error occurred:<br><br>{exc.__class__.__name__}: {exc!s}")
             msg_box.setDetailedText("".join(traceback.format_tb(tback)))
-            msg_box.exec_()
+            msg_box.exec_()  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def fix_sys_and_cwd_path():
@@ -222,13 +222,9 @@ if __name__ == "__main__":
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
     app.setOrganizationDomain("github.com/NickHugi/PyKotor")
-    app.thread().setPriority(QThread.Priority.HighestPriority)
+    app.thread().setPriority(QThread.Priority.HighestPriority)  # pyright: ignore[reportOptionalMemberAccess]
     atexit.register(last_resort_cleanup)
     app.aboutToQuit.connect(qt_cleanup)
-    #app.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
-    # os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
-    # os.environ["QT_SCALE_FACTOR"] = "1"
 
     from toolset.gui.widgets.settings.application import ApplicationSettings
     settings_widget = ApplicationSettings()
@@ -252,10 +248,10 @@ if __name__ == "__main__":
         msgBox.setIcon(QMessageBox.Icon.Critical)
         msgBox.setWindowTitle("Error")
         msgBox.setText("This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
-        msgBox.exec_()
+        msgBox.exec_()  # pyright: ignore[reportAttributeAccessIssue]
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
 
     from toolset.gui.windows.main import ToolWindow
 
     ToolWindow().show()
-    app.exec_()
+    app.exec_()  # pyright: ignore[reportAttributeAccessIssue]

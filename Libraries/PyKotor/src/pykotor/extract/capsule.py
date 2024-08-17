@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -14,6 +14,8 @@ if TYPE_CHECKING:
     import os
 
     from collections.abc import Iterator
+
+    from typing_extensions import Self
 
 
 class LazyCapsule(FileResource):
@@ -649,3 +651,31 @@ class Capsule(LazyCapsule):
         result = super().add(resname, restype, resdata)
         self.reload()
         return result
+
+    @classmethod
+    def from_data(cls, data: bytes, resname: str, restype: ResourceType) -> Self:
+        """Initialize a Capsule object from raw data bytes.
+
+        Args:
+        ----
+            data: The raw bytes of the capsule file.
+            resname: The resource name for identification.
+            restype: The resource type.
+
+        Returns:
+        -------
+            Capsule: The initialized Capsule object.
+        """
+        with BinaryReader.from_bytes(data) as reader:
+            capsule = cast(cls, object())
+            capsule.__class__ = cls
+            file_type = reader.read_string(4)
+            reader.skip(4)
+            if file_type in (member.value for member in ERFType):
+                capsule._resources = capsule._load_erf(reader)  # noqa: SLF001
+            elif file_type == "RIM ":
+                capsule._resources = capsule._load_rim(reader)  # noqa: SLF001
+            else:
+                msg = f"Data provided is not a valid ERF/MOD/SAV/RIM format, found '{file_type}'."
+                raise ValueError(msg)
+            return capsule

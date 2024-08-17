@@ -82,52 +82,7 @@ class InsertInstanceDialog(QDialog):
         self._setupSignals()
         self._setupLocationSelect()
         self._setupResourceList()
-
-    def togglePreview(self):
-        #self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
-        self.update3dPreview()
-
-    def update3dPreview(self):
-        """Updates the model preview.
-
-        Processing Logic:
-        ----------------
-            - Build the data and model name from the provided data
-            - Get the MDL and MDX resources from the installation based on the model name
-            - If both resources exist, set them on the preview renderer
-            - If not, clear out any existing model from the preview.
-        """
-        #self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
-        #self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
-
-        if self.globalSettings.showPreviewUTP:
-            self._update_model()
-        else:
-            self.setFixedSize(374, 457)
-
-    def _update_model(self):
-        """Updates the model preview.
-
-        Processing Logic:
-        ----------------
-            - Build the data and model name from the provided data
-            - Get the MDL and MDX resources from the installation based on the model name
-            - If both resources exist, set them on the preview renderer
-            - If not, clear out any existing model from the preview
-        """
-        self.setFixedSize(674, 457)
-
-        data, _ = self.build()
-        modelname: str = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
-        if not modelname or not modelname.strip():
-            RobustRootLogger().warning(
-                "Placeable '%s.%s' has no model to render!",
-                self._resname,
-                self._restype,
-            )
-            self.ui.previewRenderer.clearModel()
-            return
-        self.setRenderModel(modelname)
+        self.setMinimumHeight(500)
 
     def _setupSignals(self):
         self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
@@ -250,13 +205,19 @@ class InsertInstanceDialog(QDialog):
         self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
 
         if self.ui.reuseResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+            button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
+            assert button is not None, "buttonBox does not have an OK button assigned."
+            button.setEnabled(True)
 
         if self.ui.copyResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
+            assert button is not None, "buttonBox does not have an OK button assigned."
+            button.setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
         if self.ui.createResourceRadio.isChecked():
-            self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+            button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
+            assert button is not None, "buttonBox does not have an OK button assigned."
+            button.setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
     def onResourceSelected(self):
         """Updates the dynamic text label when a resource is selected."""
@@ -347,12 +308,17 @@ class InsertInstanceDialog(QDialog):
         return "\n".join(summary)
 
     def onResRefEdited(self, text: str):
-        self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.isValidResref(text))
+        button = self.ui.buttonBox.button(QDialogButtonBox.StandardButton.Ok)  # pyright: ignore[reportArgumentType]
+        assert button is not None, "ok button is not setup on the buttonBox"
+        button.setEnabled(self.isValidResref(text))
 
     def onResourceFilterChanged(self):
         text = self.ui.resourceFilter.text()
         for row in range(self.ui.resourceList.count()):
             item = self.ui.resourceList.item(row)
+            if item is None:
+                RobustRootLogger().warning(f"item at row {row} was None!")
+                continue
             item.setHidden(text not in item.text())
 
     def isValidResref(self, text: str) -> bool:

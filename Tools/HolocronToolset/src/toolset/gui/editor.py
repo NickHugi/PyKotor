@@ -10,11 +10,10 @@ import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QPoint, QTimer, QUrl, Qt
-from qtpy.QtGui import QGuiApplication, QIcon, QPixmap
+from qtpy.QtGui import QIcon, QPixmap
 from qtpy.QtMultimedia import QMediaPlayer
 from qtpy.QtWidgets import (
     QApplication,
-    QDockWidget,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -70,7 +69,6 @@ if TYPE_CHECKING:
     from PyQt6.QtMultimedia import QMediaPlayer as PyQt6MediaPlayer
     from PySide6.QtMultimedia import QMediaPlayer as PySide6MediaPlayer
     from qtpy.QtGui import QFocusEvent, QMouseEvent, QShowEvent
-    from typing_extensions import Literal
 
     from pykotor.common.language import LocalizedString
     from pykotor.resource.formats.rim.rim_data import RIM
@@ -287,9 +285,9 @@ class Editor(QMainWindow):
     Provides methods for saving and loading files that are stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
 
-    newFile = QtCore.Signal()
-    savedFile = QtCore.Signal(object, object, object, object)
-    loadedFile = QtCore.Signal(object, object, object, object)
+    newFile = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    savedFile = QtCore.Signal(object, object, object, object)  # pyright: ignore[reportPrivateImportUsage]
+    loadedFile = QtCore.Signal(object, object, object, object)  # pyright: ignore[reportPrivateImportUsage]
 
     CAPSULE_FILTER = "*.mod *.erf *.rim *.sav"
 
@@ -325,47 +323,19 @@ class Editor(QMainWindow):
         self._logger = RobustRootLogger()
         self._global_settings: GlobalSettings = GlobalSettings()
 
+        self._editorTitle: str = title
         self._filepath: Path | None = None
         self._resname: str | None = None
         self._restype: ResourceType | None = None
         self._revert: bytes | None = None
-
-        writeSupported = readSupported.copy() if readSupported is writeSupported else writeSupported
-        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
-        for add_format in additional_formats:
-            readSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"]
-                for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
-            )
-            writeSupported.extend(
-                ResourceType.__members__[f"{restype.name}_{add_format}"]
-                for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
-            )
-        self._readSupported: list[ResourceType] = readSupported
-        self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
 
-        self._editorTitle: str = title
-        self.setWindowTitle(title)
-        self._setupIcon(iconName)
         self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
         self.layout().addWidget(self.mediaPlayer)
+        self.setWindowTitle(title)
+        self._setupIcon(iconName)
 
-        self._saveFilter: str = "All valid files ("
-        for resource in writeSupported:
-            self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
-        self._saveFilter += f" {self.CAPSULE_FILTER});;"
-        for resource in writeSupported:
-            self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._saveFilter += f"Save into module ({self.CAPSULE_FILTER})"
-
-        self._openFilter: str = "All valid files ("
-        for resource in readSupported:
-            self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
-        self._openFilter += f" {self.CAPSULE_FILTER});;"
-        for resource in readSupported:
-            self._openFilter += f"{resource.category} File (*.{resource.extension});;"
-        self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
+        self.setupEditorFilters(readSupported, writeSupported)
 
 
     def showEvent(self, event: QShowEvent):
@@ -374,112 +344,6 @@ class Editor(QMainWindow):
             self.size().width() + QApplication.font().pointSize() * 2,
             self.size().height(),
         )
-        #QTimer.singleShot(0, lambda event=event: self.adjustPosition(event))
-
-    def adjustPosition(self, event: QShowEvent | None = None):  # sourcery skip: extract-method
-        if event is not None:
-            super().showEvent(event)
-        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
-        window_geometry = self.geometry()
-        x = (screen_geometry.width() - window_geometry.width()) // 2
-        y = (screen_geometry.height() - window_geometry.height()) // 2
-        self.move(x, y-50)
-
-        main_window = next(
-            (
-                widget
-                for widget in QApplication.topLevelWidgets()
-                if isinstance(widget, QMainWindow)
-                and widget.__class__.__name__ == "ToolWindow"
-            ),
-            None,
-        )
-
-        if not main_window:
-            self._logger.error("Main ToolWindow not found")
-            return
-
-        main_geometry = main_window.geometry()
-        editor_geometry = self.geometry()
-        if editor_geometry.intersects(main_geometry):
-            new_x = main_geometry.right() + 10
-            if new_x + editor_geometry.width() > screen_geometry.right():
-                new_x = main_geometry.left() - editor_geometry.width() - 10
-            new_y = main_geometry.top()
-            if new_y + editor_geometry.height() > screen_geometry.bottom():
-                new_y = screen_geometry.bottom() - editor_geometry.height()
-            if new_x < screen_geometry.left():
-                new_x = screen_geometry.left()
-            if new_y < screen_geometry.top():
-                new_y = screen_geometry.top()
-            self.move(new_x, new_y-50)
-            main_geometry = main_window.geometry()
-            editor_geometry = self.geometry()
-            if editor_geometry.intersects(main_geometry):
-                new_mw_x = editor_geometry.width()+10
-                if new_mw_x < screen_geometry.left():
-                    new_mw_x = screen_geometry.left()
-                main_window.move(new_mw_x, main_window.pos().y())
-
-    def setSecondaryWidgetPosition(self, widget: QWidget, position: Literal["left", "right", "top", "bottom"]):
-        if isinstance(widget, QDockWidget):
-            widget.setFloating(True)
-
-        widget.resize(widget.width(), self.height())
-        self.move(self.pos().x(), self.pos().y() - 50)
-
-        if position == "right":
-            relevant_editor_coord = self.mapToGlobal(self.rect().topRight())
-        elif position == "left":
-            relevant_editor_coord = self.mapToGlobal(self.rect().topLeft())
-        elif position == "top":
-            relevant_editor_coord = self.mapToGlobal(self.rect().topLeft())
-        elif position == "bottom":
-            relevant_editor_coord = self.mapToGlobal(self.rect().bottomLeft())
-        else:
-            raise ValueError("Invalid position argument. Must be 'left', 'right', 'top', or 'bottom'.")
-
-        if position == "right":
-            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y())
-        elif position == "left":
-            widget.move(relevant_editor_coord.x() - widget.width(), relevant_editor_coord.y())
-        elif position == "top":
-            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y() - widget.height())
-        elif position == "bottom":
-            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y())
-
-        editor_bottom_y = self.geometry().bottom()
-        dock_bottom_y = widget.geometry().bottom()
-        title_bar_height = dock_bottom_y - editor_bottom_y
-
-        if position in ("right", "left", "bottom"):
-            widget.move(relevant_editor_coord.x(), relevant_editor_coord.y() - title_bar_height)
-        elif position == "top":
-            widget.move(relevant_editor_coord.x() - widget.width(), relevant_editor_coord.y() - widget.height() - title_bar_height)
-
-        # Ensure the widget and the editor are on screen and move them if necessary
-        screen_geometry = QGuiApplication.primaryScreen().availableGeometry()
-        widget_geometry = widget.geometry()
-        editor_geometry = self.geometry()
-
-        # Check if either the widget or the editor is off screen
-        if not screen_geometry.contains(widget_geometry) or not screen_geometry.contains(editor_geometry):
-            move_x = move_y = 0
-
-            if widget_geometry.right() > screen_geometry.right():
-                move_x = screen_geometry.right() - widget_geometry.right()
-            elif widget_geometry.left() < screen_geometry.left():
-                move_x = screen_geometry.left() - widget_geometry.left()
-
-            if widget_geometry.bottom() > screen_geometry.bottom():
-                move_y = screen_geometry.bottom() - widget_geometry.bottom()
-            elif widget_geometry.top() < screen_geometry.top():
-                move_y = screen_geometry.top() - widget_geometry.top()
-
-            self.move(self.x() + move_x, self.y() + move_y)
-            widget.move(widget.x() + move_x, widget.y() + move_y)
-
-        widget.show()
 
     def _setupMenus(self):
         """Sets up menu actions and keyboard shortcuts.
@@ -533,6 +397,37 @@ class Editor(QMainWindow):
             if not isinstance(self, ERFEditor):
                 relpath /= f"{self._resname}.{self._restype.extension}"
         self.setWindowTitle(f"{relpath} - {self._editorTitle}({installationName})")
+
+    def setupEditorFilters(self, readSupported: list[ResourceType], writeSupported: list[ResourceType]):
+        writeSupported = readSupported.copy() if readSupported is writeSupported else writeSupported
+        additional_formats = {"XML", "JSON", "CSV", "ASCII", "YAML"}
+        for add_format in additional_formats:
+            readSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in readSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
+            writeSupported.extend(
+                ResourceType.__members__[f"{restype.name}_{add_format}"]
+                for restype in writeSupported if f"{restype.name}_{add_format}" in ResourceType.__members__
+            )
+        self._readSupported: list[ResourceType] = readSupported
+        self._writeSupported: list[ResourceType] = writeSupported
+
+        self._saveFilter: str = "All valid files ("
+        for resource in writeSupported:
+            self._saveFilter += f'*.{resource.extension}{"" if writeSupported[-1] == resource else " "}'
+        self._saveFilter += f" {self.CAPSULE_FILTER});;"
+        for resource in writeSupported:
+            self._saveFilter += f"{resource.category} File (*.{resource.extension});;"
+        self._saveFilter += f"Save into module ({self.CAPSULE_FILTER})"
+
+        self._openFilter: str = "All valid files ("
+        for resource in readSupported:
+            self._openFilter += f'*.{resource.extension}{"" if readSupported[-1] == resource else " "}'
+        self._openFilter += f" {self.CAPSULE_FILTER});;"
+        for resource in readSupported:
+            self._openFilter += f"{resource.category} File (*.{resource.extension});;"
+        self._openFilter += f"Load from module ({self.CAPSULE_FILTER})"
 
     def getOpenedFileName(self) -> str:
         if self._filepath is not None and self._filepath.name and self._restype is not None:
@@ -881,7 +776,7 @@ class Editor(QMainWindow):
         else:
             data: bytes = BinaryReader.load_file(r_filepath)
             res_ident: ResourceIdentifier = ResourceIdentifier.from_path(r_filepath).validate()
-            self.load(r_filepath, *res_ident.unpack(), data)
+            self.load(r_filepath, res_ident.resname, res_ident.restype, data)
 
     def _load_module_from_dialog_info(self, dialog: LoadFromModuleDialog, c_filepath: Path):
         resname: str | None = dialog.resname()
@@ -910,6 +805,10 @@ class Editor(QMainWindow):
 
         # Set the new position
         self.move(new_x, new_y)
+
+    #@property
+    #def filepath(self):
+    #    return self._resource.filepath()
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes):
         """Load a resource from a file.

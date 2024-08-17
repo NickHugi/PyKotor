@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 
 from collections import OrderedDict
 from contextlib import suppress
@@ -507,7 +506,6 @@ class FileItems(CustomItem):
         sei.lpFile = str(file_path).encode("utf-8")
         sei.nShow = 1
         ShellExecuteEx(ctypes.byref(sei))
-        time.sleep(1)
 
     def _sendToRecycleBin(
         self,

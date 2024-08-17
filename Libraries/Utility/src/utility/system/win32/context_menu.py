@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import ctypes
 import errno
-import os
 
 from contextlib import ExitStack
 from ctypes import byref, windll
 from pathlib import WindowsPath
-from typing import TYPE_CHECKING, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Iterable, Protocol, cast, runtime_checkable
 
 import comtypes  # pyright: ignore[reportMissingTypeStubs]
 import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
@@ -15,6 +14,8 @@ import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
 from utility.system.win32.hwnd import SimplePyHWND
 
 if TYPE_CHECKING:
+    import os
+
     from typing import Any, Callable, Sequence
 
     from typing_extensions import Literal
@@ -174,15 +175,25 @@ def windows_context_menu_folder(
     context_menu = folder_item.Verbs()
     show_context_menu(context_menu, hwnd)
 
-def windows_context_menu(path: os.PathLike | str, hwnd: int | None = None):
-    parsed_path: WindowsPath = WindowsPath(path)
+def windows_context_menu(path: os.PathLike | str | Iterable[os.PathLike | str], hwnd: int | None = None):
+    if isinstance(path, Iterable):
+        paths = list(path)
+        if not paths:
+            return
+        if len(paths) > 1:
+            windows_context_menu_multiple(paths, hwnd)
+            return
+        parsed_path: WindowsPath = WindowsPath(paths[0])
+    else:
+        parsed_path = WindowsPath(path)
+
     if safe_isfile(parsed_path):
         windows_context_menu_file(parsed_path, hwnd)
     elif safe_isdir(parsed_path):
         windows_context_menu_folder(parsed_path, hwnd)
     else:
-        msg = f"Path is neither file nor folder: {path}"
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), msg)
+        msg = f"Path is neither file nor folder: '{path}'"
+        raise FileNotFoundError(errno.ENOENT, msg, str(path))
 
 # Example usage
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.3
+## Created by: Qt User Interface Compiler version 6.6.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QVBoxLayout, QWidget)
 
 from toolset.gui.widgets.main_widgets import (ResourceList, TextureList)
+from toolset.gui.widgets.kotor_filesystem_model import FileSystemTreeView
 from toolset.rcc import resources_rc_pyside6
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -217,7 +218,13 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.gameCombo)
 
-        self.resourceTabs = QTabWidget(self.centralwidget)
+        self.outerTabWidget = QTabWidget(self.centralwidget)
+        self.outerTabWidget.setObjectName(u"outerTabWidget")
+        self.resourceListTab = QWidget()
+        self.resourceListTab.setObjectName(u"resourceListTab")
+        self.verticalLayoutResourceListTab = QVBoxLayout(self.resourceListTab)
+        self.verticalLayoutResourceListTab.setObjectName(u"verticalLayoutResourceListTab")
+        self.resourceTabs = QTabWidget(self.resourceListTab)
         self.resourceTabs.setObjectName(u"resourceTabs")
         self.coreTab = QWidget()
         self.coreTab.setObjectName(u"coreTab")
@@ -287,7 +294,21 @@ class Ui_MainWindow(object):
 
         self.resourceTabs.addTab(self.texturesTab, "")
 
-        self.verticalLayout_4.addWidget(self.resourceTabs)
+        self.verticalLayoutResourceListTab.addWidget(self.resourceTabs)
+
+        self.outerTabWidget.addTab(self.resourceListTab, "")
+        self.fileSystemTab = QWidget()
+        self.fileSystemTab.setObjectName(u"fileSystemTab")
+        self.verticalLayoutFileSystemTab = QVBoxLayout(self.fileSystemTab)
+        self.verticalLayoutFileSystemTab.setObjectName(u"verticalLayoutFileSystemTab")
+        self.fileSystemView = FileSystemTreeView(self.fileSystemTab)
+        self.fileSystemView.setObjectName(u"fileSystemView")
+
+        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemView)
+
+        self.outerTabWidget.addTab(self.fileSystemTab, "")
+
+        self.verticalLayout_4.addWidget(self.outerTabWidget)
 
 
         self.horizontalLayout.addLayout(self.verticalLayout_4)
@@ -295,7 +316,7 @@ class Ui_MainWindow(object):
         self.vboxlayout = QVBoxLayout()
         self.vboxlayout.setObjectName(u"vboxlayout")
         self.vboxlayout.setSizeConstraint(QLayout.SetFixedSize)
-        self.verticalSpacer_2 = QSpacerItem(124, 45, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.verticalSpacer_2 = QSpacerItem(124, 45, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
         self.vboxlayout.addItem(self.verticalSpacer_2)
 
@@ -303,23 +324,23 @@ class Ui_MainWindow(object):
         self.sidebar.setObjectName(u"sidebar")
         self.sidebar.setFrameShape(QFrame.NoFrame)
         self.sidebar.setFrameShadow(QFrame.Raised)
-        self.verticalLayout_5 = QVBoxLayout(self.sidebar)
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayoutRightPanel = QVBoxLayout(self.sidebar)
+        self.verticalLayoutRightPanel.setObjectName(u"verticalLayoutRightPanel")
+        self.verticalLayoutRightPanel.setContentsMargins(0, 0, 0, 0)
         self.openButton = QPushButton(self.sidebar)
         self.openButton.setObjectName(u"openButton")
 
-        self.verticalLayout_5.addWidget(self.openButton)
+        self.verticalLayoutRightPanel.addWidget(self.openButton)
 
         self.extractButton = QPushButton(self.sidebar)
         self.extractButton.setObjectName(u"extractButton")
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.extractButton.sizePolicy().hasHeightForWidth())
         self.extractButton.setSizePolicy(sizePolicy)
 
-        self.verticalLayout_5.addWidget(self.extractButton)
+        self.verticalLayoutRightPanel.addWidget(self.extractButton)
 
         self.tpcGroup_2 = QGroupBox(self.sidebar)
         self.tpcGroup_2.setObjectName(u"tpcGroup_2")
@@ -336,7 +357,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_10.addWidget(self.tpcTxiCheckbox)
 
 
-        self.verticalLayout_5.addWidget(self.tpcGroup_2)
+        self.verticalLayoutRightPanel.addWidget(self.tpcGroup_2)
 
         self.mdlGroup_2 = QGroupBox(self.sidebar)
         self.mdlGroup_2.setObjectName(u"mdlGroup_2")
@@ -354,12 +375,12 @@ class Ui_MainWindow(object):
         self.verticalLayout_9.addWidget(self.mdlTexturesCheckbox)
 
 
-        self.verticalLayout_5.addWidget(self.mdlGroup_2)
+        self.verticalLayoutRightPanel.addWidget(self.mdlGroup_2)
 
 
         self.vboxlayout.addWidget(self.sidebar)
 
-        self.verticalSpacer = QSpacerItem(124, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.verticalSpacer = QSpacerItem(124, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.vboxlayout.addItem(self.verticalSpacer)
 
@@ -450,6 +471,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
+        self.outerTabWidget.setCurrentIndex(0)
         self.resourceTabs.setCurrentIndex(0)
 
 
@@ -523,6 +545,8 @@ class Ui_MainWindow(object):
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.modulesTab), QCoreApplication.translate("MainWindow", u"Modules", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.overrideTab), QCoreApplication.translate("MainWindow", u"Override", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.texturesTab), QCoreApplication.translate("MainWindow", u"Textures", None))
+        self.outerTabWidget.setTabText(self.outerTabWidget.indexOf(self.resourceListTab), QCoreApplication.translate("MainWindow", u"Resource List", None))
+        self.outerTabWidget.setTabText(self.outerTabWidget.indexOf(self.fileSystemTab), QCoreApplication.translate("MainWindow", u"File System", None))
         self.openButton.setText(QCoreApplication.translate("MainWindow", u"Open Selected", None))
         self.extractButton.setText(QCoreApplication.translate("MainWindow", u"Extract Selected", None))
         self.tpcGroup_2.setTitle(QCoreApplication.translate("MainWindow", u"TPC", None))

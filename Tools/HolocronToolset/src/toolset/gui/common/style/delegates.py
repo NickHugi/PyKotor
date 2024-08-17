@@ -203,6 +203,15 @@ class HTMLDelegate(QStyledItemDelegate):
         nudge_offset = self.nudgedModelIndexes.get(index, (0, 0))
         painter.translate(*nudge_offset)
 
+        # Handle the Decoration Role (icon)
+        decoration = index.data(Qt.ItemDataRole.DecorationRole)
+        if decoration:
+            icon = QIcon(decoration)
+            icon_size = option.decorationSize
+            icon_rect = QRect(option.rect.topLeft(), icon_size)
+            icon.paint(painter, icon_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            option.rect.setLeft(icon_rect.right() + 5)  # Adjust text starting position
+
         display_data = index.data(Qt.DisplayRole)
         if not display_data:
             painter.restore()

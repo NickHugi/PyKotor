@@ -26,7 +26,6 @@ from qtpy.QtCore import (
     QPointF,
     QPropertyAnimation,
     QRect,
-    QSettings,
     QTimer,
     Qt,
 )
@@ -75,7 +74,6 @@ from qtpy.QtWidgets import (
     QTextEdit,
     QToolTip,
     QVBoxLayout,
-    QWhatsThis,
     QWidget,
     QWidgetAction,
 )
@@ -96,7 +94,7 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.common.style.delegates import _ICONS_DATA_ROLE, HTMLDelegate
-from toolset.gui.common.widgets.tree import RobustTreeView
+from toolset.gui.common.widgets.tree import RobustTreeView, TreeSettings
 from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
 from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
@@ -2052,6 +2050,21 @@ class CopySyncDict(weakref.WeakKeyDictionary):
 class DLGTreeView(RobustTreeView):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
+        #self.setUniformRowHeights(False)  # taken care of in RobustTreeView
+        self.setTextElideMode(Qt.TextElideMode.ElideNone)
+        self.setAnimated(True)
+        self.setAutoExpandDelay(2000)
+        self.setAutoScroll(False)
+        #self.setExpandsOnDoubleClick(True)
+        self.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+        self.setIndentation(20)
+        self.setWordWrap(True)
+        self.setAlternatingRowColors(False)
+        self.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
+        self.setAutoFillBackground(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.override_drop_in_view: bool = True  # set to False to use the new logic (not recommended - untested)
         self.editor: DLGEditor | None = None
         self.dropIndicatorRect: QRect = QRect()
@@ -3282,174 +3295,6 @@ Should return 1 or 0, representing a boolean.
         refreshMenu = advancedMenu.addMenu("Refresh")
         treeMenu = refreshMenu.addMenu("TreeView")
 
-        self.ui.menubar.addAction("Help").triggered.connect(self.showAllTips)
-        whats_this_action = QAction(self.style().standardIcon(QStyle.SP_TitleBarContextHelpButton), "", self)
-        whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
-        whats_this_action.setToolTip("Enter WhatsThis? mode.")
-        self.ui.menubar.addAction(whats_this_action)
-
-        # View Menu: Display-related settings
-        if qtpy.API_NAME == "PyQt5":
-            self._addExclusiveMenuAction(
-                viewMenu,
-                "Text Elide Mode",
-                self.ui.dialogTree.textElideMode,
-                self.ui.dialogTree.setTextElideMode,
-                options={
-                    "Elide Left": Qt.TextElideMode.ElideLeft,
-                    "Elide Right": Qt.TextElideMode.ElideRight,
-                    "Elide Middle": Qt.TextElideMode.ElideMiddle,
-                    "Elide None": Qt.TextElideMode.ElideNone,
-                },
-                settings_key="textElideMode",
-            )
-
-        if qtpy.API_NAME == "PyQt5":
-            self._addExclusiveMenuAction(
-                viewMenu,
-                "Layout Direction",
-                self.ui.dialogTree.layoutDirection,
-                self.ui.dialogTree.setLayoutDirection,
-                options={
-                    "Left to Right": Qt.LayoutDirection.LeftToRight,
-                    "Right to Left": Qt.LayoutDirection.RightToLeft,
-                },
-                settings_key="layoutDirection",
-            )
-
-        self._addMenuAction(
-            viewMenu,
-            "Uniform Row Heights",
-            self.ui.dialogTree.uniformRowHeights,
-            self.ui.dialogTree.setUniformRowHeights,
-            settings_key="uniformRowHeights",
-        )
-
-        self._addMenuAction(
-            viewMenu,
-            "Show/Hide Branch Connectors",
-            self.ui.dialogTree.branchConnectorsDrawn,
-            self.ui.dialogTree.drawConnectors,
-            settings_key="drawBranchConnectors",
-        )
-
-        self._addMenuAction(
-            viewMenu,
-            "UI Animations",
-            self.ui.dialogTree.isAnimated,
-            self.ui.dialogTree.setAnimated,
-            settings_key="animations",
-        )
-
-        self._addMenuAction(
-            viewMenu,
-            "Expand Items on Double Click",
-            self.ui.dialogTree.expandsOnDoubleClick,
-            self.ui.dialogTree.setExpandsOnDoubleClick,
-            settings_key="expandsOnDoubleClick",
-        )
-
-        self._addMenuAction(
-            viewMenu,
-            "Alternating Row Colors",
-            self.ui.dialogTree.alternatingRowColors,
-            self.ui.dialogTree.setAlternatingRowColors,
-            settings_key="alternatingRowColors",
-        )
-
-        self._addMenuAction(viewMenu, "Tree Indentation",
-                            self.ui.dialogTree.indentation,
-                            self.ui.dialogTree.setIndentation,
-                            settings_key="indentation",
-                            param_type=int)
-
-        self._addColorMenuAction(
-            viewMenu,
-            "Set Entry Text Color",
-            lambda: QColor(
-                self.dlg_settings.get("entryTextColor", QColor(255, 0, 0))
-            ),
-            settings_key="entryTextColor",
-        )
-
-        self._addColorMenuAction(
-            viewMenu,
-            "Set Reply Text Color",
-            lambda: QColor(
-                self.dlg_settings.get("replyTextColor", QColor(0, 0, 255))
-            ),
-            settings_key="replyTextColor",
-        )
-
-        # Settings Menu: Configuration settings
-        if qtpy.API_NAME == "PyQt5":
-            self._addExclusiveMenuAction(
-                advancedMenu,
-                "Focus Policy",
-                self.ui.dialogTree.focusPolicy,
-                self.ui.dialogTree.setFocusPolicy,
-                options={
-                    "No Focus": Qt.FocusPolicy.NoFocus,
-                    "Tab Focus": Qt.FocusPolicy.TabFocus,
-                    "Click Focus": Qt.FocusPolicy.ClickFocus,
-                    "Strong Focus": Qt.FocusPolicy.StrongFocus,
-                    "Wheel Focus": Qt.FocusPolicy.WheelFocus,
-                },
-                settings_key="focusPolicy",
-            )
-
-        if qtpy.API_NAME == "PyQt5":
-            self._addExclusiveMenuAction(
-                settingsMenu,
-                "Horizontal Scroll Mode",
-                self.ui.dialogTree.horizontalScrollMode,
-                self.ui.dialogTree.setHorizontalScrollMode,
-                options={
-                    "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
-                    "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
-                },
-                settings_key="horizontalScrollMode",
-            )
-
-            self._addExclusiveMenuAction(
-                settingsMenu,
-                "Vertical Scroll Mode",
-                self.ui.dialogTree.verticalScrollMode,
-                self.ui.dialogTree.setVerticalScrollMode,
-                options={
-                    "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
-                    "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
-                },
-                settings_key="verticalScrollMode",
-            )
-
-        self._addMenuAction(advancedMenu, "Auto Scroll (internal)",
-                            self.ui.dialogTree.hasAutoScroll,
-                            self.ui.dialogTree.setAutoScroll,
-                            settings_key="autoScroll")
-
-        self._addMenuAction(settingsMenu, "Auto Fill Background",
-                            self.ui.dialogTree.autoFillBackground,
-                            self.ui.dialogTree.setAutoFillBackground,
-                            settings_key="autoFillBackground")
-
-        self._addMenuAction(settingsMenu, "Expand All Root Item Children",
-                            lambda: self.dlg_settings.get("ExpandRootChildren", False),
-                            lambda value: self.dlg_settings.set("ExpandRootChildren", value),
-                            settings_key="ExpandRootChildren")
-
-        self._addMenuAction(settingsMenu, "Font Size",
-                            self.ui.dialogTree.getTextSize,
-                            self.ui.dialogTree.setTextSize,
-                            settings_key="fontSize",
-                            param_type=int)
-
-        self._addMenuAction(settingsMenu, "Vertical Spacing",
-                            lambda: self.ui.dialogTree.itemDelegate().customVerticalSpacing,
-                            lambda x: self.ui.dialogTree.itemDelegate().setVerticalSpacing(x),
-                            settings_key="verticalSpacing",
-                            param_type=int)
-
         self._addExclusiveMenuAction(
             settingsMenu,
             "TSL Widget Handling",
@@ -3465,7 +3310,7 @@ Should return 1 or 0, representing a boolean.
             settings_key="TSLWidgetHandling",
         )
 
-        # FIXME
+        # FIXME(th3w1zard1):
         #self._addMenuAction(settingsMenu, "Show/Hide Extra ToolTips on Hover",
         #                    lambda: self.whats_this_toggle,
         #                    lambda _value: self.setupExtraTooltipMode(),
@@ -3497,8 +3342,6 @@ Should return 1 or 0, representing a boolean.
 
         windowMenu = refreshMenu.addMenu("Window")
         self._addSimpleAction(windowMenu, "Repaint", lambda: self.repaint)
-
-        #self.dlg_settings.loadAll(self)
 
 
     def setTSLWidgetHandling(self, state: str):
@@ -5054,12 +4897,13 @@ Should return 1 or 0, representing a boolean.
 
 
 class ReferenceChooserDialog(QDialog):
-    itemChosen: ClassVar[QtCore.Signal] = QtCore.Signal()
+    itemChosen: ClassVar[QtCore.Signal] = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, references: list[weakref.ref[DLGLink]], parent: DLGEditor, item_text: str):
         assert isinstance(parent, DLGEditor)
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowFlags(QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint))
+        qt_constructor = QtCore.Qt.WindowFlags if qtpy.API == "QT5" else QtCore.Qt.WindowType  # pyright: ignore[reportAttributeAccessIssue]
+        self.setWindowFlags(QtCore.Qt.Dialog | qt_constructor(QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint))  # pyright: ignore[reportAttributeAccessIssue]
         self.setWindowTitle("Node References")
 
         layout = QVBoxLayout(self)
@@ -5086,9 +4930,9 @@ class ReferenceChooserDialog(QDialog):
 
         buttonLayout = QHBoxLayout()
         self.backButton = QPushButton()
-        self.backButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack))
+        self.backButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack))  # pyright: ignore[reportOptionalMemberAccess]
         self.forwardButton = QPushButton()
-        self.forwardButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward))
+        self.forwardButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward))  # pyright: ignore[reportOptionalMemberAccess]
         okButton = QPushButton("OK")
         cancelButton = QPushButton("Cancel")
         buttonLayout.addWidget(self.backButton)
@@ -5189,87 +5033,9 @@ class ReferenceChooserDialog(QDialog):
         self.forwardButton.setEnabled(parent.current_reference_index < len(parent.reference_history) - 1)
 
 
-class DLGSettings:
-    def __init__(self):
-        self.settings = QSettings("HolocronToolsetV3", "DLGEditor")
-
-    def get(self, key: str, default: Any) -> Any:
-        return self.settings.value(key, default, default.__class__)
-
-    def set(self, key: str, value: Any):
-        self.settings.setValue(key, value)
-
-    def textElideMode(self, default: int) -> int:
-        return self.get("textElideMode", default)
-
-    def setTextElideMode(self, value: int):
-        self.set("textElideMode", value)
-
-    def focusPolicy(self, default: int) -> int:
-        return self.get("focusPolicy", default)
-
-    def setFocusPolicy(self, value: int):
-        self.set("focusPolicy", value)
-
-    def layoutDirection(self, default: int) -> int:
-        return self.get("layoutDirection", default)
-
-    def setLayoutDirection(self, value: int):  # noqa: FBT001
-        self.set("layoutDirection", value)
-
-    def verticalScrollMode(self, default: int) -> int:  # noqa: FBT001
-        return self.get("verticalScrollMode", default)
-
-    def setVerticalScrollMode(self, value: int):  # noqa: FBT001
-        self.set("verticalScrollMode", value)
-
-    def uniformRowHeights(self, default: bool) -> bool:  # noqa: FBT001
-        return self.get("uniformRowHeights", default)
-
-    def setUniformRowHeights(self, value: bool):  # noqa: FBT001
-        self.set("uniformRowHeights", value)
-
-    def animations(self, default: bool) -> bool:  # noqa: FBT001
-        return self.get("animations", default)
-
-    def setAnimations(self, value: bool):  # noqa: FBT001
-        self.set("animations", value)
-
-    def autoScroll(self, default: bool) -> bool:  # noqa: FBT001
-        return self.get("autoScroll", default)
-
-    def setAutoScroll(self, value: bool):  # noqa: FBT001
-        self.set("autoScroll", value)
-
-    def expandsOnDoubleClick(self, default: bool) -> bool:  # noqa: FBT001
-        return self.get("expandsOnDoubleClick", default)
-
-    def setExpandsOnDoubleClick(self, value: bool):  # noqa: FBT001
-        self.set("expandsOnDoubleClick", value)
-
-    def autoFillBackground(self, default: bool) -> bool:  # noqa: FBT001
-        return self.get("autoFillBackground", default)
-
-    def setAutoFillBackground(self, value: bool):  # noqa: FBT001
-        self.set("autoFillBackground", value)
-
-    def alternatingRowColors(self, default: bool) -> bool:  # noqa: FBT001
-        return self.get("alternatingRowColors", default)
-
-    def setAlternatingRowColors(self, value: bool):  # noqa: FBT001
-        self.set("alternatingRowColors", value)
-
-    def indentation(self, default: int) -> int:
-        return self.get("indentation", default)
-
-    def setIndentation(self, value: int):
-        self.set("indentation", value)
-
-    def fontSize(self, default: int) -> int:
-        return self.get("fontSize", default)
-
-    def setFontSize(self, value: int):
-        self.set("fontSize", value)
+class DLGSettings(TreeSettings):
+    def __init__(self, settings_name: str = "DLGEditor"):
+        super().__init__(settings_name)
 
     def showVerboseHoverHints(self, default: bool) -> bool:
         return self.get("showVerboseHoverHints", default)
@@ -5282,21 +5048,3 @@ class DLGSettings:
 
     def setTslWidgetHandling(self, value: str):
         self.set("TSLWidgetHandling", value)
-
-    def loadAll(self, editor: DLGEditor):
-        editor.ui.dialogTree.setTextElideMode(self.get("textElideMode", editor.ui.dialogTree.textElideMode()))
-        editor.ui.dialogTree.setFocusPolicy(self.get("focusPolicy", editor.ui.dialogTree.focusPolicy()))
-        editor.ui.dialogTree.setLayoutDirection(self.get("layoutDirection", editor.ui.dialogTree.layoutDirection()))
-        editor.ui.dialogTree.setVerticalScrollMode(self.get("verticalScrollMode", editor.ui.dialogTree.verticalScrollMode()))
-        editor.ui.dialogTree.setUniformRowHeights(self.get("uniformRowHeights", editor.ui.dialogTree.uniformRowHeights()))
-        editor.ui.dialogTree.setAnimated(self.get("animations", editor.ui.dialogTree.isAnimated()))
-        editor.ui.dialogTree.setAutoScroll(self.get("autoScroll", editor.ui.dialogTree.hasAutoScroll()))
-        editor.ui.dialogTree.setExpandsOnDoubleClick(self.get("expandsOnDoubleClick", editor.ui.dialogTree.expandsOnDoubleClick()))
-        editor.ui.dialogTree.setAutoFillBackground(self.get("autoFillBackground", editor.ui.dialogTree.autoFillBackground()))
-        editor.ui.dialogTree.setAlternatingRowColors(self.get("alternatingRowColors", editor.ui.dialogTree.alternatingRowColors()))
-        editor.ui.dialogTree.setIndentation(self.get("indentation", editor.ui.dialogTree.indentation()))
-        editor.ui.dialogTree.setTextSize(self.get("fontSize", editor.ui.dialogTree.getTextSize()))
-        editor.ui.dialogTree.itemDelegate().setVerticalSpacing(self.get("verticalSpacing", editor.ui.dialogTree.itemDelegate().customVerticalSpacing))
-        self.setTslWidgetHandling(self.get("TSLWidgetHandling", "Default"))
-        if self.get("showVerboseHoverHints", False):
-            editor.setupExtraTooltipMode()

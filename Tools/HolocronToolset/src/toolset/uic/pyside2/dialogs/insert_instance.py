@@ -19,7 +19,7 @@ class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
-        Dialog.resize(400, 447)
+        Dialog.resize(300, 747)
         self.horizontalLayout = QHBoxLayout(Dialog)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.sidebarLayout = QVBoxLayout()
