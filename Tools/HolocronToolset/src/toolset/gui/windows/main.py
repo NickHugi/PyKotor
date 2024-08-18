@@ -196,7 +196,9 @@ class ToolWindow(QMainWindow):
         self.dogHandler: FolderObserver = FolderObserver(self)
 
         # Theme setup
-        self.original_style: str = self.style().objectName()
+        q_style = self.style()
+        assert q_style is not None
+        self.original_style: str = q_style.objectName()
         self.original_palette: QPalette = self.palette()
         self.change_theme(self.settings.selectedTheme)
 
@@ -1958,25 +1960,31 @@ class ToolWindow(QMainWindow):
 
         modules: list[QStandardItem] = []
         for moduleName in sortedKeys:
-            # Some users may choose to have their RIM files for the same module merged into a single option for the
-            # dropdown menu.
-            lower_module_name = moduleName.lower()
-            if self.settings.joinRIMsTogether:
-                if lower_module_name.endswith("_s.rim"):
-                    continue
-                if self.active.game().is_k2() and lower_module_name.endswith("_dlg.erf"):
-                    continue
+            try:
+                # Some users may choose to have their RIM files for the same module merged into a single option for the
+                # dropdown menu.
+                lower_module_name = moduleName.lower()
+                # FIXME(th3w1zard1): Looks like I broke the joinRIMsTogether setting at some point.
+                # Uncommenting this prevents their resources from showing up in the toolset at all. 
+                #if self.settings.joinRIMsTogether:
+                #    if lower_module_name.endswith("_s.rim"):
+                #        continue
+                #    if self.active.game().is_k2() and lower_module_name.endswith("_dlg.erf"):
+                #        continue
 
-            item = QStandardItem(f"{areaNames[moduleName]} [{moduleName}]")
-            item.setData(moduleName, Qt.UserRole)
-            item.setData(areaNames[moduleName]+"\n"+moduleName, Qt.DisplayRole)  # Set area name
-            item.setData(moduleName, Qt.UserRole + 11)  # Set module name
+                area_text = areaNames.get(moduleName, "<module is missing area data!>")
+                item = QStandardItem(f"{area_text} [{moduleName}]")
+                item.setData(f"{area_text}\n{moduleName}", Qt.ItemDataRole.DisplayRole)
+                item.setData(moduleName, Qt.ItemDataRole.UserRole)  # Set area name
+                item.setData(moduleName, Qt.ItemDataRole.UserRole + 11)  # Set module name
 
-            # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and lower_module_name.endswith(("_dlg.erf", ".rim")):
-                item.setForeground(self.palette().shadow())
+                # Some users may choose to have items representing RIM files to have grey text.
+                if self.settings.greyRIMText and lower_module_name.endswith(("_dlg.erf", ".rim")):
+                    item.setForeground(self.palette().shadow())
 
-            modules.append(item)
+                modules.append(item)
+            except Exception:  # noqa: PERF203, BLE001
+                RobustRootLogger().exception(f"Unexpected exception thrown while parsing module '{moduleName}', skipping...")
         if self.settings.profileToolset and profiler:
             profiler.disable()
             profiler.dump_stats(str(Path("main_getModulesList.pstat").absolute()))
