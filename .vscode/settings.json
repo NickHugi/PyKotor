@@ -69,5 +69,12 @@
 
     "files.watcherExclude": {
         "**/.git/**": true
-    }
+    },
+    "editor.inlineSuggest.enabled": true,
+    "editor.quickSuggestions": {
+        "other": "inline",
+        "comments": true,
+        "strings": true
+    },
+    "editor.quickSuggestionsDelay": 100
 }
