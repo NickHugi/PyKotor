@@ -14,31 +14,10 @@ $latestSetuptoolsUrl = "https://files.pythonhosted.org/packages/4d/5b/dc575711b6
 $global:pythonInstallPath = ""
 $global:pythonVersion = ""
 
-$repoRootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-function Get-OS {
-    if ($IsWindows) {
-        return "Windows"
-    } elseif ($IsMacOS) {
-        return "Mac"
-    } elseif ($IsLinux) {
-        return "Linux"
-    }
-    $os = (Get-WmiObject -Class Win32_OperatingSystem).Caption
-    if ($os -match "Windows") {
-        return "Windows"
-    } elseif ($os -match "Mac") {
-        return "Mac"
-    } elseif ($os -match "Linux") {
-        return "Linux"
-    } else {
-        Write-Error "Unknown Operating System"
-        Write-Host "Press any key to exit..."
-        if (-not $noprompt) {
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        }
-        exit
-    }
-}
+$scriptPath = $MyInvocation.MyCommand.Definition  # Absolute path to this script.
+$repoRootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path  # Path to PyKotor repo root.
+Write-Host "The path to the script directory is: $scriptPath"
+Write-Host "The path to the root directory is: $repoRootPath"
 
 function Handle-Error {
     param (
@@ -65,6 +44,38 @@ function Handle-Error {
         Write-Host -ForegroundColor Red $ErrorRecord.ScriptStackTrace
     } else {
         Write-Host -ForegroundColor Red "No script stack trace available."
+    }
+}
+
+trap {
+    Write-Error "An error occurred: $_"
+    $response = Read-Host "Press Enter to continue or type 'q' or the hotkey `ctrl+c` to quit."
+    if ($response -eq 'exit') { exit }
+    continue
+}
+
+function Get-OS {
+    if ($IsWindows) {
+        return "Windows"
+    } elseif ($IsMacOS) {
+        return "Mac"
+    } elseif ($IsLinux) {
+        return "Linux"
+    }
+    $os = (Get-WmiObject -Class Win32_OperatingSystem).Caption
+    if ($os -match "Windows") {
+        return "Windows"
+    } elseif ($os -match "Mac") {
+        return "Mac"
+    } elseif ($os -match "Linux") {
+        return "Linux"
+    } else {
+        Write-Error "Unknown Operating System"
+        Write-Host "Press any key to exit..."
+        if (-not $noprompt) {
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+        exit
     }
 }
 

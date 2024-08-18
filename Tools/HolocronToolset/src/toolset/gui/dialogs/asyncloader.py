@@ -121,7 +121,13 @@ class AsyncLoader(QDialog, Generic[T]):
             - Connects callbacks for successful/failed task completion.
         """
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowStaysOnTopHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        self.setWindowFlags(
+            QtCore.Qt.Dialog
+            | QtCore.Qt.WindowCloseButtonHint
+            | QtCore.Qt.WindowStaysOnTopHint
+            | QtCore.Qt.WindowMinMaxButtonsHint  # Enable minimize/maximize buttons
+            & ~QtCore.Qt.WindowContextHelpButtonHint
+        )
         print("AsyncLoader.__init__: realtime_progress:", realtime_progress)
 
         self._progressBar = AnimatedProgressBar(self)
