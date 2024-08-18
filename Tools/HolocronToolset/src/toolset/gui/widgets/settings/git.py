@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class GITWidget(SettingsWidget):
-    editedSignal = QtCore.Signal()
+    editedSignal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initializes the GIT settings widget.

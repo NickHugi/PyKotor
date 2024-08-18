@@ -132,22 +132,22 @@ class WalkmeshSelection(Generic[T]):
 
 
 class WalkmeshRenderer(QWidget):
-    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyPressed = QtCore.Signal(object, object)  # mouse keys
-    keyReleased = QtCore.Signal(object, object)  # mouse keys
-    instanceHovered = QtCore.Signal(object)  # instance
-    instancePressed = QtCore.Signal(object)  # instance
+    keyPressed = QtCore.Signal(object, object)  # mouse keys  # pyright: ignore[reportPrivateImportUsage]
+    keyReleased = QtCore.Signal(object, object)  # mouse keys  # pyright: ignore[reportPrivateImportUsage]
+    instanceHovered = QtCore.Signal(object)  # instance  # pyright: ignore[reportPrivateImportUsage]
+    instancePressed = QtCore.Signal(object)  # instance  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initializes the WalkmeshViewer widget.

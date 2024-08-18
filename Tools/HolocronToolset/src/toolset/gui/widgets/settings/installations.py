@@ -19,7 +19,7 @@ from utility.logger_util import RobustRootLogger, get_log_directory
 
 
 class InstallationsWidget(QWidget):
-    edited = QtCore.Signal()
+    edited = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initialize the Installations widget.

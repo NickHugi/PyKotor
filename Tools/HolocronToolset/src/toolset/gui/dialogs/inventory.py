@@ -472,7 +472,7 @@ class ItemContainer:
 
 
 class DropFrame(ItemContainer, QFrame):
-    itemDropped = QtCore.Signal(object, object, object)
+    itemDropped = QtCore.Signal(object, object, object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget | None):
         QFrame.__init__(self)
@@ -865,8 +865,8 @@ class ItemBuilderDialog(QDialog):  # FIXME(th3w1zard1): There is UI code used in
 
 
 class ItemBuilderWorker(QThread):
-    utiLoaded = QtCore.Signal(object, object)
-    finished = QtCore.Signal()
+    utiLoaded = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    finished = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__()

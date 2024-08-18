@@ -290,7 +290,7 @@ def openInstanceDialog(
 
 
 class GITEditor(Editor):
-    settingsUpdated = QtCore.Signal(object)
+    settingsUpdated = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(
         self,

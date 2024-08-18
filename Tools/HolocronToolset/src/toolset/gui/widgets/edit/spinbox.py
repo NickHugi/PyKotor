@@ -5,7 +5,7 @@ from qtpy.QtWidgets import QFormLayout, QSpinBox
 
 
 class GFFFieldSpinBox(QSpinBox):
-    applyFinalValue = QtCore.Signal(int)
+    applyFinalValue = QtCore.Signal(int)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

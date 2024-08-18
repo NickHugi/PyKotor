@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class ModuleDesignerWidget(SettingsWidget):
-    editedSignal = QtCore.Signal()
+    editedSignal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initializes the Module Designer UI.

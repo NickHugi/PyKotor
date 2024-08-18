@@ -34,7 +34,7 @@ class FileSearchQuery:
 
 
 class FileSearcher(QDialog):
-    fileResults = QtCore.Signal(list, HTInstallation)  # type: ignore[private-import]
+    fileResults = QtCore.Signal(list, HTInstallation)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget | None, installations: dict[str, HTInstallation]):
         super().__init__(parent)
@@ -188,7 +188,7 @@ class FileSearcher(QDialog):
 
 
 class FileResults(QDialog):
-    selectionSignal = QtCore.Signal(FileResource)  # type: ignore[private-import]
+    selectionSignal = QtCore.Signal(FileResource)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(
         self,

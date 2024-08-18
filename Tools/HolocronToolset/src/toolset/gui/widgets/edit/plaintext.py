@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 
 class HTPlainTextEdit(QPlainTextEdit):
-    keyReleased = QtCore.Signal()
-    doubleClicked = QtCore.Signal()
+    keyReleased = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    doubleClicked = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

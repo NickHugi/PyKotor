@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class MiscWidget(QWidget):
-    editedSignal = QtCore.Signal()
+    editedSignal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)

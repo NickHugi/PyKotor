@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class LocalizedStringLineEdit(QWidget):
-    editingFinished: QtCore.Signal = QtCore.Signal()
+    editingFinished: QtCore.Signal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         """Initialize a locstring edit widget.

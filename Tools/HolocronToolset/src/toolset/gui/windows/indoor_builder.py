@@ -485,19 +485,19 @@ class IndoorMapBuilder(QMainWindow):
 
 
 class IndoorMapRenderer(QWidget):
-    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    mouseMoved = QtCore.Signal(object, object, object, object)  # screen coords, screen delta, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when mouse is moved over the widget."""
 
-    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys
+    mouseScrolled = QtCore.Signal(object, object, object)  # screen delta, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when mouse is scrolled over the widget."""
 
-    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mouseReleased = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is released after being pressed on the widget."""
 
-    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mousePressed = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    mouseDoubleClicked = QtCore.Signal(object, object, object)  # screen coords, mouse, keys
+    mouseDoubleClicked = QtCore.Signal(object, object, object)  # screen coords, mouse, keys  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when a mouse button is double clicked on the widget."""
 
     def __init__(self, parent: QWidget):

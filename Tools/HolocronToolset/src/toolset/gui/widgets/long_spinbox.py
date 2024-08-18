@@ -7,7 +7,7 @@ from qtpy.QtWidgets import QAbstractSpinBox
 class LongSpinBox(QAbstractSpinBox):
     """Implementation of QAbstractSpinBox that allows for values that exceed a signed 32-bit integer."""
 
-    valueChanged = QtCore.Signal(object)
+    valueChanged = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent):
         super().__init__(parent)

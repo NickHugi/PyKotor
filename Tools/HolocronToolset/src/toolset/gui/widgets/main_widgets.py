@@ -38,9 +38,9 @@ if TYPE_CHECKING:
 
 
 class MainWindowList(QWidget):
-    requestOpenResource = QtCore.Signal(object, object)
-    requestExtractResource = QtCore.Signal(object)
-    sectionChanged = QtCore.Signal(object)
+    requestOpenResource = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    requestExtractResource = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    sectionChanged = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     @abstractmethod
     def selectedResources(self) -> list[FileResource]: ...
