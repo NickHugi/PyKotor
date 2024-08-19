@@ -32,7 +32,7 @@ maintainers = [
   {name = "th3w1zard1", email = "halomastar@gmail.com"},
 ]
 readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "GPLv3 License"}
+license = {text = "LGPL-3.0-or-later License"}
 keywords = ["kotor", "pyqt5", "holocron", "toolset", "pykotor", "star", "wars", "starwars", "toolset", "toolkit", "opengl", "designer", "module", "modding", "dlgeditor", "AIO", "editor", "GFF"]
 
 [project.urls]

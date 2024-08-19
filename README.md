@@ -114,7 +114,7 @@ These represent the currently passing/failing python versions/operating system c
 <!-- MACOS-BADGES-END -->
 
 ## License
-This repository falls under the [GPLv3 License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
+This repository falls under the [LGPL-3.0-or-later License](https://github.com/NickHugi/PyKotor/blob/master/LICENSE).
 
 
 

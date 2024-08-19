@@ -107,7 +107,7 @@ def main():
                     "dest_base": project_metadata["name"],
                     "version_info": {
                         "description": project_metadata["description"],
-                        "copyright": "GPLv3 Licensing",
+                        "copyright": "LGPL-3.0-or-later Licensing",
                         "version": VERSION,
                         "product_name": project_metadata["name"],
                         "internal_name": "PyKotor",
