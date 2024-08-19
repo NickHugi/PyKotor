@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
@@ -7,36 +9,18 @@ param(
 $this_noprompt = $noprompt
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
+$repoRootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
 Write-Host "The path to the script directory is: $scriptPath"
-Write-Host "The path to the root directory is: $rootPath"
+Write-Host "The path to the root directory is: $repoRootPath"
 
 Write-Host "Initializing python virtual environment..."
 if ($this_noprompt) {
-    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+    . $repoRootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
 } else {
-    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+    . $repoRootPath/install_python_venv.ps1 -venv_name $venv_name
 }
+Write-Host "----------------------------------------"
 
-$current_working_dir = (Get-Location).Path
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/HolocronToolset/src").Path
-
-# Determine the final executable path
-$finalExecutablePath = $null
-if ((Get-OS) -eq "Windows") {
-    $finalExecutablePath = "$rootPath\dist\HolocronToolset.exe"
-} elseif ((Get-OS) -eq "Linux") {
-    $finalExecutablePath = "$rootPath/dist/HolocronToolset"
-} elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/HolocronToolset.app"
-}
-
-# Delete the final executable if it exists
-if (Test-Path -LiteralPath $finalExecutablePath) {
-    Remove-Item -LiteralPath $finalExecutablePath -Force
-}
-
-Write-Host "Extra PYTHONPATH paths:\n'$env:PYTHONPATH'\n\n"
 $iconExtension = if ((Get-OS) -eq 'Mac') {'icns'} else {'ico'}
 $pyInstallerArgs = @{
     'exclude-module' = @(
@@ -92,10 +76,53 @@ $pyInstallerArgs = @{
     'noconfirm' = $true
     #'debug' = 'all'
     'name' = "HolocronToolset"
-    'distpath'=($rootPath + $pathSep + "dist")
+    'distpath'=($repoRootPath + $pathSep + "dist")
     'upx-dir' = $upx_dir
     'icon'="resources/icons/sith.$iconExtension"
 }
+
+$toolSrcDir = (Resolve-Path -LiteralPath "$($repoRootPath)$($pathSep)Tools$($pathSep)$($pyInstallerArgs.name)$($pathSep)src").Path
+$pyInstallerArgs.workpath = "$toolSrcDir$($pathSep)build"
+$pyInstallerArgs.path += $toolSrcDir
+Write-Host "toolSrcDir: '$toolSrcDir'"
+
+
+# Build flat arguments array.
+$argumentsArray = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
+    if ($_.Value -is [System.Array]) {
+        $arr = @()
+        foreach ($elem in $($_.Value)) { $arr += "--$($_.Key)=$elem" }
+        $arr
+    } else {
+        if ($_.Value -eq $true) { "--$($_.Key)" }
+        elseif ($_.Value -eq $false) {}
+        else { "--$($_.Key)=$($_.Value)" }
+    }
+}
+
+
+# Remove old compile/build files/folders if clean is set.
+if (Get-OS -eq "Windows") { $extension = "exe" } elseif ($os -eq "Linux") { $extension = "" } elseif ($os -eq "Mac") { $extension = "app" }
+$finalExecutablePath = $pyInstallerArgs.distpath + $pathSep + "$($pyInstallerArgs.name).$extension"
+if (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue) {
+    Write-Host "Removing old exe at '$finalExecutablePath'"
+    Remove-Item -LiteralPath $finalExecutablePath -Force
+} else {
+    $finalExecutableDir = "$($pyInstallerArgs.distpath)$pathSep$($pyInstallerArgs.name)"
+    if (Test-Path $finalExecutableDir -ErrorAction SilentlyContinue) {
+        $finalExecutablePath = "$($pyInstallerArgs.distpath)$($pathSep)$($pyInstallerArgs.name)$($pathSep)$($pyInstallerArgs.name).$extension"
+        Write-Host "Final executable dir: $finalExecutableDir"
+        if (Test-Path -LiteralPath $finalExecutableDir -ErrorAction SilentlyContinue) {
+            Write-Host "Removing old dist dir at '$finalExecutableDir'"
+            Remove-Item -LiteralPath $finalExecutableDir -Recurse -Force
+        }
+    }
+}
+Write-Host "Final executable path: $finalExecutablePath"
+if ($clean -and (Test-Path $pyInstallerArgs.workpath -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath $pyInstallerArgs.workpath -Recurse -Force }
+
+
+# setup QT_API env var (for pyinstaller)
 if (-not $env:QT_API) {
     $env:QT_API = "PyQt5"  # Default to PyQt5 if QT_API is not set
 }
@@ -129,63 +156,20 @@ switch ($env:QT_API) {
 }
 Write-Host "QT_API: $env:QT_API"
 
-$pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
-    $key = $_.Key
-    $value = $_.Value
 
-    if ($value -is [System.Array]) {
-        # Handle array values
-        $arr = @()
-        foreach ($elem in $value) {
-            $arr += "--$key=$elem"
-        }
-        $arr
-    } else {
-        # Handle key-value pair arguments
-        if ($value -eq $true) {
-            "--$key"
-        } elseif ($value -eq $false) {
-        } else {
-            "--$key=$value"
-        }
-    }
+Write-Host "Compiling $($pyInstallerArgs.name)..."
+Push-Location -LiteralPath $toolSrcDir
+try {
+    $argumentsArray = @('-m', 'PyInstaller') + $argumentsArray + "toolset$pathSep`__main__.py"
+    Write-Host "Executing command: $pythonExePath $argumentsArray"
+    & $pythonExePath $argumentsArray
+} finally {
+    Pop-Location
 }
 
-# Add PYTHONPATH paths as arguments
-$env:PYTHONPATH -split ';' | ForEach-Object {
-    $pyInstallerArgs += "--path=$_"
-}
-
-# Define each argument as an element in an array
-$argumentsArray = @(
-    "-m",
-    "PyInstaller"
-)
-
-# Unpack $pyInstallerArgs into $argumentsArray
-foreach ($arg in $pyInstallerArgs) {
-    $argumentsArray += $arg
-}
-if ($env:GITHUB_ACTIONS -eq "true") {  # HACK for github runners using python 3.12
-    $pyInstallerArgs += '--paths C:\Miniconda\'
-}
-
-# Append the final script path
-$argumentsArray += "toolset/__main__.py"
-
-# Use the call operator with the arguments array
-Write-Host "Executing command: $pythonExePath $argumentsArray"
-& $pythonExePath $argumentsArray
-
-# Check if the final executable exists
-if (-not (Test-Path -LiteralPath $finalExecutablePath)) {
-    Write-Error "Holocron Toolset could not be compiled, scroll up to find out why"   
+Write-Host "Checking '$finalExecutablePath' to see if it was built and the file exists."
+if (-not (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue)) {
+    Write-Error "$($pyInstallerArgs.name) could not be compiled, scroll up to find out why"
 } else {
-    Write-Host "Holocron Toolset was compiled to '$finalExecutablePath'"
-}
-Set-Location -LiteralPath $current_working_dir
-
-if (-not $this_noprompt) {
-    Write-Host "Press any key to exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host "$($pyInstallerArgs.name) was compiled to '$finalExecutablePath'"
 }

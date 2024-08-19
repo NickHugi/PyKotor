@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
@@ -1556,6 +1558,10 @@ $pythonInfo = Initialize-Python $pythonExePath
 Write-Host "`nInitialized Python Version: $($pythonInfo.Version)    Path: $($pythonInfo.Path)"
 $pythonVersion = $pythonInfo.Version
 $pythonExePath = $pythonInfo.Path
+
+# Use Python to find the site-packages directory using sysconfig for compatibility with virtual environments
+$sitePackagesPath = & $pythonExePath -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+Write-Host "`nSite-Packages Path: $sitePackagesPath"
 
 # Set environment variables from .env file
 $dotenv_path = "$repoRootPath$pathSep.env"

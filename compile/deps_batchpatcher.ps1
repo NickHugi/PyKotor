@@ -1,3 +1,6 @@
+#!/usr/bin/env pwsh
+
+[CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
   [string]$venv_name = ".venv"

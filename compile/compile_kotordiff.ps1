@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 [CmdletBinding(PositionalBinding=$false)]
 param(
   [switch]$noprompt,
@@ -7,42 +9,20 @@ param(
 $this_noprompt = $noprompt
 
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$rootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
+$repoRootPath = (Resolve-Path -LiteralPath "$scriptPath/..").Path
 Write-Host "The path to the script directory is: $scriptPath"
-Write-Host "The path to the root directory is: $rootPath"
+Write-Host "The path to the root directory is: $repoRootPath"
 
 Write-Host "Initializing python virtual environment..."
 if ($this_noprompt) {
-    . $rootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
+    . $repoRootPath/install_python_venv.ps1 -noprompt -venv_name $venv_name
 } else {
-    . $rootPath/install_python_venv.ps1 -venv_name $venv_name
+    . $repoRootPath/install_python_venv.ps1 -venv_name $venv_name
 }
+Write-Host "----------------------------------------"
 
-Write-Host "Installing required packages to build the kotordiff tool..."
-& $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
-& $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
-& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
 
-$current_working_dir = (Get-Location).Path
-Set-Location -LiteralPath (Resolve-Path -LiteralPath "$rootPath/Tools/KotorDiff/src").Path
-
-# Determine the final executable path
-$finalExecutablePath = $null
-if ((Get-OS) -eq "Windows") {
-    $finalExecutablePath = "$rootPath\dist\KotorDiff.exe"
-} elseif ((Get-OS) -eq "Linux") {
-    $finalExecutablePath = "$rootPath/dist/KotorDiff"
-} elseif ((Get-OS) -eq "Mac") {
-    $finalExecutablePath = "$rootPath/dist/KotorDiff"
-}
-
-# Delete the final executable if it exists
-if (Test-Path -LiteralPath $finalExecutablePath) {
-    Remove-Item -LiteralPath $finalExecutablePath -Force
-}
-
-Write-Host "Compiling KotorDiff..."
-Write-Host "EXTRA PYTHONPATH: '$env:PYTHONPATH'"
+Write-Verbose "EXTRA PYTHONPATH: '$env:PYTHONPATH'"
 $pyInstallerArgs = @{
     'exclude-module' = @(
         'numpy',
@@ -132,45 +112,69 @@ $pyInstallerArgs = @{
     'upx-dir' = $upx_dir
 }
 
-$pyInstallerArgs = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
-    $key = $_.Key
-    $value = $_.Value
+$toolSrcDir = (Resolve-Path -LiteralPath "$($repoRootPath)$($pathSep)Tools$($pathSep)$($pyInstallerArgs.name)$($pathSep)src").Path
+$pyInstallerArgs.workpath = "$toolSrcDir$($pathSep)build"
+$pyInstallerArgs.path += $toolSrcDir
+Write-Host "toolSrcDir: '$toolSrcDir'"
 
-    if ($value -is [System.Array]) {
-        # Handle array values
+
+# Build flat arguments array.
+$argumentsArray = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
+    if ($_.Value -is [System.Array]) {
         $arr = @()
-        foreach ($elem in $value) {
-            $arr += "--$key=$elem"
-        }
+        foreach ($elem in $($_.Value)) { $arr += "--$($_.Key)=$elem" }
         $arr
     } else {
-        # Handle key-value pair arguments
-        if ($value -eq $true) {
-            "--$key"
-        } elseif ($value -eq $false) {
-        } else {
-            "--$key=$value"
-        }
+        if ($_.Value -eq $true) { "--$($_.Key)" }
+        elseif ($_.Value -eq $false) {}
+        else { "--$($_.Key)=$($_.Value)" }
     }
 }
 
-# Add PYTHONPATH paths as arguments
-$env:PYTHONPATH -split ';' | ForEach-Object {
-    $pyInstallerArgs += "--path=$_"
+
+# Remove old compile/build files/folders if clean is set.
+if (Get-OS -eq "Windows") { $extension = "exe" } elseif ($os -eq "Linux") { $extension = "" } elseif ($os -eq "Mac") { $extension = "app" }
+$finalExecutablePath = $pyInstallerArgs.distpath + $pathSep + "$($pyInstallerArgs.name).$extension"
+if (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue) {
+    Write-Host "Removing old exe at '$finalExecutablePath'"
+    Remove-Item -LiteralPath $finalExecutablePath -Force
+} else {
+    $finalExecutablePath = "$($pyInstallerArgs.distpath)$($pathSep)$($pyInstallerArgs.name)$($pathSep)$($pyInstallerArgs.name).$extension"
+    $finalExecutableDir = "$($pyInstallerArgs.distpath)$pathSep$($pyInstallerArgs.name)"
+    if (Test-Path -LiteralPath $finalExecutableDir -ErrorAction SilentlyContinue) {
+        Write-Host "Removing old dist dir at '$finalExecutableDir'"
+        Remove-Item -LiteralPath $finalExecutableDir -Recurse -Force
+    }
+}
+if ($clean -and (Test-Path $pyInstallerArgs.workpath -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath $pyInstallerArgs.workpath -Recurse -Force }
+
+
+Write-Host "Compiling $($pyInstallerArgs.name)..."
+Push-Location -LiteralPath $toolSrcDir
+try {
+    $argumentsArray = @('-m', 'PyInstaller') + $argumentsArray + "$($pyInstallerArgs.name)$pathSep`__main__.py"
+    Write-Host "Executing command: $pythonExePath $argumentsArray"
+    & $pythonExePath $argumentsArray
+} finally {
+    Pop-Location
 }
 
-# Define each argument as an element in an array
-$argumentsArray = @(
-    "-m",
-    "PyInstaller"
-)
-# Unpack $pyInstallerArgs into $argumentsArray
-foreach ($arg in $pyInstallerArgs) {
-    $argumentsArray += $arg
+Write-Host "Checking '$finalExecutablePath' to see if it was built and the file exists."
+if (-not (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue)) {
+    Write-Error "$($pyInstallerArgs.name) could not be compiled, scroll up to find out why"
+} else {
+    Write-Host "$($pyInstallerArgs.name) was compiled to '$finalExecutablePath'"
 }
+
 
 # Append the final script path
 $argumentsArray += "kotordiff/__main__.py"
+Write-Host "Installing required packages to build the kotordiff tool..."
+& $pythonExePath -m pip install --upgrade pip --prefer-binary --progress-bar on
+& $pythonExePath -m pip install pyinstaller --prefer-binary --progress-bar on
+& $pythonExePath -m pip install -r ($rootPath + $pathSep + "Libraries" + $pathSep + "PyKotor" + $pathSep + "requirements.txt") --prefer-binary --compile --progress-bar on -U
+
+Write-Host "Compiling KotorDiff..."
 
 # Use the call operator with the arguments array
 Write-Host "Executing command: $pythonExePath $argumentsArray"
