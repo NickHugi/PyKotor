@@ -185,6 +185,32 @@ class CaseAwarePath(InternalWindowsPath if os.name == "nt" else InternalPosixPat
         # Extract the differing prefix part as a new Path object
         return abs_parts[:start_index_of_rel_in_abs]
 
+    def safe_relative_to(self, other: str | os.PathLike) -> str:
+        # Normalize paths to handle different OS path conventions
+        from_path = os.path.normpath(self)
+        to_path = os.path.normpath(other)
+
+        # Get common prefix
+        common_prefix = os.path.commonpath([from_path, to_path])
+
+        # Calculate relative path
+        from_parts = from_path.split(os.sep)  # noqa: PTH206
+        to_parts = to_path.split(os.sep)  # noqa: PTH206
+        common_parts = common_prefix.split(os.sep)  # noqa: PTH206
+
+        # Number of "../" to prepend for going up from from_path to the common prefix
+        up_dirs = len(from_parts) - len(common_parts)
+        if up_dirs == 0:
+            up_dirs = "."
+
+        # Remaining parts after the common prefix
+        down_dirs = os.sep.join(to_parts[len(common_parts):])  # noqa: PTH118
+
+        result = f"{up_dirs}{os.sep}{down_dirs}" if down_dirs else up_dirs
+        if isinstance(result, int):
+            print(f"result somehow an int: {result}")
+        return str(result)
+
     def relative_to(
         self,
         *args: PathElem,

@@ -7,9 +7,12 @@ import qtpy
 from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QMessageBox, QPushButton
 
+from toolset.gui.common.filters import NoScrollEventFilter
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
+    from qtpy.QtCore import QSize
+    from qtpy.QtGui import QCloseEvent
     from qtpy.QtWidgets import QTreeWidgetItem, QWidget
 
 
@@ -20,15 +23,6 @@ class SettingsDialog(QDialog):
         Args:
         ----
             parent: QWidget: The parent widget of this dialog
-
-        Processing Logic:
-        ----------------
-            - Initialize parent class with parent widget
-            - Set flag for edited installations
-            - Import UI dialog class
-            - Set up UI
-            - Map pages to UI elements
-            - Connect signal handlers.
         """
         super().__init__(parent)
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinMaxButtonsHint & ~QtCore.Qt.WindowContextHelpButtonHint)
@@ -49,10 +43,12 @@ class SettingsDialog(QDialog):
         self.ui = settings.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()
+        self.no_scroll_filter: NoScrollEventFilter = NoScrollEventFilter()
+        self.installEventFilter(self.no_scroll_filter)
 
         # Variable to store the original size
-        self.originalSize = None
-        self.previousPage = None
+        self.originalSize: QSize | None = None
+        self.previousPage: str | None = None
 
         self.pageDict: dict[str, QWidget] = {
             "Installations": self.ui.installationsPage,
@@ -70,6 +66,10 @@ class SettingsDialog(QDialog):
         self.resetButton.clicked.connect(self.resetAllSettings)
         self.ui.verticalLayout.addWidget(self.resetButton)
 
+    def closeEvent(self, a0: QCloseEvent | None) -> None:
+        self.accept()
+        return super().closeEvent(a0)
+
     def pageChanged(self, pageTreeItem: QTreeWidgetItem):
         pageItemText = pageTreeItem.text(0)
         newPage = self.pageDict[pageItemText]
@@ -81,7 +81,7 @@ class SettingsDialog(QDialog):
             self.originalSize = self.size()
             self.resize(800, 800)  # Adjust the size based on the image dimensions
         elif self.previousPage in ("GIT Editor", "Module Designer") and pageItemText not in ("GIT Editor", "Module Designer"):
-            if self.originalSize:
+            if self.originalSize is not None:
                 self.resize(self.originalSize)
 
         self.previousPage = pageItemText

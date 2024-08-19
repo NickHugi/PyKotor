@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import cProfile
-from contextlib import suppress
 import errno
 import os
 import platform
@@ -9,9 +8,10 @@ import shutil
 import struct
 import sys
 
+from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, cast
 
 import qtpy
 
@@ -160,6 +160,42 @@ def run_module_designer(
         print(f"Failed to load HT main window icon from {icon_path}")
     addWindow(designerUi, show=False)
     sys.exit(app.exec_())
+
+
+class UpdateCheckThread(QThread):
+    update_info_fetched = QtCore.Signal(dict, dict, bool)  # Signal to emit the results
+    def __init__(self, toolWindow: QMainWindow, *, silent: bool = False):
+        super().__init__()
+        self.toolWindow: QMainWindow = toolWindow
+        self.silent: bool = silent
+
+    def get_latest_version_info(self) -> tuple[dict[str, Any], dict[str, Any]]:
+        edge_info = {}
+        if self.toolWindow.settings.useBetaChannel:
+            edge_info = getRemoteToolsetUpdateInfo(useBetaChannel=True, silent=self.silent)
+            print("<SDM> [get_latest_version_info scope] edge_info: ", edge_info)
+
+            if not isinstance(edge_info, dict):
+                if self.silent:
+                    edge_info = {}
+                else:
+                    raise edge_info
+
+        master_info = getRemoteToolsetUpdateInfo(useBetaChannel=False, silent=self.silent)
+        print("<SDM> [get_latest_version_info scope] master_info: ", master_info)
+
+        if not isinstance(master_info, dict):
+            if self.silent:
+                master_info = {}
+            else:
+                raise master_info
+
+        return master_info, edge_info
+
+    def run(self):
+        # This method is executed in a separate thread
+        master_info, edge_info = self.get_latest_version_info()
+        self.update_info_fetched.emit(master_info, edge_info, self.silent)
 
 
 class ToolWindow(QMainWindow):
@@ -321,8 +357,6 @@ class ToolWindow(QMainWindow):
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if obj == getattr(self, "collectButton", object()) and event.type() == QEvent.Type.HoverEnter:
             self.collectButton.showMenu()
-        if hasattr(self, "focusHandler"):
-            return self.focusHandler.eventFilter(obj, event)
         return super().eventFilter(obj, event)
 
     def _setupSignals(self):  # sourcery skip: remove-unreachable-code
@@ -991,7 +1025,10 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
 
-        self.fileSystemModel.setRootPath(path)
+        try:
+            self.fileSystemModel.setRootPath(path)
+        except Exception:  # noqa: BLE001
+            self.log.exception("Failed to setup the experimental file system model view")
 
         active = self.installations.get(name)
         if active:
@@ -1010,7 +1047,7 @@ class ToolWindow(QMainWindow):
                         assert loader is not None
                         loader._worker.progress.emit(data, mtype)  # noqa: SLF001
                 new_active = HTInstallation(path, name, tsl=tsl, progress_callback=progress_callback)
-                if self.settings.profileToolset and profiler:
+                if self.settings.profileToolset and profiler is not None:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
                 return new_active
@@ -1049,6 +1086,7 @@ class ToolWindow(QMainWindow):
 
         prepare_loader = AsyncLoader(self, "Preparing resources...", lambda: prepare_task(), "Failed to load installation")
         if not prepare_loader.exec_():
+            print("prepare_loader.exec_() failed.")
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
         assert prepare_loader.value
@@ -1069,7 +1107,6 @@ class ToolWindow(QMainWindow):
             self.refreshCoreList(reload=True)
             self.refreshSavesList(reload=True)
             self.ui.texturesWidget.setInstallation(self.active)
-            self.updateMenus()
             try:
                 self.log.debug("Setting up watchdog observer...")
                 if self.dogObserver is not None:
@@ -1086,9 +1123,6 @@ class ToolWindow(QMainWindow):
             #self.dogObserver = Observer()
             #self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
             #self.dogObserver.start()
-            self.log.info("Loader task completed.")
-            self.settings.installations()[name].path = path
-            self.installations[name] = self.active  # pyright: ignore[reportArgumentType]
         except Exception as e:
             self.log.exception("Failed to initialize the installation")
             QMessageBox(
@@ -1098,6 +1132,11 @@ class ToolWindow(QMainWindow):
             ).exec_()
             self.unsetInstallation()
             self.previousGameComboIndex = 0
+        else:
+            self.updateMenus()
+            self.log.info("Loader task completed.")
+            self.settings.installations()[name].path = path
+            self.installations[name] = self.active  # pyright: ignore[reportArgumentType]
         self.show()
         self.activateWindow()
         self.previousGameComboIndex = index
@@ -1260,30 +1299,33 @@ class ToolWindow(QMainWindow):
             instance.quit()
 
     def mouseMoveEvent(self, event: QMouseEvent):
+        #print("mouseMoveEvent")
         if event.buttons() == Qt.MouseButton.LeftButton:
+            #print("mouseMoveEvent (button passed)")
             # This code is responsible for allowing the window to be drag-moved from any point, not just the title bar.
             mouseMovePos = getattr(self, "_mouseMovePos", None)
             if mouseMovePos is None:
+                #print("mouseMovePos is None (mouseMoveEvent)")
                 return
             globalPos = event.globalPos()
             self.move(self.mapFromGlobal(self.mapToGlobal(self.pos()) + (globalPos - mouseMovePos)))
             self._mouseMovePos = globalPos
 
     def mousePressEvent(self, event: QMouseEvent):
+        #print("mousePressEvent")
         if event.button() == Qt.MouseButton.LeftButton:
-            self._mousePressPos = event.globalPos()
-            print("<SDM> [mousePressEvent scope] self._mousePressPos: ", self._mousePressPos)
+            #print("mousePressEvent (button passed)")
+            self._mouseMovePos = event.globalPos()
+            #print("<SDM> [mousePressEvent scope] self._mouseMovePos: ", self._mouseMovePos)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        #print("mouseReleaseEvent")
         if event.button() == Qt.MouseButton.LeftButton:
-            self._mousePressPos = None
+            #print("mouseReleaseEvent (button passed)")
             self._mouseMovePos = None
 
     def keyPressEvent(self, event: QKeyEvent):
-        if event.key() in [Qt.Key_Tab, Qt.Key_Backtab]:
-            self.focusHandler.handleTabNavigation(event)
-        else:
-            super().keyPressEvent(event)
+        super().keyPressEvent(event)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent | None):
         if e is None:
@@ -1539,28 +1581,12 @@ class ToolWindow(QMainWindow):
                             f"Check if you are connected to the internet.\nError: {msg}", QMessageBox.Ok, self).exec_()
 
     def _check_toolset_update(self, *, silent: bool):
-        def get_latest_version_info() -> tuple[dict[str, Any], dict[str, Any]]:
-            edge_info = None
-            if self.settings.useBetaChannel:
-                edge_info = getRemoteToolsetUpdateInfo(useBetaChannel=True, silent=silent)
-                print("<SDM> [get_latest_version_info scope] edge_info: ", edge_info)
+        self.check_update_thread: UpdateCheckThread = UpdateCheckThread(self, silent=silent)
+        self.check_update_thread.update_info_fetched.connect(self._on_update_info_fetched)
+        self.check_update_thread.start()
 
-                if not isinstance(edge_info, dict):
-                    if silent:
-                        edge_info = None
-                    else:
-                        raise edge_info
-
-            master_info = getRemoteToolsetUpdateInfo(useBetaChannel=False, silent=silent)
-            print("<SDM> [get_latest_version_info scope] master_info: ", master_info)
-
-            if not isinstance(master_info, dict):
-                if silent:
-                    master_info = None
-                else:
-                    raise master_info
-
-            return master_info, edge_info
+    def _on_update_info_fetched(self, master_info: dict[str, Any], edge_info: dict[str, Any], silent: bool):  # noqa: FBT001
+        print("<SDM> [display_version_message scope] edge_info: ", edge_info)
 
         def determine_version_info(
             edgeRemoteInfo: dict[str, Any],
@@ -1568,7 +1594,6 @@ class ToolWindow(QMainWindow):
         ) -> tuple[dict[str, Any], bool]:
             version_list: list[tuple[Literal["toolsetLatestVersion", "toolsetLatestBetaVersion"], Literal["master", "edge"], str]] = []
             print("<SDM> [determine_version_info scope] version_list: ", version_list)
-
 
             if self.settings.useBetaChannel:
                 version_list.append(("toolsetLatestVersion", "master", masterRemoteInfo.get("toolsetLatestVersion", "")))
@@ -1593,6 +1618,8 @@ class ToolWindow(QMainWindow):
             greatest_version: str,
             notes: str,
             download_link: str,
+            remoteInfo: dict[str, Any],
+            release_version_checked: bool,
         ):
             if is_up_to_date:
                 if silent:
@@ -1600,17 +1627,20 @@ class ToolWindow(QMainWindow):
                 up_to_date_msg_box = QMessageBox(
                     QMessageBox.Icon.Information, "Version is up to date",
                     f"You are running the latest {cur_version_str}version ({CURRENT_VERSION}).",
-                    QMessageBox.Ok | QMessageBox.Close, parent=None,
-                    flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint
+                    QMessageBox.Ok | QMessageBox.Yes | QMessageBox.Close, parent=None,
+                    flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint  # pyright: ignore[reportArgumentType]
                 )
                 print("<SDM> [display_version_message scope] up_to_date_msg_box: ", up_to_date_msg_box)
 
-                up_to_date_msg_box.button(QMessageBox.Ok).setText("Reinstall?")
+                up_to_date_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
+                up_to_date_msg_box.button(QMessageBox.Yes).setText("Choose Update")
                 up_to_date_msg_box.setWindowIcon(self.windowIcon())
                 result = up_to_date_msg_box.exec_()
                 print("<SDM> [display_version_message scope] result: ", result)
 
                 if result == QMessageBox.Ok:
+                    self.autoupdate_toolset(greatest_version, remoteInfo, isRelease=release_version_checked)
+                elif result == QMessageBox.Yes:
                     toolset_updater = UpdateDialog(self)
                     print("<SDM> [display_version_message scope] toolset_updater: ", toolset_updater)
 
@@ -1627,7 +1657,8 @@ class ToolWindow(QMainWindow):
             print("<SDM> [display_version_message scope] new_version_msg_box: ", new_version_msg_box)
 
             new_version_msg_box.setDefaultButton(QMessageBox.Abort)
-            new_version_msg_box.button(QMessageBox.Yes).setText("Open")
+            new_version_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
+            new_version_msg_box.button(QMessageBox.Yes).setText("Details")
             new_version_msg_box.button(QMessageBox.Abort).setText("Ignore")
             new_version_msg_box.setWindowIcon(self.windowIcon())
             response = new_version_msg_box.exec_()
@@ -1639,9 +1670,6 @@ class ToolWindow(QMainWindow):
                 print("<SDM> [display_version_message scope] toolset_updater: ", toolset_updater)
 
                 toolset_updater.exec_()
-
-        master_info, edge_info = get_latest_version_info()
-        print("<SDM> [display_version_message scope] edge_info: ", edge_info)
 
         if edge_info is None:
             return
@@ -1671,7 +1699,7 @@ class ToolWindow(QMainWindow):
             cur_version_beta_release_str = "beta "
 
         display_version_message(version_check is False, cur_version_beta_release_str, greatest_available_version,
-                                toolset_latest_notes, toolset_download_link)
+                                toolset_latest_notes, toolset_download_link, remote_info, release_version_checked)
 
     def autoupdate_toolset(
         self,
@@ -1886,9 +1914,15 @@ class ToolWindow(QMainWindow):
             print("no installation is currently loaded, cannot refresh core list")
             return
         self.log.info("Loading core installation resources into UI...")
-        self.ui.coreWidget.setResources(self.active.core_resources())
+        try:
+            self.ui.coreWidget.setResources(self.active.core_resources())
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Failed to setResources of the core list")
         self.log.debug("Remove unused Core tab categories...")
-        self.ui.coreWidget.modulesModel.removeUnusedCategories()
+        try:
+            self.ui.coreWidget.modulesModel.removeUnusedCategories()
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Failed to remove unused categories in the core list")
 
     def changeModule(self, moduleName: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
@@ -1912,21 +1946,20 @@ class ToolWindow(QMainWindow):
         moduleItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of modules in the modulesCombo combobox."""
+        moduleItems = [] if moduleItems is None else moduleItems
+        action = "Reload" if reload else "Refresh"
         if not moduleItems:
-            action = "Reloading" if reload else "Refreshing"
+            try:
+                moduleItems = self._getModulesList(reload=reload)
+            except Exception:  # noqa: BLE001
+                RobustRootLogger().exception(f"Failed to get the list of {action}ed modules!")
+            else:
+                print("<SDM> [task scope] moduleItems: ", moduleItems)
 
-            def task() -> list[QStandardItem]:
-                return self._getModulesList(reload=reload)
-
-
-            loader = AsyncLoader(self, f"{action} modules list...", task, "Error refreshing module list.")
-            print("<SDM> [task scope] loader: ", loader)
-
-            loader.exec_()
-            moduleItems = loader.value
-            print("<SDM> [task scope] moduleItems: ", moduleItems)
-
-        self.ui.modulesWidget.setSections(moduleItems)
+        try:
+            self.ui.modulesWidget.setSections(moduleItems)
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception(f"Failed to call setSections on the {action}ed modulesWidget!")
 
     def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:  # noqa: C901
         if self.active is None:
@@ -1943,10 +1976,14 @@ class ToolWindow(QMainWindow):
             try:
                 self.active.load_modules()
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to reload the list of modules")
+                RobustRootLogger().exception("Failed to reload the list of modules (load_modules function)")
 
 
-        areaNames: dict[str, str] = self.active.module_names()
+        try:
+            areaNames: dict[str, str] = self.active.module_names()
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Failed to get the list of area names from the modules!")
+            areaNames = {k: (str(v[0].filepath()) if v else "unknown filepath") for k, v in self.active._modules.items()}
         print("<SDM> [_getModulesList scope] areaNames: ", areaNames)
 
 
@@ -1966,7 +2003,11 @@ class ToolWindow(QMainWindow):
             sortStr += f"_{lowerModuleFileName}".lower()
             return sortStr
 
-        sortedKeys: list[str] = sorted(areaNames, key=sortAlgo)
+        try:
+            sortedKeys: list[str] = sorted(areaNames, key=sortAlgo)
+        except Exception:  # noqa: BLE001
+            RobustRootLogger().exception("Failed to sort the list of modules")
+            sortedKeys = list(areaNames.keys())
 
         modules: list[QStandardItem] = []
         for moduleName in sortedKeys:
@@ -2008,11 +2049,14 @@ class ToolWindow(QMainWindow):
             print("No installation is currently loaded, cannot refresh override list")
             return []
         if reload:
-            self.active.load_override()
+            try:
+                self.active.load_override()
+            except Exception:  # noqa: BLE001
+                RobustRootLogger().exception("Failed to call load_override in getOverrideList")
 
         sections: list[QStandardItem] = []
         for directory in self.active.override_list():
-            section = QStandardItem(directory if directory.strip() else "[Root]")
+            section = QStandardItem(str(directory if directory.strip() else "[Root]"))
             section.setData(directory, QtCore.Qt.ItemDataRole.UserRole)
             sections.append(section)
         return sections
@@ -2024,15 +2068,7 @@ class ToolWindow(QMainWindow):
         overrideItems: list[QStandardItem] | None = None,
     ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        if not overrideItems:
-            action = "Reloading" if reload else "Refreshing"
-
-            def task() -> list[QStandardItem]:
-                return self._getOverrideList()
-
-            loader = AsyncLoader(self, f"{action} override list...", task, f"Error {action}ing override list.")
-            loader.exec_()
-            overrideItems = loader.value
+        overrideItems = self._getOverrideList(reload=reload)
         self.ui.overrideWidget.setSections(overrideItems)
 
     def _getTexturePackList(self, *, reload: bool = True) -> list[QStandardItem] | None:
@@ -2044,7 +2080,7 @@ class ToolWindow(QMainWindow):
 
         sections = []
         for texturepack in self.active.texturepacks_list():
-            section = QStandardItem(texturepack)
+            section = QStandardItem(str(texturepack))
             print("<SDM> [_getTexturePackList scope] section: ", section)
 
             section.setData(texturepack, QtCore.Qt.ItemDataRole.UserRole)
@@ -2080,39 +2116,36 @@ class ToolWindow(QMainWindow):
                 section = QStandardItem(save_path_str)
                 print("<SDM> [refreshSavesList scope] section: ", section)
 
-                section.setData(save_path_str, QtCore.Qt.UserRole)
+                section.setData(save_path_str, QtCore.Qt.ItemDataRole.UserRole)
                 sections.append(section)
             self.ui.savesWidget.setSections(sections)
-        except Exception:
+        except Exception:  # noqa: BLE001
             RobustRootLogger().exception("Failed to load/refresh the saves list")
 
     # endregion
 
     # region Extract
-    def get_multiple_directories(self, title: str = "Choose some folders."):
+    def get_multiple_directories(self, title: str = "Choose some folders.") -> list[Path]:
         dialog = QFileDialog(self)
         print("<SDM> [get_multiple_directories scope] dialog: ", dialog)
 
-        dialog.setFileMode(QFileDialog.Directory)
-        dialog.setOption(QFileDialog.DontUseNativeDialog, True)
-        dialog.setOption(QFileDialog.ShowDirsOnly, True)
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
         dialog.setWindowTitle(title)
-        dialog.setDirectory(self)  # Optionally set the initial directory
+        dialog.setDirectory(self)
 
-        # Create a layout to enable multi-selection of directories
         list_view = dialog.findChild(QListView, "listView")
         print("<SDM> [get_multiple_directories scope] list_view: ", list_view)
-
+        if isinstance(list_view, QListView):
+            list_view.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
         tree_view = dialog.findChild(QTreeView)
         print("<SDM> [get_multiple_directories scope] tree_view: ", tree_view)
+        if isinstance(tree_view, QTreeView):
+            tree_view.setSelectionMode(QAbstractItemView.SelectionMode.MultiSelection)
 
-        if list_view:
-            list_view.setSelectionMode(QAbstractItemView.MultiSelection)
-        if tree_view:
-            tree_view.setSelectionMode(QAbstractItemView.MultiSelection)
-
-        if dialog.exec_() == QFileDialog.Accepted:
-            selected_dirs = dialog.selectedFiles()
+        if dialog.exec_() == QFileDialog.DialogCode.Accepted:
+            selected_dirs: list[str] = dialog.selectedFiles()
             print("<SDM> [get_multiple_directories scope] selected_dirs: ", selected_dirs)
 
             return [Path(dir_path) for dir_path in selected_dirs]
@@ -2125,7 +2158,7 @@ class ToolWindow(QMainWindow):
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         print("<SDM> [extractModuleRoomTextures scope] str: ", str)
 
-        if curModuleName not in self.active._modules:
+        if curModuleName not in self.active._modules:  # noqa: SLF001
             RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
             BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
             return

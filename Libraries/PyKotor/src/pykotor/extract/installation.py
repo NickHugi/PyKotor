@@ -219,16 +219,16 @@ class Installation:
         self,
         filepath: Path | CaseAwarePath,
     ) -> FileResource | None:
-        resname, restype = ResourceIdentifier.from_path(filepath).unpack()
-        if restype.is_invalid:
-            return None
         try:
+            if self.progress_callback:
+                self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
+            resname, restype = ResourceIdentifier.from_path(filepath).unpack()
+            if restype.is_invalid:
+                return None
             resource = FileResource(resname, restype, filepath.stat().st_size, 0, filepath)
-        except Exception as e:
-            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
+        except Exception:  # noqa: BLE001
+            self._log.exception(f"Error loading file {filepath}")
             return None
-        if self.progress_callback:
-            self.progress_callback(f"Loading {filepath.relative_to(self._path)}", "update_subtask_text")
         return resource
 
     def _build_resource_list(
@@ -237,14 +237,14 @@ class Installation:
         capsule_check: Callable,
     ) -> tuple[Path, list[FileResource] | None]:
         # sourcery skip: extract-method
-        if not capsule_check(filepath):
-            return filepath, None
-        if self.progress_callback:
-            self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
         try:
+            if not capsule_check(filepath):
+                return filepath, None
+            if self.progress_callback:
+                self.progress_callback(f"Indexing capsule '{filepath.relative_to(self._path)}'", "update_subtask_text")
             resource_list = list(Capsule(filepath))
-        except Exception as e:
-            self._log.error(f"Error loading file {filepath}: {e.__class__.__name__}: {e}")
+        except Exception:  # noqa: BLE001
+            self._log.exception(f"Error loading file {filepath}")
             return filepath, None
         else:
             return filepath, resource_list
@@ -268,7 +268,7 @@ class Installation:
         -------
             dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        r_path = CaseAwarePath.pathify(path)
+        r_path = Path.pathify(path)
         if not r_path.safe_isdir():
             self._log.info("The '%s' folder did not exist when loading the installation at '%s', skipping...", r_path.name, self._path)
             return {}
@@ -287,13 +287,13 @@ class Installation:
                     for file in files_iter
                 ):
                     filepath, resource = future.result()
-                    if not resource:
+                    if resource is None:
                         continue
                     resources_dict[filepath.name] = resource
         else:
             for file in files_iter:
                 filepath, resource = self._build_resource_list(file, capsule_check)
-                if not resource:
+                if resource is None:
                     continue
                 resources_dict[filepath.name] = resource
         if not resources_dict:
@@ -337,13 +337,13 @@ class Installation:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 for future in as_completed(executor.submit(self._build_single_resource, file) for file in files_iter):
                     resource = future.result()
-                    if not resource:
+                    if resource is None:
                         continue
                     resources_list.append(resource)
         else:
             for file in files_iter:
                 resource = self._build_single_resource(file)
-                if not resource:
+                if resource is None:
                     continue
                 resources_list.append(resource)
         if not resources_list:
@@ -431,20 +431,27 @@ class Installation:
             directory: The relative path of a subfolder to the override folder.
         """
         override_path: CaseAwarePath = self.override_path()
-        target_dirs: list[CaseAwarePath]
+        target_dirs: list[CaseAwarePath] = []
         if directory:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            if self.game().is_k1():
-                target_dirs = []
-            elif self.game().is_k2():
+            try:
+                is_k1 = self.game().is_k1()
+            except (ValueError, Exception):
+                is_k1 = True
+                RobustRootLogger().exception("Failed to get the game of your installation!")
+            if is_k1:
                 target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
             self._override = {}
 
         for folder in target_dirs:
-            relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
+            try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
+                relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
+            except Exception:  # noqa: BLE001
+                RobustRootLogger().exception(f"Failed to get the relative folder of '{folder}' and '{override_path}'")
+                relative_folder = folder.safe_relative_to(override_path).replace("\\", "/")
             self._override[relative_folder] = self.load_resources_list(folder, recurse=True)
 
     def reload_override(
@@ -1512,7 +1519,7 @@ class Installation:
                 SearchLocation.TEXTURES_TPA,
                 SearchLocation.CHITIN,
             ]
-        resnames: set[str] = set(resnames)
+        resnames = set(resnames)
         case_resnames: set[str] = {resname.lower() for resname in resnames}
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
@@ -1683,7 +1690,7 @@ class Installation:
                                 continue
                             if int(stripped_header) == query_stringref:
                                 return True
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             RobustRootLogger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
                 else:
                     try:
@@ -1695,7 +1702,7 @@ class Installation:
                                 continue
                             if int(stripped_cell) == query_stringref:
                                 return True
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         RobustRootLogger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
             return False
 

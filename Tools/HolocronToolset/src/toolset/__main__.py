@@ -284,5 +284,7 @@ if __name__ == "__main__":
 
     from toolset.gui.windows.main import ToolWindow
 
-    ToolWindow().show()
+    toolWindow = ToolWindow()
+    toolWindow.show()
+    toolWindow.checkForUpdates(silent=True)
     app.exec_()  # pyright: ignore[reportAttributeAccessIssue]
