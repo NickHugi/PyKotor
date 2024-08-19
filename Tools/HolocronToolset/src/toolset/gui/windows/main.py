@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import cProfile
+from contextlib import suppress
 import errno
 import os
 import platform
@@ -193,7 +194,7 @@ class ToolWindow(QMainWindow):
 
         # Watchdog
         self.dogObserver: BaseObserver | None = None
-        self.dogHandler: FolderObserver = FolderObserver(self)
+        #self.dogHandler: FolderObserver = FolderObserver(self)
 
         # Theme setup
         q_style = self.style()
@@ -203,7 +204,7 @@ class ToolWindow(QMainWindow):
         self.change_theme(self.settings.selectedTheme)
 
         self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
-        self.fileSystemModel.setRootPath(Path(__file__).parent)
+        self.fileSystemModel.setRootPath(Path.home())
 
         # Focus handler (searchbox, various keyboard actions)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -1069,10 +1070,13 @@ class ToolWindow(QMainWindow):
             self.refreshSavesList(reload=True)
             self.ui.texturesWidget.setInstallation(self.active)
             self.updateMenus()
-            self.log.debug("Setting up watchdog observer...")
-            if self.dogObserver is not None:
-                self.log.debug("Stopping old watchdog service...")
-                self.dogObserver.stop()
+            try:
+                self.log.debug("Setting up watchdog observer...")
+                if self.dogObserver is not None:
+                    self.log.debug("Stopping old watchdog service...")
+                    self.dogObserver.stop()
+            except Exception:  # noqa: BLE001
+                RobustRootLogger().exception("An unexpected exception occurred while dealing with watchdog.")
 
             # FIXME(th3w1zard1): Not once in my life have I seen this watchdog report modified files correctly. Not even in Cortisol's last release version.
             # Causes a hella slowdown on Linux, something to do with internal logging since it seems to be overly tracking `os.stat_result` and creating
@@ -1924,7 +1928,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.modulesWidget.setSections(moduleItems)
 
-    def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:
+    def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:  # noqa: C901
         if self.active is None:
             print("No installation is currently loaded, cannot refresh modules list")
             return []
@@ -1936,7 +1940,11 @@ class ToolWindow(QMainWindow):
             profiler.enable()
         # If specified the user can forcibly reload the resource list for every module
         if reload:
-            self.active.load_modules()
+            try:
+                self.active.load_modules()
+            except Exception:  # noqa: BLE001
+                RobustRootLogger().exception("Failed to reload the list of modules")
+
 
         areaNames: dict[str, str] = self.active.module_names()
         print("<SDM> [_getModulesList scope] areaNames: ", areaNames)
@@ -1944,15 +1952,17 @@ class ToolWindow(QMainWindow):
 
         def sortAlgo(moduleFileName: str) -> str:
             lowerModuleFileName = moduleFileName.lower()
-            if "stunt" in lowerModuleFileName:  # keep the stunt modules at the bottom.
-                sortStr = "zzzzz"
-            elif self.settings.moduleSortOption == 0:  # "Sort by filename":
+            sortStr = ""
+            with suppress(Exception):
+                if "stunt" in lowerModuleFileName:  # keep the stunt modules at the bottom.
+                    sortStr = "zzzzz"
+                elif self.settings.moduleSortOption == 0:  # "Sort by filename":
 
-                sortStr = ""
-            elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
-                sortStr = areaNames.get(moduleFileName, "y").lower()
-            else:  # alternate mod id that attempts to match to filename.
-                sortStr = self.active.module_id(moduleFileName, use_alternate=True)
+                    sortStr = ""
+                elif self.settings.moduleSortOption == 1:  # "Sort by humanized area name":
+                    sortStr = areaNames.get(moduleFileName, "y").lower()
+                else:  # alternate mod id that attempts to match to filename.
+                    sortStr = self.active.module_id(moduleFileName, use_alternate=True)
             sortStr += f"_{lowerModuleFileName}".lower()
             return sortStr
 
@@ -1965,7 +1975,7 @@ class ToolWindow(QMainWindow):
                 # dropdown menu.
                 lower_module_name = moduleName.lower()
                 # FIXME(th3w1zard1): Looks like I broke the joinRIMsTogether setting at some point.
-                # Uncommenting this prevents their resources from showing up in the toolset at all. 
+                # Uncommenting this prevents their resources from showing up in the toolset at all.
                 #if self.settings.joinRIMsTogether:
                 #    if lower_module_name.endswith("_s.rim"):
                 #        continue
@@ -2058,20 +2068,23 @@ class ToolWindow(QMainWindow):
         if self.active is None:
             print("No installation is currently loaded, cannot refresh saves list")
             return
-        if reload:
-            self.active.load_saves()
+        try:
+            if reload:
+                self.active.load_saves()
 
-        sections: list[QStandardItem] = []
-        for save_path in self.active.saves:
-            save_path_str = str(save_path)
-            print("<SDM> [refreshSavesList scope] save_path_str: ", save_path_str)
+            sections: list[QStandardItem] = []
+            for save_path in self.active.saves:
+                save_path_str = str(save_path)
+                print("<SDM> [refreshSavesList scope] save_path_str: ", save_path_str)
 
-            section = QStandardItem(save_path_str)
-            print("<SDM> [refreshSavesList scope] section: ", section)
+                section = QStandardItem(save_path_str)
+                print("<SDM> [refreshSavesList scope] section: ", section)
 
-            section.setData(save_path_str, QtCore.Qt.UserRole)
-            sections.append(section)
-        self.ui.savesWidget.setSections(sections)
+                section.setData(save_path_str, QtCore.Qt.UserRole)
+                sections.append(section)
+            self.ui.savesWidget.setSections(sections)
+        except Exception:
+            RobustRootLogger().exception("Failed to load/refresh the saves list")
 
     # endregion
 

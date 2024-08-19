@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import hashlib
@@ -7,7 +8,7 @@ import sys
 
 from contextlib import suppress
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Iterable, SupportsFloat, SupportsInt, TypeVar
+from typing import TYPE_CHECKING, Any, Iterable, OrderedDict, SupportsFloat, SupportsInt, TypeVar
 
 from utility.system.path import Path
 
@@ -183,6 +184,14 @@ def is_debug_mode() -> bool:
     return ret
 
 
+def is_frozen() -> bool:
+    return (
+        getattr(sys, "frozen", False)
+        or getattr(sys, "_MEIPASS", False)
+        # or tempfile.gettempdir() in sys.executable
+    )
+
+
 def has_attr_excluding_object(cls: type, attr_name: str) -> bool:
     # Exclude the built-in 'object' class
     mro_classes = [c for c in cls.mro() if c != object]
@@ -307,3 +316,20 @@ def is_float(val: str | float | Buffer | SupportsFloat | SupportsIndex) -> bool:
         return False
     else:
         return True
+
+
+def to_kwargs(
+    *args: Any,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    if sys.version_info < (3, 7):  # noqa: UP036
+        kwargs = OrderedDict(kwargs)
+    keys = iter(kwargs.keys())
+    for arg in args:
+        try:
+            key = next(keys)
+            if kwargs[key] is None:
+                kwargs[key] = arg
+        except StopIteration as e:  # noqa: PERF203
+            raise ValueError("Too many positional arguments for the available keyword arguments.") from e  # noqa: B904
+    return dict(kwargs)

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import atexit
 import gc
+import importlib
 import multiprocessing
 import os
 import pathlib
 import sys
 import tempfile
+import threading
 import traceback
 
 from contextlib import suppress
@@ -14,6 +16,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from qtpy import QtCore
     from qtpy.QtCore import QSettings
 
 
@@ -56,17 +59,27 @@ def onAppCrash(
 
     # Check if the current thread is the main GUI thread
     with suppress(Exception):
-        from qtpy import QtCore
-        from qtpy.QtWidgets import QApplication, QMessageBox
-        if QThread.currentThread() == QApplication.instance().thread():
-            # Create a message box with the exception information
-            msg_box = QMessageBox()
-            msg_box.setWindowFlags(msg_box.windowFlags() | QtCore.Qt.WindowType.WindowStaysOnTopHint)
-            msg_box.setIcon(QMessageBox.Icon.Critical)
-            msg_box.setWindowTitle("Application Error")
-            msg_box.setText(f"An unexpected error occurred:<br><br>{exc.__class__.__name__}: {exc!s}")
-            msg_box.setDetailedText("".join(traceback.format_tb(tback)))
-            msg_box.exec_()  # pyright: ignore[reportAttributeAccessIssue]
+        app: QtCore.QCoreApplication | None = None
+        curThreadIsMain: bool = True
+        curProcessIsMain: bool = True
+
+        with suppress(ImportError, Exception):
+            from qtpy.QtWidgets import QApplication
+            app: QtCore.QCoreApplication | None = QApplication.instance()
+            curThreadIsMain = app is None or QThread.currentThread() == app.thread()
+            curProcessIsMain = multiprocessing.current_process().name == "MainProcess"
+        curThreadIsMain &= threading.current_thread() == threading.main_thread()
+
+        if curThreadIsMain and curProcessIsMain:
+            from utility.system.agnostics import showerror
+            error_message = f"An unexpected error occurred:\n\n{exc.__class__.__name__}: {exc!s}"
+            detailed_message = "".join(traceback.format_tb(tback))
+
+            # Combine the main error message with the detailed traceback
+            full_message = f"{error_message}\n\nDetails:\n{detailed_message}"
+
+            # Show the error message box with details
+            showerror("Application Error", full_message)
 
 
 def fix_sys_and_cwd_path():
@@ -98,20 +111,34 @@ def fix_sys_and_cwd_path():
         os.chdir(toolset_path)
 
 
+def fix_qt_env_var():
+    qtpy_case_map: dict[str, str] = {
+        "pyqt5": "PyQt5",
+        "pyqt6": "PyQt6",
+        "pyside2": "PySide2",
+        "pyside6": "PySide6",
+    }
+    case_api_name = qtpy_case_map.get(os.environ.get("QT_API", "").lower().strip())
+    if case_api_name in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
+        print(f"QT_API manually set by user to '{case_api_name}'.")
+        os.environ["QT_API"] = case_api_name
+    else:
+        set_qt_api()
+
+
 def set_qt_api():
-    # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
     available_apis = ["PyQt5", "PyQt6", "PySide2", "PySide6"]
     for api in available_apis:
         try:
             if api == "PyQt5":
-                __import__("PyQt5.QtCore")
+                importlib.import_module("PyQt5.QtCore")
             elif api == "PyQt6":
-                __import__("PyQt6.QtCore")
+                importlib.import_module("PyQt6.QtCore")
             elif api == "PySide2":
-                __import__("PySide2.QtCore")
+                importlib.import_module("PySide2.QtCore")
             elif api == "PySide6":
-                __import__("PySide6.QtCore")
-        except (ImportError, ModuleNotFoundError):  # noqa: S112, PERF203
+                importlib.import_module("PySide6.QtCore")
+        except (ImportError):  # noqa: S112, PERF203
             continue
         else:
             os.environ["QT_API"] = api
@@ -139,25 +166,27 @@ def qt_cleanup():
     for obj in gc.get_objects():
         with suppress(RuntimeError):  # wrapped C/C++ object of type QThread has been deleted
             if isinstance(obj, QThread) and obj.isRunning():
-                RobustRootLogger().debug(f"Terminating QThread: {obj}")
+                RobustRootLogger().info(f"Terminating QThread: {obj}")
                 obj.terminate()
                 obj.wait()
     terminate_child_processes()
 
 def last_resort_cleanup():
-    """Prevents the toolset from running in the background after sys.exit is called..."""
+    """Prevents the toolset from running in the background after sys.exit is called.
+
+    This function should be registered with atexit as early as possible.
+    """
     from utility.logger_util import RobustRootLogger
     from utility.system.process import gracefully_shutdown_threads, start_shutdown_process
 
     RobustRootLogger().info("Fully shutting down Holocron Toolset...")
-    # kill_self_pid()
     gracefully_shutdown_threads()
     RobustRootLogger().debug("Starting new shutdown process...")
     start_shutdown_process()
     RobustRootLogger().debug("Shutdown process started...")
 
 
-def initToolsetPreLaunchSettings():
+def setupPreInitSettings():
     from qtpy.QtWidgets import QApplication
 
     from toolset.gui.widgets.settings.application import ApplicationSettings
@@ -173,74 +202,75 @@ def initToolsetPreLaunchSettings():
             continue
         QApplication.setAttribute(attr_value, settings_widget.settings.value(attr_name, QApplication.testAttribute(attr_value), bool))
 
-    if os.name == "nt":
-        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
-
-    from utility.misc import is_debug_mode
-    if not is_debug_mode() or is_frozen():
-        os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
-        os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
-
 
 def main_init():
     sys.excepthook = onAppCrash
-    if multiprocessing.current_process() == "MainProcess":
-        multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to some other start method (probably 'fork') which breaks the updater.
+    is_main_process: bool = multiprocessing.current_process() == "MainProcess"
+    if is_main_process:
+        multiprocessing.set_start_method("spawn")  # 'spawn' is default on windows, linux/mac defaults to most likely 'fork' which breaks the built-in updater.
+        atexit.register(last_resort_cleanup)  # last_resort_cleanup already handles child processes.
 
     if is_frozen():
         from utility.logger_util import RobustRootLogger
 
         RobustRootLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
-        set_qt_api()
+        if is_main_process:
+            set_qt_api()
     else:
         fix_sys_and_cwd_path()
-        qtpy_case_map: dict[str, str] = {
-            "pyqt5": "PyQt5",
-            "pyqt6": "PyQt6",
-            "pyside2": "PySide2",
-            "pyside6": "PySide6",
-        }
-        case_api_name = qtpy_case_map.get(os.environ.get("QT_API", "").lower().strip())
-        if case_api_name in ("PyQt5", "PyQt6", "PySide2", "PySide6"):
-            print(f"QT_API manually set by user to '{case_api_name}'.")
-            os.environ["QT_API"] = case_api_name
-        else:
-            set_qt_api()
+        fix_qt_env_var()
+        import faulthandler
+        faulthandler.enable()
 
-    initToolsetPreLaunchSettings()
+
+def setupPostInitSettings():
+    from qtpy.QtGui import QFont
+
+    from toolset.gui.widgets.settings.application import ApplicationSettings
+    settings_widget = ApplicationSettings()
+    toolset_qsettings: QSettings = settings_widget.settings
+    app.setFont(toolset_qsettings.value("GlobalFont", QApplication.font(), QFont))
+
+    for attr_name, attr_value in settings_widget.__dict__.items():
+        if attr_value is None:  # attr not available in this qt version.
+            continue
+        if attr_name.startswith("AA_"):
+            QApplication.setAttribute(attr_value, toolset_qsettings.value(attr_name, QApplication.testAttribute(attr_value), bool))
+
+    for name, setting in settings_widget.MISC_SETTINGS.items():
+        if toolset_qsettings.contains(name):
+            qsetting_lookup_val = toolset_qsettings.value(name, setting.getter(), setting.setting_type)
+            setting.setter(qsetting_lookup_val)
+
+
+def setupToolsetDefaultEnv():
+    from utility.misc import is_debug_mode
+
+    if os.name == "nt":
+        os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation")
+    if not is_debug_mode() or is_frozen():
+        os.environ["QT_DEBUG_PLUGINS"] = os.environ.get("QT_DEBUG_PLUGINS", "0")
+        os.environ["QT_LOGGING_RULES"] = os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")  # Disable specific Qt debug output
 
 
 if __name__ == "__main__":
     main_init()
 
     from qtpy.QtCore import QThread
-    from qtpy.QtGui import QFont
     from qtpy.QtWidgets import QApplication, QMessageBox
+
+    setupPreInitSettings()
 
     app = QApplication(sys.argv)
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
     app.setOrganizationDomain("github.com/NickHugi/PyKotor")
     app.thread().setPriority(QThread.Priority.HighestPriority)  # pyright: ignore[reportOptionalMemberAccess]
-    atexit.register(last_resort_cleanup)
     app.aboutToQuit.connect(qt_cleanup)
 
-    from toolset.gui.widgets.settings.application import ApplicationSettings
-    settings_widget = ApplicationSettings()
-    toolset_qsettings: QSettings = settings_widget.settings
-    for attr_name, attr_value in settings_widget.__dict__.items():
-        if attr_value is None:  # attr not available in this qt version.
-            continue
-        if not attr_name.startswith("AA_"):
-            continue
-        QApplication.setAttribute(attr_value, toolset_qsettings.value(attr_name, QApplication.testAttribute(attr_value), bool))
-
-    for name, setting in settings_widget.MISC_SETTINGS.items():
-        if toolset_qsettings.contains(name):
-            qsetting_lookup_val = toolset_qsettings.value(name, setting.getter(), setting.setting_type)
-            setting.setter(qsetting_lookup_val)
-    app.setFont(toolset_qsettings.value("GlobalFont", QApplication.font(), QFont))
+    setupPostInitSettings()
+    setupToolsetDefaultEnv()
 
     if is_running_from_temp():
         # Show error message using PyQt5's QMessageBox

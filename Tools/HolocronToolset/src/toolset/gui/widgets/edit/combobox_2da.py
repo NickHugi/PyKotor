@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable
@@ -174,8 +175,9 @@ class ComboBox2DA(QComboBox):
             )
         self.setToolTip(tooltip_text)
 
-    def setContext(self, data: TwoDA, install: HTInstallation, resname: str):
-        self._this2DA = data
+    def setContext(self, data: TwoDA | None, install: HTInstallation, resname: str):
+        if data is not None:
+            self._this2DA = data
         self._installation = install
         self._resname = resname
 

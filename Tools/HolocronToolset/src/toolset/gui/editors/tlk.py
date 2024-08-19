@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 from time import sleep
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
 
 class EnterSpinBox(QSpinBox):
     # Custom signal that you can emit when Enter is pressed
-    enterPressed = QtCore.Signal()
+    enterPressed = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
@@ -480,10 +481,10 @@ class LoaderDialog(QDialog):
 
 
 class LoaderWorker(QThread):
-    batch = QtCore.Signal(object)
-    entryCount = QtCore.Signal(object)
-    loaded = QtCore.Signal()
-    language = QtCore.Signal(object)
+    batch = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    entryCount = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    loaded = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    language = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, fileData: bytes, model: QStandardItemModel):
         super().__init__()

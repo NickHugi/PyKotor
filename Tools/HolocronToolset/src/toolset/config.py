@@ -90,10 +90,6 @@ def getRemoteToolsetUpdateInfo(
         base64_content = file_data["content"]
         decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
         decoded_content_str = decoded_content.decode(encoding="utf-8")
-        # use for testing only:
-        # with open("config.py") as f:
-        #    decoded_content_str = f.read()
-        # Use regex to extract the JSON part between the markers
         json_data_match = re.search(r"<---JSON_START--->\s*\#\s*(.*?)\s*\#\s*<---JSON_END--->", decoded_content_str, flags=re.DOTALL)
 
         if not json_data_match:

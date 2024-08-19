@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import multiprocessing
 
 from abc import abstractmethod
 from time import sleep
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Tuple, cast
 
 import qtpy
 
@@ -22,6 +23,7 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QHeaderView, QMenu, QToolTip, QWidget
 
+from pykotor.extract.file import FileResource
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
@@ -32,7 +34,6 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QResizeEvent
 
     from pykotor.common.misc import CaseInsensitiveDict
-    from pykotor.extract.file import FileResource
     from pykotor.resource.type import ResourceType
     from toolset.data.installation import HTInstallation
 
@@ -46,9 +47,15 @@ class MainWindowList(QWidget):
     def selectedResources(self) -> list[FileResource]: ...
 
 
+class ResourceStandardItem(QStandardItem):
+    def __init__(self, *args: Any, resource: FileResource, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.resource: FileResource = resource
+
+
 class ResourceList(MainWindowList):
-    requestReload = QtCore.Signal(object)
-    requestRefresh = QtCore.Signal()
+    requestReload = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestRefresh = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     HORIZONTAL_HEADER_LABELS: ClassVar[list[str]] = ["ResRef", "Type"]
 
@@ -165,14 +172,23 @@ class ResourceList(MainWindowList):
 
     def flattenTree(self):
         """Flatten the tree structure into a single level."""
-        flat_items: list[tuple[FileResource, tuple[QStandardItem, ...]]] = []
+        flat_items: list[tuple[FileResource, tuple[ResourceStandardItem, QStandardItem]]] = []
 
         for i in range(self.modulesModel.rowCount()):
             category_item: QStandardItem = self.modulesModel.item(i)
             for j in range(category_item.rowCount()):
-                resource: FileResource = category_item.child(j, 0).resource
-                cloned_resource_row = tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount()))
-                flat_items.append((resource, cloned_resource_row))
+                resourceItem: ResourceStandardItem = cast(ResourceStandardItem, category_item.child(j, 0))
+                resourceItem.__class__ = ResourceStandardItem
+
+                flat_items.append(
+                    cast(
+                        Tuple[FileResource, Tuple[ResourceStandardItem, QStandardItem]],
+                        (
+                            resourceItem.resource,
+                            tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount())),
+                        ),
+                    )
+                )
 
         self._clearModulesModel()
         for resource, cloned_resource_row in flat_items:
@@ -330,7 +346,7 @@ class ResourceList(MainWindowList):
         """
         allResources: list[QStandardItem] = self.modulesModel.allResourcesItems()
         resourceSet: set[FileResource] = set(resources)
-        resourceItemMap: dict[FileResource, QStandardItem] = {item.resource: item for item in allResources}
+        resourceItemMap: dict[FileResource, ResourceStandardItem] = {item.resource: item for item in allResources if isinstance(item, ResourceStandardItem)}
         for resource in resourceSet:
             if resource in resourceItemMap:
                 resourceItemMap[resource].resource = resource
@@ -338,6 +354,8 @@ class ResourceList(MainWindowList):
                 self.modulesModel.addResource(resource, customCategory)
         if clearExisting:
             for item in allResources:
+                if not isinstance(item, ResourceStandardItem):
+                    continue
                 if item.resource in resourceSet:
                     continue
                 item.parent().removeRow(item.row())
@@ -368,6 +386,8 @@ class ResourceList(MainWindowList):
             self.ui.resourceTree.setCurrentIndex(child)
 
         for item in model.allResourcesItems():
+            if not isinstance(item, ResourceStandardItem):
+                continue
             resource_from_item: FileResource = item.resource
             if resource_from_item == resource:
                 itemIndex: QModelIndex = model.proxyModel().mapFromSource(item.index())
@@ -413,7 +433,7 @@ class ResourceList(MainWindowList):
         super().resizeEvent(event)
         self.ui.resourceTree.setColumnWidth(1, 10)
         self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
-        header: QHeaderView | None = self.ui.resourceTree.header()
+        header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
         assert header is not None
         header.setSectionResizeMode(QHeaderView.Interactive)  # type: ignore[arg-type]
 
@@ -491,10 +511,12 @@ class ResourceModel(QStandardItemModel):
         resource: FileResource,
         customCategory: str | None = None,
     ):
-        item1 = QStandardItem(resource.resname())
-        item1.resource = resource
-        item2 = QStandardItem(resource.restype().extension.upper())
-        self._addResourceIntoCategory(resource.restype(), customCategory).appendRow([item1, item2])
+        self._addResourceIntoCategory(resource.restype(), customCategory).appendRow(
+            [
+                ResourceStandardItem(resource.resname(), resource=resource),
+                QStandardItem(resource.restype().extension.upper()),
+            ]
+        )
 
     def resourceFromIndexes(
         self,
@@ -512,7 +534,7 @@ class ResourceModel(QStandardItemModel):
         self,
         items: list[QStandardItem],
     ) -> list[FileResource]:
-        return [item.resource for item in items if hasattr(item, "resource")]  # pyright: ignore[reportAttributeAccessIssue]
+        return [item.resource for item in items if isinstance(item, ResourceStandardItem)]  # pyright: ignore[reportAttributeAccessIssue]
 
     def allResourcesItems(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
@@ -536,10 +558,10 @@ class ResourceModel(QStandardItemModel):
 
 
 class TextureList(MainWindowList):
-    requestReload = QtCore.Signal(object)
+    requestReload = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
-    requestRefresh = QtCore.Signal()
-    iconUpdate = QtCore.Signal(object, object)
+    requestRefresh = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    iconUpdate = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -604,7 +626,7 @@ class TextureList(MainWindowList):
         self,
         resources: list[FileResource],
     ):
-        blankImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
+        blankImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format.Format_RGB888)
         blankIcon = QIcon(QPixmap.fromImage(blankImage))
 
         self.texturesModel.clear()
@@ -629,7 +651,7 @@ class TextureList(MainWindowList):
     def selectedResources(self) -> list[FileResource]:
         resources: list[FileResource] = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
-            sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
+            sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)  # pyright: ignore[reportArgumentType]
             item = self.texturesModel.item(sourceIndex.row())
             resources.append(item.data(QtCore.Qt.ItemDataRole.UserRole + 1))
         return resources
@@ -646,8 +668,8 @@ class TextureList(MainWindowList):
         proxyModel = self.texturesProxyModel
         model = self.texturesModel
 
-        firstItem = None
-        firstIndex = None
+        firstItem: QStandardItem | None = None
+        firstIndex: QModelIndex | None = None
 
         for y in range(2, 92, 2):
             for x in range(2, 92, 2):
@@ -661,7 +683,7 @@ class TextureList(MainWindowList):
 
         items: list[QStandardItem] = []
 
-        if firstItem:
+        if firstItem is not None and firstIndex is not None:
             widthCount: int = scanWidth // 92
             heightCount: int = scanHeight // 92 + 2
             numVisible: int = min(proxyModel.rowCount(), widthCount * heightCount)
@@ -702,7 +724,7 @@ class TextureList(MainWindowList):
         if self._installation is None:
             print("No installation loaded, nothing to scroll through?")
             return
-        # Note: Avoid redundantly loading textures that have already been loaded
+        # Avoid redundantly loading textures that have already been loaded
         textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
             [item.text() for item in self.visibleItems() if item.text().lower() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
@@ -730,7 +752,7 @@ class TextureList(MainWindowList):
         item: QStandardItem,
         icon: QIcon,
     ):
-        try:  # FIXME: there's a race condition happening somewhere, causing the item to have previously been deleted.
+        try:  # FIXME(th3w1zard1): there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
         except RuntimeError:
             RobustRootLogger().exception("Could not update TextureList icon")
@@ -739,7 +761,6 @@ class TextureList(MainWindowList):
         self.requestOpenResource.emit(self.selectedResources(), None)
 
     def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
-        # Trigger the scroll slot method - this will cause any newly visible icons to load.
         self.onTextureListScrolled()
 
 
