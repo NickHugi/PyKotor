@@ -16,6 +16,8 @@ from toolset.utils.window import addWindow
 
 if TYPE_CHECKING:
 
+    import os
+
     from qtpy.QtGui import QStandardItemModel
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
@@ -74,7 +76,7 @@ class HTInstallation(Installation):
 
     def __init__(
         self,
-        path: str,
+        path: str | os.PathLike,
         name: str,
         *,
         tsl: bool | None = None,

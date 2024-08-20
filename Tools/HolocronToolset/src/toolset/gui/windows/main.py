@@ -1026,7 +1026,7 @@ class ToolWindow(QMainWindow):
             return
 
         try:
-            self.ui.fileSystemWidget.setRootPath(path)
+            self.ui.fileSystemWidget.setRootPath(Path(path))
         except Exception:  # noqa: BLE001
             self.log.exception("Failed to setup the experimental file system model view")
 
@@ -1046,7 +1046,7 @@ class ToolWindow(QMainWindow):
                     def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
                         assert loader is not None
                         loader._worker.progress.emit(data, mtype)  # noqa: SLF001
-                new_active = HTInstallation(path, name, tsl=tsl, progress_callback=progress_callback)
+                new_active = HTInstallation(CaseAwarePath(path), name, tsl=tsl, progress_callback=progress_callback)
                 if self.settings.profileToolset and profiler is not None:
                     profiler.disable()
                     profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
