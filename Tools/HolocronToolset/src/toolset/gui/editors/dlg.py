@@ -3638,7 +3638,8 @@ Should return 1 or 0, representing a boolean.
 
         data = bytearray()
         gameToUse = self._installation.game()
-        if gameToUse.is_k1() and self.dlg_settings.get("TSLWidgetHandling", "Default") == "Enabled":
+        tslWidgetHandlingSetting = self.dlg_settings.get("TSLWidgetHandling", "Default")
+        if gameToUse.is_k1() and tslWidgetHandlingSetting == "Enable":
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Save TSL Fields?")
