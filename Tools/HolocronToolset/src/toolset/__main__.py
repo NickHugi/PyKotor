@@ -58,30 +58,6 @@ def onAppCrash(
     logger = RobustRootLogger()
     logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
-    # Check if the current thread is the main GUI thread
-    with suppress(Exception):
-        app: QtCore.QCoreApplication | None = None
-        curThreadIsMain: bool = True
-        curProcessIsMain: bool = True
-
-        with suppress(ImportError, Exception):
-            from qtpy.QtWidgets import QApplication
-            app: QtCore.QCoreApplication | None = QApplication.instance()
-            curThreadIsMain = app is None or QThread.currentThread() == app.thread()
-            curProcessIsMain = multiprocessing.current_process().name == "MainProcess"
-        curThreadIsMain &= threading.current_thread() == threading.main_thread()
-
-        if curThreadIsMain and curProcessIsMain:
-            from utility.system.agnostics import showerror
-            error_message = f"An unexpected error occurred:\n\n{exc.__class__.__name__}: {exc!s}"
-            detailed_message = "".join(traceback.format_tb(tback))
-
-            # Combine the main error message with the detailed traceback
-            full_message = f"{error_message}\n\nDetails:\n{detailed_message}"
-
-            # Show the error message box with details
-            showerror("Application Error", full_message)
-
 
 def fix_sys_and_cwd_path():
     """Fixes sys.path and current working directory for PyKotor.
