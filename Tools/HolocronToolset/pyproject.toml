@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name="HolocronToolset"
 description="A PyQt5-backed program with a collection of tools and editors that make it easy to work with kotor files"
-version="3.0.0b9"
+version="3.1.1"
 requires-python = ">= 3.7"
 dependencies = [
     "idna",  # Tested with 3.3

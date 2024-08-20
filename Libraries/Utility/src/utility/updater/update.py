@@ -359,11 +359,11 @@ class LibUpdate:
                     if "mega.nz" in parsed_url.lower():
                         download_mega_file_url(parsed_url, archive_path, progress_hooks=self.progress_hooks)
                     else:
-                        if "https://github.com" in parsed_url.lower():
-                            tag = self.latest
-                            if self.version_to_tag_parser is not None:
-                                tag = self.version_to_tag_parser(tag)
-                            parsed_url = parsed_url.replace("{tag}", tag)
+                        # HACK(th3w1zard1): use the latest tag for GitHub based downloads.
+                        tag = self.latest
+                        if self.version_to_tag_parser is not None:
+                            tag = self.version_to_tag_parser(tag)
+                        parsed_url = parsed_url.replace("{tag}", tag)
                         fd = FileDownloader(
                             self.archive_name,
                             [parsed_url],

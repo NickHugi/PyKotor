@@ -17,13 +17,13 @@ from utility.logger_util import RobustRootLogger
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
-    "currentVersion": "3.1.0",
+    "currentVersion": "3.1.1",
     "toolsetLatestVersion": "3.1.0",
-    "toolsetLatestBetaVersion": "3.1.0",
+    "toolsetLatestBetaVersion": "3.1.1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
     "toolsetDownloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset",
-    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v3.1.0-toolset",
+    "toolsetBetaDownloadLink": "https://github.com/NickHugi/PyKotor/releases/tag/v{tag}-toolset",
     "toolsetDirectLinks": {
         "Darwin": {
             "32bit": [],
