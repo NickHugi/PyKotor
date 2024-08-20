@@ -26,10 +26,6 @@
         "5678",
         "--wait-for-client"
     ],
-
-    "python.testing.autoTestDiscoverOnSaveEnabled": true,
-    "python.testing.promptToConfigure": true,
-    "python.testing.pytestEnabled": false,
     "python.testing.unittestEnabled": true,
     "python.testing.unittestArgs": [
         "-v",
@@ -41,7 +37,7 @@
 
     "launch": {
         "compounds": [],
-        "justMyCode": true,
+        "justMyCode": false,
         "debugStdLib": true
     },
 
@@ -76,5 +72,8 @@
         "comments": true,
         "strings": true
     },
-    "editor.quickSuggestionsDelay": 100
+    "editor.quickSuggestionsDelay": 100,
+    "debugpy.debugJustMyCode": true,
+    "pythonTestExplorer.outputs.showOutputsOnRun": true,
+    "pythonTestExplorer.testFramework": "unittest"
 }
