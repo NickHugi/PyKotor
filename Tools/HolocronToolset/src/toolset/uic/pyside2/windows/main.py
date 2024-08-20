@@ -13,7 +13,7 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 from toolset.gui.widgets.main_widgets import ResourceList
-from toolset.gui.widgets.kotor_filesystem_model import FileSystemTreeView
+from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
 from toolset.gui.widgets.main_widgets import TextureList
 
 from toolset.rcc import resources_rc_pyside2
@@ -293,10 +293,10 @@ class Ui_MainWindow(object):
         self.fileSystemTab.setObjectName(u"fileSystemTab")
         self.verticalLayoutFileSystemTab = QVBoxLayout(self.fileSystemTab)
         self.verticalLayoutFileSystemTab.setObjectName(u"verticalLayoutFileSystemTab")
-        self.fileSystemView = FileSystemTreeView(self.fileSystemTab)
-        self.fileSystemView.setObjectName(u"fileSystemView")
+        self.fileSystemWidget = ResourceFileSystemWidget(self.fileSystemTab)
+        self.fileSystemWidget.setObjectName(u"fileSystemWidget")
 
-        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemView)
+        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemWidget)
 
         self.outerTabWidget.addTab(self.fileSystemTab, "")
 

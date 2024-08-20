@@ -172,7 +172,7 @@
                   </attribute>
                   <layout class="QVBoxLayout" name="verticalLayoutFileSystemTab">
                     <item>
-                      <widget class="FileSystemTreeView" name="fileSystemView" />
+                      <widget class="ResourceFileSystemWidget" name="fileSystemWidget" />
                     </item>
                   </layout>
                 </widget>
@@ -837,9 +837,9 @@
       <container>1</container>
     </customwidget>
     <customwidget>
-      <class>FileSystemTreeView</class>
+      <class>ResourceFileSystemWidget</class>
       <extends>QWidget</extends>
-      <header location="global">toolset.gui.widgets.resource_fsmodel</header>
+      <header location="global">toolset.gui.widgets.kotor_filesystem_model</header>
       <container>1</container>
     </customwidget>
     <customwidget>

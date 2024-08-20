@@ -12,8 +12,7 @@ import qtpy
 
 from qtpy.QtCore import QDir, QFileInfo, QModelIndex, QTemporaryFile, Qt
 from qtpy.QtGui import QColor, QDrag, QImage, QPainter, QPixmap
-
-from utility.logger_util import RobustRootLogger
+from qtpy.QtWidgets import QHBoxLayout, QLineEdit, QPushButton
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     QDesktopWidget = None
@@ -23,9 +22,6 @@ elif qtpy.API_NAME in ("PyQt5", "PySide2"):
 else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 from qtpy.QtWidgets import QAbstractItemView, QApplication, QFileIconProvider, QHeaderView, QMainWindow, QMenu, QStyle, QVBoxLayout, QWidget
-
-from pykotor.extract.capsule import LazyCapsule
-from pykotor.tools.misc import is_capsule_file
 
 
 def update_sys_path(path: pathlib.Path):
@@ -53,59 +49,124 @@ if toolset_path.exists():
     os.chdir(toolset_path)
 
 
+from qtpy.QtCore import QObject  # noqa: E402
 from qtpy.QtGui import QIcon  # noqa: E402
 
+from pykotor.extract.capsule import LazyCapsule  # noqa: E402
 from pykotor.extract.file import FileResource  # noqa: E402
+from pykotor.tools.misc import is_capsule_file  # noqa: E402
 from toolset.__main__ import main_init  # noqa: E402
 from toolset.gui.common.style.delegates import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
 from toolset.gui.common.widgets.tree import RobustTreeView  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.gui.widgets.purepy_standard_item_model import PyQStandardItem, PyQStandardItemModel  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
+from utility.logger_util import RobustRootLogger  # noqa: E402
 from utility.system.os_helper import get_size_on_disk  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QObject, QPoint
+    from qtpy.QtCore import QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent
     from qtpy.QtWidgets import QScrollBar
 
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.main import ToolWindow
 
+class ResourceFileSystemWidget(QWidget):
+    def __init__(self, parent: QWidget | None = None, *, view: RobustTreeView | None = None):
+        super().__init__(parent)
 
-class FileSystemTreeView(RobustTreeView):
-    def __init__(self, parent: QWidget | None = None):
-        super().__init__(parent, use_columns=True)
-        #self.setItemDelegate(HTMLDelegate(self, word_wrap=False))
+        # Setup the view and model.
+        self.fsTreeView: RobustTreeView = RobustTreeView(self, use_columns=True) if view is None else view
+        self.fsModel: ResourceFileSystemModel = ResourceFileSystemModel(self)
+        self.fsTreeView.setModel(self.fsModel)
+
+        # Address bar
+        self.address_bar = QLineEdit(self)
+        self.address_bar.returnPressed.connect(self.onAddressBarReturnPressed)
+
+        # Go button
+        self.go_button = QPushButton("Go", self)
+        self.go_button.clicked.connect(self.onGoButtonClicked)
+
+        # Refresh button
+        self.refresh_button = QPushButton("Refresh", self)
+        self.refresh_button.clicked.connect(self.onRefreshButtonClicked)
+
+        # Layout for the address bar, go button, and refresh button
+        self.address_layout = QHBoxLayout()
+        self.address_layout.addWidget(self.address_bar)
+        self.address_layout.addWidget(self.go_button)
+        self.address_layout.addWidget(self.refresh_button)
+
+        # Main layout
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.addLayout(self.address_layout)
+        self.main_layout.addWidget(self.fsTreeView)
+
+        # Configure the QTreeView
+        self.setup_tree_view()
+
+    def setup_tree_view(self):
         self.undo_stack: QUndoStack = QUndoStack(self)
-        h: QHeaderView | None = self.header()
+        h: QHeaderView | None = self.fsTreeView.header()
         assert h is not None
         h.setSectionsClickable(True)
         h.setSortIndicatorShown(True)
         h.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self.setWordWrap(False)
-        self.setSortingEnabled(True)
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.setUniformRowHeights(False)
-        self.setVerticalScrollMode(self.ScrollMode.ScrollPerItem)
-        self.setSelectionMode(self.SelectionMode.ExtendedSelection)
-        self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
-        self.setDragEnabled(True)
-        self.setAcceptDrops(True)
-        self.setDropIndicatorShown(True)
-        self.expanded.connect(self.onItemExpanded)
-        self.collapsed.connect(self.onItemCollapsed)
-        self.customContextMenuRequested.connect(self.fileSystemModelContextMenu)
-        self.doubleClicked.connect(self.fileSystemModelDoubleClick)
+        self.fsTreeView.setWordWrap(False)
+        self.fsTreeView.setSortingEnabled(True)
+        self.fsTreeView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.fsTreeView.setUniformRowHeights(False)
+        self.fsTreeView.setVerticalScrollMode(self.fsTreeView.ScrollMode.ScrollPerItem)
+        self.fsTreeView.setSelectionMode(self.fsTreeView.SelectionMode.ExtendedSelection)
+        self.fsTreeView.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
+        self.fsTreeView.setDragEnabled(True)
+        self.fsTreeView.setAcceptDrops(True)
+        self.fsTreeView.setDropIndicatorShown(True)
+        self.fsTreeView.expanded.connect(self.onItemExpanded)
+        self.fsTreeView.collapsed.connect(self.onItemCollapsed)
+        self.fsTreeView.customContextMenuRequested.connect(self.fileSystemModelContextMenu)
+        self.fsTreeView.doubleClicked.connect(self.fileSystemModelDoubleClick)
+
+    def setRootPath(self, path: Path):
+        if self.fsModel is None:
+            raise RuntimeError(f"Call setModel before calling {self}.setRootPath")
+        self.fsModel.setRootPath(path)
+        self.updateAddressBar()
+
+    def updateAddressBar(self):
+        """Updates the address bar to show the current root path."""
+        model = self.fsModel
+        if model and model._root_item is not None:  # noqa: SLF001
+            self.address_bar.setText(str(model._root_item.path))  # noqa: SLF001
+        else:
+            self.address_bar.setText("")
+
+    def onGoButtonClicked(self):
+        """Handle Go button click to change the root path."""
+        self.onAddressBarReturnPressed()
+
+    def onAddressBarReturnPressed(self):
+        """Handle user input in the address bar to change the root path."""
+        new_path = Path(self.address_bar.text())
+        if new_path.exists() and new_path.is_dir():
+            self.setRootPath(new_path)
+        else:
+            print(f"Invalid path: {new_path}")
+        self.updateAddressBar()
+
+    def onRefreshButtonClicked(self):
+        self.fsModel.resetInternalData()
 
     def adjust_view_size(self):
         """Adjust the view size based on content."""
-        sb: QScrollBar | None = self.verticalScrollBar()
+        sb: QScrollBar | None = self.fsTreeView.verticalScrollBar()
         assert sb is not None
         width = sb.width() + 4  # Add some padding
-        for i in range(self.model().columnCount()):
-            width += self.columnWidth(i)
+        for i in range(self.fsModel.columnCount()):
+            width += self.fsTreeView.columnWidth(i)
         print("all column's widths:", width)
         if QDesktopWidget is None:
             app = cast(QApplication, QApplication.instance())
@@ -118,31 +179,30 @@ class FileSystemTreeView(RobustTreeView):
         self.resize(min(width, screen_width), self.height())
 
     def onItemExpanded(self, idx: QModelIndex):
+        # sourcery skip: class-extract-method
         print(f"onItemExpanded, row={idx.row()}, col={idx.column()}")
-        self.debounceLayoutChanged(preChangeEmit=True)
+        self.fsTreeView.debounceLayoutChanged(preChangeEmit=True)
         item = idx.internalPointer()
         if isinstance(item, DirItem) and not item._children_loaded:  # noqa: SLF001
-            item.load_children(self.model())
+            item.load_children(self.fsModel)
         self.refresh_item(item)
-        self.debounceLayoutChanged(preChangeEmit=False)
+        self.fsTreeView.debounceLayoutChanged(preChangeEmit=False)
 
     def onItemCollapsed(self, idx: QModelIndex):
         print(f"onItemCollapsed, row={idx.row()}, col={idx.column()}")
-        self.debounceLayoutChanged(preChangeEmit=True)
+        self.fsTreeView.debounceLayoutChanged(preChangeEmit=True)
         item = idx.internalPointer()
         if isinstance(item, DirItem):
             item.set_refresh_next_expand()
         self.refresh_item(item)
-        self.debounceLayoutChanged(preChangeEmit=False)
+        self.fsTreeView.debounceLayoutChanged(preChangeEmit=False)
 
     def model(self) -> ResourceFileSystemModel:
-        result = super().model()
-        assert isinstance(result, ResourceFileSystemModel)
-        return result
+        return self.fsModel
 
     def fileSystemModelDoubleClick(self, idx: QModelIndex):
         item: ResourceItem | DirItem = idx.internalPointer()
-        print(f"<SDM> [fileSystemModelDoubleClick scope] {item.__class__.__name__}: ", repr(item.resource if hasattr(item, "resource") else item.path))
+        print(f"<SDM> [fileSystemModelDoubleClick scope] {item.__class__.__name__}: ", repr(item.resource if isinstance(item, ResourceItem) else item.path))
 
         if isinstance(item, ResourceItem) and item.path.exists() and item.path.is_file():
             mw: ToolWindow = next((w for w in QApplication.topLevelWidgets() if isinstance(w, QMainWindow) and w.__class__.__name__ == "ToolWindow"), None)  # pyright: ignore[reportAssignmentType]
@@ -151,8 +211,8 @@ class FileSystemTreeView(RobustTreeView):
             openResourceEditor(item.path, item.resource.resname(), item.resource.restype(), item.resource.data(), installation=mw.active, parentWindow=None)
         elif isinstance(item, DirItem):
             if not item.children:
-                item.load_children(self.model())
-            self.expand(idx)
+                item.load_children(self.fsModel)
+            self.fsTreeView.expand(idx)
         else:
             raise TypeError("Unsupported tree item type")
 
@@ -173,7 +233,7 @@ class FileSystemTreeView(RobustTreeView):
 
         if not isinstance(icon, QIcon):
             raise TypeError(f"Invalid icon passed to {self.__class__.__name__}.setItemIcon()!")
-        if isinstance(self.itemDelegate(), HTMLDelegate):
+        if isinstance(self.fsTreeView.itemDelegate(), HTMLDelegate):
             icon_data = {
                 "icons": [(icon, None, "Item icon")],
                 "size": 32,
@@ -181,19 +241,19 @@ class FileSystemTreeView(RobustTreeView):
                 "rows": 1,
                 "columns": 1,
             }
-            self.model().setData(idx, icon_data, _ICONS_DATA_ROLE)
+            self.fsModel.setData(idx, icon_data, _ICONS_DATA_ROLE)
         else:
-            self.model().setData(idx, icon, Qt.ItemDataRole.DecorationRole)
+            self.fsModel.setData(idx, icon, Qt.ItemDataRole.DecorationRole)
 
     def toggleHiddenFiles(self):
-        f = self.model().filter()
+        f = self.fsModel.filter()
         print("<SDM> [toggleHiddenFiles scope] f: ", f)
 
-        self.model().setFilter(f & ~QDir.Filter.Hidden if bool(f & QDir.Filter.Hidden) else f | QDir.Filter.Hidden)
+        self.fsModel.setFilter(f & ~QDir.Filter.Hidden if bool(f & QDir.Filter.Hidden) else f | QDir.Filter.Hidden)  # pyright: ignore[reportArgumentType]
 
     def refresh_item(self, item: TreeItem, depth: int = 1):
         """Refresh the given TreeItem and its children up to the specified depth."""
-        model = self.model()
+        model = self.fsModel
         if not isinstance(item, TreeItem):
             raise TypeError(f"Expected a TreeItem, got {type(item).__name__}")
         index = model.indexFromItem(item)
@@ -203,7 +263,7 @@ class FileSystemTreeView(RobustTreeView):
 
     def refresh_item_recursive(self, item: TreeItem, depth: int):
         """Recursively refresh the given TreeItem and its children up to the specified depth."""
-        model = self.model()
+        model = self.fsModel
 
         index = model.indexFromItem(item)
         if not index.isValid():
@@ -217,14 +277,14 @@ class FileSystemTreeView(RobustTreeView):
                 self.refresh_item_recursive(child, depth - 1)
 
     def createNewFolder(self):
-        root_path = self.model().rootPath
+        root_path = self.fsModel.rootPath
         print("<SDM> [createNewFolder scope] root_path: ", root_path)
 
         p = Path(root_path, "New Folder")
         print("<SDM> [createNewFolder scope] p: ", p)
 
         p.mkdir(parents=True, exist_ok=True)
-        root_item = self.model()._root_item  # noqa: SLF001
+        root_item = self.fsModel._root_item  # noqa: SLF001
         assert root_item is not None
         self.refresh_item(root_item)
 
@@ -236,10 +296,10 @@ class FileSystemTreeView(RobustTreeView):
         print("<SDM> [onEmptySpaceContextMenu scope] sm: ", sm)
 
         for i, t in enumerate(["Name", "Size", "Type", "Date Modified"]):
-            sm.addAction(t).triggered.connect(lambda i=i: self.sortByColumn(i, Qt.SortOrder.AscendingOrder))  # pyright: ignore[reportOptionalMemberAccess]
+            sm.addAction(t).triggered.connect(lambda i=i: self.fsTreeView.sortByColumn(i, Qt.SortOrder.AscendingOrder))  # pyright: ignore[reportOptionalMemberAccess]
             print("<SDM> [onEmptySpaceContextMenu scope] i: ", i)
 
-        m.addAction("Refresh").triggered.connect(lambda *args, **kwargs: self.model().resetInternalData())  # pyright: ignore[reportOptionalMemberAccess]
+        m.addAction("Refresh").triggered.connect(lambda *args, **kwargs: self.fsModel.resetInternalData())  # pyright: ignore[reportOptionalMemberAccess]
         nm = m.addMenu("New")
         print("<SDM> [onEmptySpaceContextMenu scope] nm: ", nm)
 
@@ -248,31 +308,31 @@ class FileSystemTreeView(RobustTreeView):
         print("<SDM> [onEmptySpaceContextMenu scope] sh: ", sh)
 
         sh.setCheckable(True)  # pyright: ignore[reportOptionalMemberAccess]
-        sh.setChecked(bool(self.model().filter() & QDir.Filter.Hidden))  # pyright: ignore[reportOptionalMemberAccess]
+        sh.setChecked(bool(self.fsModel.filter() & QDir.Filter.Hidden))  # pyright: ignore[reportOptionalMemberAccess]
         sh.triggered.connect(self.toggleHiddenFiles)  # pyright: ignore[reportOptionalMemberAccess]
         if hasattr(m, "exec"):
-            m.exec(self.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess]
+            m.exec(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess]
         elif hasattr(m, "exec_"):
-            m.exec_(self.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
+            m.exec_(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
 
-    def showHeaderContextMenu(self, point: QPoint):
+    def onHeaderContextMenu(self, point: QPoint):
         print(f"<SDM> [{self.__class__.__name__}.onHeaderContextMenu scope] point.x", point.x(), "y:", point.y())
         m = QMenu(self)
-        h = self.header()
+        h = self.fsTreeView.header()
         td = m.addAction("Advanced")
 
         td.setCheckable(True)  # pyright: ignore[reportOptionalMemberAccess]
-        td.setChecked(self.model()._detailed_view)  # noqa: SLF001  # pyright: ignore[reportOptionalMemberAccess]
-        td.triggered.connect(self.model().toggle_detailed_view)  # pyright: ignore[reportOptionalMemberAccess]
+        td.setChecked(self.fsModel._detailed_view)  # noqa: SLF001  # pyright: ignore[reportOptionalMemberAccess]
+        td.triggered.connect(self.fsModel.toggle_detailed_view)  # pyright: ignore[reportOptionalMemberAccess]
 
         sh = m.addAction("Show Hidden Items")
         sh.setCheckable(True)  # pyright: ignore[reportOptionalMemberAccess]
-        sh.setChecked(bool(self.model().filter() & QDir.Filter.Hidden))  # pyright: ignore[reportOptionalMemberAccess]
+        sh.setChecked(bool(self.fsModel.filter() & QDir.Filter.Hidden))  # pyright: ignore[reportOptionalMemberAccess]
         sh.triggered.connect(self.toggleHiddenFiles)  # pyright: ignore[reportOptionalMemberAccess]
-        super().showHeaderContextMenu(point, m)
+        self.fsTreeView.showHeaderContextMenu(point, m)
 
     def fileSystemModelContextMenu(self, point: QPoint):
-        sel_idx = self.selectedIndexes()
+        sel_idx = self.fsTreeView.selectedIndexes()
         print("<SDM> [fileSystemModelContextMenu scope] sel_idx: ", sel_idx)
 
         if not sel_idx:
@@ -305,14 +365,13 @@ class FileSystemTreeView(RobustTreeView):
         m.addSeparator()
         ResourceItems(resources=list(resources), viewport=lambda: self.parent()).runContextMenu(point, installation=active_installation, menu=m)
         print("<SDM> [fileSystemModelContextMenu scope] resources: ", resources)
+        self.fsModel.resetInternalData()
 
 
     def startDrag(self, actions: Qt.DropAction):  # pyright: ignore[reportOptionalMemberAccess]
         print("startDrag")
         d = QDrag(self)
-        print("<SDM> [startDrag scope] d: ", d)
-
-        d.setMimeData(self.model().mimeData(self.selectedIndexes()))
+        d.setMimeData(self.fsModel.mimeData(self.fsTreeView.selectedIndexes()))
         if hasattr(d, "exec_"):
             d.exec_(actions)  # pyright: ignore[reportAttributeAccessIssue]
         elif hasattr(d, "exec"):
@@ -429,7 +488,7 @@ class DirItem(TreeItem):
             children.append(item)
         self.set_children(children)
         for child in self.children:
-            model.treeView.setItemIcon(child.index(), child.icon_data())
+            model.getContainerWidget().setItemIcon(child.index(), child.icon_data())
         if not self.children:
             self.set_refresh_next_expand()
         return self.children
@@ -557,15 +616,26 @@ class ResourceFileSystemModel(PyQStandardItemModel):
     }
     STAT_TO_COLUMN_MAP: ClassVar[dict[str, str]] = {v: k for k, v in COLUMN_TO_STAT_MAP.items()}
 
-    def __init__(self, treeView: FileSystemTreeView, parent: QObject | None = None):
+    def __init__(self, parent: QObject | None = None):
+        self._testParent = parent
         super().__init__(parent=parent)
         self._detailed_view: bool = False
         self._root_item: DirItem | None = None
         self._headers: list[str] = ["File Name", "File Path", "Offset", "Size"]
         self._detailed_headers: list[str] = list({*self._headers, *self.COLUMN_TO_STAT_MAP.keys()})
-        self._filter = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs | QDir.Filter.Files
-        self.treeView: FileSystemTreeView = treeView
-        treeView.setModel(self)
+        self._filter: QDir.Filter | QDir.Filters | int = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs | QDir.Filter.Files
+
+    def getTreeView(self) -> RobustTreeView:
+        qparent_obj = QObject.parent(self)
+        if not isinstance(qparent_obj, ResourceFileSystemWidget):
+            raise RuntimeError("ResourceFileSystem MVC setup incorrectly, the parent of the model must be the container.")  # noqa: TRY004
+        return qparent_obj.fsTreeView
+
+    def getContainerWidget(self) -> ResourceFileSystemWidget:
+        qparent_obj = QObject.parent(self)
+        if not isinstance(qparent_obj, ResourceFileSystemWidget):
+            raise RuntimeError("ResourceFileSystem MVC setup incorrectly, the parent of the model must be the container.")  # noqa: TRY004
+        return qparent_obj
 
     def toggle_detailed_view(self):
         self._detailed_view = not self._detailed_view
@@ -573,18 +643,30 @@ class ResourceFileSystemModel(PyQStandardItemModel):
 
         self.layoutAboutToBeChanged.emit()
         self.layoutChanged.emit()
-        self.treeView.adjust_view_size()
+        self.getContainerWidget().adjust_view_size()
 
     @property
     def rootPath(self) -> Path | None:
-        if self._root_item is None:
-            return None
-        return self._root_item.path
+        return None if self._root_item is None else self._root_item.path
 
-    def setRootPath(self, path: os.PathLike | str):
+    def resetInternalData(self, *, _alwaysEndReset: bool = True):
+        """Resets the internal data of the model, forcing a reload of the view. i.e.: restat's all files on disk and reloads them into the ui anew."""
         self.beginResetModel()
+
+        # Clear the current root item and reset it
+        if self._root_item:
+            self._root_item.children.clear()
+            self._root_item.load_children(self)
+
+        if _alwaysEndReset:
+            self.endResetModel()
+        print("<SDM> [resetInternalData scope] Model data has been reset.")
+        self.getContainerWidget().updateAddressBar()
+ 
+    def setRootPath(self, path: os.PathLike | str):
+        self.resetInternalData(_alwaysEndReset=False)
         self._root_item = self.create_fertile_tree_item(Path(path))
-        print("<SDM> [setRootPath scope] self._root_item: ", self._root_item)
+        print("<SDM> [setRootPath scope] self._root_item: ", self._root_item.path)
 
         self._root_item.load_children(self)
         self._root_index = self.index(0, 0, QModelIndex())
@@ -601,7 +683,7 @@ class ResourceFileSystemModel(PyQStandardItemModel):
             )
         )
 
-        self.fileInfoList = QDir(str(self.rootPath)).entryInfoList(filters)
+        self.fileInfoList = QDir(str(self.rootPath)).entryInfoList(filters)  # pyright: ignore[reportCallIssue, reportArgumentType]
         self.endResetModel()
 
     def _getItem(self, index: QModelIndex) -> TreeItem | None:
@@ -651,11 +733,7 @@ class ResourceFileSystemModel(PyQStandardItemModel):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():
-            parent_item = self._root_item
-        else:
-            parent_item = parent.internalPointer()
-
+        parent_item = parent.internalPointer() if parent.isValid() else self._root_item
         assert isinstance(parent_item, TreeItem)
         child_item = parent_item.child(row) if parent_item else None
         if child_item:
@@ -666,13 +744,13 @@ class ResourceFileSystemModel(PyQStandardItemModel):
         if not index.isValid():
             return None
         item: TreeItem = index.internalPointer()
-        if isinstance(self.treeView.itemDelegate(), HTMLDelegate):
+        if isinstance(self.getTreeView().itemDelegate(), HTMLDelegate):
             if role == Qt.ItemDataRole.DisplayRole:
                 if self._detailed_view:
                     display_data = self.get_detailed_data(index)
                 else:
                     display_data = self.get_default_data(index)
-                return f'<span style="color:{QColor(0, 0, 0).name()}; font-size:{self.treeView.getTextSize()}pt;">{display_data}</span>'
+                return f'<span style="color:{QColor(0, 0, 0).name()}; font-size:{self.getTreeView().getTextSize()}pt;">{display_data}</span>'
             if role == Qt.ItemDataRole.DecorationRole and index.column() == 0:
                 return item.icon_data()
         if role == Qt.ItemDataRole.DisplayRole:
@@ -684,17 +762,13 @@ class ResourceFileSystemModel(PyQStandardItemModel):
             return item.icon_data()
 
         if role == _ICONS_DATA_ROLE and index.column() == 0:
-
-            # Prepare icon data for the _ICONS_DATA_ROLE
             icon_data = {
-                "icons": [(item.icon_data(), None, "Item icon")],  # Simple icon with no action or tooltip
-                "size": 32,  # Size of the icon
-                "spacing": 5,  # Spacing between icons
-                "rows": 1,  # Since we're setting just one icon
-                "columns": 1,  # Single column layout
+                "icons": [(item.icon_data(), None, "Item icon")],
+                "size": 32,
+                "spacing": 5,
+                "rows": 1,
+                "columns": 1,
             }
-
-            # Set the data using _ICONS_DATA_ROLE instead of Qt.ItemDataRole.DecorationRole
             self.setData(index, icon_data, _ICONS_DATA_ROLE)
 
         return None
@@ -750,7 +824,7 @@ class ResourceFileSystemModel(PyQStandardItemModel):
     def parent(self, index: QModelIndex) -> QModelIndex:
         if not index.isValid():
             return QModelIndex()
-        child_item: TreeItem = index.internalPointer()
+        child_item: Any = index.internalPointer()
         if not isinstance(child_item, TreeItem):
             return QModelIndex()
         parent_item = child_item.parent if child_item else None
@@ -783,9 +857,7 @@ class ResourceFileSystemModel(PyQStandardItemModel):
         stat_attr = self.COLUMN_TO_STAT_MAP.get(column_name, "")
         value = getattr(stat_result, stat_attr, None)
         if "size" in stat_attr:
-            if value is None:
-                return "N/A"
-            return self.human_readable_size(value)
+            return "N/A" if value is None else self.human_readable_size(value)
         if "time" in stat_attr:
             if value is None:
                 return "N/A"
@@ -838,7 +910,7 @@ class ResourceFileSystemModel(PyQStandardItemModel):
             index = self.indexFromItem(item)
             if not index.isValid():
                 return (1, "", original_index)
-            column_name = self._headers[column] if not self._detailed_view else self._detailed_headers[column]
+            column_name = self._detailed_headers[column] if self._detailed_view else self._headers[column]
             if column_name == "Size":
                 assert isinstance(item, (DirItem, ResourceItem))
                 size_value = 0 if isinstance(item, DirItem) else item.resource.size()
@@ -869,33 +941,6 @@ class ResourceFileSystemModel(PyQStandardItemModel):
             self.layoutChanged.emit()
 
 
-class MainWindow(QMainWindow):
-    def __init__(self, root_path: Path):
-        super().__init__()
-        self.setWindowTitle("QTreeView with HTMLDelegate")
-
-        self.treeView: FileSystemTreeView = FileSystemTreeView(self)
-        self.model: ResourceFileSystemModel = ResourceFileSystemModel(self.treeView)
-        self.model.setRootPath(root_path)
-
-        central_widget = QWidget()
-        layout = QVBoxLayout(central_widget)
-        layout.addWidget(self.treeView)
-        self.setCentralWidget(central_widget)
-        self.setMinimumSize(824, 568)
-        self.resize_and_center()
-
-    def resize_and_center(self):
-        """Resize and center the window on the screen."""
-        self.treeView.adjust_view_size()
-        screen = QApplication.primaryScreen().geometry()  # pyright: ignore[reportOptionalMemberAccess]
-        new_x = (screen.width() - self.width()) // 2
-        new_y = (screen.height() - self.height()) // 2
-        new_x = max(0, min(new_x, screen.width() - self.width()))
-        new_y = max(0, min(new_y, screen.height() - self.height()))
-        self.move(new_x, new_y)
-
-
 def create_example_directory_structure(base_path: Path):
     if base_path.exists():
         import shutil
@@ -912,17 +957,37 @@ def create_example_directory_structure(base_path: Path):
     (base_path / "Folder2" / "file4.txt").write_text("This is file4 in Folder2")
 
 
+class MainWindow(QMainWindow):
+    def __init__(self, root_path: Path):
+        super().__init__()
+        self.setWindowTitle("QTreeView with HTMLDelegate")
+
+        self.rFileSystemWidget: ResourceFileSystemWidget = ResourceFileSystemWidget(self)
+        self.rFileSystemWidget.setRootPath(root_path)
+
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
+        layout.addWidget(self.rFileSystemWidget)
+        self.setCentralWidget(central_widget)
+        self.setMinimumSize(824, 568)
+        self.resize_and_center()
+
+    def resize_and_center(self):
+        """Resize and center the window on the screen."""
+        self.rFileSystemWidget.adjust_view_size()
+        screen = QApplication.primaryScreen().geometry()  # pyright: ignore[reportOptionalMemberAccess]
+        new_x = (screen.width() - self.width()) // 2
+        new_y = (screen.height() - self.height()) // 2
+        new_x = max(0, min(new_x, screen.width() - self.width()))
+        new_y = max(0, min(new_y, screen.height() - self.height()))
+        self.move(new_x, new_y)
+
+
 if __name__ == "__main__":
     main_init()
     app = QApplication(sys.argv)
     app.setDoubleClickInterval(1)
-
-    # Assuming you have already called create_example_directory_structure
     base_path = Path(r"C:\Program Files (x86)\Steam\steamapps\common\swkotor").resolve()
-    print("<SDM> [create_example_directory_structure scope] base_path: ", base_path)
-
-    #create_example_directory_structure(base_path)
-
     main_window = MainWindow(base_path)
     print("<SDM> [create_example_directory_structure scope] main_window: ", main_window)
 

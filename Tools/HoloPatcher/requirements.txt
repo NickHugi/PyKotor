@@ -1,2 +1,1 @@
-cefpython3  # the webview we use for holopatcher tkinter's ui.
-# toga  # for the new_ui_alpha.py
+toga  # for the ui

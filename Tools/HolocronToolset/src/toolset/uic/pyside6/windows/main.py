@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QVBoxLayout, QWidget)
 
 from toolset.gui.widgets.main_widgets import (ResourceList, TextureList)
-from toolset.gui.widgets.kotor_filesystem_model import FileSystemTreeView
+from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
 from toolset.rcc import resources_rc_pyside6
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -301,10 +301,10 @@ class Ui_MainWindow(object):
         self.fileSystemTab.setObjectName(u"fileSystemTab")
         self.verticalLayoutFileSystemTab = QVBoxLayout(self.fileSystemTab)
         self.verticalLayoutFileSystemTab.setObjectName(u"verticalLayoutFileSystemTab")
-        self.fileSystemView = FileSystemTreeView(self.fileSystemTab)
-        self.fileSystemView.setObjectName(u"fileSystemView")
+        self.fileSystemWidget = ResourceFileSystemWidget(self.fileSystemTab)
+        self.fileSystemWidget.setObjectName(u"fileSystemWidget")
 
-        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemView)
+        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemWidget)
 
         self.outerTabWidget.addTab(self.fileSystemTab, "")
 

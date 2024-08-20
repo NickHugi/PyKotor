@@ -11,7 +11,7 @@ import sys
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import qtpy
 
@@ -90,7 +90,7 @@ from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
 from toolset.gui.helpers.callback import BetterMessageBox
-from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemModel
+from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
 from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
@@ -239,12 +239,8 @@ class ToolWindow(QMainWindow):
         self.original_palette: QPalette = self.palette()
         self.change_theme(self.settings.selectedTheme)
 
-        self.fileSystemModel: ResourceFileSystemModel = ResourceFileSystemModel(self.ui.fileSystemView, self)  # pyright: ignore[reportArgumentType]
-        self.fileSystemModel.setRootPath(Path.home())
-
-        # Focus handler (searchbox, various keyboard actions)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setFocus()
+        # FileSystem explorer tab
+        self.ui.fileSystemWidget.setRootPath(Path.home())
 
         # Finalize the init
         self.reloadSettings()
@@ -292,7 +288,7 @@ class ToolWindow(QMainWindow):
         self.erfEditorButton.hide()
 
         modulesResourceList = self.ui.modulesWidget.ui
-        modulesSectionCombo: FilterComboBox = modulesResourceList.sectionCombo  # type: ignore[]
+        modulesSectionCombo: FilterComboBox = cast(FilterComboBox, modulesResourceList.sectionCombo)  # type: ignore[]
         modulesSectionCombo.__class__ = FilterComboBox
         modulesSectionCombo.__init__(init=False)
         modulesSectionCombo.setEditable(False)
@@ -898,10 +894,15 @@ class ToolWindow(QMainWindow):
                 print("<SDM> [onSavepathChanged scope] categoryItem: ", categoryItem.text())
 
                 # Check if resource is already listed under this category
+                from toolset.gui.widgets.main_widgets import ResourceStandardItem
                 foundResource = False
                 for i in range(categoryItem.rowCount()):
                     item = categoryItem.child(i)
-                    if item and item.resource == resource:
+                    if (
+                        item is not None
+                        and isinstance(item, ResourceStandardItem)
+                        and item.resource == resource
+                    ):
                         # Update the resource reference if necessary
                         item.resource = resource
                         foundResource = True
@@ -909,8 +910,7 @@ class ToolWindow(QMainWindow):
 
                 if not foundResource:
                     # Add new resource under the category
-                    item1 = QStandardItem(resource.resname())
-                    item1.resource = resource
+                    item1 = ResourceStandardItem(resource.resname(), resource=resource)
                     item2 = QStandardItem(restype.extension.upper())
                     categoryItem.appendRow([item1, item2])
 
@@ -1026,7 +1026,7 @@ class ToolWindow(QMainWindow):
             return
 
         try:
-            self.fileSystemModel.setRootPath(path)
+            self.ui.fileSystemWidget.setRootPath(path)
         except Exception:  # noqa: BLE001
             self.log.exception("Failed to setup the experimental file system model view")
 

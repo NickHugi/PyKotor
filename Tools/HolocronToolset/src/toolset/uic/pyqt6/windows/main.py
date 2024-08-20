@@ -91,9 +91,9 @@ class Ui_MainWindow(object):
         self.fileSystemTab.setObjectName("fileSystemTab")
         self.verticalLayoutFileSystemTab = QtWidgets.QVBoxLayout(self.fileSystemTab)
         self.verticalLayoutFileSystemTab.setObjectName("verticalLayoutFileSystemTab")
-        self.fileSystemView = FileSystemTreeView(parent=self.fileSystemTab)
-        self.fileSystemView.setObjectName("fileSystemView")
-        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemView)
+        self.fileSystemWidget = ResourceFileSystemWidget(parent=self.fileSystemTab)
+        self.fileSystemWidget.setObjectName("fileSystemWidget")
+        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemWidget)
         self.outerTabWidget.addTab(self.fileSystemTab, "")
         self.verticalLayout_4.addWidget(self.outerTabWidget)
         self.horizontalLayout.addLayout(self.verticalLayout_4)
@@ -496,6 +496,6 @@ class Ui_MainWindow(object):
         self.actionDiscordDeadlyStream.setText(_translate("MainWindow", "Deadly Stream"))
         self.actionModuleDesigner.setText(_translate("MainWindow", "Module Designer"))
 from toolset.gui.widgets.main_widgets import ResourceList, TextureList
-from toolset.gui.widgets.kotor_filesystem_model import FileSystemTreeView
+from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
 
 from toolset.rcc import resources_rc_pyqt6
