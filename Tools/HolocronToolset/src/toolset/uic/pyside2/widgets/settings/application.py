@@ -142,7 +142,7 @@ class Ui_ApplicationSettingsWidget(object):
         self.addButton.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Add", None))
         self.editButton.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Edit", None))
         self.removeButton.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Remove", None))
-        self.resetAttributesButton.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Reset Attributes", None))
+        self.resetAttributesButton.setText(QCoreApplication.translate("ApplicationSettingsWidget", u"Reset All on this Page", None))
         self.groupBoxMiscSettings.setTitle(QCoreApplication.translate("ApplicationSettingsWidget", u"Miscellaneous Settings", None))
         self.groupBoxAASettings.setTitle(QCoreApplication.translate("ApplicationSettingsWidget", u"Experimental settings (may cause app crashes)", None))
     # retranslateUi

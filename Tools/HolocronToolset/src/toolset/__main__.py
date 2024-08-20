@@ -221,8 +221,10 @@ def main_init():
     else:
         fix_sys_and_cwd_path()
         fix_qt_env_var()
-        import faulthandler
-        faulthandler.enable()
+        # DO NOT USE `faulthandler` IN THIS TOOLSET!!
+        #import faulthandler
+        # https://bugreports.qt.io/browse/PYSIDE-2359
+        #faulthandler.enable()
 
 
 def setupPostInitSettings():

@@ -97,9 +97,9 @@ class ResourceList(MainWindowList):
         self.setupSignals()
 
         self.modulesModel: ResourceModel = ResourceModel()
-        self.modulesModel.proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.modulesModel.proxyModel().setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.ui.resourceTree.setModel(self.modulesModel.proxyModel())  # type: ignore[arg-type]
-        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)  # type: ignore[arg-type]
+        self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)  # type: ignore[arg-type]
         self.sectionModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
 
@@ -108,8 +108,8 @@ class ResourceList(MainWindowList):
         assert header is not None
         header.setSectionsClickable(True)
         header.setSortIndicatorShown(True)
-        header.setContextMenuPolicy(Qt.CustomContextMenu)  # type: ignore[arg-type]
-        header.setSectionResizeMode(QHeaderView.Interactive)  # type: ignore[arg-type]
+        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # type: ignore[arg-type]
 
         header.customContextMenuRequested.connect(self.onHeaderContextMenu)
 
@@ -134,24 +134,28 @@ class ResourceList(MainWindowList):
 
         # Flatten/Unflatten
         flatten_action = menu.addAction("Flatten")
+        assert flatten_action is not None
         flatten_action.setCheckable(True)
         flatten_action.setChecked(self.flattened)
         flatten_action.triggered.connect(self.toggleFlatten)
 
         # Collapse/Expand All
         expand_collapse_action = menu.addAction("Expand All")
+        assert expand_collapse_action is not None
         expand_collapse_action.setCheckable(True)
         expand_collapse_action.setChecked(self.expandedState)
         expand_collapse_action.triggered.connect(self.toggleExpandCollapse)
 
         # Auto-fit Columns
         auto_fit_columns_action = menu.addAction("Auto-fit Columns")
+        assert auto_fit_columns_action is not None
         auto_fit_columns_action.setCheckable(True)
         auto_fit_columns_action.setChecked(self.autoResizeEnabled)
         auto_fit_columns_action.triggered.connect(self.toggleAutoFitColumns)
 
         # Alternate Row Colors
         alternate_row_colors_action = menu.addAction("Alternate Row Colors")
+        assert alternate_row_colors_action is not None
         alternate_row_colors_action.setCheckable(True)
         alternate_row_colors_action.setChecked(self.ui.resourceTree.alternatingRowColors())
         alternate_row_colors_action.triggered.connect(self.ui.resourceTree.setAlternatingRowColors)
@@ -175,7 +179,8 @@ class ResourceList(MainWindowList):
         flat_items: list[tuple[FileResource, tuple[ResourceStandardItem, QStandardItem]]] = []
 
         for i in range(self.modulesModel.rowCount()):
-            category_item: QStandardItem = self.modulesModel.item(i)
+            category_item: QStandardItem | None = self.modulesModel.item(i)
+            assert category_item is not None
             for j in range(category_item.rowCount()):
                 resourceItem: ResourceStandardItem = cast(ResourceStandardItem, category_item.child(j, 0))
                 resourceItem.__class__ = ResourceStandardItem
@@ -185,7 +190,7 @@ class ResourceList(MainWindowList):
                         Tuple[FileResource, Tuple[ResourceStandardItem, QStandardItem]],
                         (
                             resourceItem.resource,
-                            tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount())),
+                            tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount())),  # pyright: ignore[reportOptionalMemberAccess]
                         ),
                     )
                 )
@@ -199,10 +204,10 @@ class ResourceList(MainWindowList):
         """Restore the original tree structure."""
         resources = []
         for i in range(self.modulesModel.rowCount()):
-            item: QStandardItem = self.modulesModel.item(i, 0)
-            resource: FileResource | None = getattr(item, "resource", None)
-            if resource is not None:
-                resources.append(resource)
+            item: ResourceStandardItem | QStandardItem | None = self.modulesModel.item(i, 0)
+            if not isinstance(item, ResourceStandardItem):
+                continue
+            resources.append(item.resource)
         self._clearModulesModel()
         self.setResources(resources, clearExisting=False)
 
@@ -261,7 +266,7 @@ class ResourceList(MainWindowList):
             self.autoFitColumns()
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() == QtCore.QEvent.MouseMove and obj is self.ui.resourceTree.viewport():
+        if event.type() == QtCore.QEvent.Type.MouseMove and obj is self.ui.resourceTree.viewport():
             assert isinstance(event, QMouseEvent)
             self.mouseMoveEvent(event)
             return True
@@ -292,17 +297,15 @@ class ResourceList(MainWindowList):
         index = self.ui.resourceTree.indexAt(event.pos())  # type: ignore[arg-type]
         if index.isValid():
             # Retrieve the QStandardItem from the model using the index
-            model_index: QModelIndex = self.ui.resourceTree.model().mapToSource(index)  # Map proxy index to source index
-            item: QStandardItem = self.ui.resourceTree.model().sourceModel().itemFromIndex(model_index)
-            if item is not None:
-                resource: FileResource | None = getattr(item, "resource", None)
-                if resource is not None:
-                    self.tooltipText = str(resource.filepath())
-                    self.tooltipPos = event.globalPos()
-                    self.tooltipTimer.start(1100)  # Set the delay to 3000ms (3 seconds)
-                else:
-                    self.tooltipTimer.stop()
-                    QToolTip.hideText()
+            model_index: QModelIndex = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).mapToSource(index)  # Map proxy index to source index
+            item: ResourceStandardItem | QStandardItem | None = cast(
+                QStandardItemModel,
+                cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel(),
+            ).itemFromIndex(model_index)
+            if isinstance(item, ResourceStandardItem):
+                self.tooltipText = str(item.resource.filepath())
+                self.tooltipPos = event.globalPos()
+                self.tooltipTimer.start(1100)  # Set the delay to 3000ms (3 seconds)
             else:
                 self.tooltipTimer.stop()
                 QToolTip.hideText()
@@ -397,7 +400,7 @@ class ResourceList(MainWindowList):
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())  # type: ignore[arg-type]
 
     def _getSectionUserRoleData(self):
-        return self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
+        return self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
 
 
     def onFilterStringUpdated(self):
@@ -449,16 +452,14 @@ class ResourceProxyModel(QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
-        model = self.sourceModel()
+        model: QStandardItemModel = self.sourceModel()
 
         resref_index = model.index(source_row, 0, source_parent)
-        item = model.itemFromIndex(resref_index)
-        resource: FileResource | None = getattr(item, "resource", None)
-
-        if resource is not None:
+        item: ResourceStandardItem | QStandardItem | None = model.itemFromIndex(resref_index)
+        if isinstance(item, ResourceStandardItem):
             # Get the file name and resource name
-            filename = resource.filepath().name.lower()
-            resname = resource.filename().lower()
+            filename = item.resource.filepath().name.lower()
+            resname = item.resource.filename().lower()
 
             # Check if the filter string is a substring of either the filename or the resource name
             if self.filter_string in filename or self.filter_string in resname:
@@ -633,8 +634,8 @@ class TextureList(MainWindowList):
         for resource in resources:
             item = QStandardItem(blankIcon, resource.resname())
             item.setToolTip(resource.resname())
-            item.setData(False, QtCore.Qt.ItemDataRole.UserRole)
-            item.setData(resource, QtCore.Qt.ItemDataRole.UserRole + 1)
+            item.setData(False, Qt.ItemDataRole.UserRole)
+            item.setData(resource, Qt.ItemDataRole.UserRole + 1)
             self.texturesModel.appendRow(item)
 
         if self._installation is not None:
@@ -653,7 +654,7 @@ class TextureList(MainWindowList):
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)  # pyright: ignore[reportArgumentType]
             item = self.texturesModel.item(sourceIndex.row())
-            resources.append(item.data(QtCore.Qt.ItemDataRole.UserRole + 1))
+            resources.append(item.data(Qt.ItemDataRole.UserRole + 1))
         return resources
 
     def visibleItems(self) -> list[QStandardItem]:
@@ -712,10 +713,10 @@ class TextureList(MainWindowList):
         self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self):
-        self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
+        self.sectionChanged.emit(self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole))
 
     def onReloadClicked(self):
-        self.requestReload.emit(self.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole))
+        self.requestReload.emit(self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole))
 
     def onRefreshClicked(self):
         self.requestRefresh.emit()
@@ -745,7 +746,7 @@ class TextureList(MainWindowList):
 
             task = TextureListTask(item.row(), tpc, itemText)
             self._taskQueue.put(task)
-            item.setData(True, QtCore.Qt.ItemDataRole.UserRole)
+            item.setData(True, Qt.ItemDataRole.UserRole)
 
     def onIconUpdate(
         self,

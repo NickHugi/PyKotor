@@ -25,6 +25,7 @@
         "visualstudioexptteam.vscodeintellicode",
         "visualstudioexptteam.intellicode-api-usage-examples",
         "kevinrose.vsc-python-indent",
-        "hyesun.py-paste-indent"
+        "hyesun.py-paste-indent",
+        "redhat.vscode-xml"
     ]
 }

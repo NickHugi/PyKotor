@@ -104,7 +104,7 @@ class Ui_ApplicationSettingsWidget(object):
         self.addButton.setText(_translate("ApplicationSettingsWidget", "Add"))
         self.editButton.setText(_translate("ApplicationSettingsWidget", "Edit"))
         self.removeButton.setText(_translate("ApplicationSettingsWidget", "Remove"))
-        self.resetAttributesButton.setText(_translate("ApplicationSettingsWidget", "Reset Attributes"))
+        self.resetAttributesButton.setText(_translate("ApplicationSettingsWidget", "Reset All on this Page"))
         self.groupBoxMiscSettings.setTitle(_translate("ApplicationSettingsWidget", "Miscellaneous Settings"))
         self.groupBoxAASettings.setTitle(_translate("ApplicationSettingsWidget", "Experimental settings (may cause app crashes)"))
 

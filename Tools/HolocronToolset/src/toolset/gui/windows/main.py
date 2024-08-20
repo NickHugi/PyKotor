@@ -163,7 +163,7 @@ def run_module_designer(
 
 
 class UpdateCheckThread(QThread):
-    update_info_fetched = QtCore.Signal(dict, dict, bool)  # Signal to emit the results
+    update_info_fetched = QtCore.Signal(dict, dict, bool)  # pyright: ignore[reportPrivateImportUsage]
     def __init__(self, toolWindow: QMainWindow, *, silent: bool = False):
         super().__init__()
         self.toolWindow: QMainWindow = toolWindow
@@ -270,7 +270,7 @@ class ToolWindow(QMainWindow):
         self.ui.coreWidget.hideReloadButton()
 
         if is_debug_mode():
-            self.ui.menubar.addAction("Debug Reload").triggered.connect(debug_reload_pymodules)
+            self.ui.menubar.addAction("Debug Reload").triggered.connect(debug_reload_pymodules)  # pyright: ignore[reportOptionalMemberAccess]
 
         # Standardized resource path format
         icon_path = ":/images/icons/sith.png"
@@ -856,7 +856,7 @@ class ToolWindow(QMainWindow):
         print("Loading save resources into UI...")
 
         # Clear the entire model before loading new save resources
-        self.ui.savesWidget.modulesModel.invisibleRootItem().removeRows(0, self.ui.savesWidget.modulesModel.rowCount())
+        self.ui.savesWidget.modulesModel.invisibleRootItem().removeRows(0, self.ui.savesWidget.modulesModel.rowCount())  # pyright: ignore[reportOptionalMemberAccess]
         newSaveDirPath = CaseAwarePath(newSaveDir)
         print("<SDM> [onSavepathChanged scope] newSaveDirPath: ", newSaveDirPath)
 
@@ -871,7 +871,7 @@ class ToolWindow(QMainWindow):
             save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
             print("<SDM> [onSavepathChanged scope] save_path_item: ", save_path_item)
 
-            self.ui.savesWidget.modulesModel.invisibleRootItem().appendRow(save_path_item)
+            self.ui.savesWidget.modulesModel.invisibleRootItem().appendRow(save_path_item)  # pyright: ignore[reportOptionalMemberAccess]
 
             # Dictionary to keep track of category items under this save_path_item
             categoryItemsUnderSavePath: dict[str, QStandardItem] = {}

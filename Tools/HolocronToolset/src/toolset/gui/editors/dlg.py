@@ -242,7 +242,7 @@ class DLGListWidget(QListWidget):
                 hover_display = self.currentlyHoveredItem.data(Qt.ItemDataRole.DisplayRole)
                 default_display = self.currentlyHoveredItem.data(_EXTRA_DISPLAY_ROLE)
                 #print("hover display:", hover_display, "default_display", default_display)
-                self.currentlyHoveredItem.setData(Qt.DisplayRole, default_display)
+                self.currentlyHoveredItem.setData(Qt.ItemDataRole.DisplayRole, default_display)
                 self.currentlyHoveredItem.setData(_EXTRA_DISPLAY_ROLE, hover_display)
             self.currentlyHoveredItem = item
             if self.currentlyHoveredItem is None:
@@ -253,7 +253,7 @@ class DLGListWidget(QListWidget):
             hover_display = self.currentlyHoveredItem.data(_EXTRA_DISPLAY_ROLE)
             default_display = self.currentlyHoveredItem.data(Qt.ItemDataRole.DisplayRole)
             #print("hover display:", hover_display, "default_display", default_display)
-            self.currentlyHoveredItem.setData(Qt.DisplayRole, hover_display)
+            self.currentlyHoveredItem.setData(Qt.ItemDataRole.DisplayRole, hover_display)
             self.currentlyHoveredItem.setData(_EXTRA_DISPLAY_ROLE, default_display)
             self.viewport().update()
             self.update()
@@ -324,7 +324,7 @@ class DLGListWidget(QListWidget):
             hover_display = self.currentlyHoveredItem.data(Qt.ItemDataRole.DisplayRole)
             default_display = self.currentlyHoveredItem.data(_EXTRA_DISPLAY_ROLE)
             #print("hover display:", hover_display, "default_display", default_display)
-            self.currentlyHoveredItem.setData(Qt.DisplayRole, default_display)
+            self.currentlyHoveredItem.setData(Qt.ItemDataRole.DisplayRole, default_display)
             self.currentlyHoveredItem.setData(_EXTRA_DISPLAY_ROLE, hover_display)
         self.currentlyHoveredItem = None
 
@@ -1819,10 +1819,10 @@ class DLGStandardItemModel(QStandardItemModel):
                 if child_item is not None and child_item.link is not None:
                     link_to_cur_item[child_item.link] = child_item
 
-            for link in item.link.node.links:
-                child_item = link_to_cur_item[link]
+            for iterated_link in item.link.node.links:
+                child_item = link_to_cur_item[iterated_link]
                 if child_item is None:
-                    child_item = DLGStandardItem(link=link)
+                    child_item = DLGStandardItem(link=iterated_link)
                     self.loadDLGItemRec(child_item)
                 item.appendRow(child_item)
 
@@ -1889,7 +1889,7 @@ class DropTarget:
             return False
 
         view_model = view.model()
-        assert view_model is not None, f"view_model {type(view_model)}: {view_model}"
+        assert view_model is not None, "view_model cannot be None"
 
         if self.parentIndex.isValid():
             rootItemIndex = None
@@ -2273,12 +2273,12 @@ class DLGTreeView(RobustTreeView):
         gradient.setColorAt(0.5, color.lighter())
         gradient.setColorAt(1, color)
         painter.setBrush(QBrush(gradient))
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.drawEllipse(center, radius, radius)
         painter.setPen(QColor(0, 0, 0))
         painter.setFont(QFont("Arial", 10, QFont.Bold))
         text_rect = QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
-        painter.drawText(text_rect, Qt.AlignCenter, text)
+        painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, text)
 
     def calculate_links_and_nodes(self, root_node: DLGNode) -> tuple[int, int]:
         queue: deque[DLGNode] = deque([root_node])
@@ -3384,7 +3384,6 @@ Should return 1 or 0, representing a boolean.
             widget.setEnabled(self._installation.tsl)
             if self._installation.tsl:
                 widget.setToolTip("")
-
             else:
                 widget.setToolTip("This widget is only available in KOTOR II.")
         elif state == "Disable":
@@ -3641,12 +3640,12 @@ Should return 1 or 0, representing a boolean.
         tslWidgetHandlingSetting = self.dlg_settings.get("TSLWidgetHandling", "Default")
         if gameToUse.is_k1() and tslWidgetHandlingSetting == "Enable":
             msg_box = QMessageBox()
-            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setIcon(QMessageBox.Icon.Information)
             msg_box.setWindowTitle("Save TSL Fields?")
-            msg_box.setText("You have TSLWidgetHandling set to 'Enabled', but your loaded installation set to K1. Would you like to save TSL fields?")
+            msg_box.setText("You have TSLWidgetHandling set to 'Enable', but your loaded installation set to K1. Would you like to save TSL fields?")
             msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             response = msg_box.exec()
-            if response == QMessageBox.Yes:
+            if response == QMessageBox.StandardButton.Yes:
                 gameToUse = Game.K2
 
         write_dlg(self.core_dlg, data, gameToUse)
