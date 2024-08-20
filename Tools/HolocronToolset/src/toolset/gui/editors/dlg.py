@@ -3348,7 +3348,7 @@ Should return 1 or 0, representing a boolean.
 
         viewportMenu = refreshMenu.addMenu("Viewport")
         self._addSimpleAction(viewportMenu, "Repaint", self.ui.dialogTree.viewport().repaint)
-        self._addSimpleAction(viewportMenu, "Update", self.ui.dialogTree.viewport().repaint)  # Corrected redundant action
+        self._addSimpleAction(viewportMenu, "Update", self.ui.dialogTree.viewport().update)
 
         modelMenu = refreshMenu.addMenu("Model")
         self._addSimpleAction(modelMenu, "Emit Layout Changed", lambda: self.ui.dialogTree.model().layoutChanged.emit())  #pyright: ignore[reportOptionalMemberAccess]
