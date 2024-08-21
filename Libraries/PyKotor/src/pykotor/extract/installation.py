@@ -9,6 +9,7 @@ from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
+import sys
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -179,11 +180,9 @@ class Installation:
         self.load_lips()
         self._report_main_progress("Loading modules...")
         self.load_modules()
-
         # K1 doesn't actually use the RIMs in the Rims folder.
         #if self.game().is_k1():
         #    self.load_rims()
-
         self._report_main_progress("Loading streammusic...")
         self.load_streammusic()
         self._report_main_progress("Loading streamsounds...")
@@ -506,7 +505,10 @@ class Installation:
         self._streamsounds = self.load_resources_list(self.streamsounds_path())
 
     def _quicker_load_resources(self, folder_path: Path) -> list[FileResource]:
-        """Load resources from the given folder path."""
+        """streamwaves/streamvoice have tens of thousands of audio files, offload here for performance reasons.
+
+        More or less executes exactly the same as load_resources_list/dict methods.
+        """
         files: list[FileResource] = []
         try:
             if not folder_path.safe_isdir():
@@ -800,6 +802,9 @@ class Installation:
         -------
             A list of FileResources.
         """
+        if filename not in self._modules:
+            print(f"Module '{filename}' not found in the installation!", file=sys.stderr)
+            return []
         return self._modules[filename][:]
 
     def lips_list(self) -> list[str]:
@@ -825,6 +830,9 @@ class Installation:
         -------
             A list of FileResources.
         """
+        if filename not in self._lips:
+            print(f"Lip '{filename}' not found in the installation!", file=sys.stderr)
+            return []
         return self._lips[filename][:]
 
     def texturepacks_list(self) -> list[str]:
@@ -848,6 +856,9 @@ class Installation:
         -------
             A list of FileResources from the 'texturepacks' folder of the Installation.
         """
+        if filename not in self._texturepacks:
+            print(f"Texturepack '{filename}' not found in the installation!", file=sys.stderr)
+            return []
         return self._texturepacks[filename][:]
 
     def override_list(self) -> list[str]:

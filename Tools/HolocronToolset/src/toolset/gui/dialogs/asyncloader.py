@@ -122,11 +122,11 @@ class AsyncLoader(QDialog, Generic[T]):
         """
         super().__init__(parent)
         self.setWindowFlags(
-            QtCore.Qt.Dialog
-            | QtCore.Qt.WindowCloseButtonHint
-            | QtCore.Qt.WindowStaysOnTopHint
-            | QtCore.Qt.WindowMinMaxButtonsHint  # Enable minimize/maximize buttons
-            & ~QtCore.Qt.WindowContextHelpButtonHint
+            QtCore.Qt.WindowType.Dialog  # pyright: ignore[reportArgumentType]
+            | QtCore.Qt.WindowType.WindowCloseButtonHint
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+            | QtCore.Qt.WindowType.WindowMinMaxButtonsHint  # Enable minimize/maximize buttons
+            & ~QtCore.Qt.WindowType.WindowContextHelpButtonHint
         )
         print("AsyncLoader.__init__: realtime_progress:", realtime_progress)
 

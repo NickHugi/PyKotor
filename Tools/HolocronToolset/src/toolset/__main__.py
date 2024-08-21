@@ -9,15 +9,12 @@ import os
 import pathlib
 import sys
 import tempfile
-import threading
-import traceback
 
 from contextlib import suppress
 from types import TracebackType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from qtpy import QtCore
     from qtpy.QtCore import QSettings
 
 

@@ -90,7 +90,6 @@ from toolset.gui.editors.uts import UTSEditor
 from toolset.gui.editors.utt import UTTEditor
 from toolset.gui.editors.utw import UTWEditor
 from toolset.gui.helpers.callback import BetterMessageBox
-from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
 from toolset.gui.widgets.main_widgets import ResourceList
 from toolset.gui.widgets.settings.misc import GlobalSettings
 from toolset.gui.windows.help import HelpWindow
@@ -164,33 +163,32 @@ def run_module_designer(
 
 class UpdateCheckThread(QThread):
     update_info_fetched = QtCore.Signal(dict, dict, bool)  # pyright: ignore[reportPrivateImportUsage]
-    def __init__(self, toolWindow: QMainWindow, *, silent: bool = False):
+    def __init__(self, toolWindow: ToolWindow, *, silent: bool = False):
         super().__init__()
-        self.toolWindow: QMainWindow = toolWindow
+        self.toolWindow: ToolWindow = toolWindow
         self.silent: bool = silent
 
     def get_latest_version_info(self) -> tuple[dict[str, Any], dict[str, Any]]:
         edge_info = {}
         if self.toolWindow.settings.useBetaChannel:
-            edge_info = getRemoteToolsetUpdateInfo(useBetaChannel=True, silent=self.silent)
-            print("<SDM> [get_latest_version_info scope] edge_info: ", edge_info)
+            edge_info = self._get_remote_toolset_update_info(useBetaChannel=True)
 
-            if not isinstance(edge_info, dict):
-                if self.silent:
-                    edge_info = {}
-                else:
-                    raise edge_info
-
-        master_info = getRemoteToolsetUpdateInfo(useBetaChannel=False, silent=self.silent)
-        print("<SDM> [get_latest_version_info scope] master_info: ", master_info)
-
-        if not isinstance(master_info, dict):
-            if self.silent:
-                master_info = {}
-            else:
-                raise master_info
-
+        master_info = self._get_remote_toolset_update_info(useBetaChannel=False)
         return master_info, edge_info
+
+    def _get_remote_toolset_update_info(self, *, useBetaChannel: bool) -> dict[str, Any]:
+        result = getRemoteToolsetUpdateInfo(useBetaChannel=useBetaChannel, silent=self.silent)
+        print(f"<SDM> [get_latest_version_info scope] {'edge_info' if useBetaChannel else 'master_info'}: ", result)
+
+        if not isinstance(result, dict):
+            if self.silent:
+                result = {}
+            elif isinstance(result, BaseException):
+                raise result
+            else:
+                raise TypeError(f"Unexpected result type: {result}")
+
+        return result
 
     def run(self):
         # This method is executed in a separate thread
@@ -240,7 +238,10 @@ class ToolWindow(QMainWindow):
         self.change_theme(self.settings.selectedTheme)
 
         # FileSystem explorer tab
-        self.ui.fileSystemWidget.setRootPath(Path.home())
+        try:
+            self.ui.fileSystemWidget.setRootPath(Path.home())
+        except Exception:
+            self.log.exception("Failed to setup the file system widget!")
 
         # Finalize the init
         self.reloadSettings()
@@ -328,11 +329,11 @@ class ToolWindow(QMainWindow):
         modulesSectionCombo.setMaxVisibleItems(18)
         def create_more_actions_menu() -> QMenu:
             menu = QMenu()
-            menu.addAction("Room Textures").triggered.connect(self.extractModuleRoomTextures)
-            menu.addAction("Room Models").triggered.connect(self.extractModuleRoomModels)
-            menu.addAction("Textures").triggered.connect(self.extractAllModuleTextures)
-            menu.addAction("Models").triggered.connect(self.extractAllModuleModels)
-            menu.addAction("Everything").triggered.connect(lambda: self.extractModuleEverything())
+            menu.addAction("Room Textures").triggered.connect(self.extractModuleRoomTextures)  # pyright: ignore[reportOptionalMemberAccess]
+            menu.addAction("Room Models").triggered.connect(self.extractModuleRoomModels)  # pyright: ignore[reportOptionalMemberAccess]
+            menu.addAction("Textures").triggered.connect(self.extractAllModuleTextures)  # pyright: ignore[reportOptionalMemberAccess]
+            menu.addAction("Models").triggered.connect(self.extractAllModuleModels)  # pyright: ignore[reportOptionalMemberAccess]
+            menu.addAction("Everything").triggered.connect(lambda: self.extractModuleEverything())  # pyright: ignore[reportOptionalMemberAccess]
             return menu
 
         self.collectButtonMenu = create_more_actions_menu()
@@ -347,7 +348,7 @@ class ToolWindow(QMainWindow):
 
     def onMenuHide(self, *args):
         """Custom slot to handle menu hide actions."""
-        self.collectButton.menu().hide()
+        self.collectButton.menu().hide()  # pyright: ignore[reportOptionalMemberAccess]
         self.collectButtonMenu.close()
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
@@ -825,7 +826,11 @@ class ToolWindow(QMainWindow):
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
         # dropdown menu.
-        if self.settings.joinRIMsTogether and (is_rim_file(moduleFile) or is_erf_file(moduleFile)):
+        moduleFileName = PurePath(moduleFile).name
+        if self.settings.joinRIMsTogether and (
+            (is_rim_file(moduleFile) or is_erf_file(moduleFile))
+            and not moduleFileName.lower().endswith(("_s.rim", "_dlg.erf"))
+        ):
             resources.extend(self.active.module_resources(f"{PurePath(moduleFile).stem}_s.rim"))
             if self.active.game().is_k2():
                 resources.extend(self.active.module_resources(f"{PurePath(moduleFile).stem}_dlg.erf"))

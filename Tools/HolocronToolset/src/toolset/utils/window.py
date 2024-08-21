@@ -60,8 +60,8 @@ def addRecentFile(file: Path):
     """Update the list of recent files."""
     settings = GlobalSettings()
     recentFiles: list[str] = [str(fp) for fp in {Path(p) for p in settings.recentFiles} if fp.safe_isfile()]
-    recentFiles.append(str(file))
-    if len(recentFiles) > 15:
+    recentFiles.insert(0, str(file))
+    if len(recentFiles) > 15:  # noqa: PLR2004
         recentFiles.pop()
     settings.recentFiles = recentFiles
 
@@ -282,7 +282,7 @@ def openResourceEditor(
                 str(universal_simplify_exception(e)),
                 QMessageBox.StandardButton.Ok,
                 parentWindowWidget,
-                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
+                flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
             ).show()
             raise
         else:
@@ -294,7 +294,7 @@ def openResourceEditor(
             f"The selected file format '{restype}' is not yet supported.",
             QMessageBox.StandardButton.Ok,
             parentWindowWidget,
-            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,
+            flags=Qt.WindowType.Window | Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint,  # pyright: ignore[reportArgumentType]
         ).show()
 
     return None, None

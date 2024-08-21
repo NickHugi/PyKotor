@@ -26,6 +26,7 @@ from qtpy.QtWidgets import (
     QShortcut,
     QSlider,
     QStyle,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -91,15 +92,15 @@ class MediaPlayerWidget(QWidget):
         self.current_speed_index: int = 0
 
         self.playPauseButton: QPushButton = QPushButton()
-        self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+        self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))  # pyright: ignore[reportOptionalMemberAccess]
         self.playPauseButton.setFixedSize(24, 24)
 
         self.stopButton: QPushButton = QPushButton()
-        self.stopButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaStop))
+        self.stopButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaStop))  # pyright: ignore[reportOptionalMemberAccess]
         self.stopButton.setFixedSize(24, 24)
 
         self.muteButton: QPushButton = QPushButton()
-        self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
+        self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))  # pyright: ignore[reportOptionalMemberAccess]
         self.muteButton.setFixedSize(24, 24)
 
         buttonLayout: QHBoxLayout = QHBoxLayout()
@@ -123,20 +124,20 @@ class MediaPlayerWidget(QWidget):
         self.dragPosition = QPoint()
 
         def sliderMousePressEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
-            if ev.button() == Qt.LeftButton:
+            if ev.button() == Qt.LeftButton:  # pyright: ignore[reportAttributeAccessIssue]
                 self.player.pause()
                 self.dragPosition = ev.pos()  # Store click position
                 ev.accept()
             super(QSlider, slider).mousePressEvent(ev)
         def sliderMouseMoveEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
-            if ev.buttons() == Qt.LeftButton and not self.dragPosition.isNull():
+            if ev.buttons() == Qt.LeftButton and not self.dragPosition.isNull():  # pyright: ignore[reportAttributeAccessIssue]
                 value = int((ev.pos().x() / slider.width()) * slider.maximum())
                 slider.setValue(value)
                 self.player.setPosition(value)
                 ev.accept()
             super(QSlider, slider).mouseMoveEvent(ev)
         def sliderMouseReleaseEvent(ev: QMouseEvent, slider: QSlider = self.timeSlider):
-            if ev.button() == Qt.LeftButton and not self.dragPosition.isNull():
+            if ev.button() == Qt.LeftButton and not self.dragPosition.isNull():  # pyright: ignore[reportAttributeAccessIssue]
                 # Set the final value and clear dragPosition
                 value = int((ev.pos().x() / slider.width()) * slider.maximum())
                 slider.setValue(value)
@@ -159,20 +160,20 @@ class MediaPlayerWidget(QWidget):
         self.timeSlider.focusOutEvent = sliderFocusOutEvent  # type: ignore[method-override]
 
     def playPauseButtonClick(self):
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
-        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
         if stateGetter() == stateEnum.PlayingState:
-            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))  # pyright: ignore[reportOptionalMemberAccess]
             self.player.pause()
         else:
-            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))  # pyright: ignore[reportOptionalMemberAccess]
             self.player.play()
 
     def _setupSignals(self):
         self.player.mediaStatusChanged.connect(self.mediaStateChanged)
         self.player.positionChanged.connect(self.positionChanged)
         self.player.durationChanged.connect(self.durationChanged)
-        stateChanged = self.player.stateChanged if qtpy.QT5 else self.player.playbackStateChanged
+        stateChanged = self.player.stateChanged if qtpy.QT5 else self.player.playbackStateChanged  # pyright: ignore[reportAttributeAccessIssue]
         stateChanged.connect(self.stateChanged)
 
         self.playPauseButton.clicked.connect(self.playPauseButtonClick)
@@ -180,7 +181,7 @@ class MediaPlayerWidget(QWidget):
         self.muteButton.clicked.connect(self.toggleMute)
 
     def stateChanged(self, state: QMediaPlayer.MediaStatus):
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
         if state == stateEnum.PlayingState:
             self.showWidget()
 
@@ -194,18 +195,18 @@ class MediaPlayerWidget(QWidget):
         if state == QMediaPlayer.MediaStatus.EndOfMedia:
             self.timeSlider.setValue(self.timeSlider.maximum())
             self.hideWidget()
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
         if state == stateEnum.PlayingState:
-            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPause))  # pyright: ignore[reportOptionalMemberAccess]
         else:
-            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
+            self.playPauseButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))  # pyright: ignore[reportOptionalMemberAccess]
 
     def changePlaybackSpeed(self, direction: int):
         """Some qt bug prevents this from working properly. Requires a start and a play in order to take effect."""
         self.current_speed_index = max(0, min(len(self.speed_levels) - 1, self.current_speed_index + direction))
         newRate = self.speed_levels[self.current_speed_index]
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
-        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
         wasPlaying = stateGetter() == stateEnum.PlayingState
         currentPosition = self.player.position()
         self.player.setPlaybackRate(newRate)
@@ -218,7 +219,7 @@ class MediaPlayerWidget(QWidget):
             self.player.setMuted(not self.player.isMuted())
             muted = self.player.isMuted()
         else:
-            audio_output = self.player.audioOutput()
+            audio_output = self.player.audioOutput()  # pyright: ignore[reportAttributeAccessIssue]
             current_volume = audio_output.volume()
             if current_volume > 0:
                 self.previous_volume = current_volume
@@ -228,9 +229,9 @@ class MediaPlayerWidget(QWidget):
                 audio_output.setVolume(self.previous_volume if hasattr(self, "previous_volume") else 0.5)
                 muted = False
         if muted:
-            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolumeMuted))
+            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolumeMuted))  # pyright: ignore[reportOptionalMemberAccess]
         else:
-            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))
+            self.muteButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaVolume))  # pyright: ignore[reportOptionalMemberAccess]
 
     def positionChanged(self, position: int):
         if not self.timeSlider.isSliderDown():
@@ -263,16 +264,16 @@ class MediaPlayerWidget(QWidget):
 
     def setVisible(self, visible: bool):  # noqa: FBT001
         """Override to control visibility based on player state."""
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
-        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
         if stateGetter() == stateEnum.PlayingState:
             return
         super().setVisible(visible)
 
     def showEvent(self, event: QShowEvent):
         """Override to prevent showing unless playing."""
-        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState
-        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState
+        stateEnum = QMediaPlayer.State if qtpy.QT5 else QMediaPlayer.PlaybackState  # pyright: ignore[reportAttributeAccessIssue]
+        stateGetter = self.player.state if qtpy.QT5 else self.player.playbackState  # pyright: ignore[reportAttributeAccessIssue]
         if stateGetter() != stateEnum.PlayingState:
             return
         super().showEvent(event)
@@ -331,6 +332,7 @@ class Editor(QMainWindow):
         self._global_settings: GlobalSettings = GlobalSettings()
 
         self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
+        self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.mediaPlayer)
         self.setWindowTitle(title)
         self._setupIcon(iconName)
