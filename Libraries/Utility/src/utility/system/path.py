@@ -152,9 +152,11 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
     ):
         if sys.version_info >= (3, 12, 0):
             self._raw_paths: list[str] = self.parse_args(args)
+            self._cached_str = self.str_norm(self._flavour.sep.join(self._raw_paths), slash=self._flavour.sep)
+            print(self._cached_str)
         elif self._drv.strip().endswith(":") and self._flavour.sep == "\\":
             self._root = "\\"
-        self._cached_str = self.str_norm(super().__str__(), slash=self._flavour.sep)
+            self._cached_str = self.str_norm(super().__str__(), slash=self._flavour.sep)
 
     @classmethod
     def _create_instance(
@@ -165,6 +167,7 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
         instance: Self = cls.__new__(cls, *args, **kwargs)  # type: ignore[arg-type]
         if sys.version_info >= (3, 12, 0):
             instance._raw_paths = cls.parse_args(args)  # noqa: SLF001
+            instance._cached_str = cls.str_norm(cls._flavour.sep.join(instance._raw_paths), slash=cls._flavour.sep)  # noqa: SLF001
         return instance
 
     @classmethod
@@ -224,18 +227,18 @@ class PurePath(pathlib.PurePath, metaclass=PurePathType):  # type: ignore[misc]
             msg = f"Invalid slash str: '{slash}'"
             raise ValueError(msg)
 
-        formatted_path: str = str_path.strip('"')
-        if not formatted_path.strip():
-            return formatted_path
+        formatted_path: str = str_path.strip('"').strip()
+        if not formatted_path:
+            return "."
 
         # For Windows paths
         if slash == "\\":
-            formatted_path = formatted_path.replace("/", "\\")
+            formatted_path = formatted_path.replace("/", "\\").replace("\\.\\", "\\")
             formatted_path = _WINDOWS_PATH_NORMALIZE_RE.sub(r"\\\\", formatted_path)
             formatted_path = _WINDOWS_EXTRA_SLASHES_RE.sub(r"\\", formatted_path)
         # For Unix-like paths
         elif slash == "/":
-            formatted_path = formatted_path.replace("\\", "/")
+            formatted_path = formatted_path.replace("\\", "/").replace("/./", "/")
             formatted_path = _UNIX_EXTRA_SLASHES_RE.sub("/", formatted_path)
 
 
