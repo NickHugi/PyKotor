@@ -65,23 +65,22 @@ class RobustTreeView(QTreeView):
     ):
         super().__init__(parent)
         self.settings: TreeSettings = TreeSettings(settings_name)
+        self.branch_connectors_enabled: bool = False
+        self.layoutChangedDebounceTimer: QTimer = QTimer(self)
+        self.original_stylesheet: str = self.styleSheet()
+        self.setupMenuExtras()
         h: QHeaderView = self.header()
         if not use_columns:
             self.fix_horizontal_scroll_bar(h)
             #self.setColumnWidth(0, 2000)  # don't use.
-        h.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.branch_connectors_enabled: bool = False
-        self.layoutChangedDebounceTimer = QTimer(self)
-        self.layoutChangedDebounceTimer.setSingleShot(True)
-        self.original_stylesheet: str = self.styleSheet()
 
         # Connections
         h.customContextMenuRequested.connect(self.showHeaderContextMenu)
+        self.layoutChangedDebounceTimer.setSingleShot(True)
         self.layoutChangedDebounceTimer.timeout.connect(self.emitLayoutChanged)
 
     def showHeaderContextMenu(self, pos: QPoint, menu: QMenu | None = None):
-        menu = QMenu(self) if menu is None else menu
-        self.setupMenuExtras(menu)
+        menu = self.headerMenu if menu is None else menu
         menu.exec_(self.header().mapToGlobal(pos))
 
     @staticmethod
@@ -196,40 +195,41 @@ class RobustTreeView(QTreeView):
         #print("wheelVerticalScroll, delta: ", delta)
         if not delta:
             return True
-        vertScrollBar = self.verticalScrollBar()
-        if self.verticalScrollMode() == self.ScrollMode.ScrollPerItem:
-            if qtpy.QT5:
-                action = vertScrollBar.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderSingleStepAdd
-            else:
-                action = vertScrollBar.SliderAction.SliderSingleStepSub if delta > 0 else vertScrollBar.SliderAction.SliderSingleStepAdd
-            vertScrollBar.triggerAction(action)
-        else:
-            scrollStep = -self.getTextSize() if delta > 0 else self.getTextSize()
-            vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
+        self.scrollMultipleSteps("up" if delta > 0 else "down")
         return True
 
-    def scrollSingleStep(self, direction: Literal["up", "down"]):
-        """A simple working function that will scroll a single step.
+    def setScrollStepSize(self, value: int):
+        """Set the number of items to scroll per wheel event."""
+        print(f"scrollStepSize set to {value}")
+        self.settings.set("scrollStepSize", value)
 
-        Determines what a 'single step' is by checking `self.verticalScrollMode()`
+    def scrollMultipleSteps(self, direction: Literal["up", "down"]):
+        """Scroll multiple steps based on the user-defined setting.
+
+        Determines what a 'step' is by checking `self.verticalScrollMode()`
+        and multiplies it by the user-defined number of items to scroll.
         """
         vertScrollBar = self.verticalScrollBar()
+        assert vertScrollBar is not None
+        step_size = self.settings.get("scrollStepSize", 1)
+
         if self.verticalScrollMode() == QAbstractItemView.ScrollMode.ScrollPerItem:
             if qtpy.QT5:
                 action = vertScrollBar.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderSingleStepAdd
             else:
                 action = vertScrollBar.SliderAction.SliderSingleStepSub if direction == "up" else vertScrollBar.SliderAction.SliderSingleStepAdd
-            vertScrollBar.triggerAction(action)
+            for _ in range(step_size):
+                vertScrollBar.triggerAction(action)
         else:
             scrollStep = -self.getTextSize() if direction == "up" else self.getTextSize()
-            vertScrollBar.setValue(vertScrollBar.value() + scrollStep)
+            vertScrollBar.setValue(vertScrollBar.value() + scrollStep * step_size)
 
     def _wheel_changes_item_spacing(self, event: QWheelEvent) -> bool:
         delta: int = event.angleDelta().y()
         if not delta:
             return False
-        item_delegate: HTMLDelegate | None = self.itemDelegate()
-        if item_delegate is not None:
+        item_delegate: HTMLDelegate | QStyledItemDelegate | None = self.itemDelegate()
+        if isinstance(item_delegate, HTMLDelegate):
             single_step: Literal[-1, 1] = (1 if delta > 0 else -1)
             newVerticalSpacing: int = max(0, item_delegate.customVerticalSpacing + single_step)
             item_delegate.setVerticalSpacing(newVerticalSpacing)
@@ -247,46 +247,47 @@ class RobustTreeView(QTreeView):
         return True
 
     def model(self) -> QStandardItemModel | QAbstractItemModel | None:
-        model = super().model()
-        if model is None:
-            return None
-        return model
+        return super().model()
 
-    def setupMenuExtras(self, menu: QMenu):
+    def setupMenuExtras(self):
         # View Menu: Display settings related to the appearance and layout of the tree view
-        viewMenu = menu.addMenu("View")
+        self.header().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.headerMenu = QMenu(self)
+        self.viewMenu = self.headerMenu.addMenu("View")
+        self.settingsMenu = self.headerMenu.addMenu("Settings")
+        self.toolsMenu = self.headerMenu.addMenu("Tools")
 
         # Common view settings
         self._addMenuAction(
-            viewMenu,
+            self.viewMenu,
             "Uniform Row Heights",
             self.uniformRowHeights,
             self.setUniformRowHeights,
             settings_key="uniformRowHeights",
         )
         self._addMenuAction(
-            viewMenu,
+            self.viewMenu,
             "Alternating Row Colors",
             self.alternatingRowColors,
             self.setAlternatingRowColors,
             settings_key="alternatingRowColors",
         )
         self._addMenuAction(
-            viewMenu,
+            self.viewMenu,
             "Show/Hide Branch Connectors",
             self.branchConnectorsDrawn,
             self.drawConnectors,
             settings_key="drawBranchConnectors",
         )
         self._addMenuAction(
-            viewMenu,
+            self.viewMenu,
             "Expand Items on Double Click",
             self.expandsOnDoubleClick,
             self.setExpandsOnDoubleClick,
             settings_key="expandsOnDoubleClick",
         )
         self._addMenuAction(
-            viewMenu,
+            self.viewMenu,
             "Tree Indentation",
             self.indentation,
             self.setIndentation,
@@ -295,7 +296,7 @@ class RobustTreeView(QTreeView):
         )
 
         # Text and Icon Display Settings
-        displaySettingsMenu = viewMenu.addMenu("Display Settings")
+        displaySettingsMenu = self.viewMenu.addMenu("Display Settings")
         self._addMenuAction(
             displaySettingsMenu,
             "Text Elide Mode",
@@ -334,12 +335,9 @@ class RobustTreeView(QTreeView):
             settings_key="textColor",
         )
 
-        # Settings Menu: Configuration settings that affect behavior and functionality
-        settingsMenu = menu.addMenu("Settings")
-
         # Focus and scrolling settings
         self._addExclusiveMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "Focus Policy",
             self.focusPolicy,
             self.setFocusPolicy,
@@ -353,7 +351,7 @@ class RobustTreeView(QTreeView):
             settings_key="focusPolicy",
         )
         self._addExclusiveMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "Horizontal Scroll Mode",
             self.horizontalScrollMode,
             self.setHorizontalScrollMode,
@@ -364,7 +362,7 @@ class RobustTreeView(QTreeView):
             settings_key="horizontalScrollMode",
         )
         self._addExclusiveMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "Vertical Scroll Mode",
             self.verticalScrollMode,
             self.setVerticalScrollMode,
@@ -375,41 +373,47 @@ class RobustTreeView(QTreeView):
             settings_key="verticalScrollMode",
         )
         self._addMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "Auto Scroll",
             self.hasAutoScroll,
             self.setAutoScroll,
             settings_key="autoScroll",
         )
         self._addMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "Auto Fill Background",
             self.autoFillBackground,
             self.setAutoFillBackground,
             settings_key="autoFillBackground",
         )
         self._addMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "Expand All Root Item Children",
             lambda: self.settings.get("ExpandRootChildren", False),
             lambda value: self.settings.set("ExpandRootChildren", value),
             settings_key="ExpandRootChildren",
         )
+        self._addMenuAction(
+            self.settingsMenu,
+            "Items Scrolled Per Wheel",
+            lambda: self.settings.get("scrollStepSize", 1),
+            self.setScrollStepSize,
+            settings_key="scrollStepSize",
+            param_type=int,
+        )
 
-        # Tools Menu: Operations and actions that can be performed on the tree view
-        toolsMenu = menu.addMenu("Tools")
-        self._addSimpleAction(toolsMenu, "Repaint", self.repaint)
-        self._addSimpleAction(toolsMenu, "Update", self.update)
-        self._addSimpleAction(toolsMenu, "Resize Column To Contents", lambda: self.resizeColumnToContents(0))
-        self._addSimpleAction(toolsMenu, "Update Geometries", self.updateGeometries)
-        self._addSimpleAction(toolsMenu, "Reset", self.reset)
+        self._addSimpleAction(self.toolsMenu, "Repaint", self.repaint)
+        self._addSimpleAction(self.toolsMenu, "Update", self.update)
+        self._addSimpleAction(self.toolsMenu, "Resize Column To Contents", lambda: self.resizeColumnToContents(0))
+        self._addSimpleAction(self.toolsMenu, "Update Geometries", self.updateGeometries)
+        self._addSimpleAction(self.toolsMenu, "Reset", self.reset)
 
         # Help or Miscellaneous actions
-        helpMenu = menu.addMenu("Help")
-        whats_this_action = QAction(self.style().standardIcon(QStyle.SP_TitleBarContextHelpButton), "What's This?", self)
+        self.helpMenu = self.headerMenu.addMenu("Help")
+        whats_this_action = QAction(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarContextHelpButton), "What's This?", self)
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
-        whats_this_action.setToolTip("Enter What's This? mode.")
-        helpMenu.addAction(whats_this_action)
+        whats_this_action.setToolTip("Enter 'What's This?' mode.")
+        self.helpMenu.addAction(whats_this_action)
 
     def _addColorMenuAction(
         self,
@@ -484,7 +488,7 @@ class RobustTreeView(QTreeView):
         title: str,
         current_state_func: Callable[[], Any],
         set_func: Callable[[Any], Any],
-        options: dict,
+        options: dict[str, Any],
         settings_key: str,
     ):
         subMenu = menu.addMenu(title)
@@ -656,6 +660,7 @@ class TreeSettings:
         self.settings: QSettings = self.robust_tree_settings if settings_name == "RobustTreeView" else QSettings("HolocronToolsetV3", settings_name)
 
     def get(self, key: str, default: Any) -> Any:
+        # sourcery skip: assign-if-exp, reintroduce-else
         if qtpy.API_NAME in ("PyQt5", "PySide2"):
             default_val = self.robust_tree_settings.value(key, default, default.__class__)
             return self.settings.value(

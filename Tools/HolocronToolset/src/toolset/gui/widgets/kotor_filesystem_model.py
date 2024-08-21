@@ -114,11 +114,12 @@ class ResourceFileSystemWidget(QWidget):
         assert h is not None
         h.setSectionsClickable(True)
         h.setSortIndicatorShown(True)
-        h.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        h.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        h.setSectionsMovable(True)
         self.fsTreeView.setWordWrap(False)
         self.fsTreeView.setSortingEnabled(True)
         self.fsTreeView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.fsTreeView.setUniformRowHeights(False)
+        self.fsTreeView.setUniformRowHeights(True)
         self.fsTreeView.setVerticalScrollMode(self.fsTreeView.ScrollMode.ScrollPerItem)
         self.fsTreeView.setSelectionMode(self.fsTreeView.SelectionMode.ExtendedSelection)
         self.fsTreeView.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
@@ -129,6 +130,30 @@ class ResourceFileSystemWidget(QWidget):
         self.fsTreeView.collapsed.connect(self.onItemCollapsed)
         self.fsTreeView.customContextMenuRequested.connect(self.fileSystemModelContextMenu)
         self.fsTreeView.doubleClicked.connect(self.fileSystemModelDoubleClick)
+        self.fsTreeView._addSimpleAction(  # noqa: SLF001
+            self.fsTreeView.viewMenu,
+            "Resize Columns",
+            self.adjust_view_size,
+        )
+        self.fsTreeView._addSimpleAction(  # noqa: SLF001
+            self.fsTreeView.viewMenu,
+            "Toggle Detailed View",
+            self.fsModel.toggle_detailed_view,
+        )
+        self.fsTreeView._addExclusiveMenuAction(  # noqa: SLF001
+            self.fsTreeView.viewMenu,
+            "Resize Mode",
+            lambda: next((h.sectionResizeMode(i) for i in range(self.fsModel.columnCount())), QHeaderView.ResizeMode.ResizeToContents),
+            lambda mode: [h.setSectionResizeMode(i, mode) for i in range(self.fsModel.columnCount())],
+            {
+                "Custom": QHeaderView.ResizeMode.Custom,
+                "Fixed": QHeaderView.ResizeMode.Fixed,
+                "Interactive": QHeaderView.ResizeMode.Interactive,
+                "ResizeToContents": QHeaderView.ResizeMode.ResizeToContents,
+                "Stretch": QHeaderView.ResizeMode.Stretch,
+            },
+            "columnResizeMode",
+        )
 
     def setRootPath(self, path: Path):
         if self.fsModel is None:
@@ -622,7 +647,8 @@ class ResourceFileSystemModel(PyQStandardItemModel):
         self._detailed_view: bool = False
         self._root_item: DirItem | None = None
         self._headers: list[str] = ["File Name", "File Path", "Offset", "Size"]
-        self._detailed_headers: list[str] = list({*self._headers, *self.COLUMN_TO_STAT_MAP.keys()})
+        self._detailed_headers: list[str] = [*self._headers]
+        self._detailed_headers.extend(h for h in self.COLUMN_TO_STAT_MAP if h not in self._headers)
         self._filter: QDir.Filter | QDir.Filters | int = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs | QDir.Filter.Files
 
     def getTreeView(self) -> RobustTreeView:
