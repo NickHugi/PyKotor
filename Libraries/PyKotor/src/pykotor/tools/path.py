@@ -132,6 +132,7 @@ def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
     """
     mro: list[type] = cls.mro()  # Gets the method resolution order
     parent_classes: list[type] = mro[1:-1]  # Exclude the current class itself and the object class
+    cls_methods: set[str] = {method for method in cls.__dict__ if callable(getattr(cls, method))}  # define names of methods in the cls, excluding inherited
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
@@ -151,6 +152,7 @@ def create_case_insensitive_pathlib_class(cls: type[CaseAwarePath]):
         "_init",
         "__new__",
         "pathify",
+        *cls_methods,
     }
 
     for parent in parent_classes:
