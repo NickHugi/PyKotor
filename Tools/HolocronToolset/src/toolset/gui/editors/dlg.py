@@ -75,6 +75,7 @@ from qtpy.QtWidgets import (
     QTextEdit,
     QToolTip,
     QVBoxLayout,
+    QWhatsThis,
     QWidget,
     QWidgetAction,
 )
@@ -371,10 +372,10 @@ class DLGListWidget(QListWidget):
         super().scrollToItem(item, *args)
 
     def findItems(self, text: str, flags: Qt.MatchFlags) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
-        return cast(list[DLGListWidgetItem], super().findItems(text, flags))
+        return cast(List[DLGListWidgetItem], super().findItems(text, flags))
 
     def selectedItems(self) -> list[DLGListWidgetItem]:  # type: ignore[override, misc]
-        return cast(list[DLGListWidgetItem], super().selectedItems())
+        return cast(List[DLGListWidgetItem], super().selectedItems())
 
     def closePersistentEditor(self, item: DLGListWidgetItem | None = None) -> None:  # type: ignore[override, misc]
         assert isinstance(item, (DLGListWidgetItem, type(None)))
@@ -763,7 +764,7 @@ class DLGStandardItem(QStandardItem):
                 if not isinstance(item, DLGStandardItem):
                     continue
                 model._removeLinkFromParent(self, item.link)  # noqa: SLF001
-        return cast(list[DLGStandardItem], items)
+        return cast(List[DLGStandardItem], items)
 
     def removeRows(self, row: int, count: int) -> None:
         print(f"{self.__class__.__name__}.removeRows(row={row}, count={count})")
@@ -811,7 +812,7 @@ class DLGStandardItem(QStandardItem):
                 if not isinstance(item, DLGStandardItem):
                     continue
                 model._removeLinkFromParent(self, item.link)  # noqa: SLF001
-        return cast(list[DLGStandardItem], items)
+        return cast(List[DLGStandardItem], items)
 
     def takeColumn(self, column: int) -> list[DLGStandardItem]:  # type: ignore[override]
         raise NotImplementedError("takeColumn is not supported in this model.")
@@ -1201,8 +1202,6 @@ class DLGStandardItemModel(QStandardItemModel):
     ) -> None:
         assert item.link is not None, "item.link cannot be None in _processLink"
         assert self.editor is not None, "self.editor cannot be None in _processLink"
-        assert parentItem is not None, "parentItem cannot be None in _processLink"
-        assert parentItem.link is not None, f"parentItem.link cannot be None. {parentItem.__class__.__name__}: {parentItem}"
         index = (parentItem or self).rowCount() if row in (-1, None) else row
         RobustRootLogger().info(f"SDM [_processLink scope] Adding #{item.link.node.list_index} to row {index}")
         links_list = self.editor.core_dlg.starters if parentItem is None else parentItem.link.node.links
@@ -1222,6 +1221,7 @@ class DLGStandardItemModel(QStandardItemModel):
         for i, link in enumerate(links_list):
             link.list_index = i
         if isinstance(parentItem, DLGStandardItem):
+            assert parentItem.link is not None, f"parentItem.link cannot be None. {parentItem.__class__.__name__}: {parentItem}"
             self.updateItemDisplayText(parentItem)
             self.syncItemCopies(parentItem.link, parentItem)
         if item.ref_to_link in self.origToOrphanCopy:
@@ -1240,8 +1240,6 @@ class DLGStandardItemModel(QStandardItemModel):
         if link is None:
             return
         # The items could be deleted by qt at this point, so we only use the python object.
-        assert parentItem is not None
-        assert parentItem.link is not None
         links_list = self.editor.core_dlg.starters if parentItem is None else parentItem.link.node.links
         index = links_list.index(link)
         RobustRootLogger().info(f"SDM [_removeLinkFromParent scope] Removing #{link.node.list_index} from row(link index) {index}")
@@ -1249,6 +1247,8 @@ class DLGStandardItemModel(QStandardItemModel):
         for i in range(index, len(links_list)):
             links_list[i].list_index = i
         if isinstance(parentItem, DLGStandardItem):
+            assert parentItem is not None
+            assert parentItem.link is not None
             self.updateItemDisplayText(parentItem)
             self.syncItemCopies(parentItem.link, parentItem)
 
@@ -2166,7 +2166,7 @@ class DLGTreeView(RobustTreeView):
             arrow.append(QPoint(center.x() - self.getTextSize() // 3, center.y() + self.getTextSize() // 2))
 
         painter.save()
-        try:
+        try:  # sourcery skip: extract-method
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(50, 50, 50, 50))
             shadow_offset = 2
@@ -2725,7 +2725,6 @@ class DLGEditor(Editor):
 
     def showEvent(self, event: QShowEvent):
         super().showEvent(event)
-        #QTimer.singleShot(50, lambda *args: self.setSecondaryWidgetPosition(self.ui.rightDockWidget, "right"))  # type: ignore[arg-type]
         QTimer.singleShot(0, lambda *args: self.showScrollingTip())
         self.resize(self.width()+200, self.height())
         self.resizeDocks(
@@ -3302,14 +3301,171 @@ Should return 1 or 0, representing a boolean.
         self.orphanedNodesList.takeItem(self.orphanedNodesList.row(selectedOrphanItem))
 
     def setupMenuExtras(self):
-        viewMenu: QMenu = self.ui.menubar.addMenu("View")  # type: ignore[arg-type]
-        settingsMenu: QMenu = self.ui.menubar.addMenu("Settings")  # type: ignore[arg-type]
-        advancedMenu = viewMenu.addMenu("Advanced")
-        refreshMenu = advancedMenu.addMenu("Refresh")
-        treeMenu = refreshMenu.addMenu("TreeView")
+        self.viewMenu: QMenu = self.ui.menubar.addMenu("View")  # type: ignore[arg-type]
+        self.settingsMenu: QMenu = self.ui.menubar.addMenu("Settings")  # type: ignore[arg-type]
+        self.advancedMenu = self.viewMenu.addMenu("Advanced")
+        self.refreshMenu = self.advancedMenu.addMenu("Refresh")
+        self.treeMenu = self.refreshMenu.addMenu("TreeView")
+
+        self.ui.menubar.addAction("Help").triggered.connect(self.showAllTips)
+        whats_this_action = QAction(self.style().standardIcon(QStyle.SP_TitleBarContextHelpButton), "", self)
+        whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
+        whats_this_action.setToolTip("Enter WhatsThis? mode.")
+        self.ui.menubar.addAction(whats_this_action)
+
+        # Common view settings
+        self._addMenuAction(
+            self.viewMenu,
+            "Uniform Row Heights",
+            self.ui.dialogTree.uniformRowHeights,
+            self.ui.dialogTree.setUniformRowHeights,
+            settings_key="uniformRowHeights",
+        )
+        self._addMenuAction(
+            self.viewMenu,
+            "Alternating Row Colors",
+            self.ui.dialogTree.alternatingRowColors,
+            self.ui.dialogTree.setAlternatingRowColors,
+            settings_key="alternatingRowColors",
+        )
+        self._addMenuAction(
+            self.viewMenu,
+            "Show/Hide Branch Connectors",
+            self.ui.dialogTree.branchConnectorsDrawn,
+            self.ui.dialogTree.drawConnectors,
+            settings_key="drawBranchConnectors",
+        )
+        self._addMenuAction(
+            self.viewMenu,
+            "Expand Items on Double Click",
+            self.ui.dialogTree.expandsOnDoubleClick,
+            self.ui.dialogTree.setExpandsOnDoubleClick,
+            settings_key="expandsOnDoubleClick",
+        )
+        self._addMenuAction(
+            self.viewMenu,
+            "Tree Indentation",
+            self.ui.dialogTree.indentation,
+            self.ui.dialogTree.setIndentation,
+            settings_key="indentation",
+            param_type=int,
+        )
+
+        # Text and Icon Display Settings
+        displaySettingsMenu = self.viewMenu.addMenu("Display Settings")
+        self._addMenuAction(
+            displaySettingsMenu,
+            "Text Elide Mode",
+            self.ui.dialogTree.textElideMode,
+            lambda x: self.ui.dialogTree.setTextElideMode(Qt.TextElideMode(x)),
+            options={
+                "Elide Left": Qt.TextElideMode.ElideLeft,
+                "Elide Right": Qt.TextElideMode.ElideRight,
+                "Elide Middle": Qt.TextElideMode.ElideMiddle,
+                "Elide None": Qt.TextElideMode.ElideNone,
+            },
+            settings_key="textElideMode",
+        )
+        self._addMenuAction(
+            displaySettingsMenu,
+            "Font Size",
+            self.ui.dialogTree.getTextSize,
+            self.ui.dialogTree.setTextSize,
+            settings_key="fontSize",
+            param_type=int,
+        )
+        self._addMenuAction(
+            displaySettingsMenu,
+            "Vertical Spacing",
+            lambda: self.ui.dialogTree.itemDelegate().customVerticalSpacing,
+            lambda x: self.ui.dialogTree.itemDelegate().setVerticalSpacing(x),
+            settings_key="verticalSpacing",
+            param_type=int,
+        )
+        self._addColorMenuAction(
+            displaySettingsMenu,
+            "Set Text Color",
+            lambda: QColor(
+                self.ui.dialogTree.settings.get("textColor", QColor(0, 0, 0))
+            ),
+            settings_key="textColor",
+        )
+
+        # Focus and scrolling settings
+        self._addExclusiveMenuAction(
+            self.settingsMenu,
+            "Focus Policy",
+            self.ui.dialogTree.focusPolicy,
+            self.ui.dialogTree.setFocusPolicy,
+            options={
+                "No Focus": Qt.FocusPolicy.NoFocus,
+                "Tab Focus": Qt.FocusPolicy.TabFocus,
+                "Click Focus": Qt.FocusPolicy.ClickFocus,
+                "Strong Focus": Qt.FocusPolicy.StrongFocus,
+                "Wheel Focus": Qt.FocusPolicy.WheelFocus,
+            },
+            settings_key="focusPolicy",
+        )
+        self._addExclusiveMenuAction(
+            self.settingsMenu,
+            "Horizontal Scroll Mode",
+            self.ui.dialogTree.horizontalScrollMode,
+            self.ui.dialogTree.setHorizontalScrollMode,
+            options={
+                "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
+                "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
+            },
+            settings_key="horizontalScrollMode",
+        )
+        self._addExclusiveMenuAction(
+            self.settingsMenu,
+            "Vertical Scroll Mode",
+            self.ui.dialogTree.verticalScrollMode,
+            self.ui.dialogTree.setVerticalScrollMode,
+            options={
+                "Scroll Per Item": QAbstractItemView.ScrollMode.ScrollPerItem,
+                "Scroll Per Pixel": QAbstractItemView.ScrollMode.ScrollPerPixel,
+            },
+            settings_key="verticalScrollMode",
+        )
+        self._addMenuAction(
+            self.settingsMenu,
+            "Auto Scroll",
+            self.ui.dialogTree.hasAutoScroll,
+            self.ui.dialogTree.setAutoScroll,
+            settings_key="autoScroll",
+        )
+        self._addMenuAction(
+            self.settingsMenu,
+            "Auto Fill Background",
+            self.autoFillBackground,
+            self.setAutoFillBackground,
+            settings_key="autoFillBackground",
+        )
+        self._addMenuAction(
+            self.settingsMenu,
+            "Expand All Root Item Children",
+            lambda: self.dlg_settings.get("ExpandRootChildren", False),
+            lambda value: self.dlg_settings.set("ExpandRootChildren", value),
+            settings_key="ExpandRootChildren",
+        )
+        self._addMenuAction(
+            self.settingsMenu,
+            "Items Scrolled Per Wheel",
+            lambda: self.dlg_settings.get("scrollStepSize", 1),
+            self.ui.dialogTree.setScrollStepSize,
+            settings_key="scrollStepSize",
+            param_type=int,
+        )
+
+        self._addSimpleAction(self.advancedMenu, "Repaint", self.repaint)
+        self._addSimpleAction(self.advancedMenu, "Update", self.update)
+        self._addSimpleAction(self.advancedMenu, "Resize Column To Contents", lambda: self.ui.dialogTree.resizeColumnToContents(0))
+        self._addSimpleAction(self.advancedMenu, "Update Geometries", self.ui.dialogTree.updateGeometries)
+        self._addSimpleAction(self.advancedMenu, "Reset", self.ui.dialogTree.reset)
 
         self._addExclusiveMenuAction(
-            settingsMenu,
+            self.settingsMenu,
             "TSL Widget Handling",
             lambda: "Default",
             self.setTSLWidgetHandling,
@@ -3331,13 +3487,13 @@ Should return 1 or 0, representing a boolean.
         #                    param_type=bool)
 
         # Advanced Menu: Miscellaneous advanced settings
-        self._addSimpleAction(treeMenu, "Repaint", self.ui.dialogTree.repaint)
-        self._addSimpleAction(treeMenu, "Update", self.ui.dialogTree.update)
-        self._addSimpleAction(treeMenu, "Resize Column To Contents", lambda: self.ui.dialogTree.resizeColumnToContents(0))
-        self._addSimpleAction(treeMenu, "Update Geometries", self.ui.dialogTree.updateGeometries)
-        self._addSimpleAction(treeMenu, "Reset", self.ui.dialogTree.reset)
+        self._addSimpleAction(self.treeMenu, "Repaint", self.ui.dialogTree.repaint)
+        self._addSimpleAction(self.treeMenu, "Update", self.ui.dialogTree.update)
+        self._addSimpleAction(self.treeMenu, "Resize Column To Contents", lambda: self.ui.dialogTree.resizeColumnToContents(0))
+        self._addSimpleAction(self.treeMenu, "Update Geometries", self.ui.dialogTree.updateGeometries)
+        self._addSimpleAction(self.treeMenu, "Reset", self.ui.dialogTree.reset)
 
-        listWidgetMenu = refreshMenu.addMenu("ListWidget")
+        listWidgetMenu = self.refreshMenu.addMenu("ListWidget")
         self._addSimpleAction(listWidgetMenu, "Repaint", self.pinnedItemsList.repaint)
         self._addSimpleAction(listWidgetMenu, "Update", self.pinnedItemsList.update)
         self._addSimpleAction(listWidgetMenu, "Reset Horizontal Scroll Mode", lambda: self.pinnedItemsList.resetHorizontalScrollMode())
@@ -3346,14 +3502,14 @@ Should return 1 or 0, representing a boolean.
         self._addSimpleAction(listWidgetMenu, "Reset", self.pinnedItemsList.reset)
         self._addSimpleAction(listWidgetMenu, "layoutChanged", lambda: self.pinnedItemsList.model().layoutChanged.emit())
 
-        viewportMenu = refreshMenu.addMenu("Viewport")
+        viewportMenu = self.refreshMenu.addMenu("Viewport")
         self._addSimpleAction(viewportMenu, "Repaint", self.ui.dialogTree.viewport().repaint)
         self._addSimpleAction(viewportMenu, "Update", self.ui.dialogTree.viewport().update)
 
-        modelMenu = refreshMenu.addMenu("Model")
+        modelMenu = self.refreshMenu.addMenu("Model")
         self._addSimpleAction(modelMenu, "Emit Layout Changed", lambda: self.ui.dialogTree.model().layoutChanged.emit())  #pyright: ignore[reportOptionalMemberAccess]
 
-        windowMenu = refreshMenu.addMenu("Window")
+        windowMenu = self.refreshMenu.addMenu("Window")
         self._addSimpleAction(windowMenu, "Repaint", lambda: self.repaint)
 
 

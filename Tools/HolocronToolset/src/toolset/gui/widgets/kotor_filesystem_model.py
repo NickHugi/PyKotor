@@ -5,7 +5,7 @@ import pathlib
 import sys
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, Union
 
 import qtpy
 
@@ -63,7 +63,7 @@ from utility.system.path import Path  # noqa: E402
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
     from qtpy.QtGui import QDragEnterEvent, QDragMoveEvent
-    from qtpy.QtWidgets import QFileSystemModel, QScrollBar
+    from qtpy.QtWidgets import QFileSystemModel
 
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.main import ToolWindow
