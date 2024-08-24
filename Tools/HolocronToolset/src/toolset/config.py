@@ -18,7 +18,7 @@ from utility.logger_util import RobustRootLogger
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{
     "currentVersion": "3.1.1",
-    "toolsetLatestVersion": "3.1.0",
+    "toolsetLatestVersion": "3.1.1",
     "toolsetLatestBetaVersion": "3.1.1",
     "updateInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py",
     "updateBetaInfoLink": "https://api.github.com/repos/NickHugi/PyKotor/contents/Tools/HolocronToolset/src/toolset/config.py?ref=bleeding-edge",
