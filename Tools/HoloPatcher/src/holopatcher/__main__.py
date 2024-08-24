@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import atexit
-import base64
 import ctypes
 import inspect
+import io
 import json
 import os
 import pathlib
@@ -12,17 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
-
-try:
-    import tkinter as tk
-
-    from tkinter import filedialog, messagebox, ttk
-except ImportError:
-    tk = None
-    filedialog = None
-    messagebox = None
-    ttk = None
-
+import tkinter as tk
 import webbrowser
 
 from argparse import ArgumentParser
@@ -31,6 +21,12 @@ from datetime import datetime, timezone
 from enum import IntEnum
 from multiprocessing import Queue
 from threading import Event, Thread
+from tkinter import (
+    filedialog,
+    font as tkfont,
+    messagebox,
+    ttk,
+)
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, NoReturn
 
@@ -80,10 +76,8 @@ from utility.string_util import striprtf  # noqa: E402
 from utility.system.os_helper import win_get_system32_dir  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 from utility.system.process import terminate_main_process  # noqa: E402
-
-if tk:
-    from utility.tkinter.tooltip import ToolTip  # noqa: E402
-    from utility.tkinter.updater import TkProgressDialog  # noqa: E402
+from utility.tkinter.tooltip import ToolTip  # noqa: E402
+from utility.tkinter.updater import TkProgressDialog  # noqa: E402
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -170,30 +164,6 @@ def parse_args() -> Namespace:
 
 class App:
     def __init__(self):
-        if not tk:
-            self._init_cli()
-        else:
-            self._init_gui()
-
-    def _init_cli(self):
-        self.install_running: bool = False
-        self.task_running: bool = False
-        self.task_thread: Thread | None = None
-        self.mod_path: str = ""
-        self.log_level: LogLevel = LogLevel.WARNINGS
-        self.pykotor_logger = RobustRootLogger()
-        self.namespaces: list[PatcherNamespace] = []
-        self.one_shot: bool = False
-        self.root = None
-
-        self.initialize_logger()
-
-        cmdline_args: Namespace = parse_args()
-        self.open_mod(cmdline_args.tslpatchdata or Path.cwd())
-        self.execute_commandline(cmdline_args)
-
-    def _init_gui(self):
-        assert tk is not None, "GUI requires tkinter"
         self.root = tk.Tk()
         self.root.title(f"HoloPatcher {VERSION_LABEL}")
 
@@ -221,16 +191,12 @@ class App:
         self.execute_commandline(cmdline_args)
         self.pykotor_logger.debug("Init complete")
 
-        # Start the CEF message loop
-        self.run_cef_loop()
-
     def set_window(
         self,
         width: int,
         height: int,
     ):
         # Get screen dimensions
-        assert self.root is not None
         screen_width: int = self.root.winfo_screenwidth()
         screen_height: int = self.root.winfo_screenheight()
 
@@ -252,8 +218,6 @@ class App:
 
     def initialize_top_menu(self):
         # Initialize top menu bar
-        assert tk is not None, "menu requires Tkinter"
-        assert self.root is not None, "menu requires Tkinter"
         self.menu_bar = tk.Menu(self.root)
         self.root.config(menu=self.menu_bar)
 
@@ -297,9 +261,6 @@ class App:
 
     def initialize_ui_controls(self):
         # Use grid layout for main window
-        assert tk is not None, "ui controls requires Tkinter"
-        assert ttk is not None, "ui controls requires Tkinter"
-        assert self.root is not None, "ui controls requires Tkinter"
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
@@ -329,7 +290,7 @@ class App:
             top_frame,
             width=1,
             text="?",
-            command=lambda *args: messagebox.showinfo(  # pyright: ignore[reportOptionalMemberAccess]
+            command=lambda *args: messagebox.showinfo(
                 self.namespaces_combobox.get(),
                 self.get_namespace_description(*args),
             ),
@@ -350,12 +311,21 @@ class App:
         self.gamepaths_browse_button = ttk.Button(top_frame, text="Browse", command=self.open_kotor)
         self.gamepaths_browse_button.grid(row=1, column=1, padx=5, pady=2, sticky="e")
 
-        # Create frame for CEF browser
-        self.webview_frame = tk.Frame(self.root)
-        self.webview_frame.grid(row=1, column=0, sticky="nsew")
-        self.webview_frame.grid_rowconfigure(0, weight=1)
-        self.webview_frame.grid_columnconfigure(0, weight=1)
-        self.webview_frame.bind("<Configure>", self.on_configure)
+        # Middle area for text and scrollbar
+        text_frame = tk.Frame(self.root)
+        text_frame.grid(row=1, column=0, sticky="nsew")
+        text_frame.grid_rowconfigure(0, weight=1)
+        text_frame.grid_columnconfigure(0, weight=1)
+
+        # Configure the text
+        self.main_text = tk.Text(text_frame, wrap=tk.WORD)
+        self.main_text.grid(row=0, column=0, sticky="nsew")
+        self.set_text_font(self.main_text)
+
+        # Create scrollbar for main frame
+        scrollbar = tk.Scrollbar(text_frame, command=self.main_text.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        self.main_text.config(yscrollcommand=scrollbar.set)
 
         # Bottom area for buttons
         bottom_frame = tk.Frame(self.root)
@@ -383,226 +353,13 @@ class App:
         self.progress_bar = ttk.Progressbar(bottom_frame, maximum=100, variable=self.progress_value)
         self.progress_bar.grid(row=1, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
 
-    def on_configure(self, event):
-        if not hasattr(self, "browser"):
-            self.initialize_webview()
-        elif platform.system() == "Windows":
-            ctypes.windll.user32.SetWindowPos(
-                self.browser.GetWindowHandle(), 0,
-                0, 0, event.width, event.height, 0x0002)
-        elif platform.system() == "Linux":
-            self.browser.SetBounds(0, 0, event.width, event.height)
-        elif platform.system() == "Darwin":  # macOS
-            # Use SetBounds or Cocoa API depending on what you need
-            self.browser.SetBounds(0, 0, event.width, event.height)
-
-    def initialize_webview(self):
-        self.html_template = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <title>Log Viewer</title>
-            <style>
-                body {
-                    font-family: 'Arial', sans-serif;
-                    margin: 0;
-                    padding: 10px;
-                    background-color: #f0f0f0;
-                    overflow: hidden;
-                }
-                #content {
-                    height: calc(100vh - 60px);
-                    overflow-y: auto;
-                    z-index: 1;
-                    position: relative;
-                }
-                #log-container {
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    width: 100%;
-                    transition: height 1s ease, top 1s ease;
-                    z-index: 2;
-                }
-                #expander {
-                    text-align: center;
-                    cursor: pointer;
-                    background-color: #ddd;
-                    padding: 10px;
-                    font-weight: bold;
-                    color: #333;
-                }
-                #logs {
-                    overflow-y: auto;
-                    display: none;
-                    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
-                    z-index: 3; /* Higher z-index to cover content */
-                }
-                .collapsed #logs {
-                    display: none;
-                }
-                .slightly-expanded #logs {
-                    max-height: 70vh; /* Set a max height to prevent it from covering too much content */
-                    display: block;
-                    overflow-y: auto; /* Enable vertical scrolling */
-                }
-                .collapsed #expander::after {
-                    content: ' ^^^ LOG VIEW ^^^ ';
-                }
-                .slightly-expanded #expander::after {
-                    content: ' --- LOG VIEW --- ';
-                }
-                .slightly-expanded #log-container {
-                    height: 30%;
-                    top: auto;
-                }
-                .collapsed #log-container {
-                    height: 5%;
-                    top: auto;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                td {
-                    word-wrap: break-word;
-                    white-space: pre-wrap; /* Ensures that long words wrap correctly */
-                }
-                tr:nth-child(even) {
-                    background-color: #f2f2f2;
-                }
-                .log-entry {
-                    transition: all 0.5s ease;
-                }
-                .DEBUG { color: blue; }
-                .INFO { color: black; }
-                .WARNING { color: orange; }
-                .ERROR { color: red; }
-                .CRITICAL { color: white; background-color: red; }
-                .log-entry.new {
-                    animation: customSlideIn 0.25s ease;
-                }
-                @keyframes customSlideIn {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-            </style>
-            <script src="marked.min.js"></script>
-            <script>
-                console.log('Marked library loaded:', typeof marked !== 'undefined');
-            </script>
-        </head>
-        <body>
-            <div id="content" class="collapsed">
-                <!-- Main content area -->
-            </div>
-            <div id="log-container" class="collapsed">
-                <div id="expander" onclick="toggleExpand()"></div>
-                <div id="logs">
-                    <table id="logs-table">
-                        <tbody>
-                            <!-- Log entries will be dynamically inserted here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <script>
-                function toggleExpand() {
-                    const container = document.getElementById('log-container');
-                    if (container.classList.contains('collapsed')) {
-                        container.classList.remove('collapsed');
-                        container.classList.add('slightly-expanded');
-                        document.getElementById('logs').style.display = 'block';
-                    } else {
-                        container.classList.remove('slightly-expanded');
-                        container.classList.add('collapsed');
-                        document.getElementById('logs').style.display = 'none';
-                    }
-                }
-
-                function setContent(newContent) {
-                    document.getElementById('content').innerHTML = newContent;
-                    updateExpanderState();
-                }
-
-                function appendLogLine(logLine, logType) {
-                    const tableBody = document.getElementById('logs-table').getElementsByTagName('tbody')[0];
-                    const row = tableBody.insertRow();
-                    const cell = row.insertCell(0);
-                    cell.innerHTML = logLine;
-                    row.className = 'log-entry ' + logType + ' new';
-                    document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight;
-                    updateExpanderState();
-                }
-
-                function updateExpanderState() {
-                    const logs = document.getElementById('logs');
-                    const expander = document.getElementById('expander');
-                    const logContainer = document.getElementById('log-container');
-                    const hasLogs = logs.querySelector('tbody').children.length > 0;
-                    const hasContent = document.getElementById('content').innerHTML.trim() !== '';
-
-                    if (hasLogs) {
-                        expander.style.display = 'block';
-                        if (logContainer.classList.contains('collapsed')) {
-                            logContainer.classList.remove('collapsed');
-                            logContainer.classList.add('slightly-expanded');
-                        }
-                    } else {
-                        expander.style.display = 'none';
-                        logContainer.classList.remove('expanded', 'slightly-expanded');
-                        logContainer.classList.add('collapsed');
-                    }
-                }
-
-                document.addEventListener("DOMContentLoaded", function() {
-                    updateExpanderState();
-                });
-                updateExpanderState();
-            </script>
-        </body>
-        </html>
-        """
-
-        # Encode the HTML content as base64
-        encoded_html = base64.b64encode(self.html_template.encode("utf-8")).decode("utf-8")
-
-        # Create the data URL
-        data_url = f"data:text/html;base64,{encoded_html}"
-
-        # Set up the CEF browser window
-        from cefpython3 import cefpython as cef  # pyright: ignore[reportAttributeAccessIssue, reportMissingTypeStubs]  # type: ignore[import-untyped]
-        window_info = cef.WindowInfo()
-        window_info.SetAsChild(self.webview_frame.winfo_id(), [0, 0, self.webview_frame.winfo_width(), self.webview_frame.winfo_height()])
-
-        # Create the browser and load the HTML template
-        self.browser = cef.CreateBrowserSync(window_info=window_info, url=data_url)
-        self.browser.SetClientCallback("OnConsoleMessage", self.on_console_message)
-
-    def on_console_message(self, browser, message, source, line, *args, **kwargs):
-        print(f"Console message from webview:{line} - {message}", args, kwargs, file=sys.__stdout__)
-
-    def run_cef_loop(self):
-        assert self.root is not None
-        from cefpython3 import cefpython as cef  # pyright: ignore[reportAttributeAccessIssue, reportMissingTypeStubs]  # type: ignore[import-untyped]
-        cef.MessageLoopWork()
-        self.root.after(10, self.run_cef_loop)
-
     def update_progress_bar_directly(
         self,
         value: int = 1,
     ):
         """Directly update the progress bar; this is the target callable for installer.install."""
         # Safely request an update from the Tkinter main thread
-        if self.root is not None:
-            self.root.after(0, self.update_progress_value, value)
+        self.root.after(0, self.update_progress_value, value)
 
     def update_progress_value(
         self,
@@ -613,11 +370,28 @@ class App:
         self.progress_value.set(new_value)
         self.progress_bar["value"] = new_value
 
+    def set_text_font(
+        self,
+        text_frame: tk.Text,
+    ):
+        font_obj = tkfont.Font(font=text_frame.cget("font"))  # use the original font
+        font_obj.configure(size=9)
+        text_frame.configure(font=font_obj)
+
+        # Define a bold and slightly larger font
+        bold_font = tkfont.Font(font=text_frame.cget("font"))
+        bold_font.configure(size=10, weight="bold")
+
+        self.main_text.tag_configure("DEBUG", foreground="#6495ED")  # Cornflower Blue
+        self.main_text.tag_configure("INFO", foreground="#000000")   # Black
+        self.main_text.tag_configure("WARNING", foreground="#CC4E00", background="#FFF3E0", font=bold_font)  # Orange with bold font
+        self.main_text.tag_configure("ERROR", foreground="#DC143C", font=bold_font)  # Firebrick with bold font
+        self.main_text.tag_configure("CRITICAL", foreground="#FFFFFF", background="#8B0000", font=bold_font)  # White on Dark Red with bold font
+
     def on_combobox_focus_in(
         self,
         event: tk.Event,
     ):
-        assert self.root is not None
         if self.namespaces_combobox_state == 2:  # no selection, fix the focus  # noqa: PLR2004
             self.root.focus_set()
             self.namespaces_combobox_state = 0  # base status
@@ -632,7 +406,6 @@ class App:
             self.namespaces_combobox_state = 2  # no selection
 
     def check_for_updates(self):
-        assert self.root is not None
         try:
             from utility.tkinter.updater import UpdateDialog
             updateInfoData: dict[str, Any] | Exception = getRemoteHolopatcherUpdateInfo()
@@ -698,12 +471,11 @@ class App:
             TkProgressDialog.monitor_and_terminate(progress_dialog)
             if kill_self_here:
                 time.sleep(3)
-                if self.root is not None:
-                    self.root.destroy()
+                self.root.destroy()
                 sys.exit(ExitCode.CLOSE_FOR_UPDATE_PROCESS)
 
         def remove_second_dot(s: str) -> str:
-            if s.count(".") == 2:  # noqa: PLR2004
+            if s.count(".") == 2:
                 # Find the index of the second dot
                 second_dot_index = s.find(".", s.find(".") + 1)
                 # Remove the second dot by slicing and concatenating
@@ -763,8 +535,7 @@ class App:
         if num_cmdline_actions == 1:
             self._begin_oneshot(cmdline_args)
         elif num_cmdline_actions > 1:
-            if messagebox is not None:
-                messagebox.showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
+            messagebox.showerror("Invalid cmdline args passed", "Cannot run more than one of [--install, --uninstall, --validate]")
             sys.exit(ExitCode.NUMBER_OF_ARGS)
 
     def _begin_oneshot(
@@ -772,9 +543,8 @@ class App:
         cmdline_args: Namespace,
     ):
         self.one_shot = True
-        if self.root is not None:
-            self.root.withdraw()
-            self.setup_cli_messagebox_overrides()
+        self.root.withdraw()
+        self.setup_cli_messagebox_overrides()
         if not self.preinstall_validate_chosen():
             sys.exit(ExitCode.NUMBER_OF_ARGS)
         if cmdline_args.install:
@@ -858,13 +628,13 @@ class App:
             return
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
-            if messagebox is not None:
-                messagebox.showerror(
-                    "Backup folder empty/missing.",
-                    f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
-                )
+            messagebox.showerror(
+                "Backup folder empty/missing.",
+                f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
+            )
             return
         self.set_state(state=True)
+        self.clear_main_text()
         fully_ran: bool = True
         try:
             uninstaller = ModUninstaller(backup_parent_folder, Path(self.gamepaths.get()), self.logger)
@@ -874,7 +644,7 @@ class App:
         finally:
             self.set_state(state=False)
             self.logger.add_note("Mod uninstaller/backup restore task completed.")
-        if not fully_ran and tk:
+        if not fully_ran:
             self.on_namespace_option_chosen(tk.Event())
 
     def async_raise(self, tid: int, exctype: type):
@@ -911,12 +681,12 @@ class App:
             return  # leave here for the static type checkers
 
         # Handle unsafe exit.
-        if self.install_running and messagebox is not None and not messagebox.askyesno(
+        if self.install_running and not messagebox.askyesno(
             "Really cancel the current installation? ",
             "CONTINUING WILL MOST LIKELY BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
             return
-        if self.task_running and messagebox is not None and not messagebox.askyesno(
+        if self.task_running and not messagebox.askyesno(
             "Really cancel the current task?",
             "A task is currently running. Exiting now may not be safe. Really continue?",
         ):
@@ -927,7 +697,7 @@ class App:
         i = 0
         while self.task_thread.is_alive():
             try:
-                self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access  # noqa: SLF001
+                self.task_thread._stop()  # type: ignore[attr-defined]  # pylint: disable=protected-access
                 print("force terminate of install thread succeeded")
             except BaseException as e:  # pylint: disable=W0718  # noqa: BLE001
                 self._handle_general_exception(e, "Error using self.install_thread._stop()", msgbox=False)
@@ -946,9 +716,8 @@ class App:
         if self.task_thread.is_alive():
             print("Failed to stop thread!")
 
-        if self.root is not None:
-            print("Destroying self")
-            self.root.destroy()
+        print("Destroying self")
+        self.root.destroy()
         print("Goodbye! (sys.exit abort unsafe)")
         print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
         pid = os.getpid()
@@ -957,7 +726,7 @@ class App:
                 system32_path = win_get_system32_dir()
                 subprocess.run([str(system32_path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)  # noqa: S603
             else:
-                subprocess.run(["kill", "-9", str(pid)], check=True)  # noqa: S607, S603
+                subprocess.run(["kill", "-9", str(pid)], check=True)
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "Failed to kill process", msgbox=False)
         finally:
@@ -969,8 +738,7 @@ class App:
         event: tk.Event,
     ):
         """Adjust the combobox after a short delay."""
-        if self.root is not None:
-            self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
+        self.root.after(10, lambda: self.move_cursor_to_end(event.widget))
 
     def move_cursor_to_end(
         self,
@@ -981,8 +749,7 @@ class App:
         position: int = len(combobox.get())
         combobox.icursor(position)
         combobox.xview(position)
-        if self.root is not None:
-            self.root.focus_set()
+        self.root.focus_set()
 
     def get_namespace_description(self) -> str:
         """Show the expanded description from namespaces.ini when hovering over an option."""
@@ -997,9 +764,7 @@ class App:
         directory: os.PathLike | str | None = None,
         reset_namespace: bool = False,
     ):
-        if not directory:
-            assert filedialog is not None
-            directory = filedialog.askdirectory()
+        directory = directory or filedialog.askdirectory()
         if not directory:
             return
 
@@ -1007,6 +772,7 @@ class App:
 
             def task():
                 self.set_state(state=True)
+                self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 made_change = False
                 try:
@@ -1046,13 +812,13 @@ class App:
         except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
         finally:
-            if reset_namespace and self.mod_path and tk:
+            if reset_namespace and self.mod_path:
                 self.on_namespace_option_chosen(tk.Event())
             self.logger.add_verbose("iOS case rename task started.")
 
     def on_namespace_option_chosen(
         self,
-        event: tk.Event | None,
+        event: tk.Event,
         config_reader: ConfigReader | None = None,
     ):
         """Handles the namespace option being chosen from the combobox.
@@ -1090,11 +856,7 @@ class App:
             # Strip info.rtf and display in the main window frame.
             info_rtf_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             info_rte_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath()).with_suffix(".rte")
-            if (
-                not info_rtf_path.safe_isfile()
-                and not info_rte_path.safe_isfile()
-                and messagebox is not None
-            ):
+            if not info_rtf_path.safe_isfile() and not info_rte_path.safe_isfile():
                 messagebox.showwarning("No info.rtf", f"Could not load the info rtf for this mod, file '{info_rtf_path}' not found on disk.")
                 return
 
@@ -1105,12 +867,12 @@ class App:
             elif info_rtf_path.safe_isfile():
                 data = BinaryReader.load_file(info_rtf_path)
                 rtf_text = decode_bytes_with_fallbacks(data, errors="replace")
-                self.load_rtf_content(rtf_text)
+                self.set_stripped_rtf_text(rtf_text)
+                # self.load_rtf_file(info_rtf_path)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the patcher namespace.")
         else:
-            if self.root is not None:
-                self.root.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
+            self.root.after(10, lambda: self.move_cursor_to_end(self.namespaces_combobox))
 
     def _handle_general_exception(
         self,
@@ -1122,7 +884,7 @@ class App:
     ):
         self.pykotor_logger.exception(custom_msg, exc_info=exc)
         error_name, msg = universal_simplify_exception(exc)
-        if msgbox and messagebox is not None:
+        if msgbox:
             messagebox.showerror(
                 title or error_name,
                 f"{(error_name + os.linesep * 2) if title else ''}{custom_msg}.{os.linesep * 2}{msg}",
@@ -1150,7 +912,7 @@ class App:
         self.namespaces_combobox["values"] = namespaces
         self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
         self.namespaces = namespaces
-        self.on_namespace_option_chosen(None, config_reader)
+        self.on_namespace_option_chosen(tk.Event(), config_reader)
 
     def open_mod(
         self,
@@ -1174,7 +936,6 @@ class App:
         """
         try:
             if default_directory_path_str is None:
-                assert filedialog is not None
                 directory_path_str: os.PathLike | str = filedialog.askdirectory()
                 if not directory_path_str:
                     return
@@ -1198,16 +959,16 @@ class App:
                 self.load_namespace(namespaces, config_reader)
             else:
                 self.mod_path = ""
-                if not default_directory_path_str and messagebox is not None:  # don't show the error if the cwd was attempted
+                if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
             self.check_access(tslpatchdata_path, recurse=True, should_filter=True)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the mod info.")
         else:
-            if default_directory_path_str and tk:
+            if default_directory_path_str:
                 self.browse_button.place_forget()
-            if not namespace_path.safe_isfile() and tk:
+            if not namespace_path.safe_isfile():
                 self.namespaces_combobox.place_forget()
 
     def open_kotor(
@@ -1228,9 +989,7 @@ class App:
             - Move cursor after a delay to end of dropdown
         """
         try:
-            if not default_kotor_dir_str:
-                assert filedialog is not None
-                directory_path_str = filedialog.askdirectory()
+            directory_path_str: os.PathLike | str = default_kotor_dir_str or filedialog.askdirectory()
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
@@ -1239,10 +998,25 @@ class App:
             self.gamepaths.set(str(directory))
             if directory_str not in self.gamepaths["values"]:
                 self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
-            if self.root is not None:
-                self.root.after(10, self.move_cursor_to_end, self.namespaces_combobox)
+            self.root.after(10, self.move_cursor_to_end, self.namespaces_combobox)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self._handle_general_exception(e, "An unexpected error occurred while loading the game directory.")
+
+    @staticmethod
+    def play_complete_sound():
+        if os.name == "nt":
+            import winsound
+
+            # Play the system "exclamation" sound
+            winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+
+    @staticmethod
+    def play_error_sound():
+        if os.name == "nt":
+            import winsound
+
+            # Play the system 'error' sound
+            winsound.MessageBeep(winsound.MB_ICONHAND)
 
     def fix_permissions(
         self,
@@ -1250,18 +1024,10 @@ class App:
         reset_namespace: bool = False,
         check: bool = False,
     ):
-        if directory is None:
-            assert filedialog is not None
-            path_arg = filedialog.askdirectory()
-        else:
-            path_arg = directory
+        path_arg = filedialog.askdirectory() if directory is None else directory
         if not path_arg:
             return
-        if (
-            not directory
-            and messagebox is not None
-            and not messagebox.askyesno("Warning!", "This is not a toy. Really continue?")
-        ):
+        if not directory and not messagebox.askyesno("Warning!", "This is not a toy. Really continue?"):
             return
 
         try:
@@ -1270,18 +1036,19 @@ class App:
             def task() -> bool:
                 extra_msg: str = ""
                 self.set_state(state=True)
+                self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
                     access: bool = path.gain_access(recurse=True, log_func=self.logger.add_verbose)
+                    # self.play_complete_sound()
                     if not access:
-                        if messagebox is not None:
-                            if not directory:
-                                messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
-                            else:
-                                messagebox.showerror(
-                                    "Could not gain permission!",
-                                    f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
-                                )
+                        if not directory:
+                            messagebox.showerror("Could not acquire permission!", "Permissions denied! Check the logs for more details.")
+                        else:
+                            messagebox.showerror(
+                                "Could not gain permission!",
+                                f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
+                            )
                         return False
                     check_isdir: bool = path.is_dir()
                     num_files = 0
@@ -1296,8 +1063,7 @@ class App:
                     if check_isdir:
                         extra_msg = f"{num_files} files and {num_folders} folders finished processing."
                         self.logger.add_note(extra_msg)
-                    if messagebox is not None:
-                        messagebox.showinfo("Successfully acquired permission", f"The operation was successful. {extra_msg}")
+                    messagebox.showinfo("Successfully acquired permission", f"The operation was successful. {extra_msg}")
 
                 except Exception as e:
                     self._handle_general_exception(e)
@@ -1310,10 +1076,10 @@ class App:
 
             self.task_thread = Thread(target=task, name="fix_permissions_tool_task")
             self.task_thread.start()
-        except Exception as e2:  # noqa: BLE001
+        except Exception as e2:
             self._handle_general_exception(e2)
         finally:
-            if reset_namespace and self.mod_path and tk:
+            if reset_namespace and self.mod_path:
                 self.on_namespace_option_chosen(tk.Event())
             self.logger.add_verbose("Started the File/Folder permissions fixer task.")
 
@@ -1342,7 +1108,7 @@ class App:
             - If access cannot be gained, show error
             - If no access after trying, prompt user to continue with an install anyway.
         """
-        filter_results: Callable[[Path], bool] | None = None  # pyright: ignore[reportAssignmentType, reportRedeclaration]
+        filter_results: Callable[[Path], bool] | None = None  # pyright: ignore[reportGeneralTypeIssues]
         if should_filter:
 
             def filter_results(x: Path) -> bool:
@@ -1350,25 +1116,22 @@ class App:
 
         if directory.has_access(recurse=recurse, filter_results=filter_results):
             return True
-        if messagebox is not None and messagebox.askyesno(
+        if messagebox.askyesno(
             "Permission error",
             f"HoloPatcher does not have permissions to the path '{directory}', would you like to attempt to gain permission automatically?",
         ):
             directory.gain_access(recurse=recurse)
-            if tk:
-                self.on_namespace_option_chosen(tk.Event())
+            self.on_namespace_option_chosen(tk.Event())
         if not directory.has_access(recurse=recurse):
-            if messagebox is not None:
-                return messagebox.askyesno(
-                    "Unauthorized",
-                    (
-                        f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
-                        f"{os.linesep}"
-                        f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
-                        "Continue with an install anyway?"
-                    ),
-                )
-            return False
+            return messagebox.askyesno(
+                "Unauthorized",
+                (
+                    f"HoloPatcher needs permissions to access '{directory}'. {os.linesep}"
+                    f"{os.linesep}"
+                    f"Please ensure the necessary folders are writeable or rerun holopatcher with elevated privileges.{os.linesep}"
+                    "Continue with an install anyway?"
+                ),
+            )
         return True
 
     def preinstall_validate_chosen(self) -> bool:
@@ -1390,34 +1153,30 @@ class App:
             - Check write access to the KOTOR install directory.
         """
         if self.task_running:
-            if messagebox is not None:
-                messagebox.showinfo(
-                    "Task already running",
-                    "Wait for the previous task to finish.",
-                )
+            messagebox.showinfo(
+                "Task already running",
+                "Wait for the previous task to finish.",
+            )
             return False
         if not self.mod_path or not CaseAwarePath(self.mod_path).safe_isdir():
-            if messagebox is not None:
-                messagebox.showinfo(
-                    "No mod chosen",
-                    "Select your mod directory first.",
-                )
+            messagebox.showinfo(
+                "No mod chosen",
+                "Select your mod directory first.",
+            )
             return False
         game_path: str = self.gamepaths.get()
         if not game_path:
-            if messagebox is not None:
-                messagebox.showinfo(
-                    "No KOTOR directory chosen",
-                    "Select your KOTOR directory first.",
-                )
+            messagebox.showinfo(
+                "No KOTOR directory chosen",
+                "Select your KOTOR directory first.",
+            )
             return False
         case_game_path = CaseAwarePath(game_path)
         if not case_game_path.safe_isdir():
-            if messagebox is not None:
-                messagebox.showinfo(
-                    "Invalid KOTOR directory chosen",
-                    "Select a valid path to your KOTOR install.",
-                )
+            messagebox.showinfo(
+                "Invalid KOTOR directory chosen",
+                "Select a valid path to your KOTOR install.",
+            )
             return False
         game_path_str = str(case_game_path)
         self.gamepaths.set(game_path_str)
@@ -1476,6 +1235,11 @@ class App:
         self.pykotor_logger.debug("set ui state")
         self.set_state(state=True)
         self.install_running = True
+        self.clear_main_text()
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.insert(tk.END, f"Starting install...{os.linesep}")
+        self.main_text.see(tk.END)
+        self.main_text.config(state=tk.DISABLED)
         try:
             installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
             installer.tslpatchdata_path = tslpatchdata_path
@@ -1493,6 +1257,8 @@ class App:
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
 
         self.set_state(state=True)
+        self.clear_main_text()
+
         def task():
             try:
                 reader = ConfigReader.from_filepath(ini_file_path, self.logger)
@@ -1527,17 +1293,23 @@ class App:
             self.progress_bar["maximum"] = 100
             self.progress_value.set(0)
             self.task_running = True
-            if tk:
-                self.install_button.config(state=tk.DISABLED)
-                self.gamepaths_browse_button.config(state=tk.DISABLED)
-                self.browse_button.config(state=tk.DISABLED)
+            self.install_button.config(state=tk.DISABLED)
+            self.gamepaths_browse_button.config(state=tk.DISABLED)
+            self.browse_button.config(state=tk.DISABLED)
         else:
             self.task_running = False
             self.initialize_logger()  # reset the errors/warnings etc
-            if tk:
-                self.install_button.config(state=tk.NORMAL)
-                self.gamepaths_browse_button.config(state=tk.NORMAL)
-                self.browse_button.config(state=tk.NORMAL)
+            self.install_button.config(state=tk.NORMAL)
+            self.gamepaths_browse_button.config(state=tk.NORMAL)
+            self.browse_button.config(state=tk.NORMAL)
+
+    def clear_main_text(self):
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.delete(1.0, tk.END)
+        for tag in self.main_text.tag_names():
+            if tag not in ["sel"]:
+                self.main_text.tag_delete(tag)
+        self.main_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(
         self,
@@ -1568,7 +1340,6 @@ class App:
                 confirm_msg
                 and not self.one_shot
                 and confirm_msg != "N/A"
-                and messagebox is not None
                 and not messagebox.askokcancel(
                     "This mod requires confirmation",
                     confirm_msg,
@@ -1597,8 +1368,7 @@ class App:
                 self.progress_bar["value"] = 99
                 self.progress_bar["maximum"] = 100
                 self.update_progress_bar_directly()
-                if self.root is not None:
-                    self.root.update_idletasks()
+                self.root.update_idletasks()
             # profiler.disable()
             # profiler_output_file = Path("profiler_output.pstat").resolve()
             # profiler.dump_stats(str(profiler_output_file))
@@ -1623,31 +1393,28 @@ class App:
                 f"Total patches: {num_patches}",
             )
             if num_errors > 0:
-                if messagebox is not None:
-                    messagebox.showerror(
-                        "Install completed with errors!",
-                        f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
-                        f"{os.linesep * 2}Total install time: {time_str}"
-                        f"{os.linesep}Total patches: {num_patches}",
-                    )
+                messagebox.showerror(
+                    "Install completed with errors!",
+                    f"The install completed with {num_errors} errors and {num_warnings} warnings! The installation may not have been successful, check the logs for more details."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
                 if self.one_shot:
                     sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
             elif num_warnings > 0:
-                if messagebox is not None:
-                    messagebox.showwarning(
-                        "Install completed with warnings",
-                        f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
-                        f"{os.linesep * 2}Total install time: {time_str}"
-                        f"{os.linesep}Total patches: {num_patches}",
-                    )
+                messagebox.showwarning(
+                    "Install completed with warnings",
+                    f"The install completed with {num_warnings} warnings! Review the logs for details. The script in the 'uninstall' folder of the mod directory will revert these changes."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
             else:
-                if messagebox is not None:
-                    messagebox.showinfo(
-                        "Install complete!",
-                        f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
-                        f"{os.linesep * 2}Total install time: {time_str}"
-                        f"{os.linesep}Total patches: {num_patches}",
-                    )
+                messagebox.showinfo(
+                    "Install complete!",
+                    f"Check the logs for details on what has been done. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes."
+                    f"{os.linesep * 2}Total install time: {time_str}"
+                    f"{os.linesep}Total patches: {num_patches}",
+                )
                 if self.one_shot:
                     sys.exit(ExitCode.SUCCESS)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -1682,11 +1449,10 @@ class App:
         self.pykotor_logger.exception("Unhandled exception in HoloPatcher", exc_info=e)
         error_name, msg = universal_simplify_exception(e)
         self.logger.add_error(f"{error_name}: {msg}{os.linesep}The installation was aborted with errors")
-        if tk is not None and messagebox is not None:
-            messagebox.showerror(
-                error_name,
-                f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
-            )
+        messagebox.showerror(
+            error_name,
+            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep * 2}{msg}",
+        )
         raise
 
     def create_rte_content(self, event: tk.Tk | None = None):
@@ -1694,83 +1460,58 @@ class App:
 
         start_rte_editor()
 
-    def load_rte_content(  # noqa: C901, PLR0912, PLR0915
-        self, rte_content: str | bytes | bytearray | None = None
+    def load_rte_content(
+        self,
+        rte_content: str | bytes | bytearray | None = None,
     ):
-        """Load and display RTE content in the WebView."""
-        assert filedialog is not None
+        self.clear_main_text()
+        self.main_text.config(state=tk.NORMAL)
         if rte_content is None:
-            file_path_str = filedialog.askopenfilename(title="Select the rich text file (*.rte)", defaultextension="*.rte")
+            file_path_str = filedialog.askopenfilename()
             if not file_path_str:
                 return
             with Path(file_path_str).open("rb") as f:
                 rte_encoded_data: bytes = f.read()
             rte_content = decode_bytes_with_fallbacks(rte_encoded_data)
 
-        document: dict[str, Any] = json.loads(rte_content)
-        content: str = document.get("content", "")
+        document = json.loads(rte_content)
 
-        # Handle tag configurations
-        tag_configs: dict[str, Any | dict] = document.get("tag_configs", {})
-        for tag, config in tag_configs.items():
-            style: list[str] = []
-            for key, value in config.items():
-                if key == "foreground":
-                    style.append(f"color:{value};")
-                elif key == "background":
-                    style.append(f"background-color:{value};")
-                elif key == "font":
-                    style.append(f"font-family:{value};")
-                elif key == "size":
-                    style.append(f"font-size:{value}pt;")
-                elif key == "bold" and value:
-                    style.append("font-weight:bold;")
-                elif key == "italic" and value:
-                    style.append("font-style:italic;")
-                elif key == "underline" and value:
-                    style.append("text-decoration:underline;")
-                elif key == "overstrike" and value:
-                    style.append("text-decoration:line-through;")
-                elif key == "justify":
-                    if value == "left":
-                        style.append("text-align:left;")
-                    elif value == "center":
-                        style.append("text-align:center;")
-                    elif value == "right":
-                        style.append("text-align:right;")
-                elif key == "spacing1":
-                    style.append(f"line-height:{value};")
-                elif key == "spacing3":
-                    style.append(f"margin-bottom:{value};")
-                elif key == "lmargin1":
-                    style.append(f"margin-left:{value}px;")
-                elif key == "lmargin2":
-                    style.append(f"margin-right:{value}px;")
-                elif key == "bullet_list":
-                    style.append("list-style-type:disc;")
-                elif key == "numbered_list":
-                    style.append("list-style-type:decimal;")
-            style_str = "".join(style)
-            content = content.replace(f"<{tag}>", f'<span style="{style_str}">').replace(f"</{tag}>", "</span>")
+        self.main_text.insert("1.0", document["content"])
+        for tag in self.main_text.tag_names():
+            if tag not in ["sel"]:
+                self.main_text.tag_delete(tag)
 
-        content = json.dumps(content)
-        self.browser.ExecuteFunction("setContent", f"{content};")
+        if "tag_configs" in document:
+            for tag, config in document["tag_configs"].items():
+                self.main_text.tag_configure(tag, **config)
+        for tag_name in document["tags"]:
+            for tag_range in document["tags"][tag_name]:
+                self.main_text.tag_add(tag_name, *tag_range)
+        self.main_text.config(state=tk.DISABLED)
 
-    def load_rtf_content(self, rtf_text: str):
-        """Converts the RTF content to HTML and displays it in the WebView."""
-        try:
-            import pypandoc  # pyright: ignore[reportMissingTypeStubs]
-            try:
-                converted_content = pypandoc.convert_text(rtf_text, "html", format="rtf", sandbox=True)
-            except OSError:
-                pypandoc.download_pandoc(delete_installer=True)
-                converted_content = pypandoc.convert_text(rtf_text, "html", format="rtf", sandbox=True)
-        except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to load RTF content. Falling back to plaintext...")
-            converted_content = striprtf(rtf_text)
-            # Escape the content, but avoid over-escaping
-            converted_content = f"<pre>{converted_content}</pre>"
-        self.browser.ExecuteFunction("setContent", converted_content)
+    def load_rtf_file(self, file_path: os.PathLike | str):
+        from utility.pyth3.plugins.plaintext.writer import PlaintextWriter
+        from utility.pyth3.plugins.rtf15.reader import Rtf15Reader
+
+        with Path.pathify(file_path).open("rb") as file:
+            rtf_contents_as_utf8_encoded: bytes = decode_bytes_with_fallbacks(file.read()).encode()
+            doc = Rtf15Reader.read(io.BytesIO(rtf_contents_as_utf8_encoded))
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.delete(1.0, tk.END)
+        self.main_text.insert(tk.END, PlaintextWriter.write(doc).getvalue())
+        self.main_text.config(state=tk.DISABLED)
+
+    def set_stripped_rtf_text(
+        self,
+        rtf_text: str,
+    ):
+        """Strips the info.rtf of all RTF related text and displays it in the UI."""
+        stripped_content: str = striprtf(rtf_text)
+        self.clear_main_text()
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.delete(1.0, tk.END)
+        self.main_text.insert(tk.END, stripped_content)
+        self.main_text.config(state=tk.DISABLED)
 
     def write_log(
         self,
@@ -1809,12 +1550,13 @@ class App:
                 log_file.write(f"{log.formatted_message}\n")
             if log.log_type.value < log_type_to_level().value:
                 return
-        except OSError:
-            RobustRootLogger().exception(f"Failed to write the log file at '{self.log_file_path}'")
+        except OSError as e:
+            RobustRootLogger().error(f"Failed to write the log file at '{self.log_file_path}': {e.__class__.__name__}: {e}")
 
-        log_message = log.formatted_message.replace("\\", "\\\\").replace("'", "\\'")
-        if tk:
-            self.browser.ExecuteFunction("appendLogLine", log_message, log_to_tag(log))
+        self.main_text.config(state=tk.NORMAL)
+        self.main_text.insert(tk.END, log.formatted_message + os.linesep, log_to_tag(log))
+        self.main_text.see(tk.END)
+        self.main_text.config(state=tk.DISABLED)
 
 
 def onAppCrash(
@@ -1841,49 +1583,35 @@ def onAppCrash(
     RobustRootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     with suppress(Exception):
-        if tk is not None and messagebox is not None:
-            if tk._default_root is None:  # pyright: ignore[reportAttributeAccessIssue]  # noqa: SLF001
-                root = tk.Tk()
-                root.withdraw()
-            messagebox.showerror(title, short_msg)
+        root = tk.Tk()
+        root.withdraw()  # Hide
+        messagebox.showerror(title, short_msg)
+        root.destroy()
+    sys.exit(ExitCode.CRASH)
 
 
-def preshutdown_callback(app: App):
+sys.excepthook = onAppCrash
+
+
+def my_cleanup_function(app: App):
     """Prevents the patcher from running in the background after sys.exit is called."""
     print("Fully shutting down HoloPatcher...")
     terminate_main_process()
-    if app.root is not None:
-        app.root.destroy()
+    app.root.destroy()
 
 
 def main():
-    sys.excepthook = onAppCrash
-    try:
-        from cefpython3 import cefpython as cef  # pyright: ignore[reportMissingTypeStubs, reportAttributeAccessIssue]
-        cef.Initialize()
-    except ImportError:
-        RobustRootLogger().exception("Failed to import cefpython3")
-        cef = None
-
     app = App()
-    atexit.register(lambda: preshutdown_callback(app))
-    if cef is not None and app.root is not None:
-        app.root.mainloop()
-        cef.Shutdown()
-
+    app.root.mainloop()
+    atexit.register(lambda: my_cleanup_function(app))
 
 def is_running_from_temp():
     app_path = Path(sys.executable)
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
 
-
 if __name__ == "__main__":
     if is_running_from_temp():
-        try:
-            from tkinter import messagebox
-            messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
-        except ImportError:
-            RobustRootLogger().warning("Tkinter is not available")
+        messagebox.showerror("Error", "This application cannot be run from within a zip or temporary directory. Please extract it to a permanent location before running.")
         sys.exit("Exiting: Application was run from a temporary or zip directory.")
     main()
