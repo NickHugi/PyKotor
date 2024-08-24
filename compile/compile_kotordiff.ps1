@@ -133,7 +133,7 @@ $argumentsArray = $pyInstallerArgs.GetEnumerator() | ForEach-Object {
 
 
 # Remove old compile/build files/folders if clean is set.
-if (Get-OS -eq "Windows") { $extension = "exe" } elseif ($os -eq "Linux") { $extension = "" } elseif ($os -eq "Mac") { $extension = "app" }
+if (Get-OS -eq "Windows") { $extension = "exe" } elseif (Get-OS -eq "Linux") { $extension = "" } elseif (Get-OS -eq "Mac") { $extension = "app" }
 $finalExecutablePath = $pyInstallerArgs.distpath + $pathSep + "$($pyInstallerArgs.name).$extension"
 if (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue) {
     Write-Host "Removing old exe at '$finalExecutablePath'"
