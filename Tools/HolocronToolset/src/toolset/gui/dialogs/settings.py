@@ -50,7 +50,7 @@ class SettingsDialog(QDialog):
         self.originalSize: QSize | None = None
         self.previousPage: str | None = None
 
-        self.pageDict: dict[str, QWidget] = {
+        self.pageDict: dict[str, QWidget] = {  # pyright: ignore[reportAttributeAccessIssue]
             "Installations": self.ui.installationsPage,
             "GIT Editor": self.ui.gitEditorPage,
             "Misc": self.ui.miscPage,
@@ -64,11 +64,11 @@ class SettingsDialog(QDialog):
         self.resetButton = QPushButton("Reset All Settings", self)
         self.resetButton.setObjectName("resetButton")
         self.resetButton.clicked.connect(self.resetAllSettings)
-        self.ui.verticalLayout.addWidget(self.resetButton)
+        self.ui.verticalLayout.addWidget(self.resetButton)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
     def closeEvent(self, a0: QCloseEvent | None) -> None:
         self.accept()
-        return super().closeEvent(a0)
+        return super().closeEvent(a0)  # pyright: ignore[reportArgumentType]
 
     def pageChanged(self, pageTreeItem: QTreeWidgetItem):
         pageItemText = pageTreeItem.text(0)

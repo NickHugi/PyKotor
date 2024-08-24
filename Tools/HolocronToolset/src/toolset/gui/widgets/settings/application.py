@@ -172,6 +172,7 @@ class ApplicationSettingsWidget(SettingsWidget):
                 action = group_menu.addAction(env_var.name)
                 action.setToolTip(env_var.description)
                 action.hovered.connect(lambda act=action: QToolTip.showText(QCursor.pos(), act.toolTip()))
+                action.triggered.connect(lambda _, ev=env_var: self.addEnvironmentVariableFromMenu(ev.name, ev.default))
 
         self.ui.addButton.setMenu(self.add_menu)  # pyright: ignore[reportArgumentType]
 
@@ -211,13 +212,17 @@ class ApplicationSettingsWidget(SettingsWidget):
         """Edit the selected environment variable."""
         selected_row = self.ui.tableWidget.currentRow()
         if selected_row < 0:
-            QMessageBox.warning(self, "Edit Variable", "Please select a variable to edit.")
-            return
-
-        key_item = self.ui.tableWidget.item(selected_row, 0)
-        value_item = self.ui.tableWidget.item(selected_row, 1)
-        assert key_item is not None
-        assert value_item is not None
+            selected_row = self.ui.tableWidget.rowCount()
+            self.ui.tableWidget.insertRow(selected_row)
+            key_item = QTableWidgetItem("")
+            value_item = QTableWidgetItem("")
+            self.ui.tableWidget.setItem(selected_row, 0, key_item)  # pyright: ignore[reportArgumentType]
+            self.ui.tableWidget.setItem(selected_row, 1, value_item)  # pyright: ignore[reportArgumentType]
+        else:
+            key_item = self.ui.tableWidget.item(selected_row, 0)
+            value_item = self.ui.tableWidget.item(selected_row, 1)
+            assert key_item is not None
+            assert value_item is not None
 
         old_key = key_item.text()
         old_value = value_item.text()
