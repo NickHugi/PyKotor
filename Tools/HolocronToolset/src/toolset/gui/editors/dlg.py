@@ -4377,9 +4377,9 @@ Should return 1 or 0, representing a boolean.
                 self.ui.dialogTree.setCurrentIndex(belowIndex)
             self.model.shiftItem(selectedItem, 1, noSelectionUpdate=True)
         elif aboveIndex.isValid() and key in (QtKey.Key_Up,) and not self.ui.dialogTree.visualRect(aboveIndex).contains(self.ui.dialogTree.viewport().rect()):
-            self.ui.dialogTree.scrollSingleStep("up")
+            self.ui.dialogTree.scrollMultipleSteps("up")
         elif belowIndex.isValid() and key in (QtKey.Key_Down,) and not self.ui.dialogTree.visualRect(belowIndex).contains(self.ui.dialogTree.viewport().rect()):
-            self.ui.dialogTree.scrollSingleStep("down")
+            self.ui.dialogTree.scrollMultipleSteps("down")
 
     def keyPressEvent(
         self,
