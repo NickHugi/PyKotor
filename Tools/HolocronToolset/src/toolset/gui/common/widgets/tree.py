@@ -504,6 +504,38 @@ class RobustTreeView(QTreeView):
             subMenu.addAction(action)
             actionGroup.addAction(action)
 
+    def _addMultiSelectMenuAction(  # noqa: PLR0913
+        self,
+        menu: QMenu,
+        title: str,
+        current_state_func: Callable[[], Any],
+        set_func: Callable[[Any], Any],
+        options: dict[str, Any],
+        settings_key: str,
+        zero_value: Any,
+    ):
+        subMenu = menu.addMenu(title)
+        initial_value = self.settings.get(settings_key, current_state_func())
+        selected_filters = initial_value
+
+        def apply_filters():
+            combined_filter = zero_value
+            for action in subMenu.actions():
+                if action.isChecked():
+                    combined_filter |= options[action.text()]
+            set_func(combined_filter)
+            self.settings.set(settings_key, combined_filter)
+
+        for option_name, option_value in options.items():
+            action = QAction(option_name, self)
+            action.setCheckable(True)
+            action.setChecked(bool(initial_value & option_value))
+            action.triggered.connect(apply_filters)
+            subMenu.addAction(action)
+
+        # Apply the filters initially based on settings
+        apply_filters()
+
     def _handleIntAction(self, func: Callable[[int], Any], title: str, settings_key: str):
         value, ok = QInputDialog.getInt(self, f"Set {title}", f"Enter {title}:", min=0)
         if ok:

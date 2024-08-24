@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from typing_extensions import Literal
 
-    from pykotor.common.misc import CaseInsensitiveDict, Game
+    from pykotor.common.misc import Game
     from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
+    from utility.common.more_collections import CaseInsensitiveDict
 
 
 class OverrideType:

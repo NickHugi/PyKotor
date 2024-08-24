@@ -46,6 +46,12 @@ Issues = "https://github.com/NickHugi/PyKotor/issues"
 ## define only linter configurations below this point ##
 ########################################################
 
+[tool.pyright.defineConstant]
+PYQT5 = true
+PYSIDE2 = false
+PYQT6 = false
+PYSIDE6 = false
+
 [tool.ruff]
 extend = "../../pyproject.toml"
 

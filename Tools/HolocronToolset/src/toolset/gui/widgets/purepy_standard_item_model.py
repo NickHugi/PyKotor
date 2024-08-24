@@ -62,13 +62,14 @@ class PyQStandardItem:
     ):
         self._data: dict[int, Any] = {}
         self._parent: PyQStandardItem | None = None
-        self._children: list[PyQStandardItem] = []  # pyright: ignore[reportAttributeAccessIssue]
+        self._children: list[tuple[PyQStandardItem | None, ...]] = []
         self._roleNames: dict[int, QByteArray | bytes | bytearray] = {}
-        self._flags: Qt.ItemFlags | Qt.ItemFlag = Qt.ItemIsEnabled | Qt.ItemIsSelectable
-        self._model: QAbstractItemModel | None = None  # Reference to the model
-        if not args and not kwargs:
-            return
-        self._handle_init_overloads(*args, **kwargs)
+        self._flags: Qt.ItemFlags | Qt.ItemFlag | int = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+        self._model: QAbstractItemModel | None = None
+        self._rows: int = 0
+        self._columns: int = 0
+        if args or kwargs:
+            self._handle_init_overloads(*args, **kwargs)
 
     def _handle_init_overloads(  # noqa: PLR0912, C901
         self,
@@ -79,7 +80,7 @@ class PyQStandardItem:
         columns: int = 1,
         other: PyQStandardItem | None = None,
     ):
-        if len(args) > 0:
+        if args:
             first_arg = args[0]
             if isinstance(first_arg, str):
                 text = first_arg
@@ -109,8 +110,8 @@ class PyQStandardItem:
             self._data.clear()
             self._data.update(other._data)  # noqa: SLF001
             self._flags = other._flags  # noqa: SLF001
-            for child in other._children:  # noqa: SLF001
-                self.appendRow(child.clone())
+            for row in other._children:  # noqa: SLF001
+                self.appendRow(tuple(None if child is None else child.clone() for child in row))
             return
 
         # Handle rows and columns constructor
@@ -131,6 +132,35 @@ class PyQStandardItem:
             f"Received args: {args}"
         )
         raise TypeError(error_message)
+
+    def _childIndex(self, row: int, column: int) -> int:
+        if row < 0 or row >= self._rows or column < 0 or column >= self._columns:
+            return -1
+        return (row * self._columns) + column
+
+    def _setChild(self, row: int, column: int, item: PyQStandardItem, *, emitChanged: bool = True):
+        if item == self:
+            raise ValueError("Cannot set an item as a child of itself.")
+        if row < 0 or column < 0:
+            return
+        if self._rows <= row:
+            self.setRowCount(row + 1)
+        if self._columns <= column:
+            self.setColumnCount(column + 1)
+        index = self._childIndex(row, column)
+        old_item = self._children[index]
+        if item == old_item:
+            return
+        if item:
+            if item._parent is not None:  # noqa: SLF001
+                raise ValueError("Duplicate insertion of item.")
+            item._parent = self  # noqa: SLF001
+            item._model = self._model  # noqa: SLF001
+        if old_item is not None:
+            old_item._model = None  # noqa: SLF001
+        self._children[index] = item
+        if self._model is not None and emitChanged:
+            self._model.itemChanged(item)
 
     def __repr__(self) -> str:
         def format_cache(cache: dict[int, Any]) -> dict[str, str]:
@@ -167,6 +197,14 @@ class PyQStandardItem:
         if self._parent:
             details["Parent"] = f"Parent Row: {self.row()}"
         return f"{self.__class__.__name__}({', '.join(f'{key}: {value}' for key, value in details.items())})"
+
+    def _position(self):
+        if self._parent is None:
+            return (-1, -1)
+        idx = self._parent._childIndex(self)  # noqa: SLF001
+        if idx == -1:
+            return (-1, -1)
+        return (idx // self._parent.columnCount(), idx % self._parent.columnCount())
 
     def appendChild(self, child: PyQStandardItem):
         child._parent = self  # noqa: SLF001

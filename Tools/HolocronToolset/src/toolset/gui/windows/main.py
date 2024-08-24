@@ -647,7 +647,7 @@ class ToolWindow(QMainWindow):
         qcolor.setHsv(h, s, v)
         return qcolor
 
-    def create_palette(
+    def create_palette(  # noqa: PLR0913, C901
         self,
         primary: QColor | Qt.GlobalColor | str | int,
         secondary: QColor | Qt.GlobalColor | str | int,
@@ -870,7 +870,7 @@ class ToolWindow(QMainWindow):
         for save_path, resource_list in self.active.saves[newSaveDirPath].items():
             # Create a new parent item for the save_path
             save_path_item = QStandardItem(str(save_path.relative_to(save_path.parent.parent)))
-            print("<SDM> [onSavepathChanged scope] save_path_item: ", save_path_item)
+            #print("<SDM> [onSavepathChanged scope] save_path_item: ", save_path_item)
 
             self.ui.savesWidget.modulesModel.invisibleRootItem().appendRow(save_path_item)  # pyright: ignore[reportOptionalMemberAccess]
 
@@ -879,10 +879,10 @@ class ToolWindow(QMainWindow):
 
             for resource in resource_list:
                 restype: ResourceType = resource.restype()
-                print("<SDM> [onSavepathChanged scope] ResourceType: ", restype)
+                #print("<SDM> [onSavepathChanged scope] ResourceType: ", restype)
 
                 category: str = restype.category
-                print("<SDM> [onSavepathChanged scope] category: ", category)
+                #print("<SDM> [onSavepathChanged scope] category: ", category)
 
                 # Check if the category item already exists under this save_path_item
                 if category not in categoryItemsUnderSavePath:
@@ -896,7 +896,7 @@ class ToolWindow(QMainWindow):
 
                 # Now, categoryItem is guaranteed to exist
                 categoryItem = categoryItemsUnderSavePath[category]
-                print("<SDM> [onSavepathChanged scope] categoryItem: ", categoryItem.text())
+                #print("<SDM> [onSavepathChanged scope] categoryItem: ", categoryItem.text())
 
                 # Check if resource is already listed under this category
                 from toolset.gui.widgets.main_widgets import ResourceStandardItem
@@ -977,7 +977,7 @@ class ToolWindow(QMainWindow):
         assert self.active is not None
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(texturepackName))
 
-    def changeActiveInstallation(self, index: int):  # noqa: PLR0915, C901
+    def changeActiveInstallation(self, index: int):  # noqa: PLR0915, C901, PLR0912
         """Changes the active installation selected.
 
         If an installation does not have a path yet set, the user is prompted
@@ -2395,14 +2395,14 @@ class ToolWindow(QMainWindow):
             print("<SDM> [onExtractResources scope] paths_to_write: ", paths_to_write)
 
             if folder_path is None or paths_to_write is None:
-                RobustRootLogger.debug("No paths to write: user must have cancelled the getExistingDirectory dialog.")
+                RobustRootLogger().debug("No paths to write: user must have cancelled the getExistingDirectory dialog.")
                 return
             failed_savepath_handlers: dict[Path, Exception] = {}
             resource_save_paths = FileSaveHandler(selectedResources).determine_save_paths(paths_to_write, failed_savepath_handlers)
             print("<SDM> [onExtractResources scope] resource_save_paths: ", resource_save_paths)
 
             if not resource_save_paths:
-                RobustRootLogger.debug("No resources returned from FileSaveHandler.determine_save_paths")
+                RobustRootLogger().debug("No resources returned from FileSaveHandler.determine_save_paths")
                 return
             loader = AsyncLoader.__new__(AsyncLoader)
             seen_resources = {}
@@ -2428,9 +2428,7 @@ class ToolWindow(QMainWindow):
 
             qInstance = QApplication.instance()
             print("<SDM> [onExtractResources scope] qInstance: ", qInstance)
-
-            if qInstance is None:
-                return
+            assert qInstance is not None, "no QApplication created??"
             if QThread.currentThread() == qInstance.thread():
                 if loader.errors:
                     msgBox = QMessageBox(

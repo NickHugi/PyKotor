@@ -189,6 +189,4 @@ if __name__ == "__main__":
 
     item = shell.SHCreateItemFromParsingName(
         fspath(r"Z:\blah\blah"), ctx, shell.IID_IShellItem2)
-
-    SIGDN_DESKTOPABSOLUTEPARSING = 0x80028000
     print(item.GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING))  # prints Z:\blah\blah

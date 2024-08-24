@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import CaseInsensitiveDict, ResRef
+from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
@@ -50,6 +50,7 @@ from pykotor.tslpatcher.mods.twoda import (
     TargetType,
 )
 from pykotor.tslpatcher.namespaces import PatcherNamespace
+from utility.common.more_collections import CaseInsensitiveDict
 from utility.misc import is_float, is_int
 from utility.system.path import Path, PurePath, PureWindowsPath
 

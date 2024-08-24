@@ -298,6 +298,7 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
     default_folder: str | None = None,
     file_types: list[tuple[str, str]] | None = None,
     default_extension: str | None = None,
+    pick_folders: bool = False,
     *,
     overwrite_prompt: bool = False,
     strict_file_types: bool = False,
@@ -354,13 +355,14 @@ def open_file_dialog(  # noqa: C901, PLR0913, PLR0912
         list[str] | None: A list of selected file paths or None if cancelled.
     """
     options = 0
+    if pick_folders:
+        options |= FileOpenOptions.FOS_PICKFOLDERS
     if overwrite_prompt:
         options |= FileOpenOptions.FOS_OVERWRITEPROMPT
     if strict_file_types:
         options |= FileOpenOptions.FOS_STRICTFILETYPES
     if no_change_dir:
         options |= FileOpenOptions.FOS_NOCHANGEDIR
-    options |= FileOpenOptions.FOS_PICKFOLDERS
     if force_filesystem:
         options |= FileOpenOptions.FOS_FORCEFILESYSTEM
     if all_non_storage_items:

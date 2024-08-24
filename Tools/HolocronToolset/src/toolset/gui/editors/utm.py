@@ -21,9 +21,9 @@ if TYPE_CHECKING:
 
     from qtpy.QtWidgets import QWidget
 
-    from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.resource.formats.gff.gff_data import GFF
     from toolset.data.installation import HTInstallation
+    from utility.common.more_collections import CaseInsensitiveDict
 
 
 class UTMEditor(Editor):

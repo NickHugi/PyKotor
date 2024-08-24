@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ctypes import POINTER, POINTER as C_POINTER, Structure, c_char_p, c_int, c_uint, c_ulong, c_void_p, c_wchar_p, windll
+from ctypes import POINTER, POINTER as C_POINTER, Structure, byref, c_char_p, c_int, c_uint, c_ulong, c_void_p, c_wchar_p, windll
 from ctypes.wintypes import BOOL, DWORD, HWND, LPCWSTR, LPWSTR, ULONG
 from enum import IntFlag
 from typing import TYPE_CHECKING, Callable, ClassVar, Sequence
@@ -256,8 +256,8 @@ class IShellItem(IUnknown):
     Compare: Callable[[_Pointer[IUnknown], c_ulong, c_int], HRESULT]
     @classmethod
     def from_path(cls, path: os.PathLike | str) -> _Pointer[Self]:
-        pShellItem = POINTER(cls)()
-        hr = SHCreateItemFromParsingName(c_wchar_p(str(path)), None, comtypes.byref(pShellItem))
+        pShellItem = POINTER(cls)(cls())
+        hr = SHCreateItemFromParsingName(str(path), None, byref(pShellItem))
         if hr != 0:
             raise OSError(f"Failed to create IShellItem from path. HRESULT: {hr}")
         return pShellItem
@@ -285,6 +285,13 @@ class ShellItem(comtypes.COMObject):
 SHCreateItemFromParsingName = windll.shell32.SHCreateItemFromParsingName
 SHCreateItemFromParsingName.argtypes = [LPCWSTR, comtypes.POINTER(comtypes.IUnknown), comtypes.POINTER(POINTER(IShellItem))]
 SHCreateItemFromParsingName.restype = HRESULT
+
+def create_shell_item_from_path(path: str) -> _Pointer[IShellItem]:
+    item = POINTER(IShellItem)()
+    hr = SHCreateItemFromParsingName(path, None, byref(GUID("{00000000-0000-0000-C000-000000000046}")), byref(item))
+    if hr != 0:
+        raise OSError(f"SHCreateItemFromParsingName failed! HRESULT: {hr}")
+    return item
 
 
 class IContextMenu(IUnknown):

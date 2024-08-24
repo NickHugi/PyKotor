@@ -33,9 +33,9 @@ if TYPE_CHECKING:
     from qtpy.QtCore import QEvent, QModelIndex, QObject
     from qtpy.QtGui import QResizeEvent
 
-    from pykotor.common.misc import CaseInsensitiveDict
     from pykotor.resource.type import ResourceType
     from toolset.data.installation import HTInstallation
+    from utility.common.more_collections import CaseInsensitiveDict
 
 
 class MainWindowList(QWidget):
@@ -98,18 +98,18 @@ class ResourceList(MainWindowList):
 
         self.modulesModel: ResourceModel = ResourceModel()
         self.modulesModel.proxyModel().setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.ui.resourceTree.setModel(self.modulesModel.proxyModel())  # type: ignore[arg-type]
-        self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)  # type: ignore[arg-type]
+        self.ui.resourceTree.setModel(self.modulesModel.proxyModel())  # pyright: ignore[reportArgumentType]
+        self.ui.resourceTree.sortByColumn(0, Qt.SortOrder.AscendingOrder)  # pyright: ignore[reportArgumentType]
         self.sectionModel = QStandardItemModel()
-        self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
+        self.ui.sectionCombo.setModel(self.sectionModel)  # pyright: ignore[reportArgumentType]
 
         # Connect the header context menu request signal
-        header: QHeaderView = self.ui.resourceTree.header()
+        header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
         assert header is not None
         header.setSectionsClickable(True)
         header.setSortIndicatorShown(True)
-        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # type: ignore[arg-type]
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # type: ignore[arg-type]
+        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # pyright: ignore[reportArgumentType]
 
         header.customContextMenuRequested.connect(self.onHeaderContextMenu)
 
@@ -118,9 +118,9 @@ class ResourceList(MainWindowList):
         self.ui.resourceTree.collapsed.connect(self.onTreeItemCollapsed)
 
         # Install event filter on the viewport
-        viewport: QWidget | None = self.ui.resourceTree.viewport()  # type: ignore[arg-type]
+        viewport: QWidget | None = self.ui.resourceTree.viewport()  # pyright: ignore[reportAssignmentType]
         assert viewport is not None
-        viewport.installEventFilter(self)  # type: ignore[arg-type]
+        viewport.installEventFilter(self)  # pyright: ignore[reportArgumentType]
         self.setMouseTracking(True)
         self.ui.resourceTree.setMouseTracking(True)
 
@@ -160,7 +160,7 @@ class ResourceList(MainWindowList):
         alternate_row_colors_action.setChecked(self.ui.resourceTree.alternatingRowColors())
         alternate_row_colors_action.triggered.connect(self.ui.resourceTree.setAlternatingRowColors)
 
-        header: QHeaderView | None = self.ui.resourceTree.header()  # type: ignore[arg-type]
+        header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
         assert header is not None
         menu.exec_(header.mapToGlobal(point))
 

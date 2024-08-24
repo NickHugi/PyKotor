@@ -85,14 +85,14 @@ class FileSaveHandler(Generic[T]):
             if response == QFileDialog.Accepted:
                 filepath_str = dialog.selectedFiles()[0]
                 if not filepath_str or not filepath_str.strip():
-                    RobustRootLogger.debug("QFileDialog was accepted but no filepath str passed.")
+                    RobustRootLogger().debug("QFileDialog was accepted but no filepath str passed.")
                     return {}
                 paths_to_write[resource] = Path(filepath_str)
 
         elif len(self.resources) > 1:
             folderpath_str: str = QFileDialog.getExistingDirectory(self.parent, "Extract to folder")
             if not folderpath_str or not folderpath_str.strip():
-                RobustRootLogger.debug("User cancelled folderpath extraction.")
+                RobustRootLogger().debug("User cancelled folderpath extraction.")
                 return {}
 
             # Build intended destination filepaths dict
@@ -150,7 +150,7 @@ class FileSaveHandler(Generic[T]):
         # Build new_paths_to_write based on the choice.
         new_paths_to_write: dict[T, Path] = {}
         if choice == QMessageBox.StandardButton.Yes:
-            RobustRootLogger.debug(
+            RobustRootLogger().debug(
                 "User chose to Overwrite %s files/folders in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.values())).parent,
@@ -169,7 +169,7 @@ class FileSaveHandler(Generic[T]):
                 else:
                     new_paths_to_write[resource] = path
         elif choice == QMessageBox.StandardButton.No:
-            RobustRootLogger.debug(
+            RobustRootLogger().debug(
                 "User chose to Rename %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.values())).parent,
@@ -189,7 +189,7 @@ class FileSaveHandler(Generic[T]):
                         RobustRootLogger().info("Will save '%s' as '%s'", path.name, new_path)
                     new_paths_to_write[resource] = new_path
         else:
-            RobustRootLogger.debug(
+            RobustRootLogger().debug(
                 "User chose to CANCEL overwrite/renaming of %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.values())).parent,
@@ -206,11 +206,14 @@ class FileSaveHandler(Generic[T]):
         msgBox.setWindowTitle("Existing files/folders found.")
         msgBox.setText(f"The following {len(existing_files_and_folders)} files and folders already exist in the selected folder.<br><br>How would you like to handle this?")
         msgBox.setDetailedText("\n".join(existing_files_and_folders))
-        msgBox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Abort)
-        msgBox.button(QMessageBox.StandardButton.Yes).setText("Overwrite")
-        msgBox.button(QMessageBox.StandardButton.No).setText("Auto-Rename")
+        msgBox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Abort)  # pyright: ignore[reportArgumentType]
+        yesButton, noButton = msgBox.button(QMessageBox.StandardButton.Yes), msgBox.button(QMessageBox.StandardButton.No)
+        assert yesButton is not None, "Did not call setStandardButtons with the QMessageBox yes button."
+        assert noButton is not None, "Did not call setStandardButtons with the QMessageBox yes button."
+        yesButton.setText("Overwrite")
+        noButton.setText("Auto-Rename")
         msgBox.setDefaultButton(QMessageBox.StandardButton.Abort)
-        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
+        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
         return msgBox.exec_()
 
     def _handle_failed_extractions(
@@ -225,6 +228,6 @@ class FileSaveHandler(Generic[T]):
             f"{file}: {universal_simplify_exception(exc)}"
             for file, exc in failed_extractions.items()
         )
-        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)
+        msgBox.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.WindowSystemMenuHint)  # pyright: ignore[reportArgumentType]
         msgBox.setDetailedText(detailed_info)
         msgBox.exec_()

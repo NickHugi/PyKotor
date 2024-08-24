@@ -210,7 +210,7 @@ class CaseInsensitiveDict(Generic[T]):
         # it's a dict of some sort, do some more quick checks.
         if is_casedict and other._case_map != self._case_map:
             return False
-        other_dict: dict[str, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other
+        other_dict: dict[str, T] = other._dictionary if isinstance(other, CaseInsensitiveDict) else other  # pyright: ignore[reportAssignmentType]
         if len(self._dictionary) != len(other_dict):
             return False
 
@@ -229,7 +229,7 @@ class CaseInsensitiveDict(Generic[T]):
         if not isinstance(key, str):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
-        return self._dictionary[self._case_map[key.lower()]]
+        return self._dictionary[self._case_map[key.lower()]]  # pyright: ignore[reportArgumentType]
 
     def __setitem__(self, key: str, value: T):
         if not isinstance(key, str):
@@ -237,7 +237,7 @@ class CaseInsensitiveDict(Generic[T]):
             raise KeyError(msg)
         if key in self:
             self.__delitem__(key)
-        self._case_map[key.lower()] = key
+        self._case_map[key.lower()] = key  # pyright: ignore[reportArgumentType]
         self._dictionary[key] = value
 
     def __delitem__(self, key: str):
@@ -245,7 +245,7 @@ class CaseInsensitiveDict(Generic[T]):
             msg = f"Keys must be strings in CaseInsensitiveDict-inherited classes, got {key!r}"
             raise KeyError(msg)
         lower_key = key.lower()
-        del self._dictionary[self._case_map[lower_key]]
+        del self._dictionary[self._case_map[lower_key]]  # pyright: ignore[reportArgumentType]
         del self._case_map[lower_key]
 
     def __contains__(self, key: str) -> bool:
@@ -288,7 +288,7 @@ class CaseInsensitiveDict(Generic[T]):
         lower_key: str = __key.lower()
         try:
             # Attempt to pop the value using the case-insensitive key.
-            value: T = self._dictionary.pop(self._case_map.pop(lower_key))
+            value: T = self._dictionary.pop(self._case_map.pop(lower_key))  # pyright: ignore[reportArgumentType]
         except KeyError:
             if __default is _unique_sentinel:
                 raise

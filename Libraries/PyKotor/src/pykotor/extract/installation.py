@@ -3,17 +3,17 @@ from __future__ import annotations
 import itertools
 import os
 import platform
+import sys
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import suppress
 from copy import copy
 from enum import Enum, IntEnum
 from functools import lru_cache
-import sys
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
 
 from pykotor.common.language import Gender, Language, LocalizedString
-from pykotor.common.misc import CaseInsensitiveDict, Game
+from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
@@ -27,6 +27,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
+from utility.common.more_collections import CaseInsensitiveDict
 from utility.logger_util import RobustRootLogger
 from utility.system.path import Path, PurePath
 

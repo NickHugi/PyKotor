@@ -1,5 +1,6 @@
 .git
 .idea
+.idea/*
 venv
 .venv*
 errorlog.txt
@@ -16,11 +17,9 @@ nuitka_dist
 pyinstaller.exe
 build-windows.ps1
 __pycache__
-.idea
 .git
-PyKotorGL.egg-info
 /pykotor/gl/window.py
-PyKotor.egg-info
+*.egg-info*
 ignore
 *.pyc
 .history
@@ -45,7 +44,6 @@ Tree-*.toc
 logs/*
 .vscode/PythonImportHelper-v2-Completion.json
 .mypy_cache
-*.egg-info*
 /toolset/help/
 /toolset/kits/
 Tools/HolocronToolset/src/toolset/kits
@@ -57,7 +55,6 @@ Tools/HolocronToolset/src/toolset/kits/*/*
 .idea/misc.xml
 .idea/PyKotor.iml
 .mypy_cache
-*.egg-info*
 .venv
 .venv_wsl
 .secrets
@@ -71,3 +68,5 @@ typings/*
 Tools/HoloPatcher/src/holopatcher/node_modules
 Tools/HoloPatcher/src/holopatcher/package-lock.json
 Tools/HoloPatcher/src/holopatcher/package.json
+.history
+.history*
