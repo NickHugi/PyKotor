@@ -52,6 +52,8 @@ class ModificationsNCS(PatcherModifications):
                         msg = f"StrRef{token_id_or_value} was not defined before use"
                         raise KeyError(msg)
                     value = memory.memory_str[token_id_or_value]
+                    logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
+                    writer.write_uint16(value, big=True)
                 elif token_type.lower() == "2damemory":
                     memory_val: str | PureWindowsPath | None = memory.memory_2da.get(token_id_or_value, None)
                     if memory_val is None:
@@ -61,10 +63,22 @@ class ModificationsNCS(PatcherModifications):
                         msg = f"Memory value cannot be !FieldPath in [HACKList] patches, got '{memory_val!r}'"
                         raise ValueError(msg)
                     value = int(memory_val)
+                    logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
+                    writer.write_uint16(value, big=True)
                 else:
                     value = token_id_or_value
-                logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD {value} at offset {offset:#X}")
-                writer.write_uint16(value, big=True)
+                    if token_type.lower() == "uint32":
+                        logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned DWORD (32-bit) {value} at offset {offset:#X}")
+                        writer.write_uint32(value, big=True)
+                    elif token_type.lower() == "uint16":
+                        logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned WORD (16-bit) {value} at offset {offset:#X}")
+                        writer.write_uint16(value, big=True)
+                    elif token_type.lower() == "uint8":
+                        logger.add_verbose(f"HACKList {self.sourcefile}: writing unsigned BYTE (8-bit) {value} at offset {offset:#X}")
+                        writer.write_uint8(value)
+                    else:
+                        msg = f"Unknown token type '{token_type}' in HACKList patch"
+                        raise ValueError(msg)
 
     def pop_tslpatcher_vars(
         self,

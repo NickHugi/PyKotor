@@ -658,14 +658,37 @@ class ConfigReader:
             file_section_dict = CaseInsensitiveDict(self.ini[file_section_name])
             modifications.pop_tslpatcher_vars(file_section_dict, default_destination, default_source_folder)
 
-            for offset_str, value_str in file_section_dict.items():
-                lower_value: str = value_str.lower()
-                if lower_value.startswith("strref"):
-                    modifications.hackdata.append(("StrRef", int(offset_str), int(value_str[6:])))
-                elif lower_value.startswith("2damemory"):
-                    modifications.hackdata.append(("2DAMEMORY", int(offset_str), int(value_str[9:])))
+        for offset_str, value_str in file_section_dict.items():
+            if offset_str.startswith("0x"):
+                offset = int(offset_str, 16)
+            else:
+                offset = int(offset_str, 10)
+            type_specifier = "u16"
+            if ":" in value_str:
+                type_specifier, value_str = value_str.split(":", 1)
+            lower_value = value_str.lower()
+
+            if lower_value.startswith("strref"):
+                if value_str[6:].strip().startswith("0x"):
+                    value = int(value_str[6:].strip(), 16)
                 else:
-                    modifications.hackdata.append(("VALUE", int(offset_str), int(value_str)))
+                    value = int(value_str[6:].strip(), 10)
+                modifications.hackdata.append(("StrRef", offset, value))
+            elif lower_value.startswith("2damemory"):
+                if value_str[9:].strip().startswith("0x"):
+                    value = int(value_str[9:].strip(), 16)
+                else:
+                    value = int(value_str[9:].strip(), 10)
+                modifications.hackdata.append(("2DAMEMORY", offset, value))
+            elif type_specifier == "u8":
+                value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
+                modifications.hackdata.append(("UINT8", offset, value))
+            elif type_specifier == "u32":
+                value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
+                modifications.hackdata.append(("UINT32", offset, value))
+            else:
+                value = int(value_str, 16) if value_str.startswith("0x") else int(value_str, 10)
+                modifications.hackdata.append(("UINT16", offset, value))
 
             self.config.patches_ncs.append(modifications)
 
