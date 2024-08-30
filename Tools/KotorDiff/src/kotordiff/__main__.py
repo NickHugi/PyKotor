@@ -67,13 +67,16 @@ def log_output(*args, **kwargs):
         return
 
     if not OUTPUT_LOG:
-        while True:
-            chosen_log_file_path: str = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
-            OUTPUT_LOG = Path(chosen_log_file_path).resolve()
-            if OUTPUT_LOG.parent.safe_isdir():
-                break
-            print("Invalid path:", OUTPUT_LOG)
-            PARSER.print_help()
+        chosen_log_file_path: str = "log_install_differ.log"
+        OUTPUT_LOG = Path(chosen_log_file_path).resolve()
+        if not OUTPUT_LOG.parent.safe_isdir():
+            while True:
+                chosen_log_file_path: str = PARSER_ARGS.output_log or input("Filepath of the desired output logfile: ").strip() or "log_install_differ.log"
+                OUTPUT_LOG = Path(chosen_log_file_path).resolve()
+                if OUTPUT_LOG.parent.safe_isdir():
+                    break
+                print("Invalid path:", OUTPUT_LOG)
+                PARSER.print_help()
 
     # Write the captured output to the file
     with OUTPUT_LOG.open("a", encoding="utf-8") as f:
@@ -408,35 +411,36 @@ def main():
     PARSER_ARGS, unknown = PARSER.parse_known_args()
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
 
-    lookup_function: Callable[[], str] | None = None
+    lookup_function: Callable[[str], str] | None = None
 
-    def get_lookup_function() -> Callable[[], str]:
+    def get_lookup_function() -> Callable[[str], str]:
         nonlocal lookup_function
         if lookup_function is not None:
             return lookup_function
         if os.name == "nt":
-            def open_file_folder_wrapper():
-                result = open_file_and_folder_dialog()
+            def lookup_function(title: str) -> str:
+                result = open_file_and_folder_dialog(title=title)
                 return result[0] if result else ""
-            lookup_function = open_file_folder_wrapper
         else:
             choice = input("Do you want to pick a path using a ui-based file/directory picker? (y/N)").strip().lower()
             if not choice or choice == "y":
                 file_or_dir_choice = input("Do you want to pick a file? (No for directory) (y/N)").strip().lower()
                 if file_or_dir_choice == "yes":
-                    lookup_function = askopenfilename
+                    def lookup_function(title: str) -> str:
+                        return askopenfilename(title=title)
                 else:
-                    lookup_function = askdirectory
+                    def lookup_function(title: str) -> str:
+                        return askdirectory(title=title)
             else:
-                def lookup_function():
-                    return input("Please enter the (next) path manually: ")
+                def lookup_function(title: str) -> str:
+                    return input(title)
         return lookup_function
 
     while True:
         PARSER_ARGS.path1 = Path(
             PARSER_ARGS.path1
             or (unknown[0] if len(unknown) > 0 else None)
-            or get_lookup_function()(),
+            or get_lookup_function()("Path to the first K1/TSL install, file, or directory to diff."),
         ).resolve()
         if PARSER_ARGS.path1.safe_exists():
             break
@@ -447,7 +451,7 @@ def main():
         PARSER_ARGS.path2 = Path(
             PARSER_ARGS.path2
             or (unknown[1] if len(unknown) > 1 else None)
-            or get_lookup_function()(),
+            or get_lookup_function()("Path to the second K1/TSL install, file, or directory to diff."),
         ).resolve()
         if PARSER_ARGS.path2.safe_exists():
             break
