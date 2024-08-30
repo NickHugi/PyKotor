@@ -159,11 +159,3 @@ This whole tool is open source, feel free to run directly from the source script
 There's a well-written article explaining why the false positives happen on their issue template: [https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md)
 
 **TLDR:** PyInstaller is an amazing tool, but antiviruses may flag it. This is not the fault of PyInstaller or my tool, but rather the fault of how some scummy users have chosen to use PyInstaller in the past. Please report any false positives you encounter to your antivirus's website, as reports not only improve the accuracy of everybody's AV experience overall but also indirectly support the [PyInstaller project](https://github.com/pyinstaller/pyinstaller).
-
-### **Source code:**
-
-[https://github.com/th3w1zard1/PyKotor/blob/master/Tools/KotorDiff](https://github.com/th3w1zard1/PyKotor/blob/master/Tools/KotorDiff/)
-
-### **Credit:**
-
-**@Cortisol** for creating the PyKotor library (i.e., 90% of the code for this tool)
