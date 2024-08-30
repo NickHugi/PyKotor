@@ -602,7 +602,7 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             r = Restarter(cur_app_filepath, temp_app_filepath, restart_strategy=self.r_strategy, filename=self.filename,
                           update_strategy=self.u_strategy, exithook=self.exithook)
             r.process()
-        except OSError:
+        except OSError as e:
             if not is_frozen():
                 raise  # nothing to roll back if working from src
             # Raised by os.execl
@@ -613,9 +613,9 @@ class AppUpdate(LibUpdate):  # pragma: no cover
 
                 attrs = ctypes.windll.kernel32.GetFileAttributesW(str(old_app_path))
                 if attrs == -1:
-                    raise ctypes.WinError()
+                    raise ctypes.WinError() from e
                 if not ctypes.windll.kernel32.SetFileAttributesW(str(old_app_path), attrs & (~0x02)):
-                    raise ctypes.WinError()
+                    raise ctypes.WinError() from e
             except OSError:
                 # Better to stay hidden than to just fail at this point
                 self.log.exception("Could not unhide file in rollback process")
@@ -636,9 +636,9 @@ class AppUpdate(LibUpdate):  # pragma: no cover
             return
         # Check if there is an exception currently being handled
         # If there is an exception, re-raise it
-        exc_type, _exc_value, _exc_traceback = sys.exc_info()
-        if exc_type is not None:
-            raise
+        exc_type, exc_value, _exc_traceback = sys.exc_info()
+        if exc_type is not None and exc_value is not None:
+            raise exc_value
 
     def _win_overwrite(self, *, restart: bool = False):
         """Moves update to current directory of running application then restarts application using new update."""

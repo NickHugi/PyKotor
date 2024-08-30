@@ -9,7 +9,7 @@ from os import fspath
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Generic, Sequence, TypeVar
 
 from utility.system.win32.com.com_types import GUID
-from utility.system.win32.com.interfaces import IUnknown
+from utility.system.win32.com.interfaces import SIGDN
 from utility.system.win32.hresult import HRESULT, S_FALSE, S_OK
 
 if TYPE_CHECKING:
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     import comtypes  # pyright: ignore[reportMissingTypeStubs, reportMissingModuleSource]
 
     from _win32typing import PyIBindCtx, PyIUnknown  # pyright: ignore[reportMissingModuleSource]
-    from comtypes import IUnknown  # pyright: ignore[reportMissingTypeStubs]
     from comtypes._memberspec import _ComMemberSpec  # pyright: ignore[reportMissingTypeStubs]
     from typing_extensions import Self
 
@@ -32,7 +31,7 @@ class COMInitializeContext(Generic[T]):
     def __init__(self):
         self._should_uninitialize: bool = False
 
-    def __enter__(self) -> T | IUnknown | None:
+    def __enter__(self) -> T | comtypes.IUnknown | None:
         print("windll.ole32.CoInitialize()")
         hr = windll.ole32.CoInitialize(None)
         if hr == S_FALSE:
@@ -54,12 +53,12 @@ class COMInitializeContext(Generic[T]):
 
 
 class COMCreateInstanceContext(Generic[T]):
-    def __init__(self, clsid: GUID | None = None, interface: type[T | IUnknown] | None = None):
+    def __init__(self, clsid: GUID | None = None, interface: type[T | comtypes.IUnknown] | None = None):
         self.clsid: GUID | None = clsid
-        self.interface: type[T | IUnknown] | None = interface
+        self.interface: type[T | comtypes.IUnknown] | None = interface
         self._should_uninitialize: bool = False
 
-    def __enter__(self) -> T | IUnknown | None:
+    def __enter__(self) -> T | comtypes.IUnknown | None:
         print("windll.ole32.CoInitialize()")
         hr = windll.ole32.CoInitialize(None)
         if hr == S_FALSE:
@@ -69,7 +68,7 @@ class COMCreateInstanceContext(Generic[T]):
 
         self._should_uninitialize = True
         if self.interface is not None and self.clsid is not None:
-            p: _Pointer[T | IUnknown] = POINTER(self.interface)()
+            p: _Pointer[T | comtypes.IUnknown] = POINTER(self.interface)()
             iid: GUID | None = getattr(self.interface, "_iid_", None)
             if iid is None or not isinstance(iid, GUID.guid_ducktypes()):
                 raise OSError("Incorrect interface definition")
@@ -189,4 +188,4 @@ if __name__ == "__main__":
 
     item = shell.SHCreateItemFromParsingName(
         fspath(r"Z:\blah\blah"), ctx, shell.IID_IShellItem2)
-    print(item.GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING))  # prints Z:\blah\blah
+    print(item.GetDisplayName(SIGDN.SIGDN_DESKTOPABSOLUTEPARSING))  # prints Z:\blah\blah

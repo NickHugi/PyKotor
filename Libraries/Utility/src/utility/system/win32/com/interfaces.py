@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ctypes import POINTER, POINTER as C_POINTER, Structure, byref, c_char_p, c_int, c_uint, c_ulong, c_void_p, c_wchar_p, windll
+from ctypes import POINTER, POINTER as C_POINTER, Structure, byref, c_bool, c_char_p, c_int, c_uint, c_ulong, c_void_p, c_wchar_p, windll
 from ctypes.wintypes import BOOL, DWORD, HWND, LPCWSTR, LPWSTR, ULONG
 from enum import IntFlag
 from typing import TYPE_CHECKING, Callable, ClassVar, Sequence
@@ -53,7 +53,6 @@ IID_IFileDialogPrivate = GUID("{9EA5491C-89C8-4BEF-93D3-7F665FB82A33}")
 IID_IFileDialogCustomize = GUID("{E6FDD21A-163F-4975-9C8C-A69F1BA37034}")
 IID_IFileDialogEventsPrivate = GUID("{050E9E69-BAEA-4C08-AD6A-61666DD32E96}")
 IID_IFileDialogControlEvents = GUID("{36116642-D713-4B97-9B83-7484A9D00433}")
-IID_IFileDialogControlEvents = GUID("{36116642-D713-4B97-9B83-7484A9D00433}")
 IID_IFileDialogResultHandler = GUID("{42841501-194F-478F-9B4C-78985419DA53}")
 IID_IShellLink = GUID("{000214f9-0000-0000-c000-000000000046}")
 IID_IShellLinkDataList = GUID("{45E2B4AE-B1C3-11D0-BA91-00C04FD7A083}")
@@ -96,27 +95,61 @@ class FileOpenOptions(IntFlag):
     FOS_SHAREAWARE = 0x00004000
     FOS_NOREADONLYRETURN = 0x00008000
     FOS_NOTESTFILECREATE = 0x00010000
-    FOS_UNKNOWN5 = 0x00020000
     FOS_HIDEMRUPLACES = 0x00020000
     FOS_HIDEPINNEDPLACES = 0x00040000
-    FOS_UNKNOWN6 = 0x00080000
+    FOS_UNKNOWN5 = 0x00080000
     FOS_NODEREFERENCELINKS = 0x00100000
-    FOS_UNKNOWN7 = 0x00200000
-    FOS_UNKNOWN8 = 0x00400000
-    FOS_UNKNOWN9 = 0x00800000
-    FOS_UNKNOWN10 = 0x01000000
+    FOS_UNKNOWN6 = 0x00200000
+    FOS_UNKNOWN7 = 0x00400000
+    FOS_UNKNOWN8 = 0x00800000
+    FOS_UNKNOWN9 = 0x01000000
     FOS_DONTADDTORECENT = 0x02000000
-    FOS_UNKNOWN11 = 0x04000000
-    FOS_UNKNOWN12 = 0x08000000
+    FOS_UNKNOWN10 = 0x04000000
+    FOS_UNKNOWN11 = 0x08000000
     FOS_FORCESHOWHIDDEN = 0x10000000
     FOS_DEFAULTNOMINIMODE = 0x20000000
     FOS_FORCEPREVIEWPANEON = 0x40000000
-    FOS_UNKNOWN13 = 0x80000000
+    FOS_UNKNOWN12 = 0x80000000
 
 # Shell Folder Get Attributes Options
 SFGAOF = c_ulong
-SFGAO_FILESYSTEM = 0x40000000
-SFGAO_FOLDER = 0x20000000
+class SFGAO(IntFlag):
+    SFGAO_CANCOPY = 0x00000001          # Objects can be copied.
+    SFGAO_CANMOVE = 0x00000002          # Objects can be moved.
+    SFGAO_CANLINK = 0x00000004          # Objects can be linked.
+    SFGAO_STORAGE = 0x00000008          # Objects can be stored.
+    SFGAO_CANRENAME = 0x00000010        # Objects can be renamed.
+    SFGAO_CANDELETE = 0x00000020        # Objects can be deleted.
+    SFGAO_HASPROPSHEET = 0x00000040     # Objects have property sheets.
+    SFGAO_DROPTARGET = 0x00000100       # Objects are drop targets.
+    SFGAO_CAPABILITYMASK = 0x00000177   # Mask for all capability flags.
+    SFGAO_ENCRYPTED = 0x00002000        # Object is encrypted (use alt color).
+    SFGAO_ISSLOW = 0x00004000           # Accessing this object is slow.
+    SFGAO_GHOSTED = 0x00008000          # Object is ghosted (dimmed).
+    SFGAO_LINK = 0x00010000             # Shortcut (link).
+    SFGAO_SHARE = 0x00020000            # Shared.
+    SFGAO_READONLY = 0x00040000         # Read-only.
+    SFGAO_HIDDEN = 0x00080000           # Hidden object.
+    SFGAO_DISPLAYATTRMASK = 0x000FC000  # Mask for display attributes.
+    SFGAO_FILESYSANCESTOR = 0x10000000  # May contain children with file system folders.
+    SFGAO_FOLDER = 0x20000000           # Is a folder.
+    SFGAO_FILESYSTEM = 0x40000000       # Is part of the file system.
+    SFGAO_HASSUBFOLDER = 0x80000000     # May contain subfolders.
+    SFGAO_CONTENTSMASK = 0x80000000     # Mask for contents.
+    SFGAO_VALIDATE = 0x01000000         # Invalidate cached information.
+    SFGAO_REMOVABLE = 0x02000000        # Is a removable media.
+    SFGAO_COMPRESSED = 0x04000000       # Object is compressed.
+    SFGAO_BROWSABLE = 0x08000000        # Supports browsing.
+    SFGAO_NONENUMERATED = 0x00100000    # Is not enumerated.
+    SFGAO_NEWCONTENT = 0x00200000       # New content is present.
+    SFGAO_CANMONIKER = 0x00400000       # Can create monikers for this item.
+    SFGAO_HASSTORAGE = 0x00400000       # Supports storage interfaces.
+    SFGAO_STREAM = 0x00400000           # Is a stream object.
+    SFGAO_STORAGEANCESTOR = 0x00800000  # May contain children with storage folders.
+    SFGAO_STORAGECAPMASK = 0x70C50008   # Mask for storage capability attributes.
+    SFGAO_PKEYSFGAOMASK = 0x81044000    # Attributes that are part of the PKEY_SFGAOFlags property.
+
+
 class SIGDN(c_int):
     SIGDN_NORMALDISPLAY = 0x00000000
     SIGDN_PARENTRELATIVEPARSING = 0x80018001
@@ -177,30 +210,6 @@ class COMDLG_FILTERSPEC(Structure):  # noqa: N801
     ]
 
 
-class IUnknown(comtypes.IUnknown):
-    _case_insensitive_: bool = True
-    _iid_: GUID = IID_IUnknown
-    _methods_: ClassVar[list[_ComMemberSpec]] = [
-        # implicitly defined in comtypes
-        #COMMETHOD([], HRESULT, "QueryInterface",
-        #          (["in"], POINTER(GUID), "riid"),
-        #          (["out"], POINTER(POINTER(comtypes.IUnknown)), "ppvObject")),
-        #COMMETHOD([], ULONG, "AddRef"),
-        #COMMETHOD([], ULONG, "Release")
-    ]
-    QueryInterface: Callable[[GUID, _Pointer[_Pointer[IUnknown]]], HRESULT]
-    AddRef: Callable[[], ULONG]
-    Release: Callable[[], ULONG]
-class Unknown(comtypes.COMObject):
-    _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IUnknown]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
-        return S_OK
-    def AddRef(self) -> ULONG:
-        return ULONG(-1)
-    def Release(self) -> ULONG:
-        return ULONG(-1)
-
-
 class IModalWindow(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IModalWindow
@@ -208,33 +217,30 @@ class IModalWindow(comtypes.IUnknown):
         COMMETHOD([], HRESULT, "Show",
                   (["in"], HWND, "hwndParent"))
     ]
-    QueryInterface: Callable[[GUID, _Pointer[_Pointer[IUnknown]]], HRESULT]
-    AddRef: Callable[[], ULONG]
-    Release: Callable[[], ULONG]
-    Show: Callable[[HWND | int], HRESULT]
+    Show: Callable[[int | HWND], HRESULT]
 class ModalWindow(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IModalWindow]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def Show(self, hwndParent: HWND | int) -> HRESULT:
+    def Show(self, hwndParent: HWND | int) -> HRESULT:  # noqa: N803
         return S_OK
 
 
-class IShellItem(IUnknown):
+class IShellItem(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IShellItem
     _methods_: ClassVar[list[_ComMemberSpec]] = [
         COMMETHOD([], HRESULT, "BindToHandler",
-                  (["in"], POINTER(IUnknown), "pbc"),
+                  (["in"], POINTER(comtypes.IUnknown), "pbc"),
                   (["in"], POINTER(GUID), "bhid"),
                   (["in"], POINTER(GUID), "riid"),
                   (["out"], POINTER(c_void_p), "ppv")),
         COMMETHOD([], HRESULT, "GetParent",
-                  (["out"], POINTER(POINTER(IUnknown)), "ppsi")),
+                  (["out"], POINTER(POINTER(comtypes.IUnknown)), "ppsi")),
         COMMETHOD([], HRESULT, "GetDisplayName",
                   (["in"], c_ulong, "sigdnName"),
                   (["out"], POINTER(LPWSTR), "ppszName")),
@@ -242,18 +248,18 @@ class IShellItem(IUnknown):
                   (["in"], c_ulong, "sfgaoMask"),
                   (["out"], POINTER(c_ulong), "psfgaoAttribs")),
         COMMETHOD([], HRESULT, "Compare",
-                  (["in"], POINTER(IUnknown), "psi"),
+                  (["in"], POINTER(comtypes.IUnknown), "psi"),
                   (["in"], c_ulong, "hint"),
                   (["out"], POINTER(c_int), "piOrder"))
     ]
-    QueryInterface: Callable[[GUID, _Pointer[_Pointer[IUnknown]]], HRESULT]
+    QueryInterface: Callable[[GUID, _Pointer[_Pointer[comtypes.IUnknown]]], HRESULT]
     AddRef: Callable[[], ULONG]
     Release: Callable[[], ULONG]
-    BindToHandler: Callable[[_Pointer[IUnknown], GUID, GUID, _Pointer[c_void_p]], HRESULT]
-    GetParent: Callable[[], IUnknown]
+    BindToHandler: Callable[[_Pointer[comtypes.IUnknown], GUID, GUID, _Pointer[c_void_p]], HRESULT]
+    GetParent: Callable[[], comtypes.IUnknown]
     GetDisplayName: Callable[[c_ulong | int], str]
-    GetAttributes: Callable[[c_ulong | int], c_ulong]
-    Compare: Callable[[_Pointer[IUnknown], c_ulong, c_int], HRESULT]
+    GetAttributes: Callable[[c_ulong | int], int]
+    Compare: Callable[[_Pointer[comtypes.IUnknown], c_ulong, c_int], HRESULT]
     @classmethod
     def from_path(cls, path: os.PathLike | str) -> _Pointer[Self]:
         pShellItem = POINTER(cls)(cls())
@@ -264,7 +270,7 @@ class IShellItem(IUnknown):
 
 class ShellItem(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IShellItem]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
@@ -274,11 +280,11 @@ class ShellItem(comtypes.COMObject):
         return S_OK
     def GetParent(self, ppsi: comtypes.IUnknown) -> HRESULT:
         return S_OK
-    def GetDisplayName(self, sigdnName: c_ulong | int, ppszName: _Pointer[c_wchar_p]) -> HRESULT:
+    def GetDisplayName(self, sigdnName: c_ulong | int, ppszName: _Pointer[c_wchar_p]) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetAttributes(self, sfgaoMask: c_ulong | int, psfgaoAttribs: _Pointer[c_ulong]) -> HRESULT:
+    def GetAttributes(self, sfgaoMask: c_ulong | int, psfgaoAttribs: _Pointer[c_ulong]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Compare(self, psi: _Pointer[comtypes.IUnknown], hint: c_ulong | int, piOrder: c_int) -> HRESULT:
+    def Compare(self, psi: _Pointer[comtypes.IUnknown], hint: c_ulong | int, piOrder: c_int) -> HRESULT:  # noqa: N803
         return S_OK
 
 
@@ -294,7 +300,7 @@ def create_shell_item_from_path(path: str) -> _Pointer[IShellItem]:
     return item
 
 
-class IContextMenu(IUnknown):
+class IContextMenu(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IContextMenu
     _methods_: ClassVar[list[_ComMemberSpec]] = [
@@ -313,7 +319,7 @@ class IContextMenu(IUnknown):
                   (["out"], c_wchar_p, "pszName"),
                   (["in"], c_uint, "cchMax"))
     ]
-    QueryInterface: Callable[[GUID, _Pointer[_Pointer[IUnknown]]], HRESULT]
+    QueryInterface: Callable[[GUID, _Pointer[_Pointer[comtypes.IUnknown]]], HRESULT]
     AddRef: Callable[[], ULONG]
     Release: Callable[[], ULONG]
     QueryContextMenu: Callable[[c_void_p, c_uint, c_uint, c_uint, c_uint], HRESULT]
@@ -321,27 +327,27 @@ class IContextMenu(IUnknown):
     GetCommandString: Callable[[c_uint, c_uint, c_void_p, _Pointer[c_wchar_p], c_uint], HRESULT]
 class ContextMenu(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IContextMenu]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def QueryContextMenu(self, hmenu: c_void_p, indexMenu: c_uint | int, idCmdFirst: c_uint | int, idCmdLast: c_uint | int, uFlags: c_uint | int) -> HRESULT:
+    def QueryContextMenu(self, hmenu: c_void_p, indexMenu: c_uint | int, idCmdFirst: c_uint | int, idCmdLast: c_uint | int, uFlags: c_uint | int) -> HRESULT:  # noqa: N803
         return S_OK
     def InvokeCommand(self, pici: c_void_p) -> HRESULT:
         return S_OK
-    def GetCommandString(self, idCmd: c_uint | int, uType: c_uint | int, pReserved: c_void_p, pszName: c_wchar_p, cchMax: c_uint | int) -> HRESULT:
+    def GetCommandString(self, idCmd: c_uint | int, uType: c_uint | int, pReserved: c_void_p, pszName: c_wchar_p, cchMax: c_uint | int) -> HRESULT:  # noqa: N803
         return S_OK
 
 
-class IShellFolder(IUnknown):
+class IShellFolder(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IShellFolder
     _methods_: ClassVar[list[_ComMemberSpec]] = [
         COMMETHOD([], HRESULT, "ParseDisplayName",
                   (["in"], HWND, "hwnd"),
-                  (["in"], POINTER(IUnknown), "pbc"),
+                  (["in"], POINTER(comtypes.IUnknown), "pbc"),
                   (["in"], LPCWSTR, "pszDisplayName"),
                   (["out"], POINTER(ULONG), "pchEaten"),
                   (["out"], POINTER(c_void_p), "ppidl"),
@@ -349,15 +355,15 @@ class IShellFolder(IUnknown):
         COMMETHOD([], HRESULT, "EnumObjects",
                   (["in"], HWND, "hwnd"),
                   (["in"], c_ulong, "grfFlags"),
-                  (["out"], POINTER(POINTER(IUnknown)), "ppenumIDList")),
+                  (["out"], POINTER(POINTER(comtypes.IUnknown)), "ppenumIDList")),
         COMMETHOD([], HRESULT, "BindToObject",
                   (["in"], c_void_p, "pidl"),
-                  (["in"], POINTER(IUnknown), "pbc"),
+                  (["in"], POINTER(comtypes.IUnknown), "pbc"),
                   (["in"], POINTER(GUID), "riid"),
                   (["out"], POINTER(c_void_p), "ppv")),
         COMMETHOD([], HRESULT, "BindToStorage",
                   (["in"], c_void_p, "pidl"),
-                  (["in"], POINTER(IUnknown), "pbc"),
+                  (["in"], POINTER(comtypes.IUnknown), "pbc"),
                   (["in"], POINTER(GUID), "riid"),
                   (["out"], POINTER(c_void_p), "ppv")),
         COMMETHOD([], HRESULT, "CompareIDs",
@@ -390,13 +396,13 @@ class IShellFolder(IUnknown):
                   (["in"], c_ulong, "uFlags"),
                   (["out"], POINTER(c_void_p), "ppidlOut"))
     ]
-    QueryInterface: Callable[[GUID, _Pointer[_Pointer[IUnknown]]], HRESULT]
+    QueryInterface: Callable[[GUID, _Pointer[_Pointer[comtypes.IUnknown]]], HRESULT]
     AddRef: Callable[[], ULONG]
     Release: Callable[[], ULONG]
-    ParseDisplayName: Callable[[HWND, _Pointer[IUnknown], LPCWSTR, _Pointer[ULONG], _Pointer[c_void_p], _Pointer[ULONG]], HRESULT]
-    EnumObjects: Callable[[HWND, c_ulong, _Pointer[_Pointer[IUnknown]]], HRESULT]
-    BindToObject: Callable[[c_void_p, _Pointer[IUnknown], GUID, _Pointer[c_void_p]], HRESULT]
-    BindToStorage: Callable[[c_void_p, _Pointer[IUnknown], GUID, _Pointer[c_void_p]], HRESULT]
+    ParseDisplayName: Callable[[HWND, _Pointer[comtypes.IUnknown], LPCWSTR, _Pointer[ULONG], _Pointer[c_void_p], _Pointer[ULONG]], HRESULT]
+    EnumObjects: Callable[[HWND, c_ulong, _Pointer[_Pointer[comtypes.IUnknown]]], HRESULT]
+    BindToObject: Callable[[c_void_p, _Pointer[comtypes.IUnknown], GUID, _Pointer[c_void_p]], HRESULT]
+    BindToStorage: Callable[[c_void_p, _Pointer[comtypes.IUnknown], GUID, _Pointer[c_void_p]], HRESULT]
     CompareIDs: Callable[[c_void_p, c_void_p, c_void_p], HRESULT]
     CreateViewObject: Callable[[HWND, GUID, _Pointer[c_void_p]], HRESULT]
     GetAttributesOf: Callable[[c_uint, _Pointer[c_void_p], _Pointer[c_ulong]], HRESULT]
@@ -405,40 +411,40 @@ class IShellFolder(IUnknown):
     SetNameOf: Callable[[HWND, c_void_p, LPCWSTR, c_ulong, _Pointer[c_void_p]], HRESULT]
 class ShellFolder(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IShellFolder]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def ParseDisplayName(self, hwnd: HWND | int, pbc: _Pointer[comtypes.IUnknown], pszDisplayName: LPCWSTR | str, pchEaten: _Pointer[ULONG], ppidl: _Pointer[c_void_p], pdwAttributes: _Pointer[ULONG]) -> HRESULT:
+    def ParseDisplayName(self, hwnd: HWND | int, pbc: _Pointer[comtypes.IUnknown], pszDisplayName: LPCWSTR | str, pchEaten: _Pointer[ULONG], ppidl: _Pointer[c_void_p], pdwAttributes: _Pointer[ULONG]) -> HRESULT:  # noqa: N803, PLR0913
         return S_OK
-    def EnumObjects(self, hwnd: HWND | int, grfFlags: c_ulong | int, ppenumIDList: comtypes.IUnknown) -> HRESULT:
+    def EnumObjects(self, hwnd: HWND | int, grfFlags: c_ulong | int, ppenumIDList: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def BindToObject(self, pidl: c_void_p, pbc: _Pointer[comtypes.IUnknown], riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:
         return S_OK
     def BindToStorage(self, pidl: c_void_p, pbc: _Pointer[comtypes.IUnknown], riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:
         return S_OK
-    def CompareIDs(self, lParam: c_void_p, pidl1: c_void_p, pidl2: c_void_p) -> HRESULT:
+    def CompareIDs(self, lParam: c_void_p, pidl1: c_void_p, pidl2: c_void_p) -> HRESULT:  # noqa: N803
         return S_OK
-    def CreateViewObject(self, hwndOwner: HWND | int, riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:
+    def CreateViewObject(self, hwndOwner: HWND | int, riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetAttributesOf(self, cidl: c_uint | int, apidl: _Pointer[c_void_p], rgfInOut: _Pointer[c_ulong]) -> HRESULT:
+    def GetAttributesOf(self, cidl: c_uint | int, apidl: _Pointer[c_void_p], rgfInOut: _Pointer[c_ulong]) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetUIObjectOf(self, hwndOwner: HWND | int, cidl: c_uint | int, apidl: _Pointer[c_void_p], riid: GUID, rgfReserved: _Pointer[c_uint], ppv: _Pointer[c_void_p]) -> HRESULT:
+    def GetUIObjectOf(self, hwndOwner: HWND | int, cidl: c_uint | int, apidl: _Pointer[c_void_p], riid: GUID, rgfReserved: _Pointer[c_uint], ppv: _Pointer[c_void_p]) -> HRESULT:  # noqa: N803, PLR0913, E501
         return S_OK
-    def GetDisplayNameOf(self, pidl: c_void_p, uFlags: c_ulong | int, pName: _Pointer[c_wchar_p]) -> HRESULT:
+    def GetDisplayNameOf(self, pidl: c_void_p, uFlags: c_ulong | int, pName: _Pointer[c_wchar_p]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetNameOf(self, hwnd: HWND | int, pidl: c_void_p, pszName: LPCWSTR | str, uFlags: c_ulong | int, ppidlOut: _Pointer[c_void_p]) -> HRESULT:
+    def SetNameOf(self, hwnd: HWND | int, pidl: c_void_p, pszName: LPCWSTR | str, uFlags: c_ulong | int, ppidlOut: _Pointer[c_void_p]) -> HRESULT:  # noqa: N803
         return S_OK
 
 
-class IShellItemArray(IUnknown):
+class IShellItemArray(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IShellItemArray
     _methods_: ClassVar[list[_ComMemberSpec]] = [
         COMMETHOD([], HRESULT, "BindToHandler",
-                  (["in"], POINTER(IUnknown), "pbc"),
+                  (["in"], POINTER(comtypes.IUnknown), "pbc"),
                   (["in"], POINTER(GUID), "bhid"),
                   (["in"], POINTER(GUID), "riid"),
                   (["out"], POINTER(c_void_p), "ppv")),
@@ -460,12 +466,12 @@ class IShellItemArray(IUnknown):
                   (["in"], c_uint, "dwIndex"),
                   (["out"], POINTER(POINTER(IShellItem)), "ppsi")),
         COMMETHOD([], HRESULT, "EnumItems",
-                  (["out"], POINTER(POINTER(IUnknown)), "ppenumShellItems"))
+                  (["out"], POINTER(POINTER(comtypes.IUnknown)), "ppenumShellItems"))
     ]
     QueryInterface: Callable[[GUID, comtypes.IUnknown], HRESULT]
     AddRef: Callable[[], ULONG]
     Release: Callable[[], ULONG]
-    BindToHandler: Callable[[_Pointer[IUnknown], GUID, GUID], int]
+    BindToHandler: Callable[[_Pointer[comtypes.IUnknown], GUID, GUID], int]
     GetPropertyStore: Callable[[c_ulong, GUID], c_void_p]
     GetPropertyDescriptionList: Callable[[GUID, GUID], c_void_p]
     GetAttributes: Callable[[c_ulong, c_ulong], _Pointer[c_ulong]]
@@ -474,7 +480,7 @@ class IShellItemArray(IUnknown):
     EnumItems: Callable[[], comtypes.IUnknown]
 class ShellItemArray(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IShellItemArray]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
@@ -484,19 +490,19 @@ class ShellItemArray(comtypes.COMObject):
         return S_OK
     def GetPropertyStore(self, flags: c_ulong | int, riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:
         return S_OK
-    def GetPropertyDescriptionList(self, keyType: GUID, riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:
+    def GetPropertyDescriptionList(self, keyType: GUID, riid: GUID, ppv: _Pointer[c_void_p]) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetAttributes(self, attribFlags: c_ulong | int, sfgaoMask: c_ulong | int, psfgaoAttribs: _Pointer[c_ulong]) -> HRESULT:
+    def GetAttributes(self, attribFlags: c_ulong | int, sfgaoMask: c_ulong | int, psfgaoAttribs: _Pointer[c_ulong]) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetCount(self, pdwNumItems: _Pointer[c_uint]) -> HRESULT:
+    def GetCount(self, pdwNumItems: _Pointer[c_uint]) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetItemAt(self, dwIndex: c_uint | int, ppsi: IShellItem) -> HRESULT:
+    def GetItemAt(self, dwIndex: c_uint | int, ppsi: IShellItem) -> HRESULT:  # noqa: N803
         return S_OK
-    def EnumItems(self, ppenumShellItems: comtypes.IUnknown) -> HRESULT:
+    def EnumItems(self, ppenumShellItems: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
 
 
-class IShellItemFilter(IUnknown):
+class IShellItemFilter(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IShellItemFilter
     _methods_: ClassVar[list[_ComMemberSpec]] = [
@@ -513,7 +519,7 @@ class IShellItemFilter(IUnknown):
     GetEnumFlagsForItem: Callable[[], HRESULT]
 class ShellItemFilter(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IShellItemFilter]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
@@ -521,11 +527,11 @@ class ShellItemFilter(comtypes.COMObject):
         return ULONG(-1)
     def IncludeItem(self, psi: IShellItem) -> HRESULT:
         return S_OK
-    def GetEnumFlagsForItem(self, psi: IShellItem, pgrfFlags: _Pointer[c_ulong]) -> HRESULT:
+    def GetEnumFlagsForItem(self, psi: IShellItem, pgrfFlags: _Pointer[c_ulong]) -> HRESULT:  # noqa: N803
         return S_OK
 
 
-class IEnumShellItems(IUnknown):
+class IEnumShellItems(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IEnumShellItems
     _methods_: ClassVar[list[_ComMemberSpec]]
@@ -549,13 +555,13 @@ IEnumShellItems._methods_ = [  # noqa: SLF001
 ]
 class EnumShellItems(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IEnumShellItems]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def Next(self, celt: c_ulong | int, rgelt: IShellItem, pceltFetched: _Pointer[c_ulong]) -> HRESULT:
+    def Next(self, celt: c_ulong | int, rgelt: IShellItem, pceltFetched: _Pointer[c_ulong]) -> HRESULT:  # noqa: N803
         return S_OK
     def Skip(self, celt: c_ulong | int) -> HRESULT:
         return S_OK
@@ -565,7 +571,7 @@ class EnumShellItems(comtypes.COMObject):
         return S_OK
 
 
-class IPropertyStore(IUnknown):
+class IPropertyStore(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IPropertyStore
     _methods_: ClassVar[list[_ComMemberSpec]] = [
@@ -592,7 +598,7 @@ class IPropertyStore(IUnknown):
     Commit: Callable[[_Pointer[IPropertyStore]], HRESULT]
 class PropertyStore(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IPropertyStore]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
@@ -609,7 +615,7 @@ class PropertyStore(comtypes.COMObject):
     def Commit(self) -> HRESULT:
         return S_OK
 
-class IFileOperationProgressSink(IUnknown):
+class IFileOperationProgressSink(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IFileOperationProgressSink
     _methods_: ClassVar[list[_ComMemberSpec]] = [
@@ -702,17 +708,17 @@ class FileOperationProgressSink(comtypes.COMObject):
         return S_OK
     def FinishOperations(self, hr: HRESULT) -> HRESULT:
         return S_OK
-    def PreRenameItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:
+    def PreRenameItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def PostRenameItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, pszNewName: LPCWSTR | str, hrRename: HRESULT, psiNewlyCreated: IShellItem) -> HRESULT:
+    def PostRenameItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, pszNewName: LPCWSTR | str, hrRename: HRESULT, psiNewlyCreated: IShellItem) -> HRESULT:  # noqa: N803
         return S_OK
-    def PreMoveItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:
+    def PreMoveItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def PostMoveItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str, hrMove: HRESULT, psiNewlyCreated: IShellItem) -> HRESULT:
+    def PostMoveItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str, hrMove: HRESULT, psiNewlyCreated: IShellItem) -> HRESULT:  # noqa: N803, E501
         return S_OK
-    def PreCopyItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:
+    def PreCopyItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def PostCopyItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str, hrCopy: HRESULT, psiNewlyCreated: IShellItem) -> HRESULT:
+    def PostCopyItem(self, dwFlags: c_ulong | int, psiItem: IShellItem, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str, hrCopy: HRESULT, psiNewlyCreated: IShellItem) -> HRESULT:  # noqa: N803, E501
         return S_OK
     def PreDeleteItem(self, dwFlags: c_ulong | int, psiItem: IShellItem) -> HRESULT:
         return S_OK
@@ -720,9 +726,9 @@ class FileOperationProgressSink(comtypes.COMObject):
         return S_OK
     def PreNewItem(self, dwFlags: c_ulong | int, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str) -> HRESULT:
         return S_OK
-    def PostNewItem(self, dwFlags: c_ulong | int, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str, pszTemplateName: LPCWSTR | str, dwFileAttributes: c_ulong | int, hrNew: HRESULT, psiNewItem: IShellItem) -> HRESULT:
+    def PostNewItem(self, dwFlags: c_ulong | int, psiDestinationFolder: IShellItem, pszNewName: LPCWSTR | str, pszTemplateName: LPCWSTR | str, dwFileAttributes: c_ulong | int, hrNew: HRESULT, psiNewItem: IShellItem) -> HRESULT:  # noqa: N803, E501
         return S_OK
-    def UpdateProgress(self, iWorkTotal: c_ulong | int, iWorkSoFar: c_ulong | int) -> HRESULT:
+    def UpdateProgress(self, iWorkTotal: c_ulong | int, iWorkSoFar: c_ulong | int) -> HRESULT:  # noqa: N803
         return S_OK
     def ResetTimer(self) -> HRESULT:
         return S_OK
@@ -751,17 +757,17 @@ class IFileOperation(comtypes.IUnknown):
         comtypes.COMMETHOD([], HRESULT, "SetProgressMessage",
                            (["in"], c_wchar_p, "pszMessage")),
         comtypes.COMMETHOD([], HRESULT, "SetProgressDialog",
-                           (["in"], POINTER(IUnknown), "popd")),
+                           (["in"], POINTER(comtypes.IUnknown), "popd")),
 
         # Item methods
         comtypes.COMMETHOD([], HRESULT, "SetProperties",
-                           (["in"], POINTER(IUnknown), "pproparray")),
+                           (["in"], POINTER(comtypes.IUnknown), "pproparray")),
         comtypes.COMMETHOD([], HRESULT, "SetOwnerWindow",
                            (["in"], c_ulong, "hwndOwner")),
         comtypes.COMMETHOD([], HRESULT, "ApplyPropertiesToItem",
                            (["in"], POINTER(IShellItem), "psiItem")),
         comtypes.COMMETHOD([], HRESULT, "ApplyPropertiesToItems",
-                           (["in"], POINTER(IUnknown), "punkItems")),
+                           (["in"], POINTER(comtypes.IUnknown), "punkItems")),
 
         # Operation methods
         comtypes.COMMETHOD([], HRESULT, "RenameItem",
@@ -769,7 +775,7 @@ class IFileOperation(comtypes.IUnknown):
                            (["in"], c_wchar_p, "pszNewName"),
                            (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
         comtypes.COMMETHOD([], HRESULT, "RenameItems",
-                           (["in"], POINTER(IUnknown), "pUnkItems"),
+                           (["in"], POINTER(comtypes.IUnknown), "pUnkItems"),
                            (["in"], c_wchar_p, "pszNewName")),
         comtypes.COMMETHOD([], HRESULT, "MoveItem",
                            (["in"], POINTER(IShellItem), "psiItem"),
@@ -777,7 +783,7 @@ class IFileOperation(comtypes.IUnknown):
                            (["in"], c_wchar_p, "pszNewName"),
                            (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
         comtypes.COMMETHOD([], HRESULT, "MoveItems",
-                           (["in"], POINTER(IUnknown), "punkItems"),
+                           (["in"], POINTER(comtypes.IUnknown), "punkItems"),
                            (["in"], POINTER(IShellItem), "psiDestinationFolder")),
         comtypes.COMMETHOD([], HRESULT, "CopyItem",
                            (["in"], POINTER(IShellItem), "psiItem"),
@@ -785,13 +791,13 @@ class IFileOperation(comtypes.IUnknown):
                            (["in"], c_wchar_p, "pszNewName"),
                            (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
         comtypes.COMMETHOD([], HRESULT, "CopyItems",
-                           (["in"], POINTER(IUnknown), "punkItems"),
+                           (["in"], POINTER(comtypes.IUnknown), "punkItems"),
                            (["in"], POINTER(IShellItem), "psiDestinationFolder")),
         comtypes.COMMETHOD([], HRESULT, "DeleteItem",
                            (["in"], POINTER(IShellItem), "psiItem"),
                            (["in"], POINTER(IFileOperationProgressSink), "pfopsItem")),
         comtypes.COMMETHOD([], HRESULT, "DeleteItems",
-                           (["in"], POINTER(IUnknown), "punkItems")),
+                           (["in"], POINTER(comtypes.IUnknown), "punkItems")),
         comtypes.COMMETHOD([], HRESULT, "NewItem",
                            (["in"], POINTER(IShellItem), "psiDestinationFolder"),
                            (["in"], c_ulong, "dwFileAttributes"),
@@ -806,7 +812,7 @@ class IFileOperation(comtypes.IUnknown):
     ]
 
 
-class IFileDialogEvents(IUnknown):
+class IFileDialogEvents(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IFileDialogEvents
     _methods_: ClassVar[list[_ComMemberSpec]]
@@ -831,7 +837,7 @@ class IFileDialog(IModalWindow):
         COMMETHOD([], HRESULT, "GetFileTypeIndex",
                   (["out"], POINTER(c_uint), "piFileType")),
         COMMETHOD([], HRESULT, "Advise",
-                  (["in"], POINTER(IUnknown), "pfde"),
+                  (["in"], POINTER(comtypes.IUnknown), "pfde"),
                   (["out"], POINTER(DWORD), "pdwCookie")),
         COMMETHOD([], HRESULT, "Unadvise",
                   (["in"], DWORD, "dwCookie")),
@@ -872,14 +878,10 @@ class IFileDialog(IModalWindow):
         COMMETHOD([], HRESULT, "SetFilter",
                   (["in"], POINTER(IShellItemFilter), "pFilter"))
     ]
-    QueryInterface: Callable[[GUID, comtypes.IUnknown], HRESULT]
-    AddRef: Callable[[], ULONG]
-    Release: Callable[[], ULONG]
-    Show: Callable[[int | HWND], HRESULT]
     SetFileTypes: Callable[[c_uint | int, _Pointer[c_void_p]], HRESULT]
     SetFileTypeIndex: Callable[[c_uint], HRESULT]
     GetFileTypeIndex: Callable[[], _Pointer[c_uint]]
-    Advise: Callable[[IUnknown | comtypes.COMObject], int]
+    Advise: Callable[[comtypes.IUnknown | comtypes.COMObject], int]
     Unadvise: Callable[[int], HRESULT]
     SetOptions: Callable[[DWORD | int], HRESULT]
     GetOptions: Callable[[], int]
@@ -922,7 +924,7 @@ IFileDialogEvents._methods_ = [  # noqa: SLF001
     ]
 class FileDialogEvents(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IFileDialogEvents]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
@@ -930,7 +932,7 @@ class FileDialogEvents(comtypes.COMObject):
         return ULONG(-1)
     def OnFileOk(self, ifd: IFileDialog) -> HRESULT:
         return S_OK
-    def OnFolderChanging(self, ifd: IFileDialog, isiFolder: IShellItem) -> HRESULT:
+    def OnFolderChanging(self, ifd: IFileDialog, isiFolder: IShellItem) -> HRESULT:  # noqa: N803
         return S_OK
     def OnFolderChange(self, ifd: IFileDialog) -> HRESULT:
         return S_OK
@@ -944,7 +946,7 @@ class FileDialogEvents(comtypes.COMObject):
         return S_OK
 class FileDialog(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IFileDialog]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
@@ -952,15 +954,15 @@ class FileDialog(comtypes.COMObject):
         return ULONG(-1)
     def Show(self, hwndOwner: HWND | int) -> HRESULT:
         return S_OK
-    def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: Array[COMDLG_FILTERSPEC]) -> HRESULT:
+    def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: Array[COMDLG_FILTERSPEC]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileTypeIndex(self, iFileType: c_uint | int) -> HRESULT:
+    def SetFileTypeIndex(self, iFileType: c_uint | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetFileTypeIndex(self, piFileType: _Pointer[c_uint]) -> HRESULT:
+    def GetFileTypeIndex(self, piFileType: _Pointer[c_uint]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Advise(self, pfde: _Pointer[IUnknown], pdwCookie: _Pointer[DWORD]) -> HRESULT:
+    def Advise(self, pfde: _Pointer[comtypes.IUnknown], pdwCookie: _Pointer[DWORD]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Unadvise(self, dwCookie: int) -> HRESULT:
+    def Unadvise(self, dwCookie: int) -> HRESULT:  # noqa: N803
         return S_OK
     def SetOptions(self, fos: int) -> HRESULT:
         return S_OK
@@ -974,21 +976,21 @@ class FileDialog(comtypes.COMObject):
         return S_OK
     def GetCurrentSelection(self, ppsi: IShellItem) -> HRESULT:
         return S_OK
-    def SetFileName(self, pszName: LPCWSTR | str) -> HRESULT:
+    def SetFileName(self, pszName: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetFileName(self, pszName: _Pointer[LPWSTR]) -> HRESULT:
+    def GetFileName(self, pszName: _Pointer[LPWSTR]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetTitle(self, pszTitle: LPCWSTR | str) -> HRESULT:
+    def SetTitle(self, pszTitle: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetOkButtonLabel(self, pszText: LPCWSTR | str) -> HRESULT:
+    def SetOkButtonLabel(self, pszText: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileNameLabel(self, pszLabel: LPCWSTR | str) -> HRESULT:
+    def SetFileNameLabel(self, pszLabel: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def GetResult(self, ppsi: IShellItem) -> HRESULT:
         return S_OK
     def AddPlace(self, psi: IShellItem, fdap: c_int) -> HRESULT:
         return S_OK
-    def SetDefaultExtension(self, pszDefaultExtension: LPCWSTR | str) -> HRESULT:
+    def SetDefaultExtension(self, pszDefaultExtension: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def Close(self, hr: HRESULT | int) -> HRESULT:
         return S_OK
@@ -996,11 +998,11 @@ class FileDialog(comtypes.COMObject):
         return S_OK
     def ClearClientData(self) -> HRESULT:
         return S_OK
-    def SetFilter(self, pFilter: IShellItemFilter) -> HRESULT:
+    def SetFilter(self, pFilter: IShellItemFilter) -> HRESULT:  # noqa: N803
         return S_OK
 
 
-class IShellLibrary(IUnknown):
+class IShellLibrary(comtypes.IUnknown):
     _case_insensitive_: bool = True
     _iid_: GUID = IID_IShellLibrary
     _methods_: ClassVar[list[_ComMemberSpec]] = [
@@ -1077,9 +1079,9 @@ class IShellLibrary(IUnknown):
     SaveInKnownFolder: Callable[[_Pointer[IShellLibrary], GUID, LPCWSTR, c_ulong, IShellItem], HRESULT]
 class ShellLibrary(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IShellLibrary]
-    def LoadLibraryFromItem(self, psi: IShellItem, grfMode: c_ulong | int) -> HRESULT:
+    def LoadLibraryFromItem(self, psi: IShellItem, grfMode: c_ulong | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def LoadLibraryFromKnownFolder(self, kfidLibrary: GUID, grfMode: c_ulong | int) -> HRESULT:
+    def LoadLibraryFromKnownFolder(self, kfidLibrary: GUID, grfMode: c_ulong | int) -> HRESULT:  # noqa: N803
         return S_OK
     def AddFolder(self, psi: IShellItem) -> HRESULT:
         return S_OK
@@ -1087,29 +1089,29 @@ class ShellLibrary(comtypes.COMObject):
         return S_OK
     def GetFolders(self, lff: c_int | int, riid: GUID, ppv: _Pointer[_Pointer[c_void_p]]) -> HRESULT:
         return S_OK
-    def ResolveFolder(self, psi: IShellItem, grfMode: c_ulong | int, riid: GUID, ppv: _Pointer[_Pointer[c_void_p]]) -> HRESULT:
+    def ResolveFolder(self, psi: IShellItem, grfMode: c_ulong | int, riid: GUID, ppv: _Pointer[_Pointer[c_void_p]]) -> HRESULT:  # noqa: N803
         return S_OK
     def GetDefaultSaveFolder(self, dsft: c_int | int, riid: GUID, ppv: _Pointer[_Pointer[c_void_p]]) -> HRESULT:
         return S_OK
     def SetDefaultSaveFolder(self, dsft: c_int | int, psi: IShellItem) -> HRESULT:
         return S_OK
-    def GetOptions(self, pOptions: _Pointer[c_uint]) -> HRESULT:
+    def GetOptions(self, pOptions: _Pointer[c_uint]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetOptions(self, stfOptions: c_ulong | int, stfMask: c_ulong | int) -> HRESULT:
+    def SetOptions(self, stfOptions: c_ulong | int, stfMask: c_ulong | int) -> HRESULT:  # noqa: N803
         return S_OK
     def GetFolderType(self, pftid: GUID) -> HRESULT:
         return S_OK
     def SetFolderType(self, ftid: GUID) -> HRESULT:
         return S_OK
-    def GetIcon(self, ppszIcon: _Pointer[LPWSTR]) -> HRESULT:
+    def GetIcon(self, ppszIcon: _Pointer[LPWSTR]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetIcon(self, pszIcon: LPCWSTR | str) -> HRESULT:
+    def SetIcon(self, pszIcon: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def Commit(self) -> HRESULT:
         return S_OK
-    def Save(self, psiFolderToSaveIn: IShellItem, pszLibraryName: LPCWSTR | str, lrf: c_ulong | int, ppsiNewItem: IShellItem) -> HRESULT:
+    def Save(self, psiFolderToSaveIn: IShellItem, pszLibraryName: LPCWSTR | str, lrf: c_ulong | int, ppsiNewItem: IShellItem) -> HRESULT:  # noqa: N803
         return S_OK
-    def SaveInKnownFolder(self, kfid: GUID, pszLibraryName: LPCWSTR | str, lrf: c_ulong | int, ppsiNewItem: IShellItem) -> HRESULT:
+    def SaveInKnownFolder(self, kfid: GUID, pszLibraryName: LPCWSTR | str, lrf: c_ulong | int, ppsiNewItem: IShellItem) -> HRESULT:  # noqa: N803
         return S_OK
 
 
@@ -1126,23 +1128,23 @@ class IFileOpenDialog(IFileDialog):
     GetSelectedItems: Callable[[], IShellItemArray]
 class FileOpenDialog(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IFileOpenDialog]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def Show(self, hwndParent: HWND | int) -> HRESULT:
+    def Show(self, hwndParent: HWND | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: Array[COMDLG_FILTERSPEC]) -> HRESULT:
+    def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: Array[COMDLG_FILTERSPEC]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileTypeIndex(self, iFileType: c_uint | int) -> HRESULT:
+    def SetFileTypeIndex(self, iFileType: c_uint | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetFileTypeIndex(self, piFileType: _Pointer[c_uint]) -> HRESULT:
+    def GetFileTypeIndex(self, piFileType: _Pointer[c_uint]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Advise(self, pfde: _Pointer[comtypes.IUnknown], pdwCookie: _Pointer[DWORD]) -> HRESULT:
+    def Advise(self, pfde: _Pointer[comtypes.IUnknown], pdwCookie: _Pointer[DWORD]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Unadvise(self, dwCookie: int) -> HRESULT:
+    def Unadvise(self, dwCookie: int) -> HRESULT:  # noqa: N803
         return S_OK
     def SetOptions(self, fos: int) -> HRESULT:
         return S_OK
@@ -1156,21 +1158,21 @@ class FileOpenDialog(comtypes.COMObject):
         return S_OK
     def GetCurrentSelection(self, ppsi: IShellItem) -> HRESULT:
         return S_OK
-    def SetFileName(self, pszName: LPCWSTR | str) -> HRESULT:
+    def SetFileName(self, pszName: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetFileName(self, pszName: _Pointer[LPWSTR]) -> HRESULT:
+    def GetFileName(self, pszName: _Pointer[LPWSTR]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetTitle(self, pszTitle: LPCWSTR | str) -> HRESULT:
+    def SetTitle(self, pszTitle: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetOkButtonLabel(self, pszText: LPCWSTR | str) -> HRESULT:
+    def SetOkButtonLabel(self, pszText: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileNameLabel(self, pszLabel: LPCWSTR | str) -> HRESULT:
+    def SetFileNameLabel(self, pszLabel: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def GetResult(self, ppsi: IShellItem) -> HRESULT:
         return S_OK
     def AddPlace(self, psi: IShellItem, fdap: c_int) -> HRESULT:
         return S_OK
-    def SetDefaultExtension(self, pszDefaultExtension: LPCWSTR | str) -> HRESULT:
+    def SetDefaultExtension(self, pszDefaultExtension: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def Close(self, hr: HRESULT | int) -> HRESULT:
         return S_OK
@@ -1178,9 +1180,9 @@ class FileOpenDialog(comtypes.COMObject):
         return S_OK
     def ClearClientData(self) -> HRESULT:
         return S_OK
-    def SetFilter(self, isFilter: IShellItemFilter) -> HRESULT:
+    def SetFilter(self, isFilter: IShellItemFilter) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetResults(self, isArray: IShellItemArray) -> HRESULT:
+    def GetResults(self, isArray: IShellItemArray) -> HRESULT:  # noqa: N803
         return S_OK
     def GetSelectedItems(self, ppsai: IShellItemArray) -> HRESULT:
         return S_OK
@@ -1193,42 +1195,42 @@ class IFileSaveDialog(IFileDialog):
         COMMETHOD([], HRESULT, "SetSaveAsItem",
                   (["in"], POINTER(IShellItem), "psi")),
         COMMETHOD([], HRESULT, "SetProperties",
-                  (["in"], POINTER(IUnknown), "pStore")),
+                  (["in"], POINTER(comtypes.IUnknown), "pStore")),
         COMMETHOD([], HRESULT, "SetCollectedProperties",
-                  (["in"], POINTER(IUnknown), "pList"),
+                  (["in"], POINTER(comtypes.IUnknown), "pList"),
                   (["in"], BOOL, "fAppendDefault")),
         COMMETHOD([], HRESULT, "GetProperties",
-                  (["out"], POINTER(POINTER(IUnknown)), "ppStore")),
+                  (["out"], POINTER(POINTER(comtypes.IUnknown)), "ppStore")),
         COMMETHOD([], HRESULT, "ApplyProperties",
                   (["in"], POINTER(IShellItem), "psi"),
-                  (["in"], POINTER(IUnknown), "pStore"),
+                  (["in"], POINTER(comtypes.IUnknown), "pStore"),
                   (["in"], HWND, "hwnd"),
-                  (["in"], POINTER(IUnknown), "pSink"))
+                  (["in"], POINTER(comtypes.IUnknown), "pSink"))
     ]
     SetSaveAsItem: Callable[[IShellItem], HRESULT]
-    SetProperties: Callable[[_Pointer[IUnknown]], HRESULT]
-    SetCollectedProperties: Callable[[_Pointer[IUnknown], BOOL], HRESULT]
-    GetProperties: Callable[[_Pointer[_Pointer[IUnknown]]], HRESULT]
-    ApplyProperties: Callable[[IShellItem, _Pointer[IUnknown], HWND, _Pointer[IUnknown]], HRESULT]
+    SetProperties: Callable[[_Pointer[comtypes.IUnknown]], HRESULT]
+    SetCollectedProperties: Callable[[_Pointer[comtypes.IUnknown], BOOL], HRESULT]
+    GetProperties: Callable[[_Pointer[_Pointer[comtypes.IUnknown]]], HRESULT]
+    ApplyProperties: Callable[[IShellItem, _Pointer[comtypes.IUnknown], HWND, _Pointer[comtypes.IUnknown]], HRESULT]
 class FileSaveDialog(comtypes.COMObject):
     _com_interfaces_: Sequence[type[comtypes.IUnknown]] = [IFileSaveDialog]
-    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:
+    def QueryInterface(self, riid: GUID, ppvObject: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
     def AddRef(self) -> ULONG:
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def Show(self, hwndParent: HWND | int) -> HRESULT:
+    def Show(self, hwndParent: HWND | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: _Pointer[COMDLG_FILTERSPEC]) -> HRESULT:
+    def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: _Pointer[COMDLG_FILTERSPEC]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileTypeIndex(self, iFileType: c_uint | int) -> HRESULT:
+    def SetFileTypeIndex(self, iFileType: c_uint | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetFileTypeIndex(self, piFileType: _Pointer[c_uint]) -> HRESULT:
+    def GetFileTypeIndex(self, piFileType: _Pointer[c_uint]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Advise(self, pfde: _Pointer[IUnknown], pdwCookie: _Pointer[DWORD]) -> HRESULT:
+    def Advise(self, pfde: _Pointer[comtypes.IUnknown], pdwCookie: _Pointer[DWORD]) -> HRESULT:  # noqa: N803
         return S_OK
-    def Unadvise(self, dwCookie: int) -> HRESULT:
+    def Unadvise(self, dwCookie: int) -> HRESULT:  # noqa: N803
         return S_OK
     def SetOptions(self, fos: int) -> HRESULT:
         return S_OK
@@ -1242,21 +1244,21 @@ class FileSaveDialog(comtypes.COMObject):
         return S_OK
     def GetCurrentSelection(self, ppsi: IShellItem) -> HRESULT:
         return S_OK
-    def SetFileName(self, pszName: LPCWSTR | str) -> HRESULT:
+    def SetFileName(self, pszName: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetFileName(self, pszName: _Pointer[LPWSTR]) -> HRESULT:
+    def GetFileName(self, pszName: _Pointer[LPWSTR]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetTitle(self, pszTitle: LPCWSTR | str) -> HRESULT:
+    def SetTitle(self, pszTitle: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetOkButtonLabel(self, pszText: LPCWSTR | str) -> HRESULT:
+    def SetOkButtonLabel(self, pszText: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetFileNameLabel(self, pszLabel: LPCWSTR | str) -> HRESULT:
+    def SetFileNameLabel(self, pszLabel: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def GetResult(self, ppsi: IShellItem) -> HRESULT:
         return S_OK
     def AddPlace(self, psi: IShellItem, fdap: c_int) -> HRESULT:
         return S_OK
-    def SetDefaultExtension(self, pszDefaultExtension: LPCWSTR | str) -> HRESULT:
+    def SetDefaultExtension(self, pszDefaultExtension: LPCWSTR | str) -> HRESULT:  # noqa: N803
         return S_OK
     def Close(self, hr: HRESULT | int) -> HRESULT:
         return S_OK
@@ -1264,22 +1266,107 @@ class FileSaveDialog(comtypes.COMObject):
         return S_OK
     def ClearClientData(self) -> HRESULT:
         return S_OK
-    def SetFilter(self, pFilter: IShellItemFilter) -> HRESULT:
+    def SetFilter(self, pFilter: IShellItemFilter) -> HRESULT:  # noqa: N803
         return S_OK
     def SetSaveAsItem(self, psi: IShellItem) -> HRESULT:
         return S_OK
-    def SetProperties(self, pStore: _Pointer[comtypes.IUnknown]) -> HRESULT:
+    def SetProperties(self, pStore: _Pointer[comtypes.IUnknown]) -> HRESULT:  # noqa: N803
         return S_OK
-    def SetCollectedProperties(self, pList: _Pointer[comtypes.IUnknown], fAppendDefault: BOOL | int) -> HRESULT:
+    def SetCollectedProperties(self, pList: _Pointer[comtypes.IUnknown], fAppendDefault: BOOL | int) -> HRESULT:  # noqa: N803
         return S_OK
-    def GetProperties(self, ppStore: comtypes.IUnknown) -> HRESULT:
+    def GetProperties(self, ppStore: comtypes.IUnknown) -> HRESULT:  # noqa: N803
         return S_OK
-    def ApplyProperties(self, psi: IShellItem, pStore: _Pointer[comtypes.IUnknown], hwnd: HWND | int, pSink: _Pointer[comtypes.IUnknown]) -> HRESULT:
+    def ApplyProperties(self, psi: IShellItem, pStore: _Pointer[comtypes.IUnknown], hwnd: HWND | int, pSink: _Pointer[comtypes.IUnknown]) -> HRESULT:  # noqa: N803
         return S_OK
+
+
+class IFileDialogCustomize(comtypes.IUnknown):
+    _case_insensitive_ = True
+    _iid_ = IID_IFileDialogCustomize
+    _methods_: ClassVar[list[_ComMemberSpec]] = [
+        COMMETHOD([], HRESULT, "EnableOpenDropDown", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "AddText", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszText")),
+        COMMETHOD([], HRESULT, "AddPushButton", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszLabel")),
+        COMMETHOD([], HRESULT, "AddCheckButton", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszLabel"), (["in"], c_int, "bChecked")),
+        COMMETHOD([], HRESULT, "AddRadioButtonList", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "AddComboBox", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "AddControlItem", (["in"], c_uint, "dwIDCtl"), (["in"], c_uint, "dwIDItem"), (["in"], LPCWSTR, "pszLabel")),
+        COMMETHOD([], HRESULT, "AddEditBox", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszText")),
+        COMMETHOD([], HRESULT, "AddSeparator", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "AddMenu", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszLabel")),
+        COMMETHOD([], HRESULT, "SetControlLabel", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszLabel")),
+        COMMETHOD([], HRESULT, "SetControlState", (["in"], c_uint, "dwIDCtl"), (["in"], c_int, "dwState")),
+        COMMETHOD([], HRESULT, "SetCheckButtonState", (["in"], c_uint, "dwIDCtl"), (["in"], c_int, "bChecked")),
+        COMMETHOD([], HRESULT, "GetCheckButtonState", (["in"], c_uint, "dwIDCtl"), (["out"], POINTER(c_int), "pbChecked")),
+        COMMETHOD([], HRESULT, "SetEditBoxText", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszText")),
+        COMMETHOD([], HRESULT, "GetEditBoxText", (["in"], c_uint, "dwIDCtl"), (["out"], POINTER(LPCWSTR), "ppszText")),
+        COMMETHOD([], HRESULT, "SetControlItemText", (["in"], c_uint, "dwIDCtl"), (["in"], c_uint, "dwIDItem"), (["in"], LPCWSTR, "pszLabel")),
+        COMMETHOD([], HRESULT, "GetControlItemState", (["in"], c_uint, "dwIDCtl"), (["in"], c_uint, "dwIDItem"), (["out"], POINTER(c_int), "pdwState")),
+        COMMETHOD([], HRESULT, "SetControlItemState", (["in"], c_uint, "dwIDCtl"), (["in"], c_uint, "dwIDItem"), (["in"], c_int, "dwState")),
+        COMMETHOD([], HRESULT, "GetSelectedControlItem", (["in"], c_uint, "dwIDCtl"), (["out"], POINTER(c_uint), "pdwIDItem")),
+        COMMETHOD([], HRESULT, "SetSelectedControlItem", (["in"], c_uint, "dwIDCtl"), (["in"], c_uint, "dwIDItem")),
+        COMMETHOD([], HRESULT, "StartVisualGroup", (["in"], c_uint, "dwIDCtl"), (["in"], LPCWSTR, "pszLabel")),
+        COMMETHOD([], HRESULT, "EndVisualGroup", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "MakeProminent", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "RemoveControlItem", (["in"], c_uint, "dwIDCtl"), (["in"], c_uint, "dwIDItem")),
+        COMMETHOD([], HRESULT, "RemoveAllControlItems", (["in"], c_uint, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "GetControlState", (["in"], c_uint, "dwIDCtl"), (["out"], POINTER(c_int), "pdwState")),
+    ]
+    EnableOpenDropDown: Callable[[int], HRESULT]
+    AddText: Callable[[int, str], HRESULT]
+    AddPushButton: Callable[[int, str], HRESULT]
+    AddCheckButton: Callable[[int, str, int], HRESULT]
+    AddRadioButtonList: Callable[[int], HRESULT]
+    AddComboBox: Callable[[int], HRESULT]
+    AddControlItem: Callable[[int, int, str], HRESULT]
+    AddEditBox: Callable[[int, str], HRESULT]
+    AddSeparator: Callable[[int], HRESULT]
+    AddMenu: Callable[[int, str], HRESULT]
+    SetControlLabel: Callable[[int, str], HRESULT]
+    SetControlState: Callable[[int, int], HRESULT]
+    SetCheckButtonState: Callable[[int, int], HRESULT]
+    GetCheckButtonState: Callable[[int], int]
+    SetEditBoxText: Callable[[int, str], HRESULT]
+    GetEditBoxText: Callable[[int], LPCWSTR]
+    SetControlItemText: Callable[[int, int, str], HRESULT]
+    GetControlItemState: Callable[[int, int], int]
+    SetControlItemState: Callable[[int, int, int], HRESULT]
+    GetSelectedControlItem: Callable[[int], int]
+    SetSelectedControlItem: Callable[[int, int], HRESULT]
+    StartVisualGroup: Callable[[int, str], HRESULT]
+    EndVisualGroup: Callable[[int], HRESULT]
+    MakeProminent: Callable[[int], HRESULT]
+    RemoveControlItem: Callable[[int, int], HRESULT]
+    RemoveAllControlItems: Callable[[int], HRESULT]
+    GetControlState: Callable[[int], int]
+
+
+class IFileDialogControlEvents(comtypes.IUnknown):
+    _case_insensitive_ = True
+    _iid_ = IID_IFileDialogControlEvents
+    _methods_: ClassVar[list[_ComMemberSpec]] = [
+        COMMETHOD([], HRESULT, "OnItemSelected",
+                  (["in"], comtypes.POINTER(IFileDialogCustomize), "pfdc"),
+                  (["in"], c_int, "dwIDCtl"),
+                  (["in"], c_int, "dwIDItem")),
+        COMMETHOD([], HRESULT, "OnButtonClicked",
+                  (["in"], comtypes.POINTER(IFileDialogCustomize), "pfdc"),
+                  (["in"], c_int, "dwIDCtl")),
+        COMMETHOD([], HRESULT, "OnCheckButtonToggled",
+                  (["in"], comtypes.POINTER(IFileDialogCustomize), "pfdc"),
+                  (["in"], c_int, "dwIDCtl"),
+                  (["in"], c_bool, "bChecked")),
+        COMMETHOD([], HRESULT, "OnControlActivating",
+                  (["in"], comtypes.POINTER(IFileDialogCustomize), "pfdc"),
+                  (["in"], c_int, "dwIDCtl")),
+    ]
+    OnButtonClicked: Callable[[IFileDialogCustomize, c_uint], HRESULT]
+    OnCheckButtonToggled: Callable[[IFileDialogCustomize, c_uint, c_int], HRESULT]
+    OnControlActivating: Callable[[IFileDialogCustomize, c_uint], HRESULT]
+    OnItemSelected: Callable[[IFileDialogCustomize, c_uint, c_uint], HRESULT]
 
 
 if __name__ == "__main__":
-    assert Unknown()
     assert ModalWindow()
     assert ShellItem()
     assert ContextMenu()

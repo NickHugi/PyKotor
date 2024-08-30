@@ -135,7 +135,7 @@ def askopenfilenames(  # noqa: PLR0913
             parent=_get_tk_root() if parent is None else parent,
             typevariable=typevariable,
         )
-        return "" if not result else tuple(result)
+        return tuple(result) if result else ""
     except Exception:  # noqa: BLE001
         RobustRootLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
         from utility.system.win32.com.windialogs import open_file_dialog
@@ -146,7 +146,7 @@ def askopenfilenames(  # noqa: PLR0913
             defaultextension,
             allow_multiple_selection=True
         )
-        return "" if not result else tuple(result)
+        return tuple(result) if result else ""
 
 
 def askopenfiles(  # noqa: PLR0913
@@ -182,7 +182,7 @@ def askopenfiles(  # noqa: PLR0913
             defaultextension,
             allow_multiple_selection=True
         )
-        return None if not result else tuple(open(file, mode) for file in result)  # noqa: PTH123, SIM115
+        return tuple(open(file, mode) for file in result) if result else None  # noqa: PTH123, SIM115
 
 
 
