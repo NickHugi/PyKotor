@@ -8,6 +8,8 @@ import sys
 
 from copy import deepcopy
 
+from utility.system.path import Path
+
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.is_dir():
@@ -16,11 +18,13 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Callable, cast
 
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
-from pykotor.tools.path import CaseAwarePath
 from utility.system.agnostics import askdirectory, askopenfilenames, askretrycancel, showinfo
+
+if os.name == "nt":
+    from utility.system.win32.com.windialogs import open_file_and_folder_dialog
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
@@ -127,7 +131,7 @@ def log(message: str):
     """Function to log messages both on console and to a file if logging is enabled."""
     print(message)
     if LOGGING_ENABLED:
-        cast(CaseAwarePath, PARSER_ARGS.output).mkdir(parents=True, exist_ok=True)
+        cast(Path, PARSER_ARGS.output).mkdir(parents=True, exist_ok=True)
         with PARSER_ARGS.output.joinpath("output.log").open("a", encoding="utf-8") as log_file:
             log_file.write(message + "\n")
 
@@ -171,8 +175,8 @@ def resize_extent_by_factor(
 
 
 def process_file(
-    gui_file: CaseAwarePath,
-    output_dir: CaseAwarePath,
+    gui_file: Path,
+    output_dir: Path,
     resolutions: list[tuple[int, int]],
 ):
     global PARSER_ARGS  # noqa: PLW0602
@@ -186,11 +190,11 @@ def process_file(
 
     if PARSER_ARGS.resolution.upper() == "ALL":
         for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
-            aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
+            aspect_ratio_dir: Path = output_dir / aspect_ratio.replace(":", "x")
 
             for width, height in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
                 adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-                output_path: CaseAwarePath = aspect_ratio_dir / f"{width}x{height}" / gui_file.name
+                output_path: Path = aspect_ratio_dir / f"{width}x{height}" / gui_file.name
                 output_path.parent.mkdir(exist_ok=True, parents=True)
                 log(f"Created directory for aspect ratio {aspect_ratio} at {output_path}")
                 write_gff(adjusted_gui_data, output_path)
@@ -198,7 +202,7 @@ def process_file(
     else:
         for width, height in resolutions:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
-            output_path: CaseAwarePath = output_dir / f"{width}x{height}" / gui_file.name
+            output_path: Path = output_dir / f"{width}x{height}" / gui_file.name
             output_path.parent.mkdir(exist_ok=True, parents=True)
             write_gff(adjusted_gui_data, output_path)
             log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path}")
@@ -210,11 +214,11 @@ def main():
     global TEST_MODE  # noqa: PLW0602
 
     if TEST_MODE:
-        input_dir = CaseAwarePath(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-10\\gui.1280x800"))
+        input_dir = Path(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-10\\gui.1280x800"))
         input_files = list(input_dir.rglob("*.gui"))
         PARSER_ARGS = argparse.Namespace(
             input=input_files,
-            output=CaseAwarePath(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-9-test")),
+            output=Path(os.path.expandvars("%USERPROFILE%\\Documents\\k1 mods\\k1hrm-1.5\\16-by-9-test")),
             output_log=None,
             logging=True,
             resolution="1280x720",
@@ -222,7 +226,7 @@ def main():
     else:
         PARSER_ARGS = _parse_user_arg_inputs()
 
-    input_paths: list[CaseAwarePath] = PARSER_ARGS.input
+    input_paths: list[Path] = PARSER_ARGS.input
     resolution_arg: str = PARSER_ARGS.resolution
     resolutions_to_process = []
 
@@ -248,7 +252,7 @@ def main():
             if not files_to_process:
                 print(f"Error: no .gui files to process in input path '{input_path}'", file=sys.stderr)
             for gui_file in files_to_process:
-                new_output_dir: CaseAwarePath = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
+                new_output_dir: Path = PARSER_ARGS.output / gui_file.relative_to(input_path).parent
                 new_output_dir.mkdir(parents=True, exist_ok=True)
                 process_file(gui_file, new_output_dir, resolutions_to_process)
                 processed_files_count += 1
@@ -258,7 +262,7 @@ def main():
             return
 
     if TEST_MODE:
-        comparison_dir = CaseAwarePath(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))
+        comparison_dir = Path(os.path.expandvars(r"%USERPROFILE%\Documents\k1 mods\k1hrm-1.5\16-by-9\gui.1280x720"))
         assert compare_directories(PARSER_ARGS.output / "1280x720", comparison_dir), "Test directories do not match."
 
     # Display a summary info dialog after processing is complete
@@ -267,7 +271,7 @@ def main():
 
 
 
-def compare_directories(dir1: CaseAwarePath, dir2: CaseAwarePath) -> bool:
+def compare_directories(dir1: Path, dir2: Path) -> bool:
     dir1_files = {str(f.relative_to(dir1)).replace("\\", "/"): f for f in dir1.rglob("*.gui")}
     dir2_files = {str(f.relative_to(dir2)).replace("\\", "/"): f for f in dir2.rglob("*.gui")}
 
@@ -309,6 +313,30 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
     parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
     parser.add_argument("--resolution", type=str, help="Specific resolution (e.g., 1920x1080) or 'ALL' for all resolutions")
 
+    lookup_function: Callable[[str], str] | None = None
+
+    def get_lookup_function() -> Callable[[str], list[str]]:
+        nonlocal lookup_function
+        if lookup_function is not None:
+            return lookup_function
+        if os.name == "nt":
+            def lookup_function(title: str) -> list[str]:
+                return open_file_and_folder_dialog(title=title) or []
+        else:
+            choice = input("Do you want to pick a path using a ui-based file/directory picker? (y/N)").strip().lower()
+            if not choice or choice == "y":
+                file_or_dir_choice = input("Do you want to pick a file? (No for directory) (y/N)").strip().lower()
+                if file_or_dir_choice == "yes":
+                    def lookup_function(title: str) -> list[str]:
+                        return askopenfilenames(title=title)
+                else:
+                    def lookup_function(title: str) -> list[str]:
+                        return askdirectory(title=title)
+            else:
+                def lookup_function(title: str) -> str:
+                    return input(title)
+        return lookup_function
+
     result, unknown = parser.parse_known_args()
     while True:
         result.input = result.input or (unknown if len(unknown) > 0 else None) or askopenfilenames(title="Select K1/TSL GUI file(s) to convert")
@@ -317,7 +345,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
                 sys.exit()
             result.input = None
             continue
-        result.input = [CaseAwarePath(path).resolve() for path in result.input]
+        result.input = [Path(path).resolve() for path in result.input]
         if all(path.exists() for path in result.input):
             break
         print("Invalid path(s):", result.input)
@@ -330,7 +358,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
                 sys.exit()
             result.output = None
             continue
-        result.output = CaseAwarePath(result.output).resolve()
+        result.output = Path(result.output).resolve()
         if result.output.parent.exists():
             result.output.mkdir(exist_ok=True, parents=True)
             break
