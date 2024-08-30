@@ -311,7 +311,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
     parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
     parser.add_argument("--resolution", type=str, help="Specific resolution (e.g., 1920x1080) or 'ALL' for all resolutions")
 
-    lookup_function: Callable[[str], list[str]] | None = None
+    lookup_function: Callable[[str], list[str]] | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType]
 
     def get_lookup_function() -> Callable[[str], list[str]]:
         nonlocal lookup_function

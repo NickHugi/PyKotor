@@ -411,7 +411,7 @@ def main():
     PARSER_ARGS, unknown = PARSER.parse_known_args()
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
 
-    lookup_function: Callable[[str], str] | None = None
+    lookup_function: Callable[[str], str] | None = None  # pyright: ignore[reportRedeclaration, reportAssignmentType]
 
     def get_lookup_function() -> Callable[[str], str]:
         nonlocal lookup_function
