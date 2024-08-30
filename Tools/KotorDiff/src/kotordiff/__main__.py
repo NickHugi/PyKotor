@@ -30,9 +30,8 @@ from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
 from utility.misc import generate_hash
-from utility.system.agnostics import askdirectory, askopenfilename, askquestion
+from utility.system.agnostics import askdirectory, askopenfilename
 from utility.system.path import Path, PureWindowsPath
 
 if os.name == "nt":
@@ -42,6 +41,7 @@ if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
     from utility.system.path import PurePath
 
+CURRENT_VERSION = "1.0.0b1"
 OUTPUT_LOG: Path | None = None
 LOGGING_ENABLED: bool | None = None
 
@@ -390,6 +390,7 @@ def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
 
 
 def main():
+    print(f"KotorDiff version {CURRENT_VERSION}")
     global PARSER_ARGS
     global PARSER  # noqa: PLW0603
     global LOGGING_ENABLED  # noqa: PLW0603
