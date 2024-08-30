@@ -17,10 +17,10 @@ if getattr(sys, "frozen", False) is False:
             sys.path.remove(working_dir)
         sys.path.append(working_dir)
 
-    pykotor_path = pathlib.Path(__file__).parents[3] / "Libraries" / "PyKotor" / "src" / "pykotor"
+    pykotor_path = pathlib.Path(__file__).parents[4] / "Libraries" / "PyKotor" / "src" / "pykotor"
     if pykotor_path.exists():
         update_sys_path(pykotor_path.parent)
-    utility_path = pathlib.Path(__file__).parents[3] / "Libraries" / "Utility" / "src" / "utility"
+    utility_path = pathlib.Path(__file__).parents[4] / "Libraries" / "Utility" / "src" / "utility"
     if utility_path.exists():
         update_sys_path(utility_path.parent)
 
