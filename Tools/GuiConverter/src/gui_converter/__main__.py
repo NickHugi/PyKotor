@@ -319,7 +319,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
             return lookup_function
         if os.name == "nt":
             def lookup_function(title: str) -> list[str]:
-                return open_file_and_folder_dialog(title=title) or []
+                return open_file_and_folder_dialog(title=title, allow_multiple_selection=True) or []
         else:
             choice = input("Do you want to pick a path using a ui-based file/directory picker? (y/N)").strip().lower()
             if not choice or choice == "y":
@@ -337,7 +337,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
 
     result, unknown = parser.parse_known_args()
     while True:
-        result.input = result.input or (unknown if len(unknown) > 0 else None) or askopenfilenames(title="Select K1/TSL GUI file(s) to convert")
+        result.input = result.input or (unknown if len(unknown) > 0 else None) or get_lookup_function()("Select K1/TSL GUI file(s) to convert")
         if not result.input or not any(result.input):
             if not askretrycancel("error: You cancelled the browse file dialog.", "You must choose at least one .gui file!"):
                 sys.exit()

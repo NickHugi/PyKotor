@@ -952,7 +952,7 @@ class FileDialog(comtypes.COMObject):
         return ULONG(-1)
     def Release(self) -> ULONG:
         return ULONG(-1)
-    def Show(self, hwndOwner: HWND | int) -> HRESULT:
+    def Show(self, hwndOwner: HWND | int) -> HRESULT:  # noqa: N803
         return S_OK
     def SetFileTypes(self, cFileTypes: c_uint | int, rgFilterSpec: Array[COMDLG_FILTERSPEC]) -> HRESULT:  # noqa: N803
         return S_OK
