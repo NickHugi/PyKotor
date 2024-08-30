@@ -303,8 +303,6 @@ def compare_directories(dir1: Path, dir2: Path) -> bool:
     return all_files_match
 
 
-
-
 def _parse_user_arg_inputs() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
     parser.add_argument("--input", type=str, help="Path to the K1/TSL GUI file.")
@@ -313,7 +311,7 @@ def _parse_user_arg_inputs() -> argparse.Namespace:
     parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
     parser.add_argument("--resolution", type=str, help="Specific resolution (e.g., 1920x1080) or 'ALL' for all resolutions")
 
-    lookup_function: Callable[[str], str] | None = None
+    lookup_function: Callable[[str], list[str]] | None = None
 
     def get_lookup_function() -> Callable[[str], list[str]]:
         nonlocal lookup_function
