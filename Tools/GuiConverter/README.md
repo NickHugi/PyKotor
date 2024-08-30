@@ -74,11 +74,3 @@ If logging is enabled, a log file named `output.log` will be created in the spec
 
 - Ensure that your `.gui` files are compatible with the Star Wars: Knights of the Old Republic game or any other project you're working on.
 - The tool supports adding more aspect ratios and resolutions by modifying the `ASPECT_RATIO_TO_RESOLUTION` dictionary in the script.
-
-## License
-
-This project is open-source and available under the MIT License. Feel free to modify and use it as per your needs.
-
-## Contribution
-
-Contributions are welcome! Please feel free to submit a pull request or report any issues you find.
