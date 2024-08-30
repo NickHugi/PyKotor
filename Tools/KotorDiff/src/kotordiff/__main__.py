@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import cProfile
+import os
 import pathlib
 import sys
 
 from argparse import ArgumentParser
 from io import StringIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 if getattr(sys, "frozen", False) is False:
 
@@ -29,12 +30,15 @@ from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from utility.error_handling import universal_simplify_exception
+from utility.logger_util import RobustRootLogger
 from utility.misc import generate_hash
+from utility.system.agnostics import askdirectory, askopenfilename, askquestion
 from utility.system.path import Path, PureWindowsPath
 
-if TYPE_CHECKING:
-    import os
+if os.name == "nt":
+    from utility.system.win32.com.windialogs import open_file_and_folder_dialog
 
+if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
     from utility.system.path import PurePath
 
@@ -402,11 +406,36 @@ def main():
 
     PARSER_ARGS, unknown = PARSER.parse_known_args()
     LOGGING_ENABLED = bool(PARSER_ARGS.logging is None or PARSER_ARGS.logging)
+
+    lookup_function: Callable[[], str] | None = None
+
+    def get_lookup_function() -> Callable[[], str]:
+        nonlocal lookup_function
+        if lookup_function is not None:
+            return lookup_function
+        if os.name == "nt":
+            def open_file_folder_wrapper():
+                result = open_file_and_folder_dialog()
+                return result[0] if result else ""
+            lookup_function = open_file_folder_wrapper
+        else:
+            choice = input("Do you want to pick a path using a ui-based file/directory picker? (y/N)").strip().lower()
+            if not choice or choice == "y":
+                file_or_dir_choice = input("Do you want to pick a file? (No for directory) (y/N)").strip().lower()
+                if file_or_dir_choice == "yes":
+                    lookup_function = askopenfilename
+                else:
+                    lookup_function = askdirectory
+            else:
+                def lookup_function():
+                    return input("Please enter the (next) path manually: ")
+        return lookup_function
+
     while True:
         PARSER_ARGS.path1 = Path(
             PARSER_ARGS.path1
             or (unknown[0] if len(unknown) > 0 else None)
-            or input("Path to the first K1/TSL install, file, or directory to diff: "),
+            or get_lookup_function()(),
         ).resolve()
         if PARSER_ARGS.path1.safe_exists():
             break
@@ -417,7 +446,7 @@ def main():
         PARSER_ARGS.path2 = Path(
             PARSER_ARGS.path2
             or (unknown[1] if len(unknown) > 1 else None)
-            or input("Path to the second K1/TSL install, file, or directory to diff: "),
+            or get_lookup_function()(),
         ).resolve()
         if PARSER_ARGS.path2.safe_exists():
             break
