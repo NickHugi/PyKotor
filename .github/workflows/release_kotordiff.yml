@@ -234,6 +234,7 @@ jobs:
           } else {
             pip install pyinstaller -U --prefer-binary
           }
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "success=true"
         } catch {
           Write-Host -ForegroundColor Red "Detailed Error Report:"
           Write-Host -ForegroundColor Red "Message: $($_.Exception.Message)"
