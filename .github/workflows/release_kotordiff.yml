@@ -231,6 +231,7 @@ jobs:
             } else {
               pip install "pyinstaller==5.4" --prefer-binary
             }
+            pip install comtypes
           } else {
             pip install pyinstaller -U --prefer-binary
           }
