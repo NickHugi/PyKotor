@@ -31,7 +31,7 @@ def onAppCrash(
     exc: BaseException,
     tback: TracebackType | None,
 ):  # sourcery skip: extract-method
-    from utility.logger_util import RobustRootLogger
+    from loggerplus import RobustLogger
 
     if issubclass(etype, KeyboardInterrupt):
         sys.__excepthook__(etype, exc, tback)
@@ -52,7 +52,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    logger = RobustRootLogger()
+    logger = RobustLogger()
     logger.critical("Uncaught exception", exc_info=(etype, exc, tback))
 
 
@@ -128,10 +128,10 @@ def is_running_from_temp() -> bool:
 def qt_cleanup():
     """Cleanup so we can exit."""
     from toolset.utils.window import WINDOWS
-    from utility.logger_util import RobustRootLogger
+    from loggerplus import RobustLogger
     from utility.system.process import terminate_child_processes
 
-    RobustRootLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
+    RobustLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
     for window in WINDOWS:
         window.close()
         window.destroy()
@@ -140,7 +140,7 @@ def qt_cleanup():
     for obj in gc.get_objects():
         with suppress(RuntimeError):  # wrapped C/C++ object of type QThread has been deleted
             if isinstance(obj, QThread) and obj.isRunning():
-                RobustRootLogger().info(f"Terminating QThread: {obj}")
+                RobustLogger().info(f"Terminating QThread: {obj}")
                 obj.terminate()
                 obj.wait()
     terminate_child_processes()
@@ -150,14 +150,14 @@ def last_resort_cleanup():
 
     This function should be registered with atexit as early as possible.
     """
-    from utility.logger_util import RobustRootLogger
+    from loggerplus import RobustLogger
     from utility.system.process import gracefully_shutdown_threads, start_shutdown_process
 
-    RobustRootLogger().info("Fully shutting down Holocron Toolset...")
+    RobustLogger().info("Fully shutting down Holocron Toolset...")
     gracefully_shutdown_threads()
-    RobustRootLogger().debug("Starting new shutdown process...")
+    RobustLogger().debug("Starting new shutdown process...")
     start_shutdown_process()
-    RobustRootLogger().debug("Shutdown process started...")
+    RobustLogger().debug("Shutdown process started...")
 
 
 def setupPreInitSettings():
@@ -185,9 +185,9 @@ def main_init():
         atexit.register(last_resort_cleanup)  # last_resort_cleanup already handles child processes.
 
     if is_frozen():
-        from utility.logger_util import RobustRootLogger
+        from loggerplus import RobustLogger
 
-        RobustRootLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
+        RobustLogger().debug("App is frozen - calling multiprocessing.freeze_support()")
         multiprocessing.freeze_support()
         if is_main_process:
             set_qt_api()

@@ -8,7 +8,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING
 
 from utility.gui.qt.common.filesystem.icons import qicon_from_file_ext, qpixmap_to_qicon
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 
 def update_sys_path(path: pathlib.Path):
@@ -243,7 +243,7 @@ class TreeItem:
             return -1
         if isinstance(self.parent, DirItem):
             if self not in self.parent.children:
-                RobustRootLogger().warning(f"parent '{self.parent.path}' has orphaned the item '{self.path}' without warning!")
+                RobustLogger().warning(f"parent '{self.parent.path}' has orphaned the item '{self.path}' without warning!")
                 return -1
             return self.parent.children.index(self)
         raise RuntimeError(f"INVALID parent item! Only `DirItem` instances should children, but parent was: '{self.parent.__class__.__name__}'")

@@ -75,8 +75,8 @@ def shutdown_main_process(main_pid: int, *, timeout: int = 3):
         print("Perform the shutdown/cleanup sequence")
         terminate_main_process(timeout, main_pid)
     except Exception:  # noqa: BLE001
-        from utility.logger_util import RobustRootLogger
-        RobustRootLogger().exception("Shutdown process encountered an exception!")
+        from loggerplus import RobustLogger
+        RobustLogger().exception("Shutdown process encountered an exception!")
 
 
 def terminate_child_processes(
@@ -89,10 +89,10 @@ def terminate_child_processes(
     """
     import multiprocessing
 
-    from utility.logger_util import RobustRootLogger
+    from loggerplus import RobustLogger
 
     ignored_pids = [] if ignored_pids is None else ignored_pids
-    log = RobustRootLogger()
+    log = RobustLogger()
     log.info("Attempting to terminate child processes gracefully...")
 
     active_children = multiprocessing.active_children()
@@ -136,8 +136,8 @@ def gracefully_shutdown_threads(timeout: int = 3) -> bool:
 
     If all terminate gracefully or if there are no threads, exit normally.
     """
-    from utility.logger_util import RobustRootLogger
-    RobustRootLogger().info("Attempting to terminate threads gracefully...")
+    from loggerplus import RobustLogger
+    RobustLogger().info("Attempting to terminate threads gracefully...")
     main_thread = threading.main_thread()
     other_threads = [t for t in threading.enumerate() if t is not main_thread]
     number_timeout_threads = 0
@@ -155,13 +155,13 @@ def gracefully_shutdown_threads(timeout: int = 3) -> bool:
         try:
             thread.join(timeout)
             if thread.is_alive():
-                RobustRootLogger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
+                RobustLogger().warning("Thread '%s' did not terminate within the timeout period of %s seconds.", thread.name, timeout)
                 number_timeout_threads += 1
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to stop the thread")
+            RobustLogger().exception("Failed to stop the thread")
 
     if number_timeout_threads:
-        RobustRootLogger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
+        RobustLogger().warning("%s total threads would not terminate on their own!", number_timeout_threads)
     else:
         print("All threads terminated gracefully; exiting normally.")
     return bool(number_timeout_threads)
@@ -176,7 +176,7 @@ def terminate_main_process(
     If threads other than the main thread are still running after the timeout, it forcefully terminates
     the process. Otherwise, exits normally.
     """
-    from utility.logger_util import RobustRootLogger
+    from loggerplus import RobustLogger
 
     # Wait for the timeout period to give threads a chance to finish
     time.sleep(timeout)
@@ -191,7 +191,7 @@ def terminate_main_process(
             print("Call sys.exit NOW")
             sys.exit(0)
 
-        RobustRootLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
+        RobustLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
         if sys.platform == "win32":
             from utility.system.os_helper import win_get_system32_dir
             sys32path = win_get_system32_dir()
@@ -204,7 +204,7 @@ def terminate_main_process(
             import signal
             os.kill(actual_self_pid, signal.SIGKILL)
     except Exception:  # noqa: BLE001
-        RobustRootLogger().exception("Exception occurred while shutting down the main process")
+        RobustLogger().exception("Exception occurred while shutting down the main process")
     finally:
         print("call os.exit NOW")
         os._exit(0 if result1 and result2 else 1)

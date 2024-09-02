@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QAction, QApplication, QDialog, QListWidgetItem, QMenu, QShortcut, QTreeWidgetItem
@@ -20,7 +21,6 @@ from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, R
 from toolset.gui.editor import Editor
 from toolset.utils.window import addWindow
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import RobustRootLogger
 
 if TYPE_CHECKING:
     import os
@@ -554,7 +554,7 @@ class UTIEditor(Editor):
             if stringref is not None:
                 return installation.talktable().string(stringref)
         except (IndexError, Exception):  # noqa: BLE001
-            RobustRootLogger().warning("Could not get the costtable 2da row/value", exc_info=True)
+            RobustLogger().warning("Could not get the costtable 2da row/value", exc_info=True)
         return None
 
     @staticmethod
@@ -568,7 +568,7 @@ class UTIEditor(Editor):
             paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
             stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
         except (IndexError, Exception):  # noqa: BLE001
-            RobustRootLogger().warning("Could not get the paramtable 2da row/value", exc_info=True)
+            RobustLogger().warning("Could not get the paramtable 2da row/value", exc_info=True)
         else:
             return installation.talktable().string(stringref)
         return None
@@ -625,7 +625,7 @@ class PropertyEditor(QDialog):
             for i in range(costtable.get_height()):
                 costName = UTIEditor.costName(installation, utiProperty.cost_table, i)
                 if not costName:
-                    RobustRootLogger().warning(f"No costName at index {i}")
+                    RobustLogger().warning(f"No costName at index {i}")
                 item = QListWidgetItem(costName)
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.costList.addItem(item)
@@ -636,7 +636,7 @@ class PropertyEditor(QDialog):
             for i in range(paramtable.get_height()):
                 paramName = UTIEditor.paramName(installation, utiProperty.param1, i)
                 if not paramName:
-                    RobustRootLogger().warning(f"No paramName at index {i}")
+                    RobustLogger().warning(f"No paramName at index {i}")
                 item = QListWidgetItem(paramName)
                 item.setData(Qt.ItemDataRole.UserRole, i)
                 self.ui.parameterList.addItem(item)

@@ -66,7 +66,7 @@ from qtpy.QtWidgets import QApplication, QFileIconProvider, QFileSystemModel, QM
 
 from utility.gui.qt.common.filesystem.node import PyFileSystemNode  # noqa: E402
 from utility.gui.qt.common.filesystem.pyfileinfogatherer import PyFileInfoGatherer  # noqa: E402
-from utility.logger_util import RobustRootLogger  # noqa: E402
+from loggerplus import RobustLogger  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
@@ -93,7 +93,7 @@ if os.name == "nt_disabled":
 
         from comtypes.automation import BSTR, IUnknown  # pyright: ignore[reportMissingTypeStubs]
     except ImportError:
-        RobustRootLogger().error("Could not setup the comtypes library, volume functionality will be disabled.")
+        RobustLogger().error("Could not setup the comtypes library, volume functionality will be disabled.")
     else:
 
         def volumeName(path: str) -> str:
@@ -197,7 +197,7 @@ class PyFileSystemModel(QAbstractItemModel):
 
     def _q_directoryChanged(self, directory: str, files: list[str] | None = None):
         parentNode = self.node(directory, fetch=False)
-        RobustRootLogger().warning(
+        RobustLogger().warning(
             f"<SDM> [_q_directoryChanged scope] parentNode: {parentNode} row: {parentNode.row()} col: {parentNode.row()} path: {parentNode.fileInfo() and parentNode.fileInfo().path()}"
         )
 
@@ -371,7 +371,7 @@ class PyFileSystemModel(QAbstractItemModel):
 
                     self.dataChanged.emit(self.index(row, 0), self.index(row, self.columnCount() - 1))
                 except ValueError:  # noqa: S110
-                    RobustRootLogger().exception(f"Internal issue trying to access '{fileName}' and resolved '{resolvedName}'")
+                    RobustLogger().exception(f"Internal issue trying to access '{fileName}' and resolved '{resolvedName}'")
 
     def _q_performDelayedSort(self):
         self.sort(self._sortColumn, self._sortOrder)
@@ -599,7 +599,7 @@ class PyFileSystemModel(QAbstractItemModel):
         try:
             shutil.rmtree(path, ignore_errors=False)  # noqa: PTH106
         except OSError as e:
-            RobustRootLogger().exception(f"Failed to rmdir: {e.__class__.__name__}: {e}")
+            RobustLogger().exception(f"Failed to rmdir: {e.__class__.__name__}: {e}")
             return False
         else:
             self._fileInfoGatherer.removePath(path)
@@ -612,7 +612,7 @@ class PyFileSystemModel(QAbstractItemModel):
         node.populate(info)
         if sys.platform == "win32" and not parentNode.fileName:
             node.volumeName = volumeName(fileName)
-            RobustRootLogger().warning(f"<SDM> [addNode scope] node.volumeName: '{node.volumeName}'")
+            RobustLogger().warning(f"<SDM> [addNode scope] node.volumeName: '{node.volumeName}'")
 
         # assert fileName not in parentNode.children
         parentNode.children[fileName] = node
@@ -761,7 +761,7 @@ class PyFileSystemModel(QAbstractItemModel):
                     providerOptions &= ~QFileIconProvider.DontUseCustomDirectoryIcons
                 provider.setOptions(providerOptions)
             else:
-                RobustRootLogger().warning("Setting PyFileSystemModel::DontUseCustomDirectoryIcons has no effect when no provider is used")
+                RobustLogger().warning("Setting PyFileSystemModel::DontUseCustomDirectoryIcons has no effect when no provider is used")
 
     def testOption(self, option: QFileSystemModel.Option) -> bool:
         print("<SDM> [testOption scope] option: ", option)
@@ -789,7 +789,7 @@ class PyFileSystemModel(QAbstractItemModel):
             else:
                 Path(path).unlink(missing_ok=False)  # noqa: PTH107
         except OSError:
-            RobustRootLogger().exception("Failed to rmdir")
+            RobustLogger().exception("Failed to rmdir")
             return False
         else:
             return True
@@ -802,7 +802,7 @@ class PyFileSystemModel(QAbstractItemModel):
         try:
             os.mkdir(dirPath)  # noqa: PTH102
         except OSError:
-            RobustRootLogger().exception(f"Failed to mkdir at '{dirPath}'")
+            RobustLogger().exception(f"Failed to mkdir at '{dirPath}'")
             return QModelIndex()
         else:  # sourcery skip: extract-method
             parentNode = self.node(parent)
