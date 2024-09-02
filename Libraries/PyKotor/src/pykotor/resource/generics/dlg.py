@@ -6,13 +6,14 @@ from collections import deque
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Dict, Generator, Generic, Sequence, TypeVar, cast
 
+from loggerplus import RobustLogger
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
-from loggerplus import RobustLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:

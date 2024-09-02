@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Set, Tuple, Union
 
-from toolset.utils.misc import getQtButtonString, getQtKeyString
 from loggerplus import RobustLogger
+
+from toolset.utils.misc import getQtButtonString, getQtKeyString
 
 Bind = Tuple[Set[int], Union[Set[int], None]]
 

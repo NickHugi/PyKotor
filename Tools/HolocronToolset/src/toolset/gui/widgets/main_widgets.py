@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Tuple, cast
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
 from qtpy.QtGui import (
@@ -27,7 +28,6 @@ from pykotor.extract.file import FileResource
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QEvent, QModelIndex, QObject

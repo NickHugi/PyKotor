@@ -4,13 +4,14 @@ from abc import ABC, abstractmethod
 from itertools import zip_longest
 from typing import TYPE_CHECKING, Any
 
+from loggerplus import RobustLogger
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct, bytes_gff
 from pykotor.resource.formats.gff.gff_data import _GFFField
 from pykotor.resource.formats.gff.io_gff import GFFBinaryReader
 from pykotor.tslpatcher.mods.template import PatcherModifications
-from loggerplus import RobustLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:

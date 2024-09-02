@@ -10,8 +10,8 @@ import comtypes
 
 from comtypes.client import CreateObject
 from comtypes.gen import Shell32
-
 from loggerplus import RobustLogger
+
 from utility.system.win32.com.interfaces import CLSID_FileOperation, IFileOperationProgressSink
 from utility.system.win32.hresult import S_OK
 

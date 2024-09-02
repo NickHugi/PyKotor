@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import markdown
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem
@@ -28,7 +29,6 @@ from toolset.config import getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from utility.error_handling import universal_simplify_exception
-from loggerplus import RobustLogger
 from utility.system.os_helper import is_frozen
 from utility.system.path import Path
 from utility.updater.github import download_github_file

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtGui import QBrush, QPalette
 from qtpy.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QMessageBox
@@ -25,7 +26,6 @@ from pykotor.tools import door, placeable
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:

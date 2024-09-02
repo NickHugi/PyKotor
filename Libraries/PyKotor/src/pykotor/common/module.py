@@ -8,6 +8,8 @@ from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Collection, Generic, TypeVar, TypedDict, cast
 
+from loggerplus import RobustLogger
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -39,7 +41,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath
-from loggerplus import RobustLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:

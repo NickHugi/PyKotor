@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy.QtWidgets import QMessageBox, QSizePolicy
 
 from pykotor.common.misc import ResRef
@@ -23,7 +24,6 @@ from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os

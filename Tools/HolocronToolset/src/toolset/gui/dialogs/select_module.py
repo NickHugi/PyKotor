@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtWidgets import QDialog, QFileDialog, QListWidgetItem
 
 from pykotor.common.module import Module
-from loggerplus import RobustLogger
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:

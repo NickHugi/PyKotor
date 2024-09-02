@@ -45,6 +45,8 @@ if getattr(sys, "frozen", False) is False:
     if utility_path.is_dir():
         add_sys_path(utility_path.parent)
 
+from loggerplus import RobustLogger
+
 from pykotor.extract.capsule import LazyCapsule
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf.erf_auto import bytes_erf, read_erf
@@ -62,7 +64,6 @@ from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc, read_tpc
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.resource.formats.vis.vis_auto import bytes_vis, read_vis
 from pykotor.resource.type import BASE_SOURCE_TYPES, ResourceType
-from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:

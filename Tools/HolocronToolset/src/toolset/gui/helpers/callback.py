@@ -3,13 +3,13 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Union
 
+from loggerplus import RobustLogger
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QLabel, QMessageBox
 
 from utility.gui.base import UserCommunication
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QIcon

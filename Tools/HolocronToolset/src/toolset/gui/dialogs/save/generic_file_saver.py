@@ -4,6 +4,7 @@ import shutil
 
 from typing import TYPE_CHECKING, Generic, Sequence, TypeVar, Union
 
+from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QFileDialog, QMessageBox
 
@@ -11,7 +12,6 @@ from pykotor.extract.file import FileResource, ResourceResult
 from pykotor.resource.formats.erf.erf_data import ERFResource
 from pykotor.resource.formats.rim.rim_data import RIMResource
 from utility.error_handling import universal_simplify_exception
-from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:

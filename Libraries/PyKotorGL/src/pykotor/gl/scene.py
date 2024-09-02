@@ -31,6 +31,7 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import (
 )
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_BGRA, GL_UNSIGNED_INT_8_8_8_8
 from glm import mat4, quat, vec3, vec4
+from loggerplus import RobustLogger
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.module import Module
@@ -94,7 +95,6 @@ from pykotor.resource.generics.uts import UTS
 from pykotor.resource.type import ResourceType
 from pykotor.tools import creature
 from utility.common.more_collections import CaseInsensitiveDict
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from collections.abc import Callable

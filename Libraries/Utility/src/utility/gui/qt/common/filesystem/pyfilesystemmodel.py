@@ -7,7 +7,11 @@ import sys
 import typing
 
 from contextlib import suppress
+from ctypes import pointer
 from typing import TYPE_CHECKING, Any, ClassVar, Iterable, overload
+
+if TYPE_CHECKING:
+    from ctypes import _Pointer
 
 
 def update_sys_path(path: pathlib.Path):
@@ -46,6 +50,7 @@ else:
     raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
 
 
+from loggerplus import RobustLogger  # noqa: E402
 from qtpy.QtCore import (  # noqa: E402
     QAbstractItemModel,  # noqa: F401
     QBasicTimer,
@@ -64,12 +69,13 @@ from qtpy.QtCore import (  # noqa: E402
 from qtpy.QtGui import QIcon  # noqa: E402
 from qtpy.QtWidgets import QApplication, QFileIconProvider, QFileSystemModel, QMainWindow, QVBoxLayout, QWidget  # noqa: E402
 
-from utility.gui.qt.common.filesystem.node import PyFileSystemNode  # noqa: E402
 from utility.gui.qt.common.filesystem.pyfileinfogatherer import PyFileInfoGatherer  # noqa: E402
-from loggerplus import RobustLogger  # noqa: E402
+from utility.gui.qt.common.filesystem.pyfilesystemnode import PyFileSystemNode  # noqa: E402
 from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
+    from ctypes import c_bool
+
     from qtpy.QtCore import (  # noqa: E402  # noqa: E402  # noqa: E402
         QDateTime,  # pyright: ignore[reportPrivateImportUsage]
         QObject,  # pyright: ignore[reportPrivateImportUsage]
@@ -157,6 +163,7 @@ class PyFileSystemModel(QAbstractItemModel):
         self._resolvedSymLinks: dict[Any, Any] = {}  # Dictionary for resolved symlinks
         self._root: PyFileSystemNode = PyFileSystemNode("")
         self._toFetch: list[dict[Literal["node", "dir", "file"], Any]] = []
+        self._filesToFetch: list[str] = []
         self._fetchingTimer: QBasicTimer = QBasicTimer()
         self._filters: QDir.Filters | int = QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.AllDirs
         self._sortColumn: int = 0
@@ -175,12 +182,13 @@ class PyFileSystemModel(QAbstractItemModel):
         self._fileInfoGatherer.nameResolved.connect(self._q_resolvedName)
         #self._fileInfoGatherer.directoryLoaded.connect(self._q_directoryChanged)
         self._delayedSortTimer.timeout.connect(self._q_performDelayedSort)
-        def shutdownFileGatherer():
+        def shutdownFileGatherer(abort_atom: _Pointer[c_bool]):
             with QMutexLocker(self.__fileInfoGathererLock):
-                self._fileInfoGatherer.abort = True
+                abort_atom.contents.value = True
         app = QApplication.instance()
         assert app is not None
-        app.aboutToQuit.connect(shutdownFileGatherer)
+        with QMutexLocker(self.__fileInfoGathererLock):
+            app.aboutToQuit.connect(lambda atom=pointer(self._fileInfoGatherer.abort): shutdownFileGatherer(atom))  # noqa: B008
 
     def _watchPaths(self, paths: list[str]):
         self._fileInfoGatherer.watchPaths(paths)
@@ -297,7 +305,7 @@ class PyFileSystemModel(QAbstractItemModel):
             self._forceSort = True
             self._q_performDelayedSort()
 
-    if sys.platform == "win32":
+    if os.name == "nt":
 
         def _unwatchPathsAt(self, index: QModelIndex) -> list[str]:
             indexNode = self.node(index)
@@ -346,6 +354,40 @@ class PyFileSystemModel(QAbstractItemModel):
             self._fileInfoGatherer.unwatchPaths(result)
 
             return result
+
+    def addVisibleFiles(self, parentNode: PyFileSystemNode, newFiles: list[str]):  # noqa: N803
+        parentIndex = self.index(parentNode)
+        indexHidden = self.isHiddenByFilter(parentNode, parentIndex)
+
+        if not indexHidden:
+            self.beginInsertRows(parentIndex, len(parentNode.visibleChildren),
+                                len(parentNode.visibleChildren) + len(newFiles) - 1)
+
+        if parentNode.dirtyChildrenIndex == -1:
+            parentNode.dirtyChildrenIndex = len(parentNode.visibleChildren)
+
+        for newFile in newFiles:
+            parentNode.visibleChildren.append(newFile)
+            parentNode.children[newFile].isVisible = True
+
+        if not indexHidden:
+            self.endInsertRows()
+
+    def removeVisibleFile(self, parentNode: PyFileSystemNode, vLocation: int):  # noqa: N803
+        if vLocation == -1:
+            return
+        parent = self.index(parentNode)
+        indexHidden = self.isHiddenByFilter(parentNode, parent)
+        if not indexHidden:
+            self.beginRemoveRows(
+                parent,
+                self.translateVisibleLocation(parentNode, vLocation),
+                self.translateVisibleLocation(parentNode, vLocation),
+            )
+        parentNode.children[parentNode.visibleChildren[vLocation]].isVisible = False
+        parentNode.visibleChildren.pop(vLocation)
+        if not indexHidden:
+            self.endRemoveRows()
 
     def _q_resolvedName(self, fileName, resolvedName):  # noqa: N803
         print(f"<SDM> [_q_resolvedName(fileName={fileName}, resolvedName={resolvedName})", self._resolvedSymLinks[fileName])
@@ -421,7 +463,7 @@ class PyFileSystemModel(QAbstractItemModel):
         resolvedPath = Path(os.path.normpath(path)).resolve()
         print("<SDM> [_handle_node_arg_str scope] resolvedPath: ", resolvedPath)
 
-        if sys.platform == "win32":
+        if os.name == "nt":
             host = resolvedPath.anchor
             print("<SDM> [_handle_node_arg_str scope] host: ", host)
 
@@ -511,53 +553,6 @@ class PyFileSystemModel(QAbstractItemModel):
     def gatherFileInfo(self, path: str, files: list[str] | None = None):
         self._fileInfoGatherer.fetchExtendedInformation(path, files or [])
 
-    def addVisibleFiles(self, parentNode: PyFileSystemNode, newFiles: list[str]):  # noqa: N803
-        parentidx = self.index(parentNode)
-        print("<SDM> [addVisibleFiles scope] parentidx: ", parentidx, "parentidx.row():", parentidx.row())
-
-        index_hidden = not self.filtersAcceptNode(parentNode)
-        print("<SDM> [addVisibleFiles scope] index_hidden: ", index_hidden)
-
-
-        if not index_hidden:
-            self.beginInsertRows(parentidx, len(parentNode.visibleChildren), len(parentNode.visibleChildren) + len(newFiles) - 1)
-
-        if parentNode.dirtyChildrenIndex == -1:
-            print("<SDM> [addVisibleFiles scope] parentNode.dirtyChildrenIndex==-1 ", parentNode.dirtyChildrenIndex)
-
-            parentNode.dirtyChildrenIndex = len(parentNode.visibleChildren)
-            print(f"<SDM> [addVisibleFiles scope] parentNode.dirtyChildrenIndex=={parentNode.dirtyChildrenIndex}")
-
-
-        for new_file in newFiles:
-            parentNode.visibleChildren.append(new_file)
-            parentNode.children[new_file].isVisible = True
-
-        if not index_hidden:
-            self.endInsertRows()
-
-    def removeVisibleFile(self, parentNode: PyFileSystemNode, vLocation: int):  # noqa: N803
-        if vLocation == -1:
-            print("<SDM> [removeVisibleFile scope] vLocation==-1, parentNode.row():", parentNode.row() if parentNode else None, "parentNode.fileName", parentNode.fileName if parentNode else None)
-
-            return
-
-        parent_index = self.index(parentNode)
-        print("<SDM> [removeVisibleFile scope] parent_index: ", parent_index, "row:", parent_index.row())
-
-        index_hidden = not self.filtersAcceptNode(parentNode)
-        print("<SDM> [removeVisibleFile scope] index_hidden: ", index_hidden)
-
-
-        if not index_hidden:
-            self.beginRemoveRows(parent_index, vLocation, vLocation)
-
-        parentNode.children[parentNode.visibleChildren[vLocation]].isVisible = False  # pyright: ignore[reportArgumentType]
-        parentNode.visibleChildren.pop(vLocation)
-
-        if not index_hidden:
-            self.endRemoveRows()
-
     def _fetchingTimerEvent(self):
         self._fetchingTimer.stop()
         for fetch in self._toFetch:
@@ -610,7 +605,7 @@ class PyFileSystemModel(QAbstractItemModel):
         print("<SDM> [addNode node.fileName ", node.fileName, "parentNode.fileName:", parentNode.fileName if parentNode is not None else None)
 
         node.populate(info)
-        if sys.platform == "win32" and not parentNode.fileName:
+        if os.name == "nt" and not parentNode.fileName:
             node.volumeName = volumeName(fileName)
             RobustLogger().warning(f"<SDM> [addNode scope] node.volumeName: '{node.volumeName}'")
 
@@ -945,10 +940,17 @@ class PyFileSystemModel(QAbstractItemModel):
         return result  # noqa: SLF001
 
     def fetchMore(self, parent: QModelIndex) -> None:
-        if self._root is None:
+        if not parent.isValid() or self._filesToFetch:
             return
-        self.node(parent).populatedChildren = True  # noqa: SLF001
-        self.gatherFileInfo(self.filePath(parent), [])
+        path = self.filePath(parent)
+        self._filesToFetch.append(path)
+        QTimer.singleShot(0, self._fetchPendingFiles)
+
+    def _fetchPendingFiles(self):
+        if not self._filesToFetch:
+            return
+        path = self._filesToFetch.pop(0)
+        self.gatherFileInfo(path, [])
 
     def indexFromItem(self, item: PyFileSystemNode) -> QModelIndex:
         if not isinstance(item, PyFileSystemNode):
@@ -1002,9 +1004,15 @@ class PyFileSystemModel(QAbstractItemModel):
                 return node.type()
             if index.column() == 3:  # noqa: PLR2004
                 return node.lastModified()
+            RobustLogger().warning(f"data: invalid display value column {index.column()}")
         elif role == Qt.ItemDataRole.DecorationRole:
-            if index.column() == 0:
-                return node.icon()
+            icon = node.icon()
+            if icon.isNull():
+                if node.isDir():
+                    icon = self.iconProvider().icon(QFileIconProvider.IconType.Folder)
+                else:
+                    icon = self.iconProvider().icon(QFileIconProvider.IconType.File)
+            return icon
         elif role == Qt.ItemDataRole.TextAlignmentRole:
             if index.column() == 1:
                 return Qt.AlignmentFlag.AlignRight

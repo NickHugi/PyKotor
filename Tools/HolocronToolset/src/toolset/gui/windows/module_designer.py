@@ -24,6 +24,7 @@ elif qtpy.API_NAME in ("PyQt6", "PySide6"):
 else:
     raise ValueError(f"Invalid QT_API: '{qtpy.API_NAME}'")
 
+from loggerplus import RobustLogger
 from qtpy.QtWidgets import QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
@@ -70,7 +71,6 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import BUTTON_TO_INT, MODIFIER_KEY_NAMES, QtMouse, getQtButtonString, getQtKeyString
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os

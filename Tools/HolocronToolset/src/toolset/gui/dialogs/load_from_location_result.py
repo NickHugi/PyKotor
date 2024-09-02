@@ -69,6 +69,8 @@ if __name__ == "__main__":
             update_sys_path(toolset_path.parent)
             os.chdir(toolset_path)
 
+from loggerplus import RobustLogger
+
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryWriterFile
 from pykotor.extract.file import FileResource, ResourceIdentifier
@@ -81,7 +83,6 @@ from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.installation import HTInstallation
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from loggerplus import RobustLogger
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 from utility.system.path import Path

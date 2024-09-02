@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Sequence
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtGui import QColor, QIcon, QKeySequence
 from qtpy.QtWidgets import QDialog, QListWidgetItem, QMenu, QMessageBox, QUndoCommand
@@ -49,7 +50,6 @@ from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os

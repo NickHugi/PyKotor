@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Callable
 
 from loggerplus import RobustLogger
+
 from utility.system.os_helper import is_frozen, requires_admin
 from utility.system.path import Path
 

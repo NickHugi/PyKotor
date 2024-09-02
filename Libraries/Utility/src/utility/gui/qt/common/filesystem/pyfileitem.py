@@ -234,11 +234,11 @@ class PyFileInfo:
 
     def isJunction(self) -> bool:
         """Returns True if the _path is a Windows junction."""
-        return self.isDir() and self.isSymLink() if sys.platform == "win32" else False
+        return self.isDir() and self.isSymLink() if os.name == "nt" else False
 
     def isShortcut(self) -> bool:
         """Returns True if the file is a Windows shortcut."""
-        return self._path.suffix.lower() == ".lnk" and sys.platform == "win32"
+        return self._path.suffix.lower() == ".lnk" and os.name == "nt"
 
     def isNativePath(self) -> bool:
         """Returns True if the _path uses the native _path separators."""
@@ -270,7 +270,7 @@ class PyFileInfo:
             return QDateTime.fromMSecsSinceEpoch(
                 int(
                     self._stat.st_ctime
-                    if sys.platform == "win32"
+                    if os.name == "nt"
                     else self._stat.st_birthtime * 1000
                 )
             )  # noqa: DTZ006
@@ -304,7 +304,7 @@ class PyFileInfo:
 
     def groupId(self) -> int | None:
         """Returns the group ID of the file."""
-        return None if sys.platform == "win32" or self._stat is None else self._stat.st_gid
+        return None if os.name == "nt" or self._stat is None else self._stat.st_gid
 
     def permissions(self) -> int | None:
         """Returns the permission bits of the file."""
@@ -529,11 +529,11 @@ class PyWrappedQFileInfo:
 
     def isJunction(self) -> bool:
         """Returns True if the path is a Windows junction."""
-        return self.isDir() and self.isSymLink() if sys.platform == "win32" else False
+        return self.isDir() and self.isSymLink() if os.name == "nt" else False
 
     def isShortcut(self) -> bool:
         """Returns True if the file is a Windows shortcut."""
-        return self._path.suffix.lower() == ".lnk" and sys.platform == "win32"
+        return self._path.suffix.lower() == ".lnk" and os.name == "nt"
 
     def isNativePath(self) -> bool:
         """Returns True if the path uses the native path separators."""
@@ -564,7 +564,7 @@ class PyWrappedQFileInfo:
         if self._stat:
             return datetime.fromtimestamp(  # noqa: DTZ006
                 self._stat.st_ctime
-                if sys.platform == "win32"
+                if os.name == "nt"
                 else self._stat.st_birthtime
             )
         return None
@@ -597,7 +597,7 @@ class PyWrappedQFileInfo:
 
     def groupId(self) -> int | None:
         """Returns the group ID of the file."""
-        return None if sys.platform == "win32" or self._stat is None else self._stat.st_gid
+        return None if os.name == "nt" or self._stat is None else self._stat.st_gid
 
     def permissions(self) -> int | None:
         """Returns the permission bits of the file."""

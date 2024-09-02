@@ -17,8 +17,8 @@ import urllib3
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-
 from loggerplus import RobustLogger
+
 from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 

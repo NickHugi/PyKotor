@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
+
 from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.generics.uti import read_uti
 from pykotor.resource.type import ResourceType
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from typing_extensions import Literal

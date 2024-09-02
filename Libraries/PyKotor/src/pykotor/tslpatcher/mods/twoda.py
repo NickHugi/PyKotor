@@ -4,10 +4,11 @@ from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
+
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tslpatcher.mods.template import PatcherModifications
 from utility.error_handling import universal_simplify_exception
-from loggerplus import RobustLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:

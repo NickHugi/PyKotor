@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import (
     QCoreApplication,
@@ -99,7 +100,6 @@ from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
-from loggerplus import RobustLogger
 from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.tricks import debug_reload_pymodules

@@ -158,7 +158,7 @@ class PyQStandardItem:
             item._model = self._model  # noqa: SLF001
         if old_item is not None:
             old_item._model = None  # noqa: SLF001
-        self._children[index] = item
+        self._children[index] = (item,)  # Wrap item in a tuple
         if self._model is not None and emitChanged:
             self._model.itemChanged(item)
 
@@ -204,21 +204,23 @@ class PyQStandardItem:
         idx = self._parent._childIndex(self)  # noqa: SLF001
         if idx == -1:
             return (-1, -1)
-        return (idx // self._parent.columnCount(), idx % self._parent.columnCount())
+        column_count = self._parent.columnCount()
+        return (idx // column_count, idx % column_count)
 
     def appendChild(self, child: PyQStandardItem):
         child._parent = self  # noqa: SLF001
         self._children.append(child)
 
-    def child(self, row: int) -> PyQStandardItem:
-        return self._children[row]
+    def child(self, row: int) -> PyQStandardItem | None:
+        return self._children[row] if 0 <= row < len(self._children) else None
 
     def childCount(self) -> int:
         return len(self._children)
 
-    def setColumnCount(self, columns):
+    def setColumnCount(self, columns: int) -> None:
         for child in self._children:
-            child.setColumnCount(columns)
+            if isinstance(child, PyQStandardItem):
+                child.setColumnCount(columns)
 
     def data(self, role: Qt.ItemDataRole | int = Qt.ItemDataRole.DisplayRole) -> Any:
         return self._data.get(role, QVariant())
@@ -252,7 +254,7 @@ class PyQStandardItem:
         if 0 <= row < len(self._children):
             self._children.pop(row)
 
-    def setRoleNames(self, roleNames: dict[int, QByteArray | bytes | bytearray]):
+    def setRoleNames(self, roleNames: dict[int, QByteArray | bytes | bytearray]):  # noqa: N803
         self._roleNames = roleNames
 
     def roleNames(self) -> dict[int, QByteArray | bytes | bytearray]:
@@ -286,7 +288,7 @@ class PyQStandardItem:
             return self._children.pop(row)
         return None
 
-    def takeRow(self, row: int) -> list[PyQStandardItem]:
+    def takeRow(self, row: int) -> list[PyQStandardItem | None]:
         if 0 <= row < len(self._children):
             return [self._children.pop(row)]
         return []
@@ -335,10 +337,9 @@ class PyQStandardItem:
         new_item._roleNames = self._roleNames.copy()  # noqa: SLF001
         new_item._model = self._model  # noqa: SLF001
 
-        for child in self._children:
-            cloned_child = child.clone()
-            cloned_child._parent = new_item  # noqa: SLF001
-            new_item._children.append(cloned_child)  # noqa: SLF001
+        for row in self._children:
+            cloned_row = tuple(child.clone() if child is not None else None for child in row)
+            new_item._children.append(cloned_row)  # noqa: SLF001
 
         return new_item
 
@@ -451,8 +452,10 @@ class PyQStandardItem:
     def setModel(self, model: QAbstractItemModel | None) -> None:
         """Sets the model associated with this item."""
         self._model = model
-        for child in self._children:
-            child.setModel(model)
+        for row in self._children:
+            for child in row:
+                if child is not None:
+                    child.setModel(model)
 
     def index(self) -> QModelIndex:
         """Returns the QModelIndex corresponding to this item."""
@@ -550,36 +553,35 @@ class PyQStandardItem:
         max_column_count = 1
         for child in self._children:
             child_column_count = len(child._children)  # noqa: SLF001
-            if child_column_count > max_column_count:
-                max_column_count = child_column_count
+            max_column_count = max(child_column_count, max_column_count)
 
         return max_column_count
 
-    def setTextAlignment(self, textAlignment: Qt.Alignment | Qt.AlignmentFlag) -> None:
+    def setTextAlignment(self, textAlignment: Qt.Alignment | Qt.AlignmentFlag) -> None:  # noqa: N803
         self.setData(textAlignment, Qt.ItemDataRole.TextAlignmentRole)
 
     def textAlignment(self) -> Qt.Alignment:
         return self.data(Qt.ItemDataRole.TextAlignmentRole)
 
-    def setSizeHint(self, sizeHint: QSize) -> None:
+    def setSizeHint(self, sizeHint: QSize) -> None:  # noqa: N803
         self.setData(sizeHint, Qt.ItemDataRole.SizeHintRole)
 
     def sizeHint(self) -> QSize:
         return self.data(Qt.ItemDataRole.SizeHintRole)
 
-    def setWhatsThis(self, whatsThis: str) -> None:
+    def setWhatsThis(self, whatsThis: str) -> None:  # noqa: N803
         self.setData(whatsThis, Qt.ItemDataRole.WhatsThisRole)
 
     def whatsThis(self) -> str:
         return self.data(Qt.ItemDataRole.WhatsThisRole)
 
-    def setStatusTip(self, statusTip: str) -> None:
+    def setStatusTip(self, statusTip: str) -> None:  # noqa: N803
         self.setData(statusTip, Qt.ItemDataRole.StatusTipRole)
 
     def statusTip(self) -> str:
         return self.data(Qt.ItemDataRole.StatusTipRole)
 
-    def setToolTip(self, toolTip: str) -> None:
+    def setToolTip(self, toolTip: str) -> None:  # noqa: N803
         self.setData(toolTip, Qt.ItemDataRole.ToolTipRole)
 
     def toolTip(self) -> str:
@@ -616,12 +618,14 @@ class PyQStandardItem:
     def emitDataChanged(self) -> None:
         if self._model:
             self._model.dataChanged.emit(self.index(), self.index())
-
     def sortChildren(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder) -> None:
-        self._children.sort(key=lambda item: item.data(column), reverse=(order == Qt.DescendingOrder))
+        self._children = sorted(
+            [child for child in self._children if isinstance(child[0], PyQStandardItem)],
+            key=lambda item: item[0].data(column),
+            reverse=(order == Qt.DescendingOrder)
+        )
         if self._model:
             self._model.layoutChanged.emit()
-
 
 class PyQStandardItemModel(QAbstractItemModel):
     def __init__(

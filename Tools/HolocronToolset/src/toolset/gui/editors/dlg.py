@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, 
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import (
     QByteArray,
@@ -104,7 +105,6 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import QtKey, getQtKeyString
 from utility.error_handling import safe_repr
-from loggerplus import RobustLogger
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     from qtpy.QtGui import QUndoStack

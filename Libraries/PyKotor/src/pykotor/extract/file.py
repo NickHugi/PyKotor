@@ -5,10 +5,11 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterator
 
+from loggerplus import RobustLogger
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
-from loggerplus import RobustLogger
 from utility.misc import generate_hash
 from utility.system.path import Path, PurePath
 

@@ -7,12 +7,13 @@ from copy import copy, deepcopy
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
+from loggerplus import RobustLogger
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 from utility.error_handling import safe_repr
-from loggerplus import RobustLogger
 from utility.string_util import format_text
 from utility.system.path import PureWindowsPath
 

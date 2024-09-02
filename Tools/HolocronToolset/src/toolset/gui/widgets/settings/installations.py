@@ -7,6 +7,7 @@ from typing import Any
 
 import qtpy
 
+from loggerplus import RobustLogger, get_log_directory
 from qtpy import QtCore
 from qtpy.QtCore import QSettings
 from qtpy.QtGui import QStandardItem, QStandardItemModel
@@ -15,7 +16,6 @@ from qtpy.QtWidgets import QWidget
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from toolset.data.settings import Settings
-from loggerplus import RobustLogger, get_log_directory
 
 
 class InstallationsWidget(QWidget):

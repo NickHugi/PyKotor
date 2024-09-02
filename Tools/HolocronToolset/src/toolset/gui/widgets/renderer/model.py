@@ -5,6 +5,7 @@ import math
 from typing import TYPE_CHECKING
 
 from glm import vec3
+from loggerplus import RobustLogger
 from qtpy.QtCore import QPoint, QTimer
 from qtpy.QtGui import QCursor
 from qtpy.QtWidgets import QOpenGLWidget
@@ -17,7 +18,6 @@ from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent

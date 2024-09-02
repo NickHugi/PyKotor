@@ -58,6 +58,8 @@ if not is_frozen():
         update_sys_path(pathlib.Path(__file__).parents[1])
 
 
+from loggerplus import RobustLogger  # noqa: E402
+
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.common.stream import BinaryReader  # noqa: E402
@@ -70,7 +72,6 @@ from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
 from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
-from loggerplus import RobustLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture  # noqa: E402
 from utility.string_util import striprtf  # noqa: E402
 from utility.system.os_helper import win_get_system32_dir  # noqa: E402
@@ -722,11 +723,11 @@ class App:
         print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
         pid = os.getpid()
         try:
-            if sys.platform == "win32":
+            if os.name == "nt":
                 system32_path = win_get_system32_dir()
                 subprocess.run([str(system32_path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)  # noqa: S603
             else:
-                subprocess.run(["kill", "-9", str(pid)], check=True)
+                subprocess.run(["/bin/kill", "-9", str(pid)], check=True)  # noqa: S603
         except Exception as e:  # noqa: BLE001
             self._handle_general_exception(e, "Failed to kill process", msgbox=False)
         finally:

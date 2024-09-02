@@ -8,7 +8,6 @@ import json
 import os
 import pathlib
 import platform
-import queue
 import subprocess
 import sys
 import tempfile
@@ -64,6 +63,8 @@ if not is_frozen():
 
 
 
+from loggerplus import RobustLogger  # noqa: E402
+
 from holopatcher.config import CURRENT_VERSION, getRemoteHolopatcherUpdateInfo, remoteVersionNewer  # noqa: E402
 from pykotor.common.misc import Game  # noqa: E402
 from pykotor.common.stream import BinaryReader  # noqa: E402
@@ -77,7 +78,6 @@ from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
 from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
-from loggerplus import RobustLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture, is_debug_mode  # noqa: E402
 from utility.string_util import striprtf  # noqa: E402
 from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, askyesno, showerror  # noqa: E402
@@ -95,7 +95,6 @@ if TYPE_CHECKING:
     from multiprocessing import Process
 
     from toga import Selection
-    from toga.window import Dialog
 
 
 VERSION_LABEL = f"v{CURRENT_VERSION}"
@@ -215,189 +214,178 @@ class HoloPatcher(toga.App):
         print("HoloPatcher.startup!!!\n\n\n")
 
         self.html_template = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Log Viewer</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 10px;
-            background-color: #f0f0f0;
-            overflow: hidden;
-        }
-        #content {
-            height: calc(100vh - 60px);
-            overflow-y: auto;
-            z-index: 1;
-            position: relative;
-        }
-        #log-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            transition: height 1s ease, top 1s ease;
-            z-index: 2;
-        }
-        #expander {
-            text-align: center;
-            cursor: pointer;
-            background-color: #ddd;
-            padding: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-        #logs {
-            overflow-y: auto;
-            display: none;
-            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
-            z-index: 3; /* Higher z-index to cover content */
-        }
-        .collapsed #logs {
-            display: none;
-        }
-        .slightly-expanded #logs {
-            max-height: 70vh; /* Set a max height to prevent it from covering too much content */
-            display: block;
-            overflow-y: auto; /* Enable vertical scrolling */
-        }
-        .collapsed #expander::after {
-            content: ' ^^^ LOG VIEW ^^^ ';
-        }
-        .slightly-expanded #expander::after {
-            content: ' --- LOG VIEW --- ';
-        }
-        .slightly-expanded #log-container {
-            height: 30%;
-            top: auto;
-        }
-        .collapsed #log-container {
-            height: 5%;
-            top: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        td {
-            word-wrap: break-word;
-            white-space: pre-wrap; /* Ensures that long words wrap correctly */
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        .log-entry {
-            transition: all 0.5s ease;
-        }
-        .DEBUG { color: blue; }
-        .INFO { color: black; }
-        .WARNING { color: orange; }
-        .ERROR { color: red; }
-        .CRITICAL { color: white; background-color: red; }
-        .log-entry.new {
-            animation: customSlideIn 0.25s ease;
-        }
-        @keyframes customSlideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div id="content" class="collapsed">
-        <!-- Main content area -->
-    </div>
-    <div id="log-container" class="collapsed">
-        <div id="expander" onclick="toggleExpand()"></div>
-        <div id="logs">
-            <table id="logs-table">
-                <tbody>
-                    <!-- Log entries will be dynamically inserted here -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <script>
-        function toggleExpand() {
-            const container = document.getElementById('log-container');
-            if (container.classList.contains('collapsed')) {
-                container.classList.remove('collapsed');
-                container.classList.add('slightly-expanded');
-                document.getElementById('logs').style.display = 'block'; // Show logs when slightly expanded
-            } else {
-                container.classList.remove('slightly-expanded');
-                container.classList.add('collapsed');
-                document.getElementById('logs').style.display = 'none'; // Hide logs when collapsed
-            }
-        }
-
-        function setContent(newContent) {
-            document.getElementById('content').innerHTML = newContent;
-            updateExpanderState();
-        }
-
-        function appendLogLine(logLine, logType) {
-            const tableBody = document.getElementById('logs-table').getElementsByTagName('tbody')[0];
-            const row = tableBody.insertRow();
-            const cell = row.insertCell(0);
-            cell.innerHTML = logLine;
-            row.className = 'log-entry ' + logType + ' new';
-            document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight; // Auto-scroll to new log entry
-            updateExpanderState();
-        }
-
-        function filterLogs() {
-            const filter = document.getElementById('log-filter').value;
-            const logEntries = document.getElementsByClassName('log-entry');
-            for (let i = 0; i < logEntries.length; i++) {
-                const logEntry = logEntries[i];
-                if (filter === 'ALL' || logEntry.classList.contains(filter)) {
-                    logEntry.style.display = 'table-row';
-                } else {
-                    logEntry.style.display = 'none';
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>Log Viewer</title>
+            <style>
+                body {
+                    font-family: 'Arial', sans-serif;
+                    margin: 0;
+                    padding: 10px;
+                    background-color: #f0f0f0;
+                    overflow: hidden;
                 }
-            }
-        }
-
-        function updateExpanderState() {
-            const logs = document.getElementById('logs');
-            const expander = document.getElementById('expander');
-            const logContainer = document.getElementById('log-container');
-            const hasLogs = logs.querySelector('tbody').children.length > 0;
-            const hasContent = document.getElementById('content').innerHTML.trim() !== '';
-
-            console.log(`hasLogs: ${hasLogs}, hasContent: ${hasContent}`);
-
-            if (hasLogs) {
-                expander.style.display = 'block';
-                if (logContainer.classList.contains('collapsed')) {
-                    logContainer.classList.remove('collapsed');
-                    logContainer.classList.add('slightly-expanded');
+                #content {
+                    height: calc(100vh - 60px);
+                    overflow-y: auto;
+                    z-index: 1;
+                    position: relative;
                 }
-            } else {
-                expander.style.display = 'none';
-                logContainer.classList.remove('expanded', 'slightly-expanded');
-                logContainer.classList.add('collapsed');
-            }
-        }
+                #log-container {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    transition: height 1s ease, top 1s ease;
+                    z-index: 2;
+                }
+                #expander {
+                    text-align: center;
+                    cursor: pointer;
+                    background-color: #ddd;
+                    padding: 10px;
+                    font-weight: bold;
+                    color: #333;
+                }
+                #logs {
+                    overflow-y: auto;
+                    display: none;
+                    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
+                    z-index: 3; /* Higher z-index to cover content */
+                }
+                .collapsed #logs {
+                    display: none;
+                }
+                .slightly-expanded #logs {
+                    max-height: 70vh; /* Set a max height to prevent it from covering too much content */
+                    display: block;
+                    overflow-y: auto; /* Enable vertical scrolling */
+                }
+                .collapsed #expander::after {
+                    content: ' ^^^ LOG VIEW ^^^ ';
+                }
+                .slightly-expanded #expander::after {
+                    content: ' --- LOG VIEW --- ';
+                }
+                .slightly-expanded #log-container {
+                    height: 30%;
+                    top: auto;
+                }
+                .collapsed #log-container {
+                    height: 5%;
+                    top: auto;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                td {
+                    word-wrap: break-word;
+                    white-space: pre-wrap; /* Ensures that long words wrap correctly */
+                }
+                tr:nth-child(even) {
+                    background-color: #f2f2f2;
+                }
+                .log-entry {
+                    transition: all 0.5s ease;
+                }
+                .DEBUG { color: blue; }
+                .INFO { color: black; }
+                .WARNING { color: orange; }
+                .ERROR { color: red; }
+                .CRITICAL { color: white; background-color: red; }
+                .log-entry.new {
+                    animation: customSlideIn 0.25s ease;
+                }
+                @keyframes customSlideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            </style>
+            <script src="marked.min.js"></script>
+            <script>
+                console.log('Marked library loaded:', typeof marked !== 'undefined');
+            </script>
+        </head>
+        <body>
+            <div id="content" class="collapsed">
+                <!-- Main content area -->
+            </div>
+            <div id="log-container" class="collapsed">
+                <div id="expander" onclick="toggleExpand()"></div>
+                <div id="logs">
+                    <table id="logs-table">
+                        <tbody>
+                            <!-- Log entries will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+                function toggleExpand() {
+                    const container = document.getElementById('log-container');
+                    if (container.classList.contains('collapsed')) {
+                        container.classList.remove('collapsed');
+                        container.classList.add('slightly-expanded');
+                        document.getElementById('logs').style.display = 'block';
+                    } else {
+                        container.classList.remove('slightly-expanded');
+                        container.classList.add('collapsed');
+                        document.getElementById('logs').style.display = 'none';
+                    }
+                }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            updateExpanderState();
-        });
-        updateExpanderState();
-    </script>
-</body>
-</html>
-"""
+                function setContent(newContent) {
+                    document.getElementById('content').innerHTML = newContent;
+                    updateExpanderState();
+                }
+
+                function appendLogLine(logLine, logType) {
+                    const tableBody = document.getElementById('logs-table').getElementsByTagName('tbody')[0];
+                    const row = tableBody.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.innerHTML = logLine;
+                    row.className = 'log-entry ' + logType + ' new';
+                    document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight;
+                    updateExpanderState();
+                }
+
+                function updateExpanderState() {
+                    const logs = document.getElementById('logs');
+                    const expander = document.getElementById('expander');
+                    const logContainer = document.getElementById('log-container');
+                    const hasLogs = logs.querySelector('tbody').children.length > 0;
+                    const hasContent = document.getElementById('content').innerHTML.trim() !== '';
+
+                    if (hasLogs) {
+                        expander.style.display = 'block';
+                        if (logContainer.classList.contains('collapsed')) {
+                            logContainer.classList.remove('collapsed');
+                            logContainer.classList.add('slightly-expanded');
+                        }
+                    } else {
+                        expander.style.display = 'none';
+                        logContainer.classList.remove('expanded', 'slightly-expanded');
+                        logContainer.classList.add('collapsed');
+                    }
+                }
+
+                document.addEventListener("DOMContentLoaded", function() {
+                    updateExpanderState();
+                });
+                updateExpanderState();
+            </script>
+        </body>
+        </html>
+        """
         # Define the HTML template with JavaScript for dynamic content updates
         # uncomment to test from file
         #template_path = get_app_dir() / "template.html"
@@ -610,17 +598,17 @@ class HoloPatcher(toga.App):
                     self.get_namespace_description()
                 )
             ),
-            style=Pack(padding_right=5, width=30)
+            style=Pack(padding_right=5, width=30, flex=0)
         )
         self.main_window.content.add(
             toga.Box(
                 style=Pack(direction=ROW, alignment=CENTER, padding=5),
-                children = [self.namespaces_combobox, self.browse_button, self.expand_namespace_description_button]
+                children = [self.namespaces_combobox, self.browse_button]
             )
         )
 
         # KOTOR Install row.
-        self.gamepaths = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))
+        self.gamepaths = toga.Selection(items=[], style=Pack(flex=1, padding_right=5, font_size=10, padding=4))  # Match the flex of the top row combobox
         self.gamepaths_browse_button = toga.Button("Browse", on_press=lambda *args, **kwargs: self.open_kotor(), style=Pack(padding_right=5))
         self.main_window.content.add(
             toga.Box(
@@ -658,7 +646,10 @@ class HoloPatcher(toga.App):
         self.web_view.evaluate_javascript(script)
 
     def update_progress_bar_directly(self, value: int = 1):
-        self.progress_bar.value += value
+        def update(app: toga.App | None = None, **kwargs):
+            self.progress_bar.value += value
+
+        self.add_background_task(update)
 
     def check_for_updates(self):
         try:
@@ -848,10 +839,10 @@ class HoloPatcher(toga.App):
 
         backup_parent_folder = Path(self.mod_path, "backup")
         if not backup_parent_folder.safe_isdir():
-            showerror(
+            self.run_later(self.display_error_dialog(
                 "Backup Folder Empty/Missing.",
                 f"Could not find backup folder '{backup_parent_folder}'{os.linesep * 2}Are you sure the mod is installed?",
-            )
+            ))
             return
 
         self.set_state(state=True)
@@ -899,7 +890,7 @@ class HoloPatcher(toga.App):
         print("Nevermind, Forcefully kill this process (taskkill or kill command in subprocess)")
         pid = os.getpid()
         try:
-            if sys.platform == "win32":
+            if os.name == "nt":
                 system32_path = win_get_system32_dir()
                 subprocess.run([str(system32_path / "taskkill.exe"), "/F", "/PID", str(pid)], check=True)  # noqa: S603
             else:
@@ -922,7 +913,7 @@ class HoloPatcher(toga.App):
         reset_namespace: bool = False,
     ):
         if not directory:
-            results: str | None = self.open_folder_dialog("Select the folder you'd like to recursively fix.")
+            results: str | None = self.open_folder_dialog("Select the folder to recursively lowercase.")
             if not results or not Path(results[0]).safe_isdir():
                 return  # User cancelled the dialog
             directory = Path(results[0])
@@ -1064,15 +1055,6 @@ class HoloPatcher(toga.App):
         self.namespaces_combobox.items = ListSource(data=namespaces, accessors=["patcher_namespace"])
         self.refresh_ui_data(config_reader=config_reader)
 
-    def run_with_dialog(self, callback: Callable[[Any | None, Exception | None], Any], dialog_message: str):
-        async def select_folder() -> Dialog:
-            return await self.main_window.select_folder_dialog(dialog_message)
-
-        def handle_folder_selection(folder, exc):
-            callback("" if folder is None else folder, exc, startup=False)
-
-        self.run_later(select_folder(), handle_folder_selection)
-
     def open_mod(
         self,
         directory_path_str: os.PathLike | str | None = None,
@@ -1179,37 +1161,35 @@ class HoloPatcher(toga.App):
     def fix_permissions(
         self,
         directory: os.PathLike | str | None = None,
-        *,
         reset_namespace: bool = False,
+        check: bool = False,
     ):
-        if directory is None:
-            directory = self.open_folder_dialog("Select target directory")
-        if directory and Path(directory).safe_isdir():
-            self._handle_fix_permissions(directory, directory, reset_namespace, None)
-
-    def _handle_fix_permissions(
-        self,
-        chosen_path: os.PathLike | str | None = None,
-        directory: os.PathLike | str | None = None,
-        reset_namespace: bool = False,  # noqa: FBT001, FBT002
-        error: Exception | None = None
-    ):
-        if chosen_path is None:
-            print("_handle_fix_permissions: user did not choose a path.")
+        path_arg = askdirectory() if directory is None else directory
+        if not path_arg:
             return
-        try:
-            path: Path = Path(chosen_path)
+        if not directory and not askyesno("Warning!", "This is not a toy. Really continue?"):
+            return
 
-            def task(result_queue: queue.Queue) -> None:
-                print("task started")
+        try:
+            path: Path = Path.pathify(path_arg)
+
+            def task(app: toga.App | None = None, **kwargs) -> bool:
                 extra_msg: str = ""
+                self.set_state(state=True)
+                self.clear_main_text()
                 self.logger.add_note("Please wait, this may take awhile...")
                 try:
                     access: bool = path.gain_access(recurse=True, log_func=self.logger.add_verbose)
-                    with suppress(Exception):
-                        self.play_complete_sound()
+                    # self.play_complete_sound()
                     if not access:
-                        result_queue.put(False)  # noqa: FBT003
+                        if not directory:
+                            self.run_later(self.display_error_dialog("Could not acquire permission!", "Permissions denied! Check the logs for more details."))
+                        else:
+                            self.run_later(self.display_error_dialog(
+                                "Could not gain permission!",
+                                f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
+                            ))
+                        return False
                     check_isdir: bool = path.is_dir()
                     num_files = 0
                     num_folders = 0
@@ -1223,48 +1203,24 @@ class HoloPatcher(toga.App):
                     if check_isdir:
                         extra_msg = f"{num_files} files and {num_folders} folders finished processing."
                         self.logger.add_note(extra_msg)
+                    self.run_later(self.display_info_dialog("Successfully acquired permission", f"The operation was successful. {extra_msg}"))
 
                 except Exception as e:  # noqa: BLE001
                     self._handle_general_exception(e)
-                    result_queue.put(False)  # noqa: FBT003
+                    return False
                 else:
-                    result_queue.put(True)  # noqa: FBT003
+                    return True
                 finally:
                     self.set_state(state=False)
                     self.logger.add_note("File/Folder permissions fixer task completed.")
 
-            self.set_state(state=True)
-            self.clear_main_text()
-
-            from threading import Thread
-            result_queue = queue.Queue()
-            self.task_thread = Thread(target=task, args=(result_queue,), name="fix_permissions_thread")
-            self.task_thread.start()
-
-            async def _end_fix_permissions(
-                app: toga.App,  # noqa: ARG001
-                task_thread: Thread = self.task_thread,
-                result_queue: queue.Queue = result_queue,
-                directory: os.PathLike | str | None = directory,
-                **kwargs,
-            ):
-                while task_thread.is_alive():
-                    await asyncio.sleep(0.1)  # adjust the sleep time as needed
-                if not result_queue.get():
-                    await self.display_error_dialog(
-                        "Could not gain permission!",
-                        f"Permission denied to {directory}. Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
-                    )
-                self.logger.add_note("File/Folder permissions fixer task complete.")
-                self.set_state(state=False)
-
-            self.add_background_task(_end_fix_permissions)
-
+            self.add_background_task(task)
         except Exception as e2:  # noqa: BLE001
             self._handle_general_exception(e2)
         finally:
             if reset_namespace and self.mod_path:
                 self.refresh_ui_data()
+            self.logger.add_verbose("Started the File/Folder permissions fixer task.")
 
     def check_access(
         self,
@@ -1372,9 +1328,7 @@ class HoloPatcher(toga.App):
             )
             return False
         print("preinstall validation: check access")
-        if self.check_access(Path(str(case_game_path))):
-            return True
-        return False
+        return self.check_access(Path(str(case_game_path)))
 
     def begin_install(self, button: toga.Button | None = None):
         """Starts the installation process in a background thread.
@@ -1398,46 +1352,28 @@ class HoloPatcher(toga.App):
             self.web_view.evaluate_javascript(f"setContent('{install_message}');")
 
             namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace  # type: ignore[]
-            async def begin_install_thread(
-                app: toga.App,  # noqa: ARG001
-                namespace: PatcherNamespace = namespace_option,
-                **kwargs,
-            ):
-                """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
-                Args:
-                ----
-                    self: The PatcherWindow instance
-
-                Processing Logic:
-                ----------------
-                    - Validate pre-install checks have passed
-                    - Get the selected namespace option
-                    - Get the path to the ini file
-                    - Create a ModInstaller instance
-                    - Try to execute the installation
-                    - Handle any exceptions during installation
-                    - Finally set the install status to not running.
-                """
-                print("begin_install_thread reached")
-                def update_progress_func(val: int = 1):
-                    self.update_progress_bar_directly(val)  # noqa: ARG005
-
-                tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
-                ini_file_path = tslpatchdata_path.joinpath(namespace.changes_filepath())
-                namespace_mod_path: CaseAwarePath = ini_file_path.parent
-
-                try:
-                    installer = ModInstaller(namespace_mod_path, str(self.gamepaths.value), ini_file_path, self.logger)
-                    installer.tslpatchdata_path = tslpatchdata_path
-                    self.progress_bar.start()
-                    self._execute_mod_install(installer, update_progress_func)
-                except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                    self._handle_exception_during_install(e)
-                finally:
-                    self.set_state(state=False)  # noqa: ARG005
-
-            self.add_background_task(begin_install_thread)
+            self.pykotor_logger.debug("Prevalidate finished, starting install thread")
+            print("Start progress bar")
+            tslpatchdata_path = CaseAwarePath(self.mod_path, "tslpatchdata")
+            ini_file_path = tslpatchdata_path.joinpath(namespace_option.changes_filepath())
+            namespace_mod_path: CaseAwarePath = ini_file_path.parent
+            installer = ModInstaller(namespace_mod_path, str(self.gamepaths.value), ini_file_path, self.logger)
+            installer.tslpatchdata_path = tslpatchdata_path
+            self.progress_bar.max = len(
+                [
+                    *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
+                    *installer.get_tlk_patches(installer.config()),
+                    *installer.config().patches_2da,
+                    *installer.config().patches_gff,
+                    *installer.config().patches_nss,
+                    *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
+                    *installer.config().patches_ssf,
+                ]
+            )
+            self.progress_bar.start()
+            self.task_thread = threading.Thread(target=self.begin_install_thread, args=(installer, self.update_progress_bar_directly), name="HoloPatcher_install_thread")
+            self.task_thread.start()
             print("Started installer in background task")
 
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
@@ -1445,58 +1381,35 @@ class HoloPatcher(toga.App):
         finally:
             self.set_state(state=False)
 
-    def test_reader(self):  # sourcery skip: no-conditionals-in-tests
-        if not self.preinstall_validate_chosen():
-            return
-        namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace  # type: ignore[]
-        ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
-
-        self.set_state(state=True)
-        self.clear_main_text()
-
-        def task():
-            try:
-                reader = ConfigReader.from_filepath(ini_file_path, self.logger)
-                reader.load(reader.config)
-            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-                self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
-            finally:
-                self.set_state(state=False)  # noqa: ARG005
-                self.logger.add_note("Config reader test is complete.")
-
-        self.add_background_task(lambda app, **kwargs: task)  # noqa: ARG005
-
-    def set_state(
+    def begin_install_thread(
         self,
-        *,
-        state: bool,
+        installer: ModInstaller,
+        update_progress_func: Callable | None = None,
+        **kwargs,
     ):
-        """Sets the active thread task state. Disables UI controls until this function is called again with run=False.
+        """Starts the mod installation thread. This function is called directly when utilizing the CLI.
 
         Args:
         ----
-            run: Whether the task is starting/running or not
+            self: The PatcherWindow instance
 
         Processing Logic:
         ----------------
-            - Sets the task_running attribute based on the run argument
-            - Configures the state of relevant buttons to disabled if a thread task is running, normal otherwise
-            - Handles enabling/disabling buttons during task process.
+            - Validate pre-install checks have passed
+            - Get the selected namespace option
+            - Get the path to the ini file
+            - Create a ModInstaller instance
+            - Try to execute the installation
+            - Handle any exceptions during installation
+            - Finally set the install status to not running.
         """
-        if state:
-            self.progress_bar.value = 0
-            self.progress_bar.max = 100
-            self.progress_value = 0
-        else:
-            self.initialize_logger()  # reset the errors/warnings etc
-        self.task_running = state
-        self.install_button.enabled = not state
-        self.gamepaths_browse_button.enabled = not state
-        self.browse_button.enabled = not state
-
-    def clear_main_text(self):
-        """Clears all content from the WebView to prepare for new content."""
-        self.web_view.evaluate_javascript("document.getElementById('content').innerHTML = '';")
+        print("begin_install_thread reached")
+        try:
+            self._execute_mod_install(installer, update_progress_func=update_progress_func)
+        except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+            self._handle_exception_during_install(e)
+        finally:
+            self.set_state(state=False)  # noqa: ARG005
 
     def _execute_mod_install(  # noqa: PLR0915
         self,
@@ -1530,19 +1443,6 @@ class HoloPatcher(toga.App):
                     print("User did not confirm.")
                     return  # If the dialog returns False, stop the execution
                 print("confirm dialog passed.")
-            if update_progress_func is not None:
-                print("Setup progress bar")
-                self.progress_bar.max = len(
-                [
-                    *installer.config().install_list,  # Note: TSLPatcher executes [InstallList] after [TLKList]
-                    *installer.get_tlk_patches(installer.config()),
-                    *installer.config().patches_2da,
-                    *installer.config().patches_gff,
-                    *installer.config().patches_nss,
-                    *installer.config().patches_ncs,  # Note: TSLPatcher executes [CompileList] after [HACKList]
-                    *installer.config().patches_ssf,
-                ]
-            )
             # profiler = cProfile.Profile()
             # profiler.enable()
             print("Jump to ModInstaller code.")
@@ -1550,12 +1450,6 @@ class HoloPatcher(toga.App):
             installer.install(None, update_progress_func)
             total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
             print("install complete")
-            if update_progress_func is not None:
-                print("update progress")
-                self.progress_bar.value = 99  # Update the current value
-                self.progress_bar.max = 100   # Set the maximum value if needed
-                update_progress_func()
-                print("progress updated")
             # profiler.disable()
             # profiler_output_file = Path("profiler_output.pstat").resolve()
             # profiler.dump_stats(str(profiler_output_file))
@@ -1619,6 +1513,59 @@ class HoloPatcher(toga.App):
         finally:
             self.set_state(state=False)  # noqa: ARG005
             self.logger.add_note("Config reader test is complete.")
+
+    def test_reader(self):  # sourcery skip: no-conditionals-in-tests
+        if not self.preinstall_validate_chosen():
+            return
+        namespace_option: PatcherNamespace = self.namespaces_combobox.value.patcher_namespace  # type: ignore[]
+        ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
+
+        self.set_state(state=True)
+        self.clear_main_text()
+
+        def task():
+            try:
+                reader = ConfigReader.from_filepath(ini_file_path, self.logger)
+                reader.load(reader.config)
+            except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
+                self._handle_general_exception(e, "An unexpected error occurred while testing the config ini reader")
+            finally:
+                self.set_state(state=False)  # noqa: ARG005
+                self.logger.add_note("Config reader test is complete.")
+
+        self.add_background_task(lambda app, **kwargs: task)  # noqa: ARG005
+
+    def set_state(
+        self,
+        *,
+        state: bool,
+    ):
+        """Sets the active thread task state. Disables UI controls until this function is called again with run=False.
+
+        Args:
+        ----
+            run: Whether the task is starting/running or not
+
+        Processing Logic:
+        ----------------
+            - Sets the task_running attribute based on the run argument
+            - Configures the state of relevant buttons to disabled if a thread task is running, normal otherwise
+            - Handles enabling/disabling buttons during task process.
+        """
+        if state:
+            self.progress_bar.value = 0
+            self.progress_bar.max = 100
+            self.progress_value = 0
+        else:
+            self.initialize_logger()  # reset the errors/warnings etc
+        self.task_running = state
+        self.install_button.enabled = not state
+        self.gamepaths_browse_button.enabled = not state
+        self.browse_button.enabled = not state
+
+    def clear_main_text(self):
+        """Clears all content from the WebView to prepare for new content."""
+        self.web_view.evaluate_javascript("document.getElementById('content').innerHTML = '';")
 
     @property
     def log_file_path(self) -> Path:
@@ -1738,7 +1685,6 @@ class HoloPatcher(toga.App):
             style_str = "".join(style)
             content = content.replace(f"<{tag}>", f'<span style="{style_str}">').replace(f"</{tag}>", "</span>")
 
-        content = json.dumps(content)
         self.web_view.evaluate_javascript(f"setContent({content});")
 
     def load_rtf_content(self, rtf_text: str):

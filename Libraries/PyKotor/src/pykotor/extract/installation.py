@@ -12,6 +12,8 @@ from enum import Enum, IntEnum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Iterable, Sequence, overload
 
+from loggerplus import RobustLogger
+
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
@@ -28,7 +30,6 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
 from utility.common.more_collections import CaseInsensitiveDict
-from loggerplus import RobustLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:

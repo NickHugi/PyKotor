@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from utility.gui.qt.common.filesystem.tree import PyFileSystemNode
+    from utility.gui.qt.common.filesystem.pyfilesystemmodel import PyFileSystemNode
 
 
 class PyFileSystemModelSorter:

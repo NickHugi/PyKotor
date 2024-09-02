@@ -34,11 +34,11 @@ class TestPlane(unittest.TestCase):
 
     def test_point_in_front_of_plane(self):
         point = vec3(0, 0, 15)
-        self.assertGreaterEqual(self.plane.distance_to_point(point), 0)
+        assert self.plane.distance_to_point(point) >= 0
 
     def test_point_behind_plane(self):
         point = vec3(0, 0, 5)
-        self.assertLess(self.plane.distance_to_point(point), 0)
+        assert self.plane.distance_to_point(point) < 0
 
     def test_point_on_plane(self):
         point = vec3(0, 0, 10)
@@ -60,22 +60,22 @@ class TestFrustum(unittest.TestCase):
     def test_point_inside_frustum(self):
         point = vec3(0, 0, 5)
         radius = 1
-        self.assertTrue(self.frustum.is_sphere_visible(point, radius))
+        assert self.frustum.is_sphere_visible(point, radius)
 
     def test_point_outside_frustum(self):
         point = vec3(0, 0, -20)  # behind the camera
         radius = 1
-        self.assertFalse(self.frustum.is_sphere_visible(point, radius))
+        assert not self.frustum.is_sphere_visible(point, radius)
 
     def test_point_on_near_plane(self):
         point = vec3(0, 0, 9)  # near the near plane
         radius = 1
-        self.assertTrue(self.frustum.is_sphere_visible(point, radius))
+        assert self.frustum.is_sphere_visible(point, radius)
 
     def test_point_on_far_plane(self):
         point = vec3(0, 0, 0)  # near the far plane
         radius = 1
-        self.assertTrue(self.frustum.is_sphere_visible(point, radius))
+        assert self.frustum.is_sphere_visible(point, radius)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

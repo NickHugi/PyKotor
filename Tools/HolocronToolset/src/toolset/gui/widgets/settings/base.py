@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from loggerplus import RobustLogger
 from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from pykotor.common.misc import Color
 from toolset.gui.common.filters import HoverEventFilter, NoScrollEventFilter
-from loggerplus import RobustLogger
 from utility.misc import is_int
 
 if TYPE_CHECKING:

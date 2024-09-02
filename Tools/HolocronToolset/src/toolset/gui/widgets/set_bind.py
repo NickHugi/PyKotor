@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy.QtWidgets import QWidget
 
 from toolset.utils.misc import MODIFIER_KEY_NAMES, QtMouse, getQtKeyStringLocalized, getQtMouseButton
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent

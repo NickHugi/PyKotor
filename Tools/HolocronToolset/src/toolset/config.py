@@ -10,10 +10,10 @@ from typing import Any
 
 import requests
 
+from loggerplus import RobustLogger
 from qtpy.QtWidgets import QMessageBox
 
 from utility.error_handling import universal_simplify_exception
-from loggerplus import RobustLogger
 
 LOCAL_PROGRAM_INFO: dict[str, Any] = {
     # <---JSON_START--->#{

@@ -4,11 +4,7 @@ import os
 import pathlib
 import sys
 
-from abc import abstractmethod
 from typing import TYPE_CHECKING
-
-from utility.gui.qt.common.filesystem.icons import qicon_from_file_ext, qpixmap_to_qicon
-from loggerplus import RobustLogger
 
 
 def update_sys_path(path: pathlib.Path):
@@ -50,20 +46,14 @@ else:
 
 from qtpy.QtCore import QDateTime, QFileDevice, QFileInfo  # noqa: E402
 from qtpy.QtGui import QIcon  # noqa: E402
-from qtpy.QtWidgets import QFileIconProvider, QStyle  # noqa: E402
+from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
 
-from pykotor.extract.capsule import LazyCapsule  # noqa: E402
-from pykotor.extract.file import FileResource  # noqa: E402
-from pykotor.tools.misc import is_capsule_file  # noqa: E402
 from utility.common.more_collections import CaseInsensitiveDict  # noqa: E402
 from utility.gui.qt.common.filesystem.pyfileinfogatherer import PyQExtendedInformation  # noqa: E402
-from utility.system.path import Path  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
-    from qtpy.QtWidgets import QFileSystemModel
 
-    from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemModel
 
 
 class PyFileSystemNode:
@@ -75,7 +65,7 @@ class PyFileSystemNode:
         parent: PyFileSystemNode | None = None,
     ):
         self.fileName: str = filename
-        if sys.platform == "win32":
+        if os.name == "nt":
             self.volumeName: str = ""
         self.parent: PyFileSystemNode | None = parent
         self.info: QFileInfo | None = None  # QExtendedInformation
@@ -224,146 +214,3 @@ class PyFileSystemNode:
                 child.retranslateStrings(iconProvider, path + child.fileName)
             else:
                 child.retranslateStrings(iconProvider, f"{path}/{child.fileName}")
-
-
-class TreeItem:
-    icon_provider: QFileIconProvider = QFileIconProvider()
-
-    def __init__(
-        self,
-        path: os.PathLike | str,
-        parent: DirItem | None = None,
-    ):
-        super().__init__()
-        self.path: Path = Path.pathify(path)
-        self.parent: DirItem | None = parent
-
-    def row(self) -> int:
-        if self.parent is None:
-            return -1
-        if isinstance(self.parent, DirItem):
-            if self not in self.parent.children:
-                RobustLogger().warning(f"parent '{self.parent.path}' has orphaned the item '{self.path}' without warning!")
-                return -1
-            return self.parent.children.index(self)
-        raise RuntimeError(f"INVALID parent item! Only `DirItem` instances should children, but parent was: '{self.parent.__class__.__name__}'")
-
-    @abstractmethod
-    def childCount(self) -> int:
-        return 0
-
-    @abstractmethod
-    def iconData(self) -> QIcon:
-        ...
-
-    def data(self) -> str:
-        return self.path.name
-
-
-class DirItem(TreeItem):
-    def __init__(
-        self,
-        path: Path,
-        parent: DirItem | None = None,
-    ):
-        super().__init__(path, parent)
-        self.children: list[TreeItem | None] = [None]  # dummy!!
-
-    def childCount(self) -> int:
-        return len(self.children)
-
-    def loadChildren(self, model: ResourceFileSystemModel | QFileSystemModel) -> list[TreeItem | None]:
-        print(f"{self.__class__.__name__}({self.path}).load_children, row={self.row()}")
-        children: list[TreeItem] = []
-        toplevel_items = list(self.path.safe_iterdir())
-        for child_path in sorted(toplevel_items):
-            if child_path.is_dir():
-                item = DirItem(child_path, self)
-            elif is_capsule_file(child_path):
-                item = CapsuleItem(child_path, self)
-            else:
-                item = FileItem(child_path, self)
-            children.append(item)
-        self.children = list(children)
-        for child in self.children:
-            if child is None:
-                continue
-            model.getContainerWidget().setItemIcon(model.indexFromItem(child), child.iconData())
-        return self.children
-
-    def child(self, row: int) -> TreeItem | None:
-        return self.children[row]
-
-    def iconData(self) -> QIcon:
-        return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirIcon, 16, 16)
-
-
-class ResourceItem(TreeItem):
-    def __init__(
-        self,
-        file: Path | FileResource,
-        parent: DirItem | None = None,
-    ):
-        self.resource: FileResource
-        if isinstance(file, FileResource):
-            self.resource = file
-            super().__init__(self.resource.filepath(), parent)
-        else:
-            self.resource = FileResource.from_path(file)
-            super().__init__(file, parent)
-
-    def data(self) -> str:
-        assert self.resource.filename().lower() == self.path.name.lower()
-        assert self.resource.filename() == self.path.name
-        return self.resource.filename()
-
-    def iconData(self) -> QIcon:
-        result_qfileiconprovider: QIcon = qicon_from_file_ext(self.resource.restype().extension)
-        return result_qfileiconprovider
-
-
-class FileItem(ResourceItem):
-    def iconData(self) -> QIcon:
-        result_qfileiconprovider: QIcon = qicon_from_file_ext(self.resource.restype().extension)
-        return result_qfileiconprovider
-
-    def childCount(self) -> int:
-        return 0
-
-
-class CapsuleItem(DirItem, FileItem):
-    def __init__(
-        self,
-        file: Path | FileResource,
-        parent: DirItem | None = None,
-    ):
-        FileItem.__init__(self, file, parent)  # call BEFORE diritem.__init__!
-        DirItem.__init__(self, file.filepath() if isinstance(file, FileResource) else file, parent)  # noqa: SLF001
-        self.children: list[CapsuleChildItem | NestedCapsuleItem]
-
-    def child(self, row: int) -> TreeItem:
-        return self.children[row]
-
-    def loadChildren(self: CapsuleItem | NestedCapsuleItem, model: ResourceFileSystemModel) -> list[CapsuleChildItem | NestedCapsuleItem]:
-        print(f"{self.__class__.__name__}({self.path}).load_children, row={self.row()}")
-        children: list[NestedCapsuleItem | CapsuleChildItem] = [
-            NestedCapsuleItem(res, self)
-            if is_capsule_file(res.filename())
-            else CapsuleChildItem(res, self)
-            for res in LazyCapsule(self.resource.filepath())
-        ]
-        self.children = children
-        return self.children
-
-    def iconData(self) -> QIcon:
-        return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirLinkOpenIcon, 16, 16)
-
-
-class CapsuleChildItem(ResourceItem):
-    def iconData(self) -> QIcon:
-        return qpixmap_to_qicon(QStyle.StandardPixmap.SP_FileIcon, 16, 16)
-
-
-class NestedCapsuleItem(CapsuleItem, CapsuleChildItem):
-    def iconData(self) -> QIcon:
-        return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirLinkIcon, 16, 16)

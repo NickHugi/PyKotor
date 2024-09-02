@@ -15,6 +15,7 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable
 
 from loggerplus import RobustLogger
+
 from utility.misc import ProcessorArchitecture
 from utility.system.os_helper import get_app_dir, get_mac_dot_app_dir, is_frozen, remove_any, win_hide_file
 from utility.system.path import ChDir, Path, PurePath

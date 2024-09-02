@@ -67,6 +67,7 @@ if __name__ == "__main__":
 
 
 from loggerplus import RobustLogger
+
 from utility.updater.github import (
     CompleteRepoData,
     ContentInfoData,

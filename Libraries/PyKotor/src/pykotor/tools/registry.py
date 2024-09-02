@@ -5,8 +5,9 @@ import os
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
 from loggerplus import RobustLogger
+
+from pykotor.common.misc import Game
 from utility.misc import ProcessorArchitecture
 from utility.system.path import Path
 

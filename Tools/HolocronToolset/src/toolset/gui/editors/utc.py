@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Sequence
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy.QtCore import QSettings, Qt
 from qtpy.QtGui import QImage, QPixmap, QTransform
 from qtpy.QtWidgets import QApplication, QListWidgetItem, QMenu, QMessageBox
@@ -27,7 +28,6 @@ from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, R
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os

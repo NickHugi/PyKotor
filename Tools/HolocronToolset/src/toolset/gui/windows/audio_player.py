@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QTimer
 from qtpy.QtMultimedia import QAudioOutput, QMediaPlayer
@@ -16,7 +17,6 @@ from qtpy.QtWidgets import QFileDialog, QMainWindow
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
-from loggerplus import RobustLogger
 from utility.system.os_helper import remove_any
 from utility.system.path import Path
 

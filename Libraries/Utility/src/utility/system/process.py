@@ -113,7 +113,7 @@ def terminate_child_processes(
             number_timeout_children += 1
             log.warning("Child process %s did not terminate in time. Forcefully terminating.", child.pid)
             try:
-                if sys.platform == "win32":
+                if os.name == "nt":
                     from utility.system.os_helper import win_get_system32_dir
                     subprocess.run([str(win_get_system32_dir() / "taskkill.exe"), "/F", "/T", "/PID", str(child.pid)],  # noqa: S603
                                    creationflags=subprocess.CREATE_NO_WINDOW, check=True)
@@ -192,7 +192,7 @@ def terminate_main_process(
             sys.exit(0)
 
         RobustLogger().warning("Child processes and/or threads did not terminate, killing main process %s as a fallback.", actual_self_pid)
-        if sys.platform == "win32":
+        if os.name == "nt":
             from utility.system.os_helper import win_get_system32_dir
             sys32path = win_get_system32_dir()
             subprocess.run(

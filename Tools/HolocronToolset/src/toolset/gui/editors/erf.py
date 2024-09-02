@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, cast
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore, QtGui
 from qtpy.QtCore import QMimeData, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
@@ -22,7 +23,6 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception
-from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:

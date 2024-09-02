@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, NamedTuple, cast
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QSize, QSortFilterProxyModel, QThread
 from qtpy.QtGui import QIcon, QPixmap, QStandardItem, QStandardItemModel
@@ -31,7 +32,6 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os

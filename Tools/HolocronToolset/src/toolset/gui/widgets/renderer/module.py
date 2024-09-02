@@ -4,6 +4,7 @@ from copy import copy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
 from qtpy.QtWidgets import QApplication, QMessageBox, QOpenGLWidget
@@ -14,7 +15,6 @@ from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
-from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from glm import vec3

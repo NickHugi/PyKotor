@@ -74,7 +74,7 @@ class PlatformSpecificDataClass:
         return super().__new__(cls, *args, **kwargs)
 
 
-if sys.platform == "win32":
+if os.name == "nt":
     from ctypes import wintypes
 
     # Constants
