@@ -11,7 +11,7 @@ from qtpy.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QSizePoli
 
 from toolset.gui.common.widgets.progressbar import AnimatedProgressBar
 from utility.error_handling import format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from multiprocessing import Process, Queue
@@ -223,7 +223,7 @@ class AsyncLoader(QDialog, Generic[T]):
         print("AsyncLoader._onFailed")
         self.errors.append(error)
         self.optionalErrorHook.emit(error)
-        RobustRootLogger().error(str(error), exc_info=error)
+        RobustLogger().error(str(error), exc_info=error)
         if len(self.errors) == 1:  # Keep the first error as the main error
             self.error = error
 

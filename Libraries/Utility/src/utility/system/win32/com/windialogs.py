@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Sequence
 import comtypes  # pyright: ignore[reportMissingTypeStubs]
 import comtypes.client  # pyright: ignore[reportMissingTypeStubs]
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import WindowsPath
 from utility.system.win32.com.com_helpers import HandleCOMCall
 from utility.system.win32.com.com_types import GUID
@@ -244,10 +244,10 @@ def configure_file_dialog(  # noqa: PLR0913, PLR0912, C901, PLR0915
         # Resolve contradictory options
         if options & FileOpenOptions.FOS_ALLNONSTORAGEITEMS:
             if options & FileOpenOptions.FOS_FORCEFILESYSTEM:
-                RobustRootLogger().warning("Removing FileOpenOptions.FOS_FORCEFILESYSTEM to prevent conflict with FOS_ALLNONSTORAGEITEMS")
+                RobustLogger().warning("Removing FileOpenOptions.FOS_FORCEFILESYSTEM to prevent conflict with FOS_ALLNONSTORAGEITEMS")
                 options &= ~FileOpenOptions.FOS_FORCEFILESYSTEM
             if options & FileOpenOptions.FOS_PICKFOLDERS:
-                RobustRootLogger().warning("Removing FileOpenOptions.FOS_PICKFOLDERS to prevent conflict with FOS_ALLNONSTORAGEITEMS")
+                RobustLogger().warning("Removing FileOpenOptions.FOS_PICKFOLDERS to prevent conflict with FOS_ALLNONSTORAGEITEMS")
                 options &= ~FileOpenOptions.FOS_PICKFOLDERS
 
         def get_flag_differences(set_options: int, get_options: int) -> list[str]:
@@ -275,7 +275,7 @@ def configure_file_dialog(  # noqa: PLR0913, PLR0912, C901, PLR0915
         )
         if (options != cur_options):
             differing_flags = get_flag_differences(options, cur_options)
-            RobustRootLogger().warning(f"Differing flags: {', '.join(differing_flags)}")
+            RobustLogger().warning(f"Differing flags: {', '.join(differing_flags)}")
 
         if not options & FileOpenOptions.FOS_PICKFOLDERS and file_types:
             print("Using custom file filters")

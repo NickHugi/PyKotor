@@ -81,7 +81,7 @@ from pykotor.tools.path import find_kotor_paths_from_default
 from toolset.data.installation import HTInstallation
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.misc import is_float, is_int
 from utility.system.os_helper import get_size_on_disk, win_get_system32_dir
 from utility.system.path import Path
@@ -316,7 +316,7 @@ class FileItems(CustomItem):
         if ok and new_filename:
             new_path = file_path.with_name(new_filename)
             shutil.move(str(file_path), str(new_path))
-            RobustRootLogger().info("Renamed '%s' to '%s'", file_path, new_path)
+            RobustLogger().info("Renamed '%s' to '%s'", file_path, new_path)
 
     def create_context_menu_dict(
         self,
@@ -410,12 +410,12 @@ class FileItems(CustomItem):
                 try:
                     run_subprocess(command)
                 except subprocess.CalledProcessError:  # noqa: S112, PERF203
-                    RobustRootLogger().debug(f"command '{command}' not found on your operating system")
+                    RobustLogger().debug(f"command '{command}' not found on your operating system")
                     continue
                 else:
                     return
 
-            RobustRootLogger().warning("all specific file manager attempts fail, fall back to opening the parent directory")
+            RobustLogger().warning("all specific file manager attempts fail, fall back to opening the parent directory")
             run_subprocess(["xdg-open", str(file_path.parent)], check=True)
 
     def _save_files(
@@ -512,7 +512,7 @@ class FileItems(CustomItem):
         file_path: Path,
         tableItem: FileTableWidgetItem,
     ):
-        RobustRootLogger().info(f"Moving '{file_path}' to Recycle Bin")
+        RobustLogger().info(f"Moving '{file_path}' to Recycle Bin")
         send2trash.send2trash(file_path)
         if hasattr(self, "removeRow"):
             self.removeRow(tableItem.row())
@@ -569,7 +569,7 @@ class FileItems(CustomItem):
             except AssertionError:
                 raise
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, file_path)
+                RobustLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, file_path)
                 error_files[file_path] = e
         if missing_files:
             self._show_missing_results(missing_files)
@@ -713,7 +713,7 @@ class ResourceItems(FileItems):
             try:
                 self._prepare_func(filepath, tableItem, func, missing_files)
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
+                RobustLogger().exception("Failed to perform action '%s' filepath: '%s'", action_name, filepath)
                 error_files[filepath] = e
         if missing_files:
             self._show_missing_results(missing_files)
@@ -786,7 +786,7 @@ class ResourceItems(FileItems):
         self.handle_post_run_actions(executed_action, resources)
         executed_action_text = executed_action.text()
         if executed_action_text in ("Delete PERMANENTLY", "Send to Recycle Bin"):
-            RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
+            RobustLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", executed_action_text)
             total_inside_capsules = {resource for resource in resources if resource.inside_capsule}
             if total_inside_capsules:
                 separator="-"*80
@@ -799,14 +799,14 @@ class ResourceItems(FileItems):
             for resource in resources:
                 if resource.inside_capsule and not resource.inside_bif:
                     filepath = resource.filepath()
-                    RobustRootLogger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
+                    RobustLogger().info(f"Perform post action '{executed_action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
                     if is_any_erf_type_file(filepath):
                         erf = read_erf(filepath)
                         erf.remove(resource.resname(), resource.restype())
                         write_erf(erf, filepath)
                     elif is_rim_file(filepath):
                         if GlobalSettings().disableRIMSaving:
-                            RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Saving into RIMs is disabled in Settings.")
+                            RobustLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Saving into RIMs is disabled in Settings.")
                         else:
                             rim = read_rim(filepath)
                             rim.remove(resource.resname(), resource.restype())
@@ -820,7 +820,7 @@ class ResourceItems(FileItems):
     ):
         action_text = executed_action.text()
         if action_text in {"Delete PERMANENTLY", "Send to Recycle Bin"}:
-            RobustRootLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", action_text)
+            RobustLogger().debug("Action '%s' called, calling resourcetablewidget's post processing handlers...", action_text)
             self.handle_delete_action(resources, executed_action)
 
     def handle_delete_action(
@@ -841,21 +841,21 @@ class ResourceItems(FileItems):
         for resource in resources:
             if resource.inside_capsule and not resource.inside_bif:
                 filepath = resource.filepath()
-                RobustRootLogger().info(f"Perform post action '{action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
+                RobustLogger().info(f"Perform post action '{action_text}' on '{resource.identifier()}' in capsule at '{filepath}'")
                 if is_any_erf_type_file(filepath):
                     erf = read_erf(filepath)
                     erf.remove(resource.resname(), resource.restype())
                     write_erf(erf, filepath)
                 elif is_rim_file(filepath):
                     if GlobalSettings().disableRIMSaving:
-                        RobustRootLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
+                        RobustLogger().warning(f"Ignoring deletion of '{resource.filename()}' in RIM at path '{filepath}'. Reason: saving into RIMs is disabled.")
                     else:
                         rim = read_rim(filepath)
                         rim.remove(resource.resname(), resource.restype())
                         write_rim(rim, filepath)
 
     def on_double_click(self, *args, installation: HTInstallation):
-        RobustRootLogger().debug(f"doubleclick args: {args} installation: {installation}")
+        RobustLogger().debug(f"doubleclick args: {args} installation: {installation}")
         #first_item = next(iter(self.selectedItems()))
         selected = {res.resource for res in self.selectedItems()}
         self.open_selected_resource(
@@ -870,12 +870,12 @@ class ResourceItems(FileItems):
         *,
         gff_specialized: bool | None = None,
     ):
-        RobustRootLogger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
+        RobustLogger().debug(f"open_selected_resource resources: {resources!r} installation: {installation!r} gff_specialized: {gff_specialized}")
         for resource in resources:
             try:
                 data: bytes = resource.data()
             except Exception:  # noqa: BLE001
-                RobustRootLogger().error("Exception occurred in open_selected_resource", exc_info=True)
+                RobustLogger().error("Exception occurred in open_selected_resource", exc_info=True)
                 QMessageBox(QMessageBox.Icon.Critical, "Failed to get the file data.", "File no longer exists, might have been deleted.").exec_()
                 return
             openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), data, installation, gff_specialized=gff_specialized)
@@ -1066,7 +1066,7 @@ class FileSelectionWindow(QMainWindow):
                     else:
                         self.add_extra_file_details(i, resource.filepath(), res_stat_result, resource)
                 except Exception:  # noqa: BLE001
-                    RobustRootLogger().exception("Error populating detailed info for '%s'", resource.filepath())
+                    RobustLogger().exception("Error populating detailed info for '%s'", resource.filepath())
             else:
                 filepath_cell = self.create_table_item(str(resource.filepath().relative_to(self.installation.path().parent)), resource)
                 self.resource_table.setItem(i, self.resource_table.get_column_index("File Path"), filepath_cell)
@@ -1134,7 +1134,7 @@ class FileSelectionWindow(QMainWindow):
 
                 self.resource_table.setItem(rowIndex, column_index, self.create_table_item(value, resource))
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
+                RobustLogger().exception("Failed to parse stat_result attribute %s (%s): %s", column_name, stat_attr, value)
                 QMessageBox.critical(self, "Stat attribute not expected format", f"Failed to parse {column_name} ({stat_attr}): {value}<br><br>{e}")
 
 

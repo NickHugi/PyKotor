@@ -4,7 +4,7 @@ import os
 import pathlib
 import sys
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 
 def update_sys_path(path: pathlib.Path):
@@ -79,7 +79,7 @@ def qicon_from_file_ext(extension: str) -> QIcon:
     try:
         icon = QFileIconProvider().icon(QFileInfo(temp_file.fileName()))
         if icon.pixmap(32, 32).isNull():
-            RobustRootLogger()(f"<SDM> Failed to retrieve a valid icon for extension '{extension}'")
+            RobustLogger()(f"<SDM> Failed to retrieve a valid icon for extension '{extension}'")
             return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirIcon if isinstance(self, DirItem) else QStyle.StandardPixmap.SP_FileIcon)
         return icon
 

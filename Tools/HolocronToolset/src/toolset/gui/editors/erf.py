@@ -22,7 +22,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -333,7 +333,7 @@ class ERFEditor(Editor):
     def openContextMenu(self, position):
         selectedResources = self.getSelectedResources()
         if not selectedResources:
-            RobustRootLogger().info("ERFEditor: Nothing selected to build context menu.")
+            RobustLogger().info("ERFEditor: Nothing selected to build context menu.")
             return
 
         mainMenu = QMenu(self)
@@ -385,7 +385,7 @@ class ERFEditor(Editor):
         """
         selectedResources = self.getSelectedResources()
         if not selectedResources:
-            RobustRootLogger().info("ERFEditor: Nothing selected to save.")
+            RobustLogger().info("ERFEditor: Nothing selected to save.")
         saveHandler = FileSaveHandler(selectedResources, parent=self)
         saveHandler.save_files()
 
@@ -415,7 +415,7 @@ class ERFEditor(Editor):
 
         inputField = dialog.findChild(QLineEdit)
         if inputField is None:
-            RobustRootLogger().warning("inputField could not be found in parent class QLineEdit")
+            RobustLogger().warning("inputField could not be found in parent class QLineEdit")
             return "", False
         inputField.setValidator(self.resRefValidator())
 
@@ -442,7 +442,7 @@ class ERFEditor(Editor):
             source_index = self._proxy_model.mapToSource(index)
             item: QStandardItem | None = self.model.itemFromIndex(source_index)
             if item is None:
-                RobustRootLogger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
+                RobustLogger().warning("item was None in ERFEditor.removeSelected() at index %s", index)
                 continue
             self.model.removeRow(item.row())
 
@@ -477,7 +477,7 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(resourceSizeStr)
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to add resource at '%s'", c_filepath.absolute())
+                RobustLogger().exception("Failed to add resource at '%s'", c_filepath.absolute())
                 error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
                 QMessageBox(
                     QMessageBox.Icon.Critical,
@@ -539,7 +539,7 @@ class ERFEditor(Editor):
         for resource in resources:
             new_filepath = filepath
             if resource.restype in (ResourceType.ERF, ResourceType.SAV, ResourceType.RIM, ResourceType.MOD):
-                RobustRootLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
+                RobustLogger().info(f"Nested capsule selected for opening, appending resref/restype '{resource.resref}.{resource.restype}' to the filepath.")
                 new_filepath /= str(ResourceIdentifier(str(resource.resref), resource.restype))
 
             _tempPath, editor = openResourceEditor(
@@ -723,11 +723,11 @@ class ERFEditorTable(QTableView):
 
         if not tempDir.safe_isdir():
             if tempDir.safe_isfile() or tempDir.exists():
-                RobustRootLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
+                RobustLogger().error(f"tempDir '{tempDir}' exists but was not a valid filesystem folder.")
             else:
                 tempDir.mkdir(parents=True, exist_ok=True)
             if not tempDir.safe_isdir():
-                RobustRootLogger().error(f"Temp directory not valid: {tempDir}")
+                RobustLogger().error(f"Temp directory not valid: {tempDir}")
             return
 
         urls: list[QtCore.QUrl] = []

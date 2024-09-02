@@ -12,7 +12,7 @@ from pykotor.common.misc import Color, Game, ResRef
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_data import GFF, GFFContent, GFFList
 from pykotor.resource.type import ResourceType
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -1081,7 +1081,7 @@ def construct_dlg(
             node = all_entries[node_struct_id]
         except IndexError:
             context_link_msg = f"(StartingList/{link_list_index})"  # noqa: SLF001
-            RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
+            RobustLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
         else:
             link: DLGLink = DLGLink(node, link_list_index)
             dlg.starters.append(link)
@@ -1101,7 +1101,7 @@ def construct_dlg(
                 node = all_replies[node_struct_id]
             except IndexError:
                 context_link_msg = f"(EntryList/{node_list_index}/RepliesList/{link_list_index})"  # noqa: SLF001
-                RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
+                RobustLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid ReplyList node, omitting...")
             else:
                 link = DLGLink(node, link_list_index)
                 link.is_child = bool(link_struct.acquire("IsChild", default=False))
@@ -1123,7 +1123,7 @@ def construct_dlg(
                 node = all_entries[node_struct_id]
             except IndexError:
                 context_link_msg = f"(ReplyList/{node_list_index}/EntriesList/{link_list_index})"  # noqa: SLF001
-                RobustRootLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid EntryList node, omitting...")
+                RobustLogger().error(f"'Index' field value '{node_struct_id}' at {context_link_msg} does not point to a valid EntryList node, omitting...")
             else:
                 link = DLGLink(node, link_list_index)
                 link.is_child = bool(link_struct.acquire("IsChild", default=False))

@@ -22,7 +22,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.string_util import ireplace
 
 if TYPE_CHECKING:
@@ -87,7 +87,7 @@ def clone_module(
         write_gff(dismantle_ifo(ifo), ifo_data)
         new_module.set_data("module", ResourceType.IFO, ifo_data)
     else:
-        RobustRootLogger().warning(f"No IFO found in module to be cloned: '{root}'")
+        RobustLogger().warning(f"No IFO found in module to be cloned: '{root}'")
 
     are_res = old_module.are()
     are = are_res.resource() if are_res is not None else None
@@ -99,7 +99,7 @@ def clone_module(
         write_gff(dismantle_are(are), are_data)
         new_module.set_data(identifier, ResourceType.ARE, are_data)
     else:
-        RobustRootLogger().warning(f"No ARE found in module to be cloned: '{root}'")
+        RobustLogger().warning(f"No ARE found in module to be cloned: '{root}'")
 
     if keep_pathing:  # sourcery skip: extract-method
         pth_res = old_module.pth()
@@ -125,11 +125,11 @@ def clone_module(
 
             utd_res = old_module.door(old_resname)
             if utd_res is None:
-                RobustRootLogger().warning(f"No UTD found for door '{old_resname}' in module '{root}'")
+                RobustLogger().warning(f"No UTD found for door '{old_resname}' in module '{root}'")
                 continue
             utd: UTD | None = utd_res.resource()
             if utd is None:
-                RobustRootLogger().warning(f"UTD resource is None for door '{old_resname}' in module '{root}'")
+                RobustLogger().warning(f"UTD resource is None for door '{old_resname}' in module '{root}'")
                 continue
 
             data = bytearray()
@@ -147,11 +147,11 @@ def clone_module(
 
             utp_res = old_module.placeable(old_resname)
             if utp_res is None:
-                RobustRootLogger().warning(f"No UTP found for placeable '{old_resname}' in module '{root}'")
+                RobustLogger().warning(f"No UTP found for placeable '{old_resname}' in module '{root}'")
                 continue
             utp: UTP | None = utp_res.resource()
             if utp is None:
-                RobustRootLogger().warning(f"UTP resource is None for placeable '{old_resname}' in module '{root}'")
+                RobustLogger().warning(f"UTP resource is None for placeable '{old_resname}' in module '{root}'")
                 continue
 
             data = bytearray()
@@ -169,11 +169,11 @@ def clone_module(
 
             uts_res = old_module.sound(old_resname)
             if uts_res is None:
-                RobustRootLogger().warning(f"No UTS found for sound '{old_resname}' in module '{root}'")
+                RobustLogger().warning(f"No UTS found for sound '{old_resname}' in module '{root}'")
                 continue
             uts: UTS | None = uts_res.resource()
             if uts is None:
-                RobustRootLogger().warning(f"UTS resource is None for sound '{old_resname}' in module '{root}'")
+                RobustLogger().warning(f"UTS resource is None for sound '{old_resname}' in module '{root}'")
                 continue
 
             data = bytearray()
@@ -234,7 +234,7 @@ def clone_module(
                         ],
                     )
                     if tpc is None:
-                        RobustRootLogger().warning(f"TPC/TGA resource not found for texture '{texture}' in module '{root}'")
+                        RobustLogger().warning(f"TPC/TGA resource not found for texture '{texture}' in module '{root}'")
                         continue
                     rgba: TPCConvertResult = tpc.convert(TPCTextureFormat.RGBA)
 
@@ -245,7 +245,7 @@ def clone_module(
                     try:
                         write_tpc(tga, tga_data, ResourceType.TGA)
                     except ValueError as e:
-                        RobustRootLogger().warning(f"Failed to write TGA for texture '{texture}' in clone_module: {e}")
+                        RobustLogger().warning(f"Failed to write TGA for texture '{texture}' in clone_module: {e}")
                         continue
                     new_module.set_data(new_texture_name, ResourceType.TGA, tga_data)
                 mdl_data = model.change_textures(mdl_data, new_textures)
@@ -267,7 +267,7 @@ def clone_module(
                         ],
                     )
                     if tpc is None:
-                        RobustRootLogger().warning(f"TPC/TGA resource not found for lightmap '{texture}' in module '{root}'")
+                        RobustLogger().warning(f"TPC/TGA resource not found for lightmap '{texture}' in module '{root}'")
                         continue
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
@@ -289,14 +289,14 @@ def clone_module(
         write_vis(vis, vis_data)
         new_module.set_data(identifier, ResourceType.VIS, vis_data)
     else:
-        RobustRootLogger().warning(f"No VIS found in module to be cloned: '{root}'")
+        RobustLogger().warning(f"No VIS found in module to be cloned: '{root}'")
 
     if lyt is not None:
         lyt_data = bytearray()
         write_lyt(lyt, lyt_data)
         new_module.set_data(identifier, ResourceType.LYT, lyt_data)
     else:
-        RobustRootLogger().error(f"No LYT found in module to be cloned: '{root}'")
+        RobustLogger().error(f"No LYT found in module to be cloned: '{root}'")
 
     filepath: CaseAwarePath = installation.module_path() / f"{identifier}.mod"
     write_erf(new_module, filepath)

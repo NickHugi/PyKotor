@@ -10,10 +10,11 @@ import struct
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from loggerplus import RobustLogger
+
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.encoding import decode_bytes_with_fallbacks
-from utility.logger_util import RobustRootLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -635,7 +636,7 @@ class BinaryReader:
         string_byte_data = self._stream.read(length) or b""
         if encoding is None:
             string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors=errors)
-            RobustRootLogger().warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
+            RobustLogger().warning(f"decode_bytes_with_fallbacks called and returned '{string}'")
         else:
             string = string_byte_data.decode(encoding=encoding, errors=errors)
         if "\0" in string:

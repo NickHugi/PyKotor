@@ -11,7 +11,7 @@ from pykotor.extract.file import FileResource, ResourceResult
 from pykotor.resource.formats.erf.erf_data import ERFResource
 from pykotor.resource.formats.rim.rim_data import RIMResource
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class FileSaveHandler(Generic[T]):
                 failed_extractions[path] = e
                 del successfully_saved_paths[resource]
             else:
-                RobustRootLogger().info(f"Saved {self.get_resource_ident(resource)} to '{path}'")
+                RobustLogger().info(f"Saved {self.get_resource_ident(resource)} to '{path}'")
 
         if failed_extractions:
             self._handle_failed_extractions(failed_extractions)
@@ -85,14 +85,14 @@ class FileSaveHandler(Generic[T]):
             if response == QFileDialog.Accepted:
                 filepath_str = dialog.selectedFiles()[0]
                 if not filepath_str or not filepath_str.strip():
-                    RobustRootLogger().debug("QFileDialog was accepted but no filepath str passed.")
+                    RobustLogger().debug("QFileDialog was accepted but no filepath str passed.")
                     return {}
                 paths_to_write[resource] = Path(filepath_str)
 
         elif len(self.resources) > 1:
             folderpath_str: str = QFileDialog.getExistingDirectory(self.parent, "Extract to folder")
             if not folderpath_str or not folderpath_str.strip():
-                RobustRootLogger().debug("User cancelled folderpath extraction.")
+                RobustLogger().debug("User cancelled folderpath extraction.")
                 return {}
 
             # Build intended destination filepaths dict
@@ -103,7 +103,7 @@ class FileSaveHandler(Generic[T]):
                 paths_to_write[resource] = file_path
 
         else:
-            RobustRootLogger().warning("FileSaveHandler: no resources sent with the constructor, nothing to save.")
+            RobustLogger().warning("FileSaveHandler: no resources sent with the constructor, nothing to save.")
 
         return paths_to_write
 
@@ -150,14 +150,14 @@ class FileSaveHandler(Generic[T]):
         # Build new_paths_to_write based on the choice.
         new_paths_to_write: dict[T, Path] = {}
         if choice == QMessageBox.StandardButton.Yes:
-            RobustRootLogger().debug(
+            RobustLogger().debug(
                 "User chose to Overwrite %s files/folders in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.values())).parent,
             )
             for resource, path in paths_to_write.items():
                 is_overwrite = "overwriting existing file" if path.safe_isfile() else "saving as"
-                RobustRootLogger().info("Extracting '%s' to '%s' and %s '%s'", path.name, path.parent, is_overwrite, path.name)
+                RobustLogger().info("Extracting '%s' to '%s' and %s '%s'", path.name, path.parent, is_overwrite, path.name)
                 try:
                     if path.safe_isdir():
                         shutil.rmtree(path)
@@ -169,7 +169,7 @@ class FileSaveHandler(Generic[T]):
                 else:
                     new_paths_to_write[resource] = path
         elif choice == QMessageBox.StandardButton.No:
-            RobustRootLogger().debug(
+            RobustLogger().debug(
                 "User chose to Rename %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.values())).parent,
@@ -186,10 +186,10 @@ class FileSaveHandler(Generic[T]):
                         failed_extractions[new_path] = e
                 else:
                     if path.safe_isfile():
-                        RobustRootLogger().info("Will save '%s' as '%s'", path.name, new_path)
+                        RobustLogger().info("Will save '%s' as '%s'", path.name, new_path)
                     new_paths_to_write[resource] = new_path
         else:
-            RobustRootLogger().debug(
+            RobustLogger().debug(
                 "User chose to CANCEL overwrite/renaming of %s files in the '%s' folder.",
                 len(existing_files_and_folders),
                 next(iter(paths_to_write.values())).parent,

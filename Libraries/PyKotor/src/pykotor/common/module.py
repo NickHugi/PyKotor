@@ -39,7 +39,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_file, is_rim_file
 from pykotor.tools.model import iterate_lightmaps, iterate_textures
 from pykotor.tools.path import CaseAwarePath
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -197,14 +197,14 @@ class ModuleLinkPiece(ModulePieceResource):
         if link_resources:
             check_resname = next(iter(link_resources)).identifier().lower_resname
             if all(check_resname == res.identifier().lower_resname for res in link_resources):
-                RobustRootLogger().debug("Module ID, Check 1: All link resources have the same resref of '%s'", check_resname)
+                RobustLogger().debug("Module ID, Check 1: All link resources have the same resref of '%s'", check_resname)
                 return ResRef(check_resname)
 
         ifo = self.ifo()
         if ifo.root.exists("Mod_Area_list"):
             actual_ftype = ifo.root.what_type("Mod_Area_list")
             if actual_ftype is not GFFFieldType.List:
-                RobustRootLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_list' type '{actual_ftype.name}', expected 'List'")
+                RobustLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_list' type '{actual_ftype.name}', expected 'List'")
             else:
                 area_list = ifo.root.get_list("Mod_Area_list")
                 area_localized_name = next(
@@ -216,11 +216,11 @@ class ModuleLinkPiece(ModulePieceResource):
                     None
                 )
                 if area_localized_name is not None and str(area_localized_name).strip():
-                    RobustRootLogger().debug("Module ID, Check 2: Found in Mod_Area_list: %s", area_localized_name)
+                    RobustLogger().debug("Module ID, Check 2: Found in Mod_Area_list: %s", area_localized_name)
                     return area_localized_name
-            RobustRootLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_list. Could not get the module id!")
+            RobustLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_list. Could not get the module id!")
         else:
-            RobustRootLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_list.")
+            RobustLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_list.")
         return None
 
     def area_name(self) -> LocalizedString | ResRef:
@@ -236,7 +236,7 @@ class ModuleLinkPiece(ModulePieceResource):
                 if actual_ftype is not GFFFieldType.LocalizedString:
                     raise ValueError(f"{self.filename()} has IFO with incorrect field 'Name' type '{actual_ftype.name}', expected 'LocalizedString'")
                 result = are.root.get_locstring("Name")
-                RobustRootLogger().debug("Check 1 result: '%s'", result)
+                RobustLogger().debug("Check 1 result: '%s'", result)
                 return result
         raise ValueError(f"Failed to find an ARE for module '{self.piece_info.filename()}'")
 
@@ -373,7 +373,7 @@ class Module:  # noqa: PLR0904
             return self._cached_mod_id
         data_capsule = self.lookup_main_capsule()
         found_id = data_capsule.module_id()
-        RobustRootLogger().debug("Found module id '%s' for module '%s'", found_id, data_capsule.filename())
+        RobustLogger().debug("Found module id '%s' for module '%s'", found_id, data_capsule.filename())
         self._cached_mod_id = found_id
         return found_id
 
@@ -420,7 +420,7 @@ class Module:  # noqa: PLR0904
             - Add found locations to the resource registry.
         """
         display_name = f"{self._root}.mod" if self.dot_mod else f"{self._root}.rim"
-        RobustRootLogger().info("Loading module resources needed for '%s'", display_name)
+        RobustLogger().info("Loading module resources needed for '%s'", display_name)
         mod_capsule = self._capsules[KModuleType.MOD.name]  # pyright: ignore[reportTypedDictNotRequiredAccess]
         capsules_to_search = [self.lookup_main_capsule()] if mod_capsule is None else [mod_capsule]
         # Lookup the GIT and LYT first.
@@ -441,7 +441,7 @@ class Module:  # noqa: PLR0904
                 continue
             typed_capsule = cast(ModulePieceResource, capsule)  # No idea why static types aren't working here as that's the whole point of the TypedDict...
             for resource in typed_capsule:
-                RobustRootLogger().info("Adding location '%s' for resource '%s' from erf/rim '%s'",
+                RobustLogger().info("Adding location '%s' for resource '%s' from erf/rim '%s'",
                                         typed_capsule.filepath(), resource.identifier(), typed_capsule.identifier())
                 self.add_locations(resource.resname(), resource.restype(), [typed_capsule.filepath()])
 
@@ -479,7 +479,7 @@ class Module:  # noqa: PLR0904
         # Check chitin first.
         for resource in self._installation.core_resources():
             if resource.identifier() in self.resources or resource.identifier() in git_search:
-                RobustRootLogger().info("Found chitin/core location '%s' for resource '%s' for module '%s'",
+                RobustLogger().info("Found chitin/core location '%s' for resource '%s' for module '%s'",
                                         resource.filepath(), resource.identifier(), display_name)
                 self.add_locations(resource.resname(), resource.restype(), (resource.filepath(),)).activate()
 
@@ -487,46 +487,46 @@ class Module:  # noqa: PLR0904
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
                 if resource.identifier() in self.resources or resource.identifier() in git_search:
-                    RobustRootLogger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
+                    RobustLogger().info("Found override location '%s' for module '%s'", resource.filepath(), display_name)
                     self.add_locations(resource.resname(), resource.restype(), [resource.filepath()]).activate()
 
         # Also try get paths for textures in models
         lookup_texture_queries: set[str] = set()
         for model in self.models():
-            RobustRootLogger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
+            RobustLogger().debug("Finding textures/lightmaps for model '%s'...", model.identifier())
             try:
                 model_data = model.data()
             except OSError:
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s",
+                RobustLogger().warning("Suppressed known exception while executing %s.reload_resources() while getting model data '%s': %s",
                                            repr(self), model.identifier(), exc_info=True, extra={"detailed": False})
                 continue
             else:
                 if model_data is None:
-                    RobustRootLogger().warning("Missing model '%s', needed by module '%s'", model.identifier(), display_name)
+                    RobustLogger().warning("Missing model '%s', needed by module '%s'", model.identifier(), display_name)
                     continue
                 if not model_data:
-                    RobustRootLogger().warning("model '%s' was unexpectedly empty, but is needed by module '%s'", model.identifier(), display_name)
+                    RobustLogger().warning("model '%s' was unexpectedly empty, but is needed by module '%s'", model.identifier(), display_name)
                     continue
             try:
                 lookup_texture_queries.update(iterate_textures(model_data))
             except OSError:  # noqa: PERF203
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_textures() with model '%s': %s",
+                RobustLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_textures() with model '%s': %s",
                                            repr(self), model.identifier(), exc_info=True, extra={"detailed": False})
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'",
+                RobustLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'",
                                              repr(self), model.identifier(), exc_info=True)
             else:
-                RobustRootLogger().info("Found %s textures in '%s'", model.identifier(), display_name)
+                RobustLogger().info("Found %s textures in '%s'", model.identifier(), display_name)
             try:
                 lookup_texture_queries.update(iterate_lightmaps(model_data))
             except OSError:  # noqa: PERF203
-                RobustRootLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_lightmaps() with model '%s': %s",
+                RobustLogger().warning("Suppressed known exception while executing %s.reload_resources() in iterate_lightmaps() with model '%s': %s",
                                            repr(self), model.identifier(), exc_info=True, extra={"detailed": False})
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'",
+                RobustLogger().exception("Unexpected exception when executing %s.reload_resources() with model '%s'",
                                              repr(self), model.identifier(), exc_info=True)
             else:
-                RobustRootLogger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
+                RobustLogger().info("Found %s lightmaps in '%s'", model.identifier(), display_name)
 
         texture_search: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
             [
@@ -547,7 +547,7 @@ class Module:  # noqa: PLR0904
                 continue  # skip this constant name
             if not locations:
                 continue
-            RobustRootLogger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
+            RobustLogger().debug(f"Adding {len(locations)} texture locations to module '{display_name}'")
             self.add_locations(identifier.resname, identifier.restype, (location.filepath for location in locations)).activate()
 
         # Finally iterate through all resources we may have missed.
@@ -617,7 +617,7 @@ class Module:  # noqa: PLR0904
         if not isinstance(locations, Collection):
             locations = list(locations)
         if not locations:
-            RobustRootLogger().warning("No locations found for '%s.%s' which are intended to add to module '%s'", resname, restype, self._root)
+            RobustLogger().warning("No locations found for '%s.%s' which are intended to add to module '%s'", resname, restype, self._root)
         module_resource: ModuleResource | None = self.resource(resname, restype)
         if module_resource is None:
             module_resource = ModuleResource(resname, restype, self._installation)
@@ -763,7 +763,7 @@ class Module:  # noqa: PLR0904
                 None,
             )
             if fallback is not None:  # noqa: RET503
-                RobustRootLogger().warning("This module '%s' has an incorrect GIT resname/resref! Expected '%s', found '%s'", self._root, self.module_id(), fallback.resname())  # noqa: RET503
+                RobustLogger().warning("This module '%s' has an incorrect GIT resname/resref! Expected '%s', found '%s'", self._root, self.module_id(), fallback.resname())  # noqa: RET503
         return result  # noqa: RET504
 
 
@@ -1527,7 +1527,7 @@ class ModuleResource(Generic[T]):
         if is_capsule_file(active_path):
             data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
             if data is None:
-                RobustRootLogger().error(f"Resource '{file_name}' not found in '{active_path}'")
+                RobustLogger().error(f"Resource '{file_name}' not found in '{active_path}'")
             return data
 
         if is_bif_file(active_path):
@@ -1538,7 +1538,7 @@ class ModuleResource(Generic[T]):
             )
             if resource is None:
                 msg = f"Resource '{file_name}' not found in BIF '{self._active}' somehow?"
-                RobustRootLogger().error(msg)
+                RobustLogger().error(msg)
                 return None
             return resource.data
 
@@ -1585,7 +1585,7 @@ class ModuleResource(Generic[T]):
                 data: bytes | None = Capsule(active_path).resource(self._resname, self._restype)
                 if data is None:
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
-                    RobustRootLogger().error(msg)
+                    RobustLogger().error(msg)
                     return None
                 self._resource_obj = conversions[self._restype](data)
 
@@ -1597,7 +1597,7 @@ class ModuleResource(Generic[T]):
                 )
                 if resource is None:
                     msg = f"Resource '{self._identifier}' not found in '{active_path}'"
-                    RobustRootLogger().error(msg)
+                    RobustLogger().error(msg)
                     return None
                 self._resource_obj = conversions[self._restype](resource.data)
 
@@ -1675,11 +1675,11 @@ class ModuleResource(Generic[T]):
                 self._locations.append(r_filepath)
             self._active = r_filepath
         if self._active is None:
-            RobustRootLogger().warning("Cannot activate module resource '%s': No locations found.", self.identifier())
+            RobustLogger().warning("Cannot activate module resource '%s': No locations found.", self.identifier())
         else:
             other_locations_available = len(self._locations)-1
             other_locations_available_display = f" ({other_locations_available} other locations available)" if other_locations_available else ""
-            RobustRootLogger().debug("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
+            RobustLogger().debug("Activating module resource '%s' at filepath '%s'%s", self.identifier(), self._active, other_locations_available_display)
         return self._active
 
     def unload(self):
@@ -1701,7 +1701,7 @@ class ModuleResource(Generic[T]):
         if self._active is None:
             next_path = next(iter(self._locations), None)
             if next_path is None:
-                RobustRootLogger().warning("No resource found for '%s'", self._identifier)
+                RobustLogger().warning("No resource found for '%s'", self._identifier)
                 return None
             self.activate()
             #raise RuntimeError(f"{self!r}.activate(filepath) must be called before use.")
@@ -1785,7 +1785,7 @@ class ModuleResource(Generic[T]):
         if bytedata is None:
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), self._installation.override_path().joinpath(self.filename()))
 
-        RobustRootLogger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
+        RobustLogger().warning("Saving ModuleResource '%s' to the Override folder as it does not have any other paths available...", self.identifier())
         result = self._installation.override_path().joinpath(self.filename())
         with result.open("wb") as f:
             f.write(bytedata)

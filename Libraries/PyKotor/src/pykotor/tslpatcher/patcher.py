@@ -23,7 +23,7 @@ from pykotor.tslpatcher.mods.install import InstallFile, create_backup
 from pykotor.tslpatcher.mods.nss import ModificationsNSS, MutableString
 from pykotor.tslpatcher.mods.template import OverrideType
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import PurePath
 
 if TYPE_CHECKING:
@@ -439,7 +439,7 @@ class ModInstaller:
                 fmt_exc_str = f"{exc_type}: {exc_msg}"
                 msg = f"An error occurred in patchlist {patch.__class__.__name__}:\n{fmt_exc_str}\n"
                 self.log.add_error(msg)
-                RobustRootLogger().exception(msg)
+                RobustLogger().exception(msg)
             if progress_update_func is not None:
                 progress_update_func()
 

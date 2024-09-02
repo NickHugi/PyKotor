@@ -104,7 +104,7 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import QtKey, getQtKeyString
 from utility.error_handling import safe_repr
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     from qtpy.QtGui import QUndoStack
@@ -192,7 +192,7 @@ class DLGListWidgetItem(QListWidgetItem):
             self.flags()
             self.isSelected()
         except RuntimeError as e:  # RuntimeError: wrapped C/C++ object of type DLGStandardItem has been deleted
-            RobustRootLogger().warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
+            RobustLogger().warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
             return True
         else:
             return False
@@ -687,7 +687,7 @@ class DLGStandardItem(QStandardItem):
             self.model()
             self.index()
         except RuntimeError as e:  # RuntimeError: wrapped C/C++ object of type DLGStandardItem has been deleted
-            RobustRootLogger().warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
+            RobustLogger().warning(f"isDeleted suppressed the following exception: {e.__class__.__name__}: {e}")
             return True
         else:
             return False
@@ -1091,7 +1091,7 @@ class DLGStandardItemModel(QStandardItemModel):
             deserialized_dlg_link: DLGLink = DLGLink.from_dict(dlg_nodes_dict)
             print("<SDM> [dropMimeData scope] deserialized_dlg_link: ", repr(deserialized_dlg_link))
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to deserialize dropped mime data of '_DLG_MIME_DATA_ROLE' format.")
+            RobustLogger().exception("Failed to deserialize dropped mime data of '_DLG_MIME_DATA_ROLE' format.")
             return True
         else:
             self.pasteItem(parentItem, deserialized_dlg_link, asNewBranches=parsedMimeData["roles"][_MODEL_INSTANCE_ID_ROLE] == id(self))
@@ -1203,7 +1203,7 @@ class DLGStandardItemModel(QStandardItemModel):
         assert item.link is not None, "item.link cannot be None in _processLink"
         assert self.editor is not None, "self.editor cannot be None in _processLink"
         index = (parentItem or self).rowCount() if row in (-1, None) else row
-        RobustRootLogger().info(f"SDM [_processLink scope] Adding #{item.link.node.list_index} to row {index}")
+        RobustLogger().info(f"SDM [_processLink scope] Adding #{item.link.node.list_index} to row {index}")
         links_list = self.editor.core_dlg.starters if parentItem is None else parentItem.link.node.links
         nodeToItems = self.nodeToItems.setdefault(item.link.node, [])
         if item not in nodeToItems:
@@ -1226,7 +1226,7 @@ class DLGStandardItemModel(QStandardItemModel):
             self.syncItemCopies(parentItem.link, parentItem)
         if item.ref_to_link in self.origToOrphanCopy:
             return
-        RobustRootLogger().debug(f"Creating internal copy of item: {item!r}")
+        RobustLogger().debug(f"Creating internal copy of item: {item!r}")
         copiedLink = DLGLink.from_dict(item.link.to_dict())
         self.origToOrphanCopy[item.ref_to_link] = copiedLink  # noqa: SLF001
         self.register_deepcopies(item.link, copiedLink)
@@ -1242,7 +1242,7 @@ class DLGStandardItemModel(QStandardItemModel):
         # The items could be deleted by qt at this point, so we only use the python object.
         links_list = self.editor.core_dlg.starters if parentItem is None else parentItem.link.node.links
         index = links_list.index(link)
-        RobustRootLogger().info(f"SDM [_removeLinkFromParent scope] Removing #{link.node.list_index} from row(link index) {index}")
+        RobustLogger().info(f"SDM [_removeLinkFromParent scope] Removing #{link.node.list_index} from row(link index) {index}")
         links_list.remove(link)
         for i in range(index, len(links_list)):
             links_list[i].list_index = i
@@ -1296,7 +1296,7 @@ class DLGStandardItemModel(QStandardItemModel):
         elif copiedLink is None:
             copiedLink = self.origToOrphanCopy.get(itemToLoad.ref_to_link)
         if copiedLink is None:
-            RobustRootLogger().info(f"Creating new internal copy of {itemToLoad.link!r}")
+            RobustLogger().info(f"Creating new internal copy of {itemToLoad.link!r}")
             copiedLink = DLGLink.from_dict(itemToLoad.link.to_dict())
             self.register_deepcopies(itemToLoad.link, copiedLink)
         child_links_copy = copiedLink.node.links
@@ -1730,7 +1730,7 @@ class DLGStandardItemModel(QStandardItemModel):
         print("Attempting to change row index for '%s' from %s to %s in parent '%s'", repr(item), oldRow, newRow, itemParentText)
 
         if newRow >= (itemParent or self).rowCount() or newRow < 0:
-            RobustRootLogger().info("New row index '%s' out of bounds. Already at the start/end of the branch. Cancelling operation.", newRow)
+            RobustLogger().info("New row index '%s' out of bounds. Already at the start/end of the branch. Cancelling operation.", newRow)
             return
 
         # Get a strong reference so takeRow doesn't assume it's now orphaned.
@@ -1754,7 +1754,7 @@ class DLGStandardItemModel(QStandardItemModel):
             self.updateItemDisplayText(itemParent)
             self.syncItemCopies(itemParent.link, itemParent)
 
-        RobustRootLogger().info("Moved link from %s to %s", oldRow, newRow)
+        RobustLogger().info("Moved link from %s to %s", oldRow, newRow)
         self.layoutChanged.emit()
 
     def moveItemToIndex(
@@ -1770,7 +1770,7 @@ class DLGStandardItemModel(QStandardItemModel):
         sourceParentItem: DLGStandardItem | None = item.parent()
         if targetParentItem is sourceParentItem and new_index == item.row():
             self.editor.blinkWindow()
-            RobustRootLogger().info("Attempted to move item to the same position. Operation aborted.")
+            RobustLogger().info("Attempted to move item to the same position. Operation aborted.")
             return
         if (
             targetParentItem is not sourceParentItem
@@ -1780,14 +1780,14 @@ class DLGStandardItemModel(QStandardItemModel):
             and sourceParentItem.link is not None
             and targetParentItem.link.node == sourceParentItem.link.node
         ):
-            RobustRootLogger().warning("Cannot drag into a different copy.")
+            RobustLogger().warning("Cannot drag into a different copy.")
             self.editor.blinkWindow()
             return
         if targetParentItem is not None and not targetParentItem.isLoaded():
             self.loadDLGItemRec(targetParentItem)
 
         if new_index < 0 or new_index > (targetParentItem or self).rowCount():
-            RobustRootLogger().info("New row index %d out of bounds. Cancelling operation.", new_index)
+            RobustLogger().info("New row index %d out of bounds. Cancelling operation.", new_index)
             return
         oldRow: int = item.row()
         if sourceParentItem is targetParentItem and new_index > oldRow:
@@ -2045,7 +2045,7 @@ class CopySyncDict(weakref.WeakKeyDictionary):
         """
         link_hash = hash(link)
         if link_hash not in self._weak_key_map:
-            RobustRootLogger().info(f"Creating deepcopy of {link!r}")
+            RobustLogger().info(f"Creating deepcopy of {link!r}")
             self[link] = DLGLink.from_dict(link.to_dict())
         return self._weak_key_map[link_hash]
 
@@ -2327,8 +2327,8 @@ class DLGTreeView(RobustTreeView):
         self.draggedItem = model.itemFromIndex(index)
         assert isinstance(self.draggedItem, DLGStandardItem), f"model.itemFromIndex({index}(row={index.row()}, col={index.column()}) did not return a DLGStandardItem, was instead {self.draggedItem.__class__.__name__}: {self.draggedItem}"
         if not self.draggedItem or getattr(self.draggedItem, "link", None) is None:
-            RobustRootLogger().warning(f"Ignoring dragged item: {self.draggedItem!r}")
-            RobustRootLogger().warning("Above item does not contain DLGLink information\n")
+            RobustLogger().warning(f"Ignoring dragged item: {self.draggedItem!r}")
+            RobustLogger().warning("Above item does not contain DLGLink information\n")
             return False
 
         assert self.draggedItem is not None
@@ -2383,7 +2383,7 @@ class DLGTreeView(RobustTreeView):
             self.setInvalidDragDrop(event)
             return
         if not self.draggedItem:
-            RobustRootLogger().warning("dragEnterEvent called before prepareDrag, rectifying.")
+            RobustLogger().warning("dragEnterEvent called before prepareDrag, rectifying.")
             if not self.prepareDrag(event=event):
                 print("dragEnterEvent: prepareDrag returned False, resetting the drag state.")
                 self.setInvalidDragDrop(event)
@@ -2403,14 +2403,14 @@ class DLGTreeView(RobustTreeView):
             assert self.draggedItem.link is not None
             self.draggedLink = self.draggedItem.link
         elif self.draggedLink is None:
-            RobustRootLogger().error("dragMoveEvent called before prepareDrag. This is an error/oversight: dragEnterEvent should have picked this up first. rectifying now....")
+            RobustLogger().error("dragMoveEvent called before prepareDrag. This is an error/oversight: dragEnterEvent should have picked this up first. rectifying now....")
             if not self.prepareDrag(event=event):
                 self.setInvalidDragDrop(event)
                 super().dragMoveEvent(event)
                 return
             self.draggedLink = self.getDraggedLinkFromMimeData(event.mimeData())
             if self.draggedLink is None:
-                RobustRootLogger().error("Could not deserialize DLGLink from mime data despite it matching our format")
+                RobustLogger().error("Could not deserialize DLGLink from mime data despite it matching our format")
                 self.setInvalidDragDrop(event)
                 super().dragMoveEvent(event)
                 return
@@ -2549,7 +2549,7 @@ class DLGTreeView(RobustTreeView):
         try:
             return DLGLink.from_dict(json.loads(self.parseMimeData(mimeData)[0]["roles"][_DLG_MIME_DATA_ROLE]))
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to deserialize mime data node.")
+            RobustLogger().exception("Failed to deserialize mime data node.")
         return None
 
     def isItemFromCurrentModel(self, event: QDropEvent) -> bool:
@@ -4313,10 +4313,10 @@ Should return 1 or 0, representing a boolean.
 
     def jumpToNode(self, link: DLGLink | None):
         if link is None:
-            RobustRootLogger().error(f"{link!r} has already been deleted from the tree.")
+            RobustLogger().error(f"{link!r} has already been deleted from the tree.")
             return
         if link not in self.model.linkToItems:
-            RobustRootLogger().warning(f"Nowhere to jump - Either an orphan, or not loaded: {link}")
+            RobustLogger().warning(f"Nowhere to jump - Either an orphan, or not loaded: {link}")
             return
         item = self.model.linkToItems[link][0]
         self.highlight_result(item)
@@ -4815,11 +4815,11 @@ Should return 1 or 0, representing a boolean.
             return
         for index in selectedIndices:
             if not index.isValid():
-                RobustRootLogger().warning("onNodeUpdate: index invalid")
+                RobustLogger().warning("onNodeUpdate: index invalid")
                 continue
             item: DLGStandardItem | None = self.model.itemFromIndex(index)
             if item is None or item.isDeleted():
-                RobustRootLogger().warning("onNodeUpdate: no item for this selected index, or item was deleted.")
+                RobustLogger().warning("onNodeUpdate: no item for this selected index, or item was deleted.")
                 continue
             assert item.link is not None, "onNodeUpdate: item.link was None"
             print(f"onNodeUpdate iterating item: {item!r}")
@@ -5056,7 +5056,7 @@ Should return 1 or 0, representing a boolean.
         self.ui.animsList.clear()
         animations_2da: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
         if animations_2da is None:
-            RobustRootLogger().error(f"refreshAnimList: {HTInstallation.TwoDA_DIALOG_ANIMS}.2da not found, the Animation List will not function!!")
+            RobustLogger().error(f"refreshAnimList: {HTInstallation.TwoDA_DIALOG_ANIMS}.2da not found, the Animation List will not function!!")
             return
 
         for index in self.ui.dialogTree.selectedIndexes():
@@ -5145,7 +5145,7 @@ class ReferenceChooserDialog(QDialog):
         for i in range(self.listWidget.count()):
             item: DLGListWidgetItem | None = self.listWidget.item(i)
             if item is None:
-                RobustRootLogger().warning(f"ReferenceChooser.update_item_sizes({i}): Item was None unexpectedly.")
+                RobustLogger().warning(f"ReferenceChooser.update_item_sizes({i}): Item was None unexpectedly.")
                 continue
             item.setSizeHint(self.listWidget.itemDelegate().sizeHint(self.listWidget.viewOptions(), self.listWidget.indexFromItem(item)))
 

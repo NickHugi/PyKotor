@@ -49,7 +49,7 @@ from toolset.gui.widgets.renderer.walkmesh import GeomPoint
 from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os
@@ -80,18 +80,18 @@ class MoveCommand(QUndoCommand):
         old_height: float | None = None,
         new_height: float | None = None,
     ):
-        RobustRootLogger().debug(f"Init movecommand with instance {instance.identifier()}")
+        RobustLogger().debug(f"Init movecommand with instance {instance.identifier()}")
         super().__init__()
         self.instance: GITInstance = instance
         self.old_position: Vector3 = old_position
         self.new_position: Vector3 = new_position
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()} (NEW {self.new_position} --> {self.old_position})")
+        RobustLogger().debug(f"Undo position: {self.instance.identifier()} (NEW {self.new_position} --> {self.old_position})")
         self.instance.position = self.old_position
 
     def redo(self):
-        RobustRootLogger().debug(f"Undo position: {self.instance.identifier()} ({self.old_position} --> NEW {self.new_position})")
+        RobustLogger().debug(f"Undo position: {self.instance.identifier()} ({self.old_position} --> NEW {self.new_position})")
         self.instance.position = self.new_position
 
 
@@ -102,21 +102,21 @@ class RotateCommand(QUndoCommand):
         old_orientation: Vector4 | float,
         new_orientation: Vector4 | float
     ):
-        RobustRootLogger().debug(f"Init rotatecommand with instance: {instance.identifier()}")
+        RobustLogger().debug(f"Init rotatecommand with instance: {instance.identifier()}")
         super().__init__()
         self.instance: GITCamera | GITCreature | GITDoor | GITPlaceable | GITStore | GITWaypoint = instance
         self.old_orientation: Vector4 | float = old_orientation
         self.new_orientation: Vector4 | float = new_orientation
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo rotation: {self.instance.identifier()} (NEW {self.new_orientation} --> {self.old_orientation})")
+        RobustLogger().debug(f"Undo rotation: {self.instance.identifier()} (NEW {self.new_orientation} --> {self.old_orientation})")
         if isinstance(self.instance, GITCamera):
             self.instance.orientation = self.old_orientation
         else:
             self.instance.bearing = self.old_orientation
 
     def redo(self):
-        RobustRootLogger().debug(f"Redo rotation: {self.instance.identifier()} ({self.old_orientation} --> NEW {self.new_orientation})")
+        RobustLogger().debug(f"Redo rotation: {self.instance.identifier()} ({self.old_orientation} --> NEW {self.new_orientation})")
         if isinstance(self.instance, GITCamera):
             self.instance.orientation = self.new_orientation
         else:
@@ -141,7 +141,7 @@ class DuplicateCommand(QUndoCommand):
             if instance not in self.git.instances():
                 print(f"{instance!r} not found in instances: no duplicate to undo.")
                 continue
-            RobustRootLogger().debug(f"Undo duplicate: {instance.identifier()}")
+            RobustLogger().debug(f"Undo duplicate: {instance.identifier()}")
             if isinstance(self.editor, GITEditor):
                 self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
             else:
@@ -164,7 +164,7 @@ class DuplicateCommand(QUndoCommand):
             if instance in self.git.instances():
                 print(f"{instance!r} already found in instances: no duplicate to redo.")
                 continue
-            RobustRootLogger().debug(f"Redo duplicate: {instance.identifier()}")
+            RobustLogger().debug(f"Redo duplicate: {instance.identifier()}")
             self.git.add(instance)
             if isinstance(self.editor, GITEditor):
                 self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
@@ -186,7 +186,7 @@ class DeleteCommand(QUndoCommand):
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo delete: {[repr(instance) for instance in self.instances]}")
+        RobustLogger().debug(f"Undo delete: {[repr(instance) for instance in self.instances]}")
         for instance in self.instances:
             if instance in self.git.instances():
                 print(f"{instance!r} already found in instances: no deletecommand to undo.")
@@ -204,13 +204,13 @@ class DeleteCommand(QUndoCommand):
             self.editor.rebuildInstanceList()
 
     def redo(self):
-        RobustRootLogger().debug(f"Redo delete: {[repr(instance) for instance in self.instances]}")
+        RobustLogger().debug(f"Redo delete: {[repr(instance) for instance in self.instances]}")
         self.editor.enterInstanceMode()
         for instance in self.instances:
             if instance not in self.git.instances():
                 print(f"{instance!r} not found in instances: no deletecommand to redo.")
                 continue
-            RobustRootLogger().debug(f"Redo delete: {instance!r}")
+            RobustLogger().debug(f"Redo delete: {instance!r}")
             if isinstance(self.editor, GITEditor):
                 self.editor._mode.renderer2d.instanceSelection.select([instance])  # noqa: SLF001
             else:
@@ -233,7 +233,7 @@ class InsertCommand(QUndoCommand):
         self.editor: GITEditor | ModuleDesigner = editor
 
     def undo(self):
-        RobustRootLogger().debug(f"Undo insert: {self.instance.identifier()}")
+        RobustLogger().debug(f"Undo insert: {self.instance.identifier()}")
         self.git.remove(self.instance)
         self.rebuildInstanceList()
 
@@ -255,7 +255,7 @@ class InsertCommand(QUndoCommand):
             print("Skipping first redo of InsertCommand.")
             self._firstRun = False
             return
-        RobustRootLogger().debug(f"Redo insert: {self.instance.identifier()}")
+        RobustLogger().debug(f"Redo insert: {self.instance.identifier()}")
         self.git.add(self.instance)
         self.rebuildInstanceList()
 
@@ -858,7 +858,7 @@ class _InstanceMode(_Mode):
         git: GIT,
     ):
         super().__init__(editor, installation, git)
-        RobustRootLogger().debug("init InstanceMode")
+        RobustLogger().debug("init InstanceMode")
         self.renderer2d.hideGeomPoints = True
         self.renderer2d.geometrySelection.clear()
         self.updateVisibility()
@@ -948,10 +948,10 @@ class _InstanceMode(_Mode):
                 loc_module_root = self._installation.get_module_root(loc.filepath.name.lower())
                 loc_is_dot_mod = loc.filepath.suffix.lower() == ".mod"
                 if loc_module_root != module_root:
-                    RobustRootLogger.debug(f"Removing location '{loc.filepath}' (not in our module '{module_root}')")
+                    RobustLogger.debug(f"Removing location '{loc.filepath}' (not in our module '{module_root}')")
                     search.pop(i)
                 elif loc_is_dot_mod != edited_file_from_dot_mod:
-                    RobustRootLogger.debug(f"Removing location '{loc.filepath}' due to rim/mod check")
+                    RobustLogger.debug(f"Removing location '{loc.filepath}' due to rim/mod check")
                     search.pop(i)
         if len(search) > 1:
             selectionWindow = FileSelectionWindow(search, self._installation)
@@ -1246,7 +1246,7 @@ class _InstanceMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
-            RobustRootLogger().info(f"Not changing selection: selected instance '{selection[0].classification()}' is still underneath the mouse.")
+            RobustLogger().info(f"Not changing selection: selected instance '{selection[0].classification()}' is still underneath the mouse.")
             return
 
         if underMouse:
@@ -1288,7 +1288,7 @@ class _InstanceMode(_Mode):
         noUndoStack: bool = False,
     ):
         if self._ui.lockInstancesCheck.isChecked():
-            RobustRootLogger().info("Ignoring moveSelected for instancemode, lockInstancesCheck is checked.")
+            RobustLogger().info("Ignoring moveSelected for instancemode, lockInstancesCheck is checked.")
             return
 
         for instance in self.renderer2d.instanceSelection.all():
@@ -1360,7 +1360,7 @@ class _GeometryMode(_Mode):
         instance.geometry.append(point)
         self.renderer2d.geomPointsUnderMouse().append(newGeomPoint)
         self.renderer2d.geometrySelection._selection.append(newGeomPoint)
-        RobustRootLogger().debug(f"Inserting new geompoint, instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
+        RobustLogger().debug(f"Inserting new geompoint, instance {instance.identifier()}. Total points: {len(list(instance.geometry))}")
 
     # region Interface Methods
     def onItemSelectionChanged(self, item: QListWidgetItem):
@@ -1401,17 +1401,17 @@ class _GeometryMode(_Mode):
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if selection and selection[0] in underMouse:
-            RobustRootLogger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
+            RobustLogger().info(f"Not changing selection: selected instance '{selection[0].instance.classification()}' is still underneath the mouse.")
             return
         self.renderer2d.geometrySelection.select(underMouse or [])
 
     def deleteSelected(self, *, noUndoStack: bool = False):
         vertex: GeomPoint | None = self.renderer2d.geometrySelection.last()
         if vertex is None:
-            RobustRootLogger().error("Could not delete last GeomPoint, there's none selected.")
+            RobustLogger().error("Could not delete last GeomPoint, there's none selected.")
             return
         instance: GITInstance = vertex.instance
-        RobustRootLogger().debug(f"Removing last geometry point for instance {instance.identifier()}")
+        RobustLogger().debug(f"Removing last geometry point for instance {instance.identifier()}")
         self.renderer2d.geometrySelection.remove(GeomPoint(instance, vertex.point))
 
     def duplicateSelected(self, position: Vector3):
@@ -1445,7 +1445,7 @@ class GITControlScheme:
     def __init__(self, editor: GITEditor):
         self.editor: GITEditor = editor
         self.settings: GITSettings = GITSettings()
-        self.log: RobustRootLogger = RobustRootLogger()
+        self.log: RobustLogger = RobustLogger()
 
         # Undo/Redo support setup.
         self.undoStack: QUndoStack = QUndoStack(self.editor)
@@ -1460,7 +1460,7 @@ class GITControlScheme:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     def onMouseMoved(
@@ -1502,14 +1502,14 @@ class GITControlScheme:
 
         if shouldPanCamera:
             moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-            #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+            #RobustLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
             self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
         if shouldRotateCamera:
             self._handleCameraRotation(screenDelta)
 
         if self.moveSelected.satisfied(buttons, keys):
             if not self.isDragMoving and isinstance(self.editor._mode, _InstanceMode):  # noqa: SLF001
-                #RobustRootLogger().debug("moveSelected instance GITControlScheme")
+                #RobustLogger().debug("moveSelected instance GITControlScheme")
                 selection: list[GITInstance] = self.editor._mode.renderer2d.instanceSelection.all()  # noqa: SLF001
                 self.initialPositions = {instance: Vector3(*instance.position) for instance in selection}
                 self.isDragMoving = True
@@ -1534,7 +1534,7 @@ class GITControlScheme:
         direction = -1 if screenDelta.x < 0 else 1 if screenDelta.x > 0 else 0
         rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
         rotateAmount = delta_magnitude * rotateSens * direction
-        #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+        #RobustLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
         self.editor.rotateCamera(rotateAmount)
 
     def handleUndoRedoFromLongActionFinished(self):

@@ -887,7 +887,7 @@ class WalkmeshRenderer(QWidget):
                     for point in instance.geometry:
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
-                            #RobustRootLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
+                            #RobustLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:
@@ -899,7 +899,7 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        #RobustRootLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        #RobustLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
     def mousePressEvent(self, e: QMouseEvent | None):
         super().mousePressEvent(e)
@@ -909,7 +909,7 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-        #RobustRootLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent | None):
         super().mouseReleaseEvent(e)
@@ -919,7 +919,7 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.discard(button)
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
-        #RobustRootLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent | None):
         super().keyPressEvent(e)
@@ -932,7 +932,7 @@ class WalkmeshRenderer(QWidget):
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
         #key_name = getQtKeyStringLocalized(key)
-        #RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent | None):
         super().keyReleaseEvent(e)
@@ -943,6 +943,6 @@ class WalkmeshRenderer(QWidget):
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
         #key_name = getQtKeyStringLocalized(key)
-        #RobustRootLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

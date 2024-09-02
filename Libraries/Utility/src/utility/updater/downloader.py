@@ -18,7 +18,7 @@ import urllib3
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path
 from utility.updater.crypto import a32_to_str, base64_to_a32, base64_url_decode, decrypt_mega_attr, get_chunks, str_to_a32
 
@@ -75,7 +75,7 @@ class FileDownloader:
         if not filepath:
             raise FileDownloaderError("No filename provided", expected=True)
         self.filepath = Path.pathify(filepath)
-        self.log = logger or RobustRootLogger()
+        self.log = logger or RobustLogger()
 
         self.file_binary_data: list = []  # Hold all binary data once file has been downloaded
         self.file_binary_path: Path = self.filepath.add_suffix(".part")  # Temporary file to hold large download data
@@ -178,9 +178,9 @@ class FileDownloader:
                     # Determine the filename from the Content-Disposition header or URL.
                     filename = self._get_filename_from_cd(r.headers.get("Content-Disposition")) or Path(url).name
                     self.downloaded_filename = filename
-                    RobustRootLogger().info(f"Expected downloaded filename: {self.downloaded_filename}")
+                    RobustLogger().info(f"Expected downloaded filename: {self.downloaded_filename}")
                     file_path = self.filepath.parent / filename
-                    RobustRootLogger().info(f"Expected download path: {file_path}")
+                    RobustLogger().info(f"Expected download path: {file_path}")
 
                     # Start the download process.
                     content_length = int(r.headers.get("Content-Length", 0))
@@ -253,7 +253,7 @@ class FileDownloader:
         data,
     ) -> int | None:
         content_length_lookup: str | None = data.headers.get("Content-Length")
-        log = RobustRootLogger()
+        log = RobustLogger()
         log.debug("Got content length of: %s", content_length_lookup)
         return int(content_length_lookup) if content_length_lookup else None
 
@@ -416,7 +416,7 @@ def _download_file(
             }
         }
 
-        log = RobustRootLogger()
+        log = RobustLogger()
 
         # Call all progress hooks with status data
         log.debug(status)

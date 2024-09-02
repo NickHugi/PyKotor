@@ -4,7 +4,7 @@ import subprocess
 
 from typing import TYPE_CHECKING
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os
@@ -138,7 +138,7 @@ def askdirectory(  # noqa: PLR0913, PLR0911, ANN201
         )
         return "" if not result or not result.strip() else result
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askdirectory() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askdirectory() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", ["--directory", f"--title={title}", f"--filename={initialdir or ''}"]) or ""
             return "" if not result or not result.strip() else result
@@ -185,7 +185,7 @@ def askopenfile(  # noqa: PLR0913, PLR0911, ANN201
             typevariable=typevariable,
         )
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
             return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
@@ -231,7 +231,7 @@ def askopenfilename(  # noqa: PLR0913, PLR0911, ANN201
         )
         return "" if not result or not result.strip() else result
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", [f"--title={title}", f"--filename={initialdir or ''}"])
             return "" if not result or not result.strip() else result
@@ -277,7 +277,7 @@ def askopenfilenames(  # noqa: PLR0913
         )
         return "" if not result else tuple(result)
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", [
                 f"--title={title}",
@@ -337,7 +337,7 @@ def askopenfiles(  # noqa: PLR0913
         )
         return result if result else None  # noqa: TRY300
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", [
                 f"--title={title}",
@@ -398,7 +398,7 @@ def asksaveasfile(  # noqa: PLR0913, PLR0911, ANN201
             typevariable=typevariable,
         )
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
             return None if not result or not result.strip() else open(result, mode)  # noqa: SIM115, PTH123
@@ -446,7 +446,7 @@ def asksaveasfilename(  # noqa: PLR0913, PLR0911, ANN201
         )
         return "" if not result or not result.strip() else result
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
         try:
             result = _run_zenity_dialog("file-selection", ["--save", f"--title={title}", f"--filename={initialdir or ''}/{initialfile or ''}"])
             return "" if not result or not result.strip() else result

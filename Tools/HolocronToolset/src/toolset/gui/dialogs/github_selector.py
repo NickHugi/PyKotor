@@ -66,7 +66,7 @@ if __name__ == "__main__":
             os.chdir(toolset_path)
 
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.updater.github import (
     CompleteRepoData,
     ContentInfoData,
@@ -76,7 +76,7 @@ from utility.updater.github import (
     get_main_url,
 )
 
-logger = RobustRootLogger
+logger = RobustLogger
 
 
 class GitHubFileSelector(QDialog):
@@ -381,7 +381,7 @@ class GitHubFileSelector(QDialog):
         if not self.selectedPath:
             QMessageBox.warning(self, "No Selection", "You must select a file.")
             return
-        RobustRootLogger().info(f"{self.__class__.__name__}: User selected '{self.selectedPath}'")
+        RobustLogger().info(f"{self.__class__.__name__}: User selected '{self.selectedPath}'")
         super().accept()
 
     def onForkChanged(self, index: int) -> None:

@@ -27,7 +27,7 @@ from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, R
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import addWindow, openResourceEditor
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os
@@ -815,7 +815,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustRootLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
+                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.getFeatItem(featId={featId!r})")
                 continue
             if item.data(Qt.ItemDataRole.UserRole) == featId:
                 return item
@@ -825,7 +825,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustRootLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
+                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.getPowerItem(powerId={powerId!r})")
                 continue
             if item.data(Qt.ItemDataRole.UserRole) == powerId:
                 return item
@@ -849,7 +849,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.featList.count()):
             item: QListWidgetItem | None = self.ui.featList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustRootLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
+                RobustLogger().warning(f"self.ui.featList.item(i={i}) returned None. Relevance: {self!r}.updateFeatSummary()")
                 continue
 
             if item.checkState() == Qt.Checked:
@@ -870,7 +870,7 @@ class UTCEditor(Editor):
         for i in range(self.ui.powerList.count()):
             item: QListWidgetItem | None = self.ui.powerList.item(i)  # pyright: ignore[reportAssignmentType]
             if item is None:
-                RobustRootLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
+                RobustLogger().warning(f"self.ui.powerList.item(i={i}) returned None. Relevance: {self!r}.updatePowerSummary()")
                 continue
 
             if item.checkState() == Qt.Checked:

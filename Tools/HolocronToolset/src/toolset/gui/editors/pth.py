@@ -437,7 +437,7 @@ class PTHControlScheme:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.editor.zoomCamera(zoom_factor)
 
     @statusBarDecorator
@@ -449,14 +449,14 @@ class PTHControlScheme:
             self.editor.ui.renderArea.doCursorLock(screen)
         if shouldPanCamera:
             moveSens = ModuleDesignerSettings().moveCameraSensitivity2d / 100
-            #RobustRootLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
+            #RobustLogger.debug(f"onMouseScrolled moveCamera (delta.y={screenDelta.y}, sensSetting={moveSens}))")
             self.editor.moveCamera(-worldDelta.x * moveSens, -worldDelta.y * moveSens)
         if shouldRotateCamera:
             delta_magnitude = abs(screenDelta.x)
             direction = -1 if screenDelta.x < 0 else 1 if screenDelta.x > 0 else 0
             rotateSens = ModuleDesignerSettings().rotateCameraSensitivity2d / 1000
             rotateAmount = delta_magnitude * rotateSens * direction
-            #RobustRootLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
+            #RobustLogger.debug(f"onMouseScrolled rotateCamera (delta_value={delta_magnitude}, rotateAmount={rotateAmount}, sensSetting={rotateSens}))")
             self.editor.rotateCamera(rotateAmount)
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(world.x, world.y)

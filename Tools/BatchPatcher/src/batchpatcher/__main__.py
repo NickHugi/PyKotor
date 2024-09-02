@@ -83,7 +83,7 @@ from pykotor.tools.misc import is_any_erf_type_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.logger import LogType, PatchLog, PatchLogger
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -406,7 +406,7 @@ def convert_gff_game(
         else:
             log_output(f"Unsupported gff: {resource.identifier()}")
     except (OSError, ValueError):
-        RobustRootLogger().error(f"Corrupted GFF: '{resource.path_ident()}', skipping...", exc_info=False)
+        RobustLogger().error(f"Corrupted GFF: '{resource.path_ident()}', skipping...", exc_info=False)
         if not resource.inside_capsule:
             log_output(f"Corrupted GFF: '{resource.path_ident()}', skipping...")
             return
@@ -469,7 +469,7 @@ def process_translations(tlk: TLK, from_lang: Language):
                     tlk.replace(strref, translated_text)
                     log_output(f"#{strref} Translated {original_text} --> {translated_text}")
             except Exception as exc:  # pylint: disable=W0718  # noqa: BLE001
-                RobustRootLogger().exception(f"tlk strref {strref} generated an exception")
+                RobustLogger().exception(f"tlk strref {strref} generated an exception")
                 log_output(f"tlk strref {strref} generated an exception: {universal_simplify_exception(exc)}")
                 log_output(traceback.format_exc())
 
@@ -482,7 +482,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             tlk = read_tlk(resource.data())
         except Exception:  # pylint: disable=W0718  # noqa: BLE001
-            RobustRootLogger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
+            RobustLogger().exception(f"[Error] loading TLK '{resource.identifier()}' at '{resource.filepath()}'!")
             log_output(traceback.format_exc())
             return None
 
@@ -500,7 +500,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             return TPCTGAReader(resource.data()).load()
         except Exception:  # pylint: disable=W0718  # noqa: BLE001
-            RobustRootLogger().exception(f"[Error] loading TGA '{resource.identifier()}' at '{resource.filepath()}'!")
+            RobustLogger().exception(f"[Error] loading TGA '{resource.identifier()}' at '{resource.filepath()}'!")
             log_output(traceback.format_exc())
             return None
 
@@ -509,7 +509,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         try:
             return TPCBinaryReader(resource.data()).load()
         except Exception:  # pylint: disable=W0718  # noqa: BLE001
-            RobustRootLogger().exception(f"[Error] loading TPC '{resource.identifier()}' at '{resource.filepath()}'!")
+            RobustLogger().exception(f"[Error] loading TPC '{resource.identifier()}' at '{resource.filepath()}'!")
             log_output(traceback.format_exc())
             return None
 
@@ -563,7 +563,7 @@ def patch_resource(resource: FileResource) -> GFF | TPC | None:
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             log_output(f"[Error] cannot load corrupted GFF '{resource.path_ident()}'!")
             if not isinstance(e, (OSError, ValueError)):
-                RobustRootLogger().exception(f"[Error] loading GFF '{resource.path_ident()}'!")
+                RobustLogger().exception(f"[Error] loading GFF '{resource.path_ident()}'!")
                 log_output(traceback.format_exc())
             # raise
             return None
@@ -627,7 +627,7 @@ def patch_capsule_file(c_file: Path):
     try:
         file_capsule = Capsule(c_file)
     except ValueError as e:
-        RobustRootLogger().exception(f"Could not load '{c_file}'")
+        RobustLogger().exception(f"Could not load '{c_file}'")
         log_output(f"Could not load '{c_file}'. Reason: {universal_simplify_exception(e)}")
         return
 
@@ -708,10 +708,10 @@ def patch_erf_or_rim(
             try:
                 erf_or_rim.set_data(resource.resname(), resource.restype(), resource.data())
             except (OSError, ValueError):
-                RobustRootLogger().error(f"Corrupted resource: {resource!r}, skipping...", exc_info=True)
+                RobustLogger().error(f"Corrupted resource: {resource!r}, skipping...", exc_info=True)
                 log_output(f"Corrupted resource: {resource!r}, skipping...")
             except Exception:
-                RobustRootLogger().exception(f"Unexpected exception occurred for resource {resource!r}")
+                RobustLogger().exception(f"Unexpected exception occurred for resource {resource!r}")
     return new_filename
 
 
@@ -839,7 +839,7 @@ def execute_patchloop_thread() -> str | None:
         do_main_patchloop()
         SCRIPT_GLOBALS.install_running = False
     except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-        RobustRootLogger().exception("Unhandled exception during the patching process.")
+        RobustLogger().exception("Unhandled exception during the patching process.")
         log_output(traceback.format_exc())
         SCRIPT_GLOBALS.install_running = False
         return messagebox.showerror("Error", f"An error occurred during patching\n{universal_simplify_exception(e)}")
@@ -1318,7 +1318,7 @@ class KOTORPatchingToolUI:
             SCRIPT_GLOBALS.install_thread = Thread(target=execute_patchloop_thread, name="Patchloop_Thread")
             SCRIPT_GLOBALS.install_thread.start()
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
-            RobustRootLogger().exception("Unhandled exception during the patching process.")
+            RobustLogger().exception("Unhandled exception during the patching process.")
             messagebox.showerror("Unhandled exception", str(universal_simplify_exception(e) + "\n" + traceback.format_exc()))
             SCRIPT_GLOBALS.install_running = False
             self.install_button.config(state=tk.DISABLED)
@@ -1340,6 +1340,6 @@ if __name__ == "__main__":
         APP = KOTORPatchingToolUI(root)
         root.mainloop()
     except Exception:  # pylint: disable=W0718  # noqa: BLE001, RUF100
-        RobustRootLogger().exception("Unhandled main exception")
+        RobustLogger().exception("Unhandled main exception")
         log_output(traceback.format_exc())
         raise

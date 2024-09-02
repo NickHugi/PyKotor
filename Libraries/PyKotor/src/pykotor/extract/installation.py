@@ -28,7 +28,7 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import deobfuscate_audio
 from utility.common.more_collections import CaseInsensitiveDict
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path, PurePath
 
 if TYPE_CHECKING:
@@ -147,7 +147,7 @@ class Installation:
     ):
         self.use_multithreading: bool = multithread  # Tested. Slower on my machine (th3w1zard1)
 
-        self._log: Logger = RobustRootLogger()
+        self._log: Logger = RobustLogger()
         self._path: CaseAwarePath = CaseAwarePath.pathify(path)
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
@@ -440,7 +440,7 @@ class Installation:
                 is_k1 = self.game().is_k1()
             except (ValueError, Exception):
                 is_k1 = True
-                RobustRootLogger().exception("Failed to get the game of your installation!")
+                RobustLogger().exception("Failed to get the game of your installation!")
             if is_k1:
                 target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
@@ -450,7 +450,7 @@ class Installation:
             try:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
                 relative_folder: str = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception(f"Failed to get the relative folder of '{folder}' and '{override_path}'")
+                RobustLogger().exception(f"Failed to get the relative folder of '{folder}' and '{override_path}'")
                 relative_folder = folder.safe_relative_to(override_path).replace("\\", "/")
             self._override[relative_folder] = self.load_resources_list(folder, recurse=True)
 
@@ -1703,7 +1703,7 @@ class Installation:
                             if int(stripped_header) == query_stringref:
                                 return True
                         except Exception as e:  # noqa: BLE001
-                            RobustRootLogger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
+                            RobustLogger().error("Error parsing '%s' header '%s': %s", filename_2da, header, str(e), exc_info=False)
                 else:
                     try:
                         for i, cell in enumerate(valid_2da.get_column(column_name)):
@@ -1715,7 +1715,7 @@ class Installation:
                             if int(stripped_cell) == query_stringref:
                                 return True
                     except Exception as e:  # noqa: BLE001
-                        RobustRootLogger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
+                        RobustLogger().error("Error parsing '%s' column '%s': %s", filename_2da, column_name, str(e), exc_info=False)
             return False
 
         def recurse_gff_lists(gff_list: GFFList) -> bool:
@@ -2177,7 +2177,7 @@ class Installation:
                 if are.root.exists("Name"):
                     actual_ftype = are.root.what_type("Name")
                     if actual_ftype is not GFFFieldType.LocalizedString:
-                        RobustRootLogger().warning(f"{area_resource.filename()} has incorrect field 'Name' type '{actual_ftype.name}', expected type 'List'")
+                        RobustLogger().warning(f"{area_resource.filename()} has incorrect field 'Name' type '{actual_ftype.name}', expected type 'List'")
                     locstring: LocalizedString = are.root.get_locstring("Name")
                     if locstring.stringref == -1:
                         return locstring.get(Language.ENGLISH, Gender.MALE)
@@ -2275,7 +2275,7 @@ class Installation:
         if ifo.root.exists("Mod_Area_List"):
             actual_ftype = ifo.root.what_type("Mod_Area_List")
             if actual_ftype is not GFFFieldType.List:
-                RobustRootLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_List' type '{actual_ftype.name}', expected 'List'")
+                RobustLogger().warning(f"{self.filename()} has IFO with incorrect field 'Mod_Area_List' type '{actual_ftype.name}', expected 'List'")
             else:
                 area_list = ifo.root.get_list("Mod_Area_List")
                 area_localized_name = next(
@@ -2288,7 +2288,7 @@ class Installation:
                 )
                 if area_localized_name is not None and str(area_localized_name).strip():
                     return area_localized_name
-            RobustRootLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_List. Could not get the area name.")
+            RobustLogger().error(f"{self.filename()}: Module.IFO does not contain a valid Mod_Area_List. Could not get the area name.")
         else:
-            RobustRootLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_List.")
+            RobustLogger().error(f"{self.filename()}: Module.IFO does not have an existing Mod_Area_List.")
         raise ValueError(f"Failed to get the area name from module filename '{self.filename()}'")

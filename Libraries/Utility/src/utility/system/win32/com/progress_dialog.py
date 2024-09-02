@@ -11,7 +11,7 @@ import comtypes
 from comtypes.client import CreateObject
 from comtypes.gen import Shell32
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.win32.com.interfaces import CLSID_FileOperation, IFileOperationProgressSink
 from utility.system.win32.hresult import S_OK
 
@@ -135,7 +135,7 @@ def perform_file_operation(
         print(f"File operation {operation} from {source_path} to {destination_path} completed")
 
     except Exception as e:  # noqa: BLE001
-        RobustRootLogger().exception(f"General error while attempting to perform file operations with the com objects: {e.__class__.__name__}: {e}")
+        RobustLogger().exception(f"General error while attempting to perform file operations with the com objects: {e.__class__.__name__}: {e}")
 
     finally:
         uninitialize_com()

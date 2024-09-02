@@ -7,7 +7,7 @@ import qtpy
 from qtpy.QtWidgets import QWidget
 
 from toolset.utils.misc import MODIFIER_KEY_NAMES, QtMouse, getQtKeyStringLocalized, getQtMouseButton
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QKeyEvent
@@ -79,7 +79,7 @@ class SetBindWidget(QWidget):
 
     def keyReleased(self, e: QKeyEvent):
         self.recordBind = False
-        RobustRootLogger().info(f"Set keybind to {self.keybind}")
+        RobustLogger().info(f"Set keybind to {self.keybind}")
 
     def setMouseAndKeyBinds(self, bind: Bind):
         # these asserts will be removed automatically with -O PYTHONOPTIMIZE flag, performance isn't affected there.

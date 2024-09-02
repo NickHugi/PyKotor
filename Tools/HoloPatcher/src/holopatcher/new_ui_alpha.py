@@ -77,7 +77,7 @@ from pykotor.tslpatcher.patcher import ModInstaller  # noqa: E402
 from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader  # noqa: E402
 from pykotor.tslpatcher.uninstall import ModUninstaller  # noqa: E402
 from utility.error_handling import universal_simplify_exception  # noqa: E402
-from utility.logger_util import RobustRootLogger  # noqa: E402
+from loggerplus import RobustLogger  # noqa: E402
 from utility.misc import ProcessorArchitecture, is_debug_mode  # noqa: E402
 from utility.string_util import striprtf  # noqa: E402
 from utility.system.agnostics import askdirectory, askokcancel, askopenfilename, askyesno, showerror  # noqa: E402
@@ -415,7 +415,7 @@ class HoloPatcher(toga.App):
         self.task_running: bool = False
         self.mod_path: str = ""
         self.log_level: LogLevel = LogLevel.WARNINGS
-        self.pykotor_logger: RobustRootLogger = RobustRootLogger()
+        self.pykotor_logger: RobustLogger = RobustLogger()
 
         self.initialize_logger()
         self.initialize_top_menu()
@@ -471,7 +471,7 @@ class HoloPatcher(toga.App):
                 if callback is not None:
                     callback(result, None)
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger().exception("An exception has occurred while firing an async function.")
+                RobustLogger().exception("An exception has occurred while firing an async function.")
                 if callback is not None:
                     callback(None, e)
         self.add_background_task(task_wrapper)
@@ -757,7 +757,7 @@ class HoloPatcher(toga.App):
             progress_queue.put({"action": "update_status", "text": "Cleaning up..."})
             updater.cleanup()
         except Exception:  # noqa: BLE001
-            RobustRootLogger().critical("Auto-update had an unexpected error", exc_info=True)
+            RobustLogger().critical("Auto-update had an unexpected error", exc_info=True)
         #finally:
         #    exitapp(True)
 
@@ -1752,7 +1752,7 @@ class HoloPatcher(toga.App):
                 pypandoc.download_pandoc(delete_installer=True)
                 html_content = pypandoc.convert_text(rtf_text, "html", format="rtf")
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to load RTF content. Falling back to plaintext...")
+            RobustLogger().exception("Failed to load RTF content. Falling back to plaintext...")
             html_content: str = striprtf(rtf_text)
 
         safe_html_content = json.dumps(html_content)
@@ -1790,7 +1790,7 @@ class HoloPatcher(toga.App):
                 print(log.log_type.value, "<", self.log_level.value)
                 return
         except OSError:
-            RobustRootLogger().exception(f"Failed to write the log file at '{self.log_file_path}'!")
+            RobustLogger().exception(f"Failed to write the log file at '{self.log_file_path}'!")
 
         def update_ui(app: toga.App, **kwargs):  # noqa: ARG001
             log_tag = log_type_to_tag(log)
@@ -1817,14 +1817,14 @@ class HoloPatcher(toga.App):
         try:
             return askopenfilename(title=title)
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
+            RobustLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
             return self.run_async_from_sync(self.main_window.open_file_dialog(title))
 
     def open_folder_dialog(self, title: str = "Select the folder target.") -> str:
         try:
             return askdirectory(title=title)
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
+            RobustLogger().exception("An error occurred while a file browser was running. Falling back to the Toga variant.")
             return self.run_async_from_sync(self.main_window.select_folder_dialog(title))
 
 
@@ -1869,7 +1869,7 @@ def onAppCrash(
                 exc = exc.with_traceback(fake_traceback)
                 # Now exc has a traceback :)
                 tback = exc.__traceback__
-    RobustRootLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
+    RobustLogger().error("Unhandled exception caught.", exc_info=(etype, exc, tback))
 
     showerror(title, short_msg)
     sys.exit(ExitCode.CRASH)

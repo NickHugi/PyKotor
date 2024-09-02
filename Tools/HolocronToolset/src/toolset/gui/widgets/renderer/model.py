@@ -17,7 +17,7 @@ from pykotor.resource.generics.git import GIT, GITCreature
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
@@ -129,7 +129,7 @@ class ModelRenderer(QOpenGLWidget):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        RobustRootLogger().debug("ModelRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        RobustLogger().debug("ModelRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
     def resizeEvent(self, e: QResizeEvent):
         super().resizeEvent(e)
@@ -181,12 +181,12 @@ class ModelRenderer(QOpenGLWidget):
     def mousePressEvent(self, e: QMouseEvent):
         button = e.button()
         self._mouseDown.add(button)
-        #RobustRootLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"ModelRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         button = e.button()
         self._mouseDown.discard(button)
-        #RobustRootLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"ModelRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def panCamera(self, forward: float, right: float, up: float):
         """Moves the camera by the specified amount.
@@ -263,13 +263,13 @@ class ModelRenderer(QOpenGLWidget):
         if self.zoomCameraOutControl.satisfied(self._mouseDown, self._keysDown):
             self.scene.camera.distance -= (ModuleDesignerSettings().zoomCameraSensitivity3d / 200)
         #key_name = getQtKeyStringLocalized(key)
-        #RobustRootLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"ModelRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         key: int = e.key()
         self._keysDown.discard(key)
         #key_name = getQtKeyStringLocalized(key)
-        #RobustRootLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"ModelRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion
 

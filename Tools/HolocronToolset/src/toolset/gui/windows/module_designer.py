@@ -70,7 +70,7 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import BUTTON_TO_INT, MODIFIER_KEY_NAMES, QtMouse, getQtButtonString, getQtKeyString
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os
@@ -126,7 +126,7 @@ class ModuleDesigner(QMainWindow):
 
         self.selectedInstances: list[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.log: RobustRootLogger = RobustRootLogger()
+        self.log: RobustLogger = RobustLogger()
 
         self.baseFrameRate = 60
         self.cameraUpdateTimer = QTimer()
@@ -606,7 +606,7 @@ class ModuleDesigner(QMainWindow):
         location: CaseAwarePath = self._installation.override_path() / f"{resource.identifier()}"
         data = resource.data()
         if data is None:
-            RobustRootLogger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
+            RobustLogger().error(f"Cannot find resource {resource.identifier()} anywhere to copy to Override. Locations: {resource.locations()}")
             return
         BinaryWriter.dump(location, data)
         resource.add_locations([location])
@@ -873,11 +873,11 @@ class ModuleDesigner(QMainWindow):
                     utt = read_utt(dialog.data)
                     instance.tag = utt.tag
                     if not instance.geometry:
-                        RobustRootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
+                        RobustLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "utt")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITEncounter):
                     if not instance.geometry:
-                        RobustRootLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
+                        RobustLogger().info("Creating default triangle trigger geometry for %s.%s...", instance.resref, "ute")
                         instance.geometry.create_triangle(origin=instance.position)
                 elif isinstance(instance, GITDoor):
                     utd = read_utd(dialog.data)
@@ -2160,7 +2160,7 @@ class ModuleDesignerControls2d:
                 return  # sometimes it'll be zero when holding middlemouse-down.
             sensSetting = ModuleDesignerSettings().zoomCameraSensitivity2d
             zoom_factor = calculate_zoom_strength(delta.y, sensSetting)
-            #RobustRootLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
+            #RobustLogger.debug(f"onMouseScrolled zoomCamera (delta.y={delta.y}, zoom_factor={zoom_factor}, sensSetting={sensSetting}))")
             self.renderer.camera.nudgeZoom(zoom_factor)
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]):
@@ -2200,13 +2200,13 @@ class ModuleDesignerControls2d:
             return
         if self.moveSelected.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                RobustRootLogger().debug("Move geometry point %s, %s", worldDelta.x, worldDelta.y)
+                RobustLogger().debug("Move geometry point %s, %s", worldDelta.x, worldDelta.y)
                 self._mode.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y)
                 return
 
             # handle undo/redo for moveSelected.
             if not self.editor.isDragMoving:
-                RobustRootLogger().debug("moveSelected instance in 2d")
+                RobustLogger().debug("moveSelected instance in 2d")
                 self.editor.initialPositions = {instance: instance.position for instance in self.editor.selectedInstances}
                 self.editor.isDragMoving = True
             self.editor.moveSelected(adjustedWorldDelta.x, adjustedWorldDelta.y, noUndoStack=True, noZCoord=True)
@@ -2237,10 +2237,10 @@ class ModuleDesignerControls2d:
             - Check if duplicate button is pressed and duplicate selected instance
             - Check if context menu button is pressed and open context menu.
         """
-        RobustRootLogger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
+        RobustLogger().debug(f"onMousePressed, screen: {screen}, buttons: {buttons}, keys: {keys}")
         world: Vector3 = self.renderer.toWorldCoords(screen.x, screen.y)
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
+            RobustLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d duplicateSelected satisfied ({self.editor.selectedInstances[-1]!r})")
             if isinstance(self._mode, _InstanceMode) and self.editor.selectedInstances:
                 self._mode.duplicateSelected(world)
         if self.openContextMenu.satisfied(buttons, keys):
@@ -2248,13 +2248,13 @@ class ModuleDesignerControls2d:
 
         if self.selectUnderneath.satisfied(buttons, keys):
             if isinstance(self._mode, _GeometryMode):
-                RobustRootLogger().debug("selectUnderneathGeometry?")
+                RobustLogger().debug("selectUnderneathGeometry?")
                 self._mode.selectUnderneath()
             elif self.renderer.instancesUnderMouse():
-                RobustRootLogger().debug("onMousePressed, selectUnderneath found one or more instances under mouse.")
+                RobustLogger().debug("onMousePressed, selectUnderneath found one or more instances under mouse.")
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
             else:
-                RobustRootLogger().debug("onMousePressed, selectUnderneath did not find any instances.")
+                RobustLogger().debug("onMousePressed, selectUnderneath did not find any instances.")
                 self.editor.setSelection([])
 
     def onKeyboardPressed(self, buttons: set[int], keys: set[int]):
@@ -2272,7 +2272,7 @@ class ModuleDesignerControls2d:
             - Check if toggle instance lock shortcut satisfied and toggle lock instances checkbox
         """
         if self.deleteSelected.satisfied(buttons, keys):
-            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
+            RobustLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d deleteSelected satisfied ")
             if isinstance(self._mode, _GeometryMode):
                 self._mode.deleteSelected()
             else:
@@ -2280,7 +2280,7 @@ class ModuleDesignerControls2d:
             return
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
-            RobustRootLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d snapToCamera satisfied ")
+            RobustLogger().debug(f"Mode {self._mode.__class__.__name__}: moduleDesignerControls2d snapToCamera satisfied ")
             for instance in self.editor.selectedInstances:
                 self.renderer.snapCameraToPoint(instance.position)
                 break

@@ -27,7 +27,7 @@ from pykotor.extract.file import FileResource
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QEvent, QModelIndex, QObject
@@ -331,7 +331,7 @@ class ResourceList(MainWindowList):
     ):
         for i in range(self.ui.sectionCombo.count()):
             if section in self.ui.sectionCombo.itemText(i):
-                RobustRootLogger().debug("changing to section '%s'", section)
+                RobustLogger().debug("changing to section '%s'", section)
                 self.ui.sectionCombo.setCurrentIndex(i)
 
     def setResources(
@@ -756,7 +756,7 @@ class TextureList(MainWindowList):
         try:  # FIXME(th3w1zard1): there's a race condition happening somewhere, causing the item to have previously been deleted.
             item.setIcon(icon)
         except RuntimeError:
-            RobustRootLogger().exception("Could not update TextureList icon")
+            RobustLogger().exception("Could not update TextureList icon")
 
     def onResourceDoubleClicked(self):
         self.requestOpenResource.emit(self.selectedResources(), None)

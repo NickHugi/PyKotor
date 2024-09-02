@@ -10,7 +10,7 @@ from qtpy.QtCore import QEvent, QObject, QSortFilterProxyModel, Qt
 from qtpy.QtGui import QKeyEvent, QStandardItemModel
 from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
@@ -90,18 +90,18 @@ class NoScrollEventFilter(QObject):
 
         parent_widget = self.parent() if parent_widget is None else parent_widget
         if parent_widget is None:
-            RobustRootLogger().warning("NoScrollEventFilter has nothing to do, please provide a widget to process (parent_widget was somehow None here)", stack_info=True)
+            RobustLogger().warning("NoScrollEventFilter has nothing to do, please provide a widget to process (parent_widget was somehow None here)", stack_info=True)
         for widget in parent_widget.findChildren(QWidget):
             try:
                 if not widget.objectName():
                     widget.setObjectName(widget.__class__.__name__ + uuid.uuid4().hex[6:])
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception(f"Failed to set a temporary object name on {widget}")
+                RobustLogger().exception(f"Failed to set a temporary object name on {widget}")
             if isinstance(widget, tuple(include_types)):
-                #RobustRootLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
+                #RobustLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
                 widget.installEventFilter(self)
             #else:
-            #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
+            #    RobustLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
             self.setup_filter(include_types, widget)
 
 

@@ -7,7 +7,7 @@ import sys
 import time
 import uuid
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path
 
 
@@ -62,11 +62,11 @@ def get_app_dir() -> Path:
     if is_frozen():
         return Path(sys.executable).resolve().parent
     main_module = sys.modules["__main__"]
-    RobustRootLogger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
+    RobustLogger().debug("Try to get the __file__ attribute that contains the path of the entry-point script.")
     main_script_path = getattr(main_module, "__file__", None)
     if main_script_path is not None:
         return Path(main_script_path).resolve().parent
-    RobustRootLogger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
+    RobustLogger().debug("Fall back to the current working directory if the __file__ attribute was not found.")
     return Path.cwd()
 
 
@@ -198,7 +198,7 @@ def win_get_system32_dir() -> Path:
         ctypes.windll.kernel32.GetSystemDirectoryW(buffer, len(buffer))
         return Path(buffer.value)
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
+        RobustLogger().warning("Error accessing system directory via GetSystemDirectoryW. Attempting fallback.", exc_info=True)
         buffer = ctypes.create_unicode_buffer(260)
         ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer))
         return Path(buffer.value).joinpath("system32")

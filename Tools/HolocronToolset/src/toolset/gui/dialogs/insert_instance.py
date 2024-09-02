@@ -25,7 +25,7 @@ from pykotor.tools import door, placeable
 from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_rim_file
 from toolset.gui.helpers.callback import BetterMessageBox
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path
 
 if TYPE_CHECKING:
@@ -317,7 +317,7 @@ class InsertInstanceDialog(QDialog):
         for row in range(self.ui.resourceList.count()):
             item = self.ui.resourceList.item(row)
             if item is None:
-                RobustRootLogger().warning(f"item at row {row} was None!")
+                RobustLogger().warning(f"item at row {row} was None!")
                 continue
             item.setHidden(text not in item.text())
 

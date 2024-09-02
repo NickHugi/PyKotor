@@ -63,10 +63,10 @@ class MiscWidget(QWidget):
             if not widget.objectName():
                 widget.setObjectName(widget.__class__.__name__)
             if isinstance(widget, tuple(include_types)):
-                #RobustRootLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
+                #RobustLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
                 widget.installEventFilter(event_filter)
             #else:
-            #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
+            #    RobustLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
             self.installEventFilters(widget, event_filter, include_types)
 
     def setupValues(self):

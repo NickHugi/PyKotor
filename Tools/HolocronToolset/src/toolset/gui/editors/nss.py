@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, NamedTuple
 
 import qtpy
 
+from loggerplus import get_log_directory
 from qtpy import QtCore
 from qtpy.QtCore import QRect, QRegularExpression, QSize
 from qtpy.QtGui import (
@@ -31,7 +32,6 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import get_log_directory
 from utility.misc import is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.updater.github import download_github_file

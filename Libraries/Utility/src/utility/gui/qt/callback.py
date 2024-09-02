@@ -8,7 +8,7 @@ from qtpy import QtCore, QtWidgets
 from qtpy.QtWidgets import QMessageBox
 
 from utility.gui.base import UserCommunication
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy import QtGui
@@ -235,10 +235,10 @@ class MessageBoxButton(IntEnum):
         qpushbuttons = []
         for button in cls:
             if not cls.is_real_button(button):
-                RobustRootLogger().debug(f"Not a real button: {button.text()}")
+                RobustLogger().debug(f"Not a real button: {button.text()}")
                 continue
             if buttons & QMessageBox.StandardButton(button.value):  # Ensure the bitmask is correctly applied
-                RobustRootLogger().debug(f"Adding qpushbutton for '{button.text()}'")
+                RobustLogger().debug(f"Adding qpushbutton for '{button.text()}'")
                 qpushbuttons.append(button.as_qpushbutton())
         print(f"Converted the following to standard buttons: {','.join(cls.from_qpushbutton(qb).text() for qb in qpushbuttons)}")
         return qpushbuttons

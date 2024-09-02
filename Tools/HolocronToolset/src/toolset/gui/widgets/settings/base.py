@@ -6,7 +6,7 @@ from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBo
 
 from pykotor.common.misc import Color
 from toolset.gui.common.filters import HoverEventFilter, NoScrollEventFilter
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.misc import is_int
 
 if TYPE_CHECKING:
@@ -46,21 +46,21 @@ class SettingsWidget(QWidget):
             if not widget.objectName():
                 widget.setObjectName(widget.__class__.__name__)
             if isinstance(widget, tuple(include_types)):
-                #RobustRootLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
+                #RobustLogger.debug(f"Installing event filter on: {widget.objectName()} (type: {widget.__class__.__name__})")
                 widget.installEventFilter(event_filter)
             #else:
-            #    RobustRootLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
+            #    RobustLogger.debug(f"Skipping NoScrollEventFilter installation on '{widget.objectName()}' due to instance check {widget.__class__.__name__}.")
             self.installEventFilters(widget, event_filter, include_types)
 
     def validateBind(self, bindName: str, bind: Bind) -> Bind:
         if not isinstance(bind, tuple) or (bind[0] is not None and not isinstance(bind[0], set)) or (bind[1] is not None and not isinstance(bind[1], set)):
-            RobustRootLogger().error(f"Invalid setting bind: '{bindName}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
+            RobustLogger().error(f"Invalid setting bind: '{bindName}', expected a Bind type (tuple with two sets of binds) but got {bind!r} (tuple[{bind[0].__class__.__name__}, {bind[1].__class__.__name__}])")
             bind = self._reset_and_get_default(bindName)
         return bind
 
     def validateColour(self, colourName: str, color_value: int) -> int:
         if not is_int(color_value):
-            RobustRootLogger().error(f"Invalid color setting: '{colourName}', expected a RGBA color integer, but got {color_value!r} (type {color_value.__class__.__name__})")
+            RobustLogger().error(f"Invalid color setting: '{colourName}', expected a RGBA color integer, but got {color_value!r} (type {color_value.__class__.__name__})")
             color_value = self._reset_and_get_default(colourName)
         return color_value
 
@@ -85,5 +85,5 @@ class SettingsWidget(QWidget):
     def _reset_and_get_default(self, settingName: str) -> Any:
         self.settings.reset_setting(settingName)
         result = self.settings.get_default(settingName)
-        RobustRootLogger().warning(f"Due to last error, will use default value '{result!r}'" )
+        RobustLogger().warning(f"Due to last error, will use default value '{result!r}'" )
         return result

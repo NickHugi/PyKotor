@@ -31,7 +31,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os
@@ -205,9 +205,9 @@ class InventoryEditor(QDialog):
             try:
                 self.ui.contentsTable.addItem(str(item.resref), item.droppable, item.infinite)
             except FileNotFoundError:  # noqa: PERF203
-                RobustRootLogger().error(f"{item.resref}.uti did not exist in the installation", exc_info=True)
+                RobustLogger().error(f"{item.resref}.uti did not exist in the installation", exc_info=True)
             except (OSError, ValueError):  # noqa: PERF203
-                RobustRootLogger().error(f"{item.resref}.uti is corrupted", exc_info=True)
+                RobustLogger().error(f"{item.resref}.uti is corrupted", exc_info=True)
 
         self.ui.tabWidget_2.setVisible(not hide_equipment)
 
@@ -345,7 +345,7 @@ class InventoryEditor(QDialog):
             try:
                 filepath, name, uti = self.getItem(resname, filepath)
             except FileNotFoundError:
-                RobustRootLogger().exception(f"Failed to get the equipment item '{resname}.uti' for the InventoryEditor")
+                RobustLogger().exception(f"Failed to get the equipment item '{resname}.uti' for the InventoryEditor")
                 return
 
             slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
@@ -911,13 +911,13 @@ class ItemBuilderWorker(QThread):
         )
         for identifier, resource_result in results.items():
             if resource_result is None:
-                RobustRootLogger().warning("Could not find UTI resource '%s'", identifier)
+                RobustLogger().warning("Could not find UTI resource '%s'", identifier)
                 continue
             uti: UTI | None = None
             try:  # FIXME(th3w1zard1): this section seems to crash often.
                 uti = read_uti(resource_result.data)
             except Exception:  # pylint: disable=W0718  # noqa: BLE001
-                RobustRootLogger().exception("Error reading UTI resource while building items.")
+                RobustLogger().exception("Error reading UTI resource while building items.")
             else:
                 self.utiLoaded.emit(uti, resource_result)
         self.finished.emit()

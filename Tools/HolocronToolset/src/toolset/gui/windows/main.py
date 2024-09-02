@@ -99,7 +99,7 @@ from toolset.utils.misc import openLink
 from toolset.utils.window import addWindow, openResourceEditor
 from ui import stylesheet_resources  # noqa: F401
 from utility.error_handling import universal_simplify_exception
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.tricks import debug_reload_pymodules
@@ -221,7 +221,7 @@ class ToolWindow(QMainWindow):
         self.installations: dict[str, HTInstallation] = {}
 
         self.settings: GlobalSettings = GlobalSettings()
-        self.log: RobustRootLogger = RobustRootLogger()
+        self.log: RobustLogger = RobustLogger()
         self._initUi()
         self._setupSignals()
         self.setWindowTitle(f"Holocron Toolset ({qtpy.API_NAME})")
@@ -1118,7 +1118,7 @@ class ToolWindow(QMainWindow):
                     self.log.debug("Stopping old watchdog service...")
                     self.dogObserver.stop()
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("An unexpected exception occurred while dealing with watchdog.")
+                RobustLogger().exception("An unexpected exception occurred while dealing with watchdog.")
 
             # FIXME(th3w1zard1): Not once in my life have I seen this watchdog report modified files correctly. Not even in Cortisol's last release version.
             # Causes a hella slowdown on Linux, something to do with internal logging since it seems to be overly tracking `os.stat_result` and creating
@@ -1216,7 +1216,7 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Icon.Information, "ERF Saved", f"Encapsulated Resource File saved to '{r_save_filepath}'").exec_()
 
         except Exception as e:  # noqa: BLE001  # pylint: disable=broad-exception-caught
-            RobustRootLogger().exception("Error extracting capsule file '%s'", module_name)
+            RobustLogger().exception("Error extracting capsule file '%s'", module_name)
             QMessageBox(QMessageBox.Icon.Critical, "Error saving capsule file", str(universal_simplify_exception(e))).exec_()
 
     def onOpenResources(
@@ -1922,12 +1922,12 @@ class ToolWindow(QMainWindow):
         try:
             self.ui.coreWidget.setResources(self.active.core_resources())
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to setResources of the core list")
+            RobustLogger().exception("Failed to setResources of the core list")
         self.log.debug("Remove unused Core tab categories...")
         try:
             self.ui.coreWidget.modulesModel.removeUnusedCategories()
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to remove unused categories in the core list")
+            RobustLogger().exception("Failed to remove unused categories in the core list")
 
     def changeModule(self, moduleName: str):
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
@@ -1957,14 +1957,14 @@ class ToolWindow(QMainWindow):
             try:
                 moduleItems = self._getModulesList(reload=reload)
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception(f"Failed to get the list of {action}ed modules!")
+                RobustLogger().exception(f"Failed to get the list of {action}ed modules!")
             else:
                 print("<SDM> [task scope] moduleItems: ", moduleItems)
 
         try:
             self.ui.modulesWidget.setSections(moduleItems)
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception(f"Failed to call setSections on the {action}ed modulesWidget!")
+            RobustLogger().exception(f"Failed to call setSections on the {action}ed modulesWidget!")
 
     def _getModulesList(self, *, reload: bool = True) -> list[QStandardItem]:  # noqa: C901
         if self.active is None:
@@ -1981,13 +1981,13 @@ class ToolWindow(QMainWindow):
             try:
                 self.active.load_modules()
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to reload the list of modules (load_modules function)")
+                RobustLogger().exception("Failed to reload the list of modules (load_modules function)")
 
 
         try:
             areaNames: dict[str, str] = self.active.module_names()
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to get the list of area names from the modules!")
+            RobustLogger().exception("Failed to get the list of area names from the modules!")
             areaNames = {k: (str(v[0].filepath()) if v else "unknown filepath") for k, v in self.active._modules.items()}
         print("<SDM> [_getModulesList scope] areaNames: ", areaNames)
 
@@ -2011,7 +2011,7 @@ class ToolWindow(QMainWindow):
         try:
             sortedKeys: list[str] = sorted(areaNames, key=sortAlgo)
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to sort the list of modules")
+            RobustLogger().exception("Failed to sort the list of modules")
             sortedKeys = list(areaNames.keys())
 
         modules: list[QStandardItem] = []
@@ -2040,7 +2040,7 @@ class ToolWindow(QMainWindow):
 
                 modules.append(item)
             except Exception:  # noqa: PERF203, BLE001
-                RobustRootLogger().exception(f"Unexpected exception thrown while parsing module '{moduleName}', skipping...")
+                RobustLogger().exception(f"Unexpected exception thrown while parsing module '{moduleName}', skipping...")
         if self.settings.profileToolset and profiler:
             profiler.disable()
             profiler.dump_stats(str(Path("main_getModulesList.pstat").absolute()))
@@ -2057,7 +2057,7 @@ class ToolWindow(QMainWindow):
             try:
                 self.active.load_override()
             except Exception:  # noqa: BLE001
-                RobustRootLogger().exception("Failed to call load_override in getOverrideList")
+                RobustLogger().exception("Failed to call load_override in getOverrideList")
 
         sections: list[QStandardItem] = []
         for directory in self.active.override_list():
@@ -2125,7 +2125,7 @@ class ToolWindow(QMainWindow):
                 sections.append(section)
             self.ui.savesWidget.setSections(sections)
         except Exception:  # noqa: BLE001
-            RobustRootLogger().exception("Failed to load/refresh the saves list")
+            RobustLogger().exception("Failed to load/refresh the saves list")
 
     # endregion
 
@@ -2164,7 +2164,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractModuleRoomTextures scope] str: ", str)
 
         if curModuleName not in self.active._modules:  # noqa: SLF001
-            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
+            RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
@@ -2203,12 +2203,12 @@ class ToolWindow(QMainWindow):
             try:
                 texNames.extend(iter(iterate_textures(res.data())))
             except Exception:
-                RobustRootLogger().exception(f"Failed to extract textures names from {res.identifier()}")
+                RobustLogger().exception(f"Failed to extract textures names from {res.identifier()}")
             lmNames = []
             try:
                 lmNames.extend(iter(iterate_lightmaps(res.data())))
             except Exception:
-                RobustRootLogger().exception(f"Failed to extract lightmap names from {res.identifier()}")
+                RobustLogger().exception(f"Failed to extract lightmap names from {res.identifier()}")
             texlmNames.extend(texNames)
             texlmNames.extend(lmNames)
         textureData: CaseInsensitiveDict[TPC | None] = self.active.textures(texlmNames)
@@ -2224,7 +2224,7 @@ class ToolWindow(QMainWindow):
         from pykotor.common.module import Module
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         if curModuleName not in self.active._modules:
-            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
+            RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             BetterMessageBox("Invalid module.", f"'{curModuleName}' not a valid module, could not find it in the loaded installation.").exec_()
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
@@ -2268,7 +2268,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractAllModuleTextures scope] str: ", str)
 
         if curModuleName not in self.active._modules:
-            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
+            RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractAllModuleTextures scope] thisModule: ", thisModule)
@@ -2292,7 +2292,7 @@ class ToolWindow(QMainWindow):
         from pykotor.common.module import Module
         curModuleName: str = self.ui.modulesWidget.ui.sectionCombo.currentData(QtCore.Qt.ItemDataRole.UserRole)
         if curModuleName not in self.active._modules:
-            RobustRootLogger().warning(f"'{curModuleName}' not a valid module.")
+            RobustLogger().warning(f"'{curModuleName}' not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractAllModuleModels scope] thisModule: ", thisModule)
@@ -2318,7 +2318,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [extractModuleEverything scope] curModuleName: ", curModuleName)
 
         if curModuleName not in self.active._modules:
-            RobustRootLogger().warning(f"'{curModuleName}' is not a valid module.")
+            RobustLogger().warning(f"'{curModuleName}' is not a valid module.")
             return
         thisModule = Module(curModuleName, self.active, use_dot_mod=is_mod_file(curModuleName))
         print("<SDM> [extractModuleEverything scope] thisModule: ", thisModule)
@@ -2344,7 +2344,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [build_extract_save_paths scope] folderpath_str: ", folderpath_str)
 
         if not folderpath_str or not folderpath_str.strip():
-            RobustRootLogger.debug("User cancelled folderpath extraction.")
+            RobustLogger.debug("User cancelled folderpath extraction.")
             return None, None
 
         folder_path = Path(folderpath_str)
@@ -2395,14 +2395,14 @@ class ToolWindow(QMainWindow):
             print("<SDM> [onExtractResources scope] paths_to_write: ", paths_to_write)
 
             if folder_path is None or paths_to_write is None:
-                RobustRootLogger().debug("No paths to write: user must have cancelled the getExistingDirectory dialog.")
+                RobustLogger().debug("No paths to write: user must have cancelled the getExistingDirectory dialog.")
                 return
             failed_savepath_handlers: dict[Path, Exception] = {}
             resource_save_paths = FileSaveHandler(selectedResources).determine_save_paths(paths_to_write, failed_savepath_handlers)
             print("<SDM> [onExtractResources scope] resource_save_paths: ", resource_save_paths)
 
             if not resource_save_paths:
-                RobustRootLogger().debug("No resources returned from FileSaveHandler.determine_save_paths")
+                RobustLogger().debug("No resources returned from FileSaveHandler.determine_save_paths")
                 return
             loader = AsyncLoader.__new__(AsyncLoader)
             seen_resources = {}
@@ -2480,7 +2480,7 @@ class ToolWindow(QMainWindow):
 
 
         if resource.restype() is ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
-            RobustRootLogger().info(f"Not extracting MDX file '{resource.identifier()}', decompiling MDLs is checked.")
+            RobustLogger().info(f"Not extracting MDX file '{resource.identifier()}', decompiling MDLs is checked.")
             return
 
         if resource.restype() is ResourceType.TPC:
@@ -2488,14 +2488,14 @@ class ToolWindow(QMainWindow):
 
             try:
                 if self.ui.tpcTxiCheckbox.isChecked():
-                    RobustRootLogger().info(f"Extracting TXI from '{resource.identifier()}' because of settings.")
+                    RobustLogger().info(f"Extracting TXI from '{resource.identifier()}' because of settings.")
                     self._extractTxi(tpc, save_path.with_suffix(".txi"))
             except Exception as e:
                 loader.errors.append(e)
 
             try:
                 if self.ui.tpcDecompileCheckbox.isChecked():
-                    RobustRootLogger().info(f"Converting '{resource.identifier()}' to TGA because of settings.")
+                    RobustLogger().info(f"Converting '{resource.identifier()}' to TGA because of settings.")
                     data = self._decompileTpc(tpc)
                     #save_path = save_path.with_suffix(".tga")  # already handled
             except Exception as e:
@@ -2503,16 +2503,16 @@ class ToolWindow(QMainWindow):
 
         if resource.restype() is ResourceType.MDL:
             if self.ui.mdlTexturesCheckbox.isChecked():
-                RobustRootLogger().info(f"Extracting MDL Textures because of settings: {resource.identifier()}")
+                RobustLogger().info(f"Extracting MDL Textures because of settings: {resource.identifier()}")
                 self._extractMdlTextures(resource, r_folderpath, loader, data, seen_resources)
 
             if self.ui.mdlDecompileCheckbox.isChecked():
-                RobustRootLogger().info(f"Converting '{resource.identifier()}' to ASCII MDL because of settings")
+                RobustLogger().info(f"Converting '{resource.identifier()}' to ASCII MDL because of settings")
                 data = self._decompileMdl(resource, data)
                 #save_path = save_path.with_suffix(".mdl.ascii")  # already handled
 
         with save_path.open("wb") as file:
-            RobustRootLogger().info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
+            RobustLogger().info(f"Saving extracted data of '{resource.identifier()}' to '{save_path}'")
             file.write(data)
 
     def _extractTxi(self, tpc: TPC, filepath: Path):
@@ -2613,14 +2613,14 @@ class ToolWindow(QMainWindow):
                                     with savepath.open("wb") as w_stream:
                                         w_stream.write(r_stream.read(location.size))
                         except Exception as e:  # noqa: BLE001, PERF203
-                            RobustRootLogger().exception(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}'")
+                            RobustLogger().exception(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}'")
                             loader.errors.append(ValueError(f"Failed to save location result of {tex_type} '{resident}' ({texlm}) for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
 
                 if not is_found:
                     loader.errors.append(ValueError(f"Missing {tex_type} '{texlm}' for model '{resource.identifier()}'"))
                     continue
             except Exception as e:  # noqa: BLE001
-                RobustRootLogger().exception(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}'")
+                RobustLogger().exception(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}'")
                 loader.errors.append(ValueError(f"Failed to extract {tex_type} '{texlm}' for model '{resource.identifier()}':<br>    {e.__class__.__name__}: {e}"))
 
 

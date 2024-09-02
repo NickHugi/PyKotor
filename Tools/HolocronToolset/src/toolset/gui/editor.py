@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 import qtpy
 
+from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QBuffer, QIODevice, QPoint, QTimer, QUrl, Qt
 from qtpy.QtGui import QIcon, QPixmap
@@ -50,7 +51,7 @@ from toolset.gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from toolset.gui.widgets.settings.installations import GlobalSettings
 from ui import stylesheet_resources  # noqa: PLC0415, F401, I001  # pylint: disable=C0415
 from utility.error_handling import assert_with_variable_trace, format_exception_with_variables, universal_simplify_exception
-from utility.logger_util import RobustRootLogger, remove_any
+from utility.system.os_helper import remove_any
 from utility.system.path import Path
 
 if qtpy.API_NAME == "PySide2":
@@ -321,7 +322,7 @@ class Editor(QMainWindow):
         super().__init__(parent)
         self._is_capsule_editor: bool = False
         self._installation: HTInstallation | None = installation
-        self._logger = RobustRootLogger()
+        self._logger = RobustLogger()
         self._global_settings: GlobalSettings = GlobalSettings()
 
         self._editorTitle: str = title
@@ -463,7 +464,7 @@ class Editor(QMainWindow):
                 invalid = True
         except ValueError as e:
             invalid = True
-            RobustRootLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
+            RobustLogger().exception("ValueError raised, assuming invalid filename/extension '%s'", filepath_str)
             error_msg = str(universal_simplify_exception(e)).replace("\n", "<br>")
         if invalid:
             msgBox = QMessageBox(
@@ -545,7 +546,7 @@ class Editor(QMainWindow):
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:  # pylint: disable=W0718  # noqa: BLE001
             self.blinkWindow()
-            RobustRootLogger().critical("Failed to write to file", exc_info=True)
+            RobustLogger().critical("Failed to write to file", exc_info=True)
             msgBox = QMessageBox(QMessageBox.Icon.Critical, "Failed to write to file", str(universal_simplify_exception(e)).replace("\n", "<br>"))
             msgBox.setDetailedText(format_exception_with_variables(e))
             msgBox.exec_()

@@ -14,7 +14,7 @@ from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 from utility.error_handling import assert_with_variable_trace
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from glm import vec3
@@ -108,7 +108,7 @@ class ModuleRenderer(QOpenGLWidget):
         return bool(self._module and self._installation)
 
     def initializeRenderer(self, installation: HTInstallation, module: Module):
-        RobustRootLogger().debug("Initialize ModuleRenderer")
+        RobustLogger().debug("Initialize ModuleRenderer")
         self.shutdownRenderer()
         self.show()
         QApplication.processEvents()  # Force the application to process all pending events
@@ -116,12 +116,12 @@ class ModuleRenderer(QOpenGLWidget):
 
         # Check if the widget and its top-level window are visible
         if not self.isVisible() or (self.window() and not self.window().isVisible()):
-            RobustRootLogger().error("Widget or its window is not visible; OpenGL context may not be initialized.")
+            RobustLogger().error("Widget or its window is not visible; OpenGL context may not be initialized.")
             raise RuntimeError("The OpenGL context is not available because the widget or its parent window is not visible.")
 
         # After ensuring visibility, finally check if a context is available.
         if not self.context():
-            RobustRootLogger().error("initializeGL was not called or did not complete successfully.")
+            RobustLogger().error("initializeGL was not called or did not complete successfully.")
             raise RuntimeError("Failed to initialize OpenGL context. Ensure that the widget is visible and properly integrated into the application's window.")
 
         self._installation = installation
@@ -134,26 +134,26 @@ class ModuleRenderer(QOpenGLWidget):
         self.resumeRenderLoop()
 
     def initializeGL(self):
-        RobustRootLogger().debug("ModuleRenderer.initializeGL called.")
+        RobustLogger().debug("ModuleRenderer.initializeGL called.")
         super().initializeGL()
-        RobustRootLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
+        RobustLogger().debug("ModuleRenderer.initializeGL - opengl context setup.")
 
     def resizeEvent(self, e: QResizeEvent):
-        RobustRootLogger().debug("ModuleRenderer resizeEvent called.")
+        RobustLogger().debug("ModuleRenderer resizeEvent called.")
         super().resizeEvent(e)
 
     def resizeGL(self, width: int, height: int):
-        RobustRootLogger().debug("ModuleRenderer resizeGL called.")
+        RobustLogger().debug("ModuleRenderer resizeGL called.")
         super().resizeGL(width, height)
         if not self._scene:
-            RobustRootLogger().debug("ignoring scene camera width/height updates in ModuleRenderer resizeGL - the scene is not initialized yet.")
+            RobustLogger().debug("ignoring scene camera width/height updates in ModuleRenderer resizeGL - the scene is not initialized yet.")
             return
         self.scene.camera.width = width
         self.scene.camera.height = height
 
     def resumeRenderLoop(self):
         """Resumes the rendering loop by starting the timer."""
-        RobustRootLogger().debug("ModuleRenderer - resumeRenderLoop called.")
+        RobustLogger().debug("ModuleRenderer - resumeRenderLoop called.")
         if not self.loopTimer.isActive():
             self.loopTimer.start(self.loopInterval)
         self.scene.camera.width = self.width()
@@ -161,13 +161,13 @@ class ModuleRenderer(QOpenGLWidget):
 
     def pauseRenderLoop(self):
         """Pauses the rendering loop by stopping the timer."""
-        RobustRootLogger().debug("ModuleRenderer - pauseRenderLoop called.")
+        RobustLogger().debug("ModuleRenderer - pauseRenderLoop called.")
         if self.loopTimer.isActive():
             self.loopTimer.stop()
 
     def shutdownRenderer(self):
         """Stops the rendering loop, unloads the module and installation, and attempts to destroy the OpenGL context."""
-        RobustRootLogger().debug("ModuleRenderer - shutdownRenderer called.")
+        RobustLogger().debug("ModuleRenderer - shutdownRenderer called.")
         self.pauseRenderLoop()
         self._module = None
         self._installation = None
@@ -197,10 +197,10 @@ class ModuleRenderer(QOpenGLWidget):
             - Records render time.
         """
         if not self.loopTimer.isActive():
-            RobustRootLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
+            RobustLogger().debug("ModuleDesigner.paintGL - loop timer is paused or not started.")
             return
         if not self.isReady():
-            RobustRootLogger().warning("ModuleDesigner.paintGL - not initialized.")
+            RobustLogger().warning("ModuleDesigner.paintGL - not initialized.")
             return  # Do nothing if not initialized
         #get_root_logger().debug("ModuleDesigner.paintGL called.")
         super().paintGL()
@@ -404,7 +404,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-        #RobustRootLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
@@ -413,7 +413,7 @@ class ModuleRenderer(QOpenGLWidget):
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
-        #RobustRootLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        #RobustLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
     def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyPressEvent(e)
@@ -424,7 +424,7 @@ class ModuleRenderer(QOpenGLWidget):
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
         #key_name = getQtKeyStringLocalized(key)
-        #RobustRootLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
+        #RobustLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
     def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
         super().keyReleaseEvent(e)
@@ -435,6 +435,6 @@ class ModuleRenderer(QOpenGLWidget):
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
         # key_name = getQtKeyStringLocalized(key)
-        # RobustRootLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        # RobustLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

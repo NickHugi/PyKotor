@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.erf.erf_data import ERF, ERFType
 from pykotor.resource.type import ResourceReader, ResourceType, ResourceWriter, autoclose
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -69,7 +69,7 @@ class ERFBinaryReader(ResourceReader):
         self._reader.skip(8)
         description_strref = self._reader.read_uint32()
         if description_strref == 0 and file_type == ERFType.MOD.value:
-            RobustRootLogger().debug("Assuming this is a SAV file")
+            RobustLogger().debug("Assuming this is a SAV file")
             self._erf.is_save_erf = True
 
         resrefs: list[str] = []

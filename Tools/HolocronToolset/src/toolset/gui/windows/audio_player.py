@@ -16,7 +16,7 @@ from qtpy.QtWidgets import QFileDialog, QMainWindow
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools import sound
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.os_helper import remove_any
 from utility.system.path import Path
 
@@ -115,7 +115,7 @@ class AudioPlayer(QMainWindow):
                 self.player.stop()
                 QTimer.singleShot(33, lambda: remove_any(filePathStr))
             except OSError:
-                RobustRootLogger().exception(f"Error removing temporary file {filePathStr}")
+                RobustLogger().exception(f"Error removing temporary file {filePathStr}")
 
     def load(self, filepath: os.PathLike | str, resname: str, restype: ResourceType, data: bytes):
         self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")

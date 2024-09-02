@@ -4,7 +4,7 @@ import subprocess
 
 from typing import TYPE_CHECKING
 
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     import os
@@ -125,7 +125,7 @@ def askdirectory(
         )
         return "" if not result or not result.strip() else result
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askdirectory() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askdirectory() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 dialog_type="open_folder",
@@ -169,7 +169,7 @@ def askopenfile(  # noqa: PLR0913
             typevariable=typevariable,
         )
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfile() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 "open_file",
@@ -222,7 +222,7 @@ def askopenfilename(  # noqa: PLR0913
         )
         return "" if not result or not result.strip() else result
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfilename() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 "open_file",
@@ -276,7 +276,7 @@ def askopenfilenames(  # noqa: PLR0913
         )
         return tuple(result) if result else ""
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfilenames() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 dialog_type="open_file",
@@ -328,7 +328,7 @@ def askopenfiles(  # noqa: PLR0913
         )
         return tuple(result) if result else None
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.askopenfiles() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 dialog_type="open_file",
@@ -381,7 +381,7 @@ def asksaveasfile(  # noqa: PLR0913
             typevariable=typevariable,
         )
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.asksaveasfile() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 "save_file",
@@ -426,7 +426,7 @@ def asksaveasfilename(  # noqa: PLR0913
         )
         return "" if not result or not result.strip() else result
     except Exception:  # noqa: BLE001
-        RobustRootLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
+        RobustLogger().warning("Tkinter's filedialog.asksaveasfilename() threw an exception!", exc_info=True)
         try:
             result = _run_cocoa_dialog(
                 "save_file",

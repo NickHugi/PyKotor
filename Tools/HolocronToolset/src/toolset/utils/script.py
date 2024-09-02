@@ -15,7 +15,7 @@ from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.type import ResourceType
 from pykotor.tools.registry import SpoofKotorRegistry
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 from utility.system.path import Path
 
 NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
@@ -31,7 +31,7 @@ NON_TSLPATCHER_NWNNSSCOMP_PERMISSION_MSG = (
 )
 
 
-log = RobustRootLogger()
+log = RobustLogger()
 
 class NoOpRegistrySpoofer:
     def __enter__(self):

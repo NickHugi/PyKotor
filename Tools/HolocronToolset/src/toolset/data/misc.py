@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Set, Tuple, Union
 
 from toolset.utils.misc import getQtButtonString, getQtKeyString
-from utility.logger_util import RobustRootLogger
+from loggerplus import RobustLogger
 
 Bind = Tuple[Set[int], Union[Set[int], None]]
 
@@ -49,7 +49,7 @@ class ControlItem:
             return True
 
         if debugLog:
-            RobustRootLogger.debug(f"Needed mouse: {[getQtButtonString(btn) for btn in iter(self.mouse)] if self.mouse is not None else 'None'}, user pressing {[getQtButtonString(btn) for btn in iter(buttons)]}. Satisfied? {mouseSatisfied} no_buttons? {self.noButtons()} any_buttons? {self.anyButtons()}")
-            RobustRootLogger.debug(f"Needed keys: {[getQtKeyString(key) for key in iter(self.keys)]}, user pressing {[getQtKeyString(key) for key in iter(keys)]} Satisfied? {keysSatisfied} any_keys? {self.anyKeys()} exactKeys? {exactKeysAndButtons}")
+            RobustLogger.debug(f"Needed mouse: {[getQtButtonString(btn) for btn in iter(self.mouse)] if self.mouse is not None else 'None'}, user pressing {[getQtButtonString(btn) for btn in iter(buttons)]}. Satisfied? {mouseSatisfied} no_buttons? {self.noButtons()} any_buttons? {self.anyButtons()}")
+            RobustLogger.debug(f"Needed keys: {[getQtKeyString(key) for key in iter(self.keys)]}, user pressing {[getQtKeyString(key) for key in iter(keys)]} Satisfied? {keysSatisfied} any_keys? {self.anyKeys()} exactKeys? {exactKeysAndButtons}")
         return False
 
