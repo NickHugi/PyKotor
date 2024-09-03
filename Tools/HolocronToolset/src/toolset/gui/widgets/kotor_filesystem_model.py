@@ -367,7 +367,12 @@ class ResourceFileSystemWidget(QWidget):
         self.fsTreeView.debounceLayoutChanged(preChangeEmit=True)
         item = idx.internalPointer()
         if isinstance(item, DirItem):
+            parentIndex = idx
+            self.fsModel.beginRemoveRows(parentIndex, 0, item.childCount() - 1 if item.childCount() > 0 else 0)
+            self.fsModel.beginInsertRows(parentIndex, 0, max(0, item.childCount() - 1))
             item.loadChildren(self.fsModel)
+            self.fsModel.endInsertRows()
+            self.fsModel.endRemoveRows()
         self.refresh_item(item)
         self.fsTreeView.debounceLayoutChanged(preChangeEmit=False)
 
@@ -499,8 +504,8 @@ class ResourceFileSystemWidget(QWidget):
         td = m.addAction("Advanced")
 
         td.setCheckable(True)  # pyright: ignore[reportOptionalMemberAccess]
-        td.setChecked(self.fsModel._detailed_view)  # noqa: SLF001  # pyright: ignore[reportOptionalMemberAccess]
-        td.triggered.connect(self.fsModel.toggle_detailed_view)  # pyright: ignore[reportOptionalMemberAccess]
+        td.setChecked(self.fsModel._detailed_view)  # noqa: SLF001  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
+        td.triggered.connect(self.fsModel.toggle_detailed_view)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
 
         sh = m.addAction("Show Hidden Items")
         sh.setCheckable(True)  # pyright: ignore[reportOptionalMemberAccess]
@@ -568,6 +573,7 @@ class SupportsRichComparison(Protocol):
     def __le__(self, other: Any) -> bool: ...
     def __gt__(self, other: Any) -> bool: ...
     def __ge__(self, other: Any) -> bool: ...
+
 
 T = TypeVar("T", bound=Union[SupportsRichComparison, str])
 class ResourceFileSystemModel(QAbstractItemModel):
@@ -677,7 +683,7 @@ class ResourceFileSystemModel(QAbstractItemModel):
             if not index.isValid():
                 return QModelIndex()
             return index.parent().parent() if index.parent().isValid() else QModelIndex()
-        return None
+        return QModelIndex()
 
     def itemFromIndex(self, index: QModelIndex) -> TreeItem | None:
         return index.internalPointer() if index.isValid() else None
