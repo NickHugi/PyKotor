@@ -8,6 +8,7 @@ import qtpy
 from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import Qt
+from qtpy.QtGui import QPixmap
 from qtpy.QtWidgets import QAction, QApplication, QDialog, QListWidgetItem, QMenu, QShortcut, QTreeWidgetItem
 
 from pykotor.common.misc import ResRef
@@ -20,9 +21,9 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow, ResourceItems
 from toolset.gui.editor import Editor
 from toolset.utils.window import addWindow
-from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
+
     import os
 
     from qtpy.QtWidgets import QWidget
@@ -44,19 +45,6 @@ class UTIEditor(Editor):
         ----
             parent: {QWidget}: The parent widget
             installation: {HTInstallation}: The KOTOR installation.
-
-        Processing Logic:
-        ----------------
-            - Initializes supported resource types
-            - Calls super().__init__ to initialize base class
-            - Initializes UTI object
-            - Sets up UI from designer file
-            - Sets up menus
-            - Sets up signals
-            - Sets up installation
-            - Sets installation on description editor
-            - Connects delete shortcut
-            - Calls new() to start with a new empty item.
         """
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
@@ -87,7 +75,7 @@ class UTIEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.onDelShortcut)
 
-        self.ui.iconLabel.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ui.iconLabel.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
         self.ui.iconLabel.customContextMenuRequested.connect(self._iconLabelContextMenu)
 
         self.new()
@@ -100,7 +88,7 @@ class UTIEditor(Editor):
         self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
         self.ui.removePropertyButton.clicked.connect(self.removeSelectedProperty)
         self.ui.addPropertyButton.clicked.connect(self.addSelectedProperty)
-        self.ui.availablePropertyList.doubleClicked.connect(self.onAvaialblePropertyListDoubleClicked)
+        self.ui.availablePropertyList.doubleClicked.connect(self.onAvailablePropertyListDoubleClicked)
         self.ui.assignedPropertiesList.doubleClicked.connect(self.onAssignedPropertyListDoubleClicked)
 
         self.ui.modelVarSpin.valueChanged.connect(self.onUpdateIcon)
@@ -133,35 +121,43 @@ class UTIEditor(Editor):
         required: list[str] = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
         installation.htBatchCache2DA(required)
 
-        baseitems: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        itemProperties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-
+        baseitems: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        itemProperties: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         self.ui.baseSelect.clear()
-        self.ui.baseSelect.setItems(baseitems.get_column("label"))
-        self.ui.baseSelect.setContext(baseitems, installation, HTInstallation.TwoDA_BASEITEMS)
+        if baseitems is None:
+            RobustLogger().error("Failed to retrieve BASEITEMS 2DA.")
+        else:
+            self.ui.baseSelect.setItems(baseitems.get_column("label"))
+            self.ui.baseSelect.setContext(baseitems, installation, HTInstallation.TwoDA_BASEITEMS)
 
         self.ui.availablePropertyList.clear()
-        for i in range(itemProperties.get_height()):
-            item = QTreeWidgetItem([UTIEditor.propertyName(installation, i)])
-            self.ui.availablePropertyList.addTopLevelItem(item)
+        if itemProperties is not None:
+            for i in range(itemProperties.get_height()):
+                propName = UTIEditor.propertyName(installation, i)
+                item = QTreeWidgetItem([propName])
+                self.ui.availablePropertyList.addTopLevelItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-            subtypeResname = itemProperties.get_cell(i, "subtyperesref")
-            if not subtypeResname:
-                item.setData(0, Qt.ItemDataRole.UserRole, i)
-                item.setData(0, Qt.ItemDataRole.UserRole + 1, i)
-                continue
-
-            subtype = installation.htGetCache2DA(subtypeResname)
-            for j in range(subtype.get_height()):
-                if subtypeResname == "spells":  # TODO(th3w1zard1): what were we debugging here again exactly...?
-                    print("   ", j)
-                name = UTIEditor.subpropertyName(installation, i, j)
-                if not name or not name.strip():  # removes the blank entries
+                subtypeResname = itemProperties.get_cell(i, "subtyperesref")
+                if not subtypeResname:
+                    item.setData(0, Qt.ItemDataRole.UserRole, i)
+                    item.setData(0, Qt.ItemDataRole.UserRole + 1, i)
                     continue
-                child = QTreeWidgetItem([name])
-                child.setData(0, Qt.ItemDataRole.UserRole, i)
-                child.setData(0, Qt.ItemDataRole.UserRole + 1, j)
-                item.addChild(child)
+
+                subtype = installation.htGetCache2DA(subtypeResname)
+                if subtype is None:
+                    RobustLogger().warning(f"Failed to retrieve subtype '{subtypeResname}' for property name '{propName}' at index {i}. Skipping...")
+                    continue
+
+                for j in range(subtype.get_height()):
+                    if subtypeResname == "spells":
+                        print("   ", j)
+                    name = UTIEditor.subpropertyName(installation, i, j)
+                    if not name or not name.strip():  # possible HACK: this fixes a bug where there'd be a bunch of blank entries.
+                        continue
+                    child = QTreeWidgetItem([name])
+                    child.setData(0, Qt.ItemDataRole.UserRole, i)
+                    child.setData(0, Qt.ItemDataRole.UserRole + 1, j)
+                    item.addChild(child)
 
     def load(
         self,
@@ -210,7 +206,7 @@ class UTIEditor(Editor):
             text = self.propertySummary(utiProperty)
             item = QListWidgetItem(text)
             item.setData(Qt.ItemDataRole.UserRole, utiProperty)
-            self.ui.assignedPropertiesList.addItem(item)
+            self.ui.assignedPropertiesList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
         # Comments
         self.ui.commentsEdit.setPlainText(uti.comment)
@@ -225,13 +221,6 @@ class UTIEditor(Editor):
         Returns:
         -------
             tuple[bytes, bytes]: Byte data and empty string
-
-        Processing Logic:
-        ----------------
-            - Populate UTI object properties from UI elements
-            - Convert UTI to GFF structure
-            - Write GFF to byte array
-            - Return byte array and empty string
         """
         uti: UTI = deepcopy(self._uti)
 
@@ -250,11 +239,14 @@ class UTIEditor(Editor):
         uti.model_variation = self.ui.modelVarSpin.value()
         uti.body_variation = self.ui.bodyVarSpin.value()
         uti.texture_variation = self.ui.textureVarSpin.value()
+        uti.properties.clear()
+        for i in range(self.ui.assignedPropertiesList.count()):
+            item = self.ui.assignedPropertiesList.item(i)
+            if item is None:
+                RobustLogger().warning(f"Failed to retrieve property item at index {i} from assigned properties list. Skipping...")
+                continue
+            uti.properties.append(item.data(Qt.ItemDataRole.UserRole))
 
-        uti.properties = [
-            self.ui.assignedPropertiesList.item(i).data(Qt.ItemDataRole.UserRole)
-            for i in range(self.ui.assignedPropertiesList.count())
-        ]
         # Comments
         uti.comment = self.ui.commentsEdit.toPlainText()
 
@@ -272,13 +264,13 @@ class UTIEditor(Editor):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if not dialog.exec_():
             return
-        self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+        self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def changeDesc(self):
         dialog = LocalizedStringDialog(self, self._installation, self.ui.descEdit.locstring())
         if not dialog.exec_():
             return
-        self._loadLocstring(self.ui.descEdit.ui.locstringText, dialog.locstring)
+        self._loadLocstring(self.ui.descEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def generateTag(self):
         resrefText = self.ui.resrefEdit.text()
@@ -331,7 +323,9 @@ class UTIEditor(Editor):
             - Adds a summary of the property to the assigned properties list widget.
             - Sets the UTIProperty as user data on the list item.
         """
-        itemprops: TwoDA = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        itemprops: TwoDA | None = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        if itemprops is None:
+            return
 
         utiProperty = UTIProperty()
         utiProperty.property_name = propertyId
@@ -345,7 +339,7 @@ class UTIEditor(Editor):
         text: str = self.propertySummary(utiProperty)
         item = QListWidgetItem(text)
         item.setData(Qt.ItemDataRole.UserRole, utiProperty)
-        self.ui.assignedPropertiesList.addItem(item)
+        self.ui.assignedPropertiesList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
     def removeSelectedProperty(self):
         if not self.ui.assignedPropertiesList.selectedItems():
@@ -458,7 +452,7 @@ class UTIEditor(Editor):
             fileMenu.addAction("Details...").triggered.connect(lambda: self._openDetails(flatLocations))
 
         contextMenu.addMenu(copyMenu)
-        contextMenu.exec_(self.ui.iconLabel.mapToGlobal(position))
+        contextMenu.exec_(self.ui.iconLabel.mapToGlobal(position))  # pyright: ignore[reportArgumentType]
 
     def _openDetails(self, locations: list[LocationResult]):
         selectionWindow = FileSelectionWindow(locations, self._installation)
@@ -478,11 +472,12 @@ class UTIEditor(Editor):
         baseItem: int = self.ui.baseSelect.currentIndex()
         modelVariation: int = self.ui.modelVarSpin.value()
         textureVariation: int = self.ui.textureVarSpin.value()
-        self.ui.iconLabel.setPixmap(self._installation.getItemIcon(baseItem, modelVariation, textureVariation))
+        pixmap = self._installation.getItemIcon(baseItem, modelVariation, textureVariation)
+        self.ui.iconLabel.setPixmap(QPixmap(pixmap))  # pyright: ignore[reportArgumentType]
         # Update the tooltip whenever the icon changes
         self.ui.iconLabel.setToolTip(self._generateIconTooltip(asHtml=True))
 
-    def onAvaialblePropertyListDoubleClicked(self):
+    def onAvailablePropertyListDoubleClicked(self):
         for item in self.ui.availablePropertyList.selectedItems():
             if item.childCount() != 0:
                 continue
@@ -501,9 +496,14 @@ class UTIEditor(Editor):
         installation: HTInstallation,
         prop: int,
     ) -> str:
-        properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        properties: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        if properties is None:
+            RobustLogger().error("Failed to retrieve ITEM_PROPERTIES 2DA.")
+            return "Unknown"
         stringref: int | None = properties.get_row(prop).get_integer("name")
-        assert stringref is not None, assert_with_variable_trace(stringref is not None)
+        if stringref is None:
+            RobustLogger().error(f"Failed to retrieve name stringref for property {prop}.")
+            return "Unknown"
         return installation.talktable().string(stringref)
 
     @staticmethod
@@ -523,20 +523,18 @@ class UTIEditor(Editor):
         Returns:
         -------
             string - The name of the subproperty
-
-        Processing Logic:
-        ----------------
-            - Gets the item properties 2DA from the cache
-            - Gets the subtype resource reference from the property row
-            - Gets the subproperties 2DA from the subtype resource
-            - Gets the name string reference from the subproperty row
-            - Returns the string from the talktable or the label if name is None
         """
-        properties: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-        subtypeResname: str = properties.get_cell(prop, "subtyperesref")
-        if not subtypeResname:
+        properties: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        if properties is None:
+            RobustLogger().error("Failed to retrieve ITEM_PROPERTIES 2DA.")
             return None
-        subproperties: TwoDA = installation.htGetCache2DA(subtypeResname)
+        subtypeResname: str | None = properties.get_cell(prop, "subtyperesref")
+        if not subtypeResname:
+            RobustLogger().error(f"Failed to retrieve subtypeResname for property {prop}.")
+            return None
+        subproperties: TwoDA | None = installation.htGetCache2DA(subtypeResname)
+        if subproperties is None:
+            return None
         headerStrref: Literal["name", "string_ref"] = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref: int | None = subproperties.get_row(subprop).get_integer(headerStrref)
         return subproperties.get_cell(subprop, "label") if nameStrref is None else installation.talktable().string(nameStrref)
@@ -546,15 +544,28 @@ class UTIEditor(Editor):
         installation: HTInstallation,
         cost: int,
         value: int,
-    ) -> str | None:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
-        costtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        costtable: TwoDA = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
+    ) -> str | None:
+        costtableList: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
+        if costtableList is None:
+            RobustLogger().error("Failed to retrieve IPRP_COSTTABLE 2DA.")
+            return None
+
+        costtable_name: str | None = costtableList.get_cell(cost, "name")
+        if costtable_name is None:
+            RobustLogger().error(f"Failed to retrieve costtable 'name' for cost '{cost}'.")
+            return None
+
+        costtable: TwoDA | None = installation.htGetCache2DA(costtable_name)
+        if costtable is None:
+            RobustLogger().error(f"Failed to retrieve '{costtable_name}' 2DA.")
+            return None
+
         try:
             stringref: int | None = costtable.get_row(value).get_integer("name")
             if stringref is not None:
                 return installation.talktable().string(stringref)
         except (IndexError, Exception):  # noqa: BLE001
-            RobustLogger().warning("Could not get the costtable 2da row/value", exc_info=True)
+            RobustLogger().warning("Could not get the costtable 2DA row/value", exc_info=True)
         return None
 
     @staticmethod
@@ -562,15 +573,51 @@ class UTIEditor(Editor):
         installation: HTInstallation,
         paramtable: int,
         param: int,
-    ) -> str | None:  # sourcery skip: remove-redundant-exception, simplify-single-exception-tuple
-        paramtableList: TwoDA = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
+    ) -> str | None:
+        RobustLogger().info(f"Attempting to get param name for paramtable: {paramtable}, param: {param}")
+
+        # Get the IPRP_PARAMTABLE 2DA
+        paramtable_list: TwoDA | None = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
+        paramtable_2da: TwoDA | None = None
+        if paramtable_list is None:
+            RobustLogger().error("Failed to retrieve IPRP_PARAMTABLE 2DA.")
+            return None
+
         try:
-            paramtable_twoda: TwoDA = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
-            stringref: int | None = paramtable_twoda.get_row(param).get_integer("name")
-        except (IndexError, Exception):  # noqa: BLE001
-            RobustLogger().warning("Could not get the paramtable 2da row/value", exc_info=True)
-        else:
-            return installation.talktable().string(stringref)
+            # Get the specific parameter table 2DA
+            table_resref = paramtable_list.get_cell(paramtable, "tableresref")
+            RobustLogger().info(f"Retrieved table_resref: '{table_resref}' for paramtable: '{paramtable}'")
+
+            paramtable_2da = installation.htGetCache2DA(table_resref)
+            if paramtable_2da is None:
+                RobustLogger().error(f"Failed to retrieve 2DA file: {table_resref}.")
+                return None
+
+            # Get the string reference for the parameter name
+            param_row = paramtable_2da.get_row(param)
+            stringref: int | None = param_row.get_integer("name")
+            if stringref is None:
+                RobustLogger().warning(f"Failed to get 'name' value for param '{param}' in '{table_resref}'")
+                RobustLogger().info(f"Available columns in '{table_resref}': '{paramtable_2da.get_headers()}'")
+                RobustLogger().info(f"Row data for param '{param}': '{param_row._data}'")  # noqa: SLF001
+                return None
+
+            # Get the actual string from the talk table
+            result = installation.talktable().string(stringref)
+            RobustLogger().info(f"Retrieved param name: {result} for stringref: {stringref}")
+            return result  # noqa: TRY300
+
+        except IndexError:
+            RobustLogger().exception(f"paramtable: {paramtable}, param: {param}")
+            RobustLogger().info(f"IPRP_PARAMTABLE height: {paramtable_list.get_height()}, width: {paramtable_list.get_width()}")
+            RobustLogger().info(f"Available rows in IPRP_PARAMTABLE: {paramtable_list.get_labels()}")
+        except KeyError:
+            RobustLogger().exception("Likely missing column in 2DA.")
+            if "paramtable_2da" in locals() and paramtable_2da is not None:
+                RobustLogger().info(f"Available columns in '{table_resref}': {paramtable_2da.get_headers()}")
+        except Exception:  # noqa: BLE001
+            RobustLogger().exception("Unexpected error in param_name", exc_info=True)
+
         return None
 
 
@@ -619,35 +666,59 @@ class PropertyEditor(QDialog):
         self._installation = installation
         self._utiProperty: UTIProperty = utiProperty
 
-        costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        if utiProperty.cost_table != 0xFF:
+        costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)  # noqa: F841
+        if costtableList is None:
+            RobustLogger().warning("Failed to get IPRP_COSTTABLE")
+            return
+        if utiProperty.cost_table != 0xFF:  # noqa: PLR2004
             costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
+            if costtable is None:
+                RobustLogger().warning(f"Failed to get costtable for name: {costtableList.get_cell(utiProperty.cost_table, 'name')}")
+                return
             for i in range(costtable.get_height()):
                 costName = UTIEditor.costName(installation, utiProperty.cost_table, i)
                 if not costName:
                     RobustLogger().warning(f"No costName at index {i}")
                 item = QListWidgetItem(costName)
                 item.setData(Qt.ItemDataRole.UserRole, i)
-                self.ui.costList.addItem(item)
+                self.ui.costList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
-        if utiProperty.param1 != 0xFF:
+        if utiProperty.param1 != 0xFF:  # noqa: PLR2004
             paramList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
-            paramtable = installation.htGetCache2DA(paramList.get_cell(utiProperty.param1, "tableresref"))
+            if paramList is None:
+                RobustLogger().warning("Failed to get IPRP_PARAMTABLE")
+                return
+
+            paramtable_resref = paramList.get_cell(utiProperty.param1, "tableresref")
+            if paramtable_resref is None:
+                RobustLogger().warning(f"No tableresref found for param1: {utiProperty.param1}")
+                return
+
+            paramtable = installation.htGetCache2DA(paramtable_resref)
+            if paramtable is None:
+                RobustLogger().warning(f"Failed to get paramtable for resref: {paramtable_resref}")
+                return
+
             for i in range(paramtable.get_height()):
                 paramName = UTIEditor.paramName(installation, utiProperty.param1, i)
                 if not paramName:
                     RobustLogger().warning(f"No paramName at index {i}")
                 item = QListWidgetItem(paramName)
                 item.setData(Qt.ItemDataRole.UserRole, i)
-                self.ui.parameterList.addItem(item)
+                self.ui.parameterList.addItem(item)  # pyright: ignore[reportArgumentType, reportCallIssue]
 
         upgrades = installation.htGetCache2DA(HTInstallation.TwoDA_UPGRADES)
-        self.ui.upgradeSelect.setItems(
-            (
+        if upgrades is not None:
+            upgrade_items = [
                 upgrades.get_cell(i, "label").replace("_", " ").title()
                 for i in range(upgrades.get_height())
-            ),
-            cleanupStrings=False,
+            ]
+        else:
+            upgrade_items = []
+
+        self.ui.upgradeSelect.setItems(
+            upgrade_items,
+            cleanupStrings=False
         )
         self.ui.upgradeSelect.setContext(upgrades, installation, HTInstallation.TwoDA_UPGRADES)
         if utiProperty.upgrade_type is not None:
@@ -670,17 +741,19 @@ class PropertyEditor(QDialog):
         self.ui.parameterEdit.setText(paramName or "")
 
     def selectCost(self):
-        if not self.ui.costList.currentItem():
+        cur_item: QListWidgetItem | None = self.ui.costList.currentItem()  # pyright: ignore[reportAssignmentType]
+        if not cur_item:
             return
 
-        self._utiProperty.cost_value = self.ui.costList.currentItem().data(Qt.ItemDataRole.UserRole)
+        self._utiProperty.cost_value = cur_item.data(Qt.ItemDataRole.UserRole)
         self.reloadTextboxes()
 
     def selectParam(self):
-        if not self.ui.parameterList.currentItem():
+        cur_item: QListWidgetItem | None = self.ui.parameterList.currentItem()  # pyright: ignore[reportAssignmentType]
+        if not cur_item:
             return
 
-        self._utiProperty.param1_value = self.ui.parameterList.currentItem().data(Qt.ItemDataRole.UserRole)
+        self._utiProperty.param1_value = cur_item.data(Qt.ItemDataRole.UserRole)
         self.reloadTextboxes()
 
     def utiProperty(self) -> UTIProperty:

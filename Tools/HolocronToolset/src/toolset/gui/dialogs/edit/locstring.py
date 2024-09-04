@@ -48,7 +48,7 @@ class LocalizedStringDialog(QDialog):
         self.ui.stringEdit.textChanged.connect(self.stringEdited)
 
         self._installation = installation
-        self.locstring = LocalizedString.from_dict(locstring.to_dict())
+        self.locstring = LocalizedString.from_dict(locstring.to_dict())  # Deepcopy the object, we don't trust the `deepcopy` function though.
         self.ui.stringrefSpin.setValue(locstring.stringref)
 
     def accept(self):

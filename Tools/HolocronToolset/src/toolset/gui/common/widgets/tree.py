@@ -68,20 +68,23 @@ class RobustTreeView(QTreeView):
         self.branch_connectors_enabled: bool = False
         self.layoutChangedDebounceTimer: QTimer = QTimer(self)
         self.original_stylesheet: str = self.styleSheet()
+        self.header_visible: bool = self.settings.get("headerVisible", False)
         self.setupMenuExtras()
         h: QHeaderView = self.header()
         if not use_columns:
+            self.toggle_header_visible(self.header_visible)
+
+    def toggle_header_visible(self, enabled: bool):
+        self.header_visible = enabled
+        h: QHeaderView = self.header()
+        if enabled:
+            h.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+            h.setStretchLastSection(True)
+            h.show()
+            self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        else:
             self.fix_horizontal_scroll_bar(h)
-            #self.setColumnWidth(0, 2000)  # don't use.
-
-        # Connections
-        h.customContextMenuRequested.connect(self.showHeaderContextMenu)
-        self.layoutChangedDebounceTimer.setSingleShot(True)
-        self.layoutChangedDebounceTimer.timeout.connect(self.emitLayoutChanged)
-
-    def showHeaderContextMenu(self, pos: QPoint, menu: QMenu | None = None):
-        menu = self.headerMenu if menu is None else menu
-        menu.exec_(self.header().mapToGlobal(pos))
+        self.settings.set("headerVisible", enabled)
 
     @staticmethod
     def fix_horizontal_scroll_bar(h: QHeaderView):
@@ -90,6 +93,12 @@ class RobustTreeView(QTreeView):
         h.setMinimumSectionSize(h.geometry().width() * 5)
         h.setDefaultSectionSize(h.geometry().width() * 10)
         h.hide()
+        #self.setColumnWidth(0, 2000)  # an alternative way to get the horizontal scrollbar, but not recommended, seemed to jerk around.
+
+
+    def showHeaderContextMenu(self, pos: QPoint, menu: QMenu | None = None):
+        menu = self.headerMenu if menu is None else menu
+        menu.exec_(self.header().mapToGlobal(pos))
 
     def setTextSize(self, size: int):
         delegate = self.itemDelegate()
@@ -414,6 +423,15 @@ class RobustTreeView(QTreeView):
         whats_this_action.triggered.connect(QWhatsThis.enterWhatsThisMode)
         whats_this_action.setToolTip("Enter 'What's This?' mode.")
         self.helpMenu.addAction(whats_this_action)
+
+        # Add the horizontal scrollbar toggle to the view menu
+        self._addMenuAction(
+            self.viewMenu,
+            "Show Horizontal Scrollbar",
+            lambda: self.header_visible,
+            self.toggle_header_visible,
+            settings_key="headerVisible",
+        )
 
     def _addColorMenuAction(
         self,

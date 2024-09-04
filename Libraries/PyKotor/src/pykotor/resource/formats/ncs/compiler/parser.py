@@ -544,7 +544,7 @@ class NssParser:
                   | ACTION_TYPE
                   | STRUCT IDENTIFIER
         """  # noqa: D400, D212, D415, D205
-        if len(p) == 3:
+        if len(p) == 3:  # noqa: PLR2004
             p[0] = DynamicDataType(p[1], p[2].label)
         else:
             p[0] = DynamicDataType(p[1])

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
+from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utw import UTW, dismantle_utw, read_utw
@@ -101,7 +102,7 @@ class UTWEditor(Editor):
         # Advanced
         self.ui.isNoteCheckbox.setChecked(utw.has_map_note)
         self.ui.noteEnabledCheckbox.setChecked(utw.map_note_enabled)
-        self._loadLocstring(self.ui.noteEdit, utw.map_note)
+        self._loadLocstring(self.ui.noteEdit, utw.map_note)  # pyright: ignore[reportArgumentType]
 
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
@@ -131,7 +132,10 @@ class UTWEditor(Editor):
         utw.resref = ResRef(self.ui.resrefEdit.text())
         utw.has_map_note = self.ui.isNoteCheckbox.isChecked()
         utw.map_note_enabled = self.ui.noteEnabledCheckbox.isChecked()
-        utw.map_note = self.ui.noteEdit.locstring
+        try:
+            utw.map_note = self.ui.noteEdit.locstring  # FIXME:
+        except AttributeError:
+            utw.map_note = LocalizedString(self.ui.noteEdit.text())  # ALSO FIXME:
         utw.comment = self.ui.commentsEdit.toPlainText()
 
         data = bytearray()
@@ -145,14 +149,19 @@ class UTWEditor(Editor):
         self._loadUTW(UTW())
 
     def changeName(self):
+        assert self._installation is not None
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring())
         if dialog.exec_():
-            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)
+            self._loadLocstring(self.ui.nameEdit.ui.locstringText, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def changeNote(self):
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)
+        assert self._installation is not None
+        try:
+            dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.locstring)  # pyright: ignore[reportArgumentType]
+        except AttributeError:
+            dialog = LocalizedStringDialog(self, self._installation, self.ui.noteEdit.text())  # pyright: ignore[reportArgumentType]
         if dialog.exec_():
-            self._loadLocstring(self.ui.noteEdit, dialog.locstring)
+            self._loadLocstring(self.ui.noteEdit, dialog.locstring)  # pyright: ignore[reportArgumentType]
 
     def generateTag(self):
         if not self.ui.resrefEdit.text():

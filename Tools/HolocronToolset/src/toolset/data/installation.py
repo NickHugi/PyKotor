@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable, Collection, cast
 
+from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QImage, QPixmap, QTransform
 from qtpy.QtWidgets import QAction, QComboBox, QLineEdit, QMenu
@@ -30,49 +31,49 @@ if TYPE_CHECKING:
 
 
 class HTInstallation(Installation):
-    TwoDA_PORTRAITS = "portraits"
-    TwoDA_APPEARANCES = "appearance"
-    TwoDA_SUBRACES = "subrace"
-    TwoDA_SPEEDS = "creaturespeed"
-    TwoDA_SOUNDSETS = "soundset"
-    TwoDA_FACTIONS = "repute"
-    TwoDA_GENDERS = "gender"
-    TwoDA_PERCEPTIONS = "ranges"
-    TwoDA_CLASSES = "classes"
-    TwoDA_FEATS = "feat"
-    TwoDA_POWERS = "spells"
-    TwoDA_BASEITEMS = "baseitems"
-    TwoDA_PLACEABLES = "placeables"
-    TwoDA_DOORS = "genericdoors"
-    TwoDA_CURSORS = "cursors"
-    TwoDA_TRAPS = "traps"
-    TwoDA_RACES = "racialtypes"
-    TwoDA_SKILLS = "skills"
-    TwoDA_UPGRADES = "upgrade"
-    TwoDA_ENC_DIFFICULTIES = "encdifficulty"
-    TwoDA_ITEM_PROPERTIES = "itempropdef"
-    TwoDA_IPRP_PARAMTABLE = "iprp_paramtable"
-    TwoDA_IPRP_COSTTABLE = "iprp_costtable"
-    TwoDA_IPRP_ABILITIES = "iprp_abilities"
-    TwoDA_IPRP_ALIGNGRP = "iprp_aligngrp"
-    TwoDA_IPRP_COMBATDAM = "iprp_combatdam"
-    TwoDA_IPRP_DAMAGETYPE = "iprp_damagetype"
-    TwoDA_IPRP_PROTECTION = "iprp_protection"
-    TwoDA_IPRP_ACMODTYPE = "iprp_acmodtype"
-    TwoDA_IPRP_IMMUNITY = "iprp_immunity"
-    TwoDA_IPRP_SAVEELEMENT = "iprp_saveelement"
-    TwoDA_IPRP_SAVINGTHROW = "iprp_savingthrow"
-    TwoDA_IPRP_ONHIT = "iprp_onhit"
-    TwoDA_IPRP_AMMOTYPE = "iprp_ammotype"
-    TwoDA_IPRP_MONSTERHIT = "iprp_mosterhit"
-    TwoDA_IPRP_WALK = "iprp_walk"
-    TwoDA_EMOTIONS = "emotion"
-    TwoDA_EXPRESSIONS = "facialanim"
-    TwoDA_VIDEO_EFFECTS = "videoeffects"
-    TwoDA_DIALOG_ANIMS = "dialoganimations"
-    TwoDA_PLANETS = "planetary"
-    TwoDA_PLOT = "plot"
-    TwoDA_CAMERAS = "camerastyle"
+    TwoDA_PORTRAITS: str = "portraits"
+    TwoDA_APPEARANCES: str = "appearance"
+    TwoDA_SUBRACES: str = "subrace"
+    TwoDA_SPEEDS: str = "creaturespeed"
+    TwoDA_SOUNDSETS: str = "soundset"
+    TwoDA_FACTIONS: str = "repute"
+    TwoDA_GENDERS: str = "gender"
+    TwoDA_PERCEPTIONS: str = "ranges"
+    TwoDA_CLASSES: str = "classes"
+    TwoDA_FEATS: str = "feat"
+    TwoDA_POWERS: str = "spells"
+    TwoDA_BASEITEMS: str = "baseitems"
+    TwoDA_PLACEABLES: str = "placeables"
+    TwoDA_DOORS: str = "genericdoors"
+    TwoDA_CURSORS: str = "cursors"
+    TwoDA_TRAPS: str = "traps"
+    TwoDA_RACES: str = "racialtypes"
+    TwoDA_SKILLS: str = "skills"
+    TwoDA_UPGRADES: str = "upgrade"
+    TwoDA_ENC_DIFFICULTIES: str = "encdifficulty"
+    TwoDA_ITEM_PROPERTIES: str = "itempropdef"
+    TwoDA_IPRP_PARAMTABLE: str = "iprp_paramtable"
+    TwoDA_IPRP_COSTTABLE: str = "iprp_costtable"
+    TwoDA_IPRP_ABILITIES: str = "iprp_abilities"
+    TwoDA_IPRP_ALIGNGRP: str = "iprp_aligngrp"
+    TwoDA_IPRP_COMBATDAM: str = "iprp_combatdam"
+    TwoDA_IPRP_DAMAGETYPE: str = "iprp_damagetype"
+    TwoDA_IPRP_PROTECTION: str = "iprp_protection"
+    TwoDA_IPRP_ACMODTYPE: str = "iprp_acmodtype"
+    TwoDA_IPRP_IMMUNITY: str = "iprp_immunity"
+    TwoDA_IPRP_SAVEELEMENT: str = "iprp_saveelement"
+    TwoDA_IPRP_SAVINGTHROW: str = "iprp_savingthrow"
+    TwoDA_IPRP_ONHIT: str = "iprp_onhit"
+    TwoDA_IPRP_AMMOTYPE: str = "iprp_ammotype"
+    TwoDA_IPRP_MONSTERHIT: str = "iprp_mosterhit"
+    TwoDA_IPRP_WALK: str = "iprp_walk"
+    TwoDA_EMOTIONS: str = "emotion"
+    TwoDA_EXPRESSIONS: str = "facialanim"
+    TwoDA_VIDEO_EFFECTS: str = "videoeffects"
+    TwoDA_DIALOG_ANIMS: str = "dialoganimations"
+    TwoDA_PLANETS: str = "planetary"
+    TwoDA_PLOT: str = "plot"
+    TwoDA_CAMERAS: str = "camerastyle"
 
     def __init__(
         self,
@@ -140,8 +141,9 @@ class HTInstallation(Installation):
                 else:
                     rootMenu.addMenu(fileMenu)
 
-                rootMenu.insertMenu(firstAction, fileMenu)
-                rootMenu.insertSeparator(firstAction)
+                if firstAction:
+                    rootMenu.insertMenu(firstAction, fileMenu)
+                    rootMenu.insertSeparator(firstAction)
                 search_order = order or [
                     SearchLocation.CHITIN,
                     SearchLocation.OVERRIDE,
@@ -363,7 +365,10 @@ class HTInstallation(Installation):
             - Returns the icon pixmap if a texture is found, otherwise returns a default icon.
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
-        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        baseitems: TwoDA | None = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        if baseitems is None:
+            RobustLogger().error("Failed to retrieve BASEITEMS 2DA.")
+            return pixmap
 
         with suppress(Exception):
             itemClass = baseitems.get_cell(uti.base_item, "itemclass")
@@ -377,10 +382,16 @@ class HTInstallation(Installation):
 
     def getItemBaseName(self, baseItem: int) -> str:
         """Get the name of the base item from its ID."""
-        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        with suppress(Exception):
+        try:
+            baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+            if baseitems is None:
+                RobustLogger().error("Failed to retrieve BASEITEMS 2DA.")
+                return "Unknown"
+        except Exception:  # noqa: BLE001
+            RobustLogger().exception("Failed to retrieve BASEITEMS 2DA.")
+            return "Unknown"
+        else:
             return baseitems.get_cell(baseItem, "label")
-        return "Unknown"
 
     def getModelVarName(self, modelVariation: int) -> str:
         """Get the name of the model variation from its ID."""
@@ -393,9 +404,19 @@ class HTInstallation(Installation):
 
     def getItemIconPath(self, baseItem: int, modelVariation: int, textureVariation: int) -> str:
         """Get the icon path based on base item, model variation, and texture variation."""
-        itemClass = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS).get_cell(baseItem, "itemclass")
-        variation = modelVariation if modelVariation != 0 else textureVariation
-        return f"i{itemClass}_{str(variation).rjust(3, '0')}"
+        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        if baseitems is None:
+            RobustLogger().error("Failed to retrieve BASEITEMS 2DA.")
+            return "Unknown"
+        try:
+            itemClass = baseitems.get_cell(baseItem, "itemclass")
+            print(f"Item class: '{itemClass}'")
+        except Exception:  # noqa: BLE001
+            RobustLogger().exception(f"Failed to get cell '{baseItem}' from BASEITEMS 2DA.")
+            return "Unknown"
+        else:
+            variation = modelVariation if modelVariation != 0 else textureVariation
+            return f"i{itemClass}_{str(variation).rjust(3, '0')}"
 
     def getItemIcon(
         self,
@@ -424,7 +445,7 @@ class HTInstallation(Installation):
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
         iconPath = self.getItemIconPath(baseItem, modelVariation, textureVariation)
-
+        print(f"Icon path: '{iconPath}'")
         with suppress(Exception):
             texture = self.htGetCacheTPC(iconPath.lower())
             if texture is not None:

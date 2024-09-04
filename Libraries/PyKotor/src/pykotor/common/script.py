@@ -45,7 +45,7 @@ class ScriptParam:
     ):
         self.datatype: DataType = DataType(datatype)
         self.name: str = name
-        self.default: str | None = default  # FIXME: type def
+        self.default: Any | None = default
 
     def __repr__(
         self,
@@ -112,5 +112,5 @@ class DataType(Enum):
         if self == DataType.VECTOR:
             return 12
         if self == DataType.STRUCT:
-            raise ValueError  # TODO
+            raise ValueError("Structs are variable size")  # TODO
         return 4

@@ -127,8 +127,9 @@ def is_running_from_temp() -> bool:
 
 def qt_cleanup():
     """Cleanup so we can exit."""
-    from toolset.utils.window import WINDOWS
     from loggerplus import RobustLogger
+
+    from toolset.utils.window import WINDOWS
     from utility.system.process import terminate_child_processes
 
     RobustLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
@@ -151,6 +152,7 @@ def last_resort_cleanup():
     This function should be registered with atexit as early as possible.
     """
     from loggerplus import RobustLogger
+
     from utility.system.process import gracefully_shutdown_threads, start_shutdown_process
 
     RobustLogger().info("Fully shutting down Holocron Toolset...")

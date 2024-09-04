@@ -273,7 +273,7 @@ class ResourceList(MainWindowList):
         return super().eventFilter(obj, event)
 
     def showTooltip(self):
-        QToolTip.showText(QCursor.pos(), self.tooltipText, self.ui.resourceTree)
+        QToolTip.showText(QCursor.pos(), self.tooltipText, self.ui.resourceTree)  # pyright: ignore[reportArgumentType]
 
     def setupSignals(self):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
@@ -296,8 +296,7 @@ class ResourceList(MainWindowList):
     def mouseMoveEvent(self, event: QMouseEvent):
         index = self.ui.resourceTree.indexAt(event.pos())  # type: ignore[arg-type]
         if index.isValid():
-            # Retrieve the QStandardItem from the model using the index
-            model_index: QModelIndex = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).mapToSource(index)  # Map proxy index to source index
+            model_index: QModelIndex = cast(QSortFilterProxyModel, self.ui.resourceTree.model()).mapToSource(index)  # pyright: ignore[reportArgumentType]
             item: ResourceStandardItem | QStandardItem | None = cast(
                 QStandardItemModel,
                 cast(QSortFilterProxyModel, self.ui.resourceTree.model()).sourceModel(),
@@ -349,7 +348,11 @@ class ResourceList(MainWindowList):
         """
         allResources: list[QStandardItem] = self.modulesModel.allResourcesItems()
         resourceSet: set[FileResource] = set(resources)
-        resourceItemMap: dict[FileResource, ResourceStandardItem] = {item.resource: item for item in allResources if isinstance(item, ResourceStandardItem)}
+        resourceItemMap: dict[FileResource, ResourceStandardItem] = {
+            item.resource: item
+            for item in allResources
+            if isinstance(item, ResourceStandardItem)
+        }
         for resource in resourceSet:
             if resource in resourceItemMap:
                 resourceItemMap[resource].resource = resource
@@ -452,7 +455,7 @@ class ResourceProxyModel(QSortFilterProxyModel):
         self.invalidateFilter()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
-        model: QStandardItemModel = self.sourceModel()
+        model: QStandardItemModel = self.sourceModel()  # pyright: ignore[reportAssignmentType]
 
         resref_index = model.index(source_row, 0, source_parent)
         item: ResourceStandardItem | QStandardItem | None = model.itemFromIndex(resref_index)
@@ -652,7 +655,11 @@ class TextureList(MainWindowList):
     def selectedResources(self) -> list[FileResource]:
         resources: list[FileResource] = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
+            if not proxyIndex.isValid():
+                continue
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)  # pyright: ignore[reportArgumentType]
+            if not sourceIndex.isValid():
+                continue
             item = self.texturesModel.item(sourceIndex.row())
             resources.append(item.data(Qt.ItemDataRole.UserRole + 1))
         return resources
@@ -691,10 +698,15 @@ class TextureList(MainWindowList):
 
             for i in range(numVisible):
                 proxyIndex: QModelIndex = proxyModel.index(firstIndex.row() + i, 0)
+                if not proxyIndex.isValid():
+                    continue
                 sourceIndex: QModelIndex = proxyModel.mapToSource(proxyIndex)
+                if not sourceIndex.isValid():
+                    continue
                 item: QStandardItem | None = model.itemFromIndex(sourceIndex)
-                if item is not None:
-                    items.append(item)
+                if item is None:
+                    continue
+                items.append(item)
 
         return items
 
