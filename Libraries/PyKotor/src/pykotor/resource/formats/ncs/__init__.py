@@ -1,4 +1,3 @@
-from __future__ import annotations
 from pykotor.resource.formats.ncs.ncs_data import (
     NCS,
     NCSInstruction,
