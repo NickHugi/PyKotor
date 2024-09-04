@@ -53,7 +53,7 @@ if toolset_path.exists():
 
 from qtpy.QtCore import QAbstractItemModel, QDir, QModelIndex, QObject, Qt  # noqa: E402, F401
 from qtpy.QtGui import QColor, QDrag, QIcon, QImage, QPixmap  # noqa: E402
-from qtpy.QtWidgets import QHBoxLayout, QLineEdit, QPushButton  # noqa: E402
+from qtpy.QtWidgets import QFileSystemModel, QHBoxLayout, QLineEdit, QPushButton  # noqa: E402
 
 from pykotor.extract.file import FileResource  # noqa: E402
 from pykotor.tools.misc import is_capsule_file  # noqa: E402
@@ -122,6 +122,9 @@ class DirItem(TreeItem):
         return len(self.children)
 
     def loadChildren(self, model: ResourceFileSystemModel | QFileSystemModel) -> list[TreeItem | None]:
+        idx = model.indexFromItem(self)
+        model.beginRemoveRows(idx, 0, self.childCount() - 1 if self.childCount() > 0 else 0)
+        model.beginInsertRows(idx, 0, max(0, self.childCount() - 1))
         print(f"{self.__class__.__name__}({self.path}).load_children, row={self.row()}")
         children: list[TreeItem] = []
         toplevel_items = list(self.path.safe_iterdir())
@@ -137,7 +140,9 @@ class DirItem(TreeItem):
         for child in self.children:
             if child is None:
                 continue
-            model.getContainerWidget().setItemIcon(model.indexFromItem(child), child.iconData())
+            model.setData(model.index(self.children.index(child), 0, idx), child.iconData(), Qt.DecorationRole)
+        model.endInsertRows()
+        model.endRemoveRows()
         return self.children
 
     def child(self, row: int) -> TreeItem | None:
@@ -233,25 +238,25 @@ class ResourceFileSystemWidget(QWidget):
         self.fsTreeView.setModel(self.fsModel)
 
         # Address bar
-        self.address_bar = QLineEdit(self)
+        self.address_bar: QLineEdit = QLineEdit(self)
         self.address_bar.returnPressed.connect(self.onAddressBarReturnPressed)
 
         # Go button
-        self.go_button = QPushButton("Go", self)
+        self.go_button: QPushButton = QPushButton("Go", self)
         self.go_button.clicked.connect(self.onGoButtonClicked)
 
         # Refresh button
-        self.refresh_button = QPushButton("Refresh", self)
+        self.refresh_button: QPushButton = QPushButton("Refresh", self)
         self.refresh_button.clicked.connect(self.onRefreshButtonClicked)
 
         # Layout for the address bar, go button, and refresh button
-        self.address_layout = QHBoxLayout()
+        self.address_layout: QHBoxLayout = QHBoxLayout()
         self.address_layout.addWidget(self.address_bar)
         self.address_layout.addWidget(self.go_button)
         self.address_layout.addWidget(self.refresh_button)
 
         # Main layout
-        self.main_layout = QVBoxLayout(self)
+        self.main_layout: QVBoxLayout = QVBoxLayout(self)
         self.main_layout.addLayout(self.address_layout)
         self.main_layout.addWidget(self.fsTreeView)
 
@@ -366,13 +371,8 @@ class ResourceFileSystemWidget(QWidget):
         print(f"onItemExpanded, row={idx.row()}, col={idx.column()}")
         self.fsTreeView.debounceLayoutChanged(preChangeEmit=True)
         item = idx.internalPointer()
-        if isinstance(item, DirItem):
-            parentIndex = idx
-            self.fsModel.beginRemoveRows(parentIndex, 0, item.childCount() - 1 if item.childCount() > 0 else 0)
-            self.fsModel.beginInsertRows(parentIndex, 0, max(0, item.childCount() - 1))
+        if isinstance(item, DirItem) and isinstance(self.fsModel, (ResourceFileSystemModel, QFileSystemModel)):
             item.loadChildren(self.fsModel)
-            self.fsModel.endInsertRows()
-            self.fsModel.endRemoveRows()
         self.refresh_item(item)
         self.fsTreeView.debounceLayoutChanged(preChangeEmit=False)
 
@@ -398,7 +398,7 @@ class ResourceFileSystemWidget(QWidget):
                 return
             openResourceEditor(item.path, item.resource.resname(), item.resource.restype(), item.resource.data(), installation=mw.active, parentWindow=None)
         elif isinstance(item, DirItem):
-            if not item.children:
+            if not item.children and isinstance(self.fsModel, (ResourceFileSystemModel, QFileSystemModel)):
                 item.loadChildren(self.fsModel)
             self.fsTreeView.expand(idx)
         else:
@@ -409,15 +409,12 @@ class ResourceFileSystemWidget(QWidget):
             q_style = QApplication.style()
             assert q_style is not None
             icon = q_style.standardIcon(icon)
-            print("<SDM> [setItemIcon scope] QStyle.StandardPixmap -> icon: ", icon)
 
         elif isinstance(icon, str):
             icon = QIcon(QPixmap(icon).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-            print("<SDM> [setItemIcon scope] str -> icon: ", icon)
 
         elif isinstance(icon, QImage):
             icon = QIcon(QPixmap.fromImage(icon))
-            print("<SDM> [setItemIcon scope] QImage -> icon: ", icon)
 
         if not isinstance(icon, QIcon):
             raise TypeError(f"Invalid icon passed to {self.__class__.__name__}.setItemIcon()!")
@@ -470,15 +467,11 @@ class ResourceFileSystemWidget(QWidget):
         root_path = self.fsModel.rootPath()
         p = Path(root_path, "New Folder")
         p.mkdir(parents=True, exist_ok=True)
-        self.fsModel.resetInternalData()
+        self.fsModel.setRootPath(p)
 
     def onEmptySpaceContextMenu(self, point: QPoint):
         m = QMenu(self)
-        print("<SDM> [onEmptySpaceContextMenu scope] m: ", m)
-
         sm = m.addMenu("Sort by")
-        print("<SDM> [onEmptySpaceContextMenu scope] sm: ", sm)
-
         for i, t in enumerate(["Name", "Size", "Type", "Date Modified"]):
             sm.addAction(t).triggered.connect(lambda i=i: self.fsTreeView.sortByColumn(i, Qt.SortOrder.AscendingOrder))  # pyright: ignore[reportOptionalMemberAccess]
             print("<SDM> [onEmptySpaceContextMenu scope] i: ", i)
