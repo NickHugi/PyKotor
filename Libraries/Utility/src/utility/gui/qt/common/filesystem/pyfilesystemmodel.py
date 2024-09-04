@@ -206,7 +206,7 @@ class PyFileSystemModel(QAbstractItemModel):
     def _q_directoryChanged(self, directory: str, files: list[str] | None = None):
         parentNode = self.node(directory, fetch=False)
         RobustLogger().warning(
-            f"<SDM> [_q_directoryChanged scope] parentNode: {parentNode} row: {parentNode.row()} col: {parentNode.row()} path: {parentNode.fileInfo() and parentNode.fileInfo().path()}"
+            f"<SDM> [_q_directoryChanged scope] parentNode: {parentNode} row: {parentNode.row()} path: {parentNode.fileInfo() and parentNode.fileInfo().path()}"
         )
 
         if len(parentNode.children) == 0:
@@ -288,13 +288,8 @@ class PyFileSystemModel(QAbstractItemModel):
         if rowsToUpdate:
             for fileName in rowsToUpdate:
                 row = parentNode.visibleChildren.index(fileName)
-                print("<SDM> [_q_fileSystemChanged scope] row: ", row)
-
                 topLeft = self.index(row, 0, self.index(path))
-                print("<SDM> [_q_fileSystemChanged scope] topLeft: ", topLeft)
-
                 bottomRight = self.index(row, self.columnCount() - 1, self.index(path))
-                print("<SDM> [_q_fileSystemChanged scope] bottomRight: ", bottomRight)
 
                 self.dataChanged.emit(topLeft, bottomRight)
 
@@ -315,8 +310,6 @@ class PyFileSystemModel(QAbstractItemModel):
                 return []
 
             caseSensitivity = Qt.CaseSensitivity.CaseSensitive if indexNode.caseSensitive() else Qt.CaseSensitivity.CaseInsensitive
-            print("<SDM> [_unwatchPathsAt scope] caseSensitivity: ", caseSensitivity)
-
             fInfo = indexNode.fileInfo()
 
             path = None if fInfo is None else fInfo.filePath()
@@ -406,7 +399,7 @@ class PyFileSystemModel(QAbstractItemModel):
             if node.parent:
                 try:
                     row = node.parent.visibleChildren.index(fileName)
-                    print(f"<SDM> [_q_resolvedName scope] row<{row}>: ")
+                    print(f"<SDM> [_q_resolvedName scope] row<{row}>: ", node.parent.visibleChildren[row])
 
                     node.parent.visibleChildren[row] = resolvedName
                     print(f"<SDM> [_q_resolvedName scope] node<{node.fileName}>.parent<{node.parent.fileName}.visibleChildren<{node.parent.visibleChildren.__len__()}>[row<{row}>]: ", node.parent.visibleChildren[row])
@@ -432,10 +425,10 @@ class PyFileSystemModel(QAbstractItemModel):
     @overload
     def node(self, index: QModelIndex) -> PyFileSystemNode: ...
     def node(self, *args, **kwargs) -> PyFileSystemNode:  # noqa: C901  # sourcery skip: low-code-quality
-        path = kwargs.get("path", args[0] if args and isinstance(args[0], str) else None)
-        fetch = kwargs.get("fetch", args[1] if len(args) > 1 and isinstance(args[1], (int, bool)) else True)
-        index = kwargs.get("index", args[0] if args and isinstance(args[0], QModelIndex) else None)
-        fileInfo = kwargs.get("fileInfo", args[0] if args and isinstance(args[0], QFileInfo) else None)
+        path: str | None = kwargs.get("path", args[0] if args and isinstance(args[0], str) else None)
+        fetch: bool | None = kwargs.get("fetch", args[1] if len(args) > 1 and isinstance(args[1], (int, bool)) else True)
+        index: QModelIndex | None = kwargs.get("index", args[0] if args and isinstance(args[0], QModelIndex) else None)
+        fileInfo: QFileInfo | None = kwargs.get("fileInfo", args[0] if args and isinstance(args[0], QFileInfo) else None)
 
         if isinstance(fileInfo, QFileInfo):
             print("<SDM> [node scope] fileInfo: ", fileInfo.path())
@@ -459,6 +452,7 @@ class PyFileSystemModel(QAbstractItemModel):
 
         index = QModelIndex()  # root
         print("<SDM> [_handle_node_arg_str scope] index: ", index)
+        print("<SDM> [_handle_node_arg_str scope] index: ", index, "index.row():", index.row(), "index.column():", index.column(), "index.isValid():", index.isValid())
 
         resolvedPath = Path(os.path.normpath(path)).resolve()
         print("<SDM> [_handle_node_arg_str scope] resolvedPath: ", resolvedPath)
@@ -522,21 +516,17 @@ class PyFileSystemModel(QAbstractItemModel):
                     self._bypassFilters[node] = 1
 
                 dirPath = str(thisFile.parent)
-                print("<SDM> [_handle_node_arg_str scope] dirPath: ", dirPath)
-
                 if not node.hasInformation() and fetch:
                     self._toFetch.append({"dir": dirPath, "file": thisFile, "node": node})
                     self._fetchingTimer.start(0, self)  # pyright: ignore[reportOptionalMemberAccess]
             parent = node
-            print("<SDM> [_handle_node_arg_str scope] parent: ", parent)
-
         return parent
 
     def _handle_unc_path(self, resolvedPath: Path, rootNode: PyFileSystemNode, host: str) -> PyFileSystemNode:  # noqa: N803
         if len(resolvedPath.parts) == 1 and not resolvedPath.endswith("/"):
             return rootNode
         info = QFileInfo(host)
-        print("<SDM> [_handle_unc_path scope] info: ", info)
+        print("<SDM> [_handle_unc_path scope] info.path(): ", info.path())
 
         if not info.exists():
             return rootNode
@@ -568,21 +558,16 @@ class PyFileSystemModel(QAbstractItemModel):
         return -1 if location == -1 or not node.isVisible else location
 
     def sort(self, column, order=Qt.SortOrder.AscendingOrder):
-        print("<SDM> [sort scope] order: ", order)
+        print("<SDM> [sort scope] order: ", order, "column: ", column)
 
         if self._sortOrder == order and self._sortColumn == column and not self._forceSort:
-            print("<SDM> [sort scope] self._sortOrder: ", self._sortOrder)
             return
 
         self.layoutAboutToBeChanged.emit()
 
         self.sortChildren(column, QModelIndex())
         self._sortColumn = column
-        print("<SDM> [sort scope] self._sortColumn: ", self._sortColumn)
-
         self._sortOrder = order
-        print("<SDM> [sort scope] self._sortOrder: ", self._sortOrder)
-
         self._forceSort = False
 
         self.layoutChanged.emit()
@@ -744,12 +729,8 @@ class PyFileSystemModel(QAbstractItemModel):
 
         if bool(changed & QFileSystemModel.DontUseCustomDirectoryIcons):
             provider = self.iconProvider()
-            print("<SDM> [setOptions scope] provider: ", provider)
-
             if provider:
                 providerOptions = provider.options()
-                print("<SDM> [setOptions scope] providerOptions: ", providerOptions)
-
                 if bool(options & QFileSystemModel.DontUseCustomDirectoryIcons):
                     providerOptions |= QFileIconProvider.DontUseCustomDirectoryIcons
                 else:
@@ -784,7 +765,7 @@ class PyFileSystemModel(QAbstractItemModel):
             else:
                 Path(path).unlink(missing_ok=False)  # noqa: PTH107
         except OSError:
-            RobustLogger().exception("Failed to rmdir")
+            RobustLogger().exception(f"Failed to rmdir '{path}'")
             return False
         else:
             return True
@@ -874,7 +855,7 @@ class PyFileSystemModel(QAbstractItemModel):
     def _handle_from_path_arg(self, path: str, column: int) -> QModelIndex:
         print("<SDM> [_handle_from_path_arg scope] path: ", path)
         pathNodeResult = self.node(path)
-        print("<SDM> [_handle_from_path_arg scope] pathNodeResult: ", pathNodeResult.fileInfo() and pathNodeResult.fileInfo().path(), "row", pathNodeResult.row(), "children count:", pathNodeResult.children.__len__())
+        print("<SDM> [_handle_from_path_arg scope] pathNodeResult: ", pathNodeResult.fileInfo() and pathNodeResult.fileInfo().path(), "row", pathNodeResult.row(), "children count:", pathNodeResult.children.__len__())  # noqa: E501
 
         idx = self.index(pathNodeResult)
         print("<SDM> [_handle_from_path_arg scope] pathNodeResult idx: ", idx.isValid() and typing.cast(PyFileSystemNode, idx.internalPointer()).fileInfo().path())
@@ -890,7 +871,7 @@ class PyFileSystemModel(QAbstractItemModel):
     def _handle_from_node_arg(self, node: PyFileSystemNode, column: int) -> QModelIndex:
         print("<SDM> [_handle_from_node_arg node.fileName ", node.fileName)
         parentNode: PyFileSystemNode | None = None if node is None else node.parent
-        if parentNode is None or not node.isVisible or node is self._root:
+        if node is self._root or parentNode is None or not node.isVisible:
             return QModelIndex()
 
         assert node is not None
@@ -909,8 +890,10 @@ class PyFileSystemModel(QAbstractItemModel):
         parentNode = node.parent
         print("<SDM> [parent scope] parentNode.fileName: ", None if parentNode is None else parentNode.fileName)
 
-        if parentNode is None or parentNode is self._root:
+        if parentNode is None:
             return QModelIndex()
+        if parentNode is self._root:
+            return self._rootIndex
 
         grandparentNode = parentNode.parent
         print("<SDM> [parent scope] grandparentNode.fileName: ", None if grandparentNode is None else grandparentNode.fileName)
@@ -929,7 +912,6 @@ class PyFileSystemModel(QAbstractItemModel):
         if not isinstance(parentItem, PyFileSystemNode):
             return False
         resultHasChildren = bool(parentItem.children)
-        print(f"hasChildren check on '{parentItem.fileInfo() and parentItem.fileInfo().path()}' {resultHasChildren}")
         return resultHasChildren
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
@@ -970,10 +952,14 @@ class PyFileSystemModel(QAbstractItemModel):
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
         node = self.node(parent)
-        if node is None or not self.indexFromItem(node).isValid():
+        if node is None:
             return 0
         nodeIndex = self.indexFromItem(node)
-        if nodeIndex is None or not nodeIndex.isValid() or not node.isVisible:
+        if (
+            nodeIndex is None
+            or not nodeIndex.isValid()
+            or not node.isVisible
+        ):
             return 0
         print("rowCount node is valid! node: ", node.fileName, " node.fileInfo().path(): ", node.fileInfo() and node.fileInfo().path())
         if node == self._root:
