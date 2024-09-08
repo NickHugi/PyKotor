@@ -18,7 +18,9 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QGroupBox, QHeaderView,
     QLineEdit, QMainWindow, QMenu, QMenuBar,
-    QSizePolicy, QTableView, QVBoxLayout, QWidget)
+    QSizePolicy, QVBoxLayout, QWidget)
+
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -69,7 +71,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.filterBox)
 
-        self.twodaTable = QTableView(self.centralwidget)
+        self.twodaTable = RobustTableView(self.centralwidget)
         self.twodaTable.setObjectName(u"twodaTable")
         self.twodaTable.setStyleSheet(u"")
         self.twodaTable.setAlternatingRowColors(True)

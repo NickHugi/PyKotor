@@ -52,26 +52,26 @@ class ApplicationSettingsWidget(SettingsWidget):
         self.ui = Ui_ApplicationSettingsWidget()
         self.ui.setupUi(self)
         self.settings: ApplicationSettings = ApplicationSettings()
-        self.populateAll()
-        self._setupAttributes()
-        self.setupFontSettings()
-        self.ui.resetAttributesButton.clicked.connect(self.resetAttributes)
+        self.populate_all()
+        self._setup_attributes()
+        self.setup_font_settings()
+        self.ui.resetAttributesButton.clicked.connect(self.reset_attributes)
 
         # Connect environment variables table buttons
-        self.ui.addButton.clicked.connect(self.addEnvironmentVariable)
-        self.ui.editButton.clicked.connect(self.editEnvironmentVariable)
-        self.ui.removeButton.clicked.connect(self.removeEnvironmentVariable)
+        self.ui.addButton.clicked.connect(self.add_environment_variable)
+        self.ui.editButton.clicked.connect(self.edit_environment_variable)
+        self.ui.removeButton.clicked.connect(self.remove_environment_variable)
 
         # Populate the environment variables table
-        self.ui.tableWidget.doubleClicked.connect(self.editEnvironmentVariable)
-        self.setupAddMenu()
+        self.ui.tableWidget.doubleClicked.connect(self.edit_environment_variable)
+        self.setup_add_menu()
 
-    def setupFontSettings(self):
+    def setup_font_settings(self):
         """Setup the font selection dialog and apply selected font globally."""
-        self.ui.fontButton.clicked.connect(self.selectFont)
-        self.updateFontLabel()
+        self.ui.fontButton.clicked.connect(self.select_font)
+        self.update_font_label()
 
-    def updateFontLabel(self):
+    def update_font_label(self):
         """Update the label to show the current font."""
         font_string = self.settings.settings.value("GlobalFont", "")
         if font_string:
@@ -82,16 +82,16 @@ class ApplicationSettingsWidget(SettingsWidget):
         else:
             self.ui.currentFontLabel.setText("Current Font: Default")
 
-    def selectFont(self):
+    def select_font(self):
         """Open QFontDialog to select a font."""
         current_font = QApplication.font()
         font, ok = QFontDialog.getFont(current_font, self)
         if ok:
             QApplication.setFont(font)
             self.settings.settings.setValue("GlobalFont", font.toString())
-            self.updateFontLabel()
+            self.update_font_label()
 
-    def populateAll(self):
+    def populate_all(self):
         """Populate the AA Settings group box with checkboxes."""
         aa_layout = self.ui.groupBoxAASettings.layout()
         for attr in dir(self.settings.__class__):
@@ -105,10 +105,10 @@ class ApplicationSettingsWidget(SettingsWidget):
                 checkbox.setObjectName(checkBoxName)
                 attrName = checkBoxName.replace("CheckBox", "", 1)
                 checkbox.setChecked(getattr(self.settings, attrName))
-                checkbox.stateChanged.connect(lambda state, name=attrName: self.saveApplicationAttribute(state, name))
+                checkbox.stateChanged.connect(lambda state, name=attrName: self.save_applicatcion_attribute(state, name))
                 aa_layout.addWidget(checkbox)  # type: ignore[arg-type]
 
-        for key, value in self.settings.EnvironmentVariables.items():
+        for key, value in self.settings.app_env_variables.items():
             row_position = self.ui.tableWidget.rowCount()
             self.ui.tableWidget.insertRow(row_position)
             self.ui.tableWidget.setItem(row_position, 0, QTableWidgetItem(key))  # pyright: ignore[reportArgumentType]
@@ -136,22 +136,22 @@ class ApplicationSettingsWidget(SettingsWidget):
                 misc_layout.addLayout(layout)  # pyright: ignore[reportArgumentType]
 
         self.ui.groupBoxMiscSettings.setLayout(misc_layout)  # pyright: ignore[reportArgumentType]
-        self.updateFontLabel()
+        self.update_font_label()
 
-    def _setupAttributes(self):
+    def _setup_attributes(self):
         for attr_name in [widget for widget in dir(self.ui) if widget.endswith("CheckBox")]:
             checkbox: QCheckBox = getattr(self.ui, attr_name)
             setting_attr_name: str = attr_name.replace("CheckBox", "", 1)
             checkbox.setChecked(getattr(self.settings, setting_attr_name))
             checkbox.stateChanged.connect(lambda state, name=setting_attr_name: setattr(self.settings, name, bool(state)))
 
-    def saveEnvironmentVariable(self, key: str, value: str):
+    def save_environment_variable(self, key: str, value: str):
         """Save a single environment variable to QSettings."""
-        environment_variables = self.settings.EnvironmentVariables
+        environment_variables = self.settings.app_env_variables
         environment_variables[key] = value
-        self.settings.EnvironmentVariables = environment_variables
+        self.settings.app_env_variables = environment_variables
 
-    def setToDefault(self, row: int):
+    def set_to_default(self, row: int):
         """Slot to reset the value in the specified row to the default."""
         key_item = self.ui.tableWidget.item(row, 0)
         assert key_item is not None
@@ -161,10 +161,10 @@ class ApplicationSettingsWidget(SettingsWidget):
         env_var = next((var for var in ENV_VARS if var.name == key), None)
         if env_var:
             self.ui.tableWidget.setItem(row, 1, QTableWidgetItem(env_var.default))  # pyright: ignore[reportArgumentType]
-            self.saveEnvironmentVariable(key, env_var.default)
+            self.save_environment_variable(key, env_var.default)
             self.ui.tableWidget.resizeColumnsToContents()
 
-    def setupAddMenu(self):
+    def setup_add_menu(self):
         """Sets up the 'Add' menu based on the groups of EnvVars."""
         self.add_menu = QMenu(self.ui.addButton)  # pyright: ignore[reportArgumentType, reportCallIssue]
         for group in sorted({var.group for var in ENV_VARS}):
@@ -173,21 +173,21 @@ class ApplicationSettingsWidget(SettingsWidget):
                 action = group_menu.addAction(env_var.name)
                 action.setToolTip(env_var.description)
                 action.hovered.connect(lambda act=action: QToolTip.showText(QCursor.pos(), act.toolTip()))
-                action.triggered.connect(lambda _, ev=env_var: self.addEnvironmentVariableFromMenu(ev.name, ev.default))
+                action.triggered.connect(lambda _, ev=env_var: self.add_environment_variable_from_menu(ev.name, ev.default))
 
         self.ui.addButton.setMenu(self.add_menu)  # pyright: ignore[reportArgumentType]
 
-    def addEnvironmentVariableFromMenu(self, key: str, value: str):
+    def add_environment_variable_from_menu(self, key: str, value: str):
         """Add an environment variable directly from the menu."""
         row_position = self.ui.tableWidget.rowCount()
         self.ui.tableWidget.insertRow(row_position)
         self.ui.tableWidget.setItem(row_position, 0, QTableWidgetItem(key))  # pyright: ignore[reportArgumentType]
         self.ui.tableWidget.setItem(row_position, 1, QTableWidgetItem(value))  # pyright: ignore[reportArgumentType]
         self.ui.tableWidget.resizeColumnsToContents()
-        self.saveEnvironmentVariable(key, value)
+        self.save_environment_variable(key, value)
         self.editedSignal.emit()
 
-    def addEnvironmentVariable(self):
+    def add_environment_variable(self):
         """Add a new environment variable."""
         dialog = EnvVariableDialog(self)
 
@@ -202,14 +202,14 @@ class ApplicationSettingsWidget(SettingsWidget):
             self.ui.tableWidget.setItem(row_position, 1, QTableWidgetItem(value))  # pyright: ignore[reportArgumentType]
 
             default_button = QPushButton("Default")
-            default_button.clicked.connect(lambda: self.setToDefault(row_position))
+            default_button.clicked.connect(lambda: self.set_to_default(row_position))
             self.ui.tableWidget.setCellWidget(row_position, 2, default_button)  # pyright: ignore[reportArgumentType]
             self.ui.tableWidget.resizeColumnsToContents()
 
-            self.saveEnvironmentVariable(key, value)
+            self.save_environment_variable(key, value)
             self.editedSignal.emit()
 
-    def editEnvironmentVariable(self):
+    def edit_environment_variable(self):
         """Edit the selected environment variable."""
         selected_row = self.ui.tableWidget.currentRow()
         if selected_row < 0:
@@ -237,21 +237,20 @@ class ApplicationSettingsWidget(SettingsWidget):
                 return
 
             if old_key != new_key:
-                self.removeEnvironmentVariableFromSettings(old_key)
+                self.remove_environment_variable_from_settings(old_key)
                 self.ui.tableWidget.setItem(selected_row, 0, QTableWidgetItem(new_key))  # Update UI with new key  # pyright: ignore[reportArgumentType]
             self.ui.tableWidget.setItem(selected_row, 1, QTableWidgetItem(new_value))  # pyright: ignore[reportArgumentType]
             self.ui.tableWidget.resizeColumnsToContents()
-            self.saveEnvironmentVariable(new_key, new_value)
+            self.save_environment_variable(new_key, new_value)
             self.editedSignal.emit()
 
-    def removeEnvironmentVariableFromSettings(self, key: str):
+    def remove_environment_variable_from_settings(self, key: str):
         """Remove a single environment variable from QSettings."""
-        environment_variables = self.settings.EnvironmentVariables
-        if key in environment_variables:
-            del environment_variables[key]
-        self.settings.EnvironmentVariables = environment_variables  # Trigger saving to QSettings
+        if key in self.settings.app_env_variables:
+            del self.settings.app_env_variables[key]
+        self.settings.settings.sync()
 
-    def removeEnvironmentVariable(self):
+    def remove_environment_variable(self):
         """Remove the selected environment variable."""
         selected_row = self.ui.tableWidget.currentRow()
         if selected_row < 0:
@@ -262,10 +261,10 @@ class ApplicationSettingsWidget(SettingsWidget):
         assert key_item is not None
         key = key_item.text()
         self.ui.tableWidget.removeRow(selected_row)
-        self.removeEnvironmentVariableFromSettings(key)
+        self.remove_environment_variable_from_settings(key)
         self.editedSignal.emit()
 
-    def resetAttributes(self):
+    def reset_attributes(self):
         for attr in [widget for widget in dir(self) if "CheckBox" in widget]:
             self._reset_and_get_default(attr[:-10])
         for name, setting in self.settings.MISC_SETTINGS.items():
@@ -279,12 +278,12 @@ class ApplicationSettingsWidget(SettingsWidget):
                 spinbox = self.findChild(QSpinBox, name)
                 if spinbox:
                     spinbox.setValue(default_value)
-        self._setupAttributes()
+        self._setup_attributes()
         self.settings.settings.remove("GlobalFont")
         QApplication.setFont(QApplication.font())  # Reset to default font
-        self.updateFontLabel()
+        self.update_font_label()
 
-    def saveApplicationAttribute(self, state: object, attr_name: str):
+    def save_applicatcion_attribute(self, state: object, attr_name: str):
         if state not in (0, 2):
             print(f"Corrupted setting: {attr_name}, cannot set state of '{state}' ({state!r}) expected a bool instead.")
             return
@@ -307,12 +306,10 @@ class ApplicationSettings(Settings):
         super().__init__("Application")
 
 
-    EnvironmentVariables = Settings.addSetting(
+    app_env_variables = Settings.addSetting(
         "EnvironmentVariables",
         {
             "QT_MULTIMEDIA_PREFERRED_PLUGINS": os.environ.get("QT_MULTIMEDIA_PREFERRED_PLUGINS", "windowsmediafoundation") if os.name == "nt" else "",
-            "QT_DEBUG_PLUGINS": os.environ.get("QT_DEBUG_PLUGINS", "0"),
-            "QT_LOGGING_RULES": os.environ.get("QT_LOGGING_RULES", "qt5ct.debug=false")
         }
     )
 

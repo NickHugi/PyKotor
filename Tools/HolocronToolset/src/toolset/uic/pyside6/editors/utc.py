@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utc.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,17 +23,17 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QFormLay
     QPushButton, QSizePolicy, QSlider, QSpacerItem,
     QSpinBox, QTabWidget, QVBoxLayout, QWidget)
 
-from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.renderer.model import ModelRenderer
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(1007, 585)
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
@@ -65,7 +65,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_15.setObjectName(u"horizontalLayout_15")
         self.previewRenderer = ModelRenderer(self.centralwidget)
         self.previewRenderer.setObjectName(u"previewRenderer")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.previewRenderer.sizePolicy().hasHeightForWidth())
@@ -103,7 +103,7 @@ class Ui_MainWindow(object):
 
         self.firstnameRandomButton = QPushButton(self.groupBox)
         self.firstnameRandomButton.setObjectName(u"firstnameRandomButton")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.firstnameRandomButton.sizePolicy().hasHeightForWidth())
@@ -159,7 +159,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_3.addWidget(self.tagGenerateButton)
 
-        self.horizontalSpacer = QSpacerItem(32, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.horizontalSpacer = QSpacerItem(32, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_3.addItem(self.horizontalSpacer)
 
@@ -179,7 +179,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_8.addWidget(self.resrefEdit)
 
-        self.horizontalSpacer_2 = QSpacerItem(32, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.horizontalSpacer_2 = QSpacerItem(32, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_8.addItem(self.horizontalSpacer_2)
 
@@ -198,7 +198,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_4.addWidget(self.appearanceSelect)
 
-        self.horizontalSpacer_5 = QSpacerItem(32, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.horizontalSpacer_5 = QSpacerItem(32, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer_5)
 
@@ -217,7 +217,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_10.addWidget(self.soundsetSelect)
 
-        self.horizontalSpacer_6 = QSpacerItem(32, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.horizontalSpacer_6 = QSpacerItem(32, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_10.addItem(self.horizontalSpacer_6)
 
@@ -233,7 +233,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
         self.conversationEdit = FilterComboBox(self.groupBox)
         self.conversationEdit.setObjectName(u"conversationEdit")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy3.setHorizontalStretch(1)
         sizePolicy3.setVerticalStretch(0)
         sizePolicy3.setHeightForWidth(self.conversationEdit.sizePolicy().hasHeightForWidth())
@@ -251,7 +251,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_5.addWidget(self.conversationModifyButton)
 
-        self.horizontalSpacer_10 = QSpacerItem(32, 0, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.horizontalSpacer_10 = QSpacerItem(32, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_5.addItem(self.horizontalSpacer_10)
 
@@ -308,7 +308,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.groupBox_2)
 
-        self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_5 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout.addItem(self.verticalSpacer_5)
 
@@ -326,7 +326,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.disarmableCheckbox = QCheckBox(self.groupBox_3)
         self.disarmableCheckbox.setObjectName(u"disarmableCheckbox")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
         sizePolicy4.setHorizontalStretch(0)
         sizePolicy4.setVerticalStretch(0)
         sizePolicy4.setHeightForWidth(self.disarmableCheckbox.sizePolicy().hasHeightForWidth())
@@ -382,7 +382,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addWidget(self.hologramCheckbox)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer)
 
@@ -548,7 +548,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.groupBox_5)
 
-        self.verticalSpacer_4 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_4 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_4)
 
@@ -776,7 +776,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.groupBox_9)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_5.addItem(self.verticalSpacer_3)
 
@@ -984,7 +984,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6.addWidget(self.groupBox_11)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_6.addItem(self.verticalSpacer_2)
 
@@ -1018,7 +1018,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_13.addWidget(self.class1LevelSpin)
 
-        self.horizontalSpacer_8 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_8 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_13.addItem(self.horizontalSpacer_8)
 
@@ -1046,7 +1046,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_14.addWidget(self.class2LevelSpin)
 
-        self.horizontalSpacer_9 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_9 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_14.addItem(self.horizontalSpacer_9)
 
@@ -1084,7 +1084,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_7.addWidget(self.groupBox_12)
 
-        self.spacer = QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_7.addItem(self.spacer)
 
@@ -1154,7 +1154,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_29.setObjectName(u"horizontalLayout_29")
         self.onBlockedEdit = FilterComboBox(self.Scripts)
         self.onBlockedEdit.setObjectName(u"onBlockedEdit")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy5.setHorizontalStretch(0)
         sizePolicy5.setVerticalStretch(0)
         sizePolicy5.setHeightForWidth(self.onBlockedEdit.sizePolicy().hasHeightForWidth())

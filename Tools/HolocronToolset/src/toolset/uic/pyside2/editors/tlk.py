@@ -12,6 +12,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -93,7 +95,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_3)
 
-        self.talkTable = QTableView(self.layoutWidget)
+        self.talkTable = RobustTableView(self.layoutWidget)
         self.talkTable.setObjectName(u"talkTable")
         self.talkTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.talkTable.setSelectionMode(QAbstractItemView.SingleSelection)

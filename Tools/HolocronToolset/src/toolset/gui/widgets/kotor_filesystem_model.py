@@ -13,7 +13,7 @@ import qtpy
 from loggerplus import RobustLogger
 
 from pykotor.extract.capsule import LazyCapsule
-from utility.gui.qt.common.icon_util import qicon_from_file_ext, qpixmap_to_qicon
+from utility.ui_libraries.qt.filesystem.icon_util import qicon_from_file_ext, qpixmap_to_qicon
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     QDesktopWidget = None

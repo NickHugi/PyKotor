@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -22,8 +22,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QSizePolicy, QSpacerItem, QStatusBar, QTabWidget,
     QVBoxLayout, QWidget)
 
-from toolset.gui.widgets.main_widgets import (ResourceList, TextureList)
 from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
+from toolset.gui.widgets.main_widgets import (ResourceList, TextureList)
 from toolset.rcc import resources_rc_pyside6
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -316,7 +316,7 @@ class Ui_MainWindow(object):
         self.vboxlayout = QVBoxLayout()
         self.vboxlayout.setObjectName(u"vboxlayout")
         self.vboxlayout.setSizeConstraint(QLayout.SetFixedSize)
-        self.verticalSpacer_2 = QSpacerItem(124, 45, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.verticalSpacer_2 = QSpacerItem(124, 45, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
 
         self.vboxlayout.addItem(self.verticalSpacer_2)
 
@@ -334,7 +334,7 @@ class Ui_MainWindow(object):
 
         self.extractButton = QPushButton(self.sidebar)
         self.extractButton.setObjectName(u"extractButton")
-        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.extractButton.sizePolicy().hasHeightForWidth())
@@ -380,7 +380,7 @@ class Ui_MainWindow(object):
 
         self.vboxlayout.addWidget(self.sidebar)
 
-        self.verticalSpacer = QSpacerItem(124, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(124, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.vboxlayout.addItem(self.verticalSpacer)
 

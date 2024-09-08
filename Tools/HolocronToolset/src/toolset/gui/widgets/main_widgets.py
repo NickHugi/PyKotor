@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import multiprocessing
-
 from abc import abstractmethod
+from ctypes import c_bool
+from queue import Empty, Queue
 from time import sleep
-from typing import TYPE_CHECKING, Any, ClassVar, Tuple, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QPoint, QSortFilterProxyModel, QThread, QTimer, Qt
+from qtpy.QtCore import QEvent, QMutex, QMutexLocker, QPoint, QSortFilterProxyModel, QThread, QTimer, QWaitCondition, Qt
 from qtpy.QtGui import (
     QCursor,
     QIcon,
     QImage,
-    QMouseEvent,
     QPixmap,
     QStandardItem,
     QStandardItemModel,
@@ -24,15 +23,15 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QHeaderView, QMenu, QToolTip, QWidget
 
-from pykotor.extract.file import FileResource
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QEvent, QModelIndex, QObject
-    from qtpy.QtGui import QResizeEvent
+    from qtpy.QtCore import QModelIndex, QObject
+    from qtpy.QtGui import QMouseEvent, QResizeEvent
 
+    from pykotor.extract.file import FileResource
     from pykotor.resource.type import ResourceType
     from toolset.data.installation import HTInstallation
     from utility.common.more_collections import CaseInsensitiveDict
@@ -44,7 +43,7 @@ class MainWindowList(QWidget):
     sectionChanged = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     @abstractmethod
-    def selectedResources(self) -> list[FileResource]: ...
+    def selected_resources(self) -> list[FileResource]: ...
 
 
 class ResourceStandardItem(QStandardItem):
@@ -54,8 +53,8 @@ class ResourceStandardItem(QStandardItem):
 
 
 class ResourceList(MainWindowList):
-    requestReload = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
-    requestRefresh = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
+    requestReload: QtCore.Signal = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+    requestRefresh: QtCore.Signal = QtCore.Signal()  # pyright: ignore[reportPrivateImportUsage]
 
     HORIZONTAL_HEADER_LABELS: ClassVar[list[str]] = ["ResRef", "Type"]
 
@@ -104,191 +103,39 @@ class ResourceList(MainWindowList):
         self.ui.sectionCombo.setModel(self.sectionModel)  # pyright: ignore[reportArgumentType]
 
         # Connect the header context menu request signal
-        header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
-        assert header is not None
-        header.setSectionsClickable(True)
-        header.setSortIndicatorShown(True)
-        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # pyright: ignore[reportArgumentType]
-
-        header.customContextMenuRequested.connect(self.onHeaderContextMenu)
-
-        # Connect expand/collapse signals to autoFitColumns if enabled
-        self.ui.resourceTree.expanded.connect(self.onTreeItemExpanded)
-        self.ui.resourceTree.collapsed.connect(self.onTreeItemCollapsed)
-
-        # Install event filter on the viewport
-        viewport: QWidget | None = self.ui.resourceTree.viewport()  # pyright: ignore[reportAssignmentType]
-        assert viewport is not None
-        viewport.installEventFilter(self)  # pyright: ignore[reportArgumentType]
-        self.setMouseTracking(True)
-        self.ui.resourceTree.setMouseTracking(True)
+        tree_view_header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
+        assert tree_view_header is not None
+        tree_view_header.setSectionsClickable(True)
+        tree_view_header.setSortIndicatorShown(True)
+        tree_view_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)  # pyright: ignore[reportArgumentType]
+        tree_view_header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # pyright: ignore[reportArgumentType]
 
         self.tooltipTimer = QTimer(self)
         self.tooltipTimer.setSingleShot(True)
-        self.tooltipTimer.timeout.connect(self.showTooltip)
+        self.tooltipTimer.timeout.connect(self.show_tooltip)
 
-    def onHeaderContextMenu(self, point: QPoint):
-        """Show context menu for the header."""
-        menu = QMenu(self)
-
-        # Flatten/Unflatten
-        flatten_action = menu.addAction("Flatten")
-        assert flatten_action is not None
-        flatten_action.setCheckable(True)
-        flatten_action.setChecked(self.flattened)
-        flatten_action.triggered.connect(self.toggleFlatten)
-
-        # Collapse/Expand All
-        expand_collapse_action = menu.addAction("Expand All")
-        assert expand_collapse_action is not None
-        expand_collapse_action.setCheckable(True)
-        expand_collapse_action.setChecked(self.expandedState)
-        expand_collapse_action.triggered.connect(self.toggleExpandCollapse)
-
-        # Auto-fit Columns
-        auto_fit_columns_action = menu.addAction("Auto-fit Columns")
-        assert auto_fit_columns_action is not None
-        auto_fit_columns_action.setCheckable(True)
-        auto_fit_columns_action.setChecked(self.autoResizeEnabled)
-        auto_fit_columns_action.triggered.connect(self.toggleAutoFitColumns)
-
-        # Alternate Row Colors
-        alternate_row_colors_action = menu.addAction("Alternate Row Colors")
-        assert alternate_row_colors_action is not None
-        alternate_row_colors_action.setCheckable(True)
-        alternate_row_colors_action.setChecked(self.ui.resourceTree.alternatingRowColors())
-        alternate_row_colors_action.triggered.connect(self.ui.resourceTree.setAlternatingRowColors)
-
-        header: QHeaderView | None = self.ui.resourceTree.header()  # pyright: ignore[reportAssignmentType]
-        assert header is not None
-        menu.exec_(header.mapToGlobal(point))
-
-    def toggleFlatten(self):
-        """Toggle the flatten state of the tree view."""
-        if self.flattened:
-            self.unflattenTree()
-        else:
-            self.flattenTree()
-        self.flattened = not self.flattened
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-
-    def flattenTree(self):
-        """Flatten the tree structure into a single level."""
-        flat_items: list[tuple[FileResource, tuple[ResourceStandardItem, QStandardItem]]] = []
-
-        for i in range(self.modulesModel.rowCount()):
-            category_item: QStandardItem | None = self.modulesModel.item(i)
-            assert category_item is not None
-            for j in range(category_item.rowCount()):
-                resourceItem: ResourceStandardItem = cast(ResourceStandardItem, category_item.child(j, 0))
-                resourceItem.__class__ = ResourceStandardItem
-
-                flat_items.append(
-                    cast(
-                        Tuple[FileResource, Tuple[ResourceStandardItem, QStandardItem]],
-                        (
-                            resourceItem.resource,
-                            tuple(category_item.child(j, col).clone() for col in range(category_item.columnCount())),  # pyright: ignore[reportOptionalMemberAccess]
-                        ),
-                    )
-                )
-
-        self._clearModulesModel()
-        for resource, cloned_resource_row in flat_items:
-            cloned_resource_row[0].resource = resource
-            self.modulesModel.appendRow(cloned_resource_row)
-
-    def unflattenTree(self):
-        """Restore the original tree structure."""
-        resources = []
-        for i in range(self.modulesModel.rowCount()):
-            item: ResourceStandardItem | QStandardItem | None = self.modulesModel.item(i, 0)
-            if not isinstance(item, ResourceStandardItem):
-                continue
-            resources.append(item.resource)
-        self._clearModulesModel()
-        self.setResources(resources, clearExisting=False)
-
-    def _clearModulesModel(self):
+    def _clear_modules_model(self):
         self.modulesModel.clear()
         self.modulesModel.setColumnCount(2)
         self.modulesModel.setHorizontalHeaderLabels(["ResRef", "Type"])
 
-    def collapseAll(self):
-        autoResizeEnabled = self.autoResizeEnabled
-        if autoResizeEnabled:  # Temporarily disable autoresize column logic while the collapse happens.
-            self.autoResizeEnabled = False
-        self.ui.resourceTree.collapseAll()
-        self.autoResizeEnabled = autoResizeEnabled
-
-    def expandAll(self):
-        autoResizeEnabled = self.autoResizeEnabled
-        if autoResizeEnabled:  # Temporarily disable autoresize column logic while the expand happens.
-            self.autoResizeEnabled = False
-        self.ui.resourceTree.expandAll()
-        self.autoResizeEnabled = autoResizeEnabled
-
-    def toggleExpandCollapse(self):
-        """Toggle between expanding and collapsing all items in the tree."""
-        if self.expandedState:
-            self.collapseAll()
-        else:
-            self.expandAll()
-        self.expandedState = not self.expandedState
-
-    def resetColumnWidths(self):
-        header = self.ui.resourceTree.header()
-        assert header is not None
-        for col in range(header.count()):
-            header.resizeSection(col, header.defaultSectionSize())
-
-    def autoFitColumns(self):
-        header = self.ui.resourceTree.header()
-        assert header is not None
-        for col in range(header.count()):
-            self.ui.resourceTree.resizeColumnToContents(col)
-
-    def toggleAutoFitColumns(self):
-        self.autoResizeEnabled = not self.autoResizeEnabled
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-        else:
-            self.resetColumnWidths()
-
-    def onTreeItemExpanded(self, index):
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-
-    def onTreeItemCollapsed(self, index):
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
-
-    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() == QtCore.QEvent.Type.MouseMove and obj is self.ui.resourceTree.viewport():
-            assert isinstance(event, QMouseEvent)
-            self.mouseMoveEvent(event)
-            return True
-        return super().eventFilter(obj, event)
-
-    def showTooltip(self):
+    def show_tooltip(self):
         QToolTip.showText(QCursor.pos(), self.tooltipText, self.ui.resourceTree)  # pyright: ignore[reportArgumentType]
 
     def setupSignals(self):
-        self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
-        self.ui.sectionCombo.currentIndexChanged.connect(self.onSectionChanged)
-        self.ui.reloadButton.clicked.connect(self.onReloadClicked)
-        self.ui.refreshButton.clicked.connect(self.onRefreshClicked)
-        self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceContextMenu)
-        self.ui.resourceTree.doubleClicked.connect(self.onResourceDoubleClicked)
+        self.ui.searchEdit.textEdited.connect(self.on_filter_string_updated)
+        self.ui.sectionCombo.currentIndexChanged.connect(self.on_section_changed)
+        self.ui.reloadButton.clicked.connect(self.on_reload_clicked)
+        self.ui.refreshButton.clicked.connect(self.on_refresh_clicked)
+        self.ui.resourceTree.customContextMenuRequested.connect(self.on_resource_context_menu)
+        self.ui.resourceTree.doubleClicked.connect(self.on_resource_double_clicked)
 
-    def enterEvent(self, event):
+    def enterEvent(self, event: QEvent):
         self.tooltipTimer.stop()
         QToolTip.hideText()
         super().enterEvent(event)
 
-    def leaveEvent(self, event):
+    def leaveEvent(self, event: QEvent):
         self.tooltipTimer.stop()
         QToolTip.hideText()
         super().leaveEvent(event)
@@ -313,18 +160,18 @@ class ResourceList(MainWindowList):
             QToolTip.hideText()
         super().mouseMoveEvent(event)
 
-    def hideReloadButton(self):
+    def hide_reload_button(self):
         self.ui.reloadButton.setVisible(False)
 
-    def hideSection(self):
+    def hide_section(self):
         self.ui.line.setVisible(False)
         self.ui.sectionCombo.setVisible(False)
         self.ui.refreshButton.setVisible(False)
 
-    def currentSection(self) -> str:
+    def current_section(self) -> str:
         return self.ui.sectionCombo.currentData()
 
-    def changeSection(
+    def change_section(
         self,
         section: str,
     ):
@@ -333,7 +180,7 @@ class ResourceList(MainWindowList):
                 RobustLogger().debug("changing to section '%s'", section)
                 self.ui.sectionCombo.setCurrentIndex(i)
 
-    def setResources(
+    def set_resources(
         self,
         resources: list[FileResource],
         customCategory: str | None = None,
@@ -346,7 +193,7 @@ class ResourceList(MainWindowList):
         ----
             resources: {list[FileResource]}: List of FileResource objects to set
         """
-        allResources: list[QStandardItem] = self.modulesModel.allResourcesItems()
+        allResources: list[QStandardItem] = self.modulesModel.all_resources_items()
         resourceSet: set[FileResource] = set(resources)
         resourceItemMap: dict[FileResource, ResourceStandardItem] = {
             item.resource: item
@@ -366,20 +213,16 @@ class ResourceList(MainWindowList):
                     continue
                 item.parent().removeRow(item.row())
         self.modulesModel.removeUnusedCategories()
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
 
-    def setSections(
+    def set_sections(
         self,
         sections: list[QStandardItem],
     ):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
-        if self.autoResizeEnabled:
-            self.autoFitColumns()
 
-    def setResourceSelection(
+    def set_resource_selection(
         self,
         resource: FileResource,
     ):
@@ -391,7 +234,7 @@ class ResourceList(MainWindowList):
             self.ui.resourceTree.scrollTo(child)
             self.ui.resourceTree.setCurrentIndex(child)
 
-        for item in model.allResourcesItems():
+        for item in model.all_resources_items():
             if not isinstance(item, ResourceStandardItem):
                 continue
             resource_from_item: FileResource = item.resource
@@ -399,28 +242,27 @@ class ResourceList(MainWindowList):
                 itemIndex: QModelIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
 
-    def selectedResources(self) -> list[FileResource]:
-        return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())  # type: ignore[arg-type]
+    def selected_resources(self) -> list[FileResource]:
+        return self.modulesModel.resource_from_indexes(self.ui.resourceTree.selectedIndexes())  # type: ignore[arg-type]
 
-    def _getSectionUserRoleData(self):
+    def _get_section_user_role_data(self):
         return self.ui.sectionCombo.currentData(Qt.ItemDataRole.UserRole)
 
-
-    def onFilterStringUpdated(self):
+    def on_filter_string_updated(self):
         self.modulesModel.proxyModel().setFilterString(self.ui.searchEdit.text())
 
-    def onSectionChanged(self):
-        self.sectionChanged.emit(self._getSectionUserRoleData())
+    def on_section_changed(self):
+        self.sectionChanged.emit(self._get_section_user_role_data())
 
-    def onReloadClicked(self):
-        self.requestReload.emit(self._getSectionUserRoleData())
+    def on_reload_clicked(self):
+        self.requestReload.emit(self._get_section_user_role_data())
 
-    def onRefreshClicked(self):
-        self._clearModulesModel()
+    def on_refresh_clicked(self):
+        self._clear_modules_model()
         self.requestRefresh.emit()
 
-    def onResourceContextMenu(self, point: QPoint):
-        resources: list[FileResource] = self.selectedResources()
+    def on_resource_context_menu(self, point: QPoint):
+        resources: list[FileResource] = self.selected_resources()
         if not resources:
             return
         menu = QMenu(self)
@@ -432,8 +274,8 @@ class ResourceList(MainWindowList):
         builder.viewport = lambda: self.ui.resourceTree
         builder.runContextMenu(point, menu=menu)
 
-    def onResourceDoubleClicked(self):
-        self.requestOpenResource.emit(self.selectedResources(), None)
+    def on_resource_double_clicked(self):
+        self.requestOpenResource.emit(self.selected_resources(), None)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -522,7 +364,7 @@ class ResourceModel(QStandardItemModel):
             ]
         )
 
-    def resourceFromIndexes(
+    def resource_from_indexes(
         self,
         indexes: list[QModelIndex],
         *,
@@ -540,7 +382,7 @@ class ResourceModel(QStandardItemModel):
     ) -> list[FileResource]:
         return [item.resource for item in items if isinstance(item, ResourceStandardItem)]  # pyright: ignore[reportAttributeAccessIssue]
 
-    def allResourcesItems(self) -> list[QStandardItem]:
+    def all_resources_items(self) -> list[QStandardItem]:
         """Returns a list of all QStandardItem objects in the model that represent resource files."""
         resources = (
             category.child(i, 0)
@@ -597,15 +439,21 @@ class TextureList(MainWindowList):
         self.sectionModel: QStandardItemModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
 
-        self._taskQueue: multiprocessing.JoinableQueue = multiprocessing.JoinableQueue()
-        self._resultQueue: multiprocessing.Queue = multiprocessing.Queue()
-        self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for _ in range(multiprocessing.cpu_count())]
+        self._taskQueue: Queue = Queue()
+        self._resultQueue: Queue = Queue()
+        self._stopFlag = c_bool(False)
+        self._mutex = QMutex()
+        self._condition = QWaitCondition()
+        self._consumers: list[TextureListConsumer] = [
+            TextureListConsumer(self._taskQueue, self._resultQueue, self._stopFlag, self._mutex, self._condition)
+            for _ in range(QThread.idealThreadCount())
+        ]
         for consumer in self._consumers:
-            consumer.start()
+            consumer.start(QThread.Priority.LowPriority)
 
         self._scanner: QThread = QThread(self)
         self._scanner.run = self.scan
-        self._scanner.start()
+        self._scanner.start(QThread.Priority.LowPriority)
 
     def setupSignals(self):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
@@ -619,9 +467,15 @@ class TextureList(MainWindowList):
         self.ui.searchEdit.textChanged.connect(self.onTextureListScrolled)
 
     def doTerminations(self):
-        self._scanner.terminate()
+        with QMutexLocker(self._mutex):
+            self._stopFlag.value = True
+            self._condition.wakeAll()
+
+        self._scanner.quit()
+        self._scanner.wait()
         for consumer in self._consumers:
-            consumer.terminate()
+            consumer.quit()
+            consumer.wait()
 
     def setInstallation(self, installation: HTInstallation):
         self._installation = installation
@@ -652,7 +506,7 @@ class TextureList(MainWindowList):
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
-    def selectedResources(self) -> list[FileResource]:
+    def selected_resources(self) -> list[FileResource]:
         resources: list[FileResource] = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             if not proxyIndex.isValid():
@@ -737,28 +591,37 @@ class TextureList(MainWindowList):
         if self._installation is None:
             print("No installation loaded, nothing to scroll through?")
             return
-        # Avoid redundantly loading textures that have already been loaded
-        textures: CaseInsensitiveDict[TPC | None] = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text().lower() not in self._scannedTextures],
-            [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
-        )
 
-        # Emit signals to load textures that have not had their icons assigned
-        for item in iter(self.visibleItems()):
-            itemText = item.text()
-            lowerItemText = itemText.lower()
-            if lowerItemText in self._scannedTextures:
-                continue
+        visible_items = self.visibleItems()
 
-            # Avoid trying to load the same texture multiple times.
-            self._scannedTextures.add(lowerItemText)
+        with QMutexLocker(self._mutex):
+            textures: CaseInsensitiveDict[TPC | None] = (
+                self._installation.textures(
+                    [
+                        item.text()
+                        for item in visible_items
+                        if item.text().lower() not in self._scannedTextures
+                    ],
+                    [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
+                )
+            )
 
-            cache_tpc: TPC | None = textures.get(itemText)
-            tpc: TPC = TPC() if cache_tpc is None else cache_tpc
+            for item in visible_items:
+                itemText = item.text()
+                lowerItemText = itemText.lower()
+                if lowerItemText in self._scannedTextures:
+                    continue
 
-            task = TextureListTask(item.row(), tpc, itemText)
-            self._taskQueue.put(task)
-            item.setData(True, Qt.ItemDataRole.UserRole)
+                self._scannedTextures.add(lowerItemText)
+
+                cache_tpc: TPC | None = textures.get(itemText)
+                tpc: TPC = TPC() if cache_tpc is None else cache_tpc
+
+                task = TextureListTask(item.row(), tpc, itemText)
+                self._taskQueue.put(task)
+                item.setData(True, Qt.ItemDataRole.UserRole)
+
+            self._condition.wakeAll()
 
     def onIconUpdate(
         self,
@@ -771,30 +634,44 @@ class TextureList(MainWindowList):
             RobustLogger().exception("Could not update TextureList icon")
 
     def onResourceDoubleClicked(self):
-        self.requestOpenResource.emit(self.selectedResources(), None)
+        self.requestOpenResource.emit(self.selected_resources(), None)
 
     def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
         self.onTextureListScrolled()
 
 
-class TextureListConsumer(multiprocessing.Process):
+class TextureListConsumer(QThread):
     def __init__(
         self,
-        taskQueue: multiprocessing.JoinableQueue,
-        resultQueue: multiprocessing.Queue,
+        taskQueue: Queue,
+        resultQueue: Queue,
+        stopFlag: c_bool,
+        mutex: QMutex,
+        condition: QWaitCondition,
     ):
-        multiprocessing.Process.__init__(self)
-        self.taskQueue: multiprocessing.JoinableQueue = taskQueue
-        self.resultQueue: multiprocessing.Queue = resultQueue
-        self.stopLoop: bool = False
+        super().__init__()
+        self.taskQueue: Queue = taskQueue
+        self.resultQueue: Queue = resultQueue
+        self._stopFlag: c_bool = stopFlag
+        self._mutex: QMutex = mutex
+        self._condition: QWaitCondition = condition
 
     def run(self):
-        while not self.stopLoop:
-            next_task = self.taskQueue.get()
+        while True:
+            with QMutexLocker(self._mutex):
+                if self._stopFlag.value:
+                    break
+                try:
+                    next_task = self.taskQueue.get_nowait()
+                except Empty:
+                    self._condition.wait(self._mutex)
+                    continue
 
             answer = next_task()
-            self.taskQueue.task_done()
-            self.resultQueue.put(answer)
+
+            with QMutexLocker(self._mutex):
+                self.resultQueue.put(answer)
+                self._condition.wakeOne()
 
 
 class TextureListTask:

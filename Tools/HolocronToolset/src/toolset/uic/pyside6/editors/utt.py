@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utt.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -23,9 +23,9 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBo
     QSpacerItem, QSpinBox, QTabWidget, QVBoxLayout,
     QWidget)
 
-from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -198,7 +198,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addLayout(self.formLayout_3)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_2)
 
@@ -281,7 +281,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addLayout(self.formLayout_2)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer)
 
@@ -365,7 +365,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addLayout(self.formLayout_5)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 26, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 26, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_5.addItem(self.verticalSpacer_3)
 

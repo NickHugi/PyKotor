@@ -12,6 +12,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from toolset.gui.editors.dlg import RobustTreeView
+from toolset.gui.editors.dlg import GFFFieldSpinBox
 from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
@@ -41,7 +43,7 @@ class Ui_MainWindow(object):
         self.splitter = QSplitter(self.centralwidget)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
-        self.treeView = QTreeView(self.splitter)
+        self.treeView = RobustTreeView(self.splitter)
         self.treeView.setObjectName(u"treeView")
         font = QFont()
         font.setFamily(u"Courier New")

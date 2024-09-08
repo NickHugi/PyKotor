@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'search.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -248,7 +248,7 @@ class Ui_Dialog(object):
 
         self.gridLayout_4.addWidget(self.typeNCSCheck, 5, 2, 1, 1)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.gridLayout_4.addItem(self.verticalSpacer, 5, 3, 1, 1)
 

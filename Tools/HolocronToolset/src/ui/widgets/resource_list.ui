@@ -91,7 +91,7 @@
     </layout>
    </item>
    <item>
-    <widget class="QTreeView" name="resourceTree">
+    <widget class="RobustTreeView" name="resourceTree">
      <property name="contextMenuPolicy">
       <enum>Qt::CustomContextMenu</enum>
      </property>
@@ -119,7 +119,14 @@
     </widget>
    </item>
   </layout>
- </widget>
- <resources/>
- <connections/>
+</widget>
+<customwidgets>
+   <customwidget>
+     <class>RobustTreeView</class>
+     <extends>QTreeView</extends>
+    <header location="global">utility.ui_libraries.qt.widgets.itemviews.tree</header>
+   </customwidget>
+</customwidgets>
+<resources/>
+<connections/>
 </ui>

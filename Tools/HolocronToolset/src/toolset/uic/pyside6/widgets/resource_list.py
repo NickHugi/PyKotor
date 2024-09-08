@@ -17,7 +17,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFrame,
     QHBoxLayout, QHeaderView, QLineEdit, QPushButton,
-    QSizePolicy, QTreeView, QVBoxLayout, QWidget)
+    QSizePolicy, QVBoxLayout, QWidget)
+
+from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeView
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -71,7 +73,7 @@ class Ui_Form(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout_4)
 
-        self.resourceTree = QTreeView(Form)
+        self.resourceTree = RobustTreeView(Form)
         self.resourceTree.setObjectName(u"resourceTree")
         self.resourceTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.resourceTree.setEditTriggers(QAbstractItemView.NoEditTriggers)

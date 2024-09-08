@@ -170,7 +170,7 @@ def setupPreInitSettings():
     # Some application settings must be set before the app starts.
     # These ones are accessible through the in-app settings window widget.
     settings_widget = ApplicationSettings()
-    environment_variables: dict[str, str] = settings_widget.EnvironmentVariables
+    environment_variables: dict[str, str] = settings_widget.app_env_variables
     for key, value in environment_variables.items():
         os.environ[key] = os.environ.get(key, value)  # Use os.environ.get to prioritize the existing env.
     for attr_name, attr_value in settings_widget.REQUIRES_RESTART.items():

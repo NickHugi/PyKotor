@@ -6,10 +6,11 @@ from abc import abstractmethod
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 
-from loggerplus import RobustLogger
 from qtpy.QtCore import QEvent, QObject, QSortFilterProxyModel, Qt
 from qtpy.QtGui import QKeyEvent, QStandardItemModel
 from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
+
+from loggerplus import RobustLogger
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex

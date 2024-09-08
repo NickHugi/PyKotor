@@ -72,7 +72,7 @@
          </layout>
         </item>
         <item>
-         <widget class="QTableView" name="talkTable">
+         <widget class="RobustTableView" name="talkTable">
           <property name="editTriggers">
            <set>QAbstractItemView::NoEditTriggers</set>
           </property>
@@ -227,7 +227,14 @@
     <string>Auto-detect (slower)</string>
    </property>
   </action>
- </widget>
- <resources/>
- <connections/>
+</widget>
+<customwidgets>
+   <customwidget>
+     <class>RobustTableView</class>
+     <extends>QTableView</extends>
+    <header location="global">utility.ui_libraries.qt.widgets.itemviews.tree</header>
+   </customwidget>
+</customwidgets>
+<resources/>
+<connections/>
 </ui>

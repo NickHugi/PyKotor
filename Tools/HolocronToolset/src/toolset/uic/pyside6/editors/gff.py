@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'gff.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -22,8 +22,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
     QLineEdit, QListWidget, QListWidgetItem, QMainWindow,
     QMenu, QMenuBar, QPlainTextEdit, QPushButton,
     QSizePolicy, QSpacerItem, QSpinBox, QSplitter,
-    QStackedWidget, QTreeView, QVBoxLayout, QWidget)
+    QStackedWidget, QVBoxLayout, QWidget)
 
+from toolset.gui.editors.dlg import (GFFFieldSpinBox, RobustTreeView)
 from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 class Ui_MainWindow(object):
@@ -52,7 +53,7 @@ class Ui_MainWindow(object):
         self.splitter = QSplitter(self.centralwidget)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Horizontal)
-        self.treeView = QTreeView(self.splitter)
+        self.treeView = RobustTreeView(self.splitter)
         self.treeView.setObjectName(u"treeView")
         font = QFont()
         font.setFamilies([u"Courier New"])
@@ -126,7 +127,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.lineEdit)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer)
 
@@ -140,7 +141,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.intSpin)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 280, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 280, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_5.addItem(self.verticalSpacer_3)
 
@@ -161,7 +162,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.floatSpin)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 280, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 280, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_4.addItem(self.verticalSpacer_2)
 

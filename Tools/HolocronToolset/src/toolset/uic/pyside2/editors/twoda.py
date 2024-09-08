@@ -12,6 +12,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -62,7 +64,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.filterBox)
 
-        self.twodaTable = QTableView(self.centralwidget)
+        self.twodaTable = RobustTableView(self.centralwidget)
         self.twodaTable.setObjectName(u"twodaTable")
         self.twodaTable.setStyleSheet(u"")
         self.twodaTable.setAlternatingRowColors(True)

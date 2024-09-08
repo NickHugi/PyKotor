@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'utd.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -22,10 +22,10 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QFormLayout, QGridLayout
     QPushButton, QSizePolicy, QSpacerItem, QSpinBox,
     QTabWidget, QVBoxLayout, QWidget)
 
-from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.renderer.model import ModelRenderer
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -53,7 +53,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.previewRenderer = ModelRenderer(self.centralwidget)
         self.previewRenderer.setObjectName(u"previewRenderer")
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.previewRenderer.sizePolicy().hasHeightForWidth())
@@ -76,7 +76,7 @@ class Ui_MainWindow(object):
         self.formLayout_3.setContentsMargins(6, 6, 6, 6)
         self.label_6 = QLabel(self.tab_9)
         self.label_6.setObjectName(u"label_6")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy1.setHorizontalStretch(1)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
@@ -106,7 +106,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_16.setObjectName(u"horizontalLayout_16")
         self.tagEdit = QLineEdit(self.tab_9)
         self.tagEdit.setObjectName(u"tagEdit")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.tagEdit.sizePolicy().hasHeightForWidth())
@@ -194,7 +194,7 @@ class Ui_MainWindow(object):
 
         self.formLayout_3.setLayout(4, QFormLayout.FieldRole, self.horizontalLayout_5)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.formLayout_3.setItem(5, QFormLayout.SpanningRole, self.verticalSpacer_2)
 
@@ -275,7 +275,7 @@ class Ui_MainWindow(object):
 
         self.widget_4 = QWidget(self.tab_10)
         self.widget_4.setObjectName(u"widget_4")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
         sizePolicy3.setHeightForWidth(self.widget_4.sizePolicy().hasHeightForWidth())
@@ -455,7 +455,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_3.addLayout(self.formLayout)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         self.verticalLayout_3.addItem(self.verticalSpacer)
 

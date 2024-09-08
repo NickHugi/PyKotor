@@ -62,33 +62,11 @@ from pykotor.gl.models.predefined_mdl import (
     WAYPOINT_MDX_DATA,
 )
 from pykotor.gl.models.read_mdl import gl_load_stitched_model
-from pykotor.gl.shader import (
-    KOTOR_FSHADER,
-    KOTOR_VSHADER,
-    PICKER_FSHADER,
-    PICKER_VSHADER,
-    PLAIN_FSHADER,
-    PLAIN_VSHADER,
-    Shader,
-    Texture,
-)
-from pykotor.resource.formats.lyt import LYTRoom
-from pykotor.resource.formats.lyt.lyt_data import LYT
+from pykotor.gl.shader import KOTOR_FSHADER, KOTOR_VSHADER, PICKER_FSHADER, PICKER_VSHADER, PLAIN_FSHADER, PLAIN_VSHADER, Shader, Texture
+from pykotor.resource.formats.lyt import LYT, LYTRoom
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, read_2da
-from pykotor.resource.generics.git import (
-    GIT,
-    GITCamera,
-    GITCreature,
-    GITDoor,
-    GITEncounter,
-    GITInstance,
-    GITPlaceable,
-    GITSound,
-    GITStore,
-    GITTrigger,
-    GITWaypoint,
-)
+from pykotor.resource.generics.git import GIT, GITCamera, GITCreature, GITDoor, GITEncounter, GITInstance, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from pykotor.resource.generics.utd import UTD
 from pykotor.resource.generics.utp import UTP
 from pykotor.resource.generics.uts import UTS
@@ -126,21 +104,6 @@ class Scene:
         installation: Installation | None = None,
         module: Module | None = None,
     ):
-        """Initializes the renderer.
-
-        Args:
-        ----
-            installation: Installation: The installation to load resources from
-            module: Module: The active module
-
-        Processing Logic:
-        ----------------
-            - Initializes OpenGL settings
-            - Sets up default textures, shaders, camera
-            - Loads 2DA tables from installation
-            - Hides certain object types by default
-            - Sets other renderer options.
-        """
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().info("Start initialize Scene%s", module_id_part)
 
@@ -205,6 +168,9 @@ class Scene:
         module_id_part = "" if module is None else f" from module '{module.root()}'"
         RobustLogger().debug("Completed pre-initialize Scene%s", module_id_part)
 
+        self.lyt_objects: dict[Any, RenderObject] = {}
+        self.show_lyt: bool = False
+
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -218,23 +184,6 @@ class Scene:
         instance: GITCreature,
         utc: UTC | None = None,
     ) -> RenderObject:
-        """Generates a render object for a creature instance.
-
-        Args:
-        ----
-            instance: {Creature instance}: Creature instance to generate render object for
-            utc: {Optional timestamp}: Timestamp to use for generation or current time if None
-
-        Returns:
-        -------
-            RenderObject: Render object representing the creature
-
-        Processing Logic:
-        ----------------
-            - Gets body, head, weapon and mask models/textures based on creature appearance
-            - Creates base render object and attaches head, hands and mask sub-objects
-            - Catches exceptions and returns default "unknown" render object if model loading fails.
-        """
         assert self.installation is not None
         try:
             if utc is None:
@@ -366,19 +315,6 @@ class Scene:
         *,
         clear_cache: bool = False,
     ):
-        """Builds and caches game objects from the module.
-
-        Args:
-        ----
-            clear_cache (bool): Whether to clear the existing cache
-
-        Processing Logic:
-        ----------------
-            - Clear existing cache if clear_cache is True
-            - Delete objects matching identifiers in clearCacheBuffer
-            - Retrieve/update game objects from module
-            - Add/update objects in cache..
-        """
         if self._module is None:
             return
 
@@ -528,6 +464,35 @@ class Scene:
         for obj in copy(self.objects):
             self._del_git_objects(obj, self.git, self.objects)
 
+        if self.layout:
+            self.build_lyt_cache()
+
+    def build_lyt_cache(self):
+        if self.layout is None:
+            return
+
+        for room in self.layout.rooms:
+            if room not in self.lyt_objects:
+                position = vec3(room.position.x, room.position.y, room.position.z)
+                self.lyt_objects[room] = RenderObject("lyt_room", position, data=room)
+
+        for track in self.layout.tracks:
+            if track not in self.lyt_objects:
+                start = vec3(track.start.x, track.start.y, track.start.z)
+                end = vec3(track.end.x, track.end.y, track.end.z)
+                self.lyt_objects[track] = RenderObject("lyt_track", start, data=track)
+                self.lyt_objects[track].end_position = end
+
+        for obstacle in self.layout.obstacles:
+            if obstacle not in self.lyt_objects:
+                position = vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z)
+                self.lyt_objects[obstacle] = RenderObject("lyt_obstacle", position, data=obstacle)
+
+        for doorhook in self.layout.doorhooks:
+            if doorhook not in self.lyt_objects:
+                position = vec3(doorhook.position.x, doorhook.position.y, doorhook.position.z)
+                self.lyt_objects[doorhook] = RenderObject("lyt_doorhook", position, data=doorhook)
+
     def _fetch2da(self, resname: str, installation: Installation) -> ResourceResult:
         result = installation.resource(resname, ResourceType.TwoDA, SEARCH_ORDER_2DA)
         if result is None:
@@ -633,6 +598,46 @@ class Scene:
         if self.show_cursor:
             self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
             self._render_object(self.plain_shader, self.cursor, mat4())
+
+        if self.show_lyt:
+            self.render_lyt()
+
+    def render_lyt(self):
+        self.plain_shader.use()
+        self.plain_shader.set_matrix4("view", self.camera.view())
+        self.plain_shader.set_matrix4("projection", self.camera.projection())
+
+        # Render rooms
+        self.plain_shader.set_vector4("color", vec4(0.5, 0.5, 1.0, 0.3))  # Semi-transparent blue
+        for obj in self.lyt_objects.values():
+            if obj.model == "lyt_room":
+                room: LYTRoom = obj.data
+                cube = Cube(self, obj.position(), room.size)
+                cube.draw(self.plain_shader, obj.transform())
+
+        # Render tracks
+        self.plain_shader.set_vector4("color", vec4(1.0, 0.5, 0.5, 1.0))  # Red
+        for obj in self.lyt_objects.values():
+            if obj.model == "lyt_track":
+                line = Line(self, obj.position(), obj.end_position)
+                line.draw(self.plain_shader, obj.transform())
+
+        # Render obstacles
+        self.plain_shader.set_vector4("color", vec4(1.0, 1.0, 0.0, 0.7))  # Yellow
+        for obj in self.lyt_objects.values():
+            if obj.model == "lyt_obstacle":
+                sphere = Sphere(self, obj.position(), 0.5)  # Assuming a radius of 0.5
+                sphere.draw(self.plain_shader, obj.transform())
+
+        # Render doorhooks
+        self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.7))  # Green
+        for obj in self.lyt_objects.values():
+            if obj.model == "lyt_doorhook":
+                cube = Cube(self, obj.position(), (1, 1, 2))  # Assuming a size for visualization
+                cube.draw(self.plain_shader, obj.transform())
+
+    def toggle_lyt_visualization(self):
+        self.show_lyt = not self.show_lyt
 
     def update_textures(self):
         """Create OpenGL textures from data loaded in background."""

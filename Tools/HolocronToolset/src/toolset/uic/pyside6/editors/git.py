@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'git.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -143,7 +143,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setSpacing(2)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer)
 
@@ -469,7 +469,7 @@ class Ui_MainWindow(object):
 
         self.renderArea = WalkmeshRenderer(self.layoutWidget1)
         self.renderArea.setObjectName(u"renderArea")
-        sizePolicy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.renderArea.sizePolicy().hasHeightForWidth())

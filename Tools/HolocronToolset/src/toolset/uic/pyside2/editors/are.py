@@ -16,7 +16,7 @@ from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.color import ColorEdit
-from toolset.gui.common.widgets.combobox import FilterComboBox
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 
 
 class Ui_MainWindow(object):

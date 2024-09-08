@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'inventory.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -18,10 +18,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QDialog, QFrame,
     QGridLayout, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QPushButton, QSizePolicy, QSpacerItem,
-    QTabWidget, QTableWidgetItem, QTreeView, QVBoxLayout,
-    QWidget)
+    QTabWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
 from toolset.gui.dialogs.inventory import (DropFrame, InventoryTable)
+from toolset.gui.editors.dlg import RobustTreeView
 from toolset.rcc import resources_rc_pyside6
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -43,7 +43,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout_3.addWidget(self.coreSearchEdit)
 
-        self.coreTree = QTreeView(self.tab)
+        self.coreTree = RobustTreeView(self.tab)
         self.coreTree.setObjectName(u"coreTree")
         self.coreTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.coreTree.setDragEnabled(True)
@@ -64,7 +64,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout_4.addWidget(self.modulesSearchEdit)
 
-        self.modulesTree = QTreeView(self.tab_2)
+        self.modulesTree = RobustTreeView(self.tab_2)
         self.modulesTree.setObjectName(u"modulesTree")
         self.modulesTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.modulesTree.setDragEnabled(True)
@@ -85,7 +85,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout_5.addWidget(self.overrideSearchEdit)
 
-        self.overrideTree = QTreeView(self.tab_5)
+        self.overrideTree = RobustTreeView(self.tab_5)
         self.overrideTree.setObjectName(u"overrideTree")
         self.overrideTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.overrideTree.setDragEnabled(True)
@@ -243,7 +243,7 @@ class Ui_Dialog(object):
 
         self.implantFrame = DropFrame(self.standardEquipmentTab)
         self.implantFrame.setObjectName(u"implantFrame")
-        sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.implantFrame.sizePolicy().hasHeightForWidth())
@@ -527,7 +527,7 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer)
 

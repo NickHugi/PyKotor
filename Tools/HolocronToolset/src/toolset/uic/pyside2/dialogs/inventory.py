@@ -12,6 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from toolset.gui.editors.dlg import RobustTreeView
 from toolset.gui.dialogs.inventory import DropFrame
 from toolset.gui.dialogs.inventory import InventoryTable
 
@@ -36,7 +37,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout_3.addWidget(self.coreSearchEdit)
 
-        self.coreTree = QTreeView(self.tab)
+        self.coreTree = RobustTreeView(self.tab)
         self.coreTree.setObjectName(u"coreTree")
         self.coreTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.coreTree.setDragEnabled(True)
@@ -57,7 +58,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout_4.addWidget(self.modulesSearchEdit)
 
-        self.modulesTree = QTreeView(self.tab_2)
+        self.modulesTree = RobustTreeView(self.tab_2)
         self.modulesTree.setObjectName(u"modulesTree")
         self.modulesTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.modulesTree.setDragEnabled(True)
@@ -78,7 +79,7 @@ class Ui_Dialog(object):
 
         self.verticalLayout_5.addWidget(self.overrideSearchEdit)
 
-        self.overrideTree = QTreeView(self.tab_5)
+        self.overrideTree = RobustTreeView(self.tab_5)
         self.overrideTree.setObjectName(u"overrideTree")
         self.overrideTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.overrideTree.setDragEnabled(True)

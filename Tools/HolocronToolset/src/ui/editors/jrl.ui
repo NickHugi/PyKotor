@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QTreeView" name="journalTree">
+      <widget class="RobustTreeView" name="journalTree">
        <property name="contextMenuPolicy">
         <enum>Qt::CustomContextMenu</enum>
        </property>
@@ -277,6 +277,11 @@
   </action>
  </widget>
  <customwidgets>
+    <customwidget>
+      <class>RobustTreeView</class>
+      <extends>QTreeView</extends>
+     <header location="global">toolset.gui.editors.dlg</header>
+    </customwidget>
   <customwidget>
    <class>LocalizedStringLineEdit</class>
    <extends>QWidget</extends>

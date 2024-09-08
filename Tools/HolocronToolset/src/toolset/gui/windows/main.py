@@ -17,26 +17,14 @@ import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import (
-    QCoreApplication,
-    QEvent,
-    QFile,
-    QTextStream,
-    QThread,
-    Qt,
-)
-from qtpy.QtGui import (
-    QColor,
-    QIcon,
-    QPalette,
-    QPixmap,
-    QStandardItem,
-)
+from qtpy.QtCore import QCoreApplication, QEvent, QFile, QFileSystemWatcher, QMutex, QTextStream, QThread, Qt
+from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QAction,
     QApplication,
     QFileDialog,
+    QFileSystemModel,
     QHBoxLayout,
     QListView,
     QMainWindow,
@@ -45,9 +33,8 @@ from qtpy.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QTreeView,
-    QVBoxLayout,
+    QVBoxLayout
 )
-from watchdog.events import FileSystemEventHandler
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, LocationResult, ResourceIdentifier, ResourceResult
@@ -65,7 +52,6 @@ from pykotor.tools.misc import is_any_erf_type_file, is_bif_file, is_capsule_fil
 from pykotor.tools.path import CaseAwarePath
 from toolset.config import CURRENT_VERSION, getRemoteToolsetUpdateInfo, remoteVersionNewer
 from toolset.data.installation import HTInstallation
-from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncLoader, ProgressDialog
 from toolset.gui.dialogs.clone_module import CloneModuleDialog
@@ -103,6 +89,8 @@ from utility.error_handling import universal_simplify_exception
 from utility.misc import ProcessorArchitecture, is_debug_mode
 from utility.system.path import Path, PurePath
 from utility.tricks import debug_reload_pymodules
+from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 from utility.updater.update import AppUpdate
 
 if qtpy.API_NAME == "PySide2":
@@ -123,7 +111,6 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
-    from watchdog.events import FileSystemEvent
     from watchdog.observers.api import BaseObserver
 
     from pykotor.resource.formats.mdl.mdl_data import MDL
@@ -197,24 +184,12 @@ class UpdateCheckThread(QThread):
 
 
 class ToolWindow(QMainWindow):
-    moduleFilesUpdated = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
+    moduleFilesUpdated: QtCore.Signal = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
     overrideFilesUpdate = QtCore.Signal(object, object)  # pyright: ignore[reportPrivateImportUsage]
 
+    MAIN_ICON_PATH = ":/images/icons/sith.png"
+
     def __init__(self):
-        """Initializes the main window.
-
-        Args:
-        ----
-            self: The object instance
-
-        Processing Logic:
-        ----------------
-            - Sets up superclass initialization
-            - Initializes observer and handler objects
-            - Hides unnecessary UI sections on startup
-            - Loads settings from file
-            - Checks for updates on first run.
-        """
         super().__init__()
 
         self.active: HTInstallation | None = None
@@ -226,28 +201,71 @@ class ToolWindow(QMainWindow):
         self._setupSignals()
         self.setWindowTitle(f"Holocron Toolset ({qtpy.API_NAME})")
 
-        # Watchdog
-        self.dogObserver: BaseObserver | None = None
-        #self.dogHandler: FolderObserver = FolderObserver(self)
-
         # Theme setup
         q_style = self.style()
         assert q_style is not None
         self.original_style: str = q_style.objectName()
         self.original_palette: QPalette = self.palette()
-        self.change_theme(self.settings.selectedTheme)
+        self.change_theme(self.settings.selectedTheme)  # Ensure it comes to the front
 
-        # FileSystem explorer tab
-        try:
-            self.ui.fileSystemWidget.setRootPath(Path.home())
-        except Exception:
-            self.log.exception("Failed to setup the file system widget!")
+        # Watchdog pip package (unnecesary - qt already has one.)
+        #self.dogObserver: BaseObserver | None = None
+        #self.dogHandler: FolderObserver = FolderObserver(self)
+        self.fs_model = QFileSystemModel()
+        self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
+        self.fs_mutex = QMutex()
+        self.fs_gatherer: PyFileInfoGatherer = PyFileInfoGatherer(self, self.fs_mutex)
 
         # Finalize the init
         self.reloadSettings()
         self.unsetInstallation()
         self.raise_()
-        self.activateWindow()  # Ensure it comes to the front
+        self.activateWindow()
+
+    def handle_change(self, path: str):
+        if self.active is None:
+            return
+
+        modified_path = os.path.normpath(path)
+        if os.path.isdir(modified_path):
+            return
+
+        now = datetime.now(tz=timezone.utc).astimezone()
+        if now - self.lastModified < timedelta(seconds=1):
+            return
+        self.lastModified = now
+
+        module_path = os.path.normpath(self.active.module_path())
+        override_path = os.path.normpath(self.active.override_path())
+
+        if module_path.lower() in modified_path.lower():
+            self.moduleFilesUpdated.emit(modified_path, "modified")
+        elif override_path.lower() in modified_path.lower():
+            self.overrideFilesUpdate.emit(modified_path, "modified")
+
+    def _setup_watcher(self):
+        """Set up file system watchers for specific paths."""
+        assert self.active is not None, "Installation not set"
+        paths_to_watch = [
+            self.active.lips_path(),
+            self.active.module_path(),
+            self.active.override_path(),
+            self.active.rims_path(),
+            self.active.streammusic_path(),
+            self.active.streamsounds_path(),
+            self.active._find_resource_folderpath(("streamvoice", "streamwaves")),
+            self.active.texturepacks_path(),
+        ]
+        paths_to_watch.extend(cast(List[CaseAwarePath], self.active.save_locations()))
+
+        # Add paths to both model and watcher
+        str_paths_to_watch = list(map(os.path.normpath, paths_to_watch))
+        self.fs_gatherer.watchPaths(str_paths_to_watch)
+        self.fs_gatherer.updates.connect(self.active.handle_file_system_changes)
+        # self.fs_gatherer.directoryLoaded.connect(self.handle_change)
+        # self.fs_gatherer.updates.connect(self.handle_change)
+        # self.fs_gatherer.newListOfFiles.connect(self.handle_change)
+        # self.fs_gatherer.nameResolved.connect(self.handle_change)
 
     def _initUi(self):
         if qtpy.API_NAME == "PySide2":
@@ -263,22 +281,19 @@ class ToolWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.coreWidget.hideSection()
-        self.ui.coreWidget.hideReloadButton()
+        self.ui.coreWidget.hide_section()
+        self.ui.coreWidget.hide_reload_button()
 
         if is_debug_mode():
             self.ui.menubar.addAction("Debug Reload").triggered.connect(debug_reload_pymodules)  # pyright: ignore[reportOptionalMemberAccess]
 
-        # Standardized resource path format
-        icon_path = ":/images/icons/sith.png"
-
         # Debugging: Check if the resource path is accessible
-        if not QPixmap(icon_path).isNull():
-            self.log.debug(f"HT main window Icon loaded successfully from {icon_path}")
-            self.setWindowIcon(QIcon(QPixmap(icon_path)))
-            cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(icon_path)))
+        if not QPixmap(self.MAIN_ICON_PATH).isNull():
+            self.log.debug(f"HT main window Icon loaded successfully from '{self.MAIN_ICON_PATH}'")
+            self.setWindowIcon(QIcon(QPixmap(self.MAIN_ICON_PATH)))
+            cast(QApplication, QApplication.instance()).setWindowIcon(QIcon(QPixmap(self.MAIN_ICON_PATH)))
         else:
-            print(f"Failed to load HT main window icon from {icon_path}")
+            print(f"Failed to load HT main window icon from '{self.MAIN_ICON_PATH}'")
         self.setupModulesTab()
 
     def setupModulesTab(self):
@@ -402,7 +417,7 @@ class ToolWindow(QMainWindow):
                 ModuleDesigner(
                     None,
                     self.active,
-                    self.active.module_path() / self.ui.modulesWidget.currentSection(),
+                    self.active.module_path() / self.ui.modulesWidget.current_section(),
                 )
             )
 
@@ -428,13 +443,13 @@ class ToolWindow(QMainWindow):
 
         self.ui.extractButton.clicked.connect(
             lambda: self.onExtractResources(
-                self.getActiveResourceWidget().selectedResources(),
+                self.getActiveResourceWidget().selected_resources(),
                 resourceWidget=self.getActiveResourceWidget(),
             ),
         )
         self.ui.openButton.clicked.connect(
             lambda *args: self.onOpenResources(
-                self.getActiveResourceWidget().selectedResources(),
+                self.getActiveResourceWidget().selected_resources(),
                 self.settings.gff_specializedEditors,
                 resourceWidget=self.getActiveResourceWidget(),
             )
@@ -526,14 +541,14 @@ class ToolWindow(QMainWindow):
         repaint_all_widgets: bool = True,
     ):
         app.setStyleSheet(sheet)
-        #self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.FramelessWindowHint)
+        #self.setWindowFlags(selfFlags() & ~Qt.WindowType.FramelessWindowHint)
         if style is None or style == self.original_style:
             app.setStyle(self.original_style)
         else:
             app.setStyle(style)
             if palette: ...
                 # still can't get the custom title bar working, leave this disabled until we do.
-                #self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)
+                #self.setWindowFlags(selfFlags() | Qt.WindowType.FramelessWindowHint)
         app_style = app.style()
         if palette is None and app_style is not None:
             palette = app_style.standardPalette()
@@ -836,7 +851,7 @@ class ToolWindow(QMainWindow):
                 resources.extend(self.active.module_resources(f"{PurePath(moduleFile).stem}_dlg.erf"))
 
         self.active.reload_module(moduleFile)
-        self.ui.modulesWidget.setResources(resources)
+        self.ui.modulesWidget.set_resources(resources)
 
     def onModuleFileUpdated(self, changedFile: str, eventType: str):
         self.log.debug(f"ToolWindow.onModuleFileUpdated(changedFile='{changedFile}', eventType='{eventType}')")
@@ -848,7 +863,7 @@ class ToolWindow(QMainWindow):
             self.active.reload_module(changedFile)
             # If the current module opened is the file which was updated, then we
             # should refresh the ui.
-            if self.ui.modulesWidget.currentSection() == changedFile:
+            if self.ui.modulesWidget.current_section() == changedFile:
                 self.onModuleReload(changedFile)
 
     def onSavepathChanged(self, newSaveDir: str):
@@ -941,7 +956,7 @@ class ToolWindow(QMainWindow):
     def onOverrideChanged(self, newDirectory: str):
         self.log.debug(f"ToolWindow.onOverrideChanged(newDirectory='{newDirectory}')")
         assert self.active is not None
-        self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
+        self.ui.overrideWidget.set_resources(self.active.override_resources(newDirectory))
 
     def onOverrideReload(self, file_or_folder: str):
         self.log.debug(f"ToolWindow.onOverrideReload(file_or_folder='{file_or_folder}')")
@@ -964,7 +979,7 @@ class ToolWindow(QMainWindow):
             print("<SDM> [onOverrideReload scope] rel_folderpath: ", rel_folderpath)
 
             self.active.load_override(str(rel_folderpath))
-        self.ui.overrideWidget.setResources(self.active.override_resources(str(rel_folderpath) if rel_folderpath.name else None))
+        self.ui.overrideWidget.set_resources(self.active.override_resources(str(rel_folderpath) if rel_folderpath.name else None))
 
     def onOverrideRefresh(self):
         self.log.debug("ToolWindow.onOverrideRefresh()")
@@ -1104,8 +1119,8 @@ class ToolWindow(QMainWindow):
             assert moduleItems is not None
             assert overrideItems is not None
             assert textureItems is not None
-            self.ui.modulesWidget.setSections(moduleItems)
-            self.ui.overrideWidget.setSections(overrideItems)
+            self.ui.modulesWidget.set_sections(moduleItems)
+            self.ui.overrideWidget.set_sections(overrideItems)
             self.ui.overrideWidget.ui.sectionCombo.setVisible(self.active.tsl)
             self.ui.overrideWidget.ui.refreshButton.setVisible(self.active.tsl)
             self.ui.texturesWidget.setSections(textureItems)
@@ -1114,9 +1129,9 @@ class ToolWindow(QMainWindow):
             self.ui.texturesWidget.setInstallation(self.active)
             try:
                 self.log.debug("Setting up watchdog observer...")
-                if self.dogObserver is not None:
-                    self.log.debug("Stopping old watchdog service...")
-                    self.dogObserver.stop()
+                #if self.dogObserver is not None:
+                #    self.log.debug("Stopping old watchdog service...")
+                #    self.dogObserver.stop()
             except Exception:  # noqa: BLE001
                 RobustLogger().exception("An unexpected exception occurred while dealing with watchdog.")
 
@@ -1128,6 +1143,7 @@ class ToolWindow(QMainWindow):
             #self.dogObserver = Observer()
             #self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
             #self.dogObserver.start()
+            self._setup_watcher()
         except Exception as e:
             self.log.exception("Failed to initialize the installation")
             QMessageBox(
@@ -1237,7 +1253,7 @@ class ToolWindow(QMainWindow):
             return
         if not isinstance(resourceWidget, ResourceList):
             return
-        filename = resourceWidget.currentSection()
+        filename = resourceWidget.current_section()
         print("<SDM> [onOpenResources scope] filename: ", filename)
 
         if not filename:
@@ -1552,7 +1568,7 @@ class ToolWindow(QMainWindow):
         window = HelpWindow(None)
         print("<SDM> [openInstructionsWindow scope] window: ", window)
 
-        window.setWindowIcon(self.windowIcon())
+        window.setWindowIcon(selfIcon())
         addWindow(window)
         window.activateWindow()
 
@@ -1624,7 +1640,7 @@ class ToolWindow(QMainWindow):
             notes: str,
             download_link: str,
             remoteInfo: dict[str, Any],
-            release_version_checked: bool,
+            release_version_checked: bool,  # noqa: FBT001
         ):
             if is_up_to_date:
                 if silent:
@@ -1639,7 +1655,7 @@ class ToolWindow(QMainWindow):
 
                 up_to_date_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
                 up_to_date_msg_box.button(QMessageBox.Yes).setText("Choose Update")
-                up_to_date_msg_box.setWindowIcon(self.windowIcon())
+                up_to_date_msg_box.setWindowIcon(selfIcon())
                 result = up_to_date_msg_box.exec_()
                 print("<SDM> [display_version_message scope] result: ", result)
 
@@ -1665,7 +1681,7 @@ class ToolWindow(QMainWindow):
             new_version_msg_box.button(QMessageBox.Ok).setText("Auto-Update")
             new_version_msg_box.button(QMessageBox.Yes).setText("Details")
             new_version_msg_box.button(QMessageBox.Abort).setText("Ignore")
-            new_version_msg_box.setWindowIcon(self.windowIcon())
+            new_version_msg_box.setWindowIcon(selfIcon())
             response = new_version_msg_box.exec_()
             print("<SDM> [display_version_message scope] response: ", response)
             if response == QMessageBox.Ok:
@@ -1811,7 +1827,7 @@ class ToolWindow(QMainWindow):
         assert self.active is not None
         resourceWidget = self.getActiveResourceWidget()
         assert isinstance(resourceWidget, ResourceList)
-        filename = resourceWidget.currentSection()
+        filename = resourceWidget.current_section()
         print("<SDM> [openERFEditor scope] filename: ", filename)
 
         if not filename:
@@ -1847,7 +1863,7 @@ class ToolWindow(QMainWindow):
         print("<SDM> [selectResource scope] tree: ", tree)
         if tree == self.ui.coreWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
-            self.ui.coreWidget.setResourceSelection(resource)
+            self.ui.coreWidget.set_resource_selection(resource)
 
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
@@ -1855,7 +1871,7 @@ class ToolWindow(QMainWindow):
             print("<SDM> [selectResource scope] filename: ", filename)
 
             self.changeModule(filename)
-            self.ui.modulesWidget.setResourceSelection(resource)
+            self.ui.modulesWidget.set_resource_selection(resource)
 
         elif tree == self.ui.overrideWidget:
             self._selectOverrideResource(resource)
@@ -1869,7 +1885,7 @@ class ToolWindow(QMainWindow):
     def _selectOverrideResource(self, resource: FileResource):
         assert self.active is not None
         self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
-        self.ui.overrideWidget.setResourceSelection(resource)
+        self.ui.overrideWidget.set_resource_selection(resource)
         subfolder: str = "."
         for folder_name in self.active.override_list():
             folder_path: CaseAwarePath = self.active.override_path() / folder_name
@@ -1895,19 +1911,19 @@ class ToolWindow(QMainWindow):
 
         self.ui.gameCombo.setCurrentIndex(0)
 
-        self.ui.coreWidget.setResources([])
-        self.ui.modulesWidget.setSections([])
-        self.ui.modulesWidget.setResources([])
-        self.ui.overrideWidget.setSections([])
-        self.ui.overrideWidget.setResources([])
+        self.ui.coreWidget.set_resources([])
+        self.ui.modulesWidget.set_sections([])
+        self.ui.modulesWidget.set_resources([])
+        self.ui.overrideWidget.set_sections([])
+        self.ui.overrideWidget.set_resources([])
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
         self.updateMenus()
         self.active = None
-        if self.dogObserver is not None:
-            self.dogObserver.stop()
-            self.dogObserver = None
+        #if self.dogObserver is not None:
+        #    self.dogObserver.stop()
+        #    self.dogObserver = None
 
     # endregion
 
@@ -1920,7 +1936,7 @@ class ToolWindow(QMainWindow):
             return
         self.log.info("Loading core installation resources into UI...")
         try:
-            self.ui.coreWidget.setResources(self.active.core_resources())
+            self.ui.coreWidget.set_resources(self.active.core_resources())
         except Exception:  # noqa: BLE001
             RobustLogger().exception("Failed to setResources of the core list")
         self.log.debug("Remove unused Core tab categories...")
@@ -1942,7 +1958,7 @@ class ToolWindow(QMainWindow):
                 print("<SDM> [changeModule scope] moduleName: ", moduleName)
 
 
-        self.ui.modulesWidget.changeSection(moduleName)
+        self.ui.modulesWidget.change_section(moduleName)
 
     def refreshModuleList(
         self,
@@ -1962,7 +1978,7 @@ class ToolWindow(QMainWindow):
                 print("<SDM> [task scope] moduleItems: ", moduleItems)
 
         try:
-            self.ui.modulesWidget.setSections(moduleItems)
+            self.ui.modulesWidget.set_sections(moduleItems)
         except Exception:  # noqa: BLE001
             RobustLogger().exception(f"Failed to call setSections on the {action}ed modulesWidget!")
 
@@ -2047,7 +2063,7 @@ class ToolWindow(QMainWindow):
         return modules
 
     def changeOverrideFolder(self, subfolder: str):
-        self.ui.overrideWidget.changeSection(subfolder)
+        self.ui.overrideWidget.change_section(subfolder)
 
     def _getOverrideList(self, *, reload: bool = True) -> list[QStandardItem]:
         if self.active is None:
@@ -2074,7 +2090,7 @@ class ToolWindow(QMainWindow):
     ):
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
         overrideItems = self._getOverrideList(reload=reload)
-        self.ui.overrideWidget.setSections(overrideItems)
+        self.ui.overrideWidget.set_sections(overrideItems)
 
     def _getTexturePackList(self, *, reload: bool = True) -> list[QStandardItem] | None:
         if self.active is None:
@@ -2123,7 +2139,7 @@ class ToolWindow(QMainWindow):
 
                 section.setData(save_path_str, QtCore.Qt.ItemDataRole.UserRole)
                 sections.append(section)
-            self.ui.savesWidget.setSections(sections)
+            self.ui.savesWidget.set_sections(sections)
         except Exception:  # noqa: BLE001
             RobustLogger().exception("Failed to load/refresh the saves list")
 
@@ -2449,8 +2465,8 @@ class ToolWindow(QMainWindow):
 
                     msgBox.setDetailedText("\n".join(str(p) for p in resource_save_paths.values()))
                 msgBox.exec_()
-        elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.currentSection()):
-            module_name = resourceWidget.currentSection()
+        elif isinstance(resourceWidget, ResourceList) and is_capsule_file(resourceWidget.current_section()):
+            module_name = resourceWidget.current_section()
             print("<SDM> [onExtractResources scope] module_name: ", module_name)
 
             self._saveCapsuleFromToolUI(module_name)
@@ -2644,42 +2660,3 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Icon.Critical, f"Failed to open file ({etype})", msg).exec_()
 
     # endregion
-
-
-class FolderObserver(FileSystemEventHandler):
-    def __init__(self, window: ToolWindow):
-        self.window: ToolWindow = window
-        self.lastModified: datetime = datetime.now(tz=timezone.utc).astimezone()
-
-    def on_any_event(self, event: FileSystemEvent):
-        if self.window.active is None:
-            return
-        rightnow: datetime = datetime.now(tz=timezone.utc).astimezone()
-        print("<SDM> [on_any_event scope] rightnow: ", rightnow)
-
-        if rightnow - self.lastModified < timedelta(seconds=1):
-            return
-
-        self.lastModified = rightnow
-        print("<SDM> [on_any_event scope] self.lastModified: ", self.lastModified)
-
-        modified_path: Path = Path(event.src_path)
-        print("<SDM> [on_any_event scope] modified_path: ", modified_path)
-
-
-        if not modified_path.safe_isfile():
-            return
-
-        module_path: Path = self.window.active.module_path()
-        print("<SDM> [on_any_event scope] module_path: ", module_path)
-
-        override_path: Path = self.window.active.override_path()
-        print("<SDM> [on_any_event scope] override_path: ", override_path)
-
-
-        if modified_path.is_relative_to(module_path):
-            self.window.moduleFilesUpdated.emit(str(modified_path), event.event_type)
-        elif modified_path.is_relative_to(override_path):
-            self.window.overrideFilesUpdate.emit(str(modified_path), event.event_type)
-        else:
-            print(f"Watchdog passed unknown file: {modified_path}")

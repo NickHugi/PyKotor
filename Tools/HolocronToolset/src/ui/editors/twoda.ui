@@ -28,7 +28,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QTableView" name="twodaTable">
+     <widget class="RobustTableView" name="twodaTable">
       <property name="styleSheet">
        <string notr="true"/>
       </property>
@@ -190,7 +190,14 @@
     <string>placeholder</string>
    </property>
   </action>
- </widget>
- <resources/>
- <connections/>
+</widget>
+<customwidgets>
+   <customwidget>
+     <class>RobustTableView</class>
+     <extends>QTableView</extends>
+    <header location="global">utility.ui_libraries.qt.widgets.itemviews.tree</header>
+   </customwidget>
+</customwidgets>
+<resources/>
+<connections/>
 </ui>

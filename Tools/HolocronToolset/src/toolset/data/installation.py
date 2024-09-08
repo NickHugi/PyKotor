@@ -1,32 +1,37 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable, Collection, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QImage, QPixmap, QTransform
 from qtpy.QtWidgets import QAction, QComboBox, QLineEdit, QMenu
 
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.chitin import Chitin
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from toolset.utils.window import addWindow
+from utility.system.path import Path
 
 if TYPE_CHECKING:
 
     import os
 
-    from qtpy.QtGui import QStandardItemModel
+    from qtpy.QtGui import QPoint, QStandardItemModel
     from qtpy.QtWidgets import QPlainTextEdit
     from typing_extensions import Literal, Self
 
-    from pykotor.extract.file import FileResource, LocationResult
+    from pykotor.extract.file import LocationResult
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
+    from pykotor.tools.path import CaseAwarePath
     from utility.system.path import PurePath
 
 
@@ -92,11 +97,161 @@ class HTInstallation(Installation):
         self._cache2da: dict[str, TwoDA] = {}
         self._cacheTpc: dict[str, TPC] = {}
 
+        # New cache dictionaries
+        self._cache_chitin: list[FileResource] | None = None
+        self._cache_lips: dict[str, list[FileResource]] | None = None
+        self._cache_modules: dict[str, list[FileResource]] | None = None
+        self._cache_override: dict[str, list[FileResource]] | None = None
+        self._cache_rims: dict[str, list[FileResource]] | None = None
+        self._cache_saves: dict[Path, dict[Path, list[FileResource]]] | None = None
+        self._cache_streammusic: list[FileResource] | None = None
+        self._cache_streamsounds: list[FileResource] | None = None
+        self._cache_streamwaves: list[FileResource] | None = None
+        self._cache_texturepacks: dict[str, list[FileResource]] | None = None
+
+    def _clear_cache(self, cache_name: str):
+        """Clear a specific cache and print a debug message."""
+        cache_attr = f"_cache_{cache_name}"
+        if hasattr(self, cache_attr):
+            setattr(self, cache_attr, None)
+            RobustLogger().debug(f"Cleared cache for {cache_name}")
+
+    def clear_all_caches(self):
+        """Clear all caches."""
+        for attr in dir(self):
+            if attr.startswith("_cache_"):
+                setattr(self, attr, None)
+        RobustLogger().debug("Cleared all caches")
+
+    def _get_cached_or_load(self, cache_name: str, load_method: Callable[[], Any]) -> Any:
+        """Get data from cache or load it if not present."""
+        cache_attr = f"_cache_{cache_name}"
+        cached_data = getattr(self, cache_attr, None)
+        if cached_data is None:
+            cached_data = load_method()
+            setattr(self, cache_attr, cached_data)
+        return cached_data
+
+    def reload_all(self): ...
+    def load_chitin(self): ...
+    def load_lips(self): ...
+    def load_modules(self): ...
+    def load_streammusic(self): ...
+    def load_streamsounds(self): ...
+    def load_textures(self): ...
+    def load_saves(self): ...
+    def load_streamwaves(self): ...
+    def load_streamvoice(self): ...
+    def load_override(self, directory: str | None = None): ...
+
     @property
-    def tsl(self) -> bool:
-        if self._tsl is None:
-            self._tsl = self.game().is_k2()
-        return self._tsl
+    def _chitin(self) -> list[FileResource]:
+        return self._get_cached_or_load("chitin", self._load_chitin)
+    @_chitin.setter
+    def _chitin(self, value: list[FileResource]) -> None: ...
+    def _load_chitin(self) -> list[FileResource]:
+        chitin_path: CaseAwarePath = self._path / "chitin.key"
+        return list(Chitin(key_path=chitin_path)) if chitin_path.safe_isfile() else []
+
+    @property
+    def _female_talktable(self) -> TalkTable: return TalkTable(self._path / "dialogf.tlk")
+    @_female_talktable.setter
+    def _female_talktable(self, value: TalkTable) -> None: ...
+
+    @property
+    def _lips(self) -> dict[str, list[FileResource]]:
+        return self._get_cached_or_load("lips", lambda: self.load_resources_dict(self.lips_path(), capsule_check=is_mod_file))
+    @_lips.setter
+    def _lips(self, value: dict[str, list[FileResource]]) -> None: ...
+
+    @property
+    def _modules(self) -> dict[str, list[FileResource]]:
+        return self._get_cached_or_load("modules", lambda: self.load_resources_dict(self.module_path(), capsule_check=is_capsule_file))
+    @_modules.setter
+    def _modules(self, value: dict[str, list[FileResource]]) -> None: ...
+
+    @property
+    def _override(self) -> dict[str, list[FileResource]]:
+        return self._get_cached_or_load("override", self._load_override)
+    @_override.setter
+    def _override(self, value: dict[str, list[FileResource]]) -> None: ...
+    def _load_override(self) -> dict[str, list[FileResource]]:
+        override_path = self.override_path()
+        result = {}
+        for folder in [f for f in override_path.safe_rglob("*") if f.safe_isdir()] + [override_path]:
+            relative_folder: str = folder.relative_to(override_path).as_posix()
+            result[relative_folder] = self.load_resources_list(folder, recurse=True)
+        return result
+
+    @property
+    def _rims(self) -> dict[str, list[FileResource]]: return self.load_resources_dict(self.rims_path(), capsule_check=is_rim_file)
+    @_rims.setter
+    def _rims(self, value: dict[str, list[FileResource]]) -> None: ...
+
+    @property
+    def saves(self) -> dict[Path, dict[Path, list[FileResource]]]:
+        return self._get_cached_or_load("saves", self._load_saves)
+    @saves.setter
+    def saves(self, value: dict[Path, dict[Path, list[FileResource]]]) -> None: ...
+    def _load_saves(self) -> dict[Path, dict[Path, list[FileResource]]]:
+        if hasattr(self, "_saves") and self._saves:
+            return self._saves
+        self._saves = {
+            save_location: {
+                save_path: [
+                    FileResource(
+                        ResourceIdentifier.from_path(file).resname,
+                        ResourceIdentifier.from_path(file).restype,
+                        file.stat().st_size,
+                        0,
+                        file
+                    ) for file in save_path.iterdir()
+                ] for save_path in save_location.iterdir() if save_path.safe_isfile()
+            } for save_location in self.save_locations() if save_location.safe_isdir()
+        }
+        return self._saves
+    @saves.setter
+    def saves(self, value: dict[Path, dict[Path, list[FileResource]]]) -> None: ...
+
+    @property
+    def _streammusic(self) -> list[FileResource]:
+        return self._get_cached_or_load("streammusic", lambda: self.load_resources_list(self.streammusic_path()))
+    @_streammusic.setter
+    def _streammusic(self, value: list[FileResource]) -> None: ...
+    def _load_streammusic(self) -> list[FileResource]:
+        return self.load_resources_list(self.streammusic_path())
+
+    @property
+    def _streamsounds(self) -> list[FileResource]:
+        return self._get_cached_or_load("streamsounds", lambda: self.load_resources_list(self.streamsounds_path()))
+    @_streamsounds.setter
+    def _streamsounds(self, value: list[FileResource]) -> None: ...
+    def _load_streamsounds(self) -> list[FileResource]:
+        return self.load_resources_list(self.streamsounds_path())
+
+    @property
+    def _streamwaves(self) -> list[FileResource]:
+        return self._get_cached_or_load("streamwaves", lambda: self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves"))))
+    @_streamwaves.setter
+    def _streamwaves(self, value: list[FileResource]) -> None: ...
+    def _load_streamwaves(self) -> list[FileResource]:
+        return self.load_resources_list(self._find_resource_folderpath(("streamvoice", "streamwaves")))
+
+    @property
+    def _talktable(self) -> TalkTable:
+        return self._get_cached_or_load("talktable", self._load_talktable)
+    @_talktable.setter
+    def _talktable(self, value: TalkTable) -> None: ...
+    def _load_talktable(self) -> TalkTable:
+        return TalkTable(self._path / "dialog.tlk")
+
+    @property
+    def _texturepacks(self) -> dict[str, list[FileResource]]:
+        return self._get_cached_or_load("texturepacks", self._load_texturepacks)
+    @_texturepacks.setter
+    def _texturepacks(self, value: dict[str, list[FileResource]]) -> None: ...
+    def _load_texturepacks(self) -> dict[str, list[FileResource]]:
+        return self.load_resources_dict(self.texturepacks_path(), capsule_check=is_erf_file)
 
     @classmethod
     def from_base_instance(cls, installation: Installation) -> Self:
@@ -118,75 +273,55 @@ class HTInstallation(Installation):
         order: list[SearchLocation] | None = None,
     ):
         from toolset.gui.dialogs.load_from_location_result import ResourceItems
-        def extendContextMenu(pos):
-            if isinstance(widget, QComboBox):
-                rootMenu = QMenu(widget)
-                widgetText = widget.currentText().strip()
-                firstAction = None
-            else:
-                rootMenu = widget.createStandardContextMenu()
-                widgetText = (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
-                firstAction = rootMenu.actions()[0] if rootMenu.actions() else None
 
-            print("<SDM> [extendContextMenu scope] rootMenu: ", rootMenu)
-            print("<SDM> [extendContextMenu scope] widgetText: ", widgetText)
+        def extendContextMenu(pos: QPoint):
+            rootMenu = QMenu(widget) if isinstance(widget, QComboBox) else widget.createStandardContextMenu()
+            widgetText = widget.currentText().strip() if isinstance(widget, QComboBox) else (widget.text() if isinstance(widget, QLineEdit) else widget.toPlainText()).strip()
 
             if widgetText:
-                fileMenu = QMenu("File...", widget)
-                print("<SDM> [extendContextMenu scope] fileMenu: ", fileMenu)
-
-                if firstAction:
-                    rootMenu.insertMenu(firstAction, fileMenu)
-                    rootMenu.insertSeparator(firstAction)
-                else:
-                    rootMenu.addMenu(fileMenu)
-
-                if firstAction:
-                    rootMenu.insertMenu(firstAction, fileMenu)
-                    rootMenu.insertSeparator(firstAction)
-                search_order = order or [
-                    SearchLocation.CHITIN,
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.MODULES,
-                    SearchLocation.RIMS,
-                ]
-                print("<SDM> [extendContextMenu scope] search_order: ", search_order)
-
-                locations = self.locations(([widgetText], resref_type if isinstance(resref_type, Collection) and len(resref_type) > 1 and isinstance(resref_type[1], ResourceType) else resref_type), search_order)
-                print("<SDM> [extendContextMenu scope] locations: ", locations)
-
-                flatLocations = [item for sublist in locations.values() for item in sublist] if isinstance(locations, dict) else locations
-                print("<SDM> [extendContextMenu scope] flatLocations: ", flatLocations)
-
-                if flatLocations:
-                    for location in flatLocations:
-                        displayPath = location.filepath.relative_to(self.path())
-                        if location.as_file_resource().inside_bif:
-                            displayPath /= location.as_file_resource().filename()
-                        displayPathStr = str(displayPath)
-                        print("<SDM> [extendContextMenu scope] displayPathStr: ", displayPathStr)
-
-                        locationMenu = fileMenu.addMenu(displayPathStr)
-                        print("<SDM> [extendContextMenu scope] locationMenu: ", locationMenu)
-
-                        resourceMenuBuilder = ResourceItems(resources=[location])
-                        print("<SDM> [extendContextMenu scope] resourceMenuBuilder: ", resourceMenuBuilder)
-
-                        resourceMenuBuilder.build_menu(locationMenu, self)
-
-                    detailsAction = QAction("Details...", fileMenu)
-                    print("<SDM> [extendContextMenu scope] detailsAction: ", detailsAction)
-
-                    detailsAction.triggered.connect(lambda: self._openDetails(flatLocations))
-                    fileMenu.addAction(detailsAction)
-                else:
-                    fileMenu.setDisabled(True)
-                for action in rootMenu.actions():
-                    if action.text() == "File...":
-                        action.setText(f"{len(flatLocations)} file(s) located")
-                        break
+                build_file_context_menu(rootMenu, widgetText)
 
             rootMenu.exec_(widget.mapToGlobal(pos))
+
+        def build_file_context_menu(rootMenu: QMenu, widgetText: str):
+            """Build and populate a file context menu for the given widget text.
+
+            This function creates a "File..." submenu in the root menu, populates it with
+            file locations based on the widget text, and adds a "Details..." action.
+
+            Args:
+                rootMenu (QMenu): The parent menu to which the file submenu will be added.
+                pos (QPoint): The position where the menu should be displayed.
+                widgetText (str): The text from the widget used to search for file locations.
+            """
+            fileMenu = QMenu("File...", widget)
+            rootMenu.insertMenu(rootMenu.actions()[0], fileMenu)
+            rootMenu.insertSeparator(rootMenu.actions()[0])
+
+            search_order = order or [SearchLocation.CHITIN, SearchLocation.OVERRIDE, SearchLocation.MODULES, SearchLocation.RIMS]
+            resource_types = resref_type if isinstance(resref_type[0], ResourceType) else resref_type
+            # FIXME(th3w1zard1): Seems the override's for `locations` are wrong, need to fix
+            locations: dict[str, list[LocationResult]] = self.locations(([widgetText], resource_types), search_order)  # pyright: ignore[reportArgumentType, reportAssignmentType]
+            flatLocations = [item for sublist in locations.values() for item in sublist] if isinstance(locations, dict) else locations
+
+            if flatLocations:
+                for location in flatLocations:
+                    displayPath = location.filepath.relative_to(self.path())
+                    if location.as_file_resource().inside_bif:
+                        displayPath /= location.as_file_resource().filename()
+                    locationMenu = fileMenu.addMenu(str(displayPath))
+                    ResourceItems(resources=[location]).build_menu(locationMenu, self)
+
+                detailsAction = QAction("Details...", fileMenu)
+                detailsAction.triggered.connect(lambda: self._openDetails(flatLocations))
+                fileMenu.addAction(detailsAction)
+            else:
+                fileMenu.setDisabled(True)
+
+            for action in rootMenu.actions():
+                if action.text() == "File...":
+                    action.setText(f"{len(flatLocations)} file(s) located")
+                    break
 
         widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         widget.customContextMenuRequested.connect(extendContextMenu)
@@ -194,10 +329,46 @@ class HTInstallation(Installation):
     def _openDetails(self, locations: list[LocationResult]):
         from toolset.gui.dialogs.load_from_location_result import FileSelectionWindow
         selectionWindow = FileSelectionWindow(locations, self)
-        print("<SDM> [_openDetails scope] selectionWindow: %s", selectionWindow)
-
-        addWindow(selectionWindow)
+        addWindow(selectionWindow)  # ez way to get qt to call AddRef
         selectionWindow.activateWindow()
+
+    def handle_file_system_changes(self, changed_files: list[str]):
+        """Handle file system changes and update caches accordingly."""
+        lower_install_path = str(self._path).lower()
+        lower_lips_path = str(self.lips_path()).lower()
+        lower_module_path = str(self.module_path()).lower()
+        lower_override_path = str(self.override_path()).lower()
+        lower_rims_path = str(self.rims_path()).lower()
+        lower_streammusic_path = str(self.streammusic_path()).lower()
+        lower_streamsounds_path = str(self.streamsounds_path()).lower()
+        lower_streamwaves_path = str(self._find_resource_folderpath(("streamvoice", "streamwaves"))).lower()
+        lower_texturepacks_path = str(self.texturepacks_path()).lower()
+        lower_save_locations = [str(save_loc).lower() for save_loc in self.save_locations()]
+
+        for path in changed_files:
+            lower_path = path.lower()
+            if lower_path == lower_install_path:
+                self._clear_cache("chitin")
+            elif lower_lips_path in lower_path:
+                self._clear_cache("lips")
+            elif lower_module_path in lower_path:
+                self._clear_cache("modules")
+            elif lower_override_path in lower_path:
+                self._clear_cache("override")
+            elif lower_rims_path in lower_path:
+                self._clear_cache("rims")
+            elif any(save_loc in lower_path for save_loc in lower_save_locations):
+                self._clear_cache("saves")
+            elif lower_streammusic_path in lower_path:
+                self._clear_cache("streammusic")
+            elif lower_streamsounds_path in lower_path:
+                self._clear_cache("streamsounds")
+            elif lower_streamwaves_path in lower_path:
+                self._clear_cache("streamwaves")
+            elif lower_texturepacks_path in lower_path:
+                self._clear_cache("texturepacks")
+            else:
+                print(f"Unhandled file change: {path}")
 
 
     # region Cache 2DA
@@ -227,36 +398,20 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def getRelevantResources(
-        self,
-        restype: ResourceType,
-        src_filepath: PurePath | None = None,
-    ) -> set[FileResource]:
-        """Use logic to get a list of relevant resources for various contexts."""
+    def getRelevantResources(self, restype: ResourceType, src_filepath: PurePath | None = None) -> set[FileResource]:
+        """Get relevant resources for a given resource type and source filepath."""
         from pykotor.common.module import Module
-        if src_filepath is not None:
-            relevant_resources = {res for res in self.override_resources() if res.restype() is restype}
-            relevant_resources.update(res for res in self.chitin_resources() if res.restype() is restype)
-            if src_filepath.is_relative_to(self.module_path()):
-                relevant_resources.update(
-                    res
-                    for cap in Module.find_capsules(self, src_filepath.name, strict=True)
-                    for res in cap
-                    if res.restype() is restype
-                )
-            elif src_filepath.is_relative_to(self.override_path()):
-                relevant_resources.update(
-                    res
-                    for relevant_reslist in (
-                        reslist
-                        for reslist in self._modules.values()
-                        if any(res.identifier() == src_filepath.name for res in reslist)
-                    )
-                    for res in relevant_reslist
-                    if res.restype() is restype
-                )
-        else:
-            relevant_resources = {res for res in self if res.restype() is restype}
+
+        if src_filepath is None:
+            return {res for res in self if res.restype() is restype}
+
+        relevant_resources = {res for res in self.override_resources() + self.chitin_resources() if res.restype() is restype}
+
+        if src_filepath.is_relative_to(self.module_path()):
+            relevant_resources.update(res for cap in Module.find_capsules(self, src_filepath.name, strict=True) for res in cap if res.restype() is restype)
+        elif src_filepath.is_relative_to(self.override_path()):
+            relevant_resources.update(res for reslist in self._modules.values() if any(r.identifier() == src_filepath.name for r in reslist) for res in reslist if res.restype() is restype)  # noqa: E501
+
         return relevant_resources
 
     def htBatchCache2DA(self, resnames: list[str], *, reload: bool = False):
@@ -356,13 +511,6 @@ class HTInstallation(Installation):
         Returns:
         -------
             QPixmap: The icon pixmap for the item
-
-        Processing Logic:
-        ----------------
-            - Looks up the item class and variation from the UTI in the base items 2DA
-            - Constructs the texture resource name from the item class and variation
-            - Looks up the texture from the texture cache
-            - Returns the icon pixmap if a texture is found, otherwise returns a default icon.
         """
         pixmap = QPixmap(":/images/inventory/unknown.png")
         baseitems: TwoDA | None = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
@@ -456,3 +604,9 @@ class HTInstallation(Installation):
         width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+
+    @property
+    def tsl(self) -> bool:
+        if self._tsl is None:
+            self._tsl = self.game().is_k2()
+        return self._tsl

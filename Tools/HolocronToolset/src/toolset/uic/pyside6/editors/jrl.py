@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'jrl.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.6.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -20,9 +20,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
     QDoubleSpinBox, QFormLayout, QGridLayout, QHBoxLayout,
     QHeaderView, QLabel, QLineEdit, QMainWindow,
     QMenu, QMenuBar, QSizePolicy, QSpinBox,
-    QSplitter, QStackedWidget, QTreeView, QVBoxLayout,
-    QWidget)
+    QSplitter, QStackedWidget, QVBoxLayout, QWidget)
 
+from toolset.gui.editors.dlg import RobustTreeView
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.plaintext import HTPlainTextEdit
@@ -51,7 +51,7 @@ class Ui_MainWindow(object):
         self.splitter = QSplitter(self.centralwidget)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Vertical)
-        self.journalTree = QTreeView(self.splitter)
+        self.journalTree = RobustTreeView(self.splitter)
         self.journalTree.setObjectName(u"journalTree")
         self.journalTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.journalTree.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -59,7 +59,7 @@ class Ui_MainWindow(object):
         self.splitter.addWidget(self.journalTree)
         self.questPages = QStackedWidget(self.splitter)
         self.questPages.setObjectName(u"questPages")
-        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.questPages.sizePolicy().hasHeightForWidth())

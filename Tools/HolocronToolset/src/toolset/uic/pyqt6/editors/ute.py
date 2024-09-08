@@ -308,8 +308,8 @@ class Ui_MainWindow(object):
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from toolset.gui.common.widgets.combobox import FilterComboBox
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from utility.ui_libraries.qt.widgets.widgets.combobox import FilterComboBox
 
 from toolset.rcc import resources_rc_pyqt6

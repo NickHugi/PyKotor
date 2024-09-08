@@ -12,6 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from toolset.gui.editors.dlg import RobustTreeView
 from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.edit.plaintext import HTPlainTextEdit
@@ -41,7 +42,7 @@ class Ui_MainWindow(object):
         self.splitter = QSplitter(self.centralwidget)
         self.splitter.setObjectName(u"splitter")
         self.splitter.setOrientation(Qt.Vertical)
-        self.journalTree = QTreeView(self.splitter)
+        self.journalTree = RobustTreeView(self.splitter)
         self.journalTree.setObjectName(u"journalTree")
         self.journalTree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.journalTree.setEditTriggers(QAbstractItemView.NoEditTriggers)

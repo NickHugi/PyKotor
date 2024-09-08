@@ -495,7 +495,7 @@ class Ui_MainWindow(object):
         self.actionDiscordKotOR.setText(_translate("MainWindow", "KOTOR Community Portal"))
         self.actionDiscordDeadlyStream.setText(_translate("MainWindow", "Deadly Stream"))
         self.actionModuleDesigner.setText(_translate("MainWindow", "Module Designer"))
-from toolset.gui.widgets.main_widgets import ResourceList, TextureList
 from toolset.gui.widgets.kotor_filesystem_model import ResourceFileSystemWidget
+from toolset.gui.widgets.main_widgets import ResourceList, TextureList
 
 from toolset.rcc import resources_rc_pyqt6
