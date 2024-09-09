@@ -6,8 +6,8 @@ from loggerplus import RobustLogger
 from qtpy.QtWidgets import QAbstractSpinBox, QComboBox, QDoubleSpinBox, QGroupBox, QSlider, QSpinBox, QWidget
 
 from pykotor.common.misc import Color
-from utility.ui_libraries.qt.corelib.itemmodels.filters import HoverEventFilter, NoScrollEventFilter
 from utility.misc import is_int
+from utility.ui_libraries.qt.corelib.itemmodels.filters import HoverEventFilter, NoScrollEventFilter
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject

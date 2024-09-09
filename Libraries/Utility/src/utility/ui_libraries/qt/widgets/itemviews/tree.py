@@ -3,18 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, QTimer, Qt
-from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import (
-    QHeaderView,
-    QMenu,
-    QPushButton,
-    QStyle,
-    QStyleOptionViewItem,
-    QTreeView,
-    QTreeWidget,
-    QTreeWidgetItem,
-    QVBoxLayout,
-)
+from qtpy.QtGui import QCursor, QStandardItem, QStandardItemModel
+from qtpy.QtWidgets import QHeaderView, QMenu, QPushButton, QStyle, QStyleOptionViewItem, QTreeView, QTreeWidget, QTreeWidgetItem, QVBoxLayout
 
 from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustAbstractItemView
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
@@ -43,21 +33,6 @@ class RobustTreeView(RobustAbstractItemView, QTreeView):
         h.customContextMenuRequested.connect(self.show_header_context_menu)
         if not use_columns:
             self.set_horizontal_scrollbar(state=False)
-        self.setup_backup_menu_when_header_hidden()
-
-    def setup_backup_menu_when_header_hidden(self):
-        corner_button = QPushButton("☰", self)
-        corner_button.setFixedSize(20, 20)
-        corner_button.clicked.connect(self.show_header_context_menu)
-        corner_button.setToolTip("Show context menu")
-        layout = QVBoxLayout(self)
-        layout.addWidget(corner_button, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
-        layout.setContentsMargins(0, 0, 0, 0)
-        QTreeView.setLayout(self, layout)
-
-    def show_header_context_menu(self, pos: QPoint):
-        menu = self.build_context_menu()
-        menu.exec_(self.header().mapToGlobal(pos))
 
     def build_context_menu(self) -> QMenu:
         menu = super().build_context_menu()

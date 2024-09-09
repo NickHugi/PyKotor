@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import qtpy
 
 from qtpy import QtCore
-from qtpy.QtCore import QMargins, QMetaType, QModelIndex, QObject, QSettings, QSize, QTimer, Qt
-from qtpy.QtGui import QColor, QPalette
+from qtpy.QtCore import QMargins, QMetaType, QModelIndex, QObject, QPoint, QSettings, QSize, QTimer, Qt
+from qtpy.QtGui import QColor, QCursor, QPalette
 from qtpy.QtWidgets import (
     QAbstractItemView,
     QAbstractScrollArea,
@@ -25,9 +25,11 @@ from qtpy.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QFrame,
+    QHeaderView,
     QLineEdit,
     QMenu,
     QMessageBox,
+    QPushButton,
     QSpinBox,
     QStyle,
     QStyleOptionViewItem,
@@ -301,6 +303,26 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
     def __init__(self, parent: QWidget | None = None, *, settings_name: str | None = None):
         super().__init__(parent, settings_name=settings_name)
         self.layout_changed_debounce_timer: QTimer = QTimer(self)
+        self.setup_backup_menu_when_header_hidden()
+
+    def setup_backup_menu_when_header_hidden(self):
+        corner_button = QPushButton("☰", self)
+        corner_button.setFixedSize(20, 20)
+        corner_button.clicked.connect(lambda _some_bool_qt_is_sending: self.show_header_context_menu())
+        corner_button.setToolTip("Show context menu")
+        layout = QVBoxLayout(self)
+        layout.addWidget(corner_button, alignment=Qt.AlignTop | Qt.AlignRight)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.__class__.setLayout(self, layout)
+
+    def show_header_context_menu(self, pos: QPoint | None = None):
+        menu = self.build_context_menu()
+        header = getattr(self, "header", None)
+        if header is not None and callable(header):
+            pos = cast(QHeaderView, header).mapToGlobal(QPoint(0, cast(QHeaderView, header).height()))
+        elif pos is None:
+            pos = QCursor.pos()
+        menu.exec_(pos)
 
     def itemDelegate(self) -> HTMLDelegate | QStyledItemDelegate | QAbstractItemDelegate:
         return super().itemDelegate()
@@ -766,7 +788,7 @@ class RobustAbstractItemView(RobustBaseWidget, QAbstractItemView if TYPE_CHECKIN
                 option.state = cast(QStyle.StateFlag, option.state & ~QStyle.StateFlag.State_Enabled)
             checkStateData = index.data(Qt.ItemDataRole.CheckStateRole)
             option.checkState = Qt.CheckState.Unchecked if checkStateData is None else checkStateData
-            option.displayAlignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            option.displayAlignment = Qt.AlignLeft | Qt.AlignVCenter
             option.index = index
             option.text = index.data(Qt.ItemDataRole.DisplayRole)
         return option

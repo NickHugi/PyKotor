@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, Qt
 from qtpy.QtWidgets import QApplication, QHeaderView, QPushButton, QTableView, QVBoxLayout, QWidget
 
-from utility.ui_libraries.qt.widgets.itemviews.base import RobustAbstractItemView
+from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustAbstractItemView
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint

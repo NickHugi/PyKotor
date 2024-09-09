@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ModuleDesignerSettings:
     # ... existing code ...
     def __init__(self):

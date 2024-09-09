@@ -17,7 +17,7 @@ import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QCoreApplication, QEvent, QFile, QFileSystemWatcher, QMutex, QTextStream, QThread, Qt
+from qtpy.QtCore import QCoreApplication, QEvent, QFile, QMutex, QTextStream, QThread, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap, QStandardItem
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -33,7 +33,7 @@ from qtpy.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QTreeView,
-    QVBoxLayout
+    QVBoxLayout,
 )
 
 from pykotor.common.stream import BinaryReader
@@ -111,7 +111,6 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QCloseEvent, QKeyEvent, QMouseEvent
     from qtpy.QtWidgets import QWidget
     from typing_extensions import Literal
-    from watchdog.observers.api import BaseObserver
 
     from pykotor.resource.formats.mdl.mdl_data import MDL
     from pykotor.resource.formats.tpc import TPC

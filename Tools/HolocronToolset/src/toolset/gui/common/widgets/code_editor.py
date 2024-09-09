@@ -4,6 +4,7 @@ import json
 
 from typing import TYPE_CHECKING, Any, cast
 
+from loggerplus import RobustLogger
 from qtpy.QtCore import QRect, QSettings, QSize, QStringListModel, Qt, Signal
 from qtpy.QtGui import QColor, QPainter, QPalette, QTextCursor, QTextFormat
 from qtpy.QtWidgets import (
@@ -17,6 +18,7 @@ from qtpy.QtWidgets import (
     QMenu,
     QPlainTextEdit,
     QPushButton,
+    QSplitter,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -39,11 +41,11 @@ class CodeEditor(QPlainTextEdit):
 
     Ported from the C++ code at: https://doc.qt.io/qt-5/qtwidgets-widgets-codeeditor-example.html
     """
-    snippetAdded = Signal(str, str)  # name, content
-    snippetRemoved = Signal(int)  # index
-    snippetInsertRequested = Signal(str)  # content
-    snippetsLoadRequested = Signal()
-    snippetsSaveRequested = Signal(list)  # list of dicts
+    snippetAdded: Signal = Signal(str, str)  # name, content
+    snippetRemoved: Signal = Signal(int)  # index
+    snippetInsertRequested: Signal = Signal(str)  # content
+    snippetsLoadRequested: Signal = Signal()
+    snippetsSaveRequested: Signal = Signal(list)  # list of dicts
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -345,11 +347,6 @@ class CodeEditor(QPlainTextEdit):
         self.redo()
 
     def replace(self):
-        splitter = QSplitter(self)
-        splitter.addWidget(self)
-        splitter.addWidget(self.parent().outputTextEdit)
-        self.setup_toolbar()
-        self.setup_menus()
         """Open a dialog to replace text in the code editor."""
         dialog = QDialog(self)
         dialog.setWindowTitle("Replace")
@@ -375,6 +372,7 @@ class CodeEditor(QPlainTextEdit):
         layout.addLayout(button_layout)
 
         dialog.setLayout(layout)
+        splitter = QSplitter(self)
         splitter.setOrientation(Qt.Vertical)
         splitter.setSizes([400, 100])
         layout.addWidget(splitter)
@@ -407,8 +405,10 @@ class CodeEditor(QPlainTextEdit):
         dialog.exec_()
 
     def on_outline_item_clicked(self, item: QTreeWidgetItem, column: int):
-        obj = item.data(0, Qt.ItemDataRole.UserRole)
-        assert isinstance(obj, FunctionDefinition)
+        obj: FunctionDefinition | None = item.data(0, Qt.ItemDataRole.UserRole)
+        if obj is None:
+            RobustLogger().error(f"Outline item '{item.text(0)}' has no function definition")
+            return
         cursor = self.textCursor()
         cursor.setPosition(obj.line_num)
         self.setTextCursor(cursor)

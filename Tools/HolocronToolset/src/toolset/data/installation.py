@@ -17,7 +17,6 @@ from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from toolset.utils.window import addWindow
-from utility.system.path import Path
 
 if TYPE_CHECKING:
 
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.twoda import TwoDA
     from pykotor.resource.generics.uti import UTI
     from pykotor.tools.path import CaseAwarePath
-    from utility.system.path import PurePath
+    from utility.system.path import Path, PurePath
 
 
 class HTInstallation(Installation):
@@ -205,8 +204,8 @@ class HTInstallation(Installation):
                         file.stat().st_size,
                         0,
                         file
-                    ) for file in save_path.iterdir()
-                ] for save_path in save_location.iterdir() if save_path.safe_isfile()
+                    ) for file in save_path.iterdir() if file.safe_isfile()
+                ] for save_path in save_location.iterdir() if save_path.safe_isdir()
             } for save_location in self.save_locations() if save_location.safe_isdir()
         }
         return self._saves
@@ -295,8 +294,8 @@ class HTInstallation(Installation):
                 widgetText (str): The text from the widget used to search for file locations.
             """
             fileMenu = QMenu("File...", widget)
-            rootMenu.insertMenu(rootMenu.actions()[0], fileMenu)
-            rootMenu.insertSeparator(rootMenu.actions()[0])
+            rootMenu.addMenu(fileMenu)
+            rootMenu.addSeparator(rootMenu.actions()[0])
 
             search_order = order or [SearchLocation.CHITIN, SearchLocation.OVERRIDE, SearchLocation.MODULES, SearchLocation.RIMS]
             resource_types = resref_type if isinstance(resref_type[0], ResourceType) else resref_type

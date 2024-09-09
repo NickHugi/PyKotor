@@ -148,23 +148,16 @@ def openResourceEditor(
     if restype.category in {"Images", "Textures"} and restype is not ResourceType.TXI:
         editor = TPCEditor(None, installation)
 
-    if restype in {ResourceType.NSS, ResourceType.NCS}:
-        if installation:
-            editor = NSSEditor(None, installation)
-        elif restype is ResourceType.NSS:
-            QMessageBox.warning(
-                parentWindowWidget,
-                "No installation loaded",
-                "The toolset cannot use its full nss editor features until you select an installation.",
-            )
-            editor = TXTEditor(None, installation)
-        else:
-            QMessageBox.warning(
-                parentWindowWidget,
-                "Cannot decompile NCS without an installation active",
-                "Please select an installation from the dropdown before loading an NCS.",
-            )
-            return None, None
+    if restype is ResourceType.NSS:
+        editor = NSSEditor(None, installation)
+
+    if restype is ResourceType.NCS:
+        QMessageBox.warning(
+            parentWindowWidget,
+            "Cannot decompile NCS without an installation active",
+            "Please select an installation from the dropdown before loading an NCS.",
+        )
+        return None, None
 
     if restype.target_type() is ResourceType.DLG:
         if installation is None or not gff_specialized:  # noqa: SIM108

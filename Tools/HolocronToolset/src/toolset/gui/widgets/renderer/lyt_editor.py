@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from qtpy.QtCore import QPoint, QRect, QSize, Signal
-from qtpy.QtGui import QBrush, QColor, QKeyEvent, QMouseEvent, QPainter, QPen
+from qtpy.QtCore import QPoint, QRect, Signal
+from qtpy.QtGui import QBrush, QColor, QPainter, QPen
 from qtpy.QtWidgets import QWidget
 
+from pykotor.common.geometry import Vector2, Vector3
+from pykotor.resource.formats.lyt.lyt_data import LYTDoorHook
+
 if TYPE_CHECKING:
-    from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom, LYTTrack, LYTDoorHook, LYTObstacle
+    from qtpy.QtGui import QKeyEvent, QMouseEvent
+
+    from pykotor.resource.formats.lyt.lyt_data import LYT, LYTObstacle, LYTRoom, LYTTrack
     from toolset.gui.widgets.renderer.module import ModuleRenderer
-    from pykotor.common.geometry import Vector2, Vector3
-    from glm import vec3
 
 
 class LYTEditor(QWidget):
