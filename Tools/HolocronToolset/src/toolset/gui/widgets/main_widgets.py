@@ -5,13 +5,14 @@ from abc import abstractmethod
 from ctypes import c_bool
 from queue import Empty, Queue
 from time import sleep
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+import time
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, cast
 
 import qtpy
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
-from qtpy.QtCore import QEvent, QMutex, QMutexLocker, QPoint, QSortFilterProxyModel, QThread, QTimer, QWaitCondition, Qt
+from qtpy.QtCore import QMutex, QMutexLocker, QPoint, QRunnable, QSortFilterProxyModel, QThread, QThreadPool, QTimer, QWaitCondition, Qt
 from qtpy.QtGui import (
     QCursor,
     QIcon,
@@ -28,7 +29,7 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from toolset.gui.dialogs.load_from_location_result import ResourceItems
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QModelIndex, QObject
+    from qtpy.QtCore import QEvent, QModelIndex, QObject
     from qtpy.QtGui import QMouseEvent, QResizeEvent
 
     from pykotor.extract.file import FileResource
@@ -439,21 +440,7 @@ class TextureList(MainWindowList):
         self.sectionModel: QStandardItemModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)  # type: ignore[arg-type]
 
-        self._taskQueue: Queue = Queue()
-        self._resultQueue: Queue = Queue()
-        self._stopFlag = c_bool(False)
-        self._mutex = QMutex()
-        self._condition = QWaitCondition()
-        self._consumers: list[TextureListConsumer] = [
-            TextureListConsumer(self._taskQueue, self._resultQueue, self._stopFlag, self._mutex, self._condition)
-            for _ in range(QThread.idealThreadCount())
-        ]
-        for consumer in self._consumers:
-            consumer.start(QThread.Priority.LowPriority)
-
-        self._scanner: QThread = QThread(self)
-        self._scanner.run = self.scan
-        self._scanner.start(QThread.Priority.LowPriority)
+        self._mutex: QMutex = QMutex()
 
     def setupSignals(self):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
@@ -467,15 +454,7 @@ class TextureList(MainWindowList):
         self.ui.searchEdit.textChanged.connect(self.onTextureListScrolled)
 
     def doTerminations(self):
-        with QMutexLocker(self._mutex):
-            self._stopFlag.value = True
-            self._condition.wakeAll()
-
-        self._scanner.quit()
-        self._scanner.wait()
-        for consumer in self._consumers:
-            consumer.quit()
-            consumer.wait()
+        """Do some things to terminate all the texture tasks."""
 
     def setInstallation(self, installation: HTInstallation):
         self._installation = installation
@@ -506,14 +485,10 @@ class TextureList(MainWindowList):
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
-    def selected_resources(self) -> list[FileResource]:
+    def selectedResources(self) -> list[FileResource]:
         resources: list[FileResource] = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
-            if not proxyIndex.isValid():
-                continue
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)  # pyright: ignore[reportArgumentType]
-            if not sourceIndex.isValid():
-                continue
             item = self.texturesModel.item(sourceIndex.row())
             resources.append(item.data(Qt.ItemDataRole.UserRole + 1))
         return resources
@@ -552,28 +527,12 @@ class TextureList(MainWindowList):
 
             for i in range(numVisible):
                 proxyIndex: QModelIndex = proxyModel.index(firstIndex.row() + i, 0)
-                if not proxyIndex.isValid():
-                    continue
                 sourceIndex: QModelIndex = proxyModel.mapToSource(proxyIndex)
-                if not sourceIndex.isValid():
-                    continue
                 item: QStandardItem | None = model.itemFromIndex(sourceIndex)
-                if item is None:
-                    continue
-                items.append(item)
+                if item is not None:
+                    items.append(item)
 
         return items
-
-    def scan(self):
-        while True:
-            for row, _resname, width, height, data in iter(self._resultQueue.get, None):
-                image = QImage(data, width, height, QImage.Format.Format_RGB888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                item = self.texturesModel.item(row, 0)
-                if item is not None:
-                    self.iconUpdate.emit(item, QIcon(pixmap))
-
-            sleep(0.1)
 
     def onFilterStringUpdated(self):
         self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
@@ -588,114 +547,68 @@ class TextureList(MainWindowList):
         self.requestRefresh.emit()
 
     def onTextureListScrolled(self):
-        if self._installation is None:
-            print("No installation loaded, nothing to scroll through?")
-            return
-
+        # Avoid redundantly loading textures that have already been loaded
         visible_items = self.visibleItems()
+        textures_to_load = {item.text() for item in visible_items if item.text().lower() not in self._scannedTextures}
+        texname_to_item = {item.text().lower(): item for item in visible_items}
 
-        with QMutexLocker(self._mutex):
-            textures: CaseInsensitiveDict[TPC | None] = (
-                self._installation.textures(
-                    [
-                        item.text()
-                        for item in visible_items
-                        if item.text().lower() not in self._scannedTextures
-                    ],
-                    [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
-                )
-            )
-
-            for item in visible_items:
-                itemText = item.text()
-                lowerItemText = itemText.lower()
-                if lowerItemText in self._scannedTextures:
-                    continue
-
-                self._scannedTextures.add(lowerItemText)
-
-                cache_tpc: TPC | None = textures.get(itemText)
-                tpc: TPC = TPC() if cache_tpc is None else cache_tpc
-
-                task = TextureListTask(item.row(), tpc, itemText)
-                self._taskQueue.put(task)
-                item.setData(True, Qt.ItemDataRole.UserRole)
-
-            self._condition.wakeAll()
+        # Emit signals to load textures that have not had their icons assigned
+        for texture_name_lower in iter(textures_to_load):
+            if texture_name_lower in self._scannedTextures:
+                continue
+            if texture_name_lower not in texname_to_item:  # should never happen.
+                continue
+            def get_texture_func(resname: str) -> TPC | None:
+                return self._installation.texture(resname, [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA])
+            item = texname_to_item[texture_name_lower]
+            self._scannedTextures.add(texture_name_lower)
+            task = LoadTextureTask(get_texture_func, item.row(), item.column(), texture_name_lower, self.onIconUpdate, self._mutex)
+            QThreadPool.globalInstance().start(task)
 
     def onIconUpdate(
         self,
-        item: QStandardItem,
+        row: int,
+        col: int,
         icon: QIcon,
     ):
-        try:  # FIXME(th3w1zard1): there's a race condition happening somewhere, causing the item to have previously been deleted.
-            item.setIcon(icon)
-        except RuntimeError:
-            RobustLogger().exception("Could not update TextureList icon")
+        item = self.texturesModel.item(row, col)
+        item.setIcon(icon)
 
     def onResourceDoubleClicked(self):
-        self.requestOpenResource.emit(self.selected_resources(), None)
+        self.requestOpenResource.emit(self.selectedResources(), None)
 
     def resizeEvent(self, a0: QResizeEvent):  # pylint: disable=W0613
         self.onTextureListScrolled()
 
 
-class TextureListConsumer(QThread):
+class LoadTextureTask(QRunnable):
     def __init__(
         self,
-        taskQueue: Queue,
-        resultQueue: Queue,
-        stopFlag: c_bool,
+        get_texture_func: Callable[[str], TPC | None],
+        row: int,
+        col: int,
+        resname: str,
+        callback: Callable[[int, int, QIcon], None],
         mutex: QMutex,
-        condition: QWaitCondition,
     ):
         super().__init__()
-        self.taskQueue: Queue = taskQueue
-        self.resultQueue: Queue = resultQueue
-        self._stopFlag: c_bool = stopFlag
+        self.get_texture_func: Callable[[str], TPC | None] = get_texture_func
+        self.row: int = row
+        self.col: int = col
+        self.resname: str = resname
+        self.callback: Callable[[int, int, QIcon], None] = callback
         self._mutex: QMutex = mutex
-        self._condition: QWaitCondition = condition
 
     def run(self):
-        while True:
-            with QMutexLocker(self._mutex):
-                if self._stopFlag.value:
-                    break
-                try:
-                    next_task = self.taskQueue.get_nowait()
-                except Empty:
-                    self._condition.wait(self._mutex)
-                    continue
-
-            answer = next_task()
-
-            with QMutexLocker(self._mutex):
-                self.resultQueue.put(answer)
-                self._condition.wakeOne()
-
-
-class TextureListTask:
-    def __init__(
-        self,
-        row: int,
-        tpc: TPC,
-        resname: str,
-    ):
-        self.row: int = row
-        self.tpc: TPC = tpc
-        self.resname: str = resname
-
-    def __repr__(self):
-        return str(self.row)
-
-    def __call__(self, *args, **kwargs) -> tuple[int, str, int, int, bytearray]:
-        width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
-        return self.row, self.resname, width, height, data
+        tpc = self.get_texture_func(self.resname)
+        if tpc is None:
+            return
+        width, height, data = tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(tpc))
+        image = QImage(data, width, height, QImage.Format.Format_RGB888)
+        pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        icon = QIcon(pixmap)
+        with QMutexLocker(self._mutex):
+            self.callback(self.row, self.col, icon)
 
     def bestMipmap(self, tpc: TPC) -> int:
-        for i in range(tpc.mipmap_count()):
-            size = tpc.get(i).width
-            if size <= 64:
-                return i
-        return 0
-
+        return next((i for i in range(tpc.mipmap_count()) if tpc.get(i).width <= 64), 0)
