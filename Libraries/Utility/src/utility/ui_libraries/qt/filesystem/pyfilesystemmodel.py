@@ -174,23 +174,24 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._task_manager.submit(self._refreshFile, path)
         self.fileSystemChanged.emit()
 
-    def _refreshDirectory(self, path: str):
+    async def _refreshDirectory(self, path: str):
         try:
             node = self._nodeForPath(path)
             if node is None:
                 return
 
+            loop = asyncio.get_event_loop()
             old_list = set(node.children.keys())
-            new_list = set(os.listdir(path))
+            new_list = set(await loop.run_in_executor(None, os.listdir, path))
 
             for name in old_list - new_list:
-                self._removeNode(node.children[name])
+                await loop.run_in_executor(None, self._removeNode, node.children[name])
 
             for name in new_list - old_list:
-                self._addNode(node, name)
+                await loop.run_in_executor(None, self._addNode, node, name)
 
             for name in old_list & new_list:
-                self._updateNode(node.children[name])
+                await loop.run_in_executor(None, self._updateNode, node.children[name])
 
             self.layoutChanged.emit()
         except Exception as e:
@@ -597,22 +598,21 @@ class PyQFileSystemModel(QAbstractItemModel):
         return self.index(0, 0, QModelIndex())
 
     def _applyNameFilters(self, files: list[str]) -> list[str]:
-        if not self._nameFilters:
-            return files
+        if not self._nameFilters and not self._fileTypeFilters:
+            return self._applyCustomFilters(files)
 
         import fnmatch
 
         filtered_files = []
         for file in files:
-            if any(fnmatch.fnmatch(file, pattern) for pattern in self._nameFilters):
+            if self._nameFilters and any(fnmatch.fnmatch(file, pattern) for pattern in self._nameFilters):
                 filtered_files.append(file)
             elif self._nameFilterDisables:
                 filtered_files.append(file)
-        if self._fileTypeFilters:
-            filtered_files = [file for file in filtered_files if any(file.endswith(ext) for ext in self._fileTypeFilters)]
+            elif self._fileTypeFilters and any(file.endswith(ext) for ext in self._fileTypeFilters):
+                filtered_files.append(file)
 
-        filtered_files = self._applyCustomFilters(filtered_files)
-        return filtered_files
+        return self._applyCustomFilters(filtered_files)
 
     def _clearCache(self, emit_signal: bool = False):
         self._cache.clear()
@@ -766,6 +766,24 @@ class PyQFileSystemModel(QAbstractItemModel):
             try:
                 if action == Qt.CopyAction:
                     await self._copyFile(srcPath, destPath)
+                elif action == Qt.MoveAction:
+                    await self._moveFile(srcPath, destPath)
+            except Exception as e:
+                self._showErrorMessage(f"Error during drag and drop operation: {e}")
+
+        await asyncio.gather(*[process_url(url) for url in data.urls()])
+        return True
+
+    async def _copyFile(self, src: str, dest: str):
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, shutil.copy2, src, dest)
+        self._refreshDirectory(os.path.dirname(dest))
+
+    async def _moveFile(self, src: str, dest: str):
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, shutil.move, src, dest)
+        self._refreshDirectory(os.path.dirname(src))
+        self._refreshDirectory(os.path.dirname(dest))
                 else:
                     await self._moveFile(srcPath, destPath)
             except Exception as e:
