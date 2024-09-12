@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
-import shutil
-import time
-import traceback
+from concurrent.futures import ProcessPoolExecutor
+from typing import Any, Callable, List
 
-from multiprocessing import Process, Queue
-from typing import TYPE_CHECKING, Any, Callable, List, cast
-
-from PyQt5.QtCore import (
+from qtpy.QtCore import (
     QAbstractItemModel,
     QDateTime,
     QDir,
@@ -19,53 +14,39 @@ from PyQt5.QtCore import (
     QModelIndex,
     QMutex,
     QMutexLocker,
+    QObject,
     QUrl,
     Qt,
-    pyqtSignal as Signal,
+    Signal,
 )
-from PyQt5.QtGui import QDrag, QIcon
-from PyQt5.QtWidgets import QApplication, QMessageBox, QStyle, QTreeView
+from qtpy.QtGui import QIcon
+from qtpy.QtWidgets import QApplication, QFileIconProvider, QMessageBox, QStyle
 
+from utility.task_management import TaskConsumer, TaskManager
 from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
-from utility.ui_libraries.qt.filesystem.pyfilesystemmodelsorter import PyFileSystemModelSorter, SortingError
 from utility.ui_libraries.qt.filesystem.pyfilesystemnode import PyFileSystemNode
 from utility.ui_libraries.qt.filesystem.pyfilesystemwatcher import PyFileSystemWatcher
-
-if TYPE_CHECKING:
-    from PyQt5.QtCore import QObject
-    from PyQt5.QtWidgets import QFileIconProvider
 
 logger = logging.getLogger(__name__)
 
 
 class PyQFileSystemModel(QAbstractItemModel):
-    directoryLoaded: Signal = Signal(str)
-    rootPathChanged: Signal = Signal(str)
-    fileRenamed: Signal = Signal(str, str, str)
-    directoryWatchError: Signal = Signal(str)
-    fileSystemChanged: Signal = Signal()
-    sortingChanged: Signal = Signal()
-    dragDropError: Signal = Signal(str)
-    filterApplied: Signal = Signal()
-    fileAttributeChanged: Signal = Signal(str)
-    customDataChanged: Signal = Signal(QModelIndex, QModelIndex, object)
-    asyncOperationError: Signal = Signal(str)
-    sortingError: Signal = Signal(str)
-    fileSystemWatcherError: Signal = Signal(str)
-    cacheUpdated: Signal = Signal()
+    directoryLoaded = Signal(str)
+    rootPathChanged = Signal(str)
+    fileRenamed = Signal(str, str, str)
+    fileSystemChanged = Signal()
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
-        self._root: PyFileSystemNode = PyFileSystemNode()
-        self._fileInfoGatherer: PyFileInfoGatherer = PyFileInfoGatherer(self)
-        self._sorter: PyFileSystemModelSorter = PyFileSystemModelSorter(self)
-        self._fileSystemWatcher: PyFileSystemWatcher = PyFileSystemWatcher(self)
-        self._filters: QDir.Filters = QDir.AllEntries | QDir.NoDotAndDotDot | QDir.AllDirs
-        self._nameFilters: list[str] = []
-        self._task_queue: Queue[tuple[str, list[str]]] = Queue()
-        self._result_queue: Queue[tuple[str, list[str]]] = Queue()
-        self._worker_process: Process = Process(target=self._worker, args=(self._task_queue, self._result_queue))
-        self._worker_process.start()
+        self._root = PyFileSystemNode()
+        self._fileInfoGatherer = PyFileInfoGatherer(self)
+        self._fileSystemWatcher = PyFileSystemWatcher(self)
+        self._filters = QDir.AllEntries | QDir.NoDotAndDotDot | QDir.AllDirs
+        self._nameFilters: List[str] = []
+        self._task_manager = TaskManager()
+        self._task_consumer = TaskConsumer(self._task_manager)
+        self._task_consumer.start()
+        self._executor = ProcessPoolExecutor()
 
         self._fileInfoGatherer.newListOfFiles.connect(self._addNewListOfFiles)
         self._fileInfoGatherer.updates.connect(self._handleUpdates)
@@ -73,23 +54,13 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._fileSystemWatcher.directoryChanged.connect(self._handleDirectoryChanged)
         self._fileSystemWatcher.fileChanged.connect(self._handleFileChanged)
 
-        self._resolveSymlinks: bool = False
-        self._readOnly: bool = False
-        self._rootPath: str = ""
-        self._sortColumn: int = 0
-        self._sortOrder: Qt.SortOrder = Qt.AscendingOrder
-        self._nameFilterDisables: bool = False
-        self._cache: dict[str, PyFileSystemNode] = {}
-        self._customRoles: dict[int, Callable[[PyFileSystemNode], Any]] = {}
-        self._fileTypeFilters: list[str] = []
-        self._customSorting: Callable[[PyFileSystemNode, PyFileSystemNode], int] | None = None
-        self._customFilters: list[str] = []
-        self._dragEnabled: bool = True
-        self._mutex: QMutex = QMutex()
-        self._error_retry_count: int = 0
-        self._cache_expiration: int = 60  # Cache expiration time in seconds
-        self._file_watcher_cache: dict[str, PyFileSystemWatcher] = {}
-        self._max_watcher_paths: int = 100
+        self._resolveSymlinks = False
+        self._readOnly = True
+        self._rootPath = ""
+        self._sortColumn = 0
+        self._sortOrder = Qt.AscendingOrder
+        self._nameFilterDisables = True
+        self._mutex = QMutex()
 
     def __del__(self):
         self._worker_process.terminate()
