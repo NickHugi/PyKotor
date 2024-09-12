@@ -5,85 +5,42 @@ import os
 import pathlib
 import sys
 
-from ctypes import c_bool
 from os import scandir
 
 from loggerplus import RobustLogger
-from qasync import QEventLoop, asyncSlot  # pyright: ignore[reportMissingTypeStubs]
-
-from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
-
-
-def update_sys_path(path: pathlib.Path):
-    working_dir = str(path)
-    print("<SDM> [update_sys_path scope] working_dir: ", working_dir)
-
-    if working_dir not in sys.path:
-        sys.path.append(working_dir)
-
-
-file_absolute_path = pathlib.Path(__file__).resolve()
-
-pykotor_path = file_absolute_path.parents[8] / "Libraries" / "PyKotor" / "src" / "pykotor"
-if pykotor_path.exists():
-    update_sys_path(pykotor_path.parent)
-pykotor_gl_path = file_absolute_path.parents[8] / "Libraries" / "PyKotorGL" / "src" / "pykotor"
-if pykotor_gl_path.exists():
-    update_sys_path(pykotor_gl_path.parent)
-utility_path = file_absolute_path.parents[5]
-if utility_path.exists():
-    update_sys_path(utility_path)
-toolset_path = file_absolute_path.parents[8] / "Tools/HolocronToolset/src/toolset"
-if toolset_path.exists():
-    update_sys_path(toolset_path.parent)
-    os.chdir(toolset_path)
-print(toolset_path)
-print(utility_path)
-
-import qtpy  # noqa: E402
-
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    QDesktopWidget = None
-    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
-elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
-else:
-    raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
-
-
-
-from qtpy.QtCore import (  # noqa: E402
+from PyQt5.QtCore import (
     QDir,
     QElapsedTimer,
     QFileInfo,
     QFileSystemWatcher,
     QObject,
     QTimer,
-    QWaitCondition,
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
+    pyqtSignal as Signal,
 )
-from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
+from PyQt5.QtWidgets import QFileIconProvider
+
+from utility.task_management import TaskConsumer, TaskManager
+from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
 
 
 class PyFileInfoGatherer(QObject):
-    updates: Signal = Signal(str, list)
-    newListOfFiles: Signal = Signal(str, list)
-    directoryLoaded: Signal = Signal(str)
-    nameResolved: Signal = Signal(str, str)
+    updates = Signal(str, list)
+    newListOfFiles = Signal(str, list)
+    directoryLoaded = Signal(str)
+    nameResolved = Signal(str, str)
 
-    # TODO(th3w1zard1): move these signals into QFileSystemModel
-    fileCreated: Signal = Signal(str)
-    fileDeleted: Signal = Signal(str)
-    fileModified: Signal = Signal(str)
-    fileAccessed: Signal = Signal(str)  # TODO(th3w1zard1): figure out how to check if a file is accessed
-    fileContentsModified: Signal = Signal(str)  # TODO(th3w1zard1): figure out how to check if a file is written to
-    directoryCreated: Signal = Signal(str)
-    directoryDeleted: Signal = Signal(str)
-    directoryModified: Signal = Signal(str)
-    permissionChanged: Signal = Signal(str)  # TODO(th3w1zard1): figure out how to check if a file's permissions have changed
-    symbolicLinkChanged: Signal = Signal(str)
-    accessDenied: Signal = Signal(str)  # Emitted when access to a file OR folder is denied
-    fileAttributeChanged: Signal = Signal(str)  # TODO(th3w1zard1): figure out how to check if a file's attributes have changed
+    fileCreated = Signal(str)
+    fileDeleted = Signal(str)
+    fileModified = Signal(str)
+    fileAccessed = Signal(str)
+    fileContentsModified = Signal(str)
+    directoryCreated = Signal(str)
+    directoryDeleted = Signal(str)
+    directoryModified = Signal(str)
+    permissionChanged = Signal(str)
+    symbolicLinkChanged = Signal(str)
+    accessDenied = Signal(str)
+    fileAttributeChanged = Signal(str)
 
     def __init__(
         self,
@@ -94,42 +51,35 @@ class PyFileInfoGatherer(QObject):
     ):
         super().__init__(parent)
 
-        # Thread control and synchronization
-        self.abort: c_bool = c_bool(False)  # noqa: FBT003
-        self.condition: QWaitCondition = QWaitCondition()
+        self.max_files_before_updates = max_files_before_updates
+        self.m_resolveSymlinks = resolveSymlinks
 
-        # File system watching
         self.m_watcher: QFileSystemWatcher | None = None
-        self.m_watching: bool = False
+        self.m_watching = False
 
-        # File gathering settings
-        self.max_files_before_updates: int = max_files_before_updates
-        self.m_resolveSymlinks: bool = resolveSymlinks
-
-        # File and path storage
         self._paths: list[str] = []
         self._files: list[list[str]] = []
 
-        # Icon handling
-        self.m_iconProvider: QFileIconProvider = QFileIconProvider()
-        QTimer.singleShot(0, self.run)
+        self.m_iconProvider = QFileIconProvider()
 
-    def __del__(self):
-        self.abort.value = True  # noqa: FBT003
+        self._task_manager = TaskManager()
+        self._task_consumer = TaskConsumer(self._task_manager)
+        self._task_consumer.start()
+
+        QTimer.singleShot(0, self.run)
 
     def setResolveSymlinks(self, enable: bool):  # noqa: FBT001
         if os.name == "nt":
             self.m_resolveSymlinks = enable
 
-    @asyncSlot()
     async def run(self):
         while True:
             if not self._paths:
-                await asyncio.sleep(0.1)  # Wait for paths to be populated
+                await asyncio.sleep(0.1)
                 continue
             currentPath = self._paths.pop(0)
             currentFiles = self._files.pop(0)
-            await self.getFileInfos(currentPath, currentFiles)
+            await self._task_manager.run_in_executor(self.getFileInfos, currentPath, currentFiles)
 
     def driveAdded(self):
         self.fetchExtendedInformation("", [])
@@ -222,8 +172,7 @@ class PyFileInfoGatherer(QObject):
                 driveName = driveName[:-1]
         return driveName
 
-    async def getFileInfos(self, path: str, files: list[str]):  # noqa: N803
-        firstTime = c_bool(True)  # noqa: FBT003
+    def getFileInfos(self, path: str, files: list[str]):
         updatedFiles: list[tuple[str, QFileInfo]] = []
         if not path:
             if files:
@@ -233,38 +182,23 @@ class PyFileInfoGatherer(QObject):
             updatedFiles = [(self._translateDriveName(info), info) for info in infoList]
             self.updates.emit("", updatedFiles)
 
-        self._base = QElapsedTimer()
-        self._base.start()
+        base = QElapsedTimer()
+        base.start()
 
         allFiles: list[str] = []
         if not files:
             try:
-                it = scandir(path)
+                with scandir(path) as it:
+                    allFiles = [entry.name for entry in it]
             except OSError as e:
                 self.accessDenied.emit(path if e.filename is None else e.filename)
-            else:
-                try:
-                    for entry in it:
-                        if self.abort.value:
-                            break
-                        try:
-                            try:
-                                allFiles.append(entry.name)
-                            except OSError as e:
-                                self.accessDenied.emit(entry.path if e.filename is None else e.filename)
-                        except OSError as e:
-                            self.accessDenied.emit(entry.path if e.filename is None else e.filename)
-                finally:
-                    it.close()
 
         if allFiles:
             self.newListOfFiles.emit(path, allFiles)
 
         for fileName in files:
-            if self.abort.value:
-                break
-            entry_info = QFileInfo(os.path.join(path, fileName))  # noqa: PTH118
-            self._fetch(entry_info, self._base, firstTime, updatedFiles, path)
+            entry_info = QFileInfo(os.path.join(path, fileName))
+            self._fetch(entry_info, base, updatedFiles, path)
 
         if files:
             self.updates.emit(path, files)
@@ -275,36 +209,28 @@ class PyFileInfoGatherer(QObject):
         self,
         entry_info: QFileInfo,
         base: QElapsedTimer,
-        firstTime: c_bool,  # noqa: N803
-        updatedFiles: list[tuple[str, QFileInfo]],  # noqa: N803
+        updatedFiles: list[tuple[str, QFileInfo]],
         path: str,
     ):
-        print("firstTime: ", firstTime)
         abs_entry_path = entry_info.filePath()
         try:
             updatedFiles.append((abs_entry_path, entry_info))
             current = QElapsedTimer()
             current.start()
 
-            if (
-                firstTime.value
-                and len(updatedFiles) > self.max_files_before_updates
-            ) or base.msecsTo(current) > 1000:  # noqa: PLR2004
+            if len(updatedFiles) > self.max_files_before_updates or base.msecsTo(current) > 1000:
                 self.updates.emit(path, updatedFiles.copy())
                 updatedFiles.clear()
                 base.restart()
-                firstTime.value = False
 
             if self.m_resolveSymlinks and entry_info.isSymLink():
                 try:
                     resolvedName = os.readlink(abs_entry_path)
-                except OSError:  # noqa: TRY302
-                    if self.__class__ is PyFileInfoGatherer:
-                        RobustLogger().warning(f"Access denied: '{abs_entry_path}'")
-                else:
-                    self.nameResolved.emit(abs_entry_path, os.path.basename(resolvedName))  # noqa: PTH119
+                    self.nameResolved.emit(abs_entry_path, os.path.basename(resolvedName))
+                except OSError:
+                    RobustLogger().warning(f"Access denied: '{abs_entry_path}'")
         except OSError as e:
-            error_path = abs_entry_path if e.filename is None else e.filename  # noqa: PTH100
+            error_path = abs_entry_path if e.filename is None else e.filename
             self.accessDenied.emit(error_path)
 
     def getInfo(self, fileInfo: QFileInfo) -> PyQExtendedInformation:  # noqa: N803
