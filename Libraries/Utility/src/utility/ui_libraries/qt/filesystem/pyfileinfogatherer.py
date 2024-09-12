@@ -11,6 +11,7 @@ from loggerplus import RobustLogger
 from PyQt5.QtCore import (
     QDir,
     QElapsedTimer,
+    QEventLoop,
     QFileInfo,
     QFileSystemWatcher,
     QObject,
