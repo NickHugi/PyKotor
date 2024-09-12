@@ -793,7 +793,7 @@ class PyQFileSystemModel(QAbstractItemModel):
             return False
         return True
 
-    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+    async def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
         if not self.canDropMimeData(data, action, row, column, parent):
             return False
 
@@ -816,6 +816,9 @@ class PyQFileSystemModel(QAbstractItemModel):
         await asyncio.gather(*[process_url(url) for url in data.urls()])
 
         return True
+
+    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+        return asyncio.run(self._dropMimeData(data, action, row, column, parent))
 
     def _applyFilters(self, files: list[str]) -> list[str]:
         filtered_files = self._applyNameFilters(files)
