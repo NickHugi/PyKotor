@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-
+import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from typing import TYPE_CHECKING, Any, Callable, List
 
@@ -28,9 +28,7 @@ from utility.ui_libraries.qt.filesystem.pyfilesystemnode import PyFileSystemNode
 from utility.ui_libraries.qt.filesystem.pyfilesystemwatcher import PyFileSystemWatcher
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import (
-        QObject,
-    )
+    from qtpy.QtCore import QObject
     from qtpy.QtWidgets import QFileIconProvider
 
 logger = logging.getLogger(__name__)
@@ -41,6 +39,11 @@ class PyQFileSystemModel(QAbstractItemModel):
     rootPathChanged = Signal(str)
     fileRenamed = Signal(str, str, str)
     fileSystemChanged = Signal()
+    sortingChanged = Signal()
+    sortingError = Signal(str)
+    asyncOperationError = Signal(str)
+    cacheUpdated = Signal()
+    customDataChanged = Signal(QModelIndex, QModelIndex, int)
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
@@ -67,6 +70,16 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._sortOrder = Qt.AscendingOrder
         self._nameFilterDisables = True
         self._mutex = QMutex()
+        self._cache = {}
+        self._cache_expiration = 60  # seconds
+        self._customRoles = {}
+        self._customFilters = []
+        self._dragEnabled = True
+        self._error_retry_count = {}
+        self._max_retries = 3
+        self._watcher_cleanup_interval = 300  # seconds
+        self._max_watcher_paths = 1000
+        self._file_watcher_cache = {}
 
     def __del__(self):
         self._executor.shutdown(wait=False)
@@ -139,23 +152,26 @@ class PyQFileSystemModel(QAbstractItemModel):
                 return "Date Modified"
         return None
 
-    def setRootPath(self, path: str) -> QModelIndex:
-        if path == self._rootPath and self._root:
+    async def setRootPathAsync(self, path: str) -> QModelIndex:
+        if path == self._rootPath:
             return self.index(0, 0, QModelIndex())
 
         self._rootPath = path
         self._root = PyFileSystemNode(path)
         self.beginResetModel()
-        self._task_manager.submit(self._fileInfoGatherer.fetchExtendedInformation, path, [])
-
-        if self._fileSystemWatcher.directories():
-            for directory in self._fileSystemWatcher.directories():
-                self._fileSystemWatcher.removePath(directory)
-        self._fileSystemWatcher.addPath(path)
-        self.rootPathChanged.emit(path)
+        await self._fileInfoGatherer.fetchExtendedInformation(path, [])
         self.endResetModel()
 
+        if self._fileSystemWatcher.directories():
+            self._fileSystemWatcher.removePaths(self._fileSystemWatcher.directories())
+        self._fileSystemWatcher.moveToThread(self._watcher_thread)
+        self._watcher_thread.start()
+        await self._watchPath(path)
+        self.rootPathChanged.emit(path)
         return self.index(0, 0, QModelIndex())
+
+    def setRootPath(self, path: str) -> QModelIndex:
+        return asyncio.run(self.setRootPathAsync(path))
 
     def rootPath(self) -> str:
         return self._rootPath
@@ -686,9 +702,31 @@ class PyQFileSystemModel(QAbstractItemModel):
                 return False
         return True
 
-    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
-        self._task_queue.put(("process_drop", (data, action, parent)))
+    async def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+        if not self.canDropMimeData(data, action, row, column, parent):
+            return False
+
+        if action == Qt.IgnoreAction:
+            return True
+
+        parent_path = self.filePath(parent) if parent.isValid() else self.rootPath()
+
+        async def process_url(url):
+            srcPath = url.toLocalFile()
+            destPath = os.path.join(parent_path, os.path.basename(srcPath))
+            try:
+                if action == Qt.CopyAction:
+                    await self._copyFile(srcPath, destPath)
+                elif action == Qt.MoveAction:
+                    await self._moveFile(srcPath, destPath)
+            except Exception as e:
+                self._showErrorMessage(f"Error during drag and drop operation: {e}")
+
+        await asyncio.gather(*[process_url(url) for url in data.urls()])
         return True
+
+    def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+        return asyncio.run(self._dropMimeData(data, action, row, column, parent))
 
     def addCustomFilter(self, filter_func: Callable[[str], bool]):
         self._customFilters.append(filter_func)
@@ -908,3 +946,23 @@ if __name__ == "__main__":
 
     with loop:
         loop.run_forever()
+    async def _copyFile(self, src: str, dest: str):
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, shutil.copy2, src, dest)
+        self._refreshDirectory(os.path.dirname(dest))
+
+    async def _moveFile(self, src: str, dest: str):
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, shutil.move, src, dest)
+        self._refreshDirectory(os.path.dirname(src))
+        self._refreshDirectory(os.path.dirname(dest))
+    def _retryOperation(self, operation: Callable, *args, max_retries: int = 3, **kwargs):
+        for attempt in range(max_retries):
+            try:
+                return operation(*args, **kwargs)
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    logger.error(f"Operation failed after {max_retries} attempts: {e}")
+                    self._showErrorMessage(f"Operation failed: {e}")
+                    return None
+                time.sleep(min(2**attempt, 30))  # Exponential backoff with a maximum of 30 seconds
