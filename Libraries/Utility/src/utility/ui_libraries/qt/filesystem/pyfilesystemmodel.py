@@ -906,6 +906,7 @@ class PyQFileSystemModel(QAbstractItemModel):
 
 if __name__ == "__main__":
     import sys
+    import qasync
 
     app = QApplication(sys.argv)
     model = PyQFileSystemModel()
@@ -917,15 +918,8 @@ if __name__ == "__main__":
     view.setRootIndex(model.index(root_path))
     view.show()
     
-    event_loop = QEventLoop(app)
-    asyncio.set_event_loop(event_loop)
+    loop = qasync.QEventLoop(app)
+    asyncio.set_event_loop(loop)
 
-    with event_loop:
-        try:
-            event_loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            for task in asyncio.all_tasks(event_loop):
-                task.cancel()
-            event_loop.run_until_complete(event_loop.shutdown_asyncgens())
+    with loop:
+        loop.run_forever()
