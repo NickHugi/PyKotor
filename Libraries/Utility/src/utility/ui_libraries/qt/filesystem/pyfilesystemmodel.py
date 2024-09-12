@@ -69,15 +69,13 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._mutex = QMutex()
 
     def __del__(self):
-        self._worker_process.terminate()
-        self._worker_process.join()
-        for watcher in self._file_watcher_cache.values():
-            watcher.deleteLater()
+        self._executor.shutdown(wait=False)
+        self._task_consumer.stop()
 
     def nodeFromIndex(self, index: QModelIndex) -> PyFileSystemNode:
         return index.internalPointer() if index.isValid() else self._root
 
-    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:  # noqa: B008
+    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
@@ -99,17 +97,17 @@ class PyQFileSystemModel(QAbstractItemModel):
 
         return self.createIndex(parentItem.row(), 0, parentItem)
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if parent.column() > 0:
             return 0
 
         parentItem = self.nodeFromIndex(parent)
         return len(parentItem.children)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: B008
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return 4  # Name, Size, Type, Date Modified
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # noqa: PLR0911
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:
         if not index.isValid() or index.column() >= self.columnCount():
             return None
 
@@ -124,10 +122,8 @@ class PyQFileSystemModel(QAbstractItemModel):
                 return item.type()
             elif index.column() == 3:
                 return item.lastModified().toString()
-        elif role == Qt.DecorationRole and index.column() == 0 and self._style:
-            return self._style.standardIcon(QStyle.SP_FileIcon if item.isFile() else QStyle.SP_DirIcon)
-        elif role in self._customRoles:
-            return self._customRoles[role](item)
+        elif role == Qt.DecorationRole and index.column() == 0:
+            return self.iconProvider().icon(item.fileInfo())
 
         return None
 
@@ -150,17 +146,17 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._rootPath = path
         self._root = PyFileSystemNode(path)
         self.beginResetModel()
-        self._task_queue.put(("fetch_extended_information", (path, cast(List[str], []))))
-        self._clearCache(emit_signal=True)
+        self._task_manager.submit(self._fileInfoGatherer.fetchExtendedInformation, path, [])
 
         if self._fileSystemWatcher.directories():
             for directory in self._fileSystemWatcher.directories():
                 self._fileSystemWatcher.removePath(directory)
-        self._watchPath(path)
+        self._fileSystemWatcher.addPath(path)
         self.rootPathChanged.emit(path)
         self.endResetModel()
 
         return self.index(0, 0, QModelIndex())
+
     def rootPath(self) -> str:
         return self._rootPath
 
@@ -168,15 +164,15 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._fileInfoGatherer.setIconProvider(provider)
 
     def iconProvider(self) -> QFileIconProvider:
-        return self._fileInfoGatherer.m_iconProvider
+        return self._fileInfoGatherer.iconProvider()
 
     def _handleDirectoryChanged(self, path: str):
-        self._task_queue.put(("refresh_directory", (path,)))
-        self.fileSystemChanged.emit(path)
+        self._task_manager.submit(self._refreshDirectory, path)
+        self.fileSystemChanged.emit()
 
     def _handleFileChanged(self, path: str):
-        self._task_queue.put(("refresh_file", (path,)))
-        self.fileSystemChanged.emit(path)
+        self._task_manager.submit(self._refreshFile, path)
+        self.fileSystemChanged.emit()
 
     def _refreshDirectory(self, path: str):
         try:
@@ -199,7 +195,6 @@ class PyQFileSystemModel(QAbstractItemModel):
             self.layoutChanged.emit()
         except Exception as e:
             logger.error(f"Error refreshing directory {path}: {e}")
-            logger.debug(traceback.format_exc())
             self._showErrorMessage(f"Error refreshing directory: {e}")
 
     def _refreshFile(self, path: str):
@@ -214,7 +209,6 @@ class PyQFileSystemModel(QAbstractItemModel):
             self.layoutChanged.emit()
         except Exception as e:
             logger.error(f"Error refreshing file {path}: {e}")
-            logger.debug(traceback.format_exc())
             self._showErrorMessage(f"Error refreshing file: {e}")
 
     def _nodeForPath(self, path: str) -> PyFileSystemNode | None:
@@ -235,7 +229,6 @@ class PyQFileSystemModel(QAbstractItemModel):
                 self.beginRemoveRows(self.createIndex(parent.row(), 0, parent), row, row)
                 del parent.children[node.fileName]
                 self.endRemoveRows()
-                self._clearCache(emit_signal=True)
         self.layoutChanged.emit()
 
     def _addNode(self, parent: PyFileSystemNode, name: str):
@@ -246,7 +239,6 @@ class PyQFileSystemModel(QAbstractItemModel):
                 self.beginInsertRows(self.createIndex(parent.row(), 0, parent), row, row)
                 parent.children[name] = new_node
                 self.endInsertRows()
-        self._clearCache(emit_signal=True)
         self.layoutChanged.emit()
 
     def _updateNode(self, node: PyFileSystemNode):
@@ -254,27 +246,21 @@ class PyQFileSystemModel(QAbstractItemModel):
         node.populate(info)
         index = self.createIndex(node.row(), 0, node)
         self.dataChanged.emit(index, index.sibling(index.row(), self.columnCount() - 1))
-        self._clearCache()
         self.layoutChanged.emit()
-
-    def _getFileInfo(self, path: str) -> QFileInfo:
-        return QFileInfo(path)
 
     def setFilter(self, filters: QDir.Filters):
         if self._filters != filters:
             self._filters = filters
             self._refresh()
-            self.filterApplied.emit()
 
     def filter(self) -> QDir.Filters:
         return self._filters
 
-    def setNameFilters(self, filters: list[str]):
+    def setNameFilters(self, filters: List[str]):
         self._nameFilters = filters
         self._refresh()
-        self.filterApplied.emit()
 
-    def nameFilters(self) -> list[str]:
+    def nameFilters(self) -> List[str]:
         return self._nameFilters
 
     def setNameFilterDisables(self, enable: bool):
@@ -285,18 +271,9 @@ class PyQFileSystemModel(QAbstractItemModel):
     def isNameFilterDisables(self) -> bool:
         return self._nameFilterDisables
 
-    def setFileTypeFilter(self, filters: list[str]):
-        self._fileTypeFilters = filters
-        self._refresh()
-        self.filterApplied.emit()
-
-    def fileTypeFilters(self) -> list[str]:
-        return self._fileTypeFilters
-
     def _refresh(self):
         self.beginResetModel()
-        self._root = PyFileSystemNode(self.rootPath())
-        self._fileInfoGatherer.fetchExtendedInformation(self.rootPath(), [])
+        self._task_manager.submit(self._fileInfoGatherer.fetchExtendedInformation, self._rootPath, [])
         self.endResetModel()
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
