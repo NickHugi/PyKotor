@@ -23,8 +23,10 @@ from PyQt5.QtCore import (
     Qt,
     pyqtSignal as Signal,
 )
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMessageBox, QStyle
+from PyQt5.QtGui import QIcon, QDrag
+from PyQt5.QtWidgets import QApplication, QMessageBox, QStyle, QTreeView, QFileIconProvider
+import asyncio
+import time
 
 from .pyfileinfogatherer import PyFileInfoGatherer
 from .pyfilesystemmodelsorter import PyFileSystemModelSorter, SortingError
