@@ -619,7 +619,6 @@ class PyQFileSystemModel(QAbstractItemModel):
     def dragMoveEvent(self, event):
         event.accept()
 
-    @asyncSlotSaved()
     async def setRootPathAsync(self, path: str) -> QModelIndex:
         if path == self._rootPath:
             return self.index(0, 0, QModelIndex())
@@ -803,13 +802,16 @@ class PyQFileSystemModel(QAbstractItemModel):
 
         async def process_url(url):
             srcPath = url.toLocalFile()
-            destPath = os.path.join(parentPath, os.path.basename(srcPath))
+            destPath = os.path.join(parent_path, os.path.basename(srcPath))
             try:
-                asyncio.create_task(self._copyFile(srcPath, destPath) if action == Qt.CopyAction else self._moveFile(srcPath, destPath))
+                if action == Qt.CopyAction:
+                    await self._copyFile(srcPath, destPath)
+                else:
+                    await self._moveFile(srcPath, destPath)
             except Exception as e:
                 self._showErrorMessage(f"Error during drag and drop operation: {e}")
 
-        asyncio.create_task(asyncio.gather(*[process_url(url) for url in data.urls()]))
+        await asyncio.gather(*[process_url(url) for url in data.urls()])
 
         return True
 
