@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
+
 from concurrent.futures import ProcessPoolExecutor
-from typing import Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable, List
 
 from qtpy.QtCore import (
     QAbstractItemModel,
@@ -14,18 +15,23 @@ from qtpy.QtCore import (
     QModelIndex,
     QMutex,
     QMutexLocker,
-    QObject,
     QUrl,
     Qt,
     Signal,
 )
 from qtpy.QtGui import QIcon
-from qtpy.QtWidgets import QApplication, QFileIconProvider, QMessageBox, QStyle
+from qtpy.QtWidgets import QApplication, QMessageBox, QStyle
 
 from utility.task_management import TaskConsumer, TaskManager
 from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyFileInfoGatherer
 from utility.ui_libraries.qt.filesystem.pyfilesystemnode import PyFileSystemNode
 from utility.ui_libraries.qt.filesystem.pyfilesystemwatcher import PyFileSystemWatcher
+
+if TYPE_CHECKING:
+    from qtpy.QtCore import (
+        QObject,
+    )
+    from qtpy.QtWidgets import QFileIconProvider
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +48,7 @@ class PyQFileSystemModel(QAbstractItemModel):
         self._fileInfoGatherer = PyFileInfoGatherer(self)
         self._fileSystemWatcher = PyFileSystemWatcher(self)
         self._filters = QDir.AllEntries | QDir.NoDotAndDotDot | QDir.AllDirs
-        self._nameFilters: List[str] = []
+        self._nameFilters: list[str] = []
         self._task_manager = TaskManager()
         self._task_consumer = TaskConsumer(self._task_manager)
         self._task_consumer.start()
