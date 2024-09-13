@@ -102,6 +102,14 @@ class LYTEditorWidget(QWidget):
         self.setupRealTimePreview()
         self.setupUndoView()
         self.setupErrorHandler()
+        
+        # New attributes for LYT editing
+        self.current_lyt: Optional[LYT] = None
+        self.room_templates: dict[str, LYTRoom] = {}
+        self.custom_textures: dict[str, QPixmap] = {}
+        self.selected_room: Optional[LYTRoom] = None
+        
+        self.setupLYTTools()
 
     def _worker_init(self):
         # Initialize worker process with necessary resources
@@ -910,6 +918,99 @@ class LYTEditorWidget(QWidget):
         # Update the preview based on the current LYT state
         self.lyt_editor.updatePreview()
         self.walkmesh_editor.updatePreview()
+    
+    def setupLYTTools(self):
+        self.lyt_toolbar = QToolBar("LYT Tools")
+        self.addToolBar(self.lyt_toolbar)
+        
+        self.add_room_action = QAction("Add Room", self)
+        self.add_room_action.triggered.connect(self.addRoom)
+        self.lyt_toolbar.addAction(self.add_room_action)
+        
+        self.edit_room_action = QAction("Edit Room", self)
+        self.edit_room_action.triggered.connect(self.editRoom)
+        self.lyt_toolbar.addAction(self.edit_room_action)
+        
+        self.add_track_action = QAction("Add Track", self)
+        self.add_track_action.triggered.connect(self.addTrack)
+        self.lyt_toolbar.addAction(self.add_track_action)
+        
+        self.add_obstacle_action = QAction("Add Obstacle", self)
+        self.add_obstacle_action.triggered.connect(self.addObstacle)
+        self.lyt_toolbar.addAction(self.add_obstacle_action)
+        
+        self.add_doorhook_action = QAction("Add Doorhook", self)
+        self.add_doorhook_action.triggered.connect(self.addDoorhook)
+        self.lyt_toolbar.addAction(self.add_doorhook_action)
+    
+    def addRoom(self):
+        room = LYTRoom()
+        room.position = Vector3(0, 0, 0)  # Default position
+        room.size = Vector3(10, 10, 3)  # Default size
+        self.current_lyt.rooms.append(room)
+        self.selected_room = room
+        self.updateLYTPreview()
+    
+    def editRoom(self):
+        if self.selected_room:
+            # Open a dialog to edit room properties
+            dialog = RoomPropertiesDialog(self.selected_room, self)
+            if dialog.exec_():
+                self.updateLYTPreview()
+    
+    def addTrack(self):
+        if self.selected_room:
+            track = LYTTrack()
+            track.start_room = self.selected_room
+            # Open a dialog to select end room and set other properties
+            dialog = TrackPropertiesDialog(self.current_lyt.rooms, track, self)
+            if dialog.exec_():
+                self.current_lyt.tracks.append(track)
+                self.updateLYTPreview()
+    
+    def addObstacle(self):
+        obstacle = LYTObstacle()
+        # Open a dialog to set obstacle properties
+        dialog = ObstaclePropertiesDialog(obstacle, self)
+        if dialog.exec_():
+            self.current_lyt.obstacles.append(obstacle)
+            self.updateLYTPreview()
+    
+    def addDoorhook(self):
+        if self.selected_room:
+            doorhook = LYTDoorHook()
+            doorhook.room = self.selected_room
+            # Open a dialog to set doorhook properties
+            dialog = DoorhookPropertiesDialog(doorhook, self)
+            if dialog.exec_():
+                self.current_lyt.doorhooks.append(doorhook)
+                self.updateLYTPreview()
+    
+    def updateLYTPreview(self):
+        self.lyt_editor.setLYT(self.current_lyt)
+        self.lytUpdated.emit(self.current_lyt)
+    
+    def importCustomTexture(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
+        if file_path:
+            texture_name = os.path.basename(file_path)
+            self.custom_textures[texture_name] = QPixmap(file_path)
+            self.texture_browser.addTexture(texture_name, self.custom_textures[texture_name])
+    
+    def generateBasicLYT(self):
+        if self.parent_ref.module:
+            self.current_lyt = self.parent_ref.module.layout().resource()
+            if not self.current_lyt:
+                self.current_lyt = LYT()
+                # Generate a basic layout based on the module's area
+                # This is a placeholder and should be implemented based on your specific requirements
+                self.current_lyt.rooms.append(LYTRoom(Vector3(0, 0, 0), Vector3(50, 50, 10)))
+            self.updateLYTPreview()
+    
+    def saveLYT(self):
+        if self.current_lyt and self.parent_ref.module:
+            self.parent_ref.module.layout().save(self.current_lyt)
+            QMessageBox.information(self, "LYT Saved", "The layout has been saved successfully.")
 
 
 class ConnectRoomsCommand(QUndoCommand):

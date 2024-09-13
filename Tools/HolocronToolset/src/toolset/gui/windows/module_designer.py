@@ -122,7 +122,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.setupUi(self)
         self.renderer = ModuleRenderer(self)
         self.ui.rendererLayout.addWidget(self.renderer)
-        self.lytEditor = LYTEditor(self.renderer)
+        self.lytEditor = LYTEditorWidget(self.renderer)
 
         self.settings = ModuleDesignerSettings()
         self.module: Module | None = None
@@ -172,6 +172,7 @@ class ModuleDesigner(QMainWindow):
 
         self._setupSignals()
         self._initUi()
+        self._setupLYTEditor()
 
     def showEvent(self, a0: QShowEvent):
         if self.ui.mainRenderer._scene is None:  # noqa: SLF001
@@ -1232,3 +1233,30 @@ class ModuleDesigner(QMainWindow):
         for key, action in actions:
             if key.satisfied(buttons, keys):
                 action()
+
+    def _setupLYTEditor(self):
+        self.lytEditorDock = QDockWidget("LYT Editor", self)
+        self.lytEditorDock.setWidget(self.lytEditor)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.lytEditorDock)
+
+        self.lytEditorAction = self.ui.menuView.addAction("LYT Editor")
+        self.lytEditorAction.setCheckable(True)
+        self.lytEditorAction.setChecked(True)
+        self.lytEditorAction.triggered.connect(self.toggleLYTEditor)
+
+    def toggleLYTEditor(self, checked):
+        self.lytEditorDock.setVisible(checked)
+
+    def openModule(self, mod_filepath: Path):
+        super().openModule(mod_filepath)
+        if self._module:
+            lyt = self._module.layout().resource()
+            if lyt:
+                self.lytEditor.setLYT(lyt)
+            else:
+                self.lytEditor.generateBasicLYT()
+
+    def saveModule(self):
+        super().saveModule()
+        if self._module:
+            self.lytEditor.saveLYT()
