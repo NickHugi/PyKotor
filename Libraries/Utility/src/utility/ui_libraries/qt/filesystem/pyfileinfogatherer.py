@@ -14,6 +14,9 @@ from qtpy.QtWidgets import QApplication, QFileIconProvider
 
 from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
 
+# Add these imports
+import multiprocessing
+
 
 class AsyncFileSystemWatcher:
     def __init__(self):
@@ -177,61 +180,36 @@ class PyFileInfoGatherer(QObject):
 
     @asyncSlot()
     async def watchedFiles(self) -> list[str]:
-        task_queue = multiprocessing.Queue()
-        result_queue = multiprocessing.Queue()
-        result = await watchedFiles(task_queue, result_queue)
-        return result
+        return await self.m_watcher.watched_files()
 
     @asyncSlot()
     async def watchedDirectories(self) -> list[str]:
-        task_queue = multiprocessing.Queue()
-        result_queue = multiprocessing.Queue()
-        result = await watchedDirectories(task_queue, result_queue)
-        return result
-
-    @asyncSlot()
-    async def createWatcher(self):
-        asyncio.get_event_loop().run_in_executor(
-            self._executor,
-            create_watcher_in_child_process,
-            self.directories_changed_queue,
-            self.files_changed_queue,
-        )
+        return await self.m_watcher.watched_directories()
 
     @asyncSlot()
     async def watchPaths(self, paths: list[str]):
         if not self.m_watching:
             print("watchPaths called for the first time, creating and setting up the watcher.")
-            await self.createWatcher()
             self.m_watching = True
         print(f"Adding paths to watcher: {paths}")
-        task_queue = multiprocessing.Queue()
-        result_queue = multiprocessing.Queue()
-        await addPathsToWatcher(paths, task_queue, result_queue)
+        await self.m_watcher.add_paths(paths)
 
     @asyncSlot()
     async def unwatchPaths(self, paths: list[str]):
         if self.m_watcher and paths:
             print(f"Removing paths from watcher: {paths}")
-            task_queue = multiprocessing.Queue()
-            result_queue = multiprocessing.Queue()
-            await removePathsFromWatcher(paths, task_queue, result_queue)
+            await self.m_watcher.remove_paths(paths)
 
     @asyncSlot()
     async def isWatching(self) -> bool:
-        result = False
-        result = self.m_watching
-        return result
+        return self.m_watching
 
     @asyncSlot()
     async def setWatching(self, v: bool):  # noqa: FBT001
         if v != self.m_watching:
             if not v and self.m_watcher:
-                task_queue = multiprocessing.Queue()
-                result_queue = multiprocessing.Queue()
-                await removePathsFromWatcher(await self.watchedFiles(), task_queue, result_queue)
-                del self.m_watcher
-                self.m_watcher = None
+                await self.m_watcher.remove_paths(await self.watchedFiles())
+                self.m_watcher = AsyncFileSystemWatcher()
             self.m_watching = v
 
     @asyncSlot()
