@@ -110,6 +110,9 @@ class LYTEditorWidget(QWidget):
         self.selected_room: Optional[LYTRoom] = None
         
         self.setupLYTTools()
+        
+        # Initialize LYT rendering
+        self.parent_ref.setLYT(self.current_lyt)
 
     def _worker_init(self):
         # Initialize worker process with necessary resources
@@ -989,6 +992,7 @@ class LYTEditorWidget(QWidget):
     def updateLYTPreview(self):
         self.lyt_editor.setLYT(self.current_lyt)
         self.lytUpdated.emit(self.current_lyt)
+        self.parent_ref.setLYT(self.current_lyt)
     
     def importCustomTexture(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
@@ -1011,6 +1015,7 @@ class LYTEditorWidget(QWidget):
         if self.current_lyt and self.parent_ref.module:
             self.parent_ref.module.layout().save(self.current_lyt)
             QMessageBox.information(self, "LYT Saved", "The layout has been saved successfully.")
+        self.parent_ref.setLYT(self.current_lyt)
 
 
 class ConnectRoomsCommand(QUndoCommand):
