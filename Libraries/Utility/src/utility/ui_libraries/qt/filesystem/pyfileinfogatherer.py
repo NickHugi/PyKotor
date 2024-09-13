@@ -99,16 +99,13 @@ class PyFileInfoGatherer(QObject):
         self.max_files_before_updates: int = max_files_before_updates
         self.m_resolveSymlinks: bool = resolveSymlinks
 
-        self.m_watcher: QFileSystemWatcher | None = None
+        self.m_watcher: AsyncFileSystemWatcher = AsyncFileSystemWatcher()
         self.m_watching: bool = False
 
         self._paths: list[str] = []
         self._files: list[list[str]] = []
 
-        self.process_lock: asyncio.Lock = asyncio.Lock()  # multiprocessing.Lock()
-
-        self.directories_changed_queue: multiprocessing.Queue[str | None] = multiprocessing.Queue()
-        self.files_changed_queue: multiprocessing.Queue[str | None] = multiprocessing.Queue()
+        self.process_lock: asyncio.Lock = asyncio.Lock()
 
         self.m_iconProvider: QFileIconProvider = QFileIconProvider()
 
@@ -118,12 +115,6 @@ class PyFileInfoGatherer(QObject):
 
     def iconProvider(self) -> QFileIconProvider:
         return self.m_iconProvider
-
-    def event_loop(self):
-        app = QApplication(sys.argv)
-        loop = QEventLoop(app)
-        yield loop
-        loop.close()
 
     def start_event_loop(self):
         asyncio.set_event_loop(QEventLoop(QApplication.instance()))
@@ -135,26 +126,20 @@ class PyFileInfoGatherer(QObject):
             self.m_resolveSymlinks = enable
 
     async def run(self):
+        asyncio.create_task(self.m_watcher.start_watching(self.handle_directory_changed, self.handle_file_changed))
         while not self._abort.is_set():
             if not self._paths:
                 await asyncio.sleep(0.1)
                 continue
             currentPath = self._paths.pop(0)
             currentFiles = self._files.pop(0)
-            result = await self.getFileInfos(currentPath, currentFiles)
-            async with self.process_lock:
-                try:
-                    result = self.directories_changed_queue.get(block=False)
-                    if result is not None:
-                        await self.list(result)
-                except queue.Empty:  # noqa: S110
-                    ...
-                try:
-                    result = self.files_changed_queue.get(block=False)
-                    if result is not None:
-                        await self.updateFile(result)
-                except queue.Empty:  # noqa: S110
-                    ...
+            await self.getFileInfos(currentPath, currentFiles)
+
+    async def handle_directory_changed(self, path: str):
+        await self.list(path)
+
+    async def handle_file_changed(self, path: str):
+        await self.updateFile(path)
 
     @asyncSlot()
     async def driveAdded(self):
