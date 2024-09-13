@@ -170,6 +170,9 @@ class ModuleDesigner(QMainWindow):
         else:
             QTimer().singleShot(33, lambda: self.openModule(mod_filepath))
 
+        self._setupSignals()
+        self._initUi()
+
     def showEvent(self, a0: QShowEvent):
         if self.ui.mainRenderer._scene is None:  # noqa: SLF001
             return  # Don't show the window if the scene isn't ready, otherwise the gl context stuff will start prematurely.
