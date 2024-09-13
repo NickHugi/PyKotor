@@ -1,27 +1,81 @@
 from __future__ import annotations
 
 import asyncio
+import multiprocessing
 import os
-import pathlib
+import queue
 import sys
 
+from concurrent.futures import ProcessPoolExecutor
 from os import scandir
+from typing import Any
 
 from loggerplus import RobustLogger
-from PyQt5.QtCore import (
-    QDir,
-    QElapsedTimer,
-    QEventLoop,
-    QFileInfo,
-    QFileSystemWatcher,
-    QObject,
-    QTimer,
-    pyqtSignal as Signal,
-)
-from PyQt5.QtWidgets import QFileIconProvider
+from qasync import QEventLoop, asyncSlot  # pyright: ignore[reportMissingTypeStubs]
+from qtpy.QtCore import QDir, QElapsedTimer, QFileInfo, QFileSystemWatcher, QObject, QTimer, Signal  # pyright: ignore[reportPrivateImportUsage]
+from qtpy.QtWidgets import QApplication, QFileIconProvider
 
-from utility.task_management import TaskConsumer, TaskManager
 from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
+
+
+def create_watcher_in_child_process(
+    directories_changed_queue: multiprocessing.Queue[str | None],
+    files_changed_queue: multiprocessing.Queue[str | None],
+):
+    assert multiprocessing.current_process().name != "MainProcess", "This function must be called in a child process."
+    app = QApplication(sys.argv)
+    watcher = QFileSystemWatcher()
+    watcher.directoryChanged.connect(lambda path: directories_changed_queue.put(path))
+    watcher.fileChanged.connect(lambda path: files_changed_queue.put(path))
+    sys.exit(app.exec_())
+
+
+async def addPathsToWatcher(
+    paths: list[str],
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+):
+    if task_queue is None:
+        return
+    task_queue.put(("addPaths", paths))
+    result = await result_queue.get()
+    if result is None:
+        return
+
+
+async def removePathsFromWatcher(
+    paths: list[str],
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+):
+    if task_queue is None:
+        return
+    task_queue.put(("removePaths", paths))
+    result = await result_queue.get()
+    if result is None:
+        return
+
+
+async def watchedFiles(
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+) -> list[str]:
+    task_queue.put(("watchedFiles", []))
+    result = await result_queue.get()
+    if result is None:
+        return []
+    return result
+
+
+async def watchedDirectories(
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+) -> list[str]:
+    task_queue.put(("watchedDirectories", []))
+    result = await result_queue.get()
+    if result is None:
+        return []
+    return result
 
 
 class PyFileInfoGatherer(QObject):
@@ -52,45 +106,78 @@ class PyFileInfoGatherer(QObject):
     ):
         super().__init__(parent)
 
-        self.max_files_before_updates = max_files_before_updates
-        self.m_resolveSymlinks = resolveSymlinks
+        self.max_files_before_updates: int = max_files_before_updates
+        self.m_resolveSymlinks: bool = resolveSymlinks
 
         self.m_watcher: QFileSystemWatcher | None = None
-        self.m_watching = False
+        self.m_watching: bool = False
 
         self._paths: list[str] = []
         self._files: list[list[str]] = []
 
-        self.m_iconProvider = QFileIconProvider()
+        self.process_lock: asyncio.Lock = asyncio.Lock()  # multiprocessing.Lock()
 
-        self._task_manager = TaskManager()
-        self._task_consumer = TaskConsumer(self._task_manager)
-        self._task_consumer.start()
+        self.directories_changed_queue: multiprocessing.Queue[str | None] = multiprocessing.Queue()
+        self.files_changed_queue: multiprocessing.Queue[str | None] = multiprocessing.Queue()
 
-        QTimer.singleShot(0, self.run)
+        self.m_iconProvider: QFileIconProvider = QFileIconProvider()
 
-    def setResolveSymlinks(self, enable: bool):  # noqa: FBT001
+        self._executor: ProcessPoolExecutor = ProcessPoolExecutor()
+        self._abort: asyncio.Event = asyncio.Event()
+        QTimer.singleShot(0, self.start_event_loop)
+
+    def iconProvider(self) -> QFileIconProvider:
+        return self.m_iconProvider
+
+    def event_loop(self):
+        app = QApplication(sys.argv)
+        loop = QEventLoop(app)
+        yield loop
+        loop.close()
+
+    def start_event_loop(self):
+        asyncio.set_event_loop(QEventLoop(QApplication.instance()))
+        asyncio.get_event_loop().create_task(self.run(), name="PyFileInfoGatherer")
+
+    @asyncSlot()
+    async def setResolveSymlinks(self, enable: bool):  # noqa: FBT001
         if os.name == "nt":
             self.m_resolveSymlinks = enable
 
     async def run(self):
-        while True:
+        while not self._abort.is_set():
             if not self._paths:
                 await asyncio.sleep(0.1)
                 continue
             currentPath = self._paths.pop(0)
             currentFiles = self._files.pop(0)
-            await self._task_manager.run_in_executor(self.getFileInfos, currentPath, currentFiles)
+            result = await self.getFileInfos(currentPath, currentFiles)
+            async with self.process_lock:
+                try:
+                    result = self.directories_changed_queue.get(block=False)
+                    if result is not None:
+                        await self.list(result)
+                except queue.Empty:  # noqa: S110
+                    ...
+                try:
+                    result = self.files_changed_queue.get(block=False)
+                    if result is not None:
+                        await self.updateFile(result)
+                except queue.Empty:  # noqa: S110
+                    ...
 
-    def driveAdded(self):
-        self.fetchExtendedInformation("", [])
+    @asyncSlot()
+    async def driveAdded(self):
+        await self.fetchExtendedInformation("", [])
 
-    def driveRemoved(self):
+    @asyncSlot()
+    async def driveRemoved(self):
         drive_info = QDir.drives()
-        drives = [self._translateDriveName(fi) for fi in drive_info]
+        drives = [await self._translateDriveName(fi) for fi in drive_info]
         self.newListOfFiles.emit("", drives)
 
-    def fetchExtendedInformation(self, path: str, files: list[str]):
+    @asyncSlot()
+    async def fetchExtendedInformation(self, path: str, files: list[str]):
         loc = len(self._paths) - 1
         while loc >= 0:
             if self._paths[loc] == path and self._files[loc] == files:
@@ -99,72 +186,94 @@ class PyFileInfoGatherer(QObject):
 
         self._paths.append(path)
         self._files.append(files)
-        self.condition.wakeAll()
 
-        if (
-            self.m_watcher is not None
-            and not files
-            and path and path.strip()
-            and not path.startswith("//")
-            and path not in self.watchedDirectories()
-        ):
-            self.watchPaths([path])
+        if self.m_watcher is not None and not files and path and path.strip() and not path.startswith("//") and path not in await self.watchedDirectories():
+            await self.watchPaths([path])
 
-    def setIconProvider(self, provider: QFileIconProvider):
+    async def setIconProvider(self, provider: QFileIconProvider):
         self.m_iconProvider = provider
 
-    def updateFile(self, filePath: str):  # noqa: N803
-        self.fetchExtendedInformation(os.path.dirname(filePath), [os.path.basename(filePath)])  # noqa: PTH120, PTH119
+    @asyncSlot()
+    async def updateFile(self, filePath: str):  # noqa: N803
+        await self.fetchExtendedInformation(
+            os.path.dirname(filePath),  # noqa: PTH120
+            [os.path.basename(filePath)],  # noqa: PTH119
+        )
 
-    def watchedFiles(self) -> list[str]:
-        return [] if self.m_watcher is None else self.m_watcher.files()
+    @asyncSlot()
+    async def watchedFiles(self) -> list[str]:
+        task_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        result = await watchedFiles(task_queue, result_queue)
+        return result
 
-    def watchedDirectories(self) -> list[str]:
-        return [] if self.m_watcher is None else self.m_watcher.directories()
+    @asyncSlot()
+    async def watchedDirectories(self) -> list[str]:
+        task_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        result = await watchedDirectories(task_queue, result_queue)
+        return result
 
-    def createWatcher(self):
-        self.m_watcher = QFileSystemWatcher(self)
-        self.m_watcher.directoryChanged.connect(self.list)
-        self.m_watcher.fileChanged.connect(self.updateFile)
+    @asyncSlot()
+    async def createWatcher(self):
+        asyncio.get_event_loop().run_in_executor(
+            self._executor,
+            create_watcher_in_child_process,
+            self.directories_changed_queue,
+            self.files_changed_queue,
+        )
 
-    def watchPaths(self, paths: list[str]):
+    @asyncSlot()
+    async def watchPaths(self, paths: list[str]):
         if not self.m_watching:
             print("watchPaths called for the first time, creating and setting up the watcher.")
-            self.createWatcher()
+            await self.createWatcher()
             self.m_watching = True
-        assert self.m_watcher is not None
         print(f"Adding paths to watcher: {paths}")
-        self.m_watcher.addPaths(paths)
+        task_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        await addPathsToWatcher(paths, task_queue, result_queue)
 
-    def unwatchPaths(self, paths: list[str]):
+    @asyncSlot()
+    async def unwatchPaths(self, paths: list[str]):
         if self.m_watcher and paths:
             print(f"Removing paths from watcher: {paths}")
-            self.m_watcher.removePaths(paths)
+            task_queue = multiprocessing.Queue()
+            result_queue = multiprocessing.Queue()
+            await removePathsFromWatcher(paths, task_queue, result_queue)
 
-    def isWatching(self) -> bool:
+    @asyncSlot()
+    async def isWatching(self) -> bool:
         result = False
         result = self.m_watching
         return result
 
-    def setWatching(self, v: bool):  # noqa: FBT001
+    @asyncSlot()
+    async def setWatching(self, v: bool):  # noqa: FBT001
         if v != self.m_watching:
             if not v and self.m_watcher:
+                task_queue = multiprocessing.Queue()
+                result_queue = multiprocessing.Queue()
+                await removePathsFromWatcher(await self.watchedFiles(), task_queue, result_queue)
                 del self.m_watcher
                 self.m_watcher = None
             self.m_watching = v
 
-    def clear(self):
-        self.unwatchPaths(self.watchedFiles())
-        self.unwatchPaths(self.watchedDirectories())
+    @asyncSlot()
+    async def clear(self):
+        await self.unwatchPaths(await self.watchedFiles())
+        await self.unwatchPaths(await self.watchedDirectories())
 
-    def removePath(self, path: str):
-        self.unwatchPaths([path])
+    @asyncSlot()
+    async def removePath(self, path: str):
+        await self.unwatchPaths([path])
 
-    def list(self, directoryPath: str):  # noqa: N803
-        self.fetchExtendedInformation(directoryPath, [])
+    @asyncSlot()
+    async def list(self, directoryPath: str):  # noqa: N803
+        await self.fetchExtendedInformation(directoryPath, [])
 
-    @staticmethod
-    def _translateDriveName(drive: QFileInfo) -> str:
+    @asyncSlot()
+    async def _translateDriveName(self, drive: QFileInfo) -> str:
         driveName = drive.absoluteFilePath()
         if os.name == "nt":  # Windows
             if driveName.startswith("/"):  # UNC host
@@ -173,14 +282,16 @@ class PyFileInfoGatherer(QObject):
                 driveName = driveName[:-1]
         return driveName
 
-    def getFileInfos(self, path: str, files: list[str]):
+    @asyncSlot()
+    async def getFileInfos(self, path: str, files: list[str]):
+        """TODO: Create a new function with all of this logic and run in executor."""
         updatedFiles: list[tuple[str, QFileInfo]] = []
         if not path:
             if files:
-                infoList = [QFileInfo(file) for file in files]
+                infoList: list[QFileInfo] = [QFileInfo(file) for file in files]
             else:
-                infoList = QDir.drives()
-            updatedFiles = [(self._translateDriveName(info), info) for info in infoList]
+                infoList: list[QFileInfo] = QDir.drives()
+            updatedFiles = [(await self._translateDriveName(info), info) for info in infoList]
             self.updates.emit("", updatedFiles)
 
         base = QElapsedTimer()
@@ -198,19 +309,20 @@ class PyFileInfoGatherer(QObject):
             self.newListOfFiles.emit(path, allFiles)
 
         for fileName in files:
-            entry_info = QFileInfo(os.path.join(path, fileName))
-            self._fetch(entry_info, base, updatedFiles, path)
+            entry_info = QFileInfo(os.path.join(path, fileName))  # noqa: PTH118
+            await self._fetch(entry_info, base, updatedFiles, path)
 
         if files:
             self.updates.emit(path, files)
 
         self.directoryLoaded.emit(path)
 
-    def _fetch(
+    @asyncSlot()
+    async def _fetch(
         self,
         entry_info: QFileInfo,
         base: QElapsedTimer,
-        updatedFiles: list[tuple[str, QFileInfo]],
+        updatedFiles: list[tuple[str, QFileInfo]],  # noqa: N803
         path: str,
     ):
         abs_entry_path = entry_info.filePath()
@@ -219,7 +331,7 @@ class PyFileInfoGatherer(QObject):
             current = QElapsedTimer()
             current.start()
 
-            if len(updatedFiles) > self.max_files_before_updates or base.msecsTo(current) > 1000:
+            if len(updatedFiles) > self.max_files_before_updates or base.msecsTo(current) > 1000:  # noqa: PLR2004
                 self.updates.emit(path, updatedFiles.copy())
                 updatedFiles.clear()
                 base.restart()
@@ -227,36 +339,27 @@ class PyFileInfoGatherer(QObject):
             if self.m_resolveSymlinks and entry_info.isSymLink():
                 try:
                     resolvedName = os.readlink(abs_entry_path)
-                    self.nameResolved.emit(abs_entry_path, os.path.basename(resolvedName))
+                    self.nameResolved.emit(abs_entry_path, os.path.basename(resolvedName))  # noqa: PTH119
                 except OSError:
                     RobustLogger().warning(f"Access denied: '{abs_entry_path}'")
         except OSError as e:
             error_path = abs_entry_path if e.filename is None else e.filename
             self.accessDenied.emit(error_path)
 
-    def getInfo(self, fileInfo: QFileInfo) -> PyQExtendedInformation:  # noqa: N803
+    @asyncSlot()
+    async def getInfo(self, fileInfo: QFileInfo) -> PyQExtendedInformation:  # noqa: N803
         info = PyQExtendedInformation(fileInfo)
         info.icon = self.m_iconProvider.icon(fileInfo)
         info.displayType = self.m_iconProvider.type(fileInfo)
 
         if not fileInfo.exists() and not fileInfo.isSymLink():
-            self.unwatchPaths([fileInfo.absoluteFilePath()])
+            await self.unwatchPaths([fileInfo.absoluteFilePath()])
         else:
             path = fileInfo.absoluteFilePath()
-            if (
-                path
-                and fileInfo.exists()
-                and fileInfo.isFile()
-                and fileInfo.isReadable()
-                and path not in self.watchedFiles()
-            ):
-                self.watchPaths([path])
+            if path and fileInfo.exists() and fileInfo.isFile() and fileInfo.isReadable() and path not in await self.watchedFiles():
+                await self.watchPaths([path])
 
-        if (
-            os.name == "nt"
-            and self.m_resolveSymlinks
-            and info.isSymLink(ignoreNtfsSymLinks=True)
-        ):
+        if os.name == "nt" and self.m_resolveSymlinks and info.isSymLink(ignoreNtfsSymLinks=True):
             resolvedInfo = QFileInfo(fileInfo.symLinkTarget()).canonicalFilePath()
             if QFileInfo(resolvedInfo).exists():
                 self.nameResolved.emit(fileInfo.filePath(), QFileInfo(resolvedInfo).fileName())
@@ -264,23 +367,15 @@ class PyFileInfoGatherer(QObject):
         return info
 
     @staticmethod
-    def is_file_new(file_path: str, os_time_grace_period: int = 2) -> bool:
+    async def is_file_new(file_path: str, os_time_grace_period: int = 2) -> bool:
         file_info = QFileInfo(file_path)
         creation_time = file_info.birthTime()
         modification_time = file_info.lastModified()
 
-        return (
-            creation_time.isValid()
-            and modification_time.isValid()
-            and abs(creation_time.secsTo(modification_time)) < os_time_grace_period
-        )
+        return creation_time.isValid() and modification_time.isValid() and abs(creation_time.secsTo(modification_time)) < os_time_grace_period
 
 
 if __name__ == "__main__":
-    import os
-
-    from qtpy.QtWidgets import QApplication
-
     # Initialize the application (required for Qt signal handling)
     app = QApplication(sys.argv)
 
@@ -288,7 +383,7 @@ if __name__ == "__main__":
     file_info_gatherer = PyFileInfoGatherer()
 
     # Connect signals to print to the console
-    #file_info_gatherer.updates.connect(lambda path, files: print(f"\nUpdates: {path}, {files}"))
+    # file_info_gatherer.updates.connect(lambda path, files: print(f"\nUpdates: {path}, {files}"))
     file_info_gatherer.newListOfFiles.connect(lambda path, files: print(f"\nNew List of Files: {path}, {files}"))
     file_info_gatherer.directoryLoaded.connect(lambda path: print(f"\nDirectory Loaded: {path}"))
     file_info_gatherer.nameResolved.connect(lambda original, resolved: print(f"\nName Resolved: {original} -> {resolved}"))
@@ -309,7 +404,6 @@ if __name__ == "__main__":
 
     # Set the directory to %USERPROFILE%
     user_profile_dir = os.path.expandvars("%USERPROFILE%")
-    file_info_gatherer.list(user_profile_dir)
 
     # Start the Qt event loop
     event_loop = QEventLoop(app)
@@ -318,5 +412,9 @@ if __name__ == "__main__":
     app_close_event = asyncio.Event()
     app.aboutToQuit.connect(app_close_event.set)
 
+    async def run_task():
+        await file_info_gatherer.list(user_profile_dir)
+
     with event_loop:
+        event_loop.create_task(run_task())
         event_loop.run_until_complete(app_close_event.wait())
