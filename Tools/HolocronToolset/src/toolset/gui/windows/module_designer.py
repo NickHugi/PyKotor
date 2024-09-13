@@ -11,6 +11,8 @@ from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
 from qtpy.QtWidgets import QAction, QApplication, QHBoxLayout, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QStatusBar, QTreeWidgetItem, QWidget
 
+from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
+
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoStack
 elif qtpy.API_NAME in ("PyQt6", "PySide6"):
@@ -64,8 +66,7 @@ if TYPE_CHECKING:
 
 
 class ModuleDesigner(QMainWindow):
-    def __init__(
-        self,
+    def __init__(self,
         parent: QWidget | None,
         installation: HTInstallation,
         mod_filepath: Path | None = None,
@@ -119,8 +120,13 @@ class ModuleDesigner(QMainWindow):
 
         self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
-        self._initUi()
-        self._setupSignals()
+        self.renderer = ModuleRenderer(self)
+        self.ui.rendererLayout.addWidget(self.renderer)
+        self.lytEditor = LYTEditor(self.renderer)
+
+        self.settings = ModuleDesignerSettings()
+        self.module: Module | None = None
+
         self.last_free_cam_time: float = 0.0  # Initialize the last toggle time
 
         def intColorToQColor(intvalue: int) -> QColor:
@@ -270,7 +276,6 @@ class ModuleDesigner(QMainWindow):
         if isinstance(renderer, ModuleRenderer):
             pos = renderer.scene.cursor.position()
             worldPos3d = Vector3(pos.x, pos.y, pos.z)
-            worldPos = worldPos3d
             self.mousePosLabel.setText(f"<b>Cursor:</b> <font color='{self.palette().color(QPalette.Link).name()}'>X: {worldPos3d.x:.2f}, Y: {worldPos3d.y:.2f}, Z: {worldPos3d.z:.2f}</font>")
 
             # Update view camera info
@@ -285,7 +290,7 @@ class ModuleDesigner(QMainWindow):
             self.mousePosLabel.setText(f"<b>Cursor:</b> <font color='{self.palette().color(QPalette.Link).name()}'>X: {worldPos.x:.2f}, Y: {worldPos.y:.2f}</font>")
 
         # Sort keys and buttons with modifiers at the beginning
-        def sort_with_modifiers(items: set[int], get_string_func: Callable[[Any], str], gt_enum_type: Literal["QtKey", "QtMouse"]) -> Sequence[Qt.Key | Qt.MouseButton | int]:
+        def sort_with_modifiers(items: set[int], get_string_func: Callable[[Any], str], gt_enum_type: Literal["QtKey", "QtMouse"]):
             modifiers = []
             if gt_enum_type == "QtKey":
                 modifiers = [item for item in items if item in MODIFIER_KEY_NAMES]
@@ -1093,21 +1098,11 @@ class ModuleDesigner(QMainWindow):
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), walkmeshSnap=False))
         return menu
 
-    def onInstanceListRightClicked(
-        self,
-        point: QPoint
-    ):
+    def onInstanceListRightClicked(self, point: QPoint):
         instance: GITInstance = self.ui.instanceList.selectedItems()[0].data(Qt.UserRole)
-        self.onContextMenuSelectionExists(instances=[instance])
+        self.onContextMenuSelectionExists(world=instance.position)
 
-    def onContextMenuSelectionExists(
-        self,
-        world: Vector3 | None = None,
-        *,
-        isFlatRendererCall: bool | None = None,
-        getMenu: bool | None = None,
-        instances: Sequence[GITInstance] | None = None,
-    ) -> QMenu | None:    # sourcery skip: extract-method
+    def onContextMenuSelectionExists(self, world: Vector3 | None = None, *, isFlatRendererCall: bool | None = None, getMenu: bool | None = None, instances: Sequence[GITInstance] | None = None) -> QMenu | None:    # sourcery skip: extract-method
         menu = QMenu(self)
         instances = self.selectedInstances if instances is None else instances
 
