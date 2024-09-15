@@ -6,7 +6,7 @@ import sys
 
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, Union, cast
 
 import qtpy
 
@@ -58,12 +58,12 @@ from qtpy.QtWidgets import QFileSystemModel, QHBoxLayout, QLineEdit, QPushButton
 from pykotor.extract.file import FileResource  # noqa: E402
 from pykotor.tools.misc import is_capsule_file  # noqa: E402
 from toolset.__main__ import main_init  # noqa: E402
-from toolset.gui.common.style.delegates import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
-from toolset.gui.common.widgets.tree import RobustTreeView  # noqa: E402
 from toolset.gui.dialogs.load_from_location_result import ResourceItems  # noqa: E402
 from toolset.utils.window import openResourceEditor  # noqa: E402
 from utility.system.os_helper import get_size_on_disk  # noqa: E402
 from utility.system.path import Path  # noqa: E402
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate  # noqa: E402
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
@@ -71,7 +71,7 @@ if TYPE_CHECKING:
 
     from toolset.data.installation import HTInstallation
     from toolset.gui.windows.main import ToolWindow
-    from utility.gui.qt.common.filesystem.pyfilesystemmodel import PyFileSystemModel
+    from utility.ui_libraries.qt.filesystem.pyfilesystemmodel import PyFileSystemModel
 
 
 class TreeItem:
@@ -121,7 +121,7 @@ class DirItem(TreeItem):
         return len(self.children)
 
     def loadChildren(self, model: ResourceFileSystemModel | QFileSystemModel) -> list[TreeItem | None]:
-        idx = model.indexFromItem(self)
+        idx = model.indexFromItem(self) if isinstance(model, ResourceFileSystemModel) else model.index(self.row(), 0)
         model.beginRemoveRows(idx, 0, self.childCount() - 1 if self.childCount() > 0 else 0)
         model.beginInsertRows(idx, 0, max(0, self.childCount() - 1))
         print(f"{self.__class__.__name__}({self.path}).load_children, row={self.row()}")
@@ -221,6 +221,48 @@ class NestedCapsuleItem(CapsuleItem, CapsuleChildItem):
     def iconData(self) -> QIcon:
         return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirLinkIcon, 16, 16)
 
+
+class ResourceFileSystemTreeView(RobustTreeView):
+    def parent(self) -> ResourceFileSystemWidget:
+        return cast(ResourceFileSystemWidget, super().parent())
+
+    def build_context_menu(self) -> QMenu:
+        rootMenu = super().build_context_menu()
+        self._add_simple_action(rootMenu, "Resize Columns", self.parent().resize_all_columns)
+        toggle_detailed_view = getattr(self.parent().fsModel, "toggle_detailed_view", None)
+        if toggle_detailed_view is not None:
+            self._add_simple_action(rootMenu, "Toggle Detailed View", toggle_detailed_view)
+        self._add_exclusive_menu_action(
+            rootMenu,
+            "Resize Mode",
+            lambda: next((self.header().sectionResizeMode(i) for i in range(self.parent().fsModel.columnCount())), QHeaderView.ResizeMode.ResizeToContents),
+            lambda mode: [self.header().setSectionResizeMode(i, mode) for i in range(self.parent().fsModel.columnCount())] if qtpy.QT5 else lambda mode: [self.header().setSectionResizeMode(i, QHeaderView.ResizeMode(mode)) for i in range(self.header().count())],
+            {
+                "Custom": QHeaderView.ResizeMode.Custom,
+                "Fixed": QHeaderView.ResizeMode.Fixed,
+                "Interactive": QHeaderView.ResizeMode.Interactive,
+                "ResizeToContents": QHeaderView.ResizeMode.ResizeToContents,
+                "Stretch": QHeaderView.ResizeMode.Stretch,
+            },
+            "columnResizeMode",
+        )
+        self._add_multi_option_menu_action(
+            rootMenu,
+            "File System Filters",
+            self.parent().fsModel.filter,
+            self.parent().fsModel.setFilter,
+            {
+                "All Entries": QDir.Filter.AllEntries,
+                "Files": QDir.Filter.Files,
+                "Directories": QDir.Filter.Dirs,
+                "Hidden Files": QDir.Filter.Hidden,
+                "No Dot Files": QDir.Filter.NoDotAndDotDot,
+            },
+            "fileSystemFilter",
+        )
+        return rootMenu
+
+
 class ResourceFileSystemWidget(QWidget):
     def __init__(
         self,
@@ -232,7 +274,7 @@ class ResourceFileSystemWidget(QWidget):
         super().__init__(parent)
 
         # Setup the view and model.
-        self.fsTreeView: RobustTreeView = RobustTreeView(self, use_columns=True) if view is None else view
+        self.fsTreeView: ResourceFileSystemTreeView | RobustTreeView = ResourceFileSystemTreeView(self, use_columns=True) if view is None else view
         self.fsModel: QFileSystemModel | ResourceFileSystemModel | PyFileSystemModel = ResourceFileSystemModel(self) if model is None else model
         self.fsTreeView.setModel(self.fsModel)
 
@@ -258,10 +300,9 @@ class ResourceFileSystemWidget(QWidget):
         self.main_layout: QVBoxLayout = QVBoxLayout(self)
         self.main_layout.addLayout(self.address_layout)
         self.main_layout.addWidget(self.fsTreeView)
-
+        
         # Configure the QTreeView
         self.setup_tree_view()
-
 
     def setup_tree_view(self):
         self.undo_stack: QUndoStack = QUndoStack(self)
@@ -285,46 +326,6 @@ class ResourceFileSystemWidget(QWidget):
         self.fsTreeView.collapsed.connect(self.onItemCollapsed)
         self.fsTreeView.customContextMenuRequested.connect(self.fileSystemModelContextMenu)
         self.fsTreeView.doubleClicked.connect(self.fileSystemModelDoubleClick)
-        self.fsTreeView._addSimpleAction(  # noqa: SLF001
-            self.fsTreeView.viewMenu,
-            "Resize Columns",
-            self.resize_all_columns,
-        )
-        if hasattr(self.fsModel, "toggle_detailed_view"):
-            self.fsTreeView._addSimpleAction(  # noqa: SLF001
-                self.fsTreeView.viewMenu,
-                "Toggle Detailed View",
-                self.fsModel.toggle_detailed_view,
-            )
-        self.fsTreeView._addExclusiveMenuAction(  # noqa: SLF001
-            self.fsTreeView.viewMenu,
-            "Resize Mode",
-            lambda: next((h.sectionResizeMode(i) for i in range(self.fsModel.columnCount())), QHeaderView.ResizeMode.ResizeToContents),
-            lambda mode: [h.setSectionResizeMode(i, mode) for i in range(self.fsModel.columnCount())],
-            {
-                "Custom": QHeaderView.ResizeMode.Custom,
-                "Fixed": QHeaderView.ResizeMode.Fixed,
-                "Interactive": QHeaderView.ResizeMode.Interactive,
-                "ResizeToContents": QHeaderView.ResizeMode.ResizeToContents,
-                "Stretch": QHeaderView.ResizeMode.Stretch,
-            },
-            "columnResizeMode",
-        )
-        self.fsTreeView._addMultiSelectMenuAction(  # noqa: SLF001
-            self.fsTreeView.viewMenu,
-            "File System Filters",
-            self.fsModel.filter,  # noqa: SLF001
-            self.fsModel.setFilter,
-            {
-                "All Entries": QDir.Filter.AllEntries,
-                "Files": QDir.Filter.Files,
-                "Directories": QDir.Filter.Dirs,
-                "Hidden Files": QDir.Filter.Hidden,
-                "No Dot Files": QDir.Filter.NoDotAndDotDot,
-            },
-            "fileSystemFilter",
-            QDir.Filters(),
-        )
 
     def setRootPath(self, path: os.PathLike | str):
         if self.fsModel is None:
@@ -368,20 +369,20 @@ class ResourceFileSystemWidget(QWidget):
     def onItemExpanded(self, idx: QModelIndex):
         # sourcery skip: class-extract-method
         print(f"onItemExpanded, row={idx.row()}, col={idx.column()}")
-        self.fsTreeView.debounceLayoutChanged(preChangeEmit=True)
+        self.fsTreeView.debounce_layout_changed(preChangeEmit=True)
         item = idx.internalPointer()
         if isinstance(item, DirItem) and isinstance(self.fsModel, (ResourceFileSystemModel, QFileSystemModel)):
             item.loadChildren(self.fsModel)
         self.refresh_item(item)
-        self.fsTreeView.debounceLayoutChanged(preChangeEmit=False)
+        self.fsTreeView.debounce_layout_changed(preChangeEmit=False)
 
     def onItemCollapsed(self, idx: QModelIndex):
         print(f"onItemCollapsed, row={idx.row()}, col={idx.column()}")
-        self.fsTreeView.debounceLayoutChanged(preChangeEmit=True)
+        self.fsTreeView.debounce_layout_changed(preChangeEmit=True)
         item = idx.internalPointer()
         assert isinstance(item, TreeItem)
         self.refresh_item(item)
-        self.fsTreeView.debounceLayoutChanged(preChangeEmit=False)
+        self.fsTreeView.debounce_layout_changed(preChangeEmit=False)
 
     def model(self) -> QFileSystemModel | ResourceFileSystemModel | PyFileSystemModel:
         return self.fsModel
@@ -488,7 +489,7 @@ class ResourceFileSystemWidget(QWidget):
         if hasattr(m, "exec"):
             m.exec(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess]
         elif hasattr(m, "exec_"):
-            m.exec_(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportOptionalMemberAccess, reportAttributeAccessIssue]
+            m.exec_(self.fsTreeView.viewport().mapToGlobal(point))  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
 
     def onHeaderContextMenu(self, point: QPoint):
         print(f"<SDM> [{self.__class__.__name__}.onHeaderContextMenu scope] point.x", point.x(), "y:", point.y())

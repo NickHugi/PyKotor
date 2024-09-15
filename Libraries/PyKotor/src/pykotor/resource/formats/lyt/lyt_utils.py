@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import List, Tuple, Optional
-from pykotor.resource.formats.lyt.lyt_data import LYT, Room, Track, Obstacle
 from pykotor.common.geometry import Vector3
+from pykotor.resource.formats.lyt.lyt_data import LYT, Room
+
 
 class LYTUtils:
     @staticmethod
-    def find_room_by_name(lyt: LYT, name: str) -> Optional[Room]:
+    def find_room_by_name(lyt: LYT, name: str) -> Room | None:
         """Find a room in the LYT by its name."""
         return next((room for room in lyt.rooms if room.name == name), None)
 
     @staticmethod
-    def find_nearest_room(lyt: LYT, position: Vector3) -> Optional[Room]:
+    def find_nearest_room(lyt: LYT, position: Vector3) -> Room | None:
         """Find the nearest room to a given position."""
         if not lyt.rooms:
             return None
@@ -44,7 +44,7 @@ class LYTUtils:
         return True
 
     @staticmethod
-    def find_path(lyt: LYT, start_room: Room, end_room: Room) -> List[Room]:
+    def find_path(lyt: LYT, start_room: Room, end_room: Room) -> list[Room]:
         """Find a path between two rooms using breadth-first search."""
         queue = [(start_room, [start_room])]
         visited = set()
@@ -64,7 +64,7 @@ class LYTUtils:
         return []  # No path found
 
     @staticmethod
-    def validate_lyt(lyt: LYT) -> Tuple[bool, List[str]]:
+    def validate_lyt(lyt: LYT) -> tuple[bool, list[str]]:
         """Validate the LYT for common issues."""
         issues = []
 

@@ -12,6 +12,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
+
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -22,7 +24,7 @@ class Ui_Form(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.pathList = QListView(Form)
+        self.pathList = RobustListView(Form)
         self.pathList.setObjectName(u"pathList")
         self.pathList.setEditTriggers(QAbstractItemView.NoEditTriggers)
 

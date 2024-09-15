@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QGroupBox, QHead
     QLineEdit, QMainWindow, QMenu, QMenuBar,
     QSizePolicy, QVBoxLayout, QWidget)
 
-from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTableView
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

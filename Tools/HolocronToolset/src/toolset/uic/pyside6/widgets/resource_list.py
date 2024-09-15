@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFram
     QHBoxLayout, QHeaderView, QLineEdit, QPushButton,
     QSizePolicy, QVBoxLayout, QWidget)
 
-from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 class Ui_Form(object):
     def setupUi(self, Form):

@@ -8,7 +8,7 @@ from loggerplus import RobustLogger
 from qtpy import QtCore, QtGui
 from qtpy.QtCore import QMimeData, Qt
 from qtpy.QtGui import QStandardItem, QStandardItemModel
-from qtpy.QtWidgets import QAction, QFileDialog, QInputDialog, QLineEdit, QMenu, QMessageBox, QShortcut, QTableView
+from qtpy.QtWidgets import QAction, QFileDialog, QInputDialog, QLineEdit, QMenu, QMessageBox, QShortcut
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
@@ -24,6 +24,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import universal_simplify_exception
 from utility.system.path import Path
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 
 if TYPE_CHECKING:
     import os
@@ -620,8 +621,8 @@ class ERFEditor(Editor):
             item.data = data
 
 
-class ERFEditorTable(QTableView):
-    resourceDropped = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
+class ERFEditorTable(RobustTableView):
+    resourceDropped: QtCore.Signal = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)

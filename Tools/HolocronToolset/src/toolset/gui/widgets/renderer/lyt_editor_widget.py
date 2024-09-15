@@ -40,6 +40,7 @@ from qtpy.QtWidgets import (
 )
 
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
+from pykotor.resource.formats.lyt.lyt_data import LYT
 from toolset.gui.widgets.renderer.custom_toolbar import CustomizableToolBar
 from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
@@ -68,7 +69,6 @@ if TYPE_CHECKING:
         QWheelEvent,
     )
 
-    from pykotor.resource.formats.lyt.lyt_data import LYT
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 

@@ -210,13 +210,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.gameCombo)
 
-        self.outerTabWidget = QTabWidget(self.centralwidget)
-        self.outerTabWidget.setObjectName(u"outerTabWidget")
-        self.resourceListTab = QWidget()
-        self.resourceListTab.setObjectName(u"resourceListTab")
-        self.verticalLayoutResourceListTab = QVBoxLayout(self.resourceListTab)
-        self.verticalLayoutResourceListTab.setObjectName(u"verticalLayoutResourceListTab")
-        self.resourceTabs = QTabWidget(self.resourceListTab)
+        self.resourceTabs = QTabWidget(self.centralwidget)
         self.resourceTabs.setObjectName(u"resourceTabs")
         self.coreTab = QWidget()
         self.coreTab.setObjectName(u"coreTab")
@@ -286,21 +280,7 @@ class Ui_MainWindow(object):
 
         self.resourceTabs.addTab(self.texturesTab, "")
 
-        self.verticalLayoutResourceListTab.addWidget(self.resourceTabs)
-
-        self.outerTabWidget.addTab(self.resourceListTab, "")
-        self.fileSystemTab = QWidget()
-        self.fileSystemTab.setObjectName(u"fileSystemTab")
-        self.verticalLayoutFileSystemTab = QVBoxLayout(self.fileSystemTab)
-        self.verticalLayoutFileSystemTab.setObjectName(u"verticalLayoutFileSystemTab")
-        self.fileSystemWidget = ResourceFileSystemWidget(self.fileSystemTab)
-        self.fileSystemWidget.setObjectName(u"fileSystemWidget")
-
-        self.verticalLayoutFileSystemTab.addWidget(self.fileSystemWidget)
-
-        self.outerTabWidget.addTab(self.fileSystemTab, "")
-
-        self.verticalLayout_4.addWidget(self.outerTabWidget)
+        self.verticalLayout_4.addWidget(self.resourceTabs)
 
 
         self.horizontalLayout.addLayout(self.verticalLayout_4)
@@ -463,7 +443,6 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.outerTabWidget.setCurrentIndex(0)
         self.resourceTabs.setCurrentIndex(0)
 
 
@@ -537,8 +516,6 @@ class Ui_MainWindow(object):
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.modulesTab), QCoreApplication.translate("MainWindow", u"Modules", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.overrideTab), QCoreApplication.translate("MainWindow", u"Override", None))
         self.resourceTabs.setTabText(self.resourceTabs.indexOf(self.texturesTab), QCoreApplication.translate("MainWindow", u"Textures", None))
-        self.outerTabWidget.setTabText(self.outerTabWidget.indexOf(self.resourceListTab), QCoreApplication.translate("MainWindow", u"Resource List", None))
-        self.outerTabWidget.setTabText(self.outerTabWidget.indexOf(self.fileSystemTab), QCoreApplication.translate("MainWindow", u"File System", None))
         self.openButton.setText(QCoreApplication.translate("MainWindow", u"Open Selected", None))
         self.extractButton.setText(QCoreApplication.translate("MainWindow", u"Extract Selected", None))
         self.tpcGroup_2.setTitle(QCoreApplication.translate("MainWindow", u"TPC", None))

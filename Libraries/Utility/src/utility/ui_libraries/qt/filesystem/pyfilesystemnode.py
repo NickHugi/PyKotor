@@ -6,6 +6,21 @@ import sys
 
 from typing import TYPE_CHECKING
 
+import qtpy  # noqa: E402
+
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    QDesktopWidget = None
+    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+elif qtpy.API_NAME in ("PyQt5", "PySide2"):
+    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+else:
+    raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
+
+
+from qtpy.QtCore import QDateTime, QFileDevice, QFileInfo  # noqa: E402
+from qtpy.QtGui import QIcon  # noqa: E402
+from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
+
 
 def update_sys_path(path: pathlib.Path):
     working_dir = str(path)
@@ -30,30 +45,11 @@ toolset_path = file_absolute_path.parents[8] / "Tools/HolocronToolset/src/toolse
 if toolset_path.exists():
     update_sys_path(toolset_path.parent)
     os.chdir(toolset_path)
-print(toolset_path)
-print(utility_path)
 
-import qtpy  # noqa: E402
-
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    QDesktopWidget = None
-    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
-elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
-else:
-    raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
-
-
-from qtpy.QtCore import QDateTime, QFileDevice, QFileInfo  # noqa: E402
-from qtpy.QtGui import QIcon  # noqa: E402
-from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
-
-from utility.common.more_collections import CaseInsensitiveDict  # noqa: E402
-from utility.gui.qt.common.filesystem.pyfileinfogatherer import PyQExtendedInformation  # noqa: E402
+from utility.ui_libraries.qt.filesystem.pyfileinfogatherer import PyQExtendedInformation  # noqa: E402
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QModelIndex
-
 
 
 class PyFileSystemNode:
@@ -69,7 +65,7 @@ class PyFileSystemNode:
             self.volumeName: str = ""
         self.parent: PyFileSystemNode | None = parent
         self.info: QFileInfo | None = None  # QExtendedInformation
-        self.children: CaseInsensitiveDict[PyFileSystemNode] = CaseInsensitiveDict()
+        self.children: dict[str, PyFileSystemNode] = {}
         self.visibleChildren: list[str] = []
         self.dirtyChildrenIndex: int = -1
         self.populatedChildren: bool = False
@@ -108,7 +104,7 @@ class PyFileSystemNode:
             return -1
         if self.parent is None:
             return 0
-        #return self.parent.children[info.fileName()].index(self)
+        # return self.parent.children[info.fileName()].index(self)
         sorted_children_keys = sorted(self.parent.children.keys())
         index = self._binary_search(sorted_children_keys, self.fileName)
         return index if sorted_children_keys[index] == self.fileName else -1

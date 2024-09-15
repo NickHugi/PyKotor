@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from qtpy.QtWidgets import QListView
 
-from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustAbstractItemView
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QMenu, QWidget
@@ -15,12 +15,12 @@ class RobustListView(RobustAbstractItemView, QListView):
         QListView.__init__(self, parent)
         RobustAbstractItemView.__init__(self, parent)
 
-    def build_context_menu(self) -> QMenu:
-        menu = super().build_context_menu()
+    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+        menu = super().build_context_menu(parent)
 
         list_menu = menu.addMenu("ListView")
 
-        self._add_multi_option_menu_action(
+        self._add_exclusive_menu_action(
             list_menu,
             "View Mode",
             self.viewMode,

@@ -80,7 +80,7 @@ def qicon_from_file_ext(extension: str) -> QIcon:
         icon = QFileIconProvider().icon(QFileInfo(temp_file.fileName()))
         if icon.pixmap(32, 32).isNull():
             RobustLogger()(f"<SDM> Failed to retrieve a valid icon for extension '{extension}'")
-            return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirIcon if isinstance(self, DirItem) else QStyle.StandardPixmap.SP_FileIcon)
+            return qpixmap_to_qicon(QStyle.StandardPixmap.SP_DirIcon)
         return icon
 
     finally:

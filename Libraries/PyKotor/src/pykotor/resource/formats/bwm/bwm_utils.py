@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import math
-from typing import List, Tuple, Optional
 from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.bwm.bwm_data import BWM, BWMFace, BWMNodeAABB, BWMEdge
+from pykotor.resource.formats.bwm.bwm_data import BWM, BWMFace, BWMNodeAABB
+
 
 class BWMUtils:
     @staticmethod
@@ -33,10 +32,10 @@ class BWMUtils:
         return (u >= 0) and (v >= 0) and (u + v <= 1)
 
     @staticmethod
-    def find_nearest_face(point: Vector3, bwm: BWM) -> Optional[BWMFace]:
+    def find_nearest_face(point: Vector3, bwm: BWM) -> BWMFace | None:
         """Find the nearest face in a BWM to a given point."""
         nearest_face = None
-        min_distance = float('inf')
+        min_distance = float("inf")
         for face in bwm.faces:
             face_center = (face.v1 + face.v2 + face.v3) / 3
             distance = (point - face_center).length()
@@ -48,13 +47,13 @@ class BWMUtils:
     @staticmethod
     def generate_aabb_tree(bwm: BWM) -> BWMNodeAABB:
         """Generate an AABB tree for the BWM."""
-        def build_tree(faces: List[BWMFace], depth: int = 0) -> BWMNodeAABB:
+        def build_tree(faces: list[BWMFace], depth: int = 0) -> BWMNodeAABB:
             if not faces:
                 return None
 
             # Calculate bounding box for all faces
-            bb_min = Vector3(float('inf'), float('inf'), float('inf'))
-            bb_max = Vector3(float('-inf'), float('-inf'), float('-inf'))
+            bb_min = Vector3(float("inf"), float("inf"), float("inf"))
+            bb_max = Vector3(float("-inf"), float("-inf"), float("-inf"))
             for face in faces:
                 for vertex in (face.v1, face.v2, face.v3):
                     bb_min = Vector3(min(bb_min.x, vertex.x), min(bb_min.y, vertex.y), min(bb_min.z, vertex.z))
@@ -88,12 +87,12 @@ class BWMUtils:
         return build_tree(bwm.faces)
 
     @staticmethod
-    def find_path(start: Vector3, end: Vector3, bwm: BWM) -> List[Vector3]:
+    def find_path(start: Vector3, end: Vector3, bwm: BWM) -> list[Vector3]:
         """Find a path between two points on the walkmesh using A* algorithm."""
         def heuristic(a: Vector3, b: Vector3) -> float:
             return (b - a).length()
 
-        def get_neighbors(face: BWMFace) -> List[BWMFace]:
+        def get_neighbors(face: BWMFace) -> list[BWMFace]:
             return [adj.face for adj in bwm.adjacencies(face) if adj]
 
         start_face = BWMUtils.find_nearest_face(start, bwm)
@@ -108,7 +107,7 @@ class BWMUtils:
         f_score = {start_face: heuristic(start, end)}
 
         while open_set:
-            current = min(open_set, key=lambda x: f_score.get(x, float('inf')))
+            current = min(open_set, key=lambda x: f_score.get(x, float("inf")))
 
             if current == end_face:
                 path = []
@@ -122,7 +121,7 @@ class BWMUtils:
             for neighbor in get_neighbors(current):
                 tentative_g_score = g_score[current] + (neighbor.centre() - current.centre()).length()
 
-                if tentative_g_score < g_score.get(neighbor, float('inf')):
+                if tentative_g_score < g_score.get(neighbor, float("inf")):
                     came_from[neighbor] = current
                     g_score[neighbor] = tentative_g_score
                     f_score[neighbor] = g_score[neighbor] + heuristic(neighbor.centre(), end)
@@ -180,7 +179,7 @@ class BWMUtils:
         return optimized_bwm
 
     @staticmethod
-    def validate_walkmesh(bwm: BWM) -> Tuple[bool, List[str]]:
+    def validate_walkmesh(bwm: BWM) -> tuple[bool, list[str]]:
         """Validate the walkmesh for common issues."""
         issues = []
         
@@ -215,7 +214,7 @@ class BWMUtils:
     @staticmethod
     def do_faces_intersect(face1: BWMFace, face2: BWMFace) -> bool:
         """Check if two faces intersect."""
-        def triangle_intersection(t1: Tuple[Vector3, Vector3, Vector3], t2: Tuple[Vector3, Vector3, Vector3]) -> bool:
+        def triangle_intersection(t1: tuple[Vector3, Vector3, Vector3], t2: tuple[Vector3, Vector3, Vector3]) -> bool:
             def edge_intersection(a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> bool:
                 def ccw(a: Vector3, b: Vector3, c: Vector3) -> bool:
                     return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x)

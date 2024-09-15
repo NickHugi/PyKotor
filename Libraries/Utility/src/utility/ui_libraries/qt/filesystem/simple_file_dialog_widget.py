@@ -28,9 +28,10 @@ from qtpy.QtWidgets import (
 
 from utility.ui_libraries.qt.debug.print_qobject import print_qt_class_calls
 from utility.ui_libraries.qt.filesystem.address_bar import PyQAddressBar
+from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 from utility.ui_libraries.qt.widgets.itemviews.tile_delegate import TileItemDelegate
-from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject, QPoint, QRect
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
 
 # Apply the decorator to all functions in the file
 @print_qt_class_calls(exclude_funcs=["paint", "sizeHint"])
-class QTileView(QListView):
+class QTileView(RobustListView):
     """A view that displays items in a 2D grid."""
 
     def __init__(self, parent: QWidget | None = None):
@@ -61,7 +62,7 @@ class ViewMode(Enum):
     TILES = auto()
 
 
-@print_qt_class_calls(exclude_funcs=["paint", "sizeHint"])
+@print_qt_class_calls(exclude_funcs=["paint", "sizeHint", "eventFilter"])
 class FirstColumnInteractableTableView(RobustTableView):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -97,13 +98,13 @@ class FirstColumnInteractableTableView(RobustTableView):
         self.selectionModel().select(QModelIndex(), QItemSelectionModel.Clear | QItemSelectionModel.Rows)
 
 
-@print_qt_class_calls(exclude_funcs=["paint", "sizeHint"])
+@print_qt_class_calls(exclude_funcs=["paint", "sizeHint", "eventFilter"])
 class FileSystemExplorerWidget(QWidget):
     def __init__(self, initial_path: Path | None = None, parent: QWidget | None = None):
         super().__init__(parent)
         initial_path = Path.home() if initial_path is None else initial_path
 
-        self.address_bar = PyQAddressBar()
+        self.address_bar: PyQAddressBar = PyQAddressBar()
         self.current_path: Path = initial_path
         self.fs_model: QFileSystemModel = QFileSystemModel()
         self.fs_model.setRootPath("")  # Set root path to the file system root
@@ -113,7 +114,7 @@ class FileSystemExplorerWidget(QWidget):
         self.completer: QCompleter = QCompleter(self)
 
         self.stacked_widget: QStackedWidget = QStackedWidget()
-        self.list_view: QListView = QListView()
+        self.list_view: RobustListView = RobustListView()
         self.table_view: FirstColumnInteractableTableView = FirstColumnInteractableTableView()
         self.tiles_view: QTileView = QTileView()
         self.list_view.viewport().installEventFilter(self)
@@ -155,11 +156,10 @@ class FileSystemExplorerWidget(QWidget):
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         if (
             isinstance(event, QWheelEvent)
-            and event.type() == QEvent.Wheel
+            and event.type() == QEvent.Type.Wheel
             and bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier)
         ):
-            wheel_event = QWheelEvent(event)
-            delta = wheel_event.angleDelta().y() / 120  # This gives us -1 or 1 for most mouse wheels
+            delta = event.angleDelta().y() / 120  # This gives us -1 or 1 for most mouse wheels
             self.change_icon_size(delta * 0.25)
             return True
         return super().eventFilter(obj, event)

@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, Qt
 from qtpy.QtWidgets import QApplication, QHeaderView, QPushButton, QTableView, QVBoxLayout, QWidget
 
-from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustAbstractItemView
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
-    from qtpy.QtCore import QPoint
     from qtpy.QtWidgets import QMenu
 
 
@@ -22,35 +21,20 @@ class RobustTableView(RobustAbstractItemView, QTableView):
         super().__init__(parent)
         self.original_stylesheet: str = self.styleSheet()
 
-        h_header: QHeaderView = self.horizontalHeader()
-        h_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        h_header.customContextMenuRequested.connect(self.show_header_context_menu)
+        self.horizontalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.horizontalHeader().customContextMenuRequested.connect(lambda pos: self.show_header_context_menu(pos, self.horizontalHeader()))
 
-        v_header: QHeaderView = self.verticalHeader()
-        v_header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        v_header.customContextMenuRequested.connect(self.show_header_context_menu)
+        self.verticalHeader().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.verticalHeader().customContextMenuRequested.connect(lambda pos: self.show_header_context_menu(pos, self.verticalHeader()))
 
-    def setup_backup_menu_when_header_hidden(self):
-        corner_button = QPushButton("☰", self)
-        corner_button.setFixedSize(20, 20)
-        corner_button.clicked.connect(self.show_header_context_menu)
-        corner_button.setToolTip("Show context menu")
-        layout = QVBoxLayout(self)
-        layout.addWidget(corner_button, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
-        layout.setContentsMargins(0, 0, 0, 0)
-        QTableView.setLayout(self, layout)
+    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+        print(f"{self.__class__.__name__}.build_context_menu")
+        menu = super().build_context_menu(parent)
 
-    def show_header_context_menu(self, pos: QPoint):
-        menu = self.build_context_menu()
-        menu.exec_(self.horizontalHeader().mapToGlobal(pos))
-
-    def build_context_menu(self) -> QMenu:
-        menu = super().build_context_menu()
-
-        table_view_menu = menu.addMenu("TableView")
-        actions_menu = table_view_menu.addMenu("Actions")
-        settings_menu = table_view_menu.addMenu("Settings")
-        advanced_menu = settings_menu.addMenu("Advanced")
+        table_view_menu: QMenu = menu.addMenu("TableView")
+        actions_menu: QMenu = table_view_menu.addMenu("Actions")
+        settings_menu: QMenu = table_view_menu.addMenu("Settings")
+        advanced_menu: QMenu = settings_menu.addMenu("Advanced")
 
         # Actions submenu items
         self._add_simple_action(actions_menu, "Resize Columns To Contents", self.resizeColumnsToContents)

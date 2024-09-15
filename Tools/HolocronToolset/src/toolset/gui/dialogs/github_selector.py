@@ -8,10 +8,11 @@ import sys
 import time
 
 from contextlib import suppress
-from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING, Any
 
 import requests
+import requests.structures
 
 from qtpy import QtCore
 from qtpy.QtCore import QTimer, Qt
@@ -38,12 +39,11 @@ if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
     from qtpy.QtWidgets import QWidget
 
-    from utility.updater.github import TreeInfoData
-
 
 
 if __name__ == "__main__":
     with suppress(Exception):
+
         def update_sys_path(path: pathlib.Path):
             working_dir = str(path)
             if working_dir not in sys.path:
@@ -68,27 +68,22 @@ if __name__ == "__main__":
 
 from loggerplus import RobustLogger
 
-from utility.updater.github import (
-    CompleteRepoData,
-    ContentInfoData,
-    extract_owner_repo,
-    get_api_url,
-    get_forks_url,
-    get_main_url,
-)
+from utility.updater.github import CompleteRepoData, TreeInfoData, extract_owner_repo, get_api_url, get_forks_url, get_main_url
 
 logger = RobustLogger
 
 
 class GitHubFileSelector(QDialog):
-    def __init__(
+    def __init__(  # noqa: PLR0915
         self,
         *args,
         selectedFiles: list[str] | None = None,
-        parent: QWidget | None = None
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint))
+        self.setWindowFlags(
+            QtCore.Qt.WindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint & ~QtCore.Qt.WindowContextHelpButtonHint & ~QtCore.Qt.WindowMinMaxButtonsHint)
+        )
         self.setWindowTitle("Select a GitHub Repository File")
         self.setMinimumSize(600, 400)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
@@ -180,10 +175,7 @@ class GitHubFileSelector(QDialog):
         try:
             repo_data = CompleteRepoData.load_repo(self.owner, self.repo)
         except requests.exceptions.HTTPError as e:
-            if (
-                e.response.status_code == 403
-                and "X-RateLimit-Reset" in e.response.headers
-            ):
+            if e.response.status_code == 403 and "X-RateLimit-Reset" in e.response.headers:  # noqa: PLR2004
                 if not self.timer.isActive():
                     QMessageBox.critical(self, "You are rate limited.", "You have submitted too many requests to github's api, check the status bar at the bottom.")
                     self.start_rate_limit_timer(e)
@@ -233,6 +225,8 @@ class GitHubFileSelector(QDialog):
         parent_item: QTreeWidgetItem | None = None,
     ) -> None:
         if files is None:
+            if self.repoData is None or self.repoData.tree is None:
+                return
             files = self.repoData.tree
 
         # Dictionary to hold the tree items by their paths
@@ -261,6 +255,8 @@ class GitHubFileSelector(QDialog):
     def populateForkComboBox(self) -> None:
         self.forkComboBox.clear()
         self.forkComboBox.addItem(f"{self.owner}/{self.repo} (main)")
+        if self.repoData is None or self.repoData.forks is None:
+            return
         for fork in self.repoData.forks:
             self.forkComboBox.addItem(fork.full_name)
 
@@ -274,6 +270,7 @@ class GitHubFileSelector(QDialog):
             self.searchAndHighlight(file_names)
             self.expandAllItems()
         else:
+
             def unhideItem(item: QTreeWidgetItem):
                 item.setHidden(False)
                 for i in range(item.childCount()):
@@ -282,17 +279,21 @@ class GitHubFileSelector(QDialog):
 
             for i in range(self.repoTreeWidget.topLevelItemCount()):
                 topLevelItem = self.repoTreeWidget.topLevelItem(i)
+                if topLevelItem is None:
+                    continue
                 unhideItem(topLevelItem)
             self.collapseAllItems()
 
     def searchAndHighlight(self, partial_file_or_folder_names: list[str]):
+        if self.repoData is None or self.repoData.tree is None:
+            return
         paths_to_highlight = [
             item.path
             for item in self.repoData.tree
             for partial_file_or_folder_name in partial_file_or_folder_names
             if partial_file_or_folder_name in item.path.split("/")[-1].lower()
         ]
-        self.expandAndHighlightPaths(paths_to_highlight)
+        self.expandAndHighlightPaths(set(paths_to_highlight))
 
     def expandAndHighlightPaths(self, paths: set[str]):
         def find_item(parent: QTreeWidgetItem, text: str) -> QTreeWidgetItem | None:
@@ -315,7 +316,7 @@ class GitHubFileSelector(QDialog):
                 else:  # Top level
                     for i in range(self.repoTreeWidget.topLevelItemCount()):
                         child = self.repoTreeWidget.topLevelItem(i)
-                        if child.text(0) == part:
+                        if child is not None and child.text(0) == part:
                             current_item = child
                             child.setHidden(False)
                             break
@@ -325,7 +326,8 @@ class GitHubFileSelector(QDialog):
             if current_item:
                 current_item.setBackground(0, QBrush(Qt.yellow))
                 current_item.setExpanded(True)
-                if current_item.data(0, Qt.UserRole).type == "tree":
+                item_data = current_item.data(0, Qt.UserRole)
+                if item_data and item_data.type == "tree":
                     unhideAllChildren(current_item)
 
         def unhideAllChildren(item: QTreeWidgetItem):
@@ -337,7 +339,8 @@ class GitHubFileSelector(QDialog):
         def hideAllItems():
             for i in range(self.repoTreeWidget.topLevelItemCount()):
                 topLevelItem = self.repoTreeWidget.topLevelItem(i)
-                hideItem(topLevelItem)
+                if topLevelItem is not None:
+                    hideItem(topLevelItem)
 
         def hideItem(item: QTreeWidgetItem):
             item.setHidden(True)
@@ -368,13 +371,14 @@ class GitHubFileSelector(QDialog):
 
     def getSelectedPath(self) -> str | None:
         selected_items = self.repoTreeWidget.selectedItems()
-        if selected_items:
-            item = selected_items[0]
-            item_info: TreeInfoData | None = item.data(0, Qt.UserRole)
-            if item_info and item_info.type == "blob":
-                return item_info.path
-                # Construct the URL in the required format
-                #return f"https://api.github.com/repos/{self.owner}/{self.repo}/contents/{item_info.path}"
+        if not selected_items:
+            return None
+
+        item = selected_items[0]
+        item_info: TreeInfoData | None = item.data(0, Qt.UserRole)
+        if item_info and item_info.type == "blob":
+            return item_info.path
+
         return None
 
     def accept(self) -> None:
@@ -386,7 +390,8 @@ class GitHubFileSelector(QDialog):
         super().accept()
 
     def onForkChanged(self, index: int) -> None:
-        self._load_repo_data(self.repoData, doForkComboUpdate=False)
+        if self.repoData is not None:
+            self._load_repo_data(self.repoData, doForkComboUpdate=False)
 
     def loadFork(self, forkName: str):
         self.repoTreeWidget.clear()
@@ -394,10 +399,9 @@ class GitHubFileSelector(QDialog):
         # Format the contents_url with the proper path and add the recursive parameter
         tree_url = f"https://api.github.com/repos/{full_name}/git/trees/master?recursive=1"
         contents_dict = self.api_get(tree_url)
-        repoIndex = [ContentInfoData.from_dict(item) for item in contents_dict["tree"]]
+        repoIndex = [TreeInfoData.from_dict(item) for item in contents_dict["tree"]]
         self.populateTreeWidget(repoIndex)
         self.searchFiles()
-
     def api_get(self, url: str) -> dict:
         try:
             response = requests.get(url, timeout=15)
@@ -405,24 +409,19 @@ class GitHubFileSelector(QDialog):
             self.update_rate_limit_info(response.headers)
             return response.json()
         except requests.exceptions.HTTPError as e:
-            if (
-                e.response.status_code != 403
-                or "X-RateLimit-Reset" not in e.response.headers
-            ):
+            if e.response.status_code != 403 or "X-RateLimit-Reset" not in e.response.headers:  # noqa: PLR2004
                 raise
             self.start_rate_limit_timer(e)
-        except requests.exceptions.RequestException as e:
+            return {}  # Return an empty dictionary when rate limit is exceeded
+        except requests.exceptions.RequestException:
             raise
-        else:
+        finally:
             self.stop_rate_limit_timer()
 
-    def start_rate_limit_timer(self, e: requests.exceptions.HTTPError = None) -> None:
+    def start_rate_limit_timer(self, e: requests.exceptions.HTTPError | None = None) -> None:
         if e:
             response = e.response
-            if (
-                response.status_code == 403
-                and "X-RateLimit-Reset" in response.headers
-            ):
+            if response.status_code == 403 and "X-RateLimit-Reset" in response.headers:  # noqa: PLR2004
                 self.rate_limit_reset = int(response.headers["X-RateLimit-Reset"])
                 self.rate_limit_remaining = 0
 
@@ -448,7 +447,7 @@ class GitHubFileSelector(QDialog):
                 self.refresh_data()
                 self.stop_rate_limit_timer()
 
-    def update_rate_limit_info(self, headers: dict):
+    def update_rate_limit_info(self, headers: dict[str, Any] | requests.structures.CaseInsensitiveDict[str]) -> None:
         if "X-RateLimit-Reset" in headers:
             self.rate_limit_reset = int(headers["X-RateLimit-Reset"])
         if "X-RateLimit-Remaining" in headers:
@@ -456,7 +455,10 @@ class GitHubFileSelector(QDialog):
 
     def onItemDoubleClicked(self, item: QTreeWidgetItem, column: int):
         item_info: TreeInfoData | None = item.data(0, Qt.UserRole)
-        if item_info is None or item_info.type != "blob":
+        if item_info is None:
+            print("No item info")
+            return
+        if item_info.type != "blob":
             print(f"Skipping {item_info.path} of type {item_info.type}")
             return
         self.accept()
@@ -469,7 +471,9 @@ class GitHubFileSelector(QDialog):
 
         url = f"https://github.com/{selectedFork}.git"
         try:
-            subprocess.run(["git", "clone", url], check=True)
+            import shlex
+            command = shlex.split(f"git clone {url}")
+            subprocess.run(command, check=True)  # noqa: S603
             QMessageBox.information(self, "Clone Successful", f"Repository {selectedFork} cloned successfully.")
         except subprocess.CalledProcessError as e:
             QMessageBox.critical(self, "Clone Failed", f"Failed to clone repository: {e!s}")
@@ -491,19 +495,22 @@ class GitHubFileSelector(QDialog):
 
         # Extract the file path from the item
         item_info: TreeInfoData = item.data(0, Qt.UserRole)
-        if item_info and item_info.type == "blob":
-            file_path = item_info.path
+        if item_info is None or item_info.type != "blob":
+            return ""
 
-            # Construct the web URL
-            web_url = f"https://github.com/{owner}/{repo}/blob/{self.repoData.branches[0].name}/{file_path}"
-            return web_url
+        file_path = item_info.path
+        if self.repoData is None or not self.repoData.branches:
+            return ""
 
-        return ""
+        # Construct the web URL
+        web_url = f"https://github.com/{owner}/{repo}/blob/{self.repoData.branches[0].name}/{file_path}"
+        return web_url
 
     def open_in_web_browser(self, item: QTreeWidgetItem) -> None:
         web_url = self.convert_item_to_web_url(item)
         if web_url:
             import webbrowser
+
             webbrowser.open(web_url)
 
     def copy_url(self, item: QTreeWidgetItem) -> None:
@@ -520,9 +527,9 @@ class GitHubFileSelector(QDialog):
                 if isinstance(response, dict) and "content" in response:
                     content = base64.b64decode(response["content"])
                     filename = self.convert_item_to_web_url(item).split("/")[-1]
-                    with open(filename, "wb") as file:
+                    with open(filename, "wb") as file:  # noqa: PTH123
                         file.write(content)
-                    QMessageBox.information(self, "Download Successful", f"Downloaded {filename} to {Path(filename).resolve()}")
+                    QMessageBox.information(self, "Download Successful", f"Downloaded {filename} to {os.path.join(os.path.curdir, filename)}")  # noqa: PTH118
                 else:
                     QMessageBox.critical(self, "Download Failed", "Failed to download the file content.")
             except requests.exceptions.RequestException as e:  # noqa: PERF203
@@ -547,6 +554,7 @@ if __name__ == "__main__":
     from qtpy.QtWidgets import QApplication
 
     from toolset.__main__ import onAppCrash
+
     sys.excepthook = onAppCrash
 
     owner = "KOTORCommunityPatches"

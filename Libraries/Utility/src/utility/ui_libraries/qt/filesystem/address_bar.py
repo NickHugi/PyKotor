@@ -23,9 +23,9 @@ class PathButton(QToolButton):
         self.is_last = is_last
         self.setText(path.name or str(path))
         self.clicked.connect(self._on_clicked)
-        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         if not is_last:
-            self.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+            self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
             self.setMenu(QMenu(self))
 
     def _on_clicked(self, checked: bool = False):  # noqa: FBT001, FBT002
@@ -49,8 +49,8 @@ class PathButton(QToolButton):
 
 @print_qt_class_calls()
 class PyQAddressBar(QToolBar):
-    path_changed = Signal(Path)
-    editing_finished = Signal()
+    path_changed: Signal = Signal(Path)
+    editing_finished: Signal = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -66,18 +66,18 @@ class PyQAddressBar(QToolBar):
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
 
         # Add navigation buttons
-        self.back_button = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack), "Back")
+        self.back_button: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack), "Back")
         self.back_button.triggered.connect(self.go_back)
 
-        self.forward_button = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward), "Forward")
+        self.forward_button: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward), "Forward")
         self.forward_button.triggered.connect(self.go_forward)
 
-        self.up_button = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowUp), "Up")
+        self.up_button: QAction = self.addAction(self.style().standardIcon(QStyle.StandardPixmap.SP_ArrowUp), "Up")
         self.up_button.triggered.connect(self.go_up)
 
         self.addSeparator()
 
-        self.line_edit = QLineEdit(self)
+        self.line_edit: QLineEdit = QLineEdit(self)
         self.line_edit.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.line_edit.hide()
         self.line_edit.editingFinished.connect(self._on_editing_finished)

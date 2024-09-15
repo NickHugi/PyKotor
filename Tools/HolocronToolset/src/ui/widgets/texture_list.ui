@@ -72,7 +72,15 @@
     </widget>
    </item>
   </layout>
- </widget>
- <resources/>
- <connections/>
+</widget>
+<customwidgets>
+ <customwidget>
+  <class>RobustListView</class>
+  <extends>QListView</extends>
+  <header location="global">utility.ui_libraries.qt.widgets.itemviews.listview</header>
+  <container>1</container>
+ </customwidget>
+</customwidgets>
+<resources/>
+<connections/>
 </ui>

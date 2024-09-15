@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFram
     QLineEdit, QListView, QSizePolicy, QVBoxLayout,
     QWidget)
 
+from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
+
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():

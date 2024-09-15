@@ -26,7 +26,7 @@ from qtpy.QtWidgets import (
 
 from pykotor.resource.formats.ncs.compiler.classes import FunctionDefinition
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeWidget
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeWidget
 
 if TYPE_CHECKING:
     from qtpy.QtCore import QPoint
@@ -616,3 +616,108 @@ class LineNumberArea(QWidget):
 
     def paintEvent(self, event):
         self._editor.lineNumberAreaPaintEvent(event)
+
+class NSSCodeEditor(CodeEditor):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.load_settings()
+
+    def load_settings(self):
+        settings = QSettings()
+        self.restoreGeometry(settings.value("NSSCodeEditor/geometry", self.saveGeometry()))
+
+    def save_settings(self):
+        settings = QSettings()
+        settings.setValue("NSSCodeEditor/geometry", self.saveGeometry())
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        pos = event.pos()
+        text = event.mimeData().text()
+        self.insert_text_at_position(text, pos)
+
+    def insert_text_at_position(self, text: str, pos: QPoint):
+        cursor = self.cursorForPosition(pos)
+        cursor.insertText(text)
+
+    def resizeEvent(self, event: QResizeEvent):
+        super().resizeEvent(event)
+        self.save_settings()
+
+    def moveEvent(self, event):
+        super().moveEvent(event)
+        self.save_settings()
+
+class WebViewEditor(QWidget):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.web_view = None
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        try:
+            from qtpy.QtWebEngineWidgets import QWebEngineView
+            self.web_view = QWebEngineView(self)
+            layout.addWidget(self.web_view)
+        except ImportError:
+            label = QLabel("Web engine not available. Please install QtWebEngine.", self)
+            layout.addWidget(label)
+
+    def load_url(self, url: str):
+        if self.web_view:
+            self.web_view.load(url)
+
+class NSSEditor(QWidget):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.native_editor = NSSCodeEditor(self)
+        self.web_editor = WebViewEditor(self)
+        self.current_editor = self.native_editor
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        self.editor_stack = QStackedWidget(self)
+        self.editor_stack.addWidget(self.native_editor)
+        self.editor_stack.addWidget(self.web_editor)
+        layout.addWidget(self.editor_stack)
+
+        self.toggle_button = QPushButton("Toggle Editor", self)
+        self.toggle_button.clicked.connect(self.toggle_editor)
+        layout.addWidget(self.toggle_button)
+
+    def toggle_editor(self):
+        if self.current_editor == self.native_editor:
+            self.editor_stack.setCurrentWidget(self.web_editor)
+            self.current_editor = self.web_editor
+            # Here you would sync the content from native to web editor
+        else:
+            self.editor_stack.setCurrentWidget(self.native_editor)
+            self.current_editor = self.native_editor
+            # Here you would sync the content from web to native editor
+
+    def load_file(self, file_path: str):
+        with open(file_path) as file:
+            content = file.read()
+        self.native_editor.setPlainText(content)
+        # If using web editor, you'd need to implement a way to load the content there as well
+
+    def save_file(self, file_path: str):
+        content = self.native_editor.toPlainText()
+        with open(file_path, "w") as file:
+            file.write(content)
+        # If using web editor, you'd need to implement a way to get the content from there as well
+
+    def set_syntax_highlighter(self, highlighter):
+        # Assuming the highlighter is compatible with QSyntaxHighlighter
+        highlighter(self.native_editor.document())
+        # For web editor, you'd need to implement syntax highlighting differently
+
+    def get_text(self) -> str:
+        return self.native_editor.toPlainText()
+        # If using web editor, you'd need to implement a way to get the content from there as well

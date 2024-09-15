@@ -132,6 +132,6 @@ class Ui_MainWindow(object):
         self.actionDuplicateRow.setText(_translate("MainWindow", "Duplicate Row"))
         self.actionDuplicateRow.setShortcut(_translate("MainWindow", "Ctrl+D"))
         self.actionplaceholder.setText(_translate("MainWindow", "placeholder"))
-from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTableView
 
 from toolset.rcc import resources_rc_pyqt5

@@ -1044,45 +1044,43 @@ class ToolWindow(QMainWindow):
             self.ui.gameCombo.setCurrentIndex(previousIndex)
             return
 
-        try:
-            self.ui.fileSystemWidget.setRootPath(Path(path))
-        except Exception:  # noqa: BLE001
-            self.log.exception("Failed to setup the experimental file system model view")
-
         active = self.installations.get(name)
         if active:
             self.active = active
 
         else:
             loader: AsyncLoader | None = None
-            def load_task() -> HTInstallation:
-                profiler = None
-                if self.settings.profileToolset and cProfile is not None:
-                    profiler = cProfile.Profile()
-                    profiler.enable()
-                progress_callback = None  # pyright: ignore[reportAssignmentType]
-                if loader is not None and loader._realtime_progress:  # noqa: SLF001
-                    def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
-                        assert loader is not None
-                        loader._worker.progress.emit(data, mtype)  # noqa: SLF001
-                new_active = HTInstallation(CaseAwarePath(path), name, tsl=tsl, progress_callback=progress_callback)
-                if self.settings.profileToolset and profiler is not None:
-                    profiler.disable()
-                    profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
-                return new_active
+            if not GlobalSettings().load_entire_installation:
+                self.active = HTInstallation(CaseAwarePath(path), name, tsl=tsl)
+            else:
+                def load_task() -> HTInstallation:
+                    profiler = None
+                    if self.settings.profileToolset and cProfile is not None:
+                        profiler = cProfile.Profile()
+                        profiler.enable()
+                    progress_callback = None  # pyright: ignore[reportAssignmentType]
+                    if loader is not None and loader._realtime_progress:  # noqa: SLF001
+                        def progress_callback(data: int | str, mtype: Literal["set_maximum", "increment", "update_maintask_text", "update_subtask_text"]):
+                            assert loader is not None
+                            loader._worker.progress.emit(data, mtype)  # noqa: SLF001
+                    new_active = HTInstallation(CaseAwarePath(path), name, tsl=tsl, progress_callback=progress_callback)
+                    if self.settings.profileToolset and profiler is not None:
+                        profiler.disable()
+                        profiler.dump_stats(str(Path("load_ht_installation.pstat").absolute()))
+                    return new_active
 
-            loader = AsyncLoader(
-                self,
-                "Loading Installation",
-                load_task,
-                "Failed to load installation",
-                realtime_progress=True,  # Enable/Disable progress bar information globally here.
-            )
-            if not loader.exec_():
-                self.ui.gameCombo.setCurrentIndex(previousIndex)
-                return
-            assert loader.value is not None
-            self.active = loader.value
+                loader = AsyncLoader(
+                    self,
+                    "Loading Installation",
+                    load_task,
+                    "Failed to load installation",
+                    realtime_progress=True,  # Enable/Disable progress bar information globally here.
+                )
+                if not loader.exec_():
+                    self.ui.gameCombo.setCurrentIndex(previousIndex)
+                    return
+                assert loader.value is not None
+                self.active = loader.value
 
         # KEEP UI CODE IN MAIN THREAD!
         self.ui.resourceTabs.setEnabled(True)
@@ -1125,7 +1123,6 @@ class ToolWindow(QMainWindow):
             self.ui.texturesWidget.setSections(textureItems)
             self.refreshCoreList(reload=True)
             self.refreshSavesList(reload=True)
-            self.ui.texturesWidget.setInstallation(self.active)
             try:
                 self.log.debug("Setting up watchdog observer...")
                 #if self.dogObserver is not None:

@@ -12,6 +12,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 from toolset.gui.editors.erf import ERFEditorTable
 
 

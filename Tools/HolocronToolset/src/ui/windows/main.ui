@@ -27,17 +27,6 @@
               <widget class="QComboBox" name="gameCombo" />
             </item>
             <item>
-              <widget class="QTabWidget" name="outerTabWidget">
-                <property name="currentIndex">
-                  <number>0</number>
-                </property>
-                <!-- First Tab: Resource List -->
-                <widget class="QWidget" name="resourceListTab">
-                  <attribute name="title">
-                    <string>Resource List</string>
-                  </attribute>
-                  <layout class="QVBoxLayout" name="verticalLayoutResourceListTab">
-                    <item>
                       <widget class="QTabWidget" name="resourceTabs">
                         <property name="currentIndex">
                           <number>0</number>
@@ -161,22 +150,6 @@
                           </layout>
                         </widget>
                       </widget>
-                    </item>
-                  </layout>
-                </widget>
-
-                <!-- Second Tab: File System -->
-                <widget class="QWidget" name="fileSystemTab">
-                  <attribute name="title">
-                    <string>File System</string>
-                  </attribute>
-                  <layout class="QVBoxLayout" name="verticalLayoutFileSystemTab">
-                    <item>
-                      <widget class="ResourceFileSystemWidget" name="fileSystemWidget" />
-                    </item>
-                  </layout>
-                </widget>
-              </widget>
             </item>
           </layout>
         </item>

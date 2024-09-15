@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QToolBar, QAction
 from qtpy.QtCore import Signal
-from pykotor.resource.formats.bwm.bwm_data import BWM
+from qtpy.QtWidgets import QAction, QToolBar, QVBoxLayout, QWidget
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import SurfaceMaterial
+from pykotor.resource.formats.bwm.bwm_data import BWM
+
 
 class WalkmeshEditor(QWidget):
     walkmeshUpdated = Signal(BWM)

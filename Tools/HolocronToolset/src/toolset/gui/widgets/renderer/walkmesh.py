@@ -7,52 +7,26 @@ from typing import TYPE_CHECKING, Generic, NamedTuple, TypeVar
 
 from qtpy import QtCore
 from qtpy.QtCore import QPoint, QPointF, QRect, QRectF, QTimer
-from qtpy.QtGui import (
-    QColor,
-    QCursor,
-    QImage,
-    QPainter,
-    QPainterPath,
-    QPen,
-    QPixmap,
-    QTransform,
-)
+from qtpy.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath, QPen, QPixmap, QTransform
 from qtpy.QtWidgets import QWidget
 
 from pykotor.common.geometry import Vector2, Vector3
+from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.are import ARENorthAxis
-from pykotor.resource.generics.git import (
-    GITCamera,
-    GITCreature,
-    GITDoor,
-    GITEncounter,
-    GITPlaceable,
-    GITSound,
-    GITStore,
-    GITTrigger,
-    GITWaypoint,
-)
+from pykotor.resource.generics.git import GITCamera, GITCreature, GITDoor, GITEncounter, GITPlaceable, GITSound, GITStore, GITTrigger, GITWaypoint
 from toolset.utils.misc import clamp
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
-    from qtpy.QtGui import (
-        QFocusEvent,
-        QKeyEvent,
-        QMouseEvent,
-        QPaintEvent,
-        QWheelEvent,
-    )
+    from qtpy.QtGui import QFocusEvent, QKeyEvent, QMouseEvent, QPaintEvent, QWheelEvent
 
     from pykotor.common.geometry import SurfaceMaterial
-    from pykotor.resource.formats.bwm import BWM, BWMFace
+    from pykotor.resource.formats.bwm import BWMFace
+    from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom
     from pykotor.resource.formats.tpc import TPC
     from pykotor.resource.generics.are import ARE
-    from pykotor.resource.generics.git import (
-        GIT,
-        GITInstance,
-    )
+    from pykotor.resource.generics.git import GIT, GITInstance
     from pykotor.resource.generics.pth import PTH
 
 T = TypeVar("T")
@@ -155,15 +129,6 @@ class WalkmeshRenderer(QWidget):
         Args:
         ----
             parent (QWidget): The parent widget
-
-        Processing Logic:
-        ----------------
-            - Initializes variables and properties
-            - Sets up camera
-            - Sets up selection
-            - Initializes mouse tracking
-            - Loads icon pixmaps
-            - Starts update loop.
         """
         super().__init__(parent)
 
@@ -256,9 +221,29 @@ class WalkmeshRenderer(QWidget):
         """
         self._walkmeshes = walkmeshes
 
+    def generateWalkmesh(self, layout: LYT):
+        """Generate walkmesh based on the current room layout."""
+        # Logic to generate walkmesh from layout
+        self._walkmeshes = []  # Clear existing walkmeshes
+        for room in layout.rooms:
+            # Generate walkmesh for each room
+            walkmesh = self.createWalkmeshForRoom(room)
+            self._walkmeshes.append(walkmesh)
+        self.updateWalkmeshDisplay()
+
+    def createWalkmeshForRoom(self, room: LYTRoom) -> BWM:
+        """Create a walkmesh for a given room."""
+        # Placeholder logic for creating a walkmesh
+        # Replace with actual walkmesh generation logic
+        walkmesh = BWM()
+        # Add faces to walkmesh based on room dimensions
+        return walkmesh
+
+    def updateWalkmeshDisplay(self):
+        self.repaint()
         self._bbmin = Vector3(1000000, 1000000, 1000000)
         self._bbmax = Vector3(-1000000, -1000000, -1000000)
-        for walkmesh in walkmeshes:
+        for walkmesh in self._walkmeshes:
             bbmin, bbmax = walkmesh.box()
             self._bbmin.x = min(bbmin.x, self._bbmin.x)
             self._bbmin.y = min(bbmin.y, self._bbmin.y)
@@ -316,15 +301,6 @@ class WalkmeshRenderer(QWidget):
         """Returns a screen-space coordinates coverted from the specified world-space coordinates.
 
         The origin of the screen-space coordinates is the top-left of the WalkmeshRenderer widget.
-
-        Args:
-        ----
-            x: The world-space X value.
-            y: The world-space Y value.
-
-        Returns:
-        -------
-            A vector representing a point on the widget.
         """
         cos: float = math.cos(self.camera.rotation())
         sin: float = math.sin(self.camera.rotation())
@@ -339,15 +315,6 @@ class WalkmeshRenderer(QWidget):
 
         The Z component is calculated using the X/Y components and the walkmesh
         face the mouse is over. If there is no face underneath the mouse, the Z component is set to zero.
-
-        Args:
-        ----
-            x: The screen-space X value.
-            y: The screen-space Y value.
-
-        Returns:
-        -------
-            A vector representing a point in the world.
         """
         y = self.height() - y
         cos = math.cos(self.camera.rotation())
@@ -366,15 +333,6 @@ class WalkmeshRenderer(QWidget):
 
         This is convereted from coordinates representing a
         change in screen-space, such as the delta paramater given in a mouseMove event.
-
-        Args:
-        ----
-            x: The screen-space X value.
-            y: The screen-space Y value.
-
-        Returns:
-        -------
-            A vector representing a change in position in the world.
         """
         cos: float = math.cos(-self.camera.rotation())
         sin: float = math.sin(-self.camera.rotation())
@@ -388,15 +346,6 @@ class WalkmeshRenderer(QWidget):
         """Returns the Z coordinate based of walkmesh data for the specified point.
 
         If there are overlapping faces, the walkable face will take priority.
-
-        Args:
-        ----
-            x: The x coordinate.
-            y: The y coordinate.
-
-        Returns:
-        -------
-            The z coordinate.
         """
         # We need to find a face in the walkmesh that is underneath the mouse to find the Z
         # We also want to prioritize walkable faces
@@ -851,17 +800,6 @@ class WalkmeshRenderer(QWidget):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent):
-        """Handles mouse move events.
-
-        Args:
-        ----
-            e: QMouseEvent - Mouse event object
-
-        Processes mouse movement:
-            - Updates mouse position
-            - Emits mouseMoved signal
-            - Finds instances and geometry points under mouse.
-        """
         super().mouseMoveEvent(e)
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
@@ -887,7 +825,7 @@ class WalkmeshRenderer(QWidget):
                     for point in instance.geometry:
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
-                            #RobustLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
+                            # RobustLogger().debug(f"pworld distance check, append GeomPoint({instance}, {point}), total geompoints: {len(self._geomPointsUnderMouse)+1}")
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
 
         if self._pth is not None:
@@ -895,13 +833,13 @@ class WalkmeshRenderer(QWidget):
                 if point.distance(world) <= self._pathNodeSize:
                     self._pathNodesUnderMouse.append(point)
 
-    def focusOutEvent(self, e: QFocusEvent | None):
+    def focusOutEvent(self, e: QFocusEvent):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
-        #RobustLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
+        # RobustLogger().debug("WalkmeshRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
-    def mousePressEvent(self, e: QMouseEvent | None):
+    def mousePressEvent(self, e: QMouseEvent):
         super().mousePressEvent(e)
         if e is None:
             return
@@ -909,9 +847,9 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-        #RobustLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
+        # RobustLogger().debug(f"WalkmeshRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
-    def mouseReleaseEvent(self, e: QMouseEvent | None):
+    def mouseReleaseEvent(self, e: QMouseEvent):
         super().mouseReleaseEvent(e)
         if e is None:
             return
@@ -919,9 +857,9 @@ class WalkmeshRenderer(QWidget):
         self._mouseDown.discard(button)
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
-        #RobustLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
+        # RobustLogger().debug(f"WalkmeshRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
-    def keyPressEvent(self, e: QKeyEvent | None):
+    def keyPressEvent(self, e: QKeyEvent):
         super().keyPressEvent(e)
         if e is None:
             return
@@ -931,10 +869,10 @@ class WalkmeshRenderer(QWidget):
         self._keysDown.add(key)
         if self.underMouse():
             self.keyPressed.emit(self._mouseDown, self._keysDown)
-        #key_name = getQtKeyStringLocalized(key)
-        #RobustLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        # key_name = getQtKeyStringLocalized(key)
+        # RobustLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent | None):
+    def keyReleaseEvent(self, e: QKeyEvent):
         super().keyReleaseEvent(e)
         if e is None:
             return
@@ -942,7 +880,7 @@ class WalkmeshRenderer(QWidget):
         self._keysDown.discard(key)
         if self.underMouse():
             self.keyReleased.emit(self._mouseDown, self._keysDown)
-        #key_name = getQtKeyStringLocalized(key)
-        #RobustLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
+        # key_name = getQtKeyStringLocalized(key)
+        # RobustLogger().debug(f"WalkmeshRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion

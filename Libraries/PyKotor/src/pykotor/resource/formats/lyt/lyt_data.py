@@ -157,8 +157,8 @@ class LYTDoorHook:
         position: Vector3,
         orientation: Vector4,
     ):
-        self.room: str = room  # TODO: find out if this is case-insensitive and implement via __eq__.
-        self.door: str = door  # TODO: find out if this is case-insensitive and implement via __eq__.
+        self.room: str = room
+        self.door: str = door
         self.position: Vector3 = position
         self.orientation: Vector4 = orientation
 
@@ -170,9 +170,4 @@ class LYTDoorHook:
             return True
         if not isinstance(other, LYTDoorHook):
             return NotImplemented
-        return (
-            self.room == other.room
-            and self.door == other.door
-            and self.position == other.position
-            and self.orientation == other.orientation
-        )
+        return self.room == other.room and self.door == other.door and self.position == other.position and self.orientation == other.orientation

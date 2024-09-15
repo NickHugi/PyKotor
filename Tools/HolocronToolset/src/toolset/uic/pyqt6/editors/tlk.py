@@ -156,6 +156,6 @@ class Ui_MainWindow(object):
         self.actionClose.setText(_translate("MainWindow", "Exit"))
         self.actionInsert.setText(_translate("MainWindow", "Insert"))
         self.actionAuto_detect_slower.setText(_translate("MainWindow", "Auto-detect (slower)"))
-from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTableView
 
 from toolset.rcc import resources_rc_pyqt6

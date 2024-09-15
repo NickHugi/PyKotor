@@ -391,6 +391,30 @@ class ModuleDesignerControls3d:
     @settings.setter
     def settings(self, value): ...
 
+    @property
+    def lytGridSize(self):
+        return self.settings.lytGridSize
+    @lytGridSize.setter
+    def lytGridSize(self, value):
+        self.settings.lytGridSize = value
+        if hasattr(self.editor, "lytEditor"):
+            self.editor.lytEditor.setGridSize(value)
+
+    @property
+    def lytSnapToGrid(self):
+        return self.settings.lytSnapToGrid
+    @lytSnapToGrid.setter
+    def lytSnapToGrid(self, value):
+        self.settings.lytSnapToGrid = value
+        if hasattr(self.editor, "lytEditor"):
+            self.editor.lytEditor.setSnapToGrid(value)
+
+    @property
+    def lytShowGrid(self):
+        return self.settings.lytShowGrid
+    @lytShowGrid.setter
+    def settings(self, value): ...
+
 
 class ModuleDesignerControlsFreeCam:
     def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
@@ -679,3 +703,27 @@ class ModuleDesignerControls2d:
         return ControlItem(self.settings.toggleLockInstancesBind)
     @toggleInstanceLock.setter
     def toggleInstanceLock(self, value): ...
+
+    @property
+    def lytGridSize(self):
+        return self.settings.lytGridSize
+    @lytGridSize.setter
+    def lytGridSize(self, value):
+        self.settings.lytGridSize = value
+        if hasattr(self.editor, "lytEditor"):
+            self.editor.lytEditor.setGridSize(value)
+
+    @property
+    def lytSnapToGrid(self):
+        return self.settings.lytSnapToGrid
+    @lytSnapToGrid.setter
+    def lytSnapToGrid(self, value):
+        self.settings.lytSnapToGrid = value
+        if hasattr(self.editor, "lytEditor"):
+            self.editor.lytEditor.setSnapToGrid(value)
+
+    @property
+    def lytShowGrid(self):
+        return self.settings.lytShowGrid
+    @lytShowGrid.setter
+    def lytShowGrid(self, value): ...

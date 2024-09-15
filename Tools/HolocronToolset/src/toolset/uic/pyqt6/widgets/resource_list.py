@@ -69,6 +69,6 @@ class Ui_Form(object):
         self.searchEdit.setPlaceholderText(_translate("Form", "search..."))
         self.reloadButton.setToolTip(_translate("Form", "Reload the active module/folder."))
         self.reloadButton.setText(_translate("Form", "Reload"))
-from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 from toolset.rcc import resources_rc_pyqt6

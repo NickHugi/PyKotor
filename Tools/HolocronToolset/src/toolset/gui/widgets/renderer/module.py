@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from copy import copy
+from copy import copy, deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from loggerplus import RobustLogger
 from qtpy import QtCore
 from qtpy.QtCore import QMetaObject, QThread, QTimer, Qt
+from qtpy.QtGui import QPainter
 from qtpy.QtWidgets import QApplication, QMessageBox, QOpenGLWidget
 
 from pykotor.common.geometry import Vector2, Vector3
@@ -14,6 +15,8 @@ from pykotor.gl.scene import Scene
 from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
+from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from utility.error_handling import assert_with_variable_trace
 
 if TYPE_CHECKING:
@@ -23,6 +26,8 @@ if TYPE_CHECKING:
 
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
+    from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTRoomTemplate, LYTTrack
+    from pykotor.resource.formats.tpc.tpc_data import TPC
     from toolset.data.installation import HTInstallation
 
 
@@ -52,6 +57,8 @@ class ModuleRenderer(QOpenGLWidget):
     objectSelected = QtCore.Signal(object)  # pyright: ignore[reportPrivateImportUsage]
     """Signal emitted when an object has been selected through the renderer."""
 
+    lytUpdated = QtCore.Signal(object)  # Signal to notify when LYT data is updated
+    """Signal emitted when LYT data is updated."""
     def __init__(self, parent: QWidget):
         """Initializes the ModuleDesigner widget.
 
@@ -73,8 +80,10 @@ class ModuleRenderer(QOpenGLWidget):
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._module: Module | None = None
         self._installation: HTInstallation | None = None
+        self._lyt_editor: LYTEditor | None = None
+        self._lyt: LYT | None = None
 
-        self.loopTimer = QTimer(self)
+        self.loopTimer: QTimer = QTimer(self)
         self.loopTimer.timeout.connect(self.loop)
         self.loopInterval: int = 33  # ms, approx 30 FPS
 
@@ -87,6 +96,54 @@ class ModuleRenderer(QOpenGLWidget):
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
         self.delta: float = 0.0333
+
+        self.lyt: LYT | None = None
+        self.textureBrowser: TextureBrowser = TextureBrowser()
+        self.lytEditor: LYTEditor = LYTEditor(self)
+        self.initLYTEditor()
+
+    def initLYTEditor(self):
+        self.lytEditor.setVisible(False)
+        self.lytEditor.roomPlaced.connect(self.onRoomPlaced)
+        self.lytEditor.roomMoved.connect(self.onRoomMoved)
+        self.lytEditor.roomResized.connect(self.onRoomResized)
+        self.lytEditor.roomRotated.connect(self.onRoomRotated)
+        self.lytEditor.doorHookPlaced.connect(self.onDoorHookPlaced)
+        self.lytEditor.textureChanged.connect(self.onTextureChanged)
+
+    def loadLYT(self, lyt: LYT):
+        self.lyt = lyt
+        self.lytEditor.setLYT(lyt)
+        self.lytEditor.setVisible(True)
+
+    def saveLYT(self):
+        if self.lyt:
+            self._module.setLYT(self.lyt)
+            self._module.save()
+
+    def onRoomPlaced(self, room: LYTRoom):
+        self.lyt.addRoom(room)
+        self.update()
+
+    def onRoomMoved(self, room: LYTRoom, position: Vector2):
+        room.setPosition(position)
+        self.update()
+
+    def onRoomResized(self, room: LYTRoom, size: Vector2):
+        room.setSize(size)
+        self.update()
+
+    def onRoomRotated(self, room: LYTRoom, angle: float):
+        room.setRotation(angle)
+        self.update()
+
+    def onDoorHookPlaced(self, doorHook: LYTDoorHook):
+        self.lyt.addDoorHook(doorHook)
+        self.update()
+
+    def onTextureChanged(self, texture: TPC):
+        self.lyt.setTexture(texture)
+        self.update()
 
     @property
     def scene(self) -> Scene:
@@ -131,6 +188,9 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
         self.sceneInitialized.emit()
+
+        self._lyt_editor = LYTEditor(self)
+        self._lyt_editor.lytUpdated.connect(self.updateLYT)
         self.resumeRenderLoop()
 
     def initializeGL(self):
@@ -221,7 +281,14 @@ class ModuleRenderer(QOpenGLWidget):
             self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
 
         self.scene.render()
+        if self.lyt:
+            self.lytEditor.render()
         self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
+
+        if self.is_lyt_mode and self._lyt_editor:
+            painter = QPainter(self)
+            self._lyt_editor.render(painter)
+            painter.end()
 
     def loop(self):
         """Repaints and checks for keyboard input on mouse press.
@@ -295,6 +362,12 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.clear()
         self._keysDown.clear()
 
+    def setLYTMode(self, enabled: bool):
+        self.is_lyt_mode = enabled
+        if enabled and self._lyt_editor:
+            self._lyt_editor.setLYT(self._lyt)
+        self.update()
+
     # region Accessors
     def keysDown(self) -> set[int]:
         return copy(self._keysDown)
@@ -357,19 +430,17 @@ class ModuleRenderer(QOpenGLWidget):
 
     # region Events
 
-    def focusOutEvent(self, e: QFocusEvent | None):
+    def focusOutEvent(self, e: QFocusEvent):
         self._mouseDown.clear()  # Clears the set when focus is lost
         self._keysDown.clear()  # Clears the set when focus is lost
         super().focusOutEvent(e)  # Ensures that the default handler is still executed
         print("ModuleRenderer.focusOutEvent: clearing all keys/buttons held down.")
 
-    def wheelEvent(self, e: QWheelEvent | None):
+    def wheelEvent(self, e: QWheelEvent):
         super().wheelEvent(e)
-        if e is None:
-            return
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
-    def mouseMoveEvent(self, e: QMouseEvent | None):
+    def mouseMoveEvent(self, e: QMouseEvent):
         """Handles mouse move events.
 
         Args:
@@ -384,8 +455,6 @@ class ModuleRenderer(QOpenGLWidget):
             4. Emit signal with mouse data if time since press > threshold
         """
         #super().mouseMoveEvent(e)
-        if e is None:
-            return
         screen = Vector2(e.x(), e.y())
         if self.freeCam:
             screenDelta = Vector2(screen.x - self.width() / 2, screen.y - self.height() / 2)
@@ -404,6 +473,8 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.add(button)
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
+        if self.lytEditor.isVisible():
+            self.lytEditor.handleMousePress(e)
         #RobustLogger().debug(f"ModuleRenderer.mousePressEvent: {self._mouseDown}, e.button() '{button}'")
 
     def mouseReleaseEvent(self, e: QMouseEvent):
@@ -413,28 +484,91 @@ class ModuleRenderer(QOpenGLWidget):
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
+        if self.lytEditor.isVisible():
+            self.lytEditor.handleMouseRelease(e)
         #RobustLogger().debug(f"ModuleRenderer.mouseReleaseEvent: {self._mouseDown}, e.button() '{button}'")
 
-    def keyPressEvent(self, e: QKeyEvent | None, bubble: bool = True):
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyPressEvent(e)
-        if e is None:
-            return
         key = e.key()
         self._keysDown.add(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
+        if self.lytEditor.isVisible():
+            self.lytEditor.handleKeyPress(e)
         #key_name = getQtKeyStringLocalized(key)
         #RobustLogger().debug(f"ModuleRenderer.keyPressEvent: {self._keysDown}, e.key() '{key_name}'")
 
-    def keyReleaseEvent(self, e: QKeyEvent | None, bubble: bool = True):
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True):
         super().keyReleaseEvent(e)
-        if e is None:
-            return
         key = e.key()
         self._keysDown.discard(key)
         if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
+        if self.lytEditor.isVisible():
+            self.lytEditor.handleKeyRelease(e)
         # key_name = getQtKeyStringLocalized(key)
         # RobustLogger().debug(f"ModuleRenderer.keyReleaseEvent: {self._keysDown}, e.key() '{key_name}'")
 
     # endregion
+
+    def loadLYT(self, lyt: LYT):
+        """Loads the LYT data into the renderer."""
+        self._lyt = deepcopy(lyt)
+        if self._lyt_editor:
+            self._lyt_editor.setLYT(self._lyt)
+        self.lytUpdated.emit(self._lyt)
+        self.update()
+
+    def getLYT(self) -> LYT | None:
+        """Returns the current LYT data."""
+        return self._lyt
+
+    def updateLYT(self, lyt: LYT):
+        """Updates the LYT data, notifies listeners, and triggers a redraw."""
+        self._lyt = deepcopy(lyt)
+        self.lytUpdated.emit(self._lyt)
+        self.update()
+
+    def addRoom(self, room: LYTRoom):
+        """Adds a new room to the LYT data and triggers a redraw."""
+        if self._lyt:
+            self._lyt.rooms.append(room)
+            self.lytUpdated.emit(self._lyt)
+            self.update()
+
+    def addTrack(self, track: LYTTrack):
+        """Adds a new track to the LYT data and triggers a redraw."""
+        if self._lyt:
+            self._lyt.tracks.append(track)
+            self.lytUpdated.emit(self._lyt)
+            self.update()
+
+    def addObstacle(self, obstacle: LYTObstacle):
+        """Adds a new obstacle to the LYT data and triggers a redraw."""
+        if self._lyt:
+            self._lyt.obstacles.append(obstacle)
+            self.lytUpdated.emit(self._lyt)
+            self.update()
+
+    def addDoorHook(self, doorhook: LYTDoorHook):
+        """Adds a new doorhook to the LYT data and triggers a redraw."""
+        if self._lyt:
+            self._lyt.doorhooks.append(doorhook)
+            self.lytUpdated.emit(self._lyt)
+            self.update()
+
+    def getLYTRoomTemplates(self) -> list[LYTRoomTemplate]:
+        """Returns a list of available room templates."""
+        # Implement logic to return room templates
+        return []
+
+    def getLYTTrackTemplates(self) -> list[LYTTrackTemplate]:
+        """Returns a list of available track templates."""
+        # Implement logic to return track templates
+        return []
+
+    def getLYTObstacleTemplates(self) -> list[LYTObstacleTemplate]:
+        """Returns a list of available obstacle templates."""
+        # Implement logic to return obstacle templates
+        return []

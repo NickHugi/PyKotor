@@ -292,6 +292,13 @@ class GlobalSettings(Settings):
         "selectedTheme",
         "Fusion (Light)",  # Default theme
     )
+    # endregion
+
+    # region Numbers
+    max_child_processes = Settings.addSetting(
+        "max_child_processes",
+        (os.cpu_count() or 1) * 2,
+    )
     moduleSortOption = Settings.addSetting(
         "moduleSortOption",
         2,
@@ -299,6 +306,10 @@ class GlobalSettings(Settings):
     # endregion
 
     # region Bools
+    load_entire_installation = Settings.addSetting(
+        "load_entire_installation",
+        False,
+    )
     profileToolset = Settings.addSetting(
         "profileToolset",
         False,

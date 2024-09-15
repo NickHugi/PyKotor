@@ -182,7 +182,11 @@ class TPCTGAReader(ResourceReader):
 
         if pillow_available:
             # Use Pillow for supported formats
-            self._load_with_pillow()
+            try:
+                self._load_with_pillow()
+            except Exception:  # noqa: BLE001
+                RobustLogger().warning("Failed to load with Pillow. Falling back to custom logic.", exc_info=True)
+                self._load_with_custom_logic()
         else:
             # Fallback to custom logic for all other cases
             self._load_with_custom_logic()
@@ -196,8 +200,6 @@ class TPCTGAReader(ResourceReader):
     ):
         if self._tpc is None:
             raise ValueError("Call load() instead of this directly.")
-        # Use Pillow to handle the TGA file
-        #print("Loading with pillow")
 
         with Image.open(io.BytesIO(self._reader._stream) if isinstance(self._reader._stream, mmap.mmap) else self._reader._stream) as img:  # pyright: ignore[reportArgumentType]
 
@@ -215,8 +217,8 @@ class TPCTGAReader(ResourceReader):
                 RobustLogger().warning(f"Unknown pillow TGA format '{img.mode}'")
                 texture_format = TPCTextureFormat.RGBA
                 new_img = img.convert("RGBA")  # Ensure the image is in RGBA format
-                return
-            new_img = new_img.transpose(Image.FLIP_TOP_BOTTOM)
+
+            new_img = new_img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
             width, height = new_img.size
             data = new_img.tobytes()
@@ -248,7 +250,7 @@ class TPCTGAReader(ResourceReader):
         y_flipped = bool(image_descriptor & 0b00100000)
         interleaving_id = (image_descriptor & 0b11000000) >> 6
         if interleaving_id:
-            ValueError("The image data must not be interleaved.")
+            raise ValueError("The image data must not be interleaved.")
 
         data: bytearray = bytearray()
         if datatype_code == _DataTypes.UNCOMPRESSED_COLOR_MAPPED:
@@ -260,7 +262,7 @@ class TPCTGAReader(ResourceReader):
             self._reader.skip(colormap_length * colormap_depth // 8)
 
             if bits_per_pixel not in {24, 32}:
-                ValueError("The image must store 24 or 32 bits per pixel.")
+                raise ValueError("The image must store 24 or 32 bits per pixel.")
 
             pixel_rows: list[bytearray] = []
             for y in range(height):
@@ -304,7 +306,7 @@ class TPCTGAReader(ResourceReader):
                 raise ValueError(msg)
             data = self._process_rle_data(width, height, bits_per_pixel, color_map=color_map)
         else:
-            msg = "The image format is not currently supported."
+            msg = f"The image format '{datatype_code}' is not currently supported."
             raise ValueError(msg)
 
         # Set the texture format based on the bits per pixel
@@ -359,7 +361,7 @@ class TPCTGAWriter(ResourceWriter):
             width, height, data = self._tpc.convert(TPCTextureFormat.RGB)
             mode = "RGB"
         img = Image.frombytes(mode, (width, height), data)
-        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         img.save(self._writer._stream if isinstance(self._writer, BinaryWriterFile) else io.BytesIO(self._writer._ba), format="TGA")
 
     def _write_with_custom_logic(

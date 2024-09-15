@@ -77,7 +77,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 from toolset.utils.misc import getQtKeyString
 from utility.ui_libraries.qt.corelib.itemmodels.filters import NoScrollEventFilter
 from utility.ui_libraries.qt.widgets.itemviews.html_delegate import _ICONS_DATA_ROLE, HTMLDelegate
-from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeView
+from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if qtpy.API_NAME in ("PyQt6", "PySide6"):
     from qtpy.QtGui import QUndoStack

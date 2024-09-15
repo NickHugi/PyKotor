@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHBoxLayout, QHe
     QSizePolicy, QVBoxLayout, QWidget)
 
 from toolset.gui.editors.erf import ERFEditorTable
+from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

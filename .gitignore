@@ -70,3 +70,13 @@ Tools/HoloPatcher/src/holopatcher/package-lock.json
 Tools/HoloPatcher/src/holopatcher/package.json
 .history
 .history*
+.aider*
+*scriptdefs.py
+*scriptlib.py
+Libraries/PyKotorGL/src/pykotor/gl/models/predefined_mdl.py
+HolocronToolset/downloads
+*toolset/kits/*
+*HolocronToolset/src/toolset/uic
+*HolocronToolset/src/toolset/uic/*
+toolset/*_extract
+Tools/HolocronToolset/src/ui/stylesheet_resources.py

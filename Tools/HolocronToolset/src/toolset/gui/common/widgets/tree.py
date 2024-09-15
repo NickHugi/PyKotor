@@ -32,7 +32,7 @@ from qtpy.QtWidgets import (
     QWhatsThis,
 )
 
-from toolset.gui.common.style.delegates import HTMLDelegate
+from utility.ui_libraries.qt.widgets.itemviews.html_delegate import HTMLDelegate
 
 if TYPE_CHECKING:
 
@@ -534,7 +534,6 @@ class RobustTreeView(QTreeView):
     ):
         subMenu = menu.addMenu(title)
         initial_value = self.settings.get(settings_key, current_state_func())
-        selected_filters = initial_value
 
         def apply_filters():
             combined_filter = zero_value

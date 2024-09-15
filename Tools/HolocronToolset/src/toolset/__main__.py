@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import asyncio
 import atexit
 import gc
 import importlib
@@ -125,12 +126,12 @@ def is_running_from_temp() -> bool:
     temp_dir = tempfile.gettempdir()
     return str(app_path).startswith(temp_dir)
 
-def qt_cleanup():
+def qt_cleanup(app_close_event: asyncio.Event):
     """Cleanup so we can exit."""
     from loggerplus import RobustLogger
 
     from toolset.utils.window import WINDOWS
-    from utility.system.process import terminate_child_processes
+    from utility.system.app_process.shutdown import terminate_child_processes
 
     RobustLogger().debug("Closing/destroy all windows from WINDOWS list, (%s to handle)...", len(WINDOWS))
     for window in WINDOWS:
@@ -141,9 +142,14 @@ def qt_cleanup():
     for obj in gc.get_objects():
         with suppress(RuntimeError):  # wrapped C/C++ object of type QThread has been deleted
             if isinstance(obj, QThread) and obj.isRunning():
-                RobustLogger().info(f"Terminating QThread: {obj}")
+                RobustLogger().info(f"Terminating QThread obj with name: {obj.objectName()}")
                 obj.terminate()
                 obj.wait()
+            elif isinstance(obj, multiprocessing.Process):
+                RobustLogger().info(f"Terminating multiprocessing.Process obj with pid: {obj.pid}")
+                obj.terminate()
+                obj.join()
+    app_close_event.set()
     terminate_child_processes()
 
 def last_resort_cleanup():
@@ -153,7 +159,7 @@ def last_resort_cleanup():
     """
     from loggerplus import RobustLogger
 
-    from utility.system.process import gracefully_shutdown_threads, start_shutdown_process
+    from utility.system.app_process.shutdown import gracefully_shutdown_threads, start_shutdown_process
 
     RobustLogger().info("Fully shutting down Holocron Toolset...")
     gracefully_shutdown_threads()
@@ -235,6 +241,7 @@ def setupToolsetDefaultEnv():
 if __name__ == "__main__":
     main_init()
 
+    from qasync import QEventLoop  # pyright: ignore[reportMissingTypeStubs]
     from qtpy.QtCore import QThread
     from qtpy.QtWidgets import QApplication, QMessageBox
 
@@ -244,8 +251,9 @@ if __name__ == "__main__":
     app.setApplicationName("HolocronToolsetV3")
     app.setOrganizationName("PyKotor")
     app.setOrganizationDomain("github.com/NickHugi/PyKotor")
-    app.thread().setPriority(QThread.Priority.HighestPriority)  # pyright: ignore[reportOptionalMemberAccess]
-    app.aboutToQuit.connect(qt_cleanup)
+    #app.thread().setPriority(QThread.Priority.HighestPriority)  # pyright: ignore[reportOptionalMemberAccess]
+    app_close_event = asyncio.Event()
+    app.aboutToQuit.connect(lambda: qt_cleanup(app_close_event))
 
     setupPostInitSettings()
     setupToolsetDefaultEnv()
@@ -263,5 +271,10 @@ if __name__ == "__main__":
 
     toolWindow = ToolWindow()
     toolWindow.show()
+
     toolWindow.checkForUpdates(silent=True)
-    app.exec_()  # pyright: ignore[reportAttributeAccessIssue]
+
+    loop = QEventLoop(app)
+    asyncio.set_event_loop(loop)
+    with loop:
+        loop.run_forever()

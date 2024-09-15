@@ -11,21 +11,19 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from qtpy.QtCore import QEvent, QLine, QMutex, QMutexLocker, QPoint, QRect, QThread, Qt, Signal  # pyright: ignore[reportPrivateImportUsage]
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen
-from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QListWidget, QMessageBox, QPushButton, QSlider, QVBoxLayout, QWidget, QlistWidgetItem
+from qtpy.QtWidgets import QApplication, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMessageBox, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.formats.lyt import LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
-from pykotor.resource.formats.lyt.lyt_data import LYT
-from toolset.gui.widgets.renderer.module import ModuleRenderer
+from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from utility.system.app_process.task_consumer import TaskConsumer
 
 if TYPE_CHECKING:
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent
-    from qtpy.QtWidgets import QListWidgetItem
 
     from pykotor.resource.formats.lyt.lyt_data import LYTRoomTemplate
+    from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
 class LYTEditor(QWidget):
@@ -535,7 +533,7 @@ class LYTEditor(QWidget):
         with self.texture_lock:
             self.texturelist.clear()
             for texture_name in self.textures:
-                self.texturelist.addItem(QlistWidgetItem(texture_name))
+                self.texturelist.addItem(QListWidgetItem(texture_name))
 
     def applyTexture(self, textureName: str):
         self.addBackgroundTask(self.applyTextureTask, (textureName,))
@@ -959,6 +957,7 @@ class LYTEditor(QWidget):
         return visible_rooms
 
     def parent(self) -> ModuleRenderer:
+        from toolset.gui.widgets.renderer.module import ModuleRenderer
         assert isinstance(self.parent(), ModuleRenderer)
         return self.parent()
 
@@ -1140,102 +1139,3 @@ class LYTEditor(QWidget):
 
     def deleteTrack(self, track: LYTTrack):
         self.addChange(("delete", "track", track))
-
-    # Implement similar methods for obstacles and doorhooks
-from __future__ import annotations
-
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QToolBar, QAction
-from qtpy.QtCore import Signal
-from pykotor.resource.formats.lyt.lyt_data import LYT, Room, Obstacle, Track
-from pykotor.common.geometry import Vector3
-
-class LYTEditor(QWidget):
-    lytUpdated = Signal(LYT)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.lyt: LYT | None = None
-        self.selected_room: Room | None = None
-        self.initUI()
-
-    def initUI(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        self.toolbar = QToolBar()
-        layout.addWidget(self.toolbar)
-
-        self.addRoomAction = QAction("Add Room", self)
-        self.addRoomAction.triggered.connect(self.addRoom)
-        self.toolbar.addAction(self.addRoomAction)
-
-        self.removeRoomAction = QAction("Remove Room", self)
-        self.removeRoomAction.triggered.connect(self.removeRoom)
-        self.toolbar.addAction(self.removeRoomAction)
-
-        self.connectRoomsAction = QAction("Connect Rooms", self)
-        self.connectRoomsAction.triggered.connect(self.connectRooms)
-        self.toolbar.addAction(self.connectRoomsAction)
-
-        self.addObstacleAction = QAction("Add Obstacle", self)
-        self.addObstacleAction.triggered.connect(self.addObstacle)
-        self.toolbar.addAction(self.addObstacleAction)
-
-        self.removeObstacleAction = QAction("Remove Obstacle", self)
-        self.removeObstacleAction.triggered.connect(self.removeObstacle)
-        self.toolbar.addAction(self.removeObstacleAction)
-
-        self.addTrackAction = QAction("Add Track", self)
-        self.addTrackAction.triggered.connect(self.addTrack)
-        self.toolbar.addAction(self.addTrackAction)
-
-        self.removeTrackAction = QAction("Remove Track", self)
-        self.removeTrackAction.triggered.connect(self.removeTrack)
-        self.toolbar.addAction(self.removeTrackAction)
-
-    def setLYT(self, lyt: LYT):
-        self.lyt = lyt
-        self.update()
-
-    def addRoom(self):
-        if self.lyt:
-            new_room = Room("New Room", Vector3(0, 0, 0), Vector3(10, 10, 3))
-            self.lyt.rooms.append(new_room)
-            self.selected_room = new_room
-            self.lytUpdated.emit(self.lyt)
-
-    def removeRoom(self):
-        if self.lyt and self.selected_room:
-            self.lyt.rooms.remove(self.selected_room)
-            self.selected_room = None
-            self.lytUpdated.emit(self.lyt)
-
-    def connectRooms(self):
-        # Logic to connect selected rooms
-        pass
-
-    def addObstacle(self):
-        if self.lyt and self.selected_room:
-            new_obstacle = Obstacle("New Obstacle", Vector3(0, 0, 0))
-            self.lyt.obstacles.append(new_obstacle)
-            self.lytUpdated.emit(self.lyt)
-
-    def removeObstacle(self):
-        # Logic to remove selected obstacle
-        pass
-
-    def addTrack(self):
-        if self.lyt and self.selected_room:
-            new_track = Track("New Track", self.selected_room, self.selected_room)
-            self.lyt.tracks.append(new_track)
-            self.lytUpdated.emit(self.lyt)
-
-    def removeTrack(self):
-        # Logic to remove selected track
-        pass
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        if self.lyt:
-            # Logic to render the LYT
-            pass

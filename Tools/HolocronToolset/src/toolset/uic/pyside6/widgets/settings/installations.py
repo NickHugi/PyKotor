@@ -17,8 +17,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QFormLayout,
     QFrame, QHBoxLayout, QLabel, QLineEdit,
-    QListView, QPushButton, QSizePolicy, QVBoxLayout,
-    QWidget)
+    QPushButton, QSizePolicy, QVBoxLayout, QWidget)
+
+from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -29,7 +30,7 @@ class Ui_Form(object):
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        self.pathList = QListView(Form)
+        self.pathList = RobustListView(Form)
         self.pathList.setObjectName(u"pathList")
         self.pathList.setEditTriggers(QAbstractItemView.NoEditTriggers)
 

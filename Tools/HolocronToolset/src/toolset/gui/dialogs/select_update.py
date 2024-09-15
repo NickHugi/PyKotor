@@ -23,7 +23,7 @@ from qtpy.QtWidgets import QApplication, QCheckBox, QComboBox, QDialog, QFormLay
 from toolset.config import LOCAL_PROGRAM_INFO, remoteVersionNewer, toolset_tag_to_version, version_to_toolset_tag
 from toolset.gui.dialogs.asyncloader import ProgressDialog
 from utility.misc import ProcessorArchitecture
-from utility.system.process import terminate_child_processes
+from utility.system.app_process.shutdown import terminate_child_processes
 from utility.updater.github import GithubRelease
 from utility.updater.update import AppUpdate
 

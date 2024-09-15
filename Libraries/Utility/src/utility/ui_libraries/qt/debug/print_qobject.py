@@ -4,7 +4,9 @@ import inspect
 import os
 
 from functools import wraps
-from typing import Any, Callable, cast
+from typing import Any, Callable, Type, TypeVar, cast
+
+import qtpy
 
 from qtpy import QtCore
 from qtpy.QtCore import (
@@ -88,9 +90,7 @@ from qtpy.QtGui import (
     QQuaternion,
     QRadialGradient,
     QRawFont,
-    QRegExpValidator,
     QRegion,
-    QRegularExpressionValidator,
     QResizeEvent,
     QStaticText,
     QSyntaxHighlighter,
@@ -111,7 +111,6 @@ from qtpy.QtGui import (
     QTextObjectInterface,
     QTextOption,
     QTextTableFormat,
-    QTouchDevice,
     QTransform,
     QValidator,
     QVector2D,
@@ -164,6 +163,12 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+if qtpy.QT5:
+    from qtpy.QtGui import QRegExpValidator, QTouchDevice
+elif qtpy.QT6:
+    from qtpy.QtGui import QRegularExpressionValidator
+else:
+    raise ImportError(f"Unsupported Qt version: {qtpy.QT_API}")
 
 def repr_qt_enum(enum: QObject, members: dict[str, Any] | None = None) -> str:
     if members is None:
@@ -196,7 +201,7 @@ def format_qt_obj(arg: Any) -> str:  # noqa: PLR0911
         QToolBar: lambda x: f"QToolBar(windowTitle='{cast(QToolBar, x).windowTitle()}', orientation={cast(QToolBar, x).orientation()})",
         QMenu: lambda x: f"QMenu(title='{cast(QMenu, x).title()}', actions={len(cast(QMenu, x).actions())})",
         Qt.ToolBarArea: lambda x: f"ToolBarArea({repr_qt_enum(x)})",
-        Qt.ToolBarAreas: lambda x: f"ToolBarAreas({repr_qt_enum(x, {'Left': Qt.ToolBarArea.LeftToolBarArea, 'Right': Qt.ToolBarArea.RightToolBarArea, 'Top': Qt.ToolBarArea.TopToolBarArea, 'Bottom': Qt.ToolBarArea.BottomToolBarArea})})",  # noqa: E501
+        **({Qt.ToolBarAreas: lambda x: f"ToolBarAreas({repr_qt_enum(x, {'Left': Qt.ToolBarArea.LeftToolBarArea, 'Right': Qt.ToolBarArea.RightToolBarArea, 'Top': Qt.ToolBarArea.TopToolBarArea, 'Bottom': Qt.ToolBarArea.BottomToolBarArea})})"} if qtpy.QT5 else {}),
         # Widgets
         QPushButton: lambda x: f"QPushButton(text='{cast(QPushButton, x).text()}')",
         QLineEdit: lambda x: f"QLineEdit(text='{cast(QLineEdit, x).text()}')",
@@ -288,7 +293,7 @@ def format_qt_obj(arg: Any) -> str:  # noqa: PLR0911
         QPagedPaintDevice: lambda x: f"QPagedPaintDevice(pageSize={cast(QPagedPaintDevice, x).pageSize()})",
         QPdfWriter: lambda x: repr(x),
         QTextItem: lambda x: f"QTextItem(renderFlags={cast(QTextItem, x).renderFlags()})",
-        QTouchDevice: lambda x: f"QTouchDevice(name='{cast(QTouchDevice, x).name()}', type={cast(QTouchDevice, x).type()})",
+        **({QTouchDevice: lambda x: f"QTouchDevice(name='{cast(QTouchDevice, x).name()}', type={cast(QTouchDevice, x).type()})"} if qtpy.QT5 else {}),
         QRawFont: lambda x: f"QRawFont(familyName='{cast(QRawFont, x).familyName()}', pixelSize={cast(QRawFont, x).pixelSize()})",
         # Base classes (moved towards the bottom)
         QWidget: lambda x: f"QWidget(type={cast(QWidget, x).__class__.__name__})",
@@ -304,8 +309,8 @@ def format_qt_obj(arg: Any) -> str:  # noqa: PLR0911
         QValidator: lambda x: f"QValidator(parent={cast(QValidator, x).parent()})",
         QIntValidator: lambda x: f"QIntValidator(bottom={cast(QIntValidator, x).bottom()}, top={cast(QIntValidator, x).top()})",
         QDoubleValidator: lambda x: f"QDoubleValidator(bottom={cast(QDoubleValidator, x).bottom()}, top={cast(QDoubleValidator, x).top()}, decimals={cast(QDoubleValidator, x).decimals()})",  # noqa: E501
-        QRegExpValidator: lambda x: f"QRegExpValidator(regExp={cast(QRegExpValidator, x).regExp().pattern()})",
-        QRegularExpressionValidator: lambda x: f"QRegularExpressionValidator(regularExpression={cast(QRegularExpressionValidator, x).regularExpression().pattern()})",
+        **({QRegExpValidator: lambda x: f"QRegExpValidator(regExp={cast(QRegExpValidator, x).regExp().pattern()})"} if qtpy.QT5 else {}),
+        **({QRegularExpressionValidator: lambda x: f"QRegularExpressionValidator(regularExpression={cast(QRegularExpressionValidator, x).regularExpression().pattern()})"} if not qtpy.QT5 else {}),
         QSyntaxHighlighter: lambda x: f"QSyntaxHighlighter(parent={cast(QSyntaxHighlighter, x).document()})",
         QFileInfo: lambda x: f"{cast(QFileInfo, x).filePath()}(QFileInfo)",
         QModelIndex: lambda x: f"QModelIndex(row={cast(QModelIndex, x).row()}, column={cast(QModelIndex, x).column()})",
@@ -417,11 +422,13 @@ def get_qt_methods(cls: type) -> list[tuple[str, Callable[..., Any]]]:
 
     return methods
 
-def print_qt_class_calls(exclude_funcs: list[str] | None = None):  # noqa: ANN201
+
+T = TypeVar("T")
+def print_qt_class_calls(exclude_funcs: list[str] | None = None) -> Callable[[type[T]], type[T]]:  # noqa: ANN201
     if exclude_funcs is None:
         exclude_funcs = []
 
-    def decorator(cls: type):  # noqa: ANN202
+    def decorator(cls: type[T]) -> type[T]:  # noqa: ANN202
         # Create a new class that inherits from the original class
         class Wrapper(cls):
             pass
@@ -432,6 +439,6 @@ def print_qt_class_calls(exclude_funcs: list[str] | None = None):  # noqa: ANN20
             if name not in exclude_funcs and not (name.startswith("__") and name != "__repr__"):
                 setattr(Wrapper, name, print_qt_func_call(method))
 
-        return Wrapper
+        return cast(Type[T], Wrapper)
 
     return decorator

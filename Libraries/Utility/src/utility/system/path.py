@@ -506,9 +506,10 @@ class PureWindowsPath(PurePath, pathlib.PureWindowsPath):  # type: ignore[misc]
 
 class Path(PurePath, pathlib.Path):  # type: ignore[misc]
     def __new__(cls, *args, **kwargs) -> Self:
+        os_specific_cls: type[PurePath] = WindowsPath if os.name == "nt" else PosixPath
         if cls is Path:
-            cls = WindowsPath if os.name == "nt" else PosixPath
-        return super().__new__(cls, *args, **kwargs)  # pyright: ignore[reportReturnType]
+            os_specific_cls = WindowsPath if os.name == "nt" else PosixPath
+        return super().__new__(os_specific_cls, *args, **kwargs)  # pyright: ignore[reportArgumentType, reportReturnType]
 
     def __init__(self, *args, **kwargs):
         self._last_stat_result: os.stat_result | None = None

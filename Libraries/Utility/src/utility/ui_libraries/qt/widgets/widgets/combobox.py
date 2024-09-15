@@ -5,7 +5,6 @@ import sys
 from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 from qtpy.QtCore import (
-    QAbstractItemModel,
     QRect,
     QSize,
     QSortFilterProxyModel,
@@ -33,6 +32,7 @@ from qtpy.QtWidgets import (
 
 if TYPE_CHECKING:
     from qtpy.QtCore import (
+        QAbstractItemModel,
         QModelIndex,
         QObject,
     )

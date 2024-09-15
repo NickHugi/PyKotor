@@ -17,20 +17,20 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QComboBox, QDockWidget, QHBoxLayout,
-    QHeaderView, QLineEdit, QListWidget, QListWidgetItem,
-    QMainWindow, QMenu, QMenuBar, QPlainTextEdit,
-    QProgressBar, QPushButton, QSizePolicy, QSpacerItem,
-    QStatusBar, QTabWidget, QTableWidget, QTableWidgetItem,
-    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
+    QHeaderView, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QMainWindow, QMenu, QMenuBar,
+    QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy,
+    QSpacerItem, QSplitter, QStackedWidget, QStatusBar,
+    QTabWidget, QToolBar, QTreeView, QTreeWidget,
+    QTreeWidgetItem, QVBoxLayout, QWidget)
 
-from toolset.gui.common.widgets.code_editor import CodeEditor
-from utility.ui_libraries.qt.widgets.itemviews.tree import RobustTreeView
+from toolset.gui.common.widgets.code_editor import NSSCodeEditor
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1180, 690)
+        MainWindow.resize(1280, 720)
         self.actionNew = QAction(MainWindow)
         self.actionNew.setObjectName(u"actionNew")
         self.actionOpen = QAction(MainWindow)
@@ -142,15 +142,22 @@ class Ui_MainWindow(object):
         self.actionTSL.setObjectName(u"actionTSL")
         self.actionTSL.setCheckable(True)
         self.actionTSL.setChecked(True)
+        self.actionDownloadVanillaSource = QAction(MainWindow)
+        self.actionDownloadVanillaSource.setObjectName(u"actionDownloadVanillaSource")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.vboxlytCentralWidget = QVBoxLayout(self.centralwidget)
-        self.vboxlytCentralWidget.setObjectName(u"vboxlytCentralWidget")
+        self.verticalLayout = QVBoxLayout(self.centralwidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
         self.middleTopHorizLyt = QHBoxLayout()
         self.middleTopHorizLyt.setObjectName(u"middleTopHorizLyt")
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.horizontalSpacer = QSpacerItem(320, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.middleTopHorizLyt.addItem(self.horizontalSpacer)
+
+        self.labelGameSelector = QLabel(self.centralwidget)
+        self.labelGameSelector.setObjectName(u"labelGameSelector")
+
+        self.middleTopHorizLyt.addWidget(self.labelGameSelector, 0, Qt.AlignmentFlag.AlignHCenter)
 
         self.gameSelector = QComboBox(self.centralwidget)
         self.gameSelector.addItem("")
@@ -164,196 +171,155 @@ class Ui_MainWindow(object):
 
         self.middleTopHorizLyt.addWidget(self.gameSelector)
 
+        self.middleTopHorizLyt.setStretch(1, 1)
+        self.middleTopHorizLyt.setStretch(2, 1)
 
-        self.vboxlytCentralWidget.addLayout(self.middleTopHorizLyt)
+        self.verticalLayout.addLayout(self.middleTopHorizLyt)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.searchBar = QLineEdit(self.centralwidget)
+        self.searchBar.setObjectName(u"searchBar")
 
-        self.vboxlytCentralWidget.addItem(self.verticalSpacer)
+        self.verticalLayout.addWidget(self.searchBar)
 
-        self.editorTabs = QTabWidget(self.centralwidget)
-        self.editorTabs.setObjectName(u"editorTabs")
+        self.mainSplitter = QSplitter(self.centralwidget)
+        self.mainSplitter.setObjectName(u"mainSplitter")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.editorTabs.sizePolicy().hasHeightForWidth())
-        self.editorTabs.setSizePolicy(sizePolicy1)
-        font = QFont()
-        font.setStyleStrategy(QFont.NoAntialias)
-        self.editorTabs.setFont(font)
+        sizePolicy1.setHeightForWidth(self.mainSplitter.sizePolicy().hasHeightForWidth())
+        self.mainSplitter.setSizePolicy(sizePolicy1)
+        self.mainSplitter.setOrientation(Qt.Horizontal)
+        self.leftPanel = QWidget(self.mainSplitter)
+        self.leftPanel.setObjectName(u"leftPanel")
+        self.leftPanelLayout = QVBoxLayout(self.leftPanel)
+        self.leftPanelLayout.setObjectName(u"leftPanelLayout")
+        self.leftPanelLayout.setContentsMargins(0, 0, 0, 0)
+        self.fileExplorerTabs = QTabWidget(self.leftPanel)
+        self.fileExplorerTabs.setObjectName(u"fileExplorerTabs")
+        self.fileExplorerTabs.setTabPosition(QTabWidget.North)
+        self.fileExplorerTab = QWidget()
+        self.fileExplorerTab.setObjectName(u"fileExplorerTab")
+        self.fileExplorerLayout = QVBoxLayout(self.fileExplorerTab)
+        self.fileExplorerLayout.setObjectName(u"fileExplorerLayout")
+        self.fileExplorerPath = QLineEdit(self.fileExplorerTab)
+        self.fileExplorerPath.setObjectName(u"fileExplorerPath")
+
+        self.fileExplorerLayout.addWidget(self.fileExplorerPath)
+
+        self.fileExplorerTree = QTreeView(self.fileExplorerTab)
+        self.fileExplorerTree.setObjectName(u"fileExplorerTree")
+
+        self.fileExplorerLayout.addWidget(self.fileExplorerTree)
+
+        self.fileExplorerTabs.addTab(self.fileExplorerTab, "")
+
+        self.leftPanelLayout.addWidget(self.fileExplorerTabs)
+
+        self.mainSplitter.addWidget(self.leftPanel)
+        self.rightSplitter = QSplitter(self.mainSplitter)
+        self.rightSplitter.setObjectName(u"rightSplitter")
+        self.rightSplitter.setOrientation(Qt.Vertical)
+        self.editorWidget = QWidget(self.rightSplitter)
+        self.editorWidget.setObjectName(u"editorWidget")
+        self.editorLayout = QVBoxLayout(self.editorWidget)
+        self.editorLayout.setObjectName(u"editorLayout")
+        self.editorLayout.setContentsMargins(0, 0, 0, 0)
+        self.editorStack = QStackedWidget(self.editorWidget)
+        self.editorStack.setObjectName(u"editorStack")
+        self.nativeEditor = NSSCodeEditor()
+        self.nativeEditor.setObjectName(u"nativeEditor")
+        self.editorStack.addWidget(self.nativeEditor)
+        self.webEditor = WebViewEditor()
+        self.webEditor.setObjectName(u"webEditor")
+        self.editorStack.addWidget(self.webEditor)
+
+        self.editorLayout.addWidget(self.editorStack)
+
+        self.toggleEditorButton = QPushButton(self.editorWidget)
+        self.toggleEditorButton.setObjectName(u"toggleEditorButton")
+
+        self.editorLayout.addWidget(self.toggleEditorButton)
+
+        self.rightSplitter.addWidget(self.editorWidget)
+        self.editorTabsWidget = QWidget(self.rightSplitter)
+        self.editorTabsWidget.setObjectName(u"editorTabsWidget")
+        self.editorTabsLayout = QVBoxLayout(self.editorTabsWidget)
+        self.editorTabsLayout.setObjectName(u"editorTabsLayout")
+        self.editorTabsLayout.setContentsMargins(0, 0, 0, 0)
+        self.editorTabs = QTabWidget(self.editorTabsWidget)
+        self.editorTabs.setObjectName(u"editorTabs")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.editorTabs.sizePolicy().hasHeightForWidth())
+        self.editorTabs.setSizePolicy(sizePolicy2)
         self.editorTabs.setAcceptDrops(True)
         self.editorTabs.setTabsClosable(True)
         self.editorTabs.setMovable(True)
-        self.tab = QWidget()
-        self.tab.setObjectName(u"tab")
-        self.verticalLayout_6 = QVBoxLayout(self.tab)
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-        self.searchBar = QLineEdit(self.tab)
-        self.searchBar.setObjectName(u"searchBar")
 
-        self.verticalLayout_6.addWidget(self.searchBar)
+        self.editorTabsLayout.addWidget(self.editorTabs)
 
-        self.codeEdit = CodeEditor(self.tab)
-        self.codeEdit.setObjectName(u"codeEdit")
+        self.searchReplaceWidget = QWidget(self.editorTabsWidget)
+        self.searchReplaceWidget.setObjectName(u"searchReplaceWidget")
+        self.searchReplaceLayout = QHBoxLayout(self.searchReplaceWidget)
+        self.searchReplaceLayout.setObjectName(u"searchReplaceLayout")
+        self.searchLineEdit = QLineEdit(self.searchReplaceWidget)
+        self.searchLineEdit.setObjectName(u"searchLineEdit")
 
-        self.verticalLayout_6.addWidget(self.codeEdit)
+        self.searchReplaceLayout.addWidget(self.searchLineEdit)
 
-        self.editorTabs.addTab(self.tab, "")
+        self.replaceLineEdit = QLineEdit(self.searchReplaceWidget)
+        self.replaceLineEdit.setObjectName(u"replaceLineEdit")
 
-        self.vboxlytCentralWidget.addWidget(self.editorTabs)
+        self.searchReplaceLayout.addWidget(self.replaceLineEdit)
 
-        self.panelTabs = QTabWidget(self.centralwidget)
-        self.panelTabs.setObjectName(u"panelTabs")
-        font1 = QFont()
-        font1.setFamilies([u"Segoe UI"])
-        font1.setPointSize(10)
-        self.panelTabs.setFont(font1)
-        self.panelTabs.setMovable(True)
-        self.panelTabs.setTabBarAutoHide(True)
+
+        self.editorTabsLayout.addWidget(self.searchReplaceWidget)
+
+        self.rightSplitter.addWidget(self.editorTabsWidget)
+        self.bottomTabs = QTabWidget(self.rightSplitter)
+        self.bottomTabs.setObjectName(u"bottomTabs")
+        self.bottomTabs.setTabPosition(QTabWidget.South)
         self.outputTab = QWidget()
         self.outputTab.setObjectName(u"outputTab")
-        self.vertLytPanelTabs = QVBoxLayout(self.outputTab)
-        self.vertLytPanelTabs.setObjectName(u"vertLytPanelTabs")
+        self.outputLayout = QVBoxLayout(self.outputTab)
+        self.outputLayout.setObjectName(u"outputLayout")
         self.outputEdit = QPlainTextEdit(self.outputTab)
         self.outputEdit.setObjectName(u"outputEdit")
-        font2 = QFont()
-        font2.setFamilies([u"Lucida Console"])
-        font2.setPointSize(10)
-        self.outputEdit.setFont(font2)
-        self.outputEdit.viewport().setProperty("cursor", QCursor(Qt.IBeamCursor))
-        self.outputEdit.setTabChangesFocus(True)
         self.outputEdit.setReadOnly(True)
 
-        self.vertLytPanelTabs.addWidget(self.outputEdit)
+        self.outputLayout.addWidget(self.outputEdit)
 
-        self.panelTabs.addTab(self.outputTab, "")
-        self.terminalTab = QWidget()
-        self.terminalTab.setObjectName(u"terminalTab")
-        self.verticalLayout_13 = QVBoxLayout(self.terminalTab)
-        self.verticalLayout_13.setObjectName(u"verticalLayout_13")
-        self.terminalWidget = QWidget(self.terminalTab)
-        self.terminalWidget.setObjectName(u"terminalWidget")
-        self.terminalWidget.setMinimumSize(QSize(0, 100))
+        self.bottomTabs.addTab(self.outputTab, "")
+        self.problemsTab = QWidget()
+        self.problemsTab.setObjectName(u"problemsTab")
+        self.problemsLayout = QVBoxLayout(self.problemsTab)
+        self.problemsLayout.setObjectName(u"problemsLayout")
+        self.problemsTree = QTreeWidget(self.problemsTab)
+        self.problemsTree.setObjectName(u"problemsTree")
 
-        self.verticalLayout_13.addWidget(self.terminalWidget)
+        self.problemsLayout.addWidget(self.problemsTree)
 
-        self.panelTabs.addTab(self.terminalTab, "")
-        self.debugTab = QWidget()
-        self.debugTab.setObjectName(u"debugTab")
-        self.verticalLayout_12 = QVBoxLayout(self.debugTab)
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
-        self.debugTable = QTableWidget(self.debugTab)
-        if (self.debugTable.columnCount() < 3):
-            self.debugTable.setColumnCount(3)
-        __qtablewidgetitem = QTableWidgetItem()
-        self.debugTable.setHorizontalHeaderItem(0, __qtablewidgetitem)
-        __qtablewidgetitem1 = QTableWidgetItem()
-        self.debugTable.setHorizontalHeaderItem(1, __qtablewidgetitem1)
-        __qtablewidgetitem2 = QTableWidgetItem()
-        self.debugTable.setHorizontalHeaderItem(2, __qtablewidgetitem2)
-        self.debugTable.setObjectName(u"debugTable")
+        self.bottomTabs.addTab(self.problemsTab, "")
+        self.rightSplitter.addWidget(self.bottomTabs)
+        self.mainSplitter.addWidget(self.rightSplitter)
 
-        self.verticalLayout_12.addWidget(self.debugTable)
-
-        self.panelTabs.addTab(self.debugTab, "")
-        self.findResultsTab = QWidget()
-        self.findResultsTab.setObjectName(u"findResultsTab")
-        self.verticalLayout_11 = QVBoxLayout(self.findResultsTab)
-        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
-        self.findResultsTree = QTreeWidget(self.findResultsTab)
-        self.findResultsTree.setObjectName(u"findResultsTree")
-
-        self.verticalLayout_11.addWidget(self.findResultsTree)
-
-        self.panelTabs.addTab(self.findResultsTab, "")
-        self.outlineTab = QWidget()
-        self.outlineTab.setObjectName(u"outlineTab")
-        self.verticalLayout_4 = QVBoxLayout(self.outlineTab)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.outlineView = QTreeWidget(self.outlineTab)
-        self.outlineView.setObjectName(u"outlineView")
-
-        self.verticalLayout_4.addWidget(self.outlineView)
-
-        self.panelTabs.addTab(self.outlineTab, "")
-        self.learnTab = QWidget()
-        self.learnTab.setObjectName(u"learnTab")
-        self.vertLytLearnTab = QVBoxLayout(self.learnTab)
-        self.vertLytLearnTab.setObjectName(u"vertLytLearnTab")
-        self.horizontalLayout_5 = QHBoxLayout()
-        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
-        self.functionSearchEdit = QLineEdit(self.learnTab)
-        self.functionSearchEdit.setObjectName(u"functionSearchEdit")
-
-        self.horizontalLayout_5.addWidget(self.functionSearchEdit)
-
-        self.constantSearchEdit = QLineEdit(self.learnTab)
-        self.constantSearchEdit.setObjectName(u"constantSearchEdit")
-
-        self.horizontalLayout_5.addWidget(self.constantSearchEdit)
-
-
-        self.vertLytLearnTab.addLayout(self.horizontalLayout_5)
-
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.functionList = QListWidget(self.learnTab)
-        self.functionList.setObjectName(u"functionList")
-
-        self.horizontalLayout.addWidget(self.functionList)
-
-        self.constantList = QListWidget(self.learnTab)
-        self.constantList.setObjectName(u"constantList")
-
-        self.horizontalLayout.addWidget(self.constantList)
-
-
-        self.vertLytLearnTab.addLayout(self.horizontalLayout)
-
-        self.panelTabs.addTab(self.learnTab, "")
-
-        self.vboxlytCentralWidget.addWidget(self.panelTabs)
+        self.verticalLayout.addWidget(self.mainSplitter)
 
         self.progressBar = QProgressBar(self.centralwidget)
         self.progressBar.setObjectName(u"progressBar")
         self.progressBar.setMaximum(1)
         self.progressBar.setTextVisible(False)
 
-        self.vboxlytCentralWidget.addWidget(self.progressBar)
+        self.verticalLayout.addWidget(self.progressBar)
 
-        self.vboxlytCentralWidget.setStretch(2, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        self.fileExplorerDock = QDockWidget(MainWindow)
-        self.fileExplorerDock.setObjectName(u"fileExplorerDock")
-        self.fileExplorerContents = QWidget()
-        self.fileExplorerContents.setObjectName(u"fileExplorerContents")
-        self.fileExplorerLayout = QVBoxLayout(self.fileExplorerContents)
-        self.fileExplorerLayout.setObjectName(u"fileExplorerLayout")
-        self.lineEdit = QLineEdit(self.fileExplorerContents)
-        self.lineEdit.setObjectName(u"lineEdit")
-
-        self.fileExplorerLayout.addWidget(self.lineEdit)
-
-        self.fileExplorerView = RobustTreeView(self.fileExplorerContents)
-        self.fileExplorerView.setObjectName(u"fileExplorerView")
-
-        self.fileExplorerLayout.addWidget(self.fileExplorerView)
-
-        self.fileSearchEdit = QLineEdit(self.fileExplorerContents)
-        self.fileSearchEdit.setObjectName(u"fileSearchEdit")
-
-        self.fileExplorerLayout.addWidget(self.fileSearchEdit)
-
-        self.refreshFileExplorerButton = QPushButton(self.fileExplorerContents)
-        self.refreshFileExplorerButton.setObjectName(u"refreshFileExplorerButton")
-
-        self.fileExplorerLayout.addWidget(self.refreshFileExplorerButton)
-
-        self.fileExplorerDock.setWidget(self.fileExplorerContents)
-        MainWindow.addDockWidget(Qt.LeftDockWidgetArea, self.fileExplorerDock)
+        self.toolBar = QToolBar(MainWindow)
+        self.toolBar.setObjectName(u"toolBar")
+        MainWindow.addToolBar(self.toolBar)
         self.bookmarksDock = QDockWidget(MainWindow)
         self.bookmarksDock.setObjectName(u"bookmarksDock")
         self.bookmarksDock.setAcceptDrops(True)
@@ -419,7 +385,7 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(Qt.RightDockWidgetArea, self.snippetsDock)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1180, 22))
+        self.menubar.setGeometry(QRect(0, 0, 1280, 21))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuEdit = QMenu(self.menubar)
@@ -428,8 +394,6 @@ class Ui_MainWindow(object):
         self.menuView.setObjectName(u"menuView")
         self.menuTools = QMenu(self.menubar)
         self.menuTools.setObjectName(u"menuTools")
-        self.menuDebug = QMenu(self.menubar)
-        self.menuDebug.setObjectName(u"menuDebug")
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setObjectName(u"menuHelp")
         MainWindow.setMenuBar(self.menubar)
@@ -438,7 +402,6 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
-        self.menubar.addAction(self.menuDebug.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)
@@ -452,6 +415,7 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionCompile)
         self.menuFile.addAction(self.actionRun)
         self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionDownloadVanillaSource)
         self.menuFile.addAction(self.actionPrint)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionExit)
@@ -486,14 +450,6 @@ class Ui_MainWindow(object):
         self.menuTools.addAction(self.actionFormat_Code)
         self.menuTools.addAction(self.actionAnalyze_Code)
         self.menuTools.addSeparator()
-        self.menuDebug.addAction(self.actionStart_Debugging)
-        self.menuDebug.addAction(self.actionStop_Debugging)
-        self.menuDebug.addAction(self.actionStep_Over)
-        self.menuDebug.addAction(self.actionStep_Into)
-        self.menuDebug.addAction(self.actionStep_Out)
-        self.menuDebug.addSeparator()
-        self.menuDebug.addAction(self.actionToggle_Breakpoint)
-        self.menuDebug.addAction(self.actionClear_All_Breakpoints)
         self.menuHelp.addAction(self.actionDocumentation)
         self.menuHelp.addAction(self.actionKeyboard_Shortcuts)
         self.menuHelp.addSeparator()
@@ -501,9 +457,6 @@ class Ui_MainWindow(object):
         self.menuHelp.addAction(self.actionAbout)
 
         self.retranslateUi(MainWindow)
-
-        self.panelTabs.setCurrentIndex(2)
-
 
         QMetaObject.connectSlotsByName(MainWindow)
     # setupUi
@@ -700,44 +653,31 @@ class Ui_MainWindow(object):
         self.actionAbout.setText(QCoreApplication.translate("MainWindow", u"About", None))
         self.actionK1.setText(QCoreApplication.translate("MainWindow", u"K1", None))
         self.actionTSL.setText(QCoreApplication.translate("MainWindow", u"TSL", None))
+        self.actionDownloadVanillaSource.setText(QCoreApplication.translate("MainWindow", u"Download from Vanilla Source Repo", None))
+#if QT_CONFIG(tooltip)
+        self.actionDownloadVanillaSource.setToolTip(QCoreApplication.translate("MainWindow", u"Download script from the vanilla source repository", None))
+#endif // QT_CONFIG(tooltip)
+        self.labelGameSelector.setText(QCoreApplication.translate("MainWindow", u"Choose a Game", None))
         self.gameSelector.setItemText(0, QCoreApplication.translate("MainWindow", u"K1", None))
         self.gameSelector.setItemText(1, QCoreApplication.translate("MainWindow", u"TSL", None))
 
 #if QT_CONFIG(tooltip)
-        self.gameSelector.setToolTip(QCoreApplication.translate("MainWindow", u"This determines what constants to use for your IDE and impacts the PyKotor compiler (if used)", None))
+        self.gameSelector.setToolTip(QCoreApplication.translate("MainWindow", u"This determines what constants to use for your IDE and\n"
+"                                        impacts the PyKotor compiler (if used)", None))
 #endif // QT_CONFIG(tooltip)
         self.gameSelector.setPlaceholderText("")
-#if QT_CONFIG(whatsthis)
-        self.editorTabs.setWhatsThis(QCoreApplication.translate("MainWindow", u"Main Code Area", None))
-#endif // QT_CONFIG(whatsthis)
         self.searchBar.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Search...", None))
-        self.editorTabs.setTabText(self.editorTabs.indexOf(self.tab), QCoreApplication.translate("MainWindow", u"Untitled", None))
-#if QT_CONFIG(whatsthis)
-        self.outputEdit.setWhatsThis(QCoreApplication.translate("MainWindow", u"Output Window for the NWScript Editor", None))
-#endif // QT_CONFIG(whatsthis)
-        self.outputEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Important errors and logs will appear here.", None))
-        self.panelTabs.setTabText(self.panelTabs.indexOf(self.outputTab), QCoreApplication.translate("MainWindow", u"Output", None))
-        self.panelTabs.setTabText(self.panelTabs.indexOf(self.terminalTab), QCoreApplication.translate("MainWindow", u"Terminal", None))
-        ___qtablewidgetitem = self.debugTable.horizontalHeaderItem(0)
-        ___qtablewidgetitem.setText(QCoreApplication.translate("MainWindow", u"Variable", None));
-        ___qtablewidgetitem1 = self.debugTable.horizontalHeaderItem(1)
-        ___qtablewidgetitem1.setText(QCoreApplication.translate("MainWindow", u"Value", None));
-        ___qtablewidgetitem2 = self.debugTable.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("MainWindow", u"Type", None));
-        self.panelTabs.setTabText(self.panelTabs.indexOf(self.debugTab), QCoreApplication.translate("MainWindow", u"Debug", None))
-        ___qtreewidgetitem = self.findResultsTree.headerItem()
-        ___qtreewidgetitem.setText(2, QCoreApplication.translate("MainWindow", u"Content", None));
-        ___qtreewidgetitem.setText(1, QCoreApplication.translate("MainWindow", u"Line", None));
-        ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", u"File", None));
-        self.panelTabs.setTabText(self.panelTabs.indexOf(self.findResultsTab), QCoreApplication.translate("MainWindow", u"Find Results", None))
-        self.panelTabs.setTabText(self.panelTabs.indexOf(self.outlineTab), QCoreApplication.translate("MainWindow", u"Outline", None))
-        self.functionSearchEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Search functions...", None))
-        self.constantSearchEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Search constants...", None))
-        self.panelTabs.setTabText(self.panelTabs.indexOf(self.learnTab), QCoreApplication.translate("MainWindow", u"Constants", None))
-        self.fileExplorerDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"File Explorer", None))
-        self.lineEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Address Bar", None))
-        self.fileSearchEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Search files...", None))
-        self.refreshFileExplorerButton.setText(QCoreApplication.translate("MainWindow", u"Refresh", None))
+        self.fileExplorerPath.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Path", None))
+        self.fileExplorerTabs.setTabText(self.fileExplorerTabs.indexOf(self.fileExplorerTab), QCoreApplication.translate("MainWindow", u"File Explorer", None))
+        self.toggleEditorButton.setText(QCoreApplication.translate("MainWindow", u"Toggle Web IDE", None))
+        self.searchLineEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Search...", None))
+        self.replaceLineEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"Replace...", None))
+        self.bottomTabs.setTabText(self.bottomTabs.indexOf(self.outputTab), QCoreApplication.translate("MainWindow", u"Output", None))
+        ___qtreewidgetitem = self.problemsTree.headerItem()
+        ___qtreewidgetitem.setText(2, QCoreApplication.translate("MainWindow", u"Line", None));
+        ___qtreewidgetitem.setText(1, QCoreApplication.translate("MainWindow", u"File", None));
+        ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", u"Description", None));
+        self.bottomTabs.setTabText(self.bottomTabs.indexOf(self.problemsTab), QCoreApplication.translate("MainWindow", u"Problems", None))
         self.bookmarksDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Bookmarks", None))
         ___qtreewidgetitem1 = self.bookmarkTree.headerItem()
         ___qtreewidgetitem1.setText(1, QCoreApplication.translate("MainWindow", u"Description", None));
@@ -753,7 +693,6 @@ class Ui_MainWindow(object):
         self.menuEdit.setTitle(QCoreApplication.translate("MainWindow", u"Edit", None))
         self.menuView.setTitle(QCoreApplication.translate("MainWindow", u"View", None))
         self.menuTools.setTitle(QCoreApplication.translate("MainWindow", u"Tools", None))
-        self.menuDebug.setTitle(QCoreApplication.translate("MainWindow", u"Debug", None))
         self.menuHelp.setTitle(QCoreApplication.translate("MainWindow", u"Help", None))
     # retranslateUi
 

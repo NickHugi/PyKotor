@@ -27,7 +27,6 @@ from qtpy.QtWidgets import (
     QShortcut,
     QSlider,
     QStyle,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -332,9 +331,8 @@ class Editor(QMainWindow):
         self._revert: bytes | None = None
         self._global_settings: GlobalSettings = GlobalSettings()
 
-        self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self.mediaPlayer)
+        #self.mediaPlayer: MediaPlayerWidget = MediaPlayerWidget(self)
+        #self.layout().addWidget(self.mediaPlayer)
         self.setWindowTitle(title)
         self._setupIcon(iconName)
 

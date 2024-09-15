@@ -11,8 +11,6 @@ from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtGui import QColor, QCursor, QIcon, QPixmap
 from qtpy.QtWidgets import QAction, QApplication, QHBoxLayout, QLabel, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QStatusBar, QTreeWidgetItem, QWidget
 
-from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
-
 if qtpy.API_NAME in ("PyQt5", "PySide2"):
     from qtpy.QtWidgets import QUndoStack
 elif qtpy.API_NAME in ("PyQt6", "PySide6"):

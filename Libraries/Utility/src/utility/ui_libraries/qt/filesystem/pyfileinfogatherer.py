@@ -1,74 +1,81 @@
 from __future__ import annotations
 
 import asyncio
+import multiprocessing
 import os
+import queue
 import sys
+
 from concurrent.futures import ProcessPoolExecutor
 from os import scandir
 from typing import Any
 
 from loggerplus import RobustLogger
 from qasync import QEventLoop, asyncSlot  # pyright: ignore[reportMissingTypeStubs]
-from qtpy.QtCore import QDir, QElapsedTimer, QFileInfo, QObject, QTimer, Signal  # pyright: ignore[reportPrivateImportUsage]
+from qtpy.QtCore import QDir, QElapsedTimer, QFileInfo, QFileSystemWatcher, QObject, QTimer, Signal  # pyright: ignore[reportPrivateImportUsage]
 from qtpy.QtWidgets import QApplication, QFileIconProvider
 
 from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
 
-# Add these imports
-import multiprocessing
+
+def create_watcher_in_child_process(
+    directories_changed_queue: multiprocessing.Queue[str | None],
+    files_changed_queue: multiprocessing.Queue[str | None],
+):
+    assert multiprocessing.current_process().name != "MainProcess", "This function must be called in a child process."
+    app = QApplication(sys.argv)
+    watcher = QFileSystemWatcher()
+    watcher.directoryChanged.connect(lambda path: directories_changed_queue.put(path))
+    watcher.fileChanged.connect(lambda path: files_changed_queue.put(path))
+    sys.exit(app.exec_())
 
 
-class AsyncFileSystemWatcher:
-    def __init__(self):
-        self._executor = ProcessPoolExecutor()
-        self._watched_files = set()
-        self._watched_directories = set()
+async def addPathsToWatcher(
+    paths: list[str],
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+):
+    if task_queue is None:
+        return
+    task_queue.put(("addPaths", paths))
+    result = await result_queue.get()
+    if result is None:
+        return
 
-    async def add_paths(self, paths: list[str]):
-        await asyncio.get_event_loop().run_in_executor(self._executor, self._add_paths, paths)
 
-    async def remove_paths(self, paths: list[str]):
-        await asyncio.get_event_loop().run_in_executor(self._executor, self._remove_paths, paths)
+async def removePathsFromWatcher(
+    paths: list[str],
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+):
+    if task_queue is None:
+        return
+    task_queue.put(("removePaths", paths))
+    result = await result_queue.get()
+    if result is None:
+        return
 
-    async def watched_files(self) -> list[str]:
-        return list(self._watched_files)
 
-    async def watched_directories(self) -> list[str]:
-        return list(self._watched_directories)
+async def watchedFiles(
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+) -> list[str]:
+    task_queue.put(("watchedFiles", []))
+    result = await result_queue.get()
+    if result is None:
+        return []
+    return result
 
-    def _add_paths(self, paths: list[str]):
-        for path in paths:
-            if os.path.isfile(path):
-                self._watched_files.add(path)
-            elif os.path.isdir(path):
-                self._watched_directories.add(path)
 
-    def _remove_paths(self, paths: list[str]):
-        for path in paths:
-            self._watched_files.discard(path)
-            self._watched_directories.discard(path)
-
-    async def start_watching(self, directories_changed_callback, files_changed_callback):
-        while True:
-            for directory in self._watched_directories:
-                if await self._directory_changed(directory):
-                    await directories_changed_callback(directory)
-            
-            for file in self._watched_files:
-                if await self._file_changed(file):
-                    await files_changed_callback(file)
-            
-            await asyncio.sleep(1)  # Adjust the sleep time as needed
-
-    async def _directory_changed(self, directory: str) -> bool:
-        # Implement directory change detection logic here
-        # This is a placeholder and should be replaced with actual logic
-        return False
-
-    async def _file_changed(self, file: str) -> bool:
-        # Implement file change detection logic here
-        # This is a placeholder and should be replaced with actual logic
-        return False
+async def watchedDirectories(
+    task_queue: multiprocessing.Queue[tuple[str, list[str]]],
+    result_queue: multiprocessing.Queue[Any],
+) -> list[str]:
+    task_queue.put(("watchedDirectories", []))
+    result = await result_queue.get()
+    if result is None:
+        return []
+    return result
 
 
 class PyFileInfoGatherer(QObject):
@@ -102,13 +109,16 @@ class PyFileInfoGatherer(QObject):
         self.max_files_before_updates: int = max_files_before_updates
         self.m_resolveSymlinks: bool = resolveSymlinks
 
-        self.m_watcher: AsyncFileSystemWatcher = AsyncFileSystemWatcher()
+        self.m_watcher: QFileSystemWatcher | None = None
         self.m_watching: bool = False
 
         self._paths: list[str] = []
         self._files: list[list[str]] = []
 
-        self.process_lock: asyncio.Lock = asyncio.Lock()
+        self.process_lock: asyncio.Lock = asyncio.Lock()  # multiprocessing.Lock()
+
+        self.directories_changed_queue: multiprocessing.Queue[str | None] = multiprocessing.Queue()
+        self.files_changed_queue: multiprocessing.Queue[str | None] = multiprocessing.Queue()
 
         self.m_iconProvider: QFileIconProvider = QFileIconProvider()
 
@@ -118,6 +128,12 @@ class PyFileInfoGatherer(QObject):
 
     def iconProvider(self) -> QFileIconProvider:
         return self.m_iconProvider
+
+    def event_loop(self):
+        app = QApplication(sys.argv)
+        loop = QEventLoop(app)
+        yield loop
+        loop.close()
 
     def start_event_loop(self):
         asyncio.set_event_loop(QEventLoop(QApplication.instance()))
@@ -129,20 +145,26 @@ class PyFileInfoGatherer(QObject):
             self.m_resolveSymlinks = enable
 
     async def run(self):
-        asyncio.create_task(self.m_watcher.start_watching(self.handle_directory_changed, self.handle_file_changed))
         while not self._abort.is_set():
             if not self._paths:
                 await asyncio.sleep(0.1)
                 continue
             currentPath = self._paths.pop(0)
             currentFiles = self._files.pop(0)
-            await self.getFileInfos(currentPath, currentFiles)
-
-    async def handle_directory_changed(self, path: str):
-        await self.list(path)
-
-    async def handle_file_changed(self, path: str):
-        await self.updateFile(path)
+            result = await self.getFileInfos(currentPath, currentFiles)
+            async with self.process_lock:
+                try:
+                    result = self.directories_changed_queue.get(block=False)
+                    if result is not None:
+                        await self.list(result)
+                except queue.Empty:  # noqa: S110
+                    ...
+                try:
+                    result = self.files_changed_queue.get(block=False)
+                    if result is not None:
+                        await self.updateFile(result)
+                except queue.Empty:  # noqa: S110
+                    ...
 
     @asyncSlot()
     async def driveAdded(self):
@@ -180,36 +202,61 @@ class PyFileInfoGatherer(QObject):
 
     @asyncSlot()
     async def watchedFiles(self) -> list[str]:
-        return await self.m_watcher.watched_files()
+        task_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        result = await watchedFiles(task_queue, result_queue)
+        return result
 
     @asyncSlot()
     async def watchedDirectories(self) -> list[str]:
-        return await self.m_watcher.watched_directories()
+        task_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        result = await watchedDirectories(task_queue, result_queue)
+        return result
+
+    @asyncSlot()
+    async def createWatcher(self):
+        asyncio.get_event_loop().run_in_executor(
+            self._executor,
+            create_watcher_in_child_process,
+            self.directories_changed_queue,
+            self.files_changed_queue,
+        )
 
     @asyncSlot()
     async def watchPaths(self, paths: list[str]):
         if not self.m_watching:
             print("watchPaths called for the first time, creating and setting up the watcher.")
+            await self.createWatcher()
             self.m_watching = True
         print(f"Adding paths to watcher: {paths}")
-        await self.m_watcher.add_paths(paths)
+        task_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        await addPathsToWatcher(paths, task_queue, result_queue)
 
     @asyncSlot()
     async def unwatchPaths(self, paths: list[str]):
         if self.m_watcher and paths:
             print(f"Removing paths from watcher: {paths}")
-            await self.m_watcher.remove_paths(paths)
+            task_queue = multiprocessing.Queue()
+            result_queue = multiprocessing.Queue()
+            await removePathsFromWatcher(paths, task_queue, result_queue)
 
     @asyncSlot()
     async def isWatching(self) -> bool:
-        return self.m_watching
+        result = False
+        result = self.m_watching
+        return result
 
     @asyncSlot()
     async def setWatching(self, v: bool):  # noqa: FBT001
         if v != self.m_watching:
             if not v and self.m_watcher:
-                await self.m_watcher.remove_paths(await self.watchedFiles())
-                self.m_watcher = AsyncFileSystemWatcher()
+                task_queue = multiprocessing.Queue()
+                result_queue = multiprocessing.Queue()
+                await removePathsFromWatcher(await self.watchedFiles(), task_queue, result_queue)
+                del self.m_watcher
+                self.m_watcher = None
             self.m_watching = v
 
     @asyncSlot()

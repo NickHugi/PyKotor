@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from qtpy.QtWidgets import QColumnView
 
-from utility.ui_libraries.qt.widgets.itemviews.baseview import RobustAbstractItemView
+from utility.ui_libraries.qt.widgets.itemviews.abstractview import RobustAbstractItemView
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QMenu, QWidget
@@ -15,8 +15,8 @@ class RobustColumnView(RobustAbstractItemView, QColumnView):
         QColumnView.__init__(self, parent)
         RobustAbstractItemView.__init__(self, parent)
 
-    def build_context_menu(self) -> QMenu:
-        menu = super().build_context_menu()
+    def build_context_menu(self, parent: QWidget | None = None) -> QMenu:
+        menu = super().build_context_menu(parent)
 
         column_menu = menu.addMenu("ColumnView")
 

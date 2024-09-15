@@ -124,7 +124,7 @@
    <customwidget>
      <class>RobustTreeView</class>
      <extends>QTreeView</extends>
-    <header location="global">utility.ui_libraries.qt.widgets.itemviews.tree</header>
+    <header location="global">utility.ui_libraries.qt.widgets.itemviews.treeview</header>
    </customwidget>
 </customwidgets>
 <resources/>
