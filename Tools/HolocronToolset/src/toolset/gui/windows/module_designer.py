@@ -179,6 +179,9 @@ class ModuleDesigner(QMainWindow):
         self.lyt_editor.lytUpdated.connect(self.onLYTUpdated)
         self.walkmesh_editor.walkmeshUpdated.connect(self.onWalkmeshUpdated)
 
+        # Initialize LYT editor
+        self.initializeLYTEditor()
+
     def showEvent(self, a0: QShowEvent):
         if self.ui.mainRenderer._scene is None:  # noqa: SLF001
             return  # Don't show the window if the scene isn't ready, otherwise the gl context stuff will start prematurely.
@@ -1249,3 +1252,36 @@ class ModuleDesigner(QMainWindow):
         for key, action in actions:
             if key.satisfied(buttons, keys):
                 action()
+    def initializeLYTEditor(self):
+        if self._module:
+            lyt_resource = self._module.layout()
+            if lyt_resource:
+                lyt = lyt_resource.resource()
+                if lyt:
+                    self.lyt_editor.setLYT(lyt)
+                else:
+                    self.lyt_editor.setLYT(LYT())  # Create a new empty LYT if the resource is empty
+            else:
+                self.lyt_editor.setLYT(LYT())  # Create a new empty LYT if there's no LYT resource
+        else:
+            self.lyt_editor.setLYT(LYT())  # Create a new empty LYT if there's no module loaded
+
+    def onLYTUpdated(self, lyt: LYT):
+        if self._module:
+            lyt_resource = self._module.layout()
+            if lyt_resource:
+                lyt_resource.save(lyt)
+            else:
+                # Create a new LYT resource if it doesn't exist
+                self._module.add_resource(lyt, "module", ResourceType.LYT)
+        self.ui.mainRenderer.scene.setLYT(lyt)
+
+    def onWalkmeshUpdated(self, walkmesh: BWM):
+        if self._module:
+            wok_resource = self._module.walkmesh()
+            if wok_resource:
+                wok_resource.save(walkmesh)
+            else:
+                # Create a new WOK resource if it doesn't exist
+                self._module.add_resource(walkmesh, "module", ResourceType.WOK)
+        self.ui.mainRenderer.scene.setWalkmesh(walkmesh)
