@@ -4,11 +4,7 @@ import os
 import pathlib
 import sys
 
-from ctypes import c_bool
-from os import scandir
 from typing import TYPE_CHECKING
-
-from loggerplus import RobustLogger
 
 from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
 
@@ -85,7 +81,7 @@ class PyFileInfoGatherer(QThread):
         self.m_watcher = None
         self.m_iconProvider = QFileIconProvider()
         self.defaultProvider = QFileIconProvider()
-        self.m_resolveSymlinks = True if os.name == 'nt' else False
+        self.m_resolveSymlinks = True if os.name == "nt" else False
         self.m_watching = True
 
         self.start(QThread.LowPriority)
@@ -97,7 +93,7 @@ class PyFileInfoGatherer(QThread):
         self.wait()
 
     def setResolveSymlinks(self, enable):
-        if os.name == 'nt':
+        if os.name == "nt":
             self.m_resolveSymlinks = enable
 
     def run(self):

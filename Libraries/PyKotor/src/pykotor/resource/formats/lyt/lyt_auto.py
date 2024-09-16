@@ -80,7 +80,7 @@ def bytes_lyt(
 
     Raises:
     ------
-       ValueError: If the specified format was unsupported.
+        ValueError: If the specified format was unsupported.
 
     Returns:
     -------

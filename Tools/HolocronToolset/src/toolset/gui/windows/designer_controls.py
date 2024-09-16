@@ -30,7 +30,7 @@ from toolset.utils.misc import BUTTON_TO_INT
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance
     from toolset.gui.editors.git import _SpawnMode
-    from toolset.gui.widgets.renderer.module import ModuleRenderer
+    from ui.module import ModuleRenderer
     from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
     from toolset.gui.windows.module_designer import ModuleDesigner
 

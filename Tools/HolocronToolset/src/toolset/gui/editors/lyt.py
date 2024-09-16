@@ -4,12 +4,9 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy.QtCore import Qt, QPointF, QSize
+from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QTransform
-from qtpy.QtWidgets import (
-    QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene,
-    QMessageBox, QGraphicsItem, QFileDialog, QListView
-)
+from qtpy.QtWidgets import QFileDialog, QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene, QListView, QMessageBox
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -17,11 +14,11 @@ from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom,
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.lyt_editor import LYTEditorSettings
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 class LYTEditor(Editor):

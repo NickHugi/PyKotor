@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator, List, Tuple
-from collections import deque
+from typing import TYPE_CHECKING, Any, Generator
 
+from pykotor.common.geometry import Vector3
 from pykotor.common.misc import ResRef
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from pykotor.common.geometry import Vector3, Vector4
+    from pykotor.common.geometry import Vector4
 
 
 class LYT:
@@ -19,10 +19,10 @@ class LYT:
     BINARY_TYPE = ResourceType.LYT
 
     def __init__(self):
-        self.rooms: List[LYTRoom] = []
-        self.tracks: List[LYTTrack] = []
-        self.obstacles: List[LYTObstacle] = []
-        self.doorhooks: List[LYTDoorHook] = []
+        self.rooms: list[LYTRoom] = []
+        self.tracks: list[LYTTrack] = []
+        self.obstacles: list[LYTObstacle] = []
+        self.doorhooks: list[LYTDoorHook] = []
         self.filedependancy: str = ""
 
     def iter_resource_identifiers(self) -> Generator[ResourceIdentifier, Any, None]:
@@ -83,9 +83,9 @@ class LYT:
         """Find the nearest room to a given position."""
         if not self.rooms:
             return None
-        return min(self.rooms, key=lambda room: (room.position - position).length())
+        return min(self.rooms, key=lambda room: (room.position - position).magnitude())
 
-    def validate(self) -> Tuple[bool, List[str]]:
+    def validate(self) -> tuple[bool, list[str]]:
         """Validate the LYT for common issues."""
         issues = []
 
@@ -178,8 +178,7 @@ class LYTRoom:
     def __init__(self, model: str, position: Vector3, size: Vector3):
         self.model: str = model
         self.position: Vector3 = position
-        self.size: Vector3 = size
-        self.connections: List[LYTRoom] = []
+        self.connections: list[LYTRoom] = []
 
     def __eq__(self, other: LYTRoom) -> bool:
         if self is other:
@@ -201,25 +200,25 @@ class LYTRoom:
         if room in self.connections:
             self.connections.remove(room)
 
-    def overlaps(self, other: LYTRoom) -> bool:
+    def overlaps(self, other: LYTRoom) -> bool:  # FIXME: the room alone does not understand its size.
         """Check if this room overlaps with another room."""
         return (abs(self.position.x - other.position.x) * 2 < (self.size.x + other.size.x) and
                 abs(self.position.y - other.position.y) * 2 < (self.size.y + other.size.y) and
                 abs(self.position.z - other.position.z) * 2 < (self.size.z + other.size.z))
 
-    def contains_point(self, point: Vector3) -> bool:
+    def contains_point(self, point: Vector3) -> bool:  # FIXME: the room alone does not understand its size.
         """Check if a point is inside this room."""
         half_size = self.size * 0.5
         return (abs(point.x - self.position.x) <= half_size.x and
                 abs(point.y - self.position.y) <= half_size.y and
                 abs(point.z - self.position.z) <= half_size.z)
 
-    def can_merge(self, other: LYTRoom) -> bool:
+    def can_merge(self, other: LYTRoom) -> bool:  # FIXME: the room alone does not understand its size.
         """Check if this room can be merged with another room."""
-        distance = (self.position - other.position).length()
-        return distance < (self.size + other.size).length() * 0.5
+        distance = (self.position - other.position).magnitude()
+        return distance < (self.size + other.size).magnitude() * 0.5
 
-    def merge(self, other: LYTRoom) -> LYTRoom:
+    def merge(self, other: LYTRoom) -> LYTRoom:  # FIXME: the room alone does not understand its size.
         """Merge this room with another room."""
         new_position = (self.position + other.position) * 0.5
         new_size = Vector3(
@@ -261,6 +260,13 @@ class LYTObstacle:
             return NotImplemented
         return self.model.lower() == other.model.lower() and self.position == other.position
 
+    def __hash__(self) -> int:
+        return hash((self.model, self.position))
+
+    def get_size(self) -> Vector3:
+        """Get the size of the obstacle."""
+        # FIXME: unimplemented??
+        return Vector3(0, 0, 0)
 
 class LYTDoorHook:
     """A door hook."""
@@ -277,3 +283,6 @@ class LYTDoorHook:
         if not isinstance(other, LYTDoorHook):
             return NotImplemented
         return self.room == other.room and self.door == other.door and self.position == other.position and self.orientation == other.orientation
+
+    def __hash__(self) -> int:
+        return hash((self.room, self.door, self.position, self.orientation))

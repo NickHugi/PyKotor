@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from typing import List, Tuple
+from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector3, Vector4
-from pykotor.resource.formats.lyt.lyt_data import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
+from pykotor.common.geometry import Vector3
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector4
 
 
 class LYTUtils:
@@ -32,7 +35,7 @@ class LYTUtils:
         room2.remove_connection(room1)
 
     @staticmethod
-    def find_path(start_room: LYTRoom, end_room: LYTRoom) -> List[LYTRoom]:
+    def find_path(start_room: LYTRoom, end_room: LYTRoom) -> list[LYTRoom]:
         """Find a path between two rooms using breadth-first search."""
         queue = [(start_room, [start_room])]
         visited = set()
@@ -52,7 +55,7 @@ class LYTUtils:
         return []  # No path found
 
     @staticmethod
-    def validate_lyt(lyt: LYT) -> Tuple[bool, List[str]]:
+    def validate_lyt(lyt: LYT) -> tuple[bool, list[str]]:
         """Validate the LYT for common issues."""
         issues = []
 

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
+    <width>1044</width>
     <height>800</height>
    </rect>
   </property>
@@ -19,12 +19,17 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="tab3DView">
-       <attribute name="title">
+     <widget class="QToolBox" name="toolBox">
+      <widget class="QWidget" name="view_3d_page">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>618</width>
+         <height>610</height>
+        </rect>
+       </property>
+       <attribute name="label">
         <string>3D View</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -33,19 +38,35 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab2DView">
-       <attribute name="title">
+      <widget class="QWidget" name="view_2d_page">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>618</width>
+         <height>610</height>
+        </rect>
+       </property>
+       <attribute name="label">
         <string>2D View</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="ModuleRenderer2D" name="renderer2D" native="true"/>
+         <widget class="WalkmeshRenderer" name="renderer2D" native="true"/>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tabLYTEditor">
-       <attribute name="title">
-        <string>LYT Editor</string>
+      <widget class="QWidget" name="view_lyt_page">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>618</width>
+         <height>610</height>
+        </rect>
+       </property>
+       <attribute name="label">
+        <string>LYT View</string>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
@@ -59,11 +80,19 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tabWalkmeshEditor">
-       <attribute name="title">
+      <widget class="QWidget" name="view_walkmesh_editor">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>618</width>
+         <height>610</height>
+        </rect>
+       </property>
+       <attribute name="label">
         <string>Walkmesh Editor</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
+       <layout class="QVBoxLayout" name="toolbox_vboxlayout">
         <item>
          <widget class="WalkmeshEditor" name="walkmeshEditor" native="true"/>
         </item>
@@ -78,7 +107,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1200</width>
+     <width>1044</width>
      <height>21</height>
     </rect>
    </property>
@@ -156,6 +185,40 @@
    <addaction name="separator"/>
    <addaction name="actionImportTexture"/>
    <addaction name="actionGenerateWalkmesh"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget">
+   <property name="floating">
+    <bool>true</bool>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="RobustTreeView" name="treeView_2"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_2">
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QVBoxLayout" name="verticalLayout_5">
+     <item>
+      <widget class="QTreeView" name="treeView">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -301,9 +364,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ModuleRenderer2D</class>
+   <class>WalkmeshRenderer</class>
    <extends>QWidget</extends>
-   <header>toolset.gui.widgets.renderer.module_2d</header>
+   <header>toolset.gui.widgets.renderer.walkmesh</header>
    <container>1</container>
   </customwidget>
   <customwidget>
@@ -323,6 +386,11 @@
    <extends>QWidget</extends>
    <header>toolset.gui.widgets.renderer.walkmesh_editor</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RobustTreeView</class>
+   <extends>QTreeView</extends>
+   <header>utility.ui_libraries.qt.widgets.itemviews.tableview</header>
   </customwidget>
  </customwidgets>
  <resources/>
