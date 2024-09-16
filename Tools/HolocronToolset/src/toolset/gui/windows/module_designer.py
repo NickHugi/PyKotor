@@ -46,6 +46,9 @@ from toolset.gui.windows.help import HelpWindow
 from toolset.utils.misc import MODIFIER_KEY_NAMES, getQtButtonString, getQtKeyString
 from toolset.utils.window import openResourceEditor
 from utility.error_handling import safe_repr
+from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
+from toolset.gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 
 if TYPE_CHECKING:
     import os
