@@ -4,10 +4,10 @@ import platform
 import shutil
 import subprocess
 import sys
-
+from concurrent.futures import ProcessPoolExecutor
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 import qtpy
 
@@ -21,6 +21,7 @@ from qtpy.QtCore import (
     QMimeData,
     QModelIndex,
     QSize,
+    QThread,
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
@@ -35,11 +36,13 @@ from qtpy.QtWidgets import (
     QMainWindow,
     QMenu,
     QMessageBox,
+    QProgressBar,
     QShortcut,
     QSplitter,
     QStackedWidget,
     QTableView,
     QTreeView,
+    QUndoCommand,
     QUndoStack,
     QVBoxLayout,
     QWidget,
@@ -59,6 +62,15 @@ if TYPE_CHECKING:
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QMouseEvent, QResizeEvent
     from qtpy.QtWidgets import QWidget
 
+try:
+    import comtypes
+    USE_COMTYPES = True
+except ImportError:
+    try:
+        import win32com.client
+        USE_COMTYPES = False
+    except ImportError:
+        USE_COMTYPES = None
 
 # Apply the decorator to all functions in the file
 @print_qt_class_calls(exclude_funcs=["paint", "sizeHint"])
@@ -118,6 +130,29 @@ class FirstColumnInteractableTableView(RobustTableView):
         self.selectionModel().reset()
         self.selectionModel().setCurrentIndex(QModelIndex(), QItemSelectionModel.Clear)
         self.selectionModel().select(QModelIndex(), QItemSelectionModel.Clear | QItemSelectionModel.Rows)
+
+
+class BaseUndoCommand(QUndoCommand):
+    def __init__(self, description: str):
+        super().__init__(description)
+
+    def redo(self):
+        try:
+            self._redo()
+        except Exception as e:
+            RobustLogger().exception(f"Error during redo of {self.text()}: {str(e)}")
+
+    def undo(self):
+        try:
+            self._undo()
+        except Exception as e:
+            RobustLogger().exception(f"Error during undo of {self.text()}: {str(e)}")
+
+    def _redo(self):
+        raise NotImplementedError("Subclasses must implement _redo")
+
+    def _undo(self):
+        raise NotImplementedError("Subclasses must implement _undo")
 
 
 class FileSystemExplorerWidget(QMainWindow):
@@ -183,6 +218,7 @@ class FileSystemExplorerWidget(QMainWindow):
         # Hide all columns in navigation pane except the first one
         for i in range(1, self.fs_model.columnCount()):
             self.ui.navigation_pane.hideColumn(i)
+        
         self.setup_connections()
         self.setup_shortcuts()
         self.setup_icons()
@@ -204,6 +240,52 @@ class FileSystemExplorerWidget(QMainWindow):
         self.fs_model.directoryLoaded.connect(self.on_directory_loaded)
 
         self.update_address_bar(initial_path)
+
+        # Setup progress bar
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setVisible(False)
+        self.ui.status_bar.addPermanentWidget(self.progress_bar)
+
+        # Setup process pool executor
+        self.executor = ProcessPoolExecutor()
+
+        # Setup COM interfaces for Windows
+        if platform.system() == "Windows":
+            self.setup_com_interfaces()
+
+    def setup_com_interfaces(self):
+        if USE_COMTYPES:
+            self.setup_com_interfaces_comtypes()
+        elif USE_COMTYPES is False:
+            self.setup_com_interfaces_pywin32()
+        else:
+            RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
+
+    def setup_com_interfaces_comtypes(self):
+        import comtypes.client as cc
+        self.shell = cc.CreateObject("Shell.Application")
+
+    def setup_com_interfaces_pywin32(self):
+        import win32com.client
+        self.shell = win32com.client.Dispatch("Shell.Application")
+
+    def run_in_background(self, func: Callable, *args, **kwargs):
+        future = self.executor.submit(func, *args, **kwargs)
+        future.add_done_callback(self.background_task_completed)
+
+    def background_task_completed(self, future):
+        try:
+            result = future.result()
+            # Handle the result if needed
+        except Exception as e:
+            RobustLogger().exception(f"Background task failed: {str(e)}")
+
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
+        if value >= 100:
+            self.progress_bar.setVisible(False)
+        elif not self.progress_bar.isVisible():
+            self.progress_bar.setVisible(True)
 
     def setup_icons(self):
         self.ui.back_button.setIcon(QIcon.fromTheme("go-previous"))  # pyright: ignore[reportArgumentType]

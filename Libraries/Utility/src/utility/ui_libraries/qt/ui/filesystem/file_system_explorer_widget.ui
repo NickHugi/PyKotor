@@ -13,6 +13,44 @@
     <property name="windowTitle">
       <string>File Explorer</string>
     </property>
+    <property name="styleSheet">
+      <string>
+        QMainWindow {
+          background-color: #f0f0f0;
+        }
+        QToolBar {
+          background-color: #ffffff;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        QToolButton {
+          background-color: transparent;
+          border: none;
+          padding: 4px;
+        }
+        QToolButton:hover {
+          background-color: #e0e0e0;
+        }
+        QLineEdit {
+          border: 1px solid #c0c0c0;
+          border-radius: 2px;
+          padding: 2px;
+        }
+        QTreeView, QListView {
+          background-color: #ffffff;
+          border: 1px solid #e0e0e0;
+        }
+        QTreeView::item:hover, QListView::item:hover {
+          background-color: #e8e8e8;
+        }
+        QTreeView::item:selected, QListView::item:selected {
+          background-color: #0078d7;
+          color: #ffffff;
+        }
+        QStatusBar {
+          background-color: #f8f8f8;
+        }
+      </string>
+    </property>
     <widget class="QWidget" name="central_widget">
       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
         <property name="spacing">
@@ -37,9 +75,6 @@
             </property>
             <property name="autoFillBackground">
               <bool>false</bool>
-            </property>
-            <property name="styleSheet">
-              <string notr="true" />
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0,0,0,0,0,0,0,1">
               <property name="spacing">
@@ -202,9 +237,6 @@
                   <property name="whatsThis">
                     <string>Go button</string>
                   </property>
-                  <property name="styleSheet">
-                    <string notr="true" />
-                  </property>
                   <property name="toolTip">
                     <string>Go</string>
                   </property>
@@ -214,13 +246,6 @@
                 <widget class="QLineEdit" name="search_bar">
                   <property name="placeholderText">
                     <string>Search</string>
-                  </property>
-                  <property name="styleSheet">
-                    <string>QLineEdit {
-                      border: 1px solid #a0a0a0;
-                      border-radius: 2px;
-                      padding: 2px;
-                      }</string>
                   </property>
                 </widget>
               </item>
@@ -363,16 +388,7 @@
                 <string>Main File Area</string>
               </property>
               <property name="frameShape">
-                <enum>QFrame::WinPanel</enum>
-              </property>
-              <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-              </property>
-              <property name="lineWidth">
-                <number>1</number>
-              </property>
-              <property name="midLineWidth">
-                <number>0</number>
+                <enum>QFrame::NoFrame</enum>
               </property>
               <property name="verticalScrollBarPolicy">
                 <enum>Qt::ScrollBarAsNeeded</enum>
@@ -473,193 +489,4 @@
         </property>
         <addaction name="action_folder_options" />
       </widget>
-      <widget class="QMenu" name="menu_help">
-        <property name="title">
-          <string>&amp;Help</string>
-        </property>
-        <addaction name="action_about" />
-      </widget>
-      <addaction name="menu_file" />
-      <addaction name="menu_edit" />
-      <addaction name="menu_view" />
-      <addaction name="menu_tools" />
-      <addaction name="menu_help" />
-    </widget>
-    <widget class="QToolBar" name="main_tool_bar">
-      <property name="windowTitle">
-        <string>toolBar</string>
-      </property>
-      <attribute name="toolBarArea">
-        <enum>TopToolBarArea</enum>
-      </attribute>
-      <attribute name="toolBarBreak">
-        <bool>false</bool>
-      </attribute>
-    </widget>
-    <widget class="QStatusBar" name="status_bar">
-      <widget class="QLabel" name="status_items">
-        <property name="geometry">
-          <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>100</width>
-            <height>30</height>
-          </rect>
-        </property>
-        <property name="text">
-          <string>0 items</string>
-        </property>
-      </widget>
-      <widget class="QLabel" name="status_size">
-        <property name="geometry">
-          <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>100</width>
-            <height>30</height>
-          </rect>
-        </property>
-        <property name="text">
-          <string>0 bytes</string>
-        </property>
-      </widget>
-    </widget>
-    <action name="action_back">
-      <property name="text">
-        <string>Back</string>
-      </property>
-    </action>
-    <action name="action_forward">
-      <property name="text">
-        <string>Forward</string>
-      </property>
-    </action>
-    <action name="action_up">
-      <property name="text">
-        <string>Up</string>
-      </property>
-    </action>
-    <action name="action_cut">
-      <property name="text">
-        <string>Cut</string>
-      </property>
-    </action>
-    <action name="action_copy">
-      <property name="text">
-        <string>Copy</string>
-      </property>
-    </action>
-    <action name="action_paste">
-      <property name="text">
-        <string>Paste</string>
-      </property>
-    </action>
-    <action name="action_delete">
-      <property name="text">
-        <string>Delete</string>
-      </property>
-    </action>
-    <action name="action_properties">
-      <property name="text">
-        <string>Properties</string>
-      </property>
-    </action>
-    <action name="action_new_window">
-      <property name="text">
-        <string>New Window</string>
-      </property>
-    </action>
-    <action name="action_open_windows_terminal">
-      <property name="text">
-        <string>Open Windows Terminal</string>
-      </property>
-    </action>
-    <action name="action_close">
-      <property name="text">
-        <string>Close</string>
-      </property>
-    </action>
-    <action name="action_invert_selection">
-      <property name="text">
-        <string>Invert Selection</string>
-      </property>
-    </action>
-    <action name="action_select_none">
-      <property name="text">
-        <string>Select None</string>
-      </property>
-    </action>
-    <action name="action_extra_large_icons">
-      <property name="text">
-        <string>Select None</string>
-      </property>
-    </action>
-    <action name="action_medium_icons">
-      <property name="text">
-        <string>Medium Icons</string>
-      </property>
-    </action>
-    <action name="action_small_icons">
-      <property name="text">
-        <string>Small Icons</string>
-      </property>
-    </action>
-    <action name="action_tiles">
-      <property name="text">
-        <string>Tile View</string>
-      </property>
-    </action>
-    <action name="action_content">
-      <property name="text">
-        <string>Content</string>
-      </property>
-    </action>
-    <action name="action_show_hidden_items">
-      <property name="text">
-        <string>Show Hidden Items</string>
-      </property>
-    </action>
-    <action name="action_exit">
-      <property name="text">
-        <string>Exit</string>
-      </property>
-    </action>
-    <action name="action_select_all">
-      <property name="text">
-        <string>Select All</string>
-      </property>
-    </action>
-    <action name="action_refresh">
-      <property name="text">
-        <string>Refresh</string>
-      </property>
-    </action>
-    <action name="action_large_icons">
-      <property name="text">
-        <string>Large icons</string>
-      </property>
-    </action>
-    <action name="action_list">
-      <property name="text">
-        <string>List</string>
-      </property>
-    </action>
-    <action name="action_details">
-      <property name="text">
-        <string>Details</string>
-      </property>
-    </action>
-    <action name="action_options">
-      <property name="text">
-        <string>Options</string>
-      </property>
-    </action>
-    <action name="action_about">
-      <property name="text">
-        <string>About</string>
-      </property>
-    </action>
-  </widget>
-  <resources />
-  <connections />
-</ui>
+      <widget class="QMenu"
