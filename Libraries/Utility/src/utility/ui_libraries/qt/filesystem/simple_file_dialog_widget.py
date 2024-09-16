@@ -287,6 +287,64 @@ class FileSystemExplorerWidget(QMainWindow):
         elif not self.progress_bar.isVisible():
             self.progress_bar.setVisible(True)
 
+    def copy(self, cut: bool = False):
+        selected_indexes = self.ui.file_list_view.selectedIndexes()
+        if selected_indexes:
+            source_paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
+            mime_data = QMimeData()
+            urls = [QUrl.fromLocalFile(str(path)) for path in source_paths]
+            mime_data.setUrls(urls)
+            self.clipboard.setMimeData(mime_data)
+            
+            if cut:
+                self.to_cut = source_paths
+            else:
+                self.to_cut = None
+
+    def paste(self):
+        mime_data = self.clipboard.mimeData()
+        if mime_data.hasUrls():
+            source_paths = [Path(url.toLocalFile()) for url in mime_data.urls()]
+            destination_path = self.current_path
+
+            if hasattr(self, "to_cut") and self.to_cut:
+                command = MoveCommand(source_paths, destination_path)
+            else:
+                command = CopyCommand(source_paths, destination_path)
+
+            self.undo_stack.push(command)
+            self.refresh()
+
+            if hasattr(self, "to_cut"):
+                self.to_cut = None
+
+    def delete(self):
+        selected_indexes = self.ui.file_list_view.selectedIndexes()
+        if selected_indexes:
+            paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
+            reply = QMessageBox.question(
+                self,
+                "Confirm Delete",
+                f"Are you sure you want to delete {len(paths)} item(s)?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply == QMessageBox.Yes:
+                command = DeleteCommand(paths)
+                self.undo_stack.push(command)
+                self.refresh()
+
+    def rename(self):
+        selected_indexes = self.ui.file_list_view.selectedIndexes()
+        if len(selected_indexes) == 1:
+            old_path = Path(self.fs_model.filePath(selected_indexes[0]))
+            new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", text=old_path.name)
+            if ok and new_name:
+                new_path = old_path.parent / new_name
+                command = RenameCommand(old_path, new_path)
+                self.undo_stack.push(command)
+                self.refresh()
+
     def setup_icons(self):
         self.ui.back_button.setIcon(QIcon.fromTheme("go-previous"))  # pyright: ignore[reportArgumentType]
         self.ui.forward_button.setIcon(QIcon.fromTheme("go-next"))  # pyright: ignore[reportArgumentType]
