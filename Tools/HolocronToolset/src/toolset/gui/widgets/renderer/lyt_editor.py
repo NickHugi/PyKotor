@@ -27,71 +27,172 @@ if TYPE_CHECKING:
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
+from PyQt5.QtWidgets import QWidget, QUndoStack
+from PyQt5.QtCore import pyqtSignal as Signal
+from PyQt5.uic import loadUi
+from pykotor.common.geometry import Vector3
+from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
+from pykotor.resource.formats.bwm import BWM, BWMFace
+from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
+from toolset.gui.widgets.renderer.lyt_commands import AddRoomCommand, MoveRoomCommand, RotateRoomCommand
+from typing import Optional, List, Dict, Any
+
 class LYTEditor(QWidget):
-    roomPlaced: Signal = Signal(object)
-    roomMoved: Signal = Signal(object, object)
-    roomResized: Signal = Signal(object, object)
-    roomRotated: Signal = Signal(object, float)
-    doorHookPlaced: Signal = Signal(object)
-    textureChanged: Signal = Signal(object)
-    lytUpdated: Signal = Signal(object)
-    walkmeshUpdated: Signal = Signal(object)
-    taskCompleted: Signal = Signal(object)
-    renderingOptimized: Signal = Signal()
+    lytUpdated = Signal(LYT)
+    walkmeshUpdated = Signal(BWM)
 
-    def __init__(self, parent: ModuleRenderer):
+    def __init__(self, parent):
         super().__init__(parent)
-        self.setParent(parent)
-        self.lyt: LYT = LYT()
-        self.selectedRoom: LYTRoom | None = None
-        self.selectedTrack: LYTTrack | None = None
-        self.selectedObstacle: LYTObstacle | None = None
-        self.selectedDoorHook: LYTDoorHook | None = None
-        self.gridSize: int = 10
-        self._snapToGrid: bool = True
-        self._showGrid: bool = True
-        self.mouseDown: set[int] = set()
-        self.mousePos: Vector2 = Vector2(0, 0)
-        self.mousePrev: Vector2 = Vector2(0, 0)
-        self.isDragging: bool = False
-        self.isResizing: bool = False
-        self.isRotating: bool = False
-        self.isPlacingDoorHook: bool = False
-        self.selectedRoomResizeCorner: int | None = None
-        self.selectedRoomRotationPoint: Vector2 | None = None
-        self.walkmesh: BWM | None = None
-        self.isEditingWalkmesh: bool = False
-        self.selectedWalkmeshFace: BWMFace | None = None
+        self.ui = loadUi("Tools/HolocronToolset/src/ui/widgets/renderer/lyt_editor.ui", self)
+        
+        self._lyt: LYT = LYT()
+        self.scene = parent.scene
+        self.selected_element: Optional[Any] = None
+        self.current_tool: str = "select"
+        
+        self.undo_stack: QUndoStack = QUndoStack(self)
+        
+        self.texture_browser: TextureBrowser = TextureBrowser(self)
+        self.textures: Dict[str, str] = {}
+        
+        self.walkmesh: Optional[BWM] = None
+        
+        self.initConnections()
 
-        self.roomTemplates: list[LYTRoom] = []  # list to store room templates
-        self.textureBrowser: TextureBrowser = TextureBrowser(self)
-        self.textures: dict[str, str] = {}  # dictionary to store texture names and paths
+    def initConnections(self):
+        self.ui.actionAddRoom.triggered.connect(self.addRoom)
+        self.ui.actionAddTrack.triggered.connect(self.addTrack)
+        self.ui.actionAddObstacle.triggered.connect(self.addObstacle)
+        self.ui.actionAddDoorHook.triggered.connect(self.addDoorHook)
+        self.ui.actionSelect.triggered.connect(lambda: self.setCurrentTool("select"))
+        self.ui.actionMove.triggered.connect(lambda: self.setCurrentTool("move"))
+        self.ui.actionRotate.triggered.connect(lambda: self.setCurrentTool("rotate"))
 
-        self.task_consumers: list[TaskConsumer] = [
-            TaskConsumer(
-                task_queue=self.task_queue,
-                result_queue=self.changes_queue,
-                error_queue=self.error_queue,
-                lock=self.task_queue_lock,
-            )
-            for _ in range(4)
-        ]
-        self.task_consumer_lock: Lock = Lock()
-        self.task_queue: multiprocessing.JoinableQueue[tuple[Callable[..., Any], tuple, dict]] = multiprocessing.JoinableQueue()
-        self.spatial_grid: dict[tuple[int, int], list[LYTRoom]] = {}
-        self.grid_size: int = 1000
-        self.lyt_lock: Lock = Lock()
-        self.texture_lock: Lock = Lock()
-        self.task_queue_lock: Lock = Lock()
-        self.is_shutting_down: bool = False
-        self.main_thread_tasks: multiprocessing.Queue[tuple[Callable[..., Any], tuple, dict]] = multiprocessing.Queue()
-        self.error_queue: multiprocessing.Queue[tuple[Callable[..., Any], Exception]] = multiprocessing.Queue()
-        self.changes_queue: multiprocessing.Queue[tuple[str, str, Any]] = multiprocessing.Queue()
-        self.change_buffer: list[tuple[str, str, Any]] = []
-        self.change_lock: Lock = Lock()
-        self.render_lock: QMutex = QMutex(QMutex.RecursionMode.Recursive)  # New lock for rendering
+    def setLYT(self, lyt: LYT):
+        self._lyt = lyt
+        self.scene.setLYT(lyt)
+        self.lytUpdated.emit(self._lyt)
 
-        self.initUI()
+    def getLYT(self) -> LYT:
+        return self._lyt
+
+    def setCurrentTool(self, tool: str):
+        self.current_tool = tool
+
+    def addRoom(self):
+        room = LYTRoom()
+        room.position = Vector3(0, 0, 0)
+        command = AddRoomCommand(self, room)
+        self.undo_stack.push(command)
+
+    def addTrack(self):
+        if len(self._lyt.rooms) < 2:
+            return
+        track = LYTTrack()
+        track.start_room = self._lyt.rooms[0]
+        track.end_room = self._lyt.rooms[1]
+        self._lyt.tracks.append(track)
+        self.scene.addLYTTrack(track)
+        self.lytUpdated.emit(self._lyt)
+
+    def addObstacle(self):
+        obstacle = LYTObstacle()
+        obstacle.position = Vector3(0, 0, 0)
+        self._lyt.obstacles.append(obstacle)
+        self.scene.addLYTObstacle(obstacle)
+        self.lytUpdated.emit(self._lyt)
+
+    def addDoorHook(self):
+        if not self._lyt.rooms:
+            return
+        doorhook = LYTDoorHook()
+        doorhook.room = self._lyt.rooms[0]
+        doorhook.position = Vector3(0, 0, 0)
+        self._lyt.doorhooks.append(doorhook)
+        self.scene.addLYTDoorHook(doorhook)
+        self.lytUpdated.emit(self._lyt)
+
+    def updateElementProperties(self):
+        if isinstance(self.selected_element, LYTRoom):
+            self.ui.roomModelEdit.setText(self.selected_element.model)
+            self.ui.roomPosXSpin.setValue(self.selected_element.position.x)
+            self.ui.roomPosYSpin.setValue(self.selected_element.position.y)
+            self.ui.roomPosZSpin.setValue(self.selected_element.position.z)
+        elif isinstance(self.selected_element, LYTObstacle):
+            self.ui.obstacleModelEdit.setText(self.selected_element.model)
+            self.ui.obstaclePosXSpin.setValue(self.selected_element.position.x)
+            self.ui.obstaclePosYSpin.setValue(self.selected_element.position.y)
+            self.ui.obstaclePosZSpin.setValue(self.selected_element.position.z)
+        elif isinstance(self.selected_element, LYTDoorHook):
+            self.ui.doorHookPosXSpin.setValue(self.selected_element.position.x)
+            self.ui.doorHookPosYSpin.setValue(self.selected_element.position.y)
+            self.ui.doorHookPosZSpin.setValue(self.selected_element.position.z)
+            self.updateDoorHookRoomCombo()
+        elif isinstance(self.selected_element, LYTTrack):
+            self.updateTrackCombos()
+
+    def updateDoorHookRoomCombo(self):
+        self.ui.doorHookRoomCombo.clear()
+        for room in self._lyt.rooms:
+            self.ui.doorHookRoomCombo.addItem(room.model, room)
+        if isinstance(self.selected_element, LYTDoorHook):
+            index = self.ui.doorHookRoomCombo.findData(self.selected_element.room)
+            if index != -1:
+                self.ui.doorHookRoomCombo.setCurrentIndex(index)
+
+    def updateTrackCombos(self):
+        self.ui.trackStartRoomCombo.clear()
+        self.ui.trackEndRoomCombo.clear()
+        for room in self._lyt.rooms:
+            self.ui.trackStartRoomCombo.addItem(room.model, room)
+            self.ui.trackEndRoomCombo.addItem(room.model, room)
+        if isinstance(self.selected_element, LYTTrack):
+            start_index = self.ui.trackStartRoomCombo.findData(self.selected_element.start_room)
+            end_index = self.ui.trackEndRoomCombo.findData(self.selected_element.end_room)
+            if start_index != -1 and end_index != -1:
+                self.ui.trackStartRoomCombo.setCurrentIndex(start_index)
+                self.ui.trackEndRoomCombo.setCurrentIndex(end_index)
+
+    def mousePressEvent(self, event):
+        if self.current_tool == "select":
+            self.selected_element = self.scene.pickLYTElement(event.x(), event.y())
+            self.updateElementProperties()
+        elif self.current_tool in ["move", "rotate"]:
+            if self.selected_element:
+                self.scene.startLYTElementTransform(self.selected_element, self.current_tool, event.x(), event.y())
+
+    def mouseMoveEvent(self, event):
+        if self.current_tool in ["move", "rotate"] and self.selected_element:
+            self.scene.updateLYTElementTransform(event.x(), event.y())
+
+    def mouseReleaseEvent(self, event):
+        if self.current_tool in ["move", "rotate"] and self.selected_element:
+            new_pos = self.scene.endLYTElementTransform()
+            if self.current_tool == "move":
+                command = MoveRoomCommand(self, self.selected_element, self.selected_element.position, new_pos)
+            elif self.current_tool == "rotate":
+                command = RotateRoomCommand(self, self.selected_element, self.selected_element.rotation, new_pos)
+            self.undo_stack.push(command)
+            self.updateElementProperties()
+            self.lytUpdated.emit(self._lyt)
+
+    def generateWalkmesh(self):
+        # Implement walkmesh generation logic here
+        self.walkmesh = BWM()
+        # ... generate walkmesh based on LYT data ...
+        self.walkmeshUpdated.emit(self.walkmesh)
+
+    def editWalkmesh(self):
+        if not self.walkmesh:
+            self.generateWalkmesh()
+        # Implement walkmesh editing logic here
+        # This might involve creating a separate WalkmeshEditor widget
+
+    def applyTexture(self, texture_name: str):
+        if self.selected_element and hasattr(self.selected_element, 'texture'):
+            self.selected_element.texture = texture_name
+            self.scene.updateLYTElementTexture(self.selected_element, texture_name)
+            self.lytUpdated.emit(self._lyt)
 
     def initUI(self):
         self.setAcceptDrops(True)

@@ -175,6 +175,82 @@ class Scene:
         self.texture_consumer.start()
         self.model_consumer.start()
 
+    def setLYT(self, lyt: LYT):
+        self.layout = lyt
+        self.clearLYTObjects()
+        for room in lyt.rooms:
+            self.addLYTRoom(room)
+        for track in lyt.tracks:
+            self.addLYTTrack(track)
+        for obstacle in lyt.obstacles:
+            self.addLYTObstacle(obstacle)
+        for doorhook in lyt.doorhooks:
+            self.addLYTDoorHook(doorhook)
+
+    def clearLYTObjects(self):
+        for obj in self.lyt_objects.values():
+            if obj in self.objects:
+                del self.objects[obj]
+        self.lyt_objects.clear()
+
+    def addLYTRoom(self, room: LYTRoom):
+        obj = RenderObject("lyt_room", vec3(room.position.x, room.position.y, room.position.z))
+        self.lyt_objects[room] = obj
+        self.objects[obj] = obj
+
+    def addLYTTrack(self, track: LYTTrack):
+        obj = RenderObject("lyt_track", vec3(track.start.x, track.start.y, track.start.z))
+        obj.end_position = vec3(track.end.x, track.end.y, track.end.z)
+        self.lyt_objects[track] = obj
+        self.objects[obj] = obj
+
+    def addLYTObstacle(self, obstacle: LYTObstacle):
+        obj = RenderObject("lyt_obstacle", vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z))
+        self.lyt_objects[obstacle] = obj
+        self.objects[obj] = obj
+
+    def addLYTDoorHook(self, doorhook: LYTDoorHook):
+        obj = RenderObject("lyt_doorhook", vec3(doorhook.position.x, doorhook.position.y, doorhook.position.z))
+        self.lyt_objects[doorhook] = obj
+        self.objects[obj] = obj
+
+    def pickLYTElement(self, x: float, y: float) -> Any:
+        picked_object = self.pick(x, y)
+        for lyt_element, render_object in self.lyt_objects.items():
+            if render_object == picked_object:
+                return lyt_element
+        return None
+
+    def startLYTElementTransform(self, element: Any, tool: str, x: float, y: float):
+        if element in self.lyt_objects:
+            self.selection = [self.lyt_objects[element]]
+            self.movingInstance = tool == "move"
+            self.rotatingInstance = tool == "rotate"
+            self.movingInstanceStartPos = self.screenToWorld(x, y)
+
+    def updateLYTElementTransform(self, x: float, y: float):
+        if self.selection and (self.movingInstance or self.rotatingInstance):
+            current_pos = self.screenToWorld(x, y)
+            delta = current_pos - self.movingInstanceStartPos
+            for obj in self.selection:
+                if self.movingInstance:
+                    obj.set_position(obj.position().x + delta.x, obj.position().y + delta.y, obj.position().z)
+                elif self.rotatingInstance:
+                    # Implement rotation logic here
+                    pass
+
+    def endLYTElementTransform(self) -> Vector3:
+        self.movingInstance = False
+        self.rotatingInstance = False
+        if self.selection:
+            return Vector3(self.selection[0].position().x, self.selection[0].position().y, self.selection[0].position().z)
+        return Vector3(0, 0, 0)
+
+    def updateLYTElementTexture(self, element: Any, texture_name: str):
+        if element in self.lyt_objects:
+            render_object = self.lyt_objects[element]
+            render_object.override_texture = texture_name
+
     def setInstallation(self, installation: Installation):
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
