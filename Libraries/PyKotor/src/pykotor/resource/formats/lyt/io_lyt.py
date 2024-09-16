@@ -36,19 +36,32 @@ class LYTAsciiReader(ResourceReader):
         for line in iterator:
             tokens = line.split()
 
-            if tokens[0] == "roomcount":
-                self._load_rooms(iterator, int(tokens[1]))
-            if tokens[0] == "trackcount":
-                self._load_tracks(iterator, int(tokens[1]))
-            if tokens[0] == "obstaclecount":
-                self._load_obstacles(iterator, int(tokens[1]))
-            if tokens[0] == "doorhookcount":
-                self._load_doorhooks(iterator, int(tokens[1]))
+            if tokens[0] == "#MAXLAYOUT":
+                assert tokens[1] == "ASCII", "Only ASCII LYT files are supported"
+            elif tokens[0] == "filedependancy":
+                self._lyt.filedependancy = tokens[1]
+            elif tokens[0] == "beginlayout":
+                self._load_layout(iterator)
 
         if auto_close:
             self._reader.close()
 
         return self._lyt
+
+    def _load_layout(self, iterator: Iterator[str]):
+        for line in iterator:
+            tokens = line.split()
+
+            if tokens[0] == "roomcount":
+                self._load_rooms(iterator, int(tokens[1]))
+            elif tokens[0] == "trackcount":
+                self._load_tracks(iterator, int(tokens[1]))
+            elif tokens[0] == "obstaclecount":
+                self._load_obstacles(iterator, int(tokens[1]))
+            elif tokens[0] == "doorhookcount":
+                self._load_doorhooks(iterator, int(tokens[1]))
+            elif tokens[0] == "donelayout":
+                break
 
     def _load_rooms(
         self,
@@ -59,7 +72,8 @@ class LYTAsciiReader(ResourceReader):
             tokens = next(iterator).split()
             model = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
-            self._lyt.rooms.append(LYTRoom(model, position))
+            # Note: We're not setting the size here as it's not provided in the LYT file
+            self._lyt.rooms.append(LYTRoom(model, position, Vector3(0, 0, 0)))
 
     def _load_tracks(
         self,
@@ -116,35 +130,32 @@ class LYTAsciiWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ):
-        roomcount = len(self._lyt.rooms)
-        trackcount = len(self._lyt.tracks)
-        obstaclecount = len(self._lyt.obstacles)
-        doorhookcount = len(self._lyt.doorhooks)
-
+        self._writer.write_string("#MAXLAYOUT ASCII\r\n")
+        self._writer.write_string(f"filedependancy {self._lyt.filedependancy}\r\n")
         self._writer.write_string("beginlayout\r\n")
 
-        self._writer.write_string(f"   roomcount {roomcount}\r\n")
+        self._writer.write_string(f"   roomcount {len(self._lyt.rooms)}\r\n")
         for room in self._lyt.rooms:
             self._writer.write_string(
-                f"      {room.model} {room.position.x} {room.position.y} {room.position.z}\r\n",
+                f"      {room.model} {room.position.x:.6f} {room.position.y:.6f} {room.position.z:.6f}\r\n",
             )
 
-        self._writer.write_string(f"   trackcount {trackcount}\r\n")
+        self._writer.write_string(f"   trackcount {len(self._lyt.tracks)}\r\n")
         for track in self._lyt.tracks:
             self._writer.write_string(
-                f"      {track.model} {track.position.x} {track.position.y} {track.position.z}\r\n",
+                f"      {track.model} {track.position.x:.6f} {track.position.y:.6f} {track.position.z:.6f}\r\n",
             )
 
-        self._writer.write_string(f"   obstaclecount {obstaclecount}\r\n")
+        self._writer.write_string(f"   obstaclecount {len(self._lyt.obstacles)}\r\n")
         for obstacle in self._lyt.obstacles:
             self._writer.write_string(
-                f"      {obstacle.model} {obstacle.position.x} {obstacle.position.y} {obstacle.position.z}\r\n",
+                f"      {obstacle.model} {obstacle.position.x:.6f} {obstacle.position.y:.6f} {obstacle.position.z:.6f}\r\n",
             )
 
-        self._writer.write_string(f"   doorhookcount {doorhookcount}\r\n")
+        self._writer.write_string(f"   doorhookcount {len(self._lyt.doorhooks)}\r\n")
         for doorhook in self._lyt.doorhooks:
             self._writer.write_string(
-                f"      {doorhook.room} {doorhook.door} 0 {doorhook.position.x} {doorhook.position.y} {doorhook.position.z} {doorhook.orientation.x} {doorhook.orientation.y} {doorhook.orientation.z} {doorhook.orientation.w}\r\n",
+                f"      {doorhook.room} {doorhook.door} 0 {doorhook.position.x:.6f} {doorhook.position.y:.6f} {doorhook.position.z:.6f} {doorhook.orientation.x:.6f} {doorhook.orientation.y:.6f} {doorhook.orientation.z:.6f} {doorhook.orientation.w:.6f}\r\n",
             )
 
         self._writer.write_string("donelayout")

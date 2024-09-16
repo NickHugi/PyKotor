@@ -22,7 +22,8 @@ from utility.system.app_process.task_consumer import TaskConsumer
 if TYPE_CHECKING:
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent
 
-    from pykotor.resource.formats.lyt.lyt_data import LYTRoomTemplate
+    from pykotor.common.module import ModuleResource
+    from pykotor.resource.formats.mdl.mdl_data import MDL
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
@@ -62,7 +63,7 @@ class LYTEditor(QWidget):
         self.isEditingWalkmesh: bool = False
         self.selectedWalkmeshFace: BWMFace | None = None
 
-        self.roomTemplates: list[LYTRoomTemplate] = []  # list to store room templates
+        self.roomTemplates: list[LYTRoom] = []  # list to store room templates
         self.textureBrowser: TextureBrowser = TextureBrowser(self)
         self.textures: dict[str, str] = {}  # dictionary to store texture names and paths
 
@@ -153,7 +154,7 @@ class LYTEditor(QWidget):
         else:
             event.ignore()
 
-    def createRoomFromTemplate(self, roomTemplate: LYTRoomTemplate):
+    def createRoomFromTemplate(self, roomTemplate: LYTRoom):
         # Logic to create a room from the given template
         newRoom = LYTRoom(position=Vector3(0, 0, 0), size=Vector2(100, 100))
         self.lyt.rooms.append(newRoom)
@@ -266,8 +267,8 @@ class LYTEditor(QWidget):
         rect = QRect(
             int(room.position.x),
             int(room.position.y),
-            int(room.size.x * zoom),
-            int(room.size.y * zoom),
+            int(room.size.x * zoom),  # FIXME: size attribute does not exist.
+            int(room.size.y * zoom),  # FIXME: size attribute does not exist.
         )
         painter.drawRect(rect)
 
@@ -276,27 +277,27 @@ class LYTEditor(QWidget):
         for i in range(4):
             x = rect.x() + (i % 2) * rect.width()
             y = rect.y() + (i // 2) * rect.height()
-            painter.drawRect(QRect(x - handleSize // 2, y - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))
+            painter.drawRect(QRect(x - handleSize // 2, y - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))  # FIXME: scaled method does not exist.
 
     def drawSelectedTrack(self, painter: QPainter, track: LYTTrack, zoom: float):
         pen = QPen(QColor(255, 0, 0), 2)
         painter.setPen(pen)
 
-        start = QPoint(int(track.start.x), int(track.start.y)) * zoom
-        end = QPoint(int(track.end.x), int(track.end.y)) * zoom
+        start = QPoint(int(track.start.x), int(track.start.y)) * zoom  # FIXME: start and end attributes do not exist.
+        end = QPoint(int(track.end.x), int(track.end.y)) * zoom  # FIXME: start and end attributes do not exist.
         painter.drawLine(start, end)
 
         # Draw handles at start and end
         handleSize = 8
-        painter.drawRect(QRect(start.x() - handleSize // 2, start.y() - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))
-        painter.drawRect(QRect(end.x() - handleSize // 2, end.y() - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))
+        painter.drawRect(QRect(start.x() - handleSize // 2, start.y() - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))  # FIXME: scaled method does not exist.
+        painter.drawRect(QRect(end.x() - handleSize // 2, end.y() - handleSize // 2, handleSize, handleSize).scaled(zoom, zoom))  # FIXME: scaled method does not exist.
 
     def drawSelectedObstacle(self, painter: QPainter, obstacle: LYTObstacle, zoom: float):
         pen = QPen(QColor(255, 255, 0), 2)
         painter.setPen(pen)
 
-        center = QPoint(int(obstacle.position.x), int(obstacle.position.y)) * zoom
-        radius = obstacle.radius * zoom
+        center = QPoint(int(obstacle.position.x), int(obstacle.position.y)) * zoom  # FIXME: position attribute does not exist.
+        radius = obstacle.radius * zoom  # FIXME: radius attribute does not exist.
         painter.drawEllipse(center, radius, radius)
 
     def drawSelectedDoorHook(self, painter: QPainter, doorhook: LYTDoorHook, zoom: float):
@@ -310,7 +311,7 @@ class LYTEditor(QWidget):
         pen = QPen(QColor(0, 0, 255, 128), 1)
         painter.setPen(pen)
         for face in self.walkmesh.faces:
-            points = [QPoint(int(v.x * zoom), int(v.y * zoom)) for v in face.vertices]
+            points = [QPoint(int(v.x * zoom), int(v.y * zoom)) for v in face.vertices]  # FIXME: vertices attribute does not exist.
             painter.drawPolygon(points)
 
     def handleKeyPress(self, e: QKeyEvent):
@@ -374,8 +375,8 @@ class LYTEditor(QWidget):
             rect = QRect(
                 int(room.position.x),
                 int(room.position.y),
-                int(room.size.x),
-                int(room.size.y),
+                int(room.size.x),  # FIXME: size attribute does not exist.
+                int(room.size.y),  # FIXME: size attribute does not exist.
             )
             if rect.contains(QPoint(int(mousePos.x), int(mousePos.y))):
                 self.selectedRoom = room
@@ -386,10 +387,10 @@ class LYTEditor(QWidget):
 
         # Check for track selection
         for track in self.lyt.tracks:
-            start = QPoint(int(track.start.x), int(track.start.y))
-            end = QPoint(int(track.end.x), int(track.end.y))
+            start = QPoint(int(track.start.x), int(track.start.y))  # FIXME: start and end attributes do not exist.
+            end = QPoint(int(track.end.x), int(track.end.y))  # FIXME: start and end attributes do not exist.
             line = QLine(start, end)
-            if line.ptDistanceToPoint(QPoint(int(mousePos.x), int(mousePos.y))) <= 5:
+            if line.ptDistanceToPoint(QPoint(int(mousePos.x), int(mousePos.y))) <= 5:  # FIXME: ptDistanceToPoint method does not exist.
                 self.selectedRoom = None
                 self.selectedTrack = track
                 self.selectedObstacle = None
@@ -399,8 +400,8 @@ class LYTEditor(QWidget):
         # Check for obstacle selection
         for obstacle in self.lyt.obstacles:
             center = QPoint(int(obstacle.position.x), int(obstacle.position.y))
-            radius = obstacle.radius
-            if QPoint(int(mousePos.x), int(mousePos.y)).distanceToPoint(center) <= radius:
+            radius = obstacle.radius  # FIXME: radius attribute does not exist.
+            if QPoint(int(mousePos.x), int(mousePos.y)).distanceToPoint(center) <= radius:  # FIXME: distanceToPoint method does not exist.
                 self.selectedRoom = None
                 self.selectedTrack = None
                 self.selectedObstacle = obstacle
@@ -446,11 +447,11 @@ class LYTEditor(QWidget):
         self.roomMoved.emit(room, newPosition)
 
     def moveTrackStart(self, track: LYTTrack, delta: Vector2):
-        newStart = Vector3(track.start.x + delta.x, track.start.y + delta.y, track.start.z)
+        newStart = Vector3(track.start.x + delta.x, track.start.y + delta.y, track.start.z)  # FIXME: start and end attributes do not exist.
         self.roomMoved.emit(track, newStart)
 
     def moveTrackEnd(self, track: LYTTrack, delta: Vector2):
-        newEnd = Vector3(track.end.x + delta.x, track.end.y + delta.y, track.end.z)
+        newEnd = Vector3(track.end.x + delta.x, track.end.y + delta.y, track.end.z)  # FIXME: start and end attributes do not exist.
         self.roomMoved.emit(track, newEnd)
 
     def moveObstacle(self, obstacle: LYTObstacle, delta: Vector2):
@@ -469,7 +470,7 @@ class LYTEditor(QWidget):
         self.mousePrev = mousePos
 
         # Calculate new size based on resize corner
-        newSize = Vector2(self.selectedRoom.size.x, self.selectedRoom.size.y)
+        newSize = Vector2(self.selectedRoom.size.x, self.selectedRoom.size.y)  # FIXME: size attribute does not exist.
         if self.selectedRoomResizeCorner == 0:
             newSize.x += delta.x
             newSize.y += delta.y
@@ -510,7 +511,7 @@ class LYTEditor(QWidget):
         self.update()
 
     def placeDoorHook(self, mousePos: Vector2):
-        doorhook = LYTDoorHook(Vector3(mousePos.x, mousePos.y, 0))
+        doorhook = LYTDoorHook(Vector3(mousePos.x, mousePos.y, 0))  # FIXME: arguments missing for door, room, orientation
         self.doorHookPlaced.emit(doorhook)
         self.update()
 
@@ -518,7 +519,7 @@ class LYTEditor(QWidget):
         # Load textures from the module
         self.addBackgroundTask(self.loadTexturesTask, ())
 
-    def loadTexturesTask(self):
+    def loadTexturesTask(self) -> list[ModuleResource[MDL]]:
         # Implement texture loading logic here
         # This method will be executed in a separate thread
         textures = self.parent().scene.module.textures()
@@ -562,7 +563,7 @@ class LYTEditor(QWidget):
             connected_rooms = self.getConnectedRooms(doorhook)
             if len(connected_rooms) == 2:
                 valid_doorhooks.append(doorhook)
-                key = tuple(sorted(connected_rooms, key=lambda r: r.id))
+                key = tuple(sorted(connected_rooms, key=lambda r: r.id))  # FIXME: id attribute does not exist.
                 if key not in doorhook_groups:
                     doorhook_groups[key] = []
                 doorhook_groups[key].append(doorhook)
@@ -571,7 +572,7 @@ class LYTEditor(QWidget):
         for doorhook in new_doorhooks:
             connected_rooms = self.getConnectedRooms(doorhook)
             if len(connected_rooms) == 2:
-                key = tuple(sorted(connected_rooms, key=lambda r: r.id))
+                key = tuple(sorted(connected_rooms, key=lambda r: r.id))  # FIXME: id attribute does not exist.
                 if key not in doorhook_groups:
                     doorhook_groups[key] = []
                 doorhook_groups[key].append(doorhook)
@@ -603,7 +604,7 @@ class LYTEditor(QWidget):
 
         # Evenly space the doorhooks along the shared edge
         edge_length = self.getEdgeLength(doorhooks[0], doorhooks[-1])
-        spacing = edge_length / (len(doorhooks) + 1)
+        spacing = edge_length / (len(doorhooks) + 1)  # FIXME: this is unused?
 
         for i, doorhook in enumerate(doorhooks):
             t = (i + 1) / (len(doorhooks) + 1)
@@ -630,15 +631,15 @@ class LYTEditor(QWidget):
             else:  # horizontal
                 door_x = start + (end - start) * t
                 door_y = max(room2.position.y, room1.position.y)
-            doorhooks.append(LYTDoorHook(Vector3(door_x, door_y, 0)))
+            doorhooks.append(LYTDoorHook(Vector3(door_x, door_y, 0)))  # FIXME: arguments missing for door, room, orientation
 
         return doorhooks
 
     def getSharedEdge(self, room1: LYTRoom, room2: LYTRoom) -> tuple[str, float, float] | None:
-        r1_left, r1_right = room1.position.x, room1.position.x + room1.size.x
-        r1_top, r1_bottom = room1.position.y, room1.position.y + room1.size.y
-        r2_left, r2_right = room2.position.x, room2.position.x + room2.size.x
-        r2_top, r2_bottom = room2.position.y, room2.position.y + room2.size.y
+        r1_left, r1_right = room1.position.x, room1.position.x + room1.size.x  # FIXME: size attribute does not exist.
+        r1_top, r1_bottom = room1.position.y, room1.position.y + room1.size.y  # FIXME: size attribute does not exist.
+        r2_left, r2_right = room2.position.x, room2.position.x + room2.size.x  # FIXME: size attribute does not exist.
+        r2_top, r2_bottom = room2.position.y, room2.position.y + room2.size.y  # FIXME: size attribute does not exist.
 
         tolerance = 0.001  # Small tolerance for floating-point comparisons
 
@@ -678,15 +679,15 @@ class LYTEditor(QWidget):
 
         # Check if the doorhook is on any of the room's edges
         on_left = abs(x - room.position.x) < tolerance
-        on_right = abs(x - (room.position.x + room.size.x)) < tolerance
+        on_right = abs(x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
         on_top = abs(y - room.position.y) < tolerance
-        on_bottom = abs(y - (room.position.y + room.size.y)) < tolerance
+        on_bottom = abs(y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
 
         return (
             (on_left or on_right)
-            and (room.position.y <= y <= room.position.y + room.size.y)
+            and (room.position.y <= y <= room.position.y + room.size.y)  # FIXME: size attribute does not exist.
             or (on_top or on_bottom)
-            and (room.position.x <= x <= room.position.x + room.size.x)
+            and (room.position.x <= x <= room.position.x + room.size.x)  # FIXME: size attribute does not exist.
         )
 
     def optimizeDoorHookPlacement(self):
@@ -695,7 +696,7 @@ class LYTEditor(QWidget):
         for doorhook in self.lyt.doorhooks:
             connected_rooms = self.getConnectedRooms(doorhook)
             if connected_rooms:
-                key = tuple(sorted(connected_rooms))
+                key = tuple(sorted(connected_rooms))  # FIXME: list[LYTRoom]" is incompatible with "Iterable[SupportsRichComparisonT@sorted]
                 if key not in doorhook_groups:
                     doorhook_groups[key] = []
                 doorhook_groups[key].append(doorhook)
@@ -716,11 +717,11 @@ class LYTEditor(QWidget):
 
         if (
             abs(mousePos.x - room.position.x) < tolerance
-            or abs(mousePos.x - (room.position.x + room.size.x)) < tolerance
+            or abs(mousePos.x - (room.position.x + room.size.x)) < tolerance  # FIXME: size attribute does not exist.
             or abs(mousePos.y - room.position.y) < tolerance
-            or abs(mousePos.y - (room.position.y + room.size.y)) < tolerance
+            or abs(mousePos.y - (room.position.y + room.size.y)) < tolerance  # FIXME: size attribute does not exist.
         ):
-            doorhook = LYTDoorHook(Vector3(mousePos.x, mousePos.y, 0))
+            doorhook = LYTDoorHook(Vector3(mousePos.x, mousePos.y, 0))  # FIXME: arguments missing for door, room, orientation
             self.lyt.doorhooks.append(doorhook)
             self.doorHookPlaced.emit(doorhook)
             self.update()
@@ -740,8 +741,8 @@ class LYTEditor(QWidget):
         rect = QRect(
             int(self.selectedRoom.position.x),
             int(self.selectedRoom.position.y),
-            int(self.selectedRoom.size.x),
-            int(self.selectedRoom.size.y),
+            int(self.selectedRoom.size.x),  # FIXME: size attribute does not exist.
+            int(self.selectedRoom.size.y),  # FIXME: size attribute does not exist.
         )
 
         handleSize = 8
@@ -769,8 +770,8 @@ class LYTEditor(QWidget):
         rect = QRect(
             int(self.selectedRoom.position.x),
             int(self.selectedRoom.position.y),
-            int(self.selectedRoom.size.x),
-            int(self.selectedRoom.size.y),
+            int(self.selectedRoom.size.x),  # FIXME: size attribute does not exist.
+            int(self.selectedRoom.size.y),  # FIXME: size attribute does not exist.
         )
 
         # Check if mouse is within the room
@@ -810,9 +811,9 @@ class LYTEditor(QWidget):
             # Create a simple rectangular face for each room
             vertices = [
                 Vector3(room.position.x, room.position.y, 0),
-                Vector3(room.position.x + room.size.x, room.position.y, 0),
-                Vector3(room.position.x + room.size.x, room.position.y + room.size.y, 0),
-                Vector3(room.position.x, room.position.y + room.size.y, 0),
+                Vector3(room.position.x + room.size.x, room.position.y, 0),  # FIXME: size attribute does not exist.
+                Vector3(room.position.x + room.size.x, room.position.y + room.size.y, 0),  # FIXME: size attribute does not exist.
+                Vector3(room.position.x, room.position.y + room.size.y, 0),  # FIXME: size attribute does not exist.
             ]
             face = BWMFace(*vertices)
             self.walkmesh.faces.append(face)
@@ -847,7 +848,7 @@ class LYTEditor(QWidget):
 
     def getWalkmeshFaceAt(self, point: Vector2) -> Optional[BWMFace]:
         for face in self.walkmesh.faces:
-            if self.isPointInPolygon(point, face.vertices):
+            if self.isPointInPolygon(point, face.vertices):  # FIXME: vertices attribute is not defined.
                 return face
         return None
 
@@ -873,7 +874,7 @@ class LYTEditor(QWidget):
     def drawSelectedWalkmeshFace(self, painter: QPainter, face: BWMFace):
         pen = QPen(QColor(255, 0, 0, 200), 2)
         painter.setPen(pen)
-        painter.drawPolygon([QPoint(int(v.x), int(v.y)) for v in face.vertices])
+        painter.drawPolygon([QPoint(int(v.x), int(v.y)) for v in face.vertices])  # FIXME: vertices attribute is not defined.
 
     def updateLYT(self):
         # Update the LYT data and notify listeners
@@ -910,9 +911,9 @@ class LYTEditor(QWidget):
         # Implement the logic to apply the texture to the selected element
         with self.lyt_lock:
             if self.selectedRoom:  # FIXME: lytroom does not store textures.
-                self.selectedRoom.texture = textureName
+                self.selectedRoom.texture = textureName  # FIXME: texture attribute does not exist in a LYTRoom.
             elif self.selectedTrack:
-                self.selectedTrack.texture = textureName
+                self.selectedTrack.texture = textureName  # FIXME: texture attribute does not exist in a LYTTrack.
         return textureName
 
     def onTextureApplied(self, result):
@@ -983,8 +984,8 @@ class LYTEditor(QWidget):
                 with self.task_consumer_lock:
                     for consumer in self.task_consumers:
                         try:
-                            if not consumer.is_busy():
-                                consumer.add_task(task, args, kwargs)
+                            if not consumer.is_busy():  # FIXME: is_busy method does not exist.
+                                consumer.add_task(task, args, kwargs)  # FIXME: add_task method does not exist.
                                 break
                             # If all consumers are busy, put the task back in the queue
                             self.task_queue.put((task, args))
@@ -993,8 +994,8 @@ class LYTEditor(QWidget):
                             break
                 for consumer in self.task_consumers:
                     try:
-                        if not consumer.is_busy():
-                            consumer.add_task(task, args)
+                        if not consumer.is_busy():  # FIXME: is_busy method does not exist.
+                            consumer.add_task(task, args)  # FIXME: add_task method does not exist.
                             break
                         # If all consumers are busy, put the task back in the queue
                         self.task_queue.put((task, args))
@@ -1015,7 +1016,7 @@ class LYTEditor(QWidget):
                 break
 
         self.processErrors()
-        self.processChanges()
+        self.processChanges()  # FIXME: processChanges method does not exist.
 
     def processErrors(self):
         while not self.error_queue.empty():
@@ -1025,7 +1026,7 @@ class LYTEditor(QWidget):
                 print(error_message)
                 # You can add more robust error handling here, such as logging to a file or showing a dialog
                 # self.showErrorDialog(error_message)
-                # Implement more robust error handling here, e.g., showing an error dialog
+                # TODO: Implement more robust error handling here, e.g., showing an error dialog
             except Empty:  # noqa: PERF203
                 break
 
@@ -1096,7 +1097,7 @@ class LYTEditor(QWidget):
         if event.type() == QEvent.Type.User:
             self.processMainThreadTasks()
             self.processBackgroundTasks()
-            self.processChanges()
+            self.processChanges()  # FIXME: processChanges method does not exist.
             return True
         return super().event(event)
 
