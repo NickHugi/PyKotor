@@ -68,6 +68,15 @@ class LYTEditor(QWidget):
         self.ui.actionMove.triggered.connect(lambda: self.setCurrentTool("move"))
         self.ui.actionRotate.triggered.connect(lambda: self.setCurrentTool("rotate"))
 
+    def initConnections(self):
+        self.ui.actionAddRoom.triggered.connect(self.addRoom)
+        self.ui.actionAddTrack.triggered.connect(self.addTrack)
+        self.ui.actionAddObstacle.triggered.connect(self.addObstacle)
+        self.ui.actionAddDoorHook.triggered.connect(self.addDoorHook)
+        self.ui.actionSelect.triggered.connect(lambda: self.setCurrentTool("select"))
+        self.ui.actionMove.triggered.connect(lambda: self.setCurrentTool("move"))
+        self.ui.actionRotate.triggered.connect(lambda: self.setCurrentTool("rotate"))
+
     def setLYT(self, lyt: LYT):
         self._lyt = lyt
         self.scene.setLYT(lyt)
