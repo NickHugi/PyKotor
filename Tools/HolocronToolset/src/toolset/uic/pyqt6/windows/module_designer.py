@@ -696,7 +696,7 @@ class Ui_MainWindow(object):
         self.actionRemoveTrack.setText(_translate("MainWindow", "Remove Track"))
         self.actionHide3DView.setText(_translate("MainWindow", "Hide 3D View"))
         self.actionHide2DView.setText(_translate("MainWindow", "Hide 2D View"))
-from modulerenderer import ModuleRenderer
-from walkmeshrenderer import WalkmeshRenderer
+from toolset.gui.widgets.renderer.module import ModuleRenderer
+from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
 from toolset.rcc import resources_rc_pyqt6

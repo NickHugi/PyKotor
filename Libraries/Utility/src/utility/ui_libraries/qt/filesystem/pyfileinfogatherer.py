@@ -34,6 +34,8 @@ from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
 if TYPE_CHECKING:
     from qtpy.QtCore import QObject
 
+from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
+
 
 def update_sys_path(path: pathlib.Path):
     working_dir = str(path)

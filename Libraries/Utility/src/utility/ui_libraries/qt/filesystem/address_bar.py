@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qtpy.QtCore import Qt, Signal  # pyright: ignore[reportPrivateImportUsage]
-from qtpy.QtWidgets import QAction, QLineEdit, QMenu, QSizePolicy, QStyle, QToolBar, QToolButton
+from qtpy.QtWidgets import QAction, QCompleter, QLineEdit, QMenu, QSizePolicy, QStyle, QToolBar, QToolButton
 
 from utility.ui_libraries.qt.debug.print_qobject import print_qt_class_calls
 
@@ -20,11 +20,13 @@ class PathButton(QToolButton):
     def __init__(self, path: Path, parent: QWidget | None = None, *, is_last: bool = False):
         super().__init__(parent)
         self.path = path
+        self.menu = QMenu(self)
         self.is_last = is_last
         self.setText(path.name or str(path))
         self.clicked.connect(self._on_clicked)
         self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         if not is_last:
+            self.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
             self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
             self.setMenu(QMenu(self))
 
@@ -36,15 +38,14 @@ class PathButton(QToolButton):
         self.setIcon(icon)
 
     def set_menu_items(self, contents: list[tuple[str, Path, QIcon]]):
-        menu = self.menu()
-        if menu is None:
-            menu = QMenu(self)
-        menu.clear()
+        self.menu.clear()
         for name, path, icon in contents:
-            action = QAction(icon, name, menu)
+            action = QAction(icon, name, self.menu)
             action.triggered.connect(lambda _, p=path: self.path_selected.emit(p))
-            menu.addAction(action)
-        self.setMenu(menu)
+            self.menu.addAction(action)
+        self.setMenu(self.menu)
+        if not self.is_last:
+            self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
 
 
 @print_qt_class_calls()
@@ -78,6 +79,9 @@ class PyQAddressBar(QToolBar):
         self.addSeparator()
 
         self.line_edit: QLineEdit = QLineEdit(self)
+        self.completer: QCompleter = QCompleter(self)
+        self.completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        self.line_edit.setCompleter(self.completer)
         self.line_edit.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.line_edit.hide()
         self.line_edit.editingFinished.connect(self._on_editing_finished)
@@ -137,6 +141,7 @@ class PyQAddressBar(QToolBar):
                 button.hide()
             self.line_edit.show()
             self.line_edit.setFocus()
+            self.line_edit.setText(str(self.current_path))
             self.line_edit.selectAll()
         else:
             self.line_edit.hide()
@@ -163,14 +168,26 @@ class PyQAddressBar(QToolBar):
             self.path_changed.emit(parent)
 
     def _on_editing_finished(self):
-        new_path = Path(self.line_edit.text()).resolve()
-        if new_path.exists():
-            if new_path != self.current_path:
-                self.update_path(new_path)
-                self.path_changed.emit(new_path)
-        else:
-            # If the path doesn't exist, revert to the current path
-            self.line_edit.setText(str(self.current_path))
+        if self.edit_mode:
+            new_path_str = self.line_edit.text()
+            try:
+                new_path = Path(new_path_str).resolve()
+                if new_path.exists():
+                    if new_path != self.current_path:
+                        self.update_path(new_path)
+                        self.path_changed.emit(new_path)
+                else:
+                    # If the path doesn't exist, check if it's a valid relative path
+                    relative_path = self.current_path / new_path_str
+                    if relative_path.exists():
+                        self.update_path(relative_path)
+                        self.path_changed.emit(relative_path)
+                    else:
+                        # If neither absolute nor relative path exists, revert to the current path
+                        self.line_edit.setText(str(self.current_path))
+            except Exception:
+                # Invalid path, revert to the current path
+                self.line_edit.setText(str(self.current_path))
         self.toggle_edit_mode(False)  # noqa: FBT003
 
     def _on_path_selected(self, path: Path):

@@ -20,7 +20,7 @@ from utility.system.path import Path
 if TYPE_CHECKING:
     from pykotor.common.geometry import Vector2
     from pykotor.resource.generics.git import GITInstance
-    from toolset.gui.widgets.renderer.module import ModuleRenderer
+    from ui.module import ModuleRenderer
 
 
 def getMouseCode(string: str) -> QtCore.Qt.MouseButton:
