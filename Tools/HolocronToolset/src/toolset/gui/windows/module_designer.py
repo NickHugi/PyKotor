@@ -33,6 +33,8 @@ from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.lyt.lyt_data import LYT
+from pykotor.resource.formats.bwm.bwm_data import BWM
 from pykotor.tools import module
 from pykotor.tools.misc import is_mod_file
 from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
@@ -1266,7 +1268,7 @@ class ModuleDesigner(QMainWindow):
         else:
             self.lyt_editor.setLYT(LYT())  # Create a new empty LYT if there's no module loaded
 
-    def onLYTUpdated(self, lyt: LYT):
+    def onLYTUpdated(self, lyt: LYT) -> None:
         if self._module:
             lyt_resource = self._module.layout()
             if lyt_resource:
