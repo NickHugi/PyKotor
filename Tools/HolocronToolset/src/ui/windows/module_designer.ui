@@ -1069,15 +1069,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ModuleRenderer</class>
-   <extends>QWidget</extends>
-   <header>modulerenderer.h</header>
-  </customwidget>
-  <customwidget>
    <class>WalkmeshRenderer</class>
    <extends>QWidget</extends>
-   <header>walkmeshrenderer.h</header>
+   <header location="global">toolset.gui.widgets.renderer.walkmesh</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ModuleRenderer</class>
+   <extends>QOpenGLWidget</extends>
+   <header location="global">toolset.gui.widgets.renderer.module</header>
   </customwidget>
  </customwidgets>
  <resources>

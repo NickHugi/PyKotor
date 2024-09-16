@@ -64,7 +64,8 @@ if TYPE_CHECKING:
 
 
 class ModuleDesigner(QMainWindow):
-    def __init__(self,
+    def __init__(
+        self,
         parent: QWidget | None,
         installation: HTInstallation,
         mod_filepath: Path | None = None,
@@ -118,13 +119,8 @@ class ModuleDesigner(QMainWindow):
 
         self.ui: Ui_MainWindow = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.renderer = ModuleRenderer(self)
-        self.ui.rendererLayout.addWidget(self.renderer)
-        self.lytEditor = LYTEditorWidget(self.renderer)
-
-        self.settings = ModuleDesignerSettings()
-        self.module: Module | None = None
-
+        self._initUi()
+        self._setupSignals()
         self.last_free_cam_time: float = 0.0  # Initialize the last toggle time
 
         def intColorToQColor(intvalue: int) -> QColor:
@@ -167,10 +163,6 @@ class ModuleDesigner(QMainWindow):
             QTimer().singleShot(33, self.openModuleWithDialog)
         else:
             QTimer().singleShot(33, lambda: self.openModule(mod_filepath))
-
-        self._setupSignals()
-        self._initUi()
-        self._setupLYTEditor()
 
     def showEvent(self, a0: QShowEvent):
         if self.ui.mainRenderer._scene is None:  # noqa: SLF001
@@ -278,6 +270,7 @@ class ModuleDesigner(QMainWindow):
         if isinstance(renderer, ModuleRenderer):
             pos = renderer.scene.cursor.position()
             worldPos3d = Vector3(pos.x, pos.y, pos.z)
+            worldPos = worldPos3d
             self.mousePosLabel.setText(f"<b>Cursor:</b> <font color='{self.palette().color(QPalette.Link).name()}'>X: {worldPos3d.x:.2f}, Y: {worldPos3d.y:.2f}, Z: {worldPos3d.z:.2f}</font>")
 
             # Update view camera info
@@ -292,7 +285,7 @@ class ModuleDesigner(QMainWindow):
             self.mousePosLabel.setText(f"<b>Cursor:</b> <font color='{self.palette().color(QPalette.Link).name()}'>X: {worldPos.x:.2f}, Y: {worldPos.y:.2f}</font>")
 
         # Sort keys and buttons with modifiers at the beginning
-        def sort_with_modifiers(items: set[int], get_string_func: Callable[[Any], str], gt_enum_type: Literal["QtKey", "QtMouse"]):
+        def sort_with_modifiers(items: set[int], get_string_func: Callable[[Any], str], gt_enum_type: Literal["QtKey", "QtMouse"]) -> Sequence[Qt.Key | Qt.MouseButton | int]:
             modifiers = []
             if gt_enum_type == "QtKey":
                 modifiers = [item for item in items if item in MODIFIER_KEY_NAMES]
@@ -1100,11 +1093,21 @@ class ModuleDesigner(QMainWindow):
         menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), walkmeshSnap=False))
         return menu
 
-    def onInstanceListRightClicked(self, point: QPoint):
+    def onInstanceListRightClicked(
+        self,
+        point: QPoint
+    ):
         instance: GITInstance = self.ui.instanceList.selectedItems()[0].data(Qt.UserRole)
-        self.onContextMenuSelectionExists(world=instance.position)
+        self.onContextMenuSelectionExists(instances=[instance])
 
-    def onContextMenuSelectionExists(self, world: Vector3 | None = None, *, isFlatRendererCall: bool | None = None, getMenu: bool | None = None, instances: Sequence[GITInstance] | None = None) -> QMenu | None:    # sourcery skip: extract-method
+    def onContextMenuSelectionExists(
+        self,
+        world: Vector3 | None = None,
+        *,
+        isFlatRendererCall: bool | None = None,
+        getMenu: bool | None = None,
+        instances: Sequence[GITInstance] | None = None,
+    ) -> QMenu | None:    # sourcery skip: extract-method
         menu = QMenu(self)
         instances = self.selectedInstances if instances is None else instances
 
@@ -1231,30 +1234,3 @@ class ModuleDesigner(QMainWindow):
         for key, action in actions:
             if key.satisfied(buttons, keys):
                 action()
-
-    def _setupLYTEditor(self):
-        self.lytEditorDock = QDockWidget("LYT Editor", self)
-        self.lytEditorDock.setWidget(self.lytEditor)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.lytEditorDock)
-
-        self.lytEditorAction = self.ui.menuView.addAction("LYT Editor")
-        self.lytEditorAction.setCheckable(True)
-        self.lytEditorAction.setChecked(True)
-        self.lytEditorAction.triggered.connect(self.toggleLYTEditor)
-
-    def toggleLYTEditor(self, checked):
-        self.lytEditorDock.setVisible(checked)
-
-    def openModule(self, mod_filepath: Path):
-        super().openModule(mod_filepath)
-        if self._module:
-            lyt = self._module.layout().resource()
-            if lyt:
-                self.lytEditor.setLYT(lyt)
-            else:
-                self.lytEditor.generateBasicLYT()
-
-    def saveModule(self):
-        super().saveModule()
-        if self._module:
-            self.lytEditor.saveLYT()
