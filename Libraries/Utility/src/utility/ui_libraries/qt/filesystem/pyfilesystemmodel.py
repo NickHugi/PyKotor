@@ -52,6 +52,19 @@ class PyQFileSystemModel(QAbstractItemModel):
     cacheUpdated = Signal()
     customDataChanged = Signal(QModelIndex, QModelIndex, int)
 
+    fileCreated: Signal = Signal(str)
+    fileDeleted: Signal = Signal(str)
+    fileModified: Signal = Signal(str)
+    fileAccessed: Signal = Signal(str)  # TODO: figure out how to check if a file is accessed
+    fileContentsModified: Signal = Signal(str)  # TODO: figure out how to check if a file is written to
+    directoryCreated: Signal = Signal(str)
+    directoryDeleted: Signal = Signal(str)
+    directoryModified: Signal = Signal(str)
+    permissionChanged: Signal = Signal(str)  # TODO: figure out how to check if a file's permissions have changed
+    symbolicLinkChanged: Signal = Signal(str)
+    accessDenied: Signal = Signal(str)  # Emitted when access to a file OR folder is denied
+    fileAttributeChanged: Signal = Signal(str)  # TODO: figure out how to check if a file's attributes have changed
+
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self._root: PyFileSystemNode = PyFileSystemNode()

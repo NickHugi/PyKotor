@@ -48,12 +48,6 @@ class BWM:
         Returns:
         -------
             list[BWMFace]: List of faces that are walkable
-
-        Processing Logic:
-        ----------------
-            - Iterate through all faces in self.faces
-            - Check if each face's material is walkable using face.material.walkable()
-            - Add face to return list if walkable.
         """
         return [face for face in self.faces if face.material.walkable()]
 
@@ -69,13 +63,6 @@ class BWM:
         Returns:
         -------
             list[BWMFace]: List of unwalkable faces in the mesh
-
-        Processing Logic:
-        ----------------
-            - Iterate through all faces in the mesh
-            - Check if the material of the face is not walkable
-            - Add the face to the return list if material is not walkable
-            - Return the list of unwalkable faces.
         """
         return [face for face in self.faces if not face.material.walkable()]
 
@@ -110,13 +97,6 @@ class BWM:
         Returns:
         -------
             list[BWMNodeAABB]: List of AABB objects for each face
-
-        Processing Logic:
-        ----------------
-            - Recursively traverse the faces tree to collect all leaf faces
-            - Calculate AABB for each leaf face
-            - Add AABB to return list
-            - Return list of all AABBs.
         """
         aabbs: list[BWMNodeAABB] = []
         self._aabbs_rec(aabbs, copy(self.faces))
@@ -128,6 +108,18 @@ class BWM:
         faces: list[BWMFace],
         rlevel: int = 0,
     ):
+        """Recursively build an axis aligned bounding box tree from a list of faces.
+
+        Args:
+        ----
+            aabbs: list[BWMNodeAABB]: Accumulator for AABBs
+            faces: list[BWMFace]: List of faces to build tree from
+            rlevel: int: Recursion level
+
+        Returns:
+        -------
+            None: Tree is built by side effect of modifying aabbs
+        """
         if rlevel > 128:
             msg = f"recursion level must not exceed 128, but is currently at level {rlevel}"
             raise ValueError(msg)
@@ -211,13 +203,6 @@ class BWM:
         Returns:
         -------
             list[BWMEdge]: A list of edges in the BWM.
-
-        Processing Logic:
-        ----------------
-            - Finds walkable faces and their adjacencies
-            - Iterates through faces and edges to find unconnected edges
-            - Traces edge paths and adds them to the edges list until it loops back
-            - Marks final edges and records perimeter lengths
         """
         walkable: list[BWMFace] = [face for face in self.faces if face.material.walkable()]
         adjacencies: list[tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]] = [self.adjacencies(face) for face in walkable]
@@ -260,6 +245,7 @@ class BWM:
 
         return edges
 
+
     def adjacencies(
         self,
         face: BWMFace,
@@ -273,13 +259,6 @@ class BWM:
         Returns:
         -------
             tuple: {Tuple of adjacencies or None}
-
-        Processing Logic:
-        ----------------
-            1. Get list of walkable faces
-            2. Define edge lists for each potential adjacency
-            3. Iterate through walkable faces and check if edges match using a bit flag
-            4. Return adjacencies or None.
         """
         walkable: list[BWMFace] = self.walkable_faces()
 
@@ -304,11 +283,11 @@ class BWM:
             if other_face.v3 in edges:
                 flag += 0x04
             edge: Literal[2, 1, 0, -1] = -1
-            if flag == 0x03:  # V1_V2
+            if flag == 0x03:
                 edge = 0
-            if flag == 0x06:  # V2_V3
+            if flag == 0x06:
                 edge = 1
-            if flag == 0x05:  # V3_V1
+            if flag == 0x05:
                 edge = 2
             return edge
 
@@ -346,14 +325,6 @@ class BWM:
         Returns:
         -------
             tuple[Vector3, Vector3]: Bounding box minimum and maximum points
-
-        Processing Logic:
-        ----------------
-            - Initialize bounding box minimum and maximum points to extreme values
-            - Iterate through all vertices of the mesh
-            - Update minimum x, y, z values of bbmin
-            - Update maximum x, y, z values of bbmax
-            - Return bounding box minimum and maximum points.
         """
         bbmin = Vector3(1000000, 1000000, 1000000)
         bbmax = Vector3(-1000000, -1000000, -1000000)
@@ -373,11 +344,6 @@ class BWM:
         Returns:
         -------
             None - Updates bbmin and bbmax in place
-
-        Processing Logic:
-        ----------------
-            - Compare vertex x, y, z to bbmin x, y, z and update bbmin with minimum
-            - Compare vertex x, y, z to bbmax x, y, z and update bbmax with maximum.
         """
         bbmin.x = min(bbmin.x, vertex.x)
         bbmin.y = min(bbmin.y, vertex.y)
@@ -465,14 +431,6 @@ class BWM:
         ----
             old: Index to replace
             new: New index to set or None
-
-        Processing Logic:
-        ----------------
-            - Loops through all faces in the object
-            - Checks if face's trans1 attribute equals old index
-            - If equal, sets trans1 to new index
-            - Checks if face's trans2 attribute equals old index
-            - If equal, sets trans2 to new index.
         """
         for face in self.faces:
             if face.trans1 == old:
@@ -524,21 +482,6 @@ class BWMFace(Face):
         self.trans2: int | None = None
         self.trans3: int | None = None
 
-    @property
-    def vertices(self) -> tuple[Vector3, Vector3, Vector3]:
-        """Returns a tuple of the face's vertices."""
-        return (self.v1, self.v2, self.v3)
-
-    def __eq__(
-        self,
-        other: BWMFace,
-    ):
-        if self is other:
-            return True
-        if not isinstance(other, BWMFace):
-            return NotImplemented
-        return self.v1 == other.v1 and self.v2 == other.v2 and self.v3 == other.v3
-
 
 class BWMMostSignificantPlane(IntEnum):
     NEGATIVE_Z = -3
@@ -576,12 +519,6 @@ class BWMNodeAABB:
         Returns:
         -------
             self - The initialized BWMNodeAABB object
-
-        Processing Logic:
-        ----------------
-            - Sets the bounding box minimum and maximum bounds
-            - Sets the splitting face and most significant plane
-            - Sets the left and right child nodes.
         """
         self.bb_min: Vector3 = bb_min
         self.bb_max: Vector3 = bb_max
@@ -589,26 +526,6 @@ class BWMNodeAABB:
         self.sigplane: BWMMostSignificantPlane = BWMMostSignificantPlane(sigplane)
         self.left: BWMNodeAABB | None = left
         self.right: BWMNodeAABB | None = right
-
-    def __eq__(
-        self,
-        other: BWMNodeAABB,
-    ):
-        if self is other:
-            return True
-        if not isinstance(other, BWMNodeAABB):
-            return NotImplemented
-        return (
-            self.bb_min == other.bb_min
-            and self.bb_max == other.bb_max
-            and self.face == other.face
-            and self.sigplane == other.sigplane
-            and self.left == other.left
-            and self.right == other.right
-        )
-
-    def __hash__(self):
-        return hash((self.bb_min, self.bb_max, self.face, self.sigplane, self.left, self.right))
 
 
 class BWMAdjacency:
@@ -627,19 +544,6 @@ class BWMAdjacency:
     ):
         self.face: BWMFace = face
         self.edge: int = index
-
-    def __eq__(
-        self,
-        other: BWMAdjacency,
-    ):
-        if self is other:
-            return True
-        if not isinstance(other, BWMAdjacency):
-            return NotImplemented
-        return self.face == other.face and self.edge == other.edge
-
-    def __hash__(self):
-        return hash((self.face, self.edge))
 
 
 class BWMEdge:
@@ -665,16 +569,3 @@ class BWMEdge:
         self.index: int = index
         self.transition: int = transition
         self.final: bool = final
-
-    def __eq__(
-        self,
-        other: BWMEdge,
-    ):
-        if self is other:
-            return True
-        if not isinstance(other, BWMEdge):
-            return NotImplemented
-        return self.face == other.face and self.index == other.index and self.transition == other.transition and self.final == other.final
-
-    def __hash__(self):
-        return hash((self.face, self.index, self.transition, self.final))

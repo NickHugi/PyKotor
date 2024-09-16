@@ -5,12 +5,34 @@ import pathlib
 import sys
 
 from ctypes import c_bool
-from os import scandir
 from typing import TYPE_CHECKING
 
-from loggerplus import RobustLogger
+import qtpy  # noqa: E402
 
-from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation
+if qtpy.API_NAME in ("PyQt6", "PySide6"):
+    QDesktopWidget = None
+    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
+elif qtpy.API_NAME in ("PyQt5", "PySide2"):
+    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
+else:
+    raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
+
+
+from qtpy.QtCore import (  # noqa: E402
+    QDir,
+    QElapsedTimer,
+    QFileInfo,
+    QFileSystemWatcher,
+    QMutex,
+    QMutexLocker,
+    QThread,
+    QWaitCondition,
+    Signal,  # pyright: ignore[reportPrivateImportUsage]
+)
+from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
+
+if TYPE_CHECKING:
+    from qtpy.QtCore import QObject
 
 
 def update_sys_path(path: pathlib.Path):
@@ -36,79 +58,71 @@ toolset_path = file_absolute_path.parents[8] / "Tools/HolocronToolset/src/toolse
 if toolset_path.exists():
     update_sys_path(toolset_path.parent)
     os.chdir(toolset_path)
-print(toolset_path)
-print(utility_path)
 
-import qtpy  # noqa: E402
-
-if qtpy.API_NAME in ("PyQt6", "PySide6"):
-    QDesktopWidget = None
-    from qtpy.QtGui import QUndoCommand, QUndoStack  # pyright: ignore[reportPrivateImportUsage]  # noqa: F401
-elif qtpy.API_NAME in ("PyQt5", "PySide2"):
-    from qtpy.QtWidgets import QDesktopWidget, QUndoCommand, QUndoStack  # noqa: F401  # pyright: ignore[reportPrivateImportUsage]
-else:
-    raise RuntimeError(f"Unexpected qtpy version: '{qtpy.API_NAME}'")
-
-
-
-from qtpy.QtCore import (  # noqa: E402
-    QDir,
-    QElapsedTimer,
-    QFileInfo,
-    QFileSystemWatcher,
-    QMutex,
-    QMutexLocker,
-    QThread,
-    QWaitCondition,
-    Signal,  # pyright: ignore[reportPrivateImportUsage]
-)
-from qtpy.QtWidgets import QFileIconProvider  # noqa: E402
-
-if TYPE_CHECKING:
-
-    from qtpy.QtCore import QObject
+from utility.ui_libraries.qt.filesystem.pyextendedinformation import PyQExtendedInformation  # noqa: E402
 
 
 class PyFileInfoGatherer(QThread):
-    updates = Signal(str, list)
-    newListOfFiles = Signal(str, list)
-    directoryLoaded = Signal(str)
-    nameResolved = Signal(str, str)
+    updates: Signal = Signal(str, list)
+    newListOfFiles: Signal = Signal(str, list)
+    directoryLoaded: Signal = Signal(str)
+    nameResolved: Signal = Signal(str, str)
 
-    def __init__(self, parent: QObject | None = None):
+    # new signal
+    accessDenied: Signal = Signal(str)  # Emitted when access to a file OR folder is denied
+
+    def __init__(
+        self,
+        parent: QObject | None = None,
+        mutex: QMutex | None = None,
+        max_files_before_updates: int = 100,
+        resolveSymlinks: bool = False,  # noqa: N803, FBT001, FBT002
+    ):
         super().__init__(parent)
-        self.mutex = QMutex()
-        self.condition = QWaitCondition()
-        self.path: list[str] = []
-        self.files: list[list[str]] = []
-        self.abort = False
-        self.m_watcher = None
-        self.m_iconProvider = QFileIconProvider()
-        self.defaultProvider = QFileIconProvider()
-        self.m_resolveSymlinks = True if os.name == 'nt' else False
-        self.m_watching = True
 
-        self.start(QThread.LowPriority)
+        # Thread control and synchronization
+        self.abort: c_bool = c_bool(False)  # Keep this as a c_bool to match the qt src code (mutable boolean). # noqa: FBT003
+        self.mutex: QMutex = QMutex() if mutex is None else mutex
+        self.condition: QWaitCondition = QWaitCondition()
+        # NOTE: We always want to watch paths, so we initialize it here. This differs from the qt src.
+        # The qt src on the other hand initializes the watcher lazily only when needed.
+        self.m_watcher: QFileSystemWatcher = QFileSystemWatcher(self)
+        self.m_watcher.fileChanged.connect(self.updateFile)
+        self.m_watcher.directoryChanged.connect(self.list)
+        self.m_iconProvider: QFileIconProvider = QFileIconProvider()
+
+        # File gathering settings
+        self.max_files_before_updates: int = max_files_before_updates
+        self.m_resolveSymlinks: bool = resolveSymlinks
+
+        # File and path storage
+        self._paths: list[str] = []
+        self._files: list[list[str]] = []
+
+        self.start(QThread.Priority.LowPriority)
 
     def __del__(self):
-        self.abort = True
-        with QMutexLocker(self.mutex):
-            self.condition.wakeAll()
+        self.abort.value = True  # noqa: FBT003
+        self.condition.wakeAll()
         self.wait()
 
-    def setResolveSymlinks(self, enable):
-        if os.name == 'nt':
+    def setResolveSymlinks(self, enable: bool):  # noqa: FBT001
+        if os.name == "nt":
             self.m_resolveSymlinks = enable
 
     def run(self):
-        while not self.abort:
-            with QMutexLocker(self.mutex):
-                while not self.abort and not self.path:
+        while True:
+            self.mutex.lock()
+            try:
+                while not self.abort.value and not self._paths:
                     self.condition.wait(self.mutex)
-                if self.abort:
+                if self.abort.value:
                     return
-                thisPath = self.path.pop(0)
-                thisList = self.files.pop(0)
+            finally:
+                self.mutex.unlock()
+
+            thisPath = self._paths.pop(0)
+            thisList = self._files.pop(0)
 
             self.getFileInfos(thisPath, thisList)
 
@@ -120,76 +134,50 @@ class PyFileInfoGatherer(QThread):
         drives = [self._translateDriveName(fi) for fi in drive_info]
         self.newListOfFiles.emit("", drives)
 
-    def fetchExtendedInformation(self, path, files):
-        with QMutexLocker(self.mutex):
-            loc = len(self.path) - 1
-            while loc >= 0:
-                if self.path[loc] == path and self.files[loc] == files:
-                    return
-                loc -= 1
+    def fetchExtendedInformation(self, path: str, files: list[str]):
+        loc = len(self._paths) - 1
+        while loc >= 0:
+            if self._paths[loc] == path and self._files[loc] == files:
+                return
+            loc -= 1
 
-            self.path.append(path)
-            self.files.append(files)
-            self.condition.wakeAll()
+        self._paths.append(path)
+        self._files.append(files)
+        self.condition.wakeAll()
 
-        if self.m_watcher and not files and path and not path.startswith("//"):
-            if path not in self.watchedDirectories():
-                self.watchPaths([path])
-
-    def setIconProvider(self, provider: QFileIconProvider):
-        with QMutexLocker(self.mutex):
-            self.m_iconProvider = provider
+        if (
+            not files
+            and path
+            and path.strip()
+            and not path.startswith("//")  # UNC path
+            and path not in self.watchedDirectories()
+        ):
+            print("Watching path:", path)
+            self.watchPaths([path])
 
     def updateFile(self, filePath: str):  # noqa: N803
-        self.fetchExtendedInformation(os.path.dirname(filePath), [os.path.basename(filePath)])  # noqa: PTH120, PTH119
+        dir_path = os.path.dirname(filePath)  # noqa: PTH120
+        file_name = os.path.basename(filePath)  # noqa: PTH119
+        self.fetchExtendedInformation(dir_path, [file_name])
 
     def watchedFiles(self) -> list[str]:
-        return [] if self.m_watcher is None else self.m_watcher.files()
+        return self.m_watcher.files()
 
     def watchedDirectories(self) -> list[str]:
-        return [] if self.m_watcher is None else self.m_watcher.directories()
-
-    def createWatcher(self):
-        self.m_watcher = QFileSystemWatcher(self)
-        self.m_watcher.directoryChanged.connect(self.list)
-        self.m_watcher.fileChanged.connect(self.updateFile)
+        return self.m_watcher.directories()
 
     def watchPaths(self, paths: list[str]):
-        if not self.m_watching:
-            print("watchPaths called for the first time, creating and setting up the watcher.")
-            self.createWatcher()
-            self.m_watching = True
-        assert self.m_watcher is not None
-        print(f"Adding paths to watcher: {paths}")
         self.m_watcher.addPaths(paths)
 
     def unwatchPaths(self, paths: list[str]):
-        if self.m_watcher and paths:
-            print(f"Removing paths from watcher: {paths}")
-            self.m_watcher.removePaths(paths)
-
-    def isWatching(self) -> bool:
-        result = False
-        with QMutexLocker(self.mutex):
-            result = self.m_watching
-        return result
-
-    def setWatching(self, v: bool):  # noqa: FBT001
-        with QMutexLocker(self.mutex):
-            if v != self.m_watching:
-                if not v and self.m_watcher:
-                    del self.m_watcher
-                    self.m_watcher = None
-                self.m_watching = v
+        self.m_watcher.removePaths(paths)
 
     def clear(self):
-        with QMutexLocker(self.mutex):
-            self.unwatchPaths(self.watchedFiles())
-            self.unwatchPaths(self.watchedDirectories())
+        self.unwatchPaths(self.watchedFiles())
+        self.unwatchPaths(self.watchedDirectories())
 
     def removePath(self, path: str):
-        with QMutexLocker(self.mutex):
-            self.unwatchPaths([path])
+        self.unwatchPaths([path])
 
     def list(self, directoryPath: str):  # noqa: N803
         self.fetchExtendedInformation(directoryPath, [])
@@ -204,64 +192,75 @@ class PyFileInfoGatherer(QThread):
                 driveName = driveName[:-1]
         return driveName
 
-    def getFileInfos(self, path, files):
+    def getFileInfos(self, path: str, files: list[str]):  # noqa: N803
+        # firstTime must be a c_bool
+        # in order to match the qt src code.
+        # it is a mutable boolean and c_bool is the best way to represent it.
+        firstTime: c_bool = c_bool(True)  # noqa: FBT003
+        updatedFiles: list[tuple[str, QFileInfo]] = []
         base = QElapsedTimer()
         base.start()
-        fileInfo = QFileInfo()
-        firstTime = True
-        updatedFiles = []
 
         if not path:  # List drives
             infoList = [QFileInfo(file) for file in files] if files else QDir.drives()
-            for i in range(len(infoList) - 1, -1, -1):
-                driveInfo = infoList[i]
-                driveName = self._translateDriveName(driveInfo)
-                updatedFiles.append((driveName, driveInfo))
+            updatedFiles = [(self._translateDriveName(info), info) for info in reversed(infoList)]
             self.updates.emit(path, updatedFiles)
             return
 
-        allFiles = []
+        allFiles: list[str] = []
         if not files:
             try:
-                with os.scandir(path) as dirIt:
-                    for entry in dirIt:
-                        if self.abort:
+                with os.scandir(path) as it:
+                    for entry in it:
+                        if self.abort.value:
                             return
                         allFiles.append(entry.name)
-            except OSError:
-                pass
+            except OSError as e:
+                self.accessDenied.emit(path if e.filename is None else e.filename)
 
         if allFiles:
             self.newListOfFiles.emit(path, allFiles)
 
         filesToCheck = files if files else allFiles
         for fileName in filesToCheck:
-            if self.abort:
-                return
-            fileInfo.setFile(os.path.join(path, fileName))
-            fileInfo.refresh()  # Equivalent to stat() call
-            firstTime = self._fetch(fileInfo, base, firstTime, updatedFiles, path)
+            with QMutexLocker(self.mutex):
+                if self.abort.value:
+                    return
+            fileInfo = QFileInfo(os.path.join(path, fileName))  # noqa: PTH118
+            fileInfo.refresh()  # pyqt equivalent for stat() call
+            self._fetch(fileInfo, base, firstTime, updatedFiles, path)
 
         if updatedFiles:
             self.updates.emit(path, updatedFiles)
+
         self.directoryLoaded.emit(path)
 
-    def _fetch(self, fileInfo, base, firstTime, updatedFiles, path):
+    def _fetch(
+        self,
+        fileInfo: QFileInfo,  # noqa: N803
+        base: QElapsedTimer,
+        firstTime: c_bool,  # noqa: N803
+        updatedFiles: list[tuple[str, QFileInfo]],  # noqa: N803
+        path: str,
+    ):
         updatedFiles.append((fileInfo.fileName(), fileInfo))
         current = QElapsedTimer()
         current.start()
-        if (firstTime and len(updatedFiles) > 100) or base.msecsTo(current) > 1000:
+
+        if (firstTime.value and len(updatedFiles) > self.max_files_before_updates) or base.msecsTo(current) > 1000:
             self.updates.emit(path, updatedFiles)
             updatedFiles.clear()
-            base = current
-            firstTime = False
+            base.restart()
+            firstTime.value = False
 
         if self.m_resolveSymlinks and fileInfo.isSymLink():
-            resolvedName = fileInfo.symLinkTarget()
-            resolvedInfo = QFileInfo(resolvedName)
-            resolvedInfo = QFileInfo(resolvedInfo.canonicalFilePath())
-            if resolvedInfo.exists():
-                self.nameResolved.emit(fileInfo.filePath(), resolvedInfo.fileName())
+            try:
+                resolvedInfo = QFileInfo(fileInfo.symLinkTarget())
+                resolvedInfo = QFileInfo(resolvedInfo.canonicalFilePath())
+                if resolvedInfo.exists():
+                    self.nameResolved.emit(fileInfo.filePath(), resolvedInfo.fileName())
+            except OSError:
+                self.accessDenied.emit(fileInfo.filePath())
 
         return firstTime
 
@@ -283,11 +282,7 @@ class PyFileInfoGatherer(QThread):
             ):
                 self.watchPaths([path])
 
-        if (
-            os.name == "nt"
-            and self.m_resolveSymlinks
-            and info.isSymLink(ignoreNtfsSymLinks=True)
-        ):
+        if os.name == "nt" and self.m_resolveSymlinks and info.isSymLink(ignoreNtfsSymLinks=True):
             resolvedInfo = QFileInfo(fileInfo.symLinkTarget()).canonicalFilePath()
             if QFileInfo(resolvedInfo).exists():
                 self.nameResolved.emit(fileInfo.filePath(), QFileInfo(resolvedInfo).fileName())
@@ -304,7 +299,7 @@ if __name__ == "__main__":
     app = QApplication([])
 
     # Initialize the PyFileInfoGatherer
-    file_info_gatherer = PyFileInfoGatherer(_debug_on_main_thread=False)
+    file_info_gatherer = PyFileInfoGatherer()
 
     # Connect signals to print to the console
     file_info_gatherer.updates.connect(lambda path, files: print(f"\nUpdates: {path}, {files}"))
@@ -316,9 +311,8 @@ if __name__ == "__main__":
     file_info_gatherer.accessDenied.connect(lambda path: print(f"\nAccess Denied: {path}"))
 
     # Set the directory to %USERPROFILE%
-    user_profile_dir = os.path.expandvars("%USERPROFILE%")
+    user_profile_dir = os.path.expandvars("%USERPROFILE%\\Test")
     file_info_gatherer.list(user_profile_dir)
-    #file_info_gatherer.run()
 
     # Start the Qt event loop
     sys.exit(app.exec())

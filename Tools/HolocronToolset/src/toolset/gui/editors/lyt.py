@@ -4,12 +4,9 @@ from typing import TYPE_CHECKING
 
 import qtpy
 
-from qtpy.QtCore import Qt, QPointF, QSize
+from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QBrush, QColor, QPainter, QPen, QTransform
-from qtpy.QtWidgets import (
-    QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene,
-    QMessageBox, QGraphicsItem, QFileDialog, QListView
-)
+from qtpy.QtWidgets import QFileDialog, QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QGraphicsRectItem, QGraphicsScene, QListView, QMessageBox
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -17,11 +14,11 @@ from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTObstacle, LYTRoom,
 from pykotor.resource.type import ResourceType
 from toolset.data.misc import ControlItem
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.git import GITSettings
 from toolset.gui.widgets.settings.lyt_editor import LYTEditorSettings
 
 if TYPE_CHECKING:
     from qtpy.QtWidgets import QWidget
+
     from toolset.data.installation import HTInstallation
 
 class LYTEditor(Editor):
@@ -94,11 +91,11 @@ class LYTEditor(Editor):
         self.ui.addRoomButton.clicked.connect(self.addRoom)
         self.ui.addTrackButton.clicked.connect(self.addTrack)
         self.ui.addObstacleButton.clicked.connect(self.addObstacle)
-        self.ui.addDoorHookButton.clicked.connect(self.addDoorHook)
+        self.ui.addDoorHookButton.clicked.connect(self.addDoorHook)  # FIXME: addDoorHookButton attribute not found
         self.ui.generateWalkmeshButton.clicked.connect(self.generateWalkmesh)
         self.ui.zoomSlider.valueChanged.connect(self.updateZoom)
-        self.ui.importTextureButton.clicked.connect(self.importTexture)
-        self.ui.importModelButton.clicked.connect(self.importModel)
+        self.ui.importTextureButton.clicked.connect(self.importTexture)  # FIXME: importTextureButton attribute not found
+        self.ui.importModelButton.clicked.connect(self.importModel)  # FIXME: importModelButton attribute not found 
 
     def _setupGraphicsView(self):
         self.ui.graphicsView.setRenderHint(QPainter.Antialiasing)
@@ -108,32 +105,32 @@ class LYTEditor(Editor):
 
     def _setupSidebar(self):
         # Setup texture browser
-        self.ui.textureBrowser.setIconSize(QSize(64, 64))
-        self.ui.textureBrowser.setViewMode(QListView.IconMode)
-        self.ui.textureBrowser.setResizeMode(QListView.Adjust)
-        self.ui.textureBrowser.setWrapping(True)
+        self.ui.textureBrowser.setIconSize(QSize(64, 64))  # FIXME: textureBrowser attribute not found
+        self.ui.textureBrowser.setViewMode(QListView.IconMode)  # FIXME: textureBrowser attribute not found
+        self.ui.textureBrowser.setResizeMode(QListView.Adjust)  # FIXME: textureBrowser attribute not found
+        self.ui.textureBrowser.setWrapping(True)  # FIXME: textureBrowser attribute not found
 
         # Setup room templates
-        self.ui.roomTemplateList.addItems(["Square Room", "Circular Room", "L-Shaped Room"])
+        self.ui.roomTemplateList.addItems(["Square Room", "Circular Room", "L-Shaped Room"])  # FIXME: roomTemplateList attribute not found
 
     def addRoom(self):
         room = LYTRoom()
         room.position = Vector3(0, 0, 0)
-        room.size = Vector2(10, 10)
+        room.size = Vector2(10, 10)  # FIXME: size attribute not found
         self._lyt.rooms.append(room)
         self.updateScene()
 
     def addTrack(self):
         track = LYTTrack()
-        track.start = Vector3(0, 0, 0)
-        track.end = Vector3(10, 10, 0)
+        track.start = Vector3(0, 0, 0)  # FIXME: start attribute not found
+        track.end = Vector3(10, 10, 0)  # FIXME: end attribute not found
         self._lyt.tracks.append(track)
         self.updateScene()
 
     def addObstacle(self):
         obstacle = LYTObstacle()
         obstacle.position = Vector3(0, 0, 0)
-        obstacle.radius = 5
+        obstacle.radius = 5  # FIXME: radius attribute not found
         self._lyt.obstacles.append(obstacle)
         self.updateScene()
 

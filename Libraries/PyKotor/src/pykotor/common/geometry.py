@@ -574,6 +574,7 @@ class Vector3:
             self.x /= magnitude
             self.y /= magnitude
             self.z /= magnitude
+        return self
 
     def magnitude(
         self,

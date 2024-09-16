@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from toolset.gui.widgets.settings.git import GITSettings
+
 
 class LYTEditorSettings(GITSettings):
     def __init__(self):

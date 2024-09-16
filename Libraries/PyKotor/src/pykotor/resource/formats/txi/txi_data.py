@@ -192,13 +192,6 @@ lowerrightcoords {self.lr_coords_count}
         Returns:
         -------
             boxes: List of bounding boxes as lists of [x1,y1,x2,y2] coordinates
-
-        Processing Logic:
-        ----------------
-            - Loops through upper_left_coords and lower_right_coords and zips them
-            - Converts normalized coords to pixel coords using resolution
-            - Appends pixel coords as a list representing a bounding box
-            - Returns list of bounding boxes.
         """
         boxes = []
         for (ulx, uly, _), (lrx, lry, _) in zip(upper_left_coords, lower_right_coords):
@@ -223,14 +216,6 @@ lowerrightcoords {self.lr_coords_count}
         Returns:
         -------
             tuple: tuple containing lists of normalized upper left and lower right box coordinates
-
-        Processing Logic:
-        ----------------
-            - Loops through each bounding box
-            - Extracts upper left and lower right coordinates from each box
-            - Normalizes the coordinates by dividing by image width/height
-            - Appends normalized upper left and lower right coords to separate lists
-            - Returns a tuple of the two lists of normalized coordinates.
         """
         upper_left_coords: list[tuple[float, float, int]] = []
         lower_right_coords: list[tuple[float, float, int]] = []
