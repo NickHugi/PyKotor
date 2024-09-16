@@ -164,6 +164,18 @@ class ModuleDesigner(QMainWindow):
         else:
             QTimer().singleShot(33, lambda: self.openModule(mod_filepath))
 
+        self.lyt_editor = LYTEditor(self)
+        self.walkmesh_editor = WalkmeshEditor(self)
+        self.texture_browser = TextureBrowser(self)
+
+        # Add new tabs for LYT and Walkmesh editors
+        self.ui.tabWidget.addTab(self.lyt_editor, "LYT Editor")
+        self.ui.tabWidget.addTab(self.walkmesh_editor, "Walkmesh Editor")
+
+        # Connect signals
+        self.lyt_editor.lytUpdated.connect(self.onLYTUpdated)
+        self.walkmesh_editor.walkmeshUpdated.connect(self.onWalkmeshUpdated)
+
     def showEvent(self, a0: QShowEvent):
         if self.ui.mainRenderer._scene is None:  # noqa: SLF001
             return  # Don't show the window if the scene isn't ready, otherwise the gl context stuff will start prematurely.
