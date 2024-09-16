@@ -156,7 +156,7 @@ class LYTEditor(QWidget):
 
     def createRoomFromTemplate(self, roomTemplate: LYTRoom):
         # Logic to create a room from the given template
-        newRoom = LYTRoom(position=Vector3(0, 0, 0), size=Vector2(100, 100))
+        newRoom = LYTRoom(position=Vector3(0, 0, 0), size=Vector2(100, 100))  # FIXME: size attribute does not exist.
         self.lyt.rooms.append(newRoom)
         self.update()
         self.textureBrowser.textureChanged.connect(self.applyTexture)
@@ -226,16 +226,16 @@ class LYTEditor(QWidget):
         pen = QPen(QColor(255, 0, 0), 2)
         painter.setPen(pen)
 
-        start = QPoint(int(track.start.x), int(track.start.y)) * zoom
-        end = QPoint(int(track.end.x), int(track.end.y)) * zoom
+        start = QPoint(int(track.start.x), int(track.start.y)) * zoom  # FIXME: start and end attributes do not exist.
+        end = QPoint(int(track.end.x), int(track.end.y)) * zoom  # FIXME: start and end attributes do not exist.
         painter.drawLine(start, end)
 
     def drawObstacle(self, painter: QPainter, obstacle: LYTObstacle, zoom: float):
         pen = QPen(QColor(255, 255, 0), 2)
         painter.setPen(pen)
 
-        center = QPoint(int(obstacle.position.x), int(obstacle.position.y)) * zoom
-        radius = obstacle.radius * zoom
+        center = QPoint(int(obstacle.position.x), int(obstacle.position.y)) * zoom  # FIXME: position attribute does not exist.
+        radius = obstacle.radius * zoom  # FIXME: radius attribute does not exist.
         painter.drawEllipse(center, radius, radius)
 
     def drawDoorHook(self, painter: QPainter, doorhook: LYTDoorHook, zoom: float):
