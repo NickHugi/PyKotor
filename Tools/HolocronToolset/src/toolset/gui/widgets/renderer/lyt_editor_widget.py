@@ -14,7 +14,7 @@ import qtpy
 
 from loggerplus import RobustLogger
 from qtpy.QtCore import QByteArray, QEvent, QMimeData, QModelIndex, QPoint, QSettings, QSize, QTimer, Qt, Signal
-from qtpy.QtGui import QDrag, QIcon, QKeySequence, QPainter, QPalette
+from qtpy.QtGui import QDrag, QHelpEvent, QIcon, QKeySequence, QPainter, QPalette, QPixmap
 from qtpy.QtWidgets import (
     QAction,
     QActionGroup,
@@ -22,6 +22,7 @@ from qtpy.QtWidgets import (
     QDialog,
     QDockWidget,
     QErrorMessage,
+    QFileDialog,
     QInputDialog,
     QLabel,
     QMenu,
@@ -39,9 +40,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.lyt.lyt_data import LYT
-from toolset.gui.widgets.renderer.custom_toolbar import CustomizableToolBar
+from pykotor.resource.formats.lyt.lyt_data import LYT, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from toolset.gui.widgets.renderer.custom_toolbar import CustomizableToolBar  # FIXME: CustomizableToolBar not found
 from toolset.gui.widgets.renderer.lyt_editor import LYTEditor
 from toolset.gui.widgets.renderer.texture_browser import TextureBrowser
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
@@ -69,6 +71,7 @@ if TYPE_CHECKING:
         QWheelEvent,
     )
 
+    from gui.widgets.renderer.walkmesh_editor import WalkmeshEditor
     from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
@@ -112,7 +115,7 @@ class LYTEditorWidget(QWidget):
         self.setupLYTTools()
         
         # Initialize LYT rendering
-        self.parent_ref.setLYT(self.current_lyt)
+        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT attribute not found
 
     def _worker_init(self):
         # Initialize worker process with necessary resources
@@ -326,7 +329,7 @@ class LYTEditorWidget(QWidget):
 
     def onToolSelected(self, action: QAction):
         self.current_tool = action.text().lower()
-        self.lyt_editor.setCurrentTool(self.current_tool)
+        self.lyt_editor.setCurrentTool(self.current_tool)  # FIXME: setCurrentTool attribute not found
 
     def setupDragAndDrop(self):
         self.setAcceptDrops(True)
@@ -346,7 +349,7 @@ class LYTEditorWidget(QWidget):
 
     def saveLayoutState(self):
         self.settings.setValue("LYTEditorWidget/geometry", self.saveGeometry())
-        self.settings.setValue("LYTEditorWidget/windowState", self.saveState())
+        self.settings.setValue("LYTEditorWidget/windowState", self.saveState())  # FIXME: saveState attribute not found
         self.settings.setValue("LYTEditorWidget/mainSplitterState", self.main_splitter.saveState())
         self.settings.setValue("LYTEditorWidget/rightPanelLayout", json.dumps(self.saveRightPanelLayout()))
 
@@ -365,7 +368,7 @@ class LYTEditorWidget(QWidget):
 
         state = self.settings.value("LYTEditorWidget/windowState")
         if state:
-            self.restoreState(state)
+            self.restoreState(state)  # FIXME: restoreState attribute not found
 
         splitter_state = self.settings.value("LYTEditorWidget/mainSplitterState")
         if splitter_state:
@@ -452,10 +455,10 @@ class LYTEditorWidget(QWidget):
 
     def setLYT(self, lyt: LYT):
         self.lyt_editor.setLYT(lyt)
-        self.walkmesh_editor.setLYT(lyt)
+        self.walkmesh_editor.setLYT(lyt)  # FIXME: setLYT attribute not found
 
     def getLYT(self) -> Optional[LYT]:
-        return self.lyt_editor.getLYT()
+        return self.lyt_editor.getLYT()  # FIXME: getLYT attribute not found
 
     def submit_task(self, task: Callable[..., Any], *args: Any, **kwargs: Any) -> concurrent.futures.Future:
         self.task_queue.append((task, args, kwargs))
@@ -497,9 +500,9 @@ class LYTEditorWidget(QWidget):
         try:
             task, result = future.result()
             if isinstance(result, functools.partial):
-                if result.success:
+                if result.success:  # FIXME: success attribute not found
                     self.lytUpdated.emit(self.getLYT())
-                elif result.error:
+                elif result.error:  # FIXME: error attribute not found
                     self.showErrorMessage(str(result.error))
             RobustLogger().info(f"Task {task.__name__} completed successfully")
         except Exception as e:  # noqa: BLE001
@@ -518,18 +521,18 @@ class LYTEditorWidget(QWidget):
         future.add_done_callback(self.on_walkmesh_generated)
 
     def editWalkmesh(self):
-        self.walkmesh_editor.editWalkmesh()
+        self.walkmesh_editor.editWalkmesh()  # FIXME: editWalkmesh attribute not found
 
     def importTexture(self):
         self.undo_stack.push(ImportTextureCommand(self.texture_browser))
 
     def manageTextures(self):
-        self.texture_browser.manageTextures()
+        self.texture_browser.manageTextures()  # FIXME: manageTextures attribute not found
 
     def _connect_rooms(self) -> tuple[Any, Any]:
-        old_state = self.lyt_editor.getLYT().serialize()
-        self.lyt_editor.autoConnectRooms()
-        new_state = self.lyt_editor.getLYT().serialize()
+        old_state = self.lyt_editor.getLYT().serialize()  # FIXME: getLYT attribute not found
+        self.lyt_editor.autoConnectRooms()  # FIXME: autoConnectRooms attribute not found
+        new_state = self.lyt_editor.getLYT().serialize()  # FIXME: getLYT attribute not found
         return old_state, new_state
 
     def on_connect_rooms_completed(self, future: concurrent.futures.Future):
@@ -560,11 +563,11 @@ class LYTEditorWidget(QWidget):
         elif mime_data.hasText():
             # Assume it's a room template or other LYT component
             component_data = mime_data.text()
-            self.addLYTComponent(component_data, event.pos())
+            self.addLYTComponent(component_data, event.pos())  # FIXME: addLYTComponent attribute not found
         elif mime_data.hasFormat("application/x-qabstractitemmodeldatalist"):
             # Handle drag and drop from texture browser
             model = cast(QModelIndex, event.source()).model()
-            index = model.index(event.source().currentIndex().row(), 0)
+            index = model.index(event.source().currentIndex().row(), 0)  # FIXME: currentIndex attribute not found
             texture_name = model.data(index, Qt.DisplayRole)
             self.applyTextureToSelectedRoom(texture_name, event.pos())
 
@@ -588,11 +591,11 @@ class LYTEditorWidget(QWidget):
         try:
             result = future.result()
             if isinstance(result, (asyncio.Future, concurrent.futures.Future, asyncio.Task, functools.partial)):
-                if result.success:
-                    self.walkmesh_editor.setWalkmesh(result.data)
+                if result.success:  # FIXME: success attribute not found
+                    self.walkmesh_editor.setWalkmesh(result.data)  # FIXME: setWalkmesh attribute not found
                     self.showInfoMessage("Walkmesh generated successfully")
                 else:
-                    self.showErrorMessage(f"Error generating walkmesh: {result.error}")
+                    self.showErrorMessage(f"Error generating walkmesh: {result.error}")  # FIXME: error attribute not found
             else:
                 self.showErrorMessage("Unexpected result from walkmesh generation")
         finally:
@@ -605,8 +608,8 @@ class LYTEditorWidget(QWidget):
 
     def update_status_bar(self):
         lyt = self.getLYT()
-        selected_room = self.lyt_editor.getSelectedRoom()
-        selected_texture = self.texture_browser.getSelectedTexture()
+        selected_room = self.lyt_editor.getSelectedRoom()  # FIXME: getSelectedRoom attribute not found
+        selected_texture = self.texture_browser.getSelectedTexture()  # FIXME: getSelectedTexture attribute not found
         room_info = f"Selected Room: {selected_room.name if selected_room else 'None'}" if selected_room else ""
         walkmesh_info = "Walkmesh visible" if self.walkmesh_editor.isVisible() else "Walkmesh hidden"
         search_info = f"Search results: {len(self.search_results)}" if self.search_results else ""
@@ -663,12 +666,12 @@ class LYTEditorWidget(QWidget):
         super().keyPressEvent(event)
 
     def deleteSelectedItem(self):
-        selected_item = self.lyt_editor.getSelectedItem()
+        selected_item = self.lyt_editor.getSelectedItem()  # FIXME: getSelectedItem attribute not found
         if selected_item:
             self.undo_stack.push(DeleteItemCommand(self.lyt_editor, selected_item))
 
     def renameSelectedItem(self):
-        selected_item = self.lyt_editor.getSelectedItem()
+        selected_item = self.lyt_editor.getSelectedItem()  # FIXME: getSelectedItem attribute not found
         if selected_item:
             self.undo_stack.push(RenameItemCommand(self.lyt_editor, selected_item))
 
@@ -687,7 +690,7 @@ class LYTEditorWidget(QWidget):
         lyt = self.getLYT()
         if lyt:
             results.extend(("Room", room.model) for room in lyt.rooms if search_text.lower() in room.model.lower())
-            results.extend(("Texture", texture) for texture in self.texture_browser.getTextures() if search_text.lower() in texture.lower())
+            results.extend(("Texture", texture) for texture in self.texture_browser.getTextures() if search_text.lower() in texture.lower())  # FIXME: getTextures attribute not found
             results.extend(("Track", track.model) for track in lyt.tracks if search_text.lower() in track.model.lower())
             results.extend(
                 ("Obstacle", obstacle.model)
@@ -718,7 +721,7 @@ class LYTEditorWidget(QWidget):
             self.update_status_bar()
 
     def toggleWalkmeshVisibility(self):
-        self.walkmesh_editor.toggleVisibility()
+        self.walkmesh_editor.toggleVisibility()  # FIXME: toggleVisibility attribute not found
         self.update_status_bar()
 
     def openTextureBrowser(self):
@@ -728,7 +731,7 @@ class LYTEditorWidget(QWidget):
         lyt: LYT | None = self.getLYT()
         if lyt:
             try:
-                write_lyt(lyt, self.getLYTPath())
+                write_lyt(lyt, self.getLYTPath())  # FIXME: getLYTPath attribute not found
                 self.showInfoMessage("LYT saved successfully")
                 RobustLogger().info("LYT saved successfully")
             except Exception as e:  # noqa: BLE001
@@ -773,7 +776,7 @@ class LYTEditorWidget(QWidget):
             self.walkmesh_dock.restoreGeometry(QByteArray.fromHex(layout_data["walkmesh_dock"]["geometry"].encode()))
 
     def duplicateSelectedRoom(self):
-        selected_room = self.lyt_editor.getSelectedRoom()
+        selected_room = self.lyt_editor.getSelectedRoom()  # FIXME: getSelectedRoom attribute not found
         if selected_room:
             self.undo_stack.push(DuplicateRoomCommand(self.lyt_editor, selected_room))
 
@@ -784,18 +787,18 @@ class LYTEditorWidget(QWidget):
             self.showFullScreen()
 
     def highlightSearchResults(self, results: list[tuple[str, str]]):
-        self.lyt_editor.clearHighlights()
+        self.lyt_editor.clearHighlights()  # FIXME: clearHighlights attribute not found
         for result_type, result_name in results:
             if result_type == "Room":
-                self.lyt_editor.highlightRoom(result_name)
+                self.lyt_editor.highlightRoom(result_name)  # FIXME: highlightRoom attribute not found
             elif result_type == "Texture":
-                self.texture_browser.highlightTexture(result_name)
+                self.texture_browser.highlightTexture(result_name)  # FIXME: highlightTexture attribute not found
 
     def goToSearchResult(self, result_type: str, result_name: str, event: QMouseEvent):
         if result_type == "Room":
-            self.lyt_editor.selectRoom(result_name)
+            self.lyt_editor.selectRoom(result_name)  # FIXME: selectRoom attribute not found
         elif result_type == "Texture":
-            self.texture_browser.selectTexture(result_name)
+            self.texture_browser.selectTexture(result_name)  # FIXME: selectTexture attribute not found
 
     def toggleHelpOverlay(self):
         if hasattr(self, "help_overlay") and self.help_overlay.isVisible():
@@ -804,9 +807,9 @@ class LYTEditorWidget(QWidget):
             self.showHelpOverlay()
 
     def showHelpOverlay(self):
-        from toolset.gui.widgets.help_overlay import HelpOverlay
+        from toolset.gui.widgets.help_overlay import HelpOverlay  # FIXME: help_overlay  file not found
 
-        self.help_overlay = HelpOverlay(self)
+        self.help_overlay = HelpOverlay(self)  # FIXME: HelpOverlay attribute not found
         self.help_overlay.addSection("Keyboard Shortcuts", self.getKeyboardShortcutsHelp())
         self.help_overlay.addSection("Mouse Controls", self.getMouseControlsHelp())
         self.help_overlay.addSection("General Tips", self.getGeneralTipsHelp())
@@ -872,7 +875,7 @@ class LYTEditorWidget(QWidget):
         lyt = self.getLYT()
         if lyt:
             results.extend(("Room", room.model) for room in lyt.rooms if search_text.lower() in room.model.lower())
-            results.extend(("Texture", texture) for texture in self.texture_browser.getTextures() if search_text.lower() in texture.lower())
+            results.extend(("Texture", texture) for texture in self.texture_browser.getTextures() if search_text.lower() in texture.lower())  # FIXME: getTextures attribute not found
             results.extend(("Track", track.model) for track in lyt.tracks if search_text.lower() in track.model.lower())
             results.extend(("Obstacle", obstacle.model) for obstacle in lyt.obstacles if search_text.lower() in obstacle.model.lower())
         return results
@@ -898,13 +901,13 @@ class LYTEditorWidget(QWidget):
         result_dialog.exec_()
 
     def toggleLayerVisibility(self):
-        self.lyt_editor.toggleLayerVisibility()
+        self.lyt_editor.toggleLayerVisibility()  # FIXME: toggleLayerVisibility attribute not found
         self.update_status_bar()
 
     def cancelCurrentOperation(self):
-        self.lyt_editor.cancelCurrentOperation()
+        self.lyt_editor.cancelCurrentOperation()  # FIXME: cancelCurrentOperation attribute not found
         self.current_tool = "select"
-        self.tool_group.actions()[0].setChecked(True)
+        self.tool_group.actions()[0].setChecked(True)  # FIXME: tool_group attribute not found
 
     def onZoomSliderValueChanged(self, value: int):
         self.zoom_pan_widget.setZoomFactor(value / 100)
@@ -919,12 +922,12 @@ class LYTEditorWidget(QWidget):
 
     def updateRealTimePreview(self):
         # Update the preview based on the current LYT state
-        self.lyt_editor.updatePreview()
-        self.walkmesh_editor.updatePreview()
+        self.lyt_editor.updatePreview()  # FIXME: updatePreview attribute not found
+        self.walkmesh_editor.updatePreview()  # FIXME: updatePreview attribute not found
     
     def setupLYTTools(self):
-        self.lyt_toolbar = QToolBar("LYT Tools")
-        self.addToolBar(self.lyt_toolbar)
+        self.lyt_toolbar = QToolBar("LYT Tools")  # FIXME: QToolBar attribute not found
+        self.addToolBar(self.lyt_toolbar)  # FIXME: addToolBar attribute not found
         
         self.add_room_action = QAction("Add Room", self)
         self.add_room_action.triggered.connect(self.addRoom)
@@ -957,7 +960,7 @@ class LYTEditorWidget(QWidget):
     def editRoom(self):
         if self.selected_room:
             # Open a dialog to edit room properties
-            dialog = RoomPropertiesDialog(self.selected_room, self)
+            dialog = RoomPropertiesDialog(self.selected_room, self)  # FIXME: RoomPropertiesDialog needs to be created
             if dialog.exec_():
                 self.updateLYTPreview()
     
@@ -966,7 +969,7 @@ class LYTEditorWidget(QWidget):
             track = LYTTrack()
             track.start_room = self.selected_room
             # Open a dialog to select end room and set other properties
-            dialog = TrackPropertiesDialog(self.current_lyt.rooms, track, self)
+            dialog = TrackPropertiesDialog(self.current_lyt.rooms, track, self)  # FIXME: TrackPropertiesDialog needs to be created
             if dialog.exec_():
                 self.current_lyt.tracks.append(track)
                 self.updateLYTPreview()
@@ -974,7 +977,7 @@ class LYTEditorWidget(QWidget):
     def addObstacle(self):
         obstacle = LYTObstacle()
         # Open a dialog to set obstacle properties
-        dialog = ObstaclePropertiesDialog(obstacle, self)
+        dialog = ObstaclePropertiesDialog(obstacle, self)  # FIXME: ObstaclePropertiesDialog needs to be created
         if dialog.exec_():
             self.current_lyt.obstacles.append(obstacle)
             self.updateLYTPreview()
@@ -984,7 +987,7 @@ class LYTEditorWidget(QWidget):
             doorhook = LYTDoorHook()
             doorhook.room = self.selected_room
             # Open a dialog to set doorhook properties
-            dialog = DoorhookPropertiesDialog(doorhook, self)
+            dialog = DoorhookPropertiesDialog(doorhook, self)  # FIXME: DoorhookPropertiesDialog needs to be created
             if dialog.exec_():
                 self.current_lyt.doorhooks.append(doorhook)
                 self.updateLYTPreview()
@@ -992,18 +995,18 @@ class LYTEditorWidget(QWidget):
     def updateLYTPreview(self):
         self.lyt_editor.setLYT(self.current_lyt)
         self.lytUpdated.emit(self.current_lyt)
-        self.parent_ref.setLYT(self.current_lyt)
+        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT attribute not found
     
     def importCustomTexture(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
         if file_path:
             texture_name = os.path.basename(file_path)
             self.custom_textures[texture_name] = QPixmap(file_path)
-            self.texture_browser.addTexture(texture_name, self.custom_textures[texture_name])
+            self.texture_browser.addTexture(texture_name, self.custom_textures[texture_name])  # FIXME: addTexture attribute not found
     
     def generateBasicLYT(self):
-        if self.parent_ref.module:
-            self.current_lyt = self.parent_ref.module.layout().resource()
+        if self.parent_ref.module:  # FIXME: module attribute not found
+            self.current_lyt = self.parent_ref.module.layout().resource()  # FIXME: module attribute not found
             if not self.current_lyt:
                 self.current_lyt = LYT()
                 # Generate a basic layout based on the module's area
@@ -1012,10 +1015,10 @@ class LYTEditorWidget(QWidget):
             self.updateLYTPreview()
     
     def saveLYT(self):
-        if self.current_lyt and self.parent_ref.module:
-            self.parent_ref.module.layout().save(self.current_lyt)
+        if self.current_lyt and self.parent_ref.module:  # FIXME: module attribute not found
+            self.parent_ref.module.layout().save(self.current_lyt)  # FIXME: module attribute not found
             QMessageBox.information(self, "LYT Saved", "The layout has been saved successfully.")
-        self.parent_ref.setLYT(self.current_lyt)
+        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT attribute not found
 
 
 class ConnectRoomsCommand(QUndoCommand):
@@ -1026,10 +1029,10 @@ class ConnectRoomsCommand(QUndoCommand):
         self.new_state: str = new_state
 
     def redo(self):
-        self.lyt_editor.getLyt().deserialize(self.new_state)
+        self.lyt_editor.getLyt().deserialize(self.new_state)  # FIXME: getLyt attribute not found
 
     def undo(self):
-        self.lyt_editor.getLYT().deserialize(self.old_state)
+        self.lyt_editor.getLYT().deserialize(self.old_state)  # FIXME: getLYT attribute not found
 
 
 class EditWalkmeshCommand(QUndoCommand):
@@ -1040,12 +1043,12 @@ class EditWalkmeshCommand(QUndoCommand):
         self.new_state: str | None = None
 
     def redo(self):
-        self.old_state = self.walkmesh_editor.getWalkmesh().serialize()
-        self.walkmesh_editor.startEditing()
-        self.new_state = self.walkmesh_editor.getWalkmesh().serialize()
+        self.old_state = self.walkmesh_editor.getWalkmesh().serialize()  # FIXME: getWalkmesh attribute not found
+        self.walkmesh_editor.startEditing()  # FIXME: startEditing attribute not found
+        self.new_state = self.walkmesh_editor.getWalkmesh().serialize()  # FIXME: getWalkmesh attribute not found
 
     def undo(self):
-        self.walkmesh_editor.getWalkmesh().deserialize(self.old_state)
+        self.walkmesh_editor.getWalkmesh().deserialize(self.old_state)  # FIXME: getWalkmesh attribute not found
 
 
 class ImportTextureCommand(QUndoCommand):
@@ -1060,7 +1063,7 @@ class ImportTextureCommand(QUndoCommand):
 
     def undo(self):
         if self.imported_texture:
-            self.texture_browser.removeTexture(self.imported_texture)
+            self.texture_browser.removeTexture(self.imported_texture)  # FIXME: removeTexture attribute not found
 
 
 class DeleteItemCommand(QUndoCommand):
@@ -1071,11 +1074,11 @@ class DeleteItemCommand(QUndoCommand):
         self.old_state: str | None = None
 
     def redo(self):
-        self.old_state = self.lyt_editor.getLYT().serialize()
-        self.lyt_editor.deleteItem(self.item)
+        self.old_state = self.lyt_editor.getLYT().serialize()  # FIXME: getLYT attribute not found
+        self.lyt_editor.deleteItem(self.item)  # FIXME: deleteItem attribute not found
 
     def undo(self):
-        self.lyt_editor.getLYT().deserialize(self.old_state)
+        self.lyt_editor.getLYT().deserialize(self.old_state)  # FIXME: getLYT attribute not found
 
 
 class RenameItemCommand(QUndoCommand):
@@ -1105,12 +1108,12 @@ class DuplicateRoomCommand(QUndoCommand):
         self.new_room: Any | None = None
 
     def redo(self):
-        self.new_room = self.lyt_editor.duplicateRoom(self.original_room)
-        self.lyt_editor.selectRoom(self.new_room)
+        self.new_room = self.lyt_editor.duplicateRoom(self.original_room)  # FIXME: duplicateRoom attribute not found
+        self.lyt_editor.selectRoom(self.new_room)  # FIXME: selectRoom attribute not found
 
     def undo(self):
-        self.lyt_editor.deleteRoom(self.new_room)
-        self.lyt_editor.selectRoom(self.original_room)
+        self.lyt_editor.deleteRoom(self.new_room)  # FIXME: deleteRoom attribute not found
+        self.lyt_editor.selectRoom(self.original_room)  # FIXME: selectRoom attribute not found
 
 
 class ZoomPanWidget(QWidget):
@@ -1161,7 +1164,7 @@ class ZoomPanWidget(QWidget):
             self.zoomOut()
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.ToolTip:
+        if event.type() == QEvent.ToolTip and isinstance(obj, QWidget) and isinstance(event, QHelpEvent):
             help_text = obj.toolTip()
             if help_text:
                 QToolTip.showText(event.globalPos(), help_text)
