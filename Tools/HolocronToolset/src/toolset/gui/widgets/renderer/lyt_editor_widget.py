@@ -76,7 +76,8 @@ if TYPE_CHECKING:
 
 
 class LYTEditorWidget(QWidget):
-    lytUpdated: Signal = Signal(object)
+    lytUpdated = Signal(LYT)
+    walkmeshUpdated = Signal(BWM)
 
     def __init__(self, parent: ModuleRenderer):
         super().__init__(parent)
@@ -106,7 +107,6 @@ class LYTEditorWidget(QWidget):
         self.setupUndoView()
         self.setupErrorHandler()
         
-        # New attributes for LYT editing
         self.current_lyt: Optional[LYT] = None
         self.room_templates: dict[str, LYTRoom] = {}
         self.custom_textures: dict[str, QPixmap] = {}
@@ -115,7 +115,7 @@ class LYTEditorWidget(QWidget):
         self.setupLYTTools()
         
         # Initialize LYT rendering
-        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT attribute not found
+        self.loadCurrentLYT()
 
     def _worker_init(self):
         # Initialize worker process with necessary resources
@@ -517,8 +517,11 @@ class LYTEditorWidget(QWidget):
         future.add_done_callback(self.on_connect_rooms_completed)
 
     def generateWalkmesh(self):
-        future = self.submit_task(self.walkmesh_editor.generateWalkmesh)
-        future.add_done_callback(self.on_walkmesh_generated)
+        if self.current_lyt:
+            future = self.submit_task(self.walkmesh_editor.generateWalkmesh, self.current_lyt)
+            future.add_done_callback(self.on_walkmesh_generated)
+        else:
+            QMessageBox.warning(self, "Generate Walkmesh", "No LYT loaded. Please load or create a LYT first.")
 
     def editWalkmesh(self):
         self.walkmesh_editor.editWalkmesh()  # FIXME: editWalkmesh attribute not found
@@ -587,17 +590,17 @@ class LYTEditorWidget(QWidget):
         # Implement logic to apply the texture to the selected room
         ...
 
-    def on_walkmesh_generated(self, future: concurrent.futures.Future[tuple[Callable[..., Any], Any]]):
+    def on_walkmesh_generated(self, future: concurrent.futures.Future):
         try:
-            result = future.result()
-            if isinstance(result, (asyncio.Future, concurrent.futures.Future, asyncio.Task, functools.partial)):
-                if result.success:  # FIXME: success attribute not found
-                    self.walkmesh_editor.setWalkmesh(result.data)  # FIXME: setWalkmesh attribute not found
-                    self.showInfoMessage("Walkmesh generated successfully")
-                else:
-                    self.showErrorMessage(f"Error generating walkmesh: {result.error}")  # FIXME: error attribute not found
+            walkmesh = future.result()
+            if isinstance(walkmesh, BWM):
+                self.walkmesh_editor.setWalkmesh(walkmesh)
+                self.walkmeshUpdated.emit(walkmesh)
+                self.showInfoMessage("Walkmesh generated successfully")
             else:
                 self.showErrorMessage("Unexpected result from walkmesh generation")
+        except Exception as e:
+            self.showErrorMessage(f"Error generating walkmesh: {str(e)}")
         finally:
             self.active_tasks -= 1
             self.update_status_bar()
@@ -993,9 +996,11 @@ class LYTEditorWidget(QWidget):
                 self.updateLYTPreview()
     
     def updateLYTPreview(self):
-        self.lyt_editor.setLYT(self.current_lyt)
-        self.lytUpdated.emit(self.current_lyt)
-        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT attribute not found
+        if self.current_lyt:
+            self.lyt_editor.setLYT(self.current_lyt)
+            self.lytUpdated.emit(self.current_lyt)
+            self.parent_ref.scene.setLYT(self.current_lyt)
+            self.walkmesh_editor.setLYT(self.current_lyt)
     
     def importCustomTexture(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Import Texture", "", "Image Files (*.png *.jpg *.bmp)")
@@ -1004,21 +1009,29 @@ class LYTEditorWidget(QWidget):
             self.custom_textures[texture_name] = QPixmap(file_path)
             self.texture_browser.addTexture(texture_name, self.custom_textures[texture_name])  # FIXME: addTexture attribute not found
     
-    def generateBasicLYT(self):
-        if self.parent_ref.module:  # FIXME: module attribute not found
-            self.current_lyt = self.parent_ref.module.layout().resource()  # FIXME: module attribute not found
+    def loadCurrentLYT(self):
+        if self.parent_ref.module:
+            lyt_resource = self.parent_ref.module.layout()
+            if lyt_resource:
+                self.current_lyt = lyt_resource.resource()
             if not self.current_lyt:
                 self.current_lyt = LYT()
                 # Generate a basic layout based on the module's area
-                # This is a placeholder and should be implemented based on your specific requirements
-                self.current_lyt.rooms.append(LYTRoom(Vector3(0, 0, 0), Vector3(50, 50, 10)))
-            self.updateLYTPreview()
+                self.current_lyt.rooms.append(LYTRoom())
+                self.current_lyt.rooms[0].position = Vector3(0, 0, 0)
+                self.current_lyt.rooms[0].model = "default_room"
+        self.updateLYTPreview()
     
     def saveLYT(self):
-        if self.current_lyt and self.parent_ref.module:  # FIXME: module attribute not found
-            self.parent_ref.module.layout().save(self.current_lyt)  # FIXME: module attribute not found
-            QMessageBox.information(self, "LYT Saved", "The layout has been saved successfully.")
-        self.parent_ref.setLYT(self.current_lyt)  # FIXME: setLYT attribute not found
+        if self.current_lyt and self.parent_ref.module:
+            lyt_resource = self.parent_ref.module.layout()
+            if lyt_resource:
+                lyt_resource.save(self.current_lyt)
+                QMessageBox.information(self, "LYT Saved", "The layout has been saved successfully.")
+            else:
+                QMessageBox.warning(self, "Save Failed", "Unable to save LYT: No layout resource found in the module.")
+        else:
+            QMessageBox.warning(self, "Save Failed", "No current LYT or module available.")
 
 
 class ConnectRoomsCommand(QUndoCommand):
