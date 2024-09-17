@@ -39,6 +39,7 @@ from qtpy.QtCore import (
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
+    QAbstractProxyModel,
 )
 from qtpy.QtGui import QCursor, QDesktopServices, QDrag, QGuiApplication, QIcon, QKeySequence, QWheelEvent
 from qtpy.QtWidgets import (
@@ -76,6 +77,7 @@ from qtpy.QtWidgets import (
     QUndoStack,
     QVBoxLayout,
     QWidget,
+    QAbstractItemDelegate,
 )
 
 from utility.ui_libraries.qt.filesystem.address_bar import PyQAddressBar
