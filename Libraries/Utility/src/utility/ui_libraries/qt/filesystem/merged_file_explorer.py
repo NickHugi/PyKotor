@@ -28,6 +28,7 @@ from qtpy.QtCore import (
     QEvent,
     QFile,
     QFileInfo,
+    QItemSelection,
     QItemSelectionModel,
     QMimeData,
     QModelIndex,
@@ -44,6 +45,7 @@ from qtpy.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QComboBox,
+    QCompleter,
     QDialog,
     QDialogButtonBox,
     QDockWidget,
@@ -55,6 +57,7 @@ from qtpy.QtWidgets import (
     QInputDialog,
     QLabel,
     QLineEdit,
+    QListView,
     QMainWindow,
     QMenu,
     QMenuBar,
@@ -67,8 +70,10 @@ from qtpy.QtWidgets import (
     QSplitter,
     QStackedWidget,
     QTabWidget,
+    QTableView,
     QTextEdit,
     QToolButton,
+    QUndoStack,
     QVBoxLayout,
     QWidget,
 )
@@ -135,7 +140,7 @@ class FirstColumnInteractableTableView(RobustTableView):
         self.selectionModel().select(QModelIndex(), QItemSelectionModel.Clear | QItemSelectionModel.Rows)
 
 
-class MergedFileExplorer(QMainWindow):
+class MergedFileExplorer(QFileDialog):
     file_selected = Signal(str)
     files_selected = Signal(list)
     directory_changed = Signal(str)
