@@ -141,12 +141,12 @@ class FirstColumnInteractableTableView(RobustTableView):
 
 
 class MergedFileExplorer(QFileDialog):
-    file_selected = Signal(str)
-    files_selected = Signal(list)
-    directory_changed = Signal(str)
-    current_changed = Signal(str)
-    filter_selected = Signal(str)
-    urls_selected = Signal(list)
+    fileSelected = Signal(str)
+    filesSelected = Signal(list)
+    currentChanged = Signal(str)
+    directoryEntered = Signal(str)
+    filterSelected = Signal(str)
+    urlsSelected = Signal(list)
 
     def __init__(
         self,
@@ -157,7 +157,7 @@ class MergedFileExplorer(QFileDialog):
         initial_filter: str = "",
         options: QFileDialog.Options | None = None,
     ):
-        super().__init__(parent)
+        super().__init__(parent, caption, directory, file_filter)
         if qtpy.API_NAME == "PyQt5":
             from utility.ui_libraries.qt.uic.pyqt5.filesystem.file_system_explorer_widget import Ui_FileSystemExplorerWidget
         elif qtpy.API_NAME == "PySide6":
@@ -408,12 +408,12 @@ class MergedFileExplorer(QFileDialog):
             file_path = self.fileSystemModel.filePath(selected_indexes[0])
             self.ui.address_bar.setText(QFileInfo(file_path).fileName())
             if len(selected_indexes) == 1:
-                self.file_selected.emit(file_path)
-            self.files_selected.emit([self.fileSystemModel.filePath(index) for index in selected_indexes])
+                self.fileSelected.emit(file_path)
+            self.filesSelected.emit([self.fileSystemModel.filePath(index) for index in selected_indexes])
         else:
             self.ui.address_bar.clear()
-            self.file_selected.emit("")
-            self.files_selected.emit([])
+            self.fileSelected.emit("")
+            self.filesSelected.emit([])
 
     def on_item_double_clicked(self, index: QModelIndex):
         path = Path(self.fileSystemModel.filePath(index))
@@ -440,28 +440,31 @@ class MergedFileExplorer(QFileDialog):
         self.tiles_view.setModel(proxy_model)
 
     def on_address_bar_path_changed(self, path: Path):
-        self.set_current_path(path)
+        self.setDirectory(str(path))
 
     def on_directory_loaded(self, path: str):
         loaded_path = Path(path)
         if loaded_path == self.current_path:
             self.update_address_bar(loaded_path)
 
-    def set_current_path(self, path: os.PathLike | str):
-        path_obj = Path(path)
+    def setDirectory(self, directory: str):
+        path_obj = Path(directory)
         if path_obj.is_dir():
-            self.current_path = path_obj
-            index = self.fileSystemModel.index(str(path_obj))
+            self._currentPath = str(path_obj)
+            index = self.fileSystemModel.index(self._currentPath)
             self.list_view.setRootIndex(index)
             self.table_view.setRootIndex(index)
             self.tiles_view.setRootIndex(index)
             self.ui.navigation_pane.setCurrentIndex(index)
-            self.address_bar.setText(str(path_obj))
-            self.directory_changed.emit(str(path_obj))
+            self.address_bar.setText(self._currentPath)
+            self.directoryEntered.emit(self._currentPath)
             self.add_to_history(path_obj)
             self.update_ui()
         else:
-            self.address_bar.setText(str(self.current_path))
+            self.address_bar.setText(self._currentPath)
+
+    def directory(self) -> str:
+        return self._currentPath
 
     def add_to_history(self, path: Path):
         if self.navigation_index < len(self.navigation_history) - 1:
@@ -947,12 +950,171 @@ class MergedFileExplorer(QFileDialog):
         self.process_pool.shutdown(wait=False)
         super().closeEvent(event)
 
+    def selectFile(self, filename: str):
+        self.fileNameEdit.setText(filename)
+        self._selectedFiles = [filename]
+        self.fileSelected.emit(filename)
+
+    def selectedFiles(self) -> list[str]:
+        return self._selectedFiles
+
+    def setViewMode(self, mode: QFileDialog.ViewMode):
+        self._viewMode = mode
+        if mode == QFileDialog.ViewMode.List:
+            self.change_view_mode(ViewMode.LIST)
+        elif mode == QFileDialog.ViewMode.Detail:
+            self.change_view_mode(ViewMode.DETAILS)
+
+    def viewMode(self) -> QFileDialog.ViewMode:
+        return self._viewMode
+
+    def setFileMode(self, mode: QFileDialog.FileMode):
+        self._fileMode = mode
+
+    def fileMode(self) -> QFileDialog.FileMode:
+        return self._fileMode
+
+    def setAcceptMode(self, mode: QFileDialog.AcceptMode):
+        self._acceptMode = mode
+
+    def acceptMode(self) -> QFileDialog.AcceptMode:
+        return self._acceptMode
+
+    def setNameFilter(self, filter: str):
+        self.setNameFilters([filter])
+
+    def setNameFilters(self, filters: list[str]):
+        self._nameFilters = filters
+        self.ui.fileTypeCombo.clear()
+        self.ui.fileTypeCombo.addItems(self._nameFilters)
+        self.apply_filter(self._nameFilters[0] if self._nameFilters else "*")
+
+    def nameFilters(self) -> list[str]:
+        return self._nameFilters
+
+    def selectNameFilter(self, filter: str):
+        index = self.ui.fileTypeCombo.findText(filter)
+        if index >= 0:
+            self.ui.fileTypeCombo.setCurrentIndex(index)
+
+    def selectedNameFilter(self) -> str:
+        return self.ui.fileTypeCombo.currentText()
+
+    def setOption(self, option: QFileDialog.Option, on: bool = True):
+        if on:
+            self._options |= option
+        else:
+            self._options &= ~option
+
+    def testOption(self, option: QFileDialog.Option) -> bool:
+        return bool(self._options & option)
+
+    def options(self) -> QFileDialog.Options:
+        return self._options
+
+    def setOptions(self, options: QFileDialog.Options):
+        self._options = options
+
+    def setMimeTypeFilters(self, filters: list[str]):
+        self.mime_type_filters = filters
+        self.ui.fileTypeCombo.clear()
+        self.ui.fileTypeCombo.addItems(self.mime_type_filters)
+        self.apply_filter()
+
+    def mimeTypeFilters(self) -> list[str]:
+        return self.mime_type_filters
+
+    def selectedMimeTypeFilter(self) -> str:
+        return self.ui.fileTypeCombo.currentText()
+
+    def selectMimeTypeFilter(self, filter: str):
+        index = self.ui.fileTypeCombo.findText(filter)
+        if index >= 0:
+            self.ui.fileTypeCombo.setCurrentIndex(index)
+
+    def setSidebarUrls(self, urls: list[QUrl]):
+        self._sidebarUrls = urls
+        self.update_sidebar()
+
+    def sidebarUrls(self) -> list[QUrl]:
+        return self._sidebarUrls
+
+    def setLabelText(self, label: QFileDialog.DialogLabel, text: str):
+        if label == QFileDialog.DialogLabel.FileName:
+            self.ui.fileNameLabel.setText(text)
+        elif label == QFileDialog.DialogLabel.Accept:
+            self.ui.okButton.setText(text)
+        elif label == QFileDialog.DialogLabel.Reject:
+            self.ui.cancelButton.setText(text)
+        elif label == QFileDialog.DialogLabel.LookIn:
+            self.ui.lookInLabel.setText(text)
+        elif label == QFileDialog.DialogLabel.FileType:
+            self.ui.fileTypeLabel.setText(text)
+
+    def labelText(self, label: QFileDialog.DialogLabel) -> str:
+        if label == QFileDialog.DialogLabel.FileName:
+            return self.ui.fileNameLabel.text()
+        elif label == QFileDialog.DialogLabel.Accept:
+            return self.ui.okButton.text()
+        elif label == QFileDialog.DialogLabel.Reject:
+            return self.ui.cancelButton.text()
+        elif label == QFileDialog.DialogLabel.LookIn:
+            return self.ui.lookInLabel.text()
+        elif label == QFileDialog.DialogLabel.FileType:
+            return self.ui.fileTypeLabel.text()
+        return ""
+
+    def setProxyModel(self, model: QAbstractProxyModel):
+        self.proxy_model = model
+        self.list_view.setModel(self.proxy_model)
+        self.table_view.setModel(self.proxy_model)
+        self.tiles_view.setModel(self.proxy_model)
+
+    def proxyModel(self) -> QAbstractProxyModel:
+        return self.proxy_model
+
+    def setIconProvider(self, provider: QFileIconProvider):
+        self.icon_provider = provider
+        self.fileSystemModel.setIconProvider(self.icon_provider)
+
+    def iconProvider(self) -> QFileIconProvider:
+        return self.icon_provider
+
+    def setHistory(self, paths: list[str]):
+        self.navigation_history = [Path(path) for path in paths]
+        self.navigation_index = len(self.navigation_history) - 1
+
+    def history(self) -> list[str]:
+        return [str(path) for path in self.navigation_history]
+
+    def setItemDelegate(self, delegate: QAbstractItemDelegate):
+        self.list_view.setItemDelegate(delegate)
+        self.table_view.setItemDelegate(delegate)
+        self.tiles_view.setItemDelegate(delegate)
+
+    def itemDelegate(self) -> QAbstractItemDelegate:
+        return self.list_view.itemDelegate()
+
+    def setFilter(self, filters: QDir.Filters):
+        self.fileSystemModel.setFilter(filters)
+
+    def filter(self) -> QDir.Filters:
+        return self.fileSystemModel.filter()
+
+    def setDefaultSuffix(self, suffix: str):
+        self.default_suffix = suffix.lstrip('.')
+
+    def defaultSuffix(self) -> str:
+        return self.default_suffix
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    main_window = QMainWindow()
-    file_explorer = MergedFileExplorer()
-    main_window.setCentralWidget(file_explorer)
-    main_window.setWindowTitle("Merged File Explorer")
-    main_window.resize(1000, 600)
-    main_window.show()
+    file_explorer = MergedFileExplorer(caption="Merged File Explorer")
+    file_explorer.setFileMode(QFileDialog.FileMode.ExistingFiles)
+    file_explorer.setViewMode(QFileDialog.ViewMode.Detail)
+    file_explorer.setNameFilter("All Files (*);;Text Files (*.txt);;Python Files (*.py)")
+    file_explorer.resize(1000, 600)
+    if file_explorer.exec_() == QDialog.Accepted:
+        selected_files = file_explorer.selectedFiles()
+        print("Selected files:", selected_files)
     sys.exit(app.exec_())
