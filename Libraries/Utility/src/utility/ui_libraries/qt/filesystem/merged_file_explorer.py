@@ -141,12 +141,12 @@ class FirstColumnInteractableTableView(RobustTableView):
 
 
 class MergedFileExplorer(QFileDialog):
-    fileSelected = Signal(str)
-    filesSelected = Signal(list)
-    currentChanged = Signal(str)
-    directoryEntered = Signal(str)
-    filterSelected = Signal(str)
-    urlsSelected = Signal(list)
+    fileSelected: Signal = Signal(str)
+    filesSelected: Signal = Signal(list)
+    currentChanged: Signal = Signal(str)
+    directoryEntered: Signal = Signal(str)
+    filterSelected: Signal = Signal(str)
+    urlsSelected: Signal = Signal(list)
 
     def __init__(
         self,
