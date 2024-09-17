@@ -4,13 +4,16 @@ import platform
 import shutil
 import subprocess
 import sys
+
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import suppress
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 import qtpy
 
+from PyQt5.QtCore import QSortFilterProxyModel
 from loggerplus import RobustLogger
 from qtpy.QtCore import (
     QDir,
@@ -21,7 +24,6 @@ from qtpy.QtCore import (
     QMimeData,
     QModelIndex,
     QSize,
-    QThread,
     QUrl,
     Qt,
     Signal,  # pyright: ignore[reportPrivateImportUsage]
@@ -32,6 +34,8 @@ from qtpy.QtWidgets import (
     QCompleter,
     QFileSystemModel,
     QInputDialog,
+    QLabel,
+    QLineEdit,
     QListView,
     QMainWindow,
     QMenu,
@@ -50,50 +54,32 @@ from qtpy.QtWidgets import (
 
 from utility.ui_libraries.qt.debug.print_qobject import print_qt_class_calls
 from utility.ui_libraries.qt.filesystem.address_bar import PyQAddressBar
+from utility.ui_libraries.qt.filesystem.icon_util import get_image_from_resource
+from utility.ui_libraries.qt.filesystem.undo_commands import CopyCommand, DeleteCommand, MoveCommand, RenameCommand
 from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
-from utility.ui_libraries.qt.widgets.itemviews.tileview import TileItemDelegate
+from utility.ui_libraries.qt.widgets.itemviews.tileview import QTileView, TileItemDelegate
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 
 if TYPE_CHECKING:
     import os
 
+    from concurrent.futures import Future
+
     from qtpy.QtCore import QObject, QPoint, QRect
     from qtpy.QtGui import QDragEnterEvent, QDropEvent, QMouseEvent, QResizeEvent
     from qtpy.QtWidgets import QWidget
 
-try:
-    import comtypes
-    USE_COMTYPES = True
-except ImportError:
-    try:
-        import win32com.client
-        USE_COMTYPES = False
-    except ImportError:
-        USE_COMTYPES = None
-
-# Apply the decorator to all functions in the file
-@print_qt_class_calls(exclude_funcs=["paint", "sizeHint"])
-class QTileView(RobustListView):
-    """A view that displays items in a 2D grid."""
-
-    def __init__(self, parent: QWidget | None = None):
-        super().__init__(parent)
-        self.setViewMode(QListView.ViewMode.IconMode)
-        self.setResizeMode(QListView.ResizeMode.Adjust)
-        self.setWrapping(True)
-        self.setUniformItemSizes(False)
-        self.setItemDelegate(TileItemDelegate(self))
-
-    def setIconSize(self, size: QSize):
-        super().setIconSize(size)
-        self.setGridSize(QSize(size.width(), size.height()))
-
 
 class ViewMode(Enum):
+    EXTRA_LARGE_ICONS = auto()
+    LARGE_ICONS = auto()
+    MEDIUM_ICONS = auto()
+    SMALL_ICONS = auto()
     DETAILS = auto()
     LIST = auto()
     TILES = auto()
+    CONTENT = auto()
 
 
 @print_qt_class_calls(exclude_funcs=["paint", "sizeHint", "eventFilter"])
@@ -140,13 +126,13 @@ class BaseUndoCommand(QUndoCommand):
         try:
             self._redo()
         except Exception as e:
-            RobustLogger().exception(f"Error during redo of {self.text()}: {str(e)}")
+            RobustLogger().exception(f"Error during redo of {self.text()}: {e!s}")
 
     def undo(self):
         try:
             self._undo()
         except Exception as e:
-            RobustLogger().exception(f"Error during undo of {self.text()}: {str(e)}")
+            RobustLogger().exception(f"Error during undo of {self.text()}: {e!s}")
 
     def _redo(self):
         raise NotImplementedError("Subclasses must implement _redo")
@@ -183,6 +169,7 @@ class FileSystemExplorerWidget(QMainWindow):
 
         self.address_bar: PyQAddressBar = PyQAddressBar()
         self.current_path: Path = initial_path
+        self.proxy_model: QSortFilterProxyModel = QSortFilterProxyModel()
         self.fs_model: QFileSystemModel = QFileSystemModel()
         self.fs_model.setRootPath(str(initial_path.root))
         self.tree_view: RobustTreeView = RobustTreeView()
@@ -194,6 +181,7 @@ class FileSystemExplorerWidget(QMainWindow):
         self.list_view: RobustListView = RobustListView()
         self.table_view: FirstColumnInteractableTableView = FirstColumnInteractableTableView()
         self.tiles_view: QTileView = QTileView()
+        self.preview_view: QLabel = QLabel()
         self.list_view.viewport().installEventFilter(self)
         self.table_view.viewport().installEventFilter(self)
         self.tiles_view.viewport().installEventFilter(self)
@@ -218,7 +206,7 @@ class FileSystemExplorerWidget(QMainWindow):
         # Hide all columns in navigation pane except the first one
         for i in range(1, self.fs_model.columnCount()):
             self.ui.navigation_pane.hideColumn(i)
-        
+
         self.setup_connections()
         self.setup_shortcuts()
         self.setup_icons()
@@ -254,102 +242,29 @@ class FileSystemExplorerWidget(QMainWindow):
             self.setup_com_interfaces()
 
     def setup_com_interfaces(self):
-        if USE_COMTYPES:
+        with suppress(ImportError):
             self.setup_com_interfaces_comtypes()
-        elif USE_COMTYPES is False:
+            return
+        with suppress(ImportError):
             self.setup_com_interfaces_pywin32()
-        else:
-            RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
+            return
+        RobustLogger().warning("Neither comtypes nor pywin32 is available. COM interfaces will not be used.")
 
     def setup_com_interfaces_comtypes(self):
-        import comtypes.client as cc
+        import comtypes.client as cc  # pyright: ignore[reportMissingTypeStubs]
+
         self.shell = cc.CreateObject("Shell.Application")
 
     def setup_com_interfaces_pywin32(self):
         import win32com.client
+
         self.shell = win32com.client.Dispatch("Shell.Application")
 
-    def run_in_background(self, func: Callable, *args, **kwargs):
-        future = self.executor.submit(func, *args, **kwargs)
-        future.add_done_callback(self.background_task_completed)
-
-    def background_task_completed(self, future):
-        try:
-            result = future.result()
-            # Handle the result if needed
-        except Exception as e:
-            RobustLogger().exception(f"Background task failed: {str(e)}")
-
-    def update_progress(self, value):
-        self.progress_bar.setValue(value)
-        if value >= 100:
-            self.progress_bar.setVisible(False)
-        elif not self.progress_bar.isVisible():
-            self.progress_bar.setVisible(True)
-
-    def copy(self, cut: bool = False):
-        selected_indexes = self.ui.file_list_view.selectedIndexes()
-        if selected_indexes:
-            source_paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
-            mime_data = QMimeData()
-            urls = [QUrl.fromLocalFile(str(path)) for path in source_paths]
-            mime_data.setUrls(urls)
-            self.clipboard.setMimeData(mime_data)
-            
-            if cut:
-                self.to_cut = source_paths
-            else:
-                self.to_cut = None
-
-    def paste(self):
-        mime_data = self.clipboard.mimeData()
-        if mime_data.hasUrls():
-            source_paths = [Path(url.toLocalFile()) for url in mime_data.urls()]
-            destination_path = self.current_path
-
-            if hasattr(self, "to_cut") and self.to_cut:
-                command = MoveCommand(source_paths, destination_path)
-            else:
-                command = CopyCommand(source_paths, destination_path)
-
-            self.undo_stack.push(command)
-            self.refresh()
-
-            if hasattr(self, "to_cut"):
-                self.to_cut = None
-
-    def delete(self):
-        selected_indexes = self.ui.file_list_view.selectedIndexes()
-        if selected_indexes:
-            paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
-            reply = QMessageBox.question(
-                self,
-                "Confirm Delete",
-                f"Are you sure you want to delete {len(paths)} item(s)?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
-            )
-            if reply == QMessageBox.Yes:
-                command = DeleteCommand(paths)
-                self.undo_stack.push(command)
-                self.refresh()
-
-    def rename(self):
-        selected_indexes = self.ui.file_list_view.selectedIndexes()
-        if len(selected_indexes) == 1:
-            old_path = Path(self.fs_model.filePath(selected_indexes[0]))
-            new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", text=old_path.name)
-            if ok and new_name:
-                new_path = old_path.parent / new_name
-                command = RenameCommand(old_path, new_path)
-                self.undo_stack.push(command)
-                self.refresh()
-
     def setup_icons(self):
-        self.ui.back_button.setIcon(QIcon.fromTheme("go-previous"))  # pyright: ignore[reportArgumentType]
-        self.ui.forward_button.setIcon(QIcon.fromTheme("go-next"))  # pyright: ignore[reportArgumentType]
-        self.ui.up_button.setIcon(QIcon.fromTheme("go-up"))  # pyright: ignore[reportArgumentType]
-        self.ui.go_button.setIcon(QIcon.fromTheme("go-jump"))  # pyright: ignore[reportArgumentType]
+        self.ui.back_button.setIcon(QIcon.fromTheme("go-previous"))
+        self.ui.forward_button.setIcon(QIcon.fromTheme("go-next"))
+        self.ui.up_button.setIcon(QIcon.fromTheme("go-up"))
+        self.ui.go_button.setIcon(QIcon.fromTheme("go-jump"))
 
     def setup_connections(self):
         self.ui.navigation_pane.clicked.connect(self.on_navigation_pane_clicked)
@@ -357,7 +272,7 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.file_list_view.doubleClicked.connect(self.on_file_list_view_double_clicked)
         self.ui.address_bar.returnPressed.connect(self.on_address_bar_return)
         self.ui.go_button.clicked.connect(self.on_go_button_clicked)
-        self.ui.file_list_view.setContextMenuPolicy(Qt.CustomContextMenu)  # pyright: ignore[reportArgumentType]
+        self.ui.file_list_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ui.file_list_view.customContextMenuRequested.connect(self.show_context_menu)
         self.ui.back_button.clicked.connect(self.go_back)
         self.ui.forward_button.clicked.connect(self.go_forward)
@@ -380,14 +295,9 @@ class FileSystemExplorerWidget(QMainWindow):
         self.ui.action_select_none.triggered.connect(self.select_none)
 
         self.ui.action_refresh.triggered.connect(self.refresh)
-        self.ui.action_extra_large_icons.triggered.connect(lambda: self.change_view_mode("extra_large_icons"))
-        self.ui.action_large_icons.triggered.connect(lambda: self.change_view_mode("large_icons"))
-        self.ui.action_medium_icons.triggered.connect(lambda: self.change_view_mode("medium_icons"))
-        self.ui.action_small_icons.triggered.connect(lambda: self.change_view_mode("small_icons"))
-        self.ui.action_list.triggered.connect(lambda: self.change_view_mode("list"))
-        self.ui.action_details.triggered.connect(lambda: self.change_view_mode("details"))
-        self.ui.action_tiles.triggered.connect(lambda: self.change_view_mode("tiles"))
-        self.ui.action_content.triggered.connect(lambda: self.change_view_mode("content"))
+        self.ui.action_list.triggered.connect(lambda: self.change_view_mode(ViewMode.LIST))
+        self.ui.action_details.triggered.connect(lambda: self.change_view_mode(ViewMode.DETAILS))
+        self.ui.action_tiles.triggered.connect(lambda: self.change_view_mode(ViewMode.TILES))
         self.ui.action_show_hidden_items.triggered.connect(self.toggle_hidden_items)
 
     def setup_shortcuts(self):
@@ -432,10 +342,10 @@ class FileSystemExplorerWidget(QMainWindow):
         path_obj = Path(path)
         if path_obj.is_dir():
             self.current_path = path_obj
-            self.ui.file_list_view.setRootIndex(self.fs_model.index(str(path_obj)))  # pyright: ignore[reportArgumentType]
-            self.ui.navigation_pane.setCurrentIndex(self.fs_model.index(str(path_obj)))  # pyright: ignore[reportArgumentType]
+            self.ui.file_list_view.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(path_obj))))
+            self.ui.navigation_pane.setCurrentIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(path_obj))))
             self.ui.address_bar.setText(str(path_obj))
-            self.directory_changed.emit(path_obj)
+            self.directory_changed.emit(str(path_obj))
             self.add_to_history(path_obj)
             self.update_ui()
         else:
@@ -464,13 +374,9 @@ class FileSystemExplorerWidget(QMainWindow):
             self.set_current_path(parent_path)
 
     def on_search_text_changed(self, text):
-        if text:
-            self.fs_model.setNameFilters([f"*{text}*"])
-            self.fs_model.setNameFilterDisables(False)
-        else:
-            self.fs_model.setNameFilters([])
-            self.fs_model.setNameFilterDisables(True)
-        self.ui.file_list_view.setRootIndex(self.fs_model.index(str(self.current_path)))  # pyright: ignore[reportArgumentType]
+        self.proxy_model.setFilterRegExp(text)
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.ui.file_list_view.setRootIndex(self.proxy_model.mapFromSource(self.fs_model.index(str(self.current_path))))
 
     def focus_address_bar(self):
         self.ui.address_bar.setFocus()
@@ -500,23 +406,20 @@ class FileSystemExplorerWidget(QMainWindow):
         self.update_status_bar()
         self.ui.back_button.setEnabled(self.navigation_index > 0)
         self.ui.forward_button.setEnabled(self.navigation_index < len(self.navigation_history) - 1)
-        self.ui.up_button.setEnabled(self.current_path != QDir.rootPath())
+        self.ui.up_button.setEnabled(self.current_path != Path(QDir.rootPath()))
 
     def update_status_bar(self):
         selected_items = len(self.ui.file_list_view.selectedIndexes())
         view_model = self.ui.file_list_view.model()
         assert view_model is not None, "View model is None"
-        total_items = view_model.rowCount(self.ui.file_list_view.rootIndex())  # pyright: ignore[reportArgumentType]
+        total_items = view_model.rowCount(self.ui.file_list_view.rootIndex())
         if selected_items > 0:
             status_text = f"{selected_items} item{'s' if selected_items > 1 else ''} selected"
         else:
             status_text = f"{total_items} item{'s' if total_items > 1 else ''}"
-        self.ui.status_items.setText(status_text)
+        self.ui.status_bar.addWidget(QLabel(status_text))
 
-        total_size = sum(
-            self.fs_model.size(view_model.index(i, 0, self.ui.file_list_view.rootIndex()))  # pyright: ignore[reportCallIssue, reportArgumentType]
-            for i in range(total_items)
-        )
+        total_size = sum(self.fs_model.size(self.proxy_model.mapToSource(view_model.index(i, 0, self.ui.file_list_view.rootIndex()))) for i in range(total_items))
         self.ui.status_size.setText(self.format_size(total_size))
 
     def format_size(self, size):
@@ -536,7 +439,7 @@ class FileSystemExplorerWidget(QMainWindow):
     def show_properties(self):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
         if selected_indexes:
-            file_path = Path(self.fs_model.filePath(selected_indexes[0]))  # pyright: ignore[reportArgumentType]
+            file_path = Path(self.fs_model.filePath(self.proxy_model.mapToSource(selected_indexes[0])))
             properties = f"Name: {file_path.name}\n"
             properties += f"Type: {'Directory' if file_path.is_dir() else 'File'}\n"
             properties += f"Size: {self.format_size(file_path.stat().st_size)}\n"
@@ -552,62 +455,81 @@ class FileSystemExplorerWidget(QMainWindow):
     def copy(self, cut: bool = False):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
         if selected_indexes:
-            urls = [QUrl.fromLocalFile(self.fs_model.filePath(index)) for index in selected_indexes]  # pyright: ignore[reportArgumentType]
+            source_paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
             mime_data = QMimeData()
+            urls = [QUrl.fromLocalFile(str(path)) for path in source_paths]
             mime_data.setUrls(urls)
             self.clipboard.setMimeData(mime_data)
+
             if cut:
-                self.to_cut = urls
+                self.to_cut = source_paths
             else:
                 self.to_cut = None
 
     def paste(self):
         mime_data = self.clipboard.mimeData()
         if mime_data.hasUrls():
-            for url in mime_data.urls():
-                source_path = Path(url.toLocalFile())
-                destination_path = self.current_path / source_path.name
+            source_paths = [Path(url.toLocalFile()) for url in mime_data.urls()]
+            destination_path = self.current_path
 
-                if hasattr(self, "to_cut") and self.to_cut and url in self.to_cut:
-                    shutil.move(source_path, destination_path)
-                elif source_path.is_dir():
-                    shutil.copytree(source_path, destination_path)
-                else:
-                    shutil.copy2(source_path, destination_path)
+            if hasattr(self, "to_cut") and self.to_cut:
+                command = MoveCommand(source_paths, destination_path)
+            else:
+                command = CopyCommand(source_paths, destination_path)
 
+            self.undo_stack.push(command)
             self.refresh()
+
             if hasattr(self, "to_cut"):
                 self.to_cut = None
 
     def delete(self):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
         if selected_indexes:
+            paths = [Path(self.fs_model.filePath(index)) for index in selected_indexes]
             reply = QMessageBox.question(
                 self,
                 "Confirm Delete",
-                f"Are you sure you want to delete {len(selected_indexes)} item(s)?",
+                f"Are you sure you want to delete {len(paths)} item(s)?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
             if reply == QMessageBox.Yes:
-                for index in selected_indexes:
-                    file_path = Path(self.fs_model.filePath(index))  # pyright: ignore[reportArgumentType]
-                    if file_path.is_dir():
-                        shutil.rmtree(file_path)
-                    else:
-                        file_path.unlink(missing_ok=True)
+                command = DeleteCommand(paths)
+                self.undo_stack.push(command)
                 self.refresh()
 
     def rename(self):
         selected_indexes = self.ui.file_list_view.selectedIndexes()
-        if len(selected_indexes) == 1:
-            old_name = self.fs_model.fileName(selected_indexes[0])  # pyright: ignore[reportArgumentType]
-            new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", text=old_name)
+        if selected_indexes:
+            file_path = Path(self.fs_model.filePath(selected_indexes[0]))
+            new_name, ok = QInputDialog.getText(self, "Rename", "Enter new name:", QLineEdit.Normal, file_path.name)
             if ok and new_name:
-                old_path = Path(self.fs_model.filePath(selected_indexes[0]))  # pyright: ignore[reportArgumentType]
-                new_path = old_path.parent / new_name
-                old_path.rename(new_path)
-                self.refresh()
+                new_path = file_path.with_name(new_name)
+                if new_path.exists():
+                    QMessageBox.warning(self, "Rename", "A file with this name already exists.")
+                else:
+                    command = RenameCommand(file_path, new_path)
+                    self.undo_stack.push(command)
+                    self.refresh()
+
+    def run_in_background(
+        self,
+        func: Callable,
+        *args,
+        callback: Callable[[Future[Any]], None] | None = None,
+        **kwargs,
+    ):
+        future = self.executor.submit(func, *args, **kwargs)
+        if callback is not None:
+            future.add_done_callback(callback)
+
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
+        if value >= 100:
+            self.progress_bar.setVisible(False)
+        elif not self.progress_bar.isVisible():
+            self.progress_bar.setVisible(True)
 
     def select_all(self):
         self.ui.file_list_view.selectAll()
@@ -776,44 +698,35 @@ class FileSystemExplorerWidget(QMainWindow):
             self.stacked_widget.setCurrentWidget(self.table_view)
         self.update_view()
 
-    def change_view_mode(self, mode):
-        if mode == "extra_large_icons":
-            self.ui.file_list_view.setViewMode(QListView.IconMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(96, 96))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize(120, 120))  # pyright: ignore[reportArgumentType]
-        elif mode == "large_icons":
-            self.ui.file_list_view.setViewMode(QListView.IconMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(48, 48))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize(80, 80))  # pyright: ignore[reportArgumentType]
-        elif mode == "medium_icons":
-            self.ui.file_list_view.setViewMode(QListView.IconMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(32, 32))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize(60, 60))  # pyright: ignore[reportArgumentType]
-        elif mode == "small_icons":
-            self.ui.file_list_view.setViewMode(QListView.IconMode)  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setIconSize(QSize(16, 16))  # pyright: ignore[reportArgumentType]
-            self.ui.file_list_view.setGridSize(QSize(40, 40))  # pyright: ignore[reportArgumentType]
-        elif mode == "list":
+    def change_view_mode(self, mode: ViewMode):
+        if mode == ViewMode.EXTRA_LARGE_ICONS:
+            self.change_icon_size(3.0)  # Adjust delta to achieve desired size
+        elif mode == ViewMode.LARGE_ICONS:
+            self.change_icon_size(2.0)  # Adjust delta to achieve desired size
+        elif mode == ViewMode.MEDIUM_ICONS:
+            self.change_icon_size(1.0)  # Adjust delta to achieve desired size
+        elif mode == ViewMode.SMALL_ICONS:
+            self.change_icon_size(0.5)  # Adjust delta to achieve desired size
+        elif mode == ViewMode.LIST:
             self.ui.file_list_view.setViewMode(QListView.ListMode)  # pyright: ignore[reportArgumentType]
             self.ui.file_list_view.setIconSize(QSize(16, 16))  # pyright: ignore[reportArgumentType]
             self.ui.file_list_view.setGridSize(QSize())  # pyright: ignore[reportArgumentType]
-        elif mode == "details":
+        elif mode == ViewMode.DETAILS:
             assert isinstance(self.ui.file_list_view, QTreeView)
             # Switch to QTreeView for details view
             self.ui.file_list_view.setViewMode(QListView.ListMode)  # pyright: ignore[reportArgumentType]
             self.ui.file_list_view.setIconSize(QSize(16, 16))  # pyright: ignore[reportArgumentType]
             self.ui.file_list_view.setGridSize(QSize())  # pyright: ignore[reportArgumentType]
-            # Show all columns
-            for i in range(self.fs_model.columnCount()):
-                self.ui.file_list_view.setColumnHidden(i, False)
-        elif mode == "tiles":
+        elif mode == ViewMode.TILES:
             self.ui.file_list_view.setViewMode(QListView.IconMode)  # pyright: ignore[reportArgumentType]
             self.ui.file_list_view.setIconSize(QSize(32, 32))  # pyright: ignore[reportArgumentType]
             self.ui.file_list_view.setGridSize(QSize(120, 80))  # pyright: ignore[reportArgumentType]
-        elif mode == "content":
-            # Similar to details view but with a preview pane
-            self.change_view_mode("details")
-            # Add a preview pane here if needed
+        elif mode == ViewMode.CONTENT:
+            self.preview_view.setVisible(True)
+            # self.preview_view.setPixmap(...)  # TODO: Implement
+        if isinstance(self.ui.file_list_view, (QTableView, QTreeView)):
+            for i in range(self.fs_model.columnCount()):
+                self.ui.file_list_view.setColumnHidden(i, mode != ViewMode.DETAILS)
 
     def change_icon_size(self, delta: float):
         new_multiplier = max(
@@ -841,7 +754,8 @@ class FileSystemExplorerWidget(QMainWindow):
 
     def show_context_menu(self, pos: QPoint):
         current_view = self.stacked_widget.currentWidget()
-        assert isinstance(current_view, (QListView, QTableView, QTileView)), f"Current view is not a QListView, instead was a {type(current_view)}"
+        assert isinstance(current_view, (QListView, QTableView, QTileView)), f"Current view is not a QListView, instead was a         
+{type(current_view)}"
 
         index = current_view.indexAt(pos)
         if index.isValid():
