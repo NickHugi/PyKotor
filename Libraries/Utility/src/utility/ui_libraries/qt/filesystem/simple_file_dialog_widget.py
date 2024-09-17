@@ -4,12 +4,14 @@ import platform
 import shutil
 import subprocess
 import sys
+import os
+from datetime import datetime
 
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import suppress
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, List
 
 import qtpy
 
@@ -50,6 +52,7 @@ from qtpy.QtWidgets import (
     QUndoStack,
     QVBoxLayout,
     QWidget,
+    QFileIconProvider,
 )
 
 from utility.ui_libraries.qt.debug.print_qobject import print_qt_class_calls
@@ -63,8 +66,6 @@ from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
 from utility.ui_libraries.qt.filesystem.file_explorer_context_menu import FileExplorerContextMenu
 
 if TYPE_CHECKING:
-    import os
-
     from concurrent.futures import Future
 
     from qtpy.QtCore import QObject, QPoint, QRect
@@ -244,6 +245,14 @@ class FileSystemExplorerWidget(QMainWindow):
 
         # Setup context menu handler
         self.context_menu_handler = FileExplorerContextMenu(self)
+
+        # Setup custom icon provider
+        self.icon_provider = QFileIconProvider()
+        self.fs_model.setIconProvider(self.icon_provider)
+
+        # Setup file watcher
+        self.fs_model.setReadOnly(False)
+        self.fs_model.setOption(QFileSystemModel.DontWatchForChanges, False)
 
     def setup_com_interfaces(self):
         with suppress(ImportError):
