@@ -758,9 +758,7 @@ class FileSystemExplorerWidget(QMainWindow):
 
     def show_context_menu(self, pos: QPoint):
         current_view = self.stacked_widget.currentWidget()
-        assert isinstance(current_view, (QListView, QTableView, QTileView)), f"Current view is not a QListView, instead was a         
-{type(current_view)}"
-
+        assert isinstance(current_view, (QListView, QTableView, QTileView)), f"Current view is not a QListView, instead was a {type(current_view)}"
         index = current_view.indexAt(pos)
         if index.isValid():
             self.show_item_context_menu(pos, index)
