@@ -60,6 +60,7 @@ from utility.ui_libraries.qt.widgets.itemviews.listview import RobustListView
 from utility.ui_libraries.qt.widgets.itemviews.tableview import RobustTableView
 from utility.ui_libraries.qt.widgets.itemviews.tileview import QTileView, TileItemDelegate
 from utility.ui_libraries.qt.widgets.itemviews.treeview import RobustTreeView
+from utility.ui_libraries.qt.filesystem.file_explorer_context_menu import FileExplorerContextMenu
 
 if TYPE_CHECKING:
     import os
@@ -240,6 +241,9 @@ class FileSystemExplorerWidget(QMainWindow):
         # Setup COM interfaces for Windows
         if platform.system() == "Windows":
             self.setup_com_interfaces()
+
+        # Setup context menu handler
+        self.context_menu_handler = FileExplorerContextMenu(self)
 
     def setup_com_interfaces(self):
         with suppress(ImportError):
