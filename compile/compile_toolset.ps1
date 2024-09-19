@@ -123,48 +123,36 @@ if (Test-Path -LiteralPath $finalExecutablePath -ErrorAction SilentlyContinue) {
 Write-Host "Final executable path: $finalExecutablePath"
 if ($pyInstallerArgs.clean -and (Test-Path $pyInstallerArgs.workpath -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath $pyInstallerArgs.workpath -Recurse -Force }
 
-
-# setup QT_API env var (for pyinstaller)
-if (-not $env:QT_API) {
-    $env:QT_API = "PyQt5"  # Default to PyQt5 if QT_API is not set
+# Ensure pyinstaller is actually excluding the other Qt bindings.
+if (-not $env:QT_API) { $env:QT_API = "PyQt5" }
+$apiMapping = @{
+    "pyqt5" = "PyQt5"
+    "pyqt6" = "PyQt6"
+    "pyside2" = "PySide2"
+    "pyside6" = "PySide6"
 }
-switch ($env:QT_API) {
-    { $_ -in "PyQt5", "PyQt6", "PySide2", "PySide6", "pyqt5", "pyqt6", "pyside2", "pyside6", "default" } {
-        # Define a dictionary for mapping lowercase to correct case
-        $apiMapping = @{
-            "pyqt5" = "PyQt5";
-            "pyqt6" = "PyQt6";
-            "pyside2" = "PySide2";
-            "pyside6" = "PySide6"
-        }
-
-        # Normalize $env:QT_API based on the dictionary
-        if ($apiMapping.ContainsKey($env:QT_API.ToLower())) {
-            $env:QT_API = $apiMapping[$env:QT_API.ToLower()]
-            Write-Host "converted QT_API to '$env:QT_API'"
-        } else {
-            Write-Error "Invalid QT_API: '$env:QT_API', hopefully pyinstaller figures it out..."
-        }
-
-        # Default modules to exclude
-        $modulesToExclude = @("PyQt5", "PyQt6", "PySide2", "PySide6") | Where-Object { $_ -ne $env:QT_API }
-
-        # Add modules to the exclude list
-        $tempArray = $pyInstallerArgs['exclude-module'] + $modulesToExclude
-        $tempArrayString = $tempArray -join ", "
-        Write-Host "Excluding: $tempArrayString"
-        $pyInstallerArgs['exclude-module'] = $tempArray
-    }
+$normalizedAPI = $apiMapping[$env:QT_API.ToLower()]
+if ($normalizedAPI) {
+    $env:QT_API = $normalizedAPI
+    Write-Host "Converted QT_API to '$env:QT_API'"
+} elseif ($env:QT_API -notin "PyQt5", "PyQt6", "PySide2", "PySide6") {
+    Write-Error "Invalid QT_API: '$env:QT_API', hopefully pyinstaller figures it out..."
 }
-Write-Host "QT_API: $env:QT_API"
+$modulesToExclude = @("PyQt5", "PyQt6", "PySide2", "PySide6") | Where-Object { $_ -ne $env:QT_API }
+$pyInstallerArgs['exclude-module'] += $modulesToExclude
+Write-Host "`nQT_API: $env:QT_API - Excluding: $($pyInstallerArgs['exclude-module'] -join ', ')"
+Write-Host "----------------------------------------`n"
 
-
-Write-Host "Compiling $($pyInstallerArgs.name)..."
+$pyinstaller_output = ""
 Push-Location -LiteralPath $toolSrcDir
 try {
+    Write-Host "Compiling $($pyInstallerArgs.name)..."
     $argumentsArray = @('-m', 'PyInstaller') + $argumentsArray + "toolset$pathSep`__main__.py"
     Write-Host "Executing command: $pythonExePath $argumentsArray"
-    & $pythonExePath $argumentsArray
+    $pyinstaller_output = & $pythonExePath $argumentsArray
+} catch {
+    Write-Host $pyinstaller_output
+    Handle-Error -ErrorRecord $_
 } finally {
     Pop-Location
 }
